@@ -1,22 +1,26 @@
 import SwiftUI
 import CoreData
-import SwiftUI
-import CoreData
 
 struct HomeView: View {
     @Environment(\.managedObjectContext) private var viewContext
 
     @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \RoutineTask.name, ascending: true)],
+        sortDescriptors: [],
         animation: .default)
     private var routineTasks: FetchedResults<RoutineTask>
 
     @State private var showingAddRoutine = false
 
+    var sortedTasks: [RoutineTask] {
+        routineTasks.sorted { task1, task2 in
+            urgencyLevel(for: task1) > urgencyLevel(for: task2)
+        }
+    }
+
     var body: some View {
         NavigationView {
             List {
-                ForEach(routineTasks) { task in
+                ForEach(sortedTasks) { task in
                     NavigationLink(destination: RoutineDetailView(task: task)) {
                         HStack {
                             Text(task.name ?? "Unnamed task")
@@ -39,6 +43,16 @@ struct HomeView: View {
                 AddRoutineView().environment(\.managedObjectContext, viewContext)
             }
         }
+    }
+
+    private func urgencyLevel(for task: RoutineTask) -> Int {
+        let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
+        let dueIn = Int(task.interval) - daysSinceLastRoutine
+
+        if dueIn <= 0 { return 3 } // Overdue, highest priority
+        if dueIn == 1 { return 2 } // Due today
+        if dueIn == 2 { return 1 } // Due tomorrow
+        return 0 // Least urgent
     }
 
     private func urgencySquare(for task: RoutineTask) -> some View {
