@@ -12,12 +12,16 @@ struct RoutineDetailView: View {
         _logs = FetchRequest(
             entity: RoutineLog.entity(),
             sortDescriptors: [NSSortDescriptor(keyPath: \RoutineLog.timestamp, ascending: false)],
-            predicate: NSPredicate(format: "task == %@", task)
+            predicate: NSPredicate(format: "task == %@", task.objectID)
         )
     }
 
     private var daysSinceLastRoutine: Int {
         Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
+    }
+
+    private var overdueDays: Int {
+        max(0, daysSinceLastRoutine - Int(task.interval))
     }
 
     private var progressColor: Color {
@@ -41,9 +45,15 @@ struct RoutineDetailView: View {
 
             Text("\(daysSinceLastRoutine) day(s) passed")
                 .foregroundColor(.secondary)
+            
+            if overdueDays > 0 {
+                Text("Overdue by \(overdueDays) day(s)")
+                    .foregroundColor(.red)
+                    .fontWeight(.bold)
+            }
 
             LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(0..<Int(task.interval), id: \.self) { index in
+                ForEach(0..<Int(task.interval), id: \ .self) { index in
                     Rectangle()
                         .fill(index < daysSinceLastRoutine ? progressColor : Color.gray.opacity(0.3))
                         .frame(width: 40, height: 40)
