@@ -9,27 +9,50 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        VStack {
-            Spacer()
-                .frame(height: 8)
-            Text("Settings")
-                .font(.largeTitle)
-                .padding()
-            Spacer()
-                .frame(height: 32)
-            Toggle("Enable Notifications", isOn: $notificationsEnabled)
-                .padding()
-                .onChange(of: notificationsEnabled) { newValue in
-                    updateNotificationSettings(enabled: newValue)
+        NavigationView {
+            List {
+                // Notifications Section
+                Section(header: Text("Notifications")) {
+                    Toggle("Enable Notifications", isOn: $notificationsEnabled)
+                        .onChange(of: notificationsEnabled) { newValue in
+                            updateNotificationSettings(enabled: newValue)
+                        }
+
+                    if !notificationsEnabled {
+                        Button("Disable Notifications in Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .foregroundColor(.red)
+                    }
                 }
-            Spacer()
-            Text("App Version: \(appVersion)")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-        }
-        .padding()
-        .onAppear {
-            checkNotificationStatus()
+
+                // Support Section
+                Section(header: Text("Support")) {
+                    Button(action: openEmail) {
+                        HStack {
+                            Image(systemName: "envelope")
+                                .foregroundColor(.blue)
+                            Text("Contact Us")
+                        }
+                    }
+                }
+
+                // About Section
+                Section(header: Text("About")) {
+                    HStack {
+                        Text("App Version")
+                        Spacer()
+                        Text(appVersion)
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .navigationTitle("Settings")
+            .onAppear {
+                checkNotificationStatus()
+            }
         }
     }
 
@@ -65,6 +88,12 @@ struct SettingsView: View {
                     notificationsEnabled = false
                 }
             }
+        }
+    }
+
+    private func openEmail() {
+        if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
+            UIApplication.shared.open(emailURL)
         }
     }
 }
