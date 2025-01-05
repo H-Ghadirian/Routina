@@ -10,26 +10,19 @@ struct SettingsView: View {
 
     var body: some View {
         VStack {
+            Spacer()
+                .frame(height: 8)
             Text("Settings")
                 .font(.largeTitle)
                 .padding()
-
+            Spacer()
+                .frame(height: 32)
             Toggle("Enable Notifications", isOn: $notificationsEnabled)
                 .padding()
                 .onChange(of: notificationsEnabled) { newValue in
                     updateNotificationSettings(enabled: newValue)
                 }
-
-            if !notificationsEnabled {
-                Button("Disable Notifications in Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-                .padding()
-                .foregroundColor(.red)
-            }
-
+            Spacer()
             Text("App Version: \(appVersion)")
                 .font(.subheadline)
                 .foregroundColor(.gray)
@@ -49,16 +42,29 @@ struct SettingsView: View {
     }
 
     private func updateNotificationSettings(enabled: Bool) {
-        if enabled {
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                DispatchQueue.main.async {
-                    notificationsEnabled = granted
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                if settings.authorizationStatus == .denied {
+                    // Redirect to system settings if notifications are disabled
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                    notificationsEnabled = false
+                    return
+                }
+                
+                if enabled {
+                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                        DispatchQueue.main.async {
+                            notificationsEnabled = granted
+                        }
+                    }
+                } else {
+                    UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+                    UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+                    notificationsEnabled = false
                 }
             }
-        } else {
-            UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-            UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-            notificationsEnabled = false // Users must disable notifications manually in settings.
         }
     }
 }
