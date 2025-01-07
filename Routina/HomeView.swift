@@ -10,6 +10,7 @@ struct HomeView: View {
     private var routineTasks: FetchedResults<RoutineTask>
 
     @State private var showingAddRoutine = false
+    @State private var needsRefresh = false  // Added State to trigger UI refresh
 
     var sortedTasks: [RoutineTask] {
         routineTasks.sorted { task1, task2 in
@@ -21,7 +22,10 @@ struct HomeView: View {
         NavigationView {
             List {
                 ForEach(sortedTasks) { task in
-                    NavigationLink(destination: RoutineDetailView(task: task)) {
+                    NavigationLink(destination: RoutineDetailView(task: task)
+                        .onDisappear {
+                            needsRefresh.toggle()  // Trigger UI refresh
+                        }) {
                         HStack {
                             Text(task.name ?? "Unnamed task")
                             Spacer()
@@ -43,6 +47,7 @@ struct HomeView: View {
                 AddRoutineView().environment(\.managedObjectContext, viewContext)
             }
         }
+        .id(needsRefresh)  // Force UI refresh when returning from detail view
     }
 
     private func urgencyLevel(for task: RoutineTask) -> Int {

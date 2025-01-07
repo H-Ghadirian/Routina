@@ -45,7 +45,7 @@ struct RoutineDetailView: View {
 
             Text("\(daysSinceLastRoutine) day(s) passed")
                 .foregroundColor(.secondary)
-            
+
             if overdueDays > 0 {
                 Text("Overdue by \(overdueDays) day(s)")
                     .foregroundColor(.red)
@@ -53,7 +53,7 @@ struct RoutineDetailView: View {
             }
 
             LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(0..<Int(task.interval), id: \ .self) { index in
+                ForEach(0..<Int(task.interval), id: \.self) { index in
                     Rectangle()
                         .fill(index < daysSinceLastRoutine ? progressColor : Color.gray.opacity(0.3))
                         .frame(width: 40, height: 40)
