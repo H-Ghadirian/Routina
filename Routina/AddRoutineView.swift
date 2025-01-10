@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct AddRoutineView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -6,21 +7,34 @@ struct AddRoutineView: View {
 
     @State private var routineName: String = ""
     @State private var interval: Int = 1
+    @State private var notificationsDisabled = false
 
     var body: some View {
         NavigationStack {
             Form {
+
                 TextField("Routine name", text: $routineName)
 
                 HStack {
                     Text("Interval: ")
                     Picker("Interval", selection: $interval) {
-                        ForEach(1...99, id: \ .self) { num in
+                        ForEach(1...99, id: \.self) { num in
                             Text("\(num) days").tag(num)
                         }
                     }
                     .pickerStyle(WheelPickerStyle())
                     .frame(height: 100)
+                }
+
+                if notificationsDisabled {
+                    Button(action: openSettings) {
+                        Label("Enable Notifications", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.red)
+                            .cornerRadius(10)
+                    }
                 }
             }
             .navigationTitle("Add Routine")
@@ -38,6 +52,20 @@ struct AddRoutineView: View {
                 }
             }
         }
+        .onAppear(perform: checkNotificationStatus)
+    }
+
+    private func checkNotificationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                notificationsDisabled = settings.authorizationStatus != .authorized
+            }
+        }
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 
     private func addRoutine() {
