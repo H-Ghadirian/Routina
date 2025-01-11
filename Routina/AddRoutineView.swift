@@ -28,11 +28,11 @@ struct AddRoutineView: View {
 
                 if notificationsDisabled {
                     Button(action: openSettings) {
-                        Label("Enable Notifications", systemImage: "exclamationmark.triangle.fill")
-                            .foregroundColor(.white)
+                        Text("Enable Notifications")
+                            .foregroundColor(.red)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color.red)
+                            .background(Color.clear)
                             .cornerRadius(10)
                     }
                 }

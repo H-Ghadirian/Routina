@@ -12,7 +12,7 @@ struct RoutineDetailView: View {
         _logs = FetchRequest(
             entity: RoutineLog.entity(),
             sortDescriptors: [NSSortDescriptor(keyPath: \RoutineLog.timestamp, ascending: false)],
-            predicate: NSPredicate(format: "task == %@", task.objectID)
+            predicate: NSPredicate(format: "task == %@", task)
         )
     }
 
@@ -43,8 +43,6 @@ struct RoutineDetailView: View {
                 .font(.largeTitle)
                 .bold()
 
-            Text("\(daysSinceLastRoutine) day(s) passed")
-                .foregroundColor(.secondary)
 
             if overdueDays > 0 {
                 Text("Overdue by \(overdueDays) day(s)")
@@ -55,29 +53,32 @@ struct RoutineDetailView: View {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(0..<Int(task.interval), id: \.self) { index in
                     Rectangle()
-                        .fill(index < daysSinceLastRoutine ? progressColor : Color.gray.opacity(0.3))
+                        .fill(index < daysSinceLastRoutine ? progressColor : Color.white.opacity(0.3))
                         .frame(width: 40, height: 40)
                         .cornerRadius(5)
                 }
             }
             .padding()
 
-            Text("Last done: \(task.lastDone?.formatted(date: .abbreviated, time: .omitted) ?? "Never")")
-                .foregroundColor(.gray)
-
             Button("Mark as Done") {
                 markAsDone()
             }
             .buttonStyle(.borderedProminent)
 
-            List {
-                Section(header: Text("Routine Logs")) {
-                    ForEach(logs) { log in
-                        Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+            if logs.count > 0, let lastDone = task.lastDone?.formatted(date: .abbreviated, time: .omitted) {
+                Text("\(daysSinceLastRoutine) \(daysSinceLastRoutine > 1 ? "days" : "day") passed since last done: \(lastDone)")
+                    .foregroundColor(.secondary)
+                
+                List {
+                    Section(header: Text("Routine Logs")) {
+                        ForEach(logs) { log in
+                            Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                        }
                     }
                 }
+            } else {
+                Text("Never done yet")
             }
-
             Spacer()
         }
         .padding()
@@ -86,7 +87,7 @@ struct RoutineDetailView: View {
     private func markAsDone() {
         task.lastDone = Date()
         let newLog = RoutineLog(context: viewContext)
-        newLog.timestamp = Date()
+        newLog.timestamp = task.lastDone
         newLog.task = task
 
         saveContext()
