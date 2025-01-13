@@ -20,21 +20,7 @@ struct HomeView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                ForEach(sortedTasks) { task in
-                    NavigationLink(destination: RoutineDetailView(task: task)
-                        .onDisappear {
-                            needsRefresh.toggle()  // Trigger UI refresh
-                        }) {
-                        HStack {
-                            Text(task.name ?? "Unnamed task")
-                            Spacer()
-                            urgencySquare(for: task)
-                        }
-                    }
-                }
-                .onDelete(perform: deleteRoutines)
-            }
+            listOfSortedTasksView
             .navigationTitle("Routina")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -48,6 +34,24 @@ struct HomeView: View {
             }
         }
         .id(needsRefresh)  // Force UI refresh when returning from detail view
+    }
+
+    private var listOfSortedTasksView: some View {
+        List {
+            ForEach(sortedTasks) { task in
+                NavigationLink(destination: RoutineDetailView(task: task)
+                    .onDisappear {
+                        needsRefresh.toggle()  // Trigger UI refresh
+                    }) {
+                    HStack {
+                        Text(task.name ?? "Unnamed task")
+                        Spacer()
+                        urgencySquare(for: task)
+                    }
+                }
+            }
+            .onDelete(perform: deleteRoutines)
+        }
     }
 
     private func urgencyLevel(for task: RoutineTask) -> Int {

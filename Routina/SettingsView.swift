@@ -11,47 +11,56 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
-                // Notifications Section
-                Section(header: Text("Notifications")) {
-                    Toggle("Enable Notifications", isOn: $notificationsEnabled)
-                        .onChange(of: notificationsEnabled) { newValue in
-                            updateNotificationSettings(enabled: newValue)
-                        }
+                notificationSectionView
 
-                    if !notificationsEnabled {
-                        Button("Disable Notifications in Settings") {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        }
-                        .foregroundColor(.red)
-                    }
-                }
+                supportSectionView
 
-                // Support Section
-                Section(header: Text("Support")) {
-                    Button(action: openEmail) {
-                        HStack {
-                            Image(systemName: "envelope")
-                                .foregroundColor(.blue)
-                            Text("Contact Us")
-                        }
-                    }
-                }
-
-                // About Section
-                Section(header: Text("About")) {
-                    HStack {
-                        Text("App Version")
-                        Spacer()
-                        Text(appVersion)
-                            .foregroundColor(.gray)
-                    }
-                }
+                aboutSectionView
             }
             .navigationTitle("Settings")
             .onAppear {
                 checkNotificationStatus()
+            }
+        }
+    }
+
+    private var notificationSectionView: some View {
+        Section(header: Text("Notifications")) {
+            Toggle("Enable Notifications", isOn: $notificationsEnabled)
+                .onChange(of: notificationsEnabled) { _, newValue in
+                    updateNotificationSettings(enabled: newValue)
+                }
+
+            if !notificationsEnabled {
+                Button("Disable Notifications in Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                .foregroundColor(.red)
+            }
+        }
+    }
+
+    private var supportSectionView: some View {
+        Section(header: Text("Support")) {
+            Button(action: openEmail) {
+                HStack {
+                    Image(systemName: "envelope")
+                        .foregroundColor(.blue)
+                    Text("Contact Us")
+                }
+            }
+        }
+    }
+
+    private var aboutSectionView: some View {
+        Section(header: Text("About")) {
+            HStack {
+                Text("App Version")
+                Spacer()
+                Text(appVersion)
+                    .foregroundColor(.gray)
             }
         }
     }
@@ -68,25 +77,36 @@ struct SettingsView: View {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 if settings.authorizationStatus == .denied {
-                    // Redirect to system settings if notifications are disabled
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
+                    openAppNotificationSystemSettings()
                     notificationsEnabled = false
                     return
                 }
                 
                 if enabled {
-                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                        DispatchQueue.main.async {
-                            notificationsEnabled = granted
-                        }
-                    }
+                    requestAuthorization()
                 } else {
-                    UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-                    UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-                    notificationsEnabled = false
+                    disableNotifications()
                 }
+            }
+        }
+    }
+
+    private func openAppNotificationSystemSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    private func disableNotifications() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        notificationsEnabled = false
+    }
+
+    private func requestAuthorization() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async {
+                notificationsEnabled = granted
             }
         }
     }

@@ -39,10 +39,7 @@ struct RoutineDetailView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text(task.name ?? "Unnamed Routine")
-                .font(.largeTitle)
-                .bold()
-
+            taskNameView
 
             if overdueDays > 0 {
                 Text("Overdue by \(overdueDays) day(s)")
@@ -50,38 +47,56 @@ struct RoutineDetailView: View {
                     .fontWeight(.bold)
             }
 
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(0..<Int(task.interval), id: \.self) { index in
-                    Rectangle()
-                        .fill(index < daysSinceLastRoutine ? progressColor : Color.white.opacity(0.3))
-                        .frame(width: 40, height: 40)
-                        .cornerRadius(5)
-                }
-            }
-            .padding()
+            rectanglesSinceLastDoneView
 
-            Button("Mark as Done") {
-                markAsDone()
-            }
-            .buttonStyle(.borderedProminent)
+            doneButtonView
 
             if logs.count > 0, let lastDone = task.lastDone?.formatted(date: .abbreviated, time: .omitted) {
                 Text("\(daysSinceLastRoutine) \(daysSinceLastRoutine > 1 ? "days" : "day") passed since last done: \(lastDone)")
                     .foregroundColor(.secondary)
-                
-                List {
-                    Section(header: Text("Routine Logs")) {
-                        ForEach(logs) { log in
-                            Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
-                        }
-                    }
-                }
+
+                listOfRoutineLogsView
             } else {
                 Text("Never done yet")
             }
             Spacer()
         }
         .padding()
+    }
+
+    private var taskNameView: some View {
+        Text(task.name ?? "Unnamed Routine")
+            .font(.largeTitle)
+            .bold()
+    }
+
+    private var rectanglesSinceLastDoneView: some View {
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(0..<Int(task.interval), id: \.self) { index in
+                Rectangle()
+                    .fill(index < daysSinceLastRoutine ? progressColor : Color.gray.opacity(0.3))
+                    .frame(width: 40, height: 40)
+                    .cornerRadius(5)
+            }
+        }
+        .padding()
+    }
+
+    private var doneButtonView: some View {
+        Button("Mark as Done") {
+            markAsDone()
+        }
+        .buttonStyle(.borderedProminent)
+    }
+
+    private var listOfRoutineLogsView: some View {
+        List {
+            Section(header: Text("Routine Logs")) {
+                ForEach(logs) { log in
+                    Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                }
+            }
+        }
     }
 
     private func markAsDone() {

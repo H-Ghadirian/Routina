@@ -12,18 +12,25 @@ struct RoutinaApp: App {
     var body: some Scene {
         WindowGroup {
             TabView {
-                HomeView()
-                    .tabItem {
-                        Label("Home", systemImage: "house")
-                    }
-                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
-
-                SettingsView()
-                    .tabItem {
-                        Label("Settings", systemImage: "gear")
-                    }
+                homeView
+                settingsView
             }
         }
+    }
+
+    private var homeView: some View {
+        HomeView()
+            .tabItem {
+                Label("Home", systemImage: "house")
+            }
+            .environment(\.managedObjectContext, persistenceController.container.viewContext)
+    }
+
+    private var settingsView: some View {
+        SettingsView()
+            .tabItem {
+                Label("Settings", systemImage: "gear")
+            }
     }
 
     private func requestNotificationPermission() {
@@ -34,14 +41,19 @@ struct RoutinaApp: App {
             }
 
             if !granted {
-                DispatchQueue.main.async {
-                    showSettingsAlert()
-                }
+                DispatchQueue.main.async { showSettingsAlert() }
             }
         }
     }
 
     private func showSettingsAlert() {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootViewController = windowScene.windows.first?.rootViewController {
+            rootViewController.present(alertController, animated: true)
+        }
+    }
+
+    private var alertController: UIAlertController {
         let alert = UIAlertController(
             title: "Enable Notifications",
             message: "To receive reminders for your routines, please enable notifications in Settings.",
@@ -54,11 +66,6 @@ struct RoutinaApp: App {
                 UIApplication.shared.open(url)
             }
         })
-
-        // Show the alert (requires a UIViewController)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootViewController = windowScene.windows.first?.rootViewController {
-            rootViewController.present(alert, animated: true)
-        }
+        return alert
     }
 }

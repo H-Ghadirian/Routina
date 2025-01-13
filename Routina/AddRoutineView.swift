@@ -17,24 +17,11 @@ struct AddRoutineView: View {
 
                 HStack {
                     Text("Interval: ")
-                    Picker("Interval", selection: $interval) {
-                        ForEach(1...99, id: \.self) { num in
-                            Text("\(num) days").tag(num)
-                        }
-                    }
-                    .pickerStyle(WheelPickerStyle())
-                    .frame(height: 100)
+                    intervalPickerView
                 }
 
                 if notificationsDisabled {
-                    Button(action: openSettings) {
-                        Text("Enable Notifications")
-                            .foregroundColor(.red)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.clear)
-                            .cornerRadius(10)
-                    }
+                    enableNotificationsButtonView
                 }
             }
             .navigationTitle("Add Routine")
@@ -53,6 +40,27 @@ struct AddRoutineView: View {
             }
         }
         .onAppear(perform: checkNotificationStatus)
+    }
+
+    private var enableNotificationsButtonView: some View {
+        Button(action: openSettings) {
+            Text("Enable Notifications")
+                .foregroundColor(.red)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.clear)
+                .cornerRadius(10)
+        }
+    }
+
+    private var intervalPickerView: some View {
+        Picker("Interval", selection: $interval) {
+            ForEach(1...99, id: \.self) { num in
+                Text("\(num) days").tag(num)
+            }
+        }
+        .pickerStyle(WheelPickerStyle())
+        .frame(height: 100)
     }
 
     private func checkNotificationStatus() {
@@ -84,16 +92,12 @@ struct AddRoutineView: View {
     }
 
     private func scheduleNotification(for task: RoutineTask) {
-        let content = UNMutableNotificationContent()
-        content.title = "Time to complete \(task.name ?? "your routine")!"
-        content.body = "Your routine is due today."
-        content.sound = .default
 
-        let dueDate = Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()
-        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-
-        let request = UNNotificationRequest(identifier: task.objectID.uriRepresentation().absoluteString, content: content, trigger: trigger)
+        let request = UNNotificationRequest(
+            identifier: task.objectID.uriRepresentation().absoluteString,
+            content: createContent(for: task.name ?? "your routine"),
+            trigger: createTrigger(for: task)
+        )
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
@@ -101,4 +105,22 @@ struct AddRoutineView: View {
             }
         }
     }
+    
+    private func createTrigger(for task: RoutineTask) -> UNCalendarNotificationTrigger {
+        let dueDate = Calendar.current.date(
+            byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()
+        ) ?? Date()
+        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        return trigger
+    }
+
+    private func createContent(for taskName: String) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = "Time to complete \(taskName)!"
+        content.body = "Your routine is due today."
+        content.sound = .default
+        return content
+    }
+
 }
