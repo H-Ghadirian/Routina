@@ -11,9 +11,8 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
-                #if os(iOS)
+#if os(iOS)
                 notificationSectionView
-                
 
                 supportSectionView
 #endif
@@ -45,7 +44,6 @@ struct SettingsView: View {
         }
     }
 
-
     private var supportSectionView: some View {
         Section(header: Text("Support")) {
             Button(action: openEmail) {
@@ -72,8 +70,10 @@ struct SettingsView: View {
 
     private func checkNotificationStatus() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                notificationsEnabled = settings.authorizationStatus == .authorized
+        DispatchQueue.main.async {
+                let systemEnabled = settings.authorizationStatus == .authorized
+                let userEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
+                notificationsEnabled = systemEnabled && userEnabled
             }
         }
     }
@@ -87,8 +87,14 @@ struct SettingsView: View {
                     notificationsEnabled = false
                     return
                 }
-                
-                if enabled {
+
+                UserDefaults.standard.set(enabled, forKey: "notificationsEnabled")
+
+                let systemEnabled = settings.authorizationStatus == .authorized
+                let userEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
+                notificationsEnabled = systemEnabled && userEnabled
+
+                if notificationsEnabled {
                     requestAuthorization()
                 } else {
                     disableNotifications()
