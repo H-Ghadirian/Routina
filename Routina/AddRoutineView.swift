@@ -20,9 +20,11 @@ struct AddRoutineView: View {
                     intervalPickerView
                 }
 
+#if os(iOS)
                 if notificationsDisabled {
                     enableNotificationsButtonView
                 }
+#endif
             }
             .navigationTitle("Add Routine")
             .toolbar {
@@ -42,6 +44,7 @@ struct AddRoutineView: View {
         .onAppear(perform: checkNotificationStatus)
     }
 
+#if os(iOS)
     private var enableNotificationsButtonView: some View {
         Button(action: openSettings) {
             Text("Enable Notifications")
@@ -52,6 +55,7 @@ struct AddRoutineView: View {
                 .cornerRadius(10)
         }
     }
+    #endif
 
     private var intervalPickerView: some View {
         Picker("Interval", selection: $interval) {
@@ -59,7 +63,9 @@ struct AddRoutineView: View {
                 Text("\(num) days").tag(num)
             }
         }
+#if os(iOS)
         .pickerStyle(WheelPickerStyle())
+#endif
         .frame(height: 100)
     }
 
@@ -71,10 +77,12 @@ struct AddRoutineView: View {
         }
     }
 
+#if os(iOS)
     private func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
     }
+#endif
 
     private func addRoutine() {
         let newRoutine = RoutineTask(context: viewContext)

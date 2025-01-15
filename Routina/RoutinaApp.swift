@@ -41,11 +41,16 @@ struct RoutinaApp: App {
             }
 
             if !granted {
-                DispatchQueue.main.async { showSettingsAlert() }
+                DispatchQueue.main.async {
+                    #if os(iOS)
+                    showSettingsAlert()
+                    #endif
+                }
             }
         }
     }
 
+#if os(iOS)
     private func showSettingsAlert() {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootViewController = windowScene.windows.first?.rootViewController {
@@ -68,4 +73,6 @@ struct RoutinaApp: App {
         })
         return alert
     }
+#endif
+
 }

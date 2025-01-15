@@ -106,9 +106,12 @@ struct RoutineDetailView: View {
         newLog.task = task
 
         saveContext()
+#if os(iOS)
         scheduleNotification(for: task)
+        #endif
     }
 
+#if os(iOS)
     private func scheduleNotification(for task: RoutineTask) {
         let content = UNMutableNotificationContent()
         content.title = "Time to complete \(task.name ?? "your routine")!"
@@ -127,6 +130,7 @@ struct RoutineDetailView: View {
             }
         }
     }
+    #endif
 
     private func saveContext() {
         do {

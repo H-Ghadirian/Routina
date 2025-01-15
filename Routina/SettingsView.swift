@@ -11,10 +11,12 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
+                #if os(iOS)
                 notificationSectionView
+                
 
                 supportSectionView
-
+#endif
                 aboutSectionView
             }
             .navigationTitle("Settings")
@@ -24,6 +26,7 @@ struct SettingsView: View {
         }
     }
 
+#if os(iOS)
     private var notificationSectionView: some View {
         Section(header: Text("Notifications")) {
             Toggle("Enable Notifications", isOn: $notificationsEnabled)
@@ -42,6 +45,7 @@ struct SettingsView: View {
         }
     }
 
+
     private var supportSectionView: some View {
         Section(header: Text("Support")) {
             Button(action: openEmail) {
@@ -53,6 +57,7 @@ struct SettingsView: View {
             }
         }
     }
+#endif
 
     private var aboutSectionView: some View {
         Section(header: Text("About")) {
@@ -73,6 +78,7 @@ struct SettingsView: View {
         }
     }
 
+#if os(iOS)
     private func updateNotificationSettings(enabled: Bool) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
@@ -116,4 +122,5 @@ struct SettingsView: View {
             UIApplication.shared.open(emailURL)
         }
     }
+#endif
 }
