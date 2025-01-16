@@ -2,10 +2,16 @@ import SwiftUI
 import UserNotifications
 
 struct SettingsView: View {
-    @State private var notificationsEnabled: Bool = false
+    @State private var appSettingNotificationsEnabled: Bool = false
+    @State private var systemSettingsNotificationsEnabled: Bool = false
 
-    var appVersion: String {
+    private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
+    }
+
+    init() {
+        UserDefaults.standard.register(defaults: ["appSettingNotificationsEnabled": true])
+        appSettingNotificationsEnabled = UserDefaults.standard.bool(forKey: "appSettingNotificationsEnabled")
     }
 
     var body: some View {
@@ -21,6 +27,8 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .onAppear {
                 checkNotificationStatus()
+            }.onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                checkNotificationStatus()
             }
         }
     }
@@ -28,17 +36,19 @@ struct SettingsView: View {
 #if os(iOS)
     private var notificationSectionView: some View {
         Section(header: Text("Notifications")) {
-            Toggle("Enable Notifications", isOn: $notificationsEnabled)
-                .onChange(of: notificationsEnabled) { _, newValue in
+            Toggle("Enable Notifications", isOn: $appSettingNotificationsEnabled)
+                .onChange(of: appSettingNotificationsEnabled) { _, newValue in
                     updateNotificationSettings(enabled: newValue)
                 }
+                .disabled(!systemSettingsNotificationsEnabled)
 
-            if !notificationsEnabled {
-                Button("Disable Notifications in Settings") {
+            if !systemSettingsNotificationsEnabled {
+                Button("Allow Notifications in System Settings is disabled") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
                     }
                 }
+                .buttonStyle(.bordered)
                 .foregroundColor(.red)
             }
         }
@@ -72,8 +82,9 @@ struct SettingsView: View {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
         DispatchQueue.main.async {
                 let systemEnabled = settings.authorizationStatus == .authorized
-                let userEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
-                notificationsEnabled = systemEnabled && userEnabled
+                let userEnabled = UserDefaults.standard.bool(forKey: "appSettingNotificationsEnabled")
+                systemSettingsNotificationsEnabled = systemEnabled
+                appSettingNotificationsEnabled = systemEnabled && userEnabled
             }
         }
     }
@@ -83,22 +94,20 @@ struct SettingsView: View {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 if settings.authorizationStatus == .denied {
-                    openAppNotificationSystemSettings()
-                    notificationsEnabled = false
+                    if enabled { openAppNotificationSystemSettings() }
+                    systemSettingsNotificationsEnabled = false
                     return
                 }
 
-                UserDefaults.standard.set(enabled, forKey: "notificationsEnabled")
+                systemSettingsNotificationsEnabled = settings.authorizationStatus == .authorized
 
-                let systemEnabled = settings.authorizationStatus == .authorized
-                let userEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
-                notificationsEnabled = systemEnabled && userEnabled
-
-                if notificationsEnabled {
+                if systemSettingsNotificationsEnabled && enabled {
                     requestAuthorization()
                 } else {
                     disableNotifications()
                 }
+                UserDefaults.standard.set(appSettingNotificationsEnabled, forKey: "appSettingNotificationsEnabled")
+
             }
         }
     }
@@ -112,13 +121,13 @@ struct SettingsView: View {
     private func disableNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-        notificationsEnabled = false
+        appSettingNotificationsEnabled = false
     }
 
     private func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             DispatchQueue.main.async {
-                notificationsEnabled = granted
+                appSettingNotificationsEnabled = granted
             }
         }
     }
