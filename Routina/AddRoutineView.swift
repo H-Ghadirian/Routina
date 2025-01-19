@@ -8,6 +8,7 @@ struct AddRoutineView: View {
     @State private var routineName: String = ""
     @State private var interval: Int = 1
     @State private var notificationsDisabled = false
+    @State private var showNotificationAlert = false
 
     var body: some View {
         NavigationStack {
@@ -40,6 +41,14 @@ struct AddRoutineView: View {
                     }
                 }
             }
+            .alert("Enable Notifications", isPresented: $showNotificationAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("OK") {
+                    requestNotificationPermission()
+                }
+            } message: {
+                Text("To remind you about your routines, please enable notifications in Settings.")
+            }
         }
         .onAppear(perform: checkNotificationStatus)
     }
@@ -55,7 +64,7 @@ struct AddRoutineView: View {
                 .cornerRadius(10)
         }
     }
-    #endif
+#endif
 
     private var intervalPickerView: some View {
         Picker("Interval", selection: $interval) {
@@ -85,6 +94,10 @@ struct AddRoutineView: View {
 #endif
 
     private func addRoutine() {
+        if notificationsDisabled, !UserDefaults.standard.bool(forKey: "requestNotificationPermission") {
+            showNotificationAlert = true
+            return
+        }
         let newRoutine = RoutineTask(context: viewContext)
         newRoutine.name = routineName
         newRoutine.interval = Int16(interval)
@@ -96,6 +109,16 @@ struct AddRoutineView: View {
             dismiss()
         } catch {
             print("Error saving routine: \(error.localizedDescription)")
+        }
+    }
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            UserDefaults.standard.set(true, forKey: "requestNotificationPermission")
+            if let error = error {
+                print("Notification permission error: \(error.localizedDescription)")
+                return
+            }
         }
     }
 
