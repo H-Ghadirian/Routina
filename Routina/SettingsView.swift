@@ -5,6 +5,7 @@ import CoreData
 struct SettingsView: View {
     @State private var appSettingNotificationsEnabled: Bool = false
     @State private var systemSettingsNotificationsEnabled: Bool = false
+    @State private var showNotificationAlert = false
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
@@ -31,6 +32,14 @@ struct SettingsView: View {
             }.onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 checkNotificationStatus()
             }
+            .alert("Enable Notifications", isPresented: $showNotificationAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("OK") {
+                    requestNotificationPermission()
+                }
+            } message: {
+                Text("To remind you about your routines, please enable notifications in Settings.")
+            }
         }
     }
 
@@ -45,6 +54,10 @@ struct SettingsView: View {
 
             if !systemSettingsNotificationsEnabled {
                 Button("Allow Notifications in System Settings is disabled") {
+                    if !UserDefaults.standard.bool(forKey: "requestNotificationPermission") {
+                        showNotificationAlert = true
+                        return
+                    }
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
                     }
@@ -67,6 +80,16 @@ struct SettingsView: View {
         }
     }
 #endif
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            UserDefaults.standard.set(true, forKey: "requestNotificationPermission")
+            if let error = error {
+                print("Notification permission error: \(error.localizedDescription)")
+                return
+            }
+        }
+    }
 
     private var aboutSectionView: some View {
         Section(header: Text("About")) {

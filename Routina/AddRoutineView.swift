@@ -12,21 +12,7 @@ struct AddRoutineView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-
-                TextField("Routine name", text: $routineName)
-
-                HStack {
-                    Text("Interval: ")
-                    intervalPickerView
-                }
-
-#if os(iOS)
-                if notificationsDisabled {
-                    enableNotificationsButtonView
-                }
-#endif
-            }
+            addRoutineForm
             .navigationTitle("Add Routine")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -51,6 +37,27 @@ struct AddRoutineView: View {
             }
         }
         .onAppear(perform: checkNotificationStatus)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            checkNotificationStatus()
+        }
+    }
+
+    private var addRoutineForm: some View {
+        Form {
+
+            TextField("Routine name", text: $routineName)
+
+            HStack {
+                Text("Interval: ")
+                intervalPickerView
+            }
+
+#if os(iOS)
+            if notificationsDisabled {
+                enableNotificationsButtonView
+            }
+#endif
+        }
     }
 
 #if os(iOS)
@@ -88,6 +95,10 @@ struct AddRoutineView: View {
 
 #if os(iOS)
     private func openSettings() {
+        if !UserDefaults.standard.bool(forKey: "requestNotificationPermission") {
+            showNotificationAlert = true
+            return
+        }
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
     }
