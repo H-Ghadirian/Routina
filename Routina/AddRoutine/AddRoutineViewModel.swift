@@ -7,23 +7,24 @@ class AddRoutineViewModel: ObservableObject {
     @Published var interval: Int = 1
     @Published var notificationsDisabled = false
     @Published var showNotificationAlert = false
+    @Published var selectedTab: String = "Home" // Track the selected tab
 
     func checkNotificationStatus() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
-                self.notificationsDisabled = settings.authorizationStatus != .authorized
+                self.notificationsDisabled = settings.authorizationStatus != .authorized || !UserDefaults.standard.bool(forKey: "appSettingNotificationsEnabled")
             }
         }
     }
 
 #if os(iOS)
-    func openSettings() {
+    func openSettings(dismiss: DismissAction) {
         if !UserDefaults.standard.bool(forKey: "requestNotificationPermission") {
             showNotificationAlert = true
             return
         }
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
+        selectedTab = "Settings"
+        dismiss()
     }
 #endif
 

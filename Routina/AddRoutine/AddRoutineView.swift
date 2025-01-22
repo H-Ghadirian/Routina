@@ -3,7 +3,7 @@ import SwiftUI
 struct AddRoutineView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = AddRoutineViewModel()
+    @EnvironmentObject private var viewModel: AddRoutineViewModel
 
     var body: some View {
         NavigationStack {
@@ -56,7 +56,7 @@ struct AddRoutineView: View {
 
 #if os(iOS)
     private var enableNotificationsButtonView: some View {
-        Button(action: viewModel.openSettings) {
+        Button(action: { viewModel.openSettings(dismiss: dismiss) }) {
             Text("Enable Notifications")
                 .foregroundColor(.red)
                 .padding()

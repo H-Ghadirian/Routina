@@ -5,13 +5,19 @@ import UserNotifications
 struct RoutinaApp: App {
     let persistenceController = PersistenceController.shared
     @State private var showSettingsBadge: Bool = false
+    @StateObject var viewModel = AddRoutineViewModel()
 
     var body: some Scene {
         WindowGroup {
-            TabView {
+            TabView(selection: $viewModel.selectedTab) {
                 homeView
+                    .tag("Home")
+
                 settingsView
+                    .tag("Settings")
+
             }
+            .environmentObject(viewModel)
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 requestNotificationPermission()
             }
