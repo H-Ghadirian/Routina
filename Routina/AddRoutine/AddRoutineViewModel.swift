@@ -1,9 +1,3 @@
-//
-//  AddRoutineViewModel.swift
-//  Routina
-//
-//  Created by ghadirianh on 18.03.25.
-//
 import UserNotifications
 import SwiftUI
 import CoreData
