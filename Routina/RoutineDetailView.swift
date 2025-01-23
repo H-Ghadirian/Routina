@@ -47,6 +47,11 @@ struct RoutineDetailView: View {
                     .fontWeight(.bold)
             }
 
+            if let dueDate = Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) {
+                Text("Due Date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
+                    .foregroundColor(.red)
+            }
+
             rectanglesSinceLastDoneView
 
             doneButtonView
