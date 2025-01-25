@@ -7,7 +7,7 @@ class AddRoutineViewModel: ObservableObject {
     @Published var interval: Int = 1
     @Published var notificationsDisabled = false
     @Published var showNotificationAlert = false
-    @Published var selectedTab: String = "Home" // Track the selected tab
+    @Published var selectedTab: String = Tab.home.rawValue
 
     func checkNotificationStatus() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
@@ -23,7 +23,7 @@ class AddRoutineViewModel: ObservableObject {
             showNotificationAlert = true
             return
         }
-        selectedTab = "Settings"
+        selectedTab = Tab.settings.rawValue
         dismiss()
     }
 #endif

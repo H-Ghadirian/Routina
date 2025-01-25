@@ -1,6 +1,11 @@
 import SwiftUI
 import UserNotifications
 
+enum Tab: String {
+    case home = "Home"
+    case settings = "Settings"
+}
+
 @main
 struct RoutinaApp: App {
     let persistenceController = PersistenceController.shared
@@ -11,10 +16,10 @@ struct RoutinaApp: App {
         WindowGroup {
             TabView(selection: $viewModel.selectedTab) {
                 homeView
-                    .tag("Home")
+                    .tag(Tab.home.rawValue)
 
                 settingsView
-                    .tag("Settings")
+                    .tag(Tab.settings.rawValue)
 
             }
             .environmentObject(viewModel)
@@ -27,7 +32,7 @@ struct RoutinaApp: App {
     private var homeView: some View {
         HomeView()
             .tabItem {
-                Label("Home", systemImage: "house")
+                Label(Tab.home.rawValue, systemImage: "house")
             }
             .environment(\.managedObjectContext, persistenceController.container.viewContext)
     }
@@ -35,7 +40,7 @@ struct RoutinaApp: App {
     private var settingsView: some View {
         SettingsView()
             .tabItem {
-                Label("Settings", systemImage: "gear")
+                Label(Tab.settings.rawValue, systemImage: "gear")
             }
             .badge(showSettingsBadge ? "!" : nil)
     }
