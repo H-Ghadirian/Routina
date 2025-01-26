@@ -33,15 +33,15 @@ struct SettingsView: View {
 #if os(iOS)
     private var notificationSectionView: some View {
         Section(header: Text("Notifications")) {
-            Toggle("Enable Notifications", isOn: $viewModel.appSettingNotificationsEnabled)
-                .onChange(of: viewModel.appSettingNotificationsEnabled) { _, newValue in
+            Toggle("Enable Notifications", isOn: $viewModel.appSettingNotifEnabled)
+                .onChange(of: viewModel.appSettingNotifEnabled) { _, newValue in
                     viewModel.updateNotificationSettings(enabled: newValue)
                 }
                 .disabled(!viewModel.systemSettingsNotificationsEnabled)
 
             if !viewModel.systemSettingsNotificationsEnabled {
                 Button("Allow Notifications in System Settings is disabled") {
-                    if !UserDefaults.standard.bool(forKey: "requestNotificationPermission") {
+                    if !SharedDefaults.app[.requestNotificationPermission] {
                         viewModel.showNotificationAlert = true
                         return
                     }

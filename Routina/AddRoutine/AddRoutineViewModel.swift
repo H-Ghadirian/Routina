@@ -12,14 +12,14 @@ class AddRoutineViewModel: ObservableObject {
     func checkNotificationStatus() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
-                self.notificationsDisabled = settings.authorizationStatus != .authorized || !UserDefaults.standard.bool(forKey: "appSettingNotificationsEnabled")
+                self.notificationsDisabled = settings.authorizationStatus != .authorized || !SharedDefaults.app[.appSettingNotificationsEnabled]
             }
         }
     }
 
 #if os(iOS)
     func openSettings(dismiss: DismissAction) {
-        if !UserDefaults.standard.bool(forKey: "requestNotificationPermission") {
+        if !SharedDefaults.app[.requestNotificationPermission] {
             showNotificationAlert = true
             return
         }
@@ -29,7 +29,7 @@ class AddRoutineViewModel: ObservableObject {
 #endif
 
     func addRoutine(context: NSManagedObjectContext, dismiss: DismissAction) {
-        if notificationsDisabled, !UserDefaults.standard.bool(forKey: "requestNotificationPermission") {
+        if notificationsDisabled, !SharedDefaults.app[.requestNotificationPermission] {
             showNotificationAlert = true
             return
         }
@@ -49,7 +49,7 @@ class AddRoutineViewModel: ObservableObject {
 
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            UserDefaults.standard.set(true, forKey: "requestNotificationPermission")
+            SharedDefaults.app[.requestNotificationPermission] = true
             if let error = error {
                 print("Notification permission error: \(error.localizedDescription)")
                 return

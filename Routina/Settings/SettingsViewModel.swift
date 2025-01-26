@@ -3,7 +3,7 @@ import UserNotifications
 import CoreData
 
 class SettingsViewModel: ObservableObject {
-    @Published var appSettingNotificationsEnabled: Bool = false
+    @Published var appSettingNotifEnabled: Bool = false
     @Published var systemSettingsNotificationsEnabled: Bool = false
     @Published var showNotificationAlert = false
 
@@ -12,13 +12,12 @@ class SettingsViewModel: ObservableObject {
     }
 
     init() {
-        UserDefaults.standard.register(defaults: ["appSettingNotificationsEnabled": true])
-        appSettingNotificationsEnabled = UserDefaults.standard.bool(forKey: "appSettingNotificationsEnabled")
+        appSettingNotifEnabled = SharedDefaults.app[.appSettingNotificationsEnabled]
     }
 
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            UserDefaults.standard.set(true, forKey: "requestNotificationPermission")
+            SharedDefaults.app[.requestNotificationPermission] = true
             if let error = error {
                 print("Notification permission error: \(error.localizedDescription)")
                 return
@@ -30,9 +29,9 @@ class SettingsViewModel: ObservableObject {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 let systemEnabled = settings.authorizationStatus == .authorized
-                let userEnabled = UserDefaults.standard.bool(forKey: "appSettingNotificationsEnabled")
+                let userEnabled = SharedDefaults.app[.appSettingNotificationsEnabled]
                 self.systemSettingsNotificationsEnabled = systemEnabled
-                self.appSettingNotificationsEnabled = systemEnabled && userEnabled
+                self.appSettingNotifEnabled = systemEnabled && userEnabled
             }
         }
     }
@@ -47,14 +46,13 @@ class SettingsViewModel: ObservableObject {
                 }
 
                 self.systemSettingsNotificationsEnabled = settings.authorizationStatus == .authorized
-
                 if self.systemSettingsNotificationsEnabled && enabled {
                     self.requestAuthorization()
                     self.scheduleNotificationsForAllRoutines()
                 } else {
                     self.disableNotifications()
                 }
-                UserDefaults.standard.set(self.appSettingNotificationsEnabled, forKey: "appSettingNotificationsEnabled")
+                SharedDefaults.app[.appSettingNotificationsEnabled] = self.appSettingNotifEnabled
             }
         }
     }
@@ -68,13 +66,13 @@ class SettingsViewModel: ObservableObject {
     func disableNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-        appSettingNotificationsEnabled = false
+        appSettingNotifEnabled = false
     }
 
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             DispatchQueue.main.async {
-                self.appSettingNotificationsEnabled = granted
+                self.appSettingNotifEnabled = granted
             }
         }
     }

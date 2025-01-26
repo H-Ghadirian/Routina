@@ -1,20 +1,21 @@
 import SwiftUI
 import UserNotifications
 
-enum Tab: String {
-    case home = "Home"
-    case settings = "Settings"
-}
-
 @main
 struct RoutinaApp: App {
     let persistenceController = PersistenceController.shared
     @State private var showSettingsBadge: Bool = false
-    @StateObject var viewModel = AddRoutineViewModel()
+    @StateObject var addRoutineViewModel = AddRoutineViewModel()
+
+    init() {
+        SharedDefaults.app.register(defaults: [
+            .appSettingNotificationsEnabled: true
+        ])
+    }
 
     var body: some Scene {
         WindowGroup {
-            TabView(selection: $viewModel.selectedTab) {
+            TabView(selection: $addRoutineViewModel.selectedTab) {
                 homeView
                     .tag(Tab.home.rawValue)
 
@@ -22,7 +23,7 @@ struct RoutinaApp: App {
                     .tag(Tab.settings.rawValue)
 
             }
-            .environmentObject(viewModel)
+            .environmentObject(addRoutineViewModel)
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 requestNotificationPermission()
             }
@@ -49,7 +50,7 @@ struct RoutinaApp: App {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 let systemEnabled = settings.authorizationStatus == .authorized
-                let userEnabled = UserDefaults.standard.bool(forKey: "appSettingNotificationsEnabled")
+                let userEnabled = SharedDefaults.app[.appSettingNotificationsEnabled]
                 showSettingsBadge = userEnabled && !systemEnabled
             }
         }
