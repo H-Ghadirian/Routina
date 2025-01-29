@@ -1,7 +1,6 @@
 import SwiftUI
 import UserNotifications
 
-@main
 struct RoutinaApp: App {
     let persistenceController = PersistenceController.shared
     @State private var showSettingsBadge: Bool = false

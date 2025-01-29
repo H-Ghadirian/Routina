@@ -12,6 +12,13 @@ struct AppView: View {
                     send: { .tabSelected($0) }
                 )
             ) {
+                HomeTCAView(
+                    store: store.scope(state: \.home, action: \.home)
+                )
+                .tabItem {
+                    Label(Tab.home.rawValue, systemImage: "house")
+                }
+                .tag(Tab.home)
             }
         }
     }
