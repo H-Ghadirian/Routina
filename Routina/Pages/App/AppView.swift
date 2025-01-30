@@ -19,6 +19,14 @@ struct AppView: View {
                     Label(Tab.home.rawValue, systemImage: "house")
                 }
                 .tag(Tab.home)
+
+                SettingsTCAView(
+                    store: store.scope(state: \.settings, action: \.settings)
+                )
+                .tabItem {
+                    Label(Tab.settings.rawValue, systemImage: "gear")
+                }
+                .tag(Tab.settings)
             }
         }
     }
