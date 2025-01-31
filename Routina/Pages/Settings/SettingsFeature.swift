@@ -1,6 +1,9 @@
 import ComposableArchitecture
 
-struct SettingsFeature: Reducer {
+@Reducer
+struct SettingsFeature {
+
+    @ObservableState
     struct State: Equatable {
         var version: String = "1.0"
     }

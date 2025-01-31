@@ -5,9 +5,15 @@ import ComposableArchitecture
 struct RoutinaTCAApp: App {
     var body: some Scene {
         WindowGroup {
-            AppView(
-                store: StoreOf<AppFeature>(initialState: .init(), reducer: {})
+            let store = Store(
+              initialState: AppFeature.State(),
+              reducer: { AppFeature() },
+              withDependencies: {
+                $0.managedObjectContext = PersistenceController.shared.container.viewContext
+              }
             )
+
+            AppView(store: store)
         }
     }
 }
