@@ -25,9 +25,6 @@ struct HomeTCAView: View {
                     .sheet(isPresented: $showingAddRoutine) {
                         AddRoutineView().environment(\.managedObjectContext, viewContext)
                     }
-                    .onAppear {
-                        // Removed fetchRoutineTasks() call
-                    }
                     .task {
                         viewStore.send(.onAppear)
                     }
