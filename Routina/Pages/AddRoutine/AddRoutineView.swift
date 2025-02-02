@@ -32,9 +32,11 @@ struct AddRoutineView: View {
             }
         }
         .onAppear(perform: viewModel.checkNotificationStatus)
+#if os(iOS)
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkNotificationStatus()
         }
+#endif
     }
 
     private var addRoutineForm: some View {

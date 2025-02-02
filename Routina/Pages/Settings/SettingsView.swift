@@ -16,9 +16,16 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .onAppear {
                 viewModel.checkNotificationStatus()
-            }.onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            }
+#if os(iOS)
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: UIApplication.didBecomeActiveNotification
+                )
+            ) { _ in
                 viewModel.checkNotificationStatus()
             }
+#endif
             .alert("Enable Notifications", isPresented: $viewModel.showNotificationAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("OK") {
