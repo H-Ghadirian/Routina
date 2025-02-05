@@ -12,6 +12,12 @@ struct AddRoutineFeature: Reducer {
         case frequencyChanged(Int)
         case saveTapped
         case cancelTapped
+        case delegate(Delegate)
+
+        enum Delegate: Equatable {
+            case didCancel
+            case didSave(String, Int)
+        }
     }
 
     var onSave: (String, Int) -> Effect<Action>
@@ -32,6 +38,8 @@ struct AddRoutineFeature: Reducer {
 
         case .cancelTapped:
             return onCancel()
+        case .delegate(_):
+            return .none
         }
     }
 }

@@ -30,23 +30,12 @@ struct HomeTCAView: View {
                             send: HomeFeature.Action.setAddRoutineSheet
                         )
                     ) {
-                        AddRoutineTCAView(
-                            store: Store(
-                                initialState: AddRoutineFeature.State(),
-                                reducer: {
-                                    AddRoutineFeature(
-                                        onSave: { name, freq in
-                                            // Call back to HomeFeature if needed
-                                            print("Saving routine:", name, freq)
-                                            return .none
-                                        },
-                                        onCancel: {
-                                            print("Cancelled")
-                                            return .none
-                                        }
-                                    )
-                                }
-                            )
+                        IfLetStore(
+                            self.store.scope(
+                                state: \.addRoutineState,
+                                action: \.addRoutineSheet
+                            ),
+                            then: AddRoutineTCAView.init(store:)
                         )
                     }
                     .task {

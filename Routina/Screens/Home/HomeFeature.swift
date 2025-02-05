@@ -7,6 +7,7 @@ struct HomeFeature {
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
         var isAddRoutineSheetPresented: Bool = false
+        var addRoutineState: AddRoutineFeature.State? = nil
     }
     
     enum Action: Equatable {
@@ -14,6 +15,7 @@ struct HomeFeature {
         case loadTasks([RoutineTask])
         case onAppear
         case setAddRoutineSheet(Bool)
+        case addRoutineSheet(AddRoutineFeature.Action)
     }
     
     @Dependency(\.managedObjectContext) var viewContext
@@ -30,10 +32,43 @@ struct HomeFeature {
                 
             case .onAppear:
                 return handleOnAppear()
-            case .setAddRoutineSheet(let isPresented):
+            case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
+                if isPresented {
+                    state.addRoutineState = AddRoutineFeature.State()
+                } else {
+                    state.addRoutineState = nil
+                }
                 return .none
+            case .addRoutineSheet(let childAction):
+                switch childAction {
+                case .delegate(.didCancel):
+                    state.isAddRoutineSheetPresented = false
+                    state.addRoutineState = nil
+                    return .none
+
+                case let .delegate(.didSave(name, freq)):
+                    state.isAddRoutineSheetPresented = false
+                    state.addRoutineState = nil
+
+                    // You can save the routine here if needed
+                    print("✅ Saved routine: \(name), every \(freq) day(s)")
+                    return .none
+
+                default:
+                    return .none
+                }
             }
+        }
+        .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
+            AddRoutineFeature(
+                onSave: { name, freq in
+                    .send(.delegate(.didSave(name, freq)))
+                },
+                onCancel: {
+                    .send(.delegate(.didCancel))
+                }
+            )
         }
     }
 
