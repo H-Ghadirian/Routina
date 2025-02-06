@@ -24,14 +24,28 @@ struct HomeTCAView: View {
                         }
     #endif
                     }
-                    .sheet(isPresented: viewStore.binding(
-                        get: \.isAddRoutineSheetPresented,
-                        send: HomeFeature.Action.setAddRoutineSheet
-                    )) {
+                    .sheet(
+                        isPresented: viewStore.binding(
+                            get: \.isAddRoutineSheetPresented,
+                            send: HomeFeature.Action.setAddRoutineSheet
+                        )
+                    ) {
                         AddRoutineTCAView(
                             store: Store(
                                 initialState: AddRoutineFeature.State(),
-                                reducer: { AddRoutineFeature() }
+                                reducer: {
+                                    AddRoutineFeature(
+                                        onSave: { name, freq in
+                                            // Call back to HomeFeature if needed
+                                            print("Saving routine:", name, freq)
+                                            return .none
+                                        },
+                                        onCancel: {
+                                            print("Cancelled")
+                                            return .none
+                                        }
+                                    )
+                                }
                             )
                         )
                     }
