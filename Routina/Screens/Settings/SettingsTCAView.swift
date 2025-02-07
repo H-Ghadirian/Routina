@@ -14,7 +14,7 @@ struct SettingsTCAView: View {
                             send: SettingsFeature.Action.toggleNotifications
                         ))
                     }
-                    
+
                     Section {
                         Button("Open app settings") {
                             viewStore.send(.openAppSettingsTapped)
@@ -30,20 +30,20 @@ struct SettingsTCAView: View {
                             }
                         }
                     }
-                    aboutSectionView
+
+                    Section(header: Text("About")) {
+                        HStack {
+                            Text("App Version")
+                            Spacer()
+                            Text(viewStore.appVersion)
+                                .foregroundColor(.gray)
+                        }
+                    }
                 }
                 .navigationTitle("Settings")
             }
-        }
-    }
-
-    private var aboutSectionView: some View {
-        Section(header: Text("About")) {
-            HStack {
-                Text("App Version")
-                Spacer()
-                Text("000")
-                    .foregroundColor(.gray)
+            .onAppear {
+                viewStore.send(.onAppear)
             }
         }
     }
