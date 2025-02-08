@@ -6,7 +6,21 @@ struct SettingsTCAView: View {
 
     var body: some View {
         WithViewStore(store, observe: { $0 }) { viewStore in
-            Text("Settings screen placeholder")
+            Form {
+                Section {
+                    Toggle("Enable notifications", isOn: viewStore.binding(
+                        get: \.notificationsEnabled,
+                        send: SettingsFeature.Action.toggleNotifications
+                    ))
+                }
+
+                Section {
+                    Button("Open app settings") {
+                        viewStore.send(.openAppSettingsTapped)
+                    }
+                }
+            }
+            .navigationTitle("Settings")
         }
     }
 }
