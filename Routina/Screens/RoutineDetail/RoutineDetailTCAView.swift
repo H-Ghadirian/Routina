@@ -56,6 +56,9 @@ struct RoutineDetailTCAView: View {
                 Spacer()
             }
             .padding()
+            .onAppear {
+                viewStore.send(.onAppear)
+            }
         }
     }
 

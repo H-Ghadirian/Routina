@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import CoreData
 import UserNotifications
 import Foundation
 
@@ -13,6 +14,7 @@ struct RoutineDetailFeature: Reducer {
     enum Action: Equatable {
         case markAsDone
         case logsLoaded([RoutineLog])
+        case onAppear
     }
 
     @Dependency(\.uuid) var uuid
@@ -46,6 +48,22 @@ struct RoutineDetailFeature: Reducer {
         case let .logsLoaded(logs):
             state.logs = logs
             return .none
+            
+        case .onAppear:
+            let task = state.task
+            let context = task.managedObjectContext!
+            return .run { send in
+                let fetchRequest: NSFetchRequest<RoutineLog> = RoutineLog.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "task == %@", task)
+                fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+                
+                do {
+                    let logs = try context.fetch(fetchRequest)
+                    await send(.logsLoaded(logs))
+                } catch {
+                    print("Error loading logs: \(error)")
+                }
+            }
         }
     }
 
