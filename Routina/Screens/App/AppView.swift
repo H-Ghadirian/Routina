@@ -28,6 +28,9 @@ struct AppView: View {
                 }
                 .tag(Tab.settings)
             }
+            .task {
+                viewStore.send(.onAppear)
+            }
         }
     }
 }

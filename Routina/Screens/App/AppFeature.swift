@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import UserNotifications
 
 @Reducer
 struct AppFeature {
@@ -15,6 +16,7 @@ struct AppFeature {
         case tabSelected(Tab)
         case home(HomeFeature.Action)
         case settings(SettingsFeature.Action)
+        case onAppear
     }
 
     var body: some ReducerOf<Self> {
@@ -29,9 +31,19 @@ struct AppFeature {
             case .tabSelected(let tab):
                 state.selectedTab = tab
                 return .none
+            case .onAppear:
+                return .run { _ in
+                    await requestNotificationAuthorization()
+                }
             default:
                 return .none
             }
         }
+    }
+
+    private func requestNotificationAuthorization() async {
+        let center = UNUserNotificationCenter.current()
+        let granted = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+        print("🔔 Notification permission granted: \(granted ?? false)")
     }
 }
