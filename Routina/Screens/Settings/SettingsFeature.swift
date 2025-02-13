@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
+import UserNotifications
 
 @Reducer
 struct SettingsFeature {
@@ -8,13 +9,16 @@ struct SettingsFeature {
     struct State: Equatable {
         var appVersion: String = ""
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
+        var systemSettingsNotificationsEnabled: Bool = true
     }
 
     enum Action: Equatable {
         case toggleNotifications(Bool)
         case openAppSettingsTapped
         case onAppear
+        case onAppBecameActive
         case contactUsTapped
+        case systemNotificationPermissionChecked(Bool)
     }
 
     var body: some ReducerOf<Self> {
@@ -30,9 +34,15 @@ struct SettingsFeature {
                     UIApplication.shared.open(url)
                 }
                 return .none
+                
             case .onAppear:
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-                return .none
+                return .run { send in
+                    let settings = await UNUserNotificationCenter.current().notificationSettings()
+                    let systemEnabled = settings.authorizationStatus == .authorized
+                    await send(.systemNotificationPermissionChecked(systemEnabled))
+                }
+                
             case .contactUsTapped:
 #if os(iOS)
                 if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
@@ -44,6 +54,16 @@ struct SettingsFeature {
                 }
 #endif
                 return .none
+
+            case let .systemNotificationPermissionChecked(value):
+                state.systemSettingsNotificationsEnabled = value
+                return .none
+            case .onAppBecameActive:
+                return .run { send in
+                    let settings = await UNUserNotificationCenter.current().notificationSettings()
+                    let systemEnabled = settings.authorizationStatus == .authorized
+                    await send(.systemNotificationPermissionChecked(systemEnabled))
+                }
             }
         }
     }

@@ -13,11 +13,13 @@ struct SettingsTCAView: View {
                             get: \.notificationsEnabled,
                             send: SettingsFeature.Action.toggleNotifications
                         ))
-                    }
+                        .disabled(viewStore.systemSettingsNotificationsEnabled == false)
 
-                    Section {
-                        Button("Open app settings") {
-                            viewStore.send(.openAppSettingsTapped)
+                        if viewStore.systemSettingsNotificationsEnabled == false {
+                            Button("Allow Notifications in System Settings") {
+                                viewStore.send(.openAppSettingsTapped)
+                            }
+                            .foregroundColor(.red)
                         }
                     }
 
@@ -46,6 +48,11 @@ struct SettingsTCAView: View {
             }
             .onAppear {
                 viewStore.send(.onAppear)
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            ) { _ in
+                viewStore.send(.onAppBecameActive)
             }
         }
     }
