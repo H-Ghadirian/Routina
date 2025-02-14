@@ -14,6 +14,7 @@ struct SettingsFeature {
         case toggleNotifications(Bool)
         case openAppSettingsTapped
         case onAppear
+        case contactUsTapped
     }
 
     var body: some ReducerOf<Self> {
@@ -31,6 +32,17 @@ struct SettingsFeature {
                 return .none
             case .onAppear:
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+                return .none
+            case .contactUsTapped:
+#if os(iOS)
+                if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
+                    return .run { _ in
+                        await MainActor.run {
+                            UIApplication.shared.open(emailURL)
+                        }
+                    }
+                }
+#endif
                 return .none
             }
         }

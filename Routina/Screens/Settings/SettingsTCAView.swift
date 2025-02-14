@@ -22,7 +22,9 @@ struct SettingsTCAView: View {
                     }
 
                     Section(header: Text("Support")) {
-                        Button(action: {}) {
+                        Button(action: {
+                            viewStore.send(.contactUsTapped)
+                        }) {
                             HStack {
                                 Image(systemName: "envelope")
                                     .foregroundColor(.blue)
