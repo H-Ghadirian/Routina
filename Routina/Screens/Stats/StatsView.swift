@@ -11,67 +11,19 @@ struct StatsView: View {
 
     @State private var selectedRange: DoneChartRange = .week
 
-    private var completionDates: [Date] {
-        logs.compactMap(\.timestamp)
-    }
-
-    private var totalDoneCount: Int {
-        completionDates.count
-    }
-
-    private var activeRoutineCount: Int {
-        tasks.filter { !$0.isPaused }.count
-    }
-
-    private var archivedRoutineCount: Int {
-        tasks.filter(\.isPaused).count
-    }
-
-    private var chartPoints: [DoneChartPoint] {
-        RoutineCompletionStats.points(
-            for: selectedRange,
-            timestamps: completionDates,
-            referenceDate: Date(),
-            calendar: calendar
-        )
-    }
-
-    private var totalCount: Int {
-        RoutineCompletionStats.totalCount(in: chartPoints)
-    }
-
-    private var averagePerDay: Double {
-        RoutineCompletionStats.averageCount(in: chartPoints)
-    }
-
-    private var busiestDay: DoneChartPoint? {
-        RoutineCompletionStats.busiestDay(in: chartPoints)
-    }
-
-    private var highlightedBusiestDay: DoneChartPoint? {
-        guard let busiestDay, busiestDay.count > 0 else { return nil }
-        return busiestDay
-    }
-
-    private var activeDayCount: Int {
-        chartPoints.filter { $0.count > 0 }.count
-    }
-
-    private var averagePerDayText: String {
-        averagePerDay.formatted(.number.precision(.fractionLength(1)))
-    }
-
-    private var chartSectionSubtitle: String {
-        if totalCount == 0 {
-            return "Your chart will fill in as you complete routines."
-        }
-
-        return "Average \(averagePerDayText) per day across \(chartPoints.count) days."
-    }
-
-    private var chartUpperBound: Double {
-        let maxCount = chartPoints.map(\.count).max() ?? 0
-        return Double(max(maxCount, Int(ceil(averagePerDay))) + 1)
+    private struct Metrics {
+        let chartPoints: [DoneChartPoint]
+        let totalDoneCount: Int
+        let activeRoutineCount: Int
+        let archivedRoutineCount: Int
+        let totalCount: Int
+        let averagePerDay: Double
+        let highlightedBusiestDay: DoneChartPoint?
+        let activeDayCount: Int
+        let chartUpperBound: Double
+        let sparklinePoints: [DoneChartPoint]
+        let sparklineMaxCount: Int
+        let xAxisDates: [Date]
     }
 
     private var surfaceGradient: LinearGradient {
@@ -176,13 +128,15 @@ struct StatsView: View {
     }
 
     var body: some View {
+        let metrics = makeMetrics()
+
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     rangeSection
-                    heroSection
-                    summaryCards
-                    chartSection
+                    heroSection(metrics: metrics)
+                    summaryCards(metrics: metrics)
+                    chartSection(metrics: metrics)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -246,7 +200,7 @@ struct StatsView: View {
 #endif
     }
 
-    private var heroSection: some View {
+    private func heroSection(metrics: Metrics) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 10) {
@@ -257,11 +211,11 @@ struct StatsView: View {
                         .padding(.vertical, 7)
                         .background(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.62), in: Capsule())
 
-                    Text(totalCount.formatted())
+                    Text(metrics.totalCount.formatted())
                         .font(.system(size: 54, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
 
-                    Text(totalCount == 1 ? "completion logged" : "completions logged")
+                    Text(metrics.totalCount == 1 ? "completion logged" : "completions logged")
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.95))
 
@@ -273,11 +227,11 @@ struct StatsView: View {
                 Spacer(minLength: 0)
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(activeDayCount)")
+                    Text("\(metrics.activeDayCount)")
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
 
-                    Text(activeDayCount == 1 ? "active day" : "active days")
+                    Text(metrics.activeDayCount == 1 ? "active day" : "active days")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.white.opacity(0.7))
                 }
@@ -286,19 +240,19 @@ struct StatsView: View {
                 .background(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
 
-            sparklinePreview
+            sparklinePreview(metrics: metrics)
 
             HStack(spacing: 12) {
                 heroStatPill(
                     icon: "gauge.with.dots.needle.50percent",
                     title: "Daily avg",
-                    value: averagePerDayText
+                    value: averagePerDayText(for: metrics)
                 )
 
                 heroStatPill(
                     icon: "bolt.fill",
                     title: "Best day",
-                    value: highlightedBusiestDay.map { "\($0.count)" } ?? "0"
+                    value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0"
                 )
             }
         }
@@ -311,7 +265,7 @@ struct StatsView: View {
         .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.32 : 0.08), radius: 22, y: 14)
     }
 
-    private var sparklinePreview: some View {
+    private func sparklinePreview(metrics: Metrics) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Daily rhythm")
@@ -320,24 +274,24 @@ struct StatsView: View {
 
                 Spacer()
 
-                Text(sparklineCaption)
+                Text(sparklineCaption(metrics: metrics))
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.white.opacity(0.72))
             }
 
             HStack(alignment: .bottom, spacing: 6) {
-                ForEach(sparklinePoints) { point in
+                ForEach(metrics.sparklinePoints) { point in
                     Capsule(style: .continuous)
-                        .fill(sparklineColor(for: point))
+                        .fill(sparklineColor(for: point, metrics: metrics))
                         .frame(maxWidth: .infinity)
-                        .frame(height: sparklineBarHeight(for: point))
+                        .frame(height: sparklineBarHeight(for: point, metrics: metrics))
                 }
             }
             .frame(height: 74, alignment: .bottom)
         }
     }
 
-    private var summaryCards: some View {
+    private func summaryCards(metrics: Metrics) -> some View {
         LazyVGrid(
             columns: [
                 GridItem(
@@ -354,8 +308,8 @@ struct StatsView: View {
                 icon: "gauge.with.dots.needle.50percent",
                 accent: .mint,
                 title: "Daily average",
-                value: averagePerDayText,
-                caption: "Across \(chartPoints.count) days",
+                value: averagePerDayText(for: metrics),
+                caption: "Across \(metrics.chartPoints.count) days",
                 accessibilityIdentifier: "stats.summary.dailyAverage"
             )
 
@@ -363,8 +317,8 @@ struct StatsView: View {
                 icon: "bolt.fill",
                 accent: .orange,
                 title: "Best day",
-                value: highlightedBusiestDay.map { "\($0.count)" } ?? "0",
-                caption: highlightedBusiestDay.map(bestDayCaption(for:)) ?? "No peak day yet",
+                value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0",
+                caption: metrics.highlightedBusiestDay.map(bestDayCaption(for:)) ?? "No peak day yet",
                 accessibilityIdentifier: "stats.summary.bestDay"
             )
 
@@ -372,7 +326,7 @@ struct StatsView: View {
                 icon: "checkmark.seal.fill",
                 accent: .blue,
                 title: "Total dones",
-                value: totalDoneCount.formatted(),
+                value: metrics.totalDoneCount.formatted(),
                 caption: "All recorded completions",
                 accessibilityIdentifier: "stats.summary.totalDones"
             )
@@ -381,8 +335,8 @@ struct StatsView: View {
                 icon: "checklist.checked",
                 accent: .green,
                 title: "Active routines",
-                value: activeRoutineCount.formatted(),
-                caption: activeRoutineCardCaption,
+                value: metrics.activeRoutineCount.formatted(),
+                caption: activeRoutineCardCaption(metrics: metrics),
                 accessibilityIdentifier: "stats.summary.activeRoutines"
             )
 
@@ -390,55 +344,55 @@ struct StatsView: View {
                 icon: "archivebox.fill",
                 accent: .teal,
                 title: "Archived routines",
-                value: archivedRoutineCount.formatted(),
-                caption: archivedRoutineCardCaption,
+                value: metrics.archivedRoutineCount.formatted(),
+                caption: archivedRoutineCardCaption(metrics: metrics),
                 accessibilityIdentifier: "stats.summary.archivedRoutines"
             )
         }
     }
 
-    private var activeRoutineCardCaption: String {
+    private func activeRoutineCardCaption(metrics: Metrics) -> String {
         if tasks.isEmpty {
             return "No routines created yet"
         }
 
-        if activeRoutineCount == 0 {
-            return archivedRoutineCount == 1
+        if metrics.activeRoutineCount == 0 {
+            return metrics.archivedRoutineCount == 1
                 ? "Your only routine is paused"
                 : "All routines are currently paused"
         }
 
-        if archivedRoutineCount == 0 {
+        if metrics.archivedRoutineCount == 0 {
             return "Everything is currently in rotation"
         }
 
-        return archivedRoutineCount == 1
+        return metrics.archivedRoutineCount == 1
             ? "1 paused routine excluded"
-            : "\(archivedRoutineCount) paused routines excluded"
+            : "\(metrics.archivedRoutineCount) paused routines excluded"
     }
 
-    private var archivedRoutineCardCaption: String {
+    private func archivedRoutineCardCaption(metrics: Metrics) -> String {
         if tasks.isEmpty {
             return "No routines created yet"
         }
 
-        if archivedRoutineCount == 0 {
+        if metrics.archivedRoutineCount == 0 {
             return "No archived routines right now"
         }
 
-        return archivedRoutineCount == 1
+        return metrics.archivedRoutineCount == 1
             ? "1 routine is paused and hidden from Home"
-            : "\(archivedRoutineCount) routines are paused and hidden from Home"
+            : "\(metrics.archivedRoutineCount) routines are paused and hidden from Home"
     }
 
-    private var chartSection: some View {
+    private func chartSection(metrics: Metrics) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Completions per day")
                         .font(.title3.weight(.semibold))
 
-                    Text(chartSectionSubtitle)
+                    Text(chartSectionSubtitle(metrics: metrics))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -447,14 +401,14 @@ struct StatsView: View {
 
                 smallHighlightBadge(
                     title: "Peak",
-                    value: highlightedBusiestDay.map { "\($0.count)" } ?? "0"
+                    value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0"
                 )
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 Chart {
-                    ForEach(chartPoints) { point in
-                        let isHighlighted = point.date == highlightedBusiestDay?.date
+                    ForEach(metrics.chartPoints) { point in
+                        let isHighlighted = point.date == metrics.highlightedBusiestDay?.date
 
                         BarMark(
                             x: .value("Date", point.date, unit: .day),
@@ -469,12 +423,12 @@ struct StatsView: View {
                         .opacity(point.count == 0 ? 0.35 : 1)
                     }
 
-                    if averagePerDay > 0 {
-                        RuleMark(y: .value("Average", averagePerDay))
+                    if metrics.averagePerDay > 0 {
+                        RuleMark(y: .value("Average", metrics.averagePerDay))
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
                             .foregroundStyle(Color.secondary.opacity(0.65))
                             .annotation(position: .topLeading, alignment: .leading) {
-                                Text("Avg \(averagePerDayText)")
+                                Text("Avg \(averagePerDayText(for: metrics))")
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 8)
@@ -486,7 +440,7 @@ struct StatsView: View {
                             }
                     }
 
-                    if let highlightedBusiestDay {
+                    if let highlightedBusiestDay = metrics.highlightedBusiestDay {
                         PointMark(
                             x: .value("Date", highlightedBusiestDay.date, unit: .day),
                             y: .value("Completions", highlightedBusiestDay.count)
@@ -495,7 +449,7 @@ struct StatsView: View {
                         .foregroundStyle(Color.white)
                     }
                 }
-                .chartYScale(domain: 0...chartUpperBound)
+                .chartYScale(domain: 0...metrics.chartUpperBound)
                 .chartYAxis {
                     AxisMarks(position: .leading) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
@@ -508,7 +462,7 @@ struct StatsView: View {
                     }
                 }
                 .chartXAxis {
-                    AxisMarks(values: xAxisDates) { value in
+                    AxisMarks(values: metrics.xAxisDates) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
                             .foregroundStyle(Color.secondary.opacity(0.12))
                         AxisTick()
@@ -536,7 +490,7 @@ struct StatsView: View {
                     text: selectedRange.periodDescription
                 )
 
-                if let highlightedBusiestDay {
+                if let highlightedBusiestDay = metrics.highlightedBusiestDay {
                     bottomInsightPill(
                         icon: "star.fill",
                         text: "Best: \(bestDayCaption(for: highlightedBusiestDay))"
@@ -682,7 +636,7 @@ struct StatsView: View {
         }
     }
 
-    private var sparklinePoints: [DoneChartPoint] {
+    private func sampledSparklinePoints(from chartPoints: [DoneChartPoint]) -> [DoneChartPoint] {
         let targetCount: Int
 
         switch selectedRange {
@@ -706,25 +660,24 @@ struct StatsView: View {
         }
     }
 
-    private var sparklineCaption: String {
-        guard let highlightedBusiestDay else {
+    private func sparklineCaption(metrics: Metrics) -> String {
+        guard let highlightedBusiestDay = metrics.highlightedBusiestDay else {
             return "No peak yet"
         }
 
         return "Peak \(highlightedBusiestDay.count)"
     }
 
-    private func sparklineColor(for point: DoneChartPoint) -> Color {
-        if point.date == highlightedBusiestDay?.date {
+    private func sparklineColor(for point: DoneChartPoint, metrics: Metrics) -> Color {
+        if point.date == metrics.highlightedBusiestDay?.date {
             return Color.white.opacity(0.96)
         }
 
         return Color.white.opacity(point.count == 0 ? 0.12 : 0.3)
     }
 
-    private func sparklineBarHeight(for point: DoneChartPoint) -> CGFloat {
-        let maxCount = max(sparklinePoints.map(\.count).max() ?? 0, 1)
-        let normalized = max(CGFloat(point.count) / CGFloat(maxCount), 0.12)
+    private func sparklineBarHeight(for point: DoneChartPoint, metrics: Metrics) -> CGFloat {
+        let normalized = max(CGFloat(point.count) / CGFloat(metrics.sparklineMaxCount), 0.12)
         return 16 + (normalized * 54)
     }
 
@@ -751,7 +704,7 @@ struct StatsView: View {
 #endif
     }
 
-    private var xAxisDates: [Date] {
+    private func makeXAxisDates(from chartPoints: [DoneChartPoint]) -> [Date] {
         switch selectedRange {
         case .week:
             return chartPoints.map(\.date)
@@ -776,6 +729,50 @@ struct StatsView: View {
                 return nil
             }
         }
+    }
+
+    private func averagePerDayText(for metrics: Metrics) -> String {
+        metrics.averagePerDay.formatted(.number.precision(.fractionLength(1)))
+    }
+
+    private func chartSectionSubtitle(metrics: Metrics) -> String {
+        if metrics.totalCount == 0 {
+            return "Your chart will fill in as you complete routines."
+        }
+
+        return "Average \(averagePerDayText(for: metrics)) per day across \(metrics.chartPoints.count) days."
+    }
+
+    private func makeMetrics() -> Metrics {
+        let completionDates = logs.compactMap(\.timestamp)
+        let chartPoints = RoutineCompletionStats.points(
+            for: selectedRange,
+            timestamps: completionDates,
+            referenceDate: Date(),
+            calendar: calendar
+        )
+        let totalCount = RoutineCompletionStats.totalCount(in: chartPoints)
+        let averagePerDay = RoutineCompletionStats.averageCount(in: chartPoints)
+        let busiestDay = RoutineCompletionStats.busiestDay(in: chartPoints)
+        let highlightedBusiestDay = busiestDay?.count ?? 0 > 0 ? busiestDay : nil
+        let sparklinePoints = sampledSparklinePoints(from: chartPoints)
+        let sparklineMaxCount = max(sparklinePoints.map(\.count).max() ?? 0, 1)
+        let maxCount = chartPoints.map(\.count).max() ?? 0
+
+        return Metrics(
+            chartPoints: chartPoints,
+            totalDoneCount: completionDates.count,
+            activeRoutineCount: tasks.filter { !$0.isPaused }.count,
+            archivedRoutineCount: tasks.filter(\.isPaused).count,
+            totalCount: totalCount,
+            averagePerDay: averagePerDay,
+            highlightedBusiestDay: highlightedBusiestDay,
+            activeDayCount: chartPoints.filter { $0.count > 0 }.count,
+            chartUpperBound: Double(max(maxCount, Int(ceil(averagePerDay))) + 1),
+            sparklinePoints: sparklinePoints,
+            sparklineMaxCount: sparklineMaxCount,
+            xAxisDates: makeXAxisDates(from: chartPoints)
+        )
     }
 
     private func xAxisLabel(for date: Date) -> String {
