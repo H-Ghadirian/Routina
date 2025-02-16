@@ -62,12 +62,15 @@ extension HomeTCAView {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.secondary.opacity(0.12))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.quaternary.opacity(0.45))
         )
-        .padding(.horizontal)
-        .padding(.top, 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(.white.opacity(0.06), lineWidth: 1)
+        )
     }
 
     func applyPlatformRefresh<Content: View>(to view: Content) -> some View {

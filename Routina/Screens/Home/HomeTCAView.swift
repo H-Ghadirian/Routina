@@ -8,6 +8,7 @@ struct HomeTCAView: View {
     private enum RoutineListFilter: String, CaseIterable, Identifiable {
         case all = "All"
         case due = "Due"
+        case todos = "Todos"
         case doneToday = "Done Today"
 
         var id: String { rawValue }
@@ -131,8 +132,6 @@ struct HomeTCAView: View {
     private var sidebarContent: some View {
 #if os(macOS)
         VStack(spacing: 12) {
-            macUtilityAccessPanel
-
             if store.routineTasks.isEmpty {
                 emptyStateView(
                     title: "No routines yet",
@@ -142,17 +141,18 @@ struct HomeTCAView: View {
                     store.send(.setAddRoutineSheet(true))
                 }
             } else {
-                platformSearchField(searchText: searchTextBinding)
-                filterPicker
-                tagFilterBar
-                locationFilterPanel
-                overallDoneCountSummary
+                VStack(spacing: 0) {
+                    macSidebarHeader
 
-                listOfSortedTasksView(
-                    routineDisplays: store.routineDisplays,
-                    awayRoutineDisplays: store.awayRoutineDisplays,
-                    archivedRoutineDisplays: store.archivedRoutineDisplays
-                )
+                    Divider()
+
+                    listOfSortedTasksView(
+                        routineDisplays: store.routineDisplays,
+                        awayRoutineDisplays: store.awayRoutineDisplays,
+                        archivedRoutineDisplays: store.archivedRoutineDisplays
+                    )
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
         .navigationTitle("Routina")
@@ -213,85 +213,56 @@ struct HomeTCAView: View {
     }
 
 #if os(macOS)
-    private var macUtilityAccessPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Quick Access")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal)
-
-            HStack(spacing: 10) {
-                Button {
-                    openWindow(id: RoutinaMacWindowID.stats)
-                } label: {
-                    macUtilityAccessCard(
-                        title: "Stats",
-                        subtitle: "See streaks and completion trends",
-                        systemImage: "chart.bar.xaxis",
-                        tint: .blue
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens the Stats window.")
-
-                SettingsLink {
-                    macUtilityAccessCard(
-                        title: "Settings",
-                        subtitle: "Manage reminders, places, and backups",
-                        systemImage: "gearshape",
-                        tint: .orange
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens the Settings window.")
-            }
-            .padding(.horizontal)
+    private var macSidebarHeader: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            macFilterPanel
+            overallDoneCountSummary
         }
-        .padding(.top, 4)
+        .padding(.horizontal, 14)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
     }
 
-    private func macUtilityAccessCard(
-        title: String,
-        subtitle: String,
-        systemImage: String,
-        tint: Color
+    private var macFilterPanel: some View {
+        macSidebarSectionCard {
+            VStack(alignment: .leading, spacing: 14) {
+                platformSearchField(searchText: searchTextBinding)
+                filterPicker
+
+                if !availableTags.isEmpty {
+                    tagFilterBar
+                }
+
+                if hasPlaceAwareContent {
+                    locationFilterPanel
+                }
+            }
+        }
+    }
+
+    private func macSidebarSectionCard<Content: View>(
+        title: String? = nil,
+        @ViewBuilder content: () -> Content
     ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 34, height: 34)
-                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 12) {
+            if let title {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-
-                Text(subtitle)
-                    .font(.caption)
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
             }
 
-            Spacer(minLength: 8)
-
-            Image(systemName: "arrow.up.forward")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            content()
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.quaternary.opacity(0.45))
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.quaternary.opacity(0.32))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(.white.opacity(0.06), lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 #endif
 
@@ -345,6 +316,43 @@ struct HomeTCAView: View {
     }
 
     private var filterPicker: some View {
+#if os(macOS)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Show")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(RoutineListFilter.allCases) { filter in
+                    Button {
+                        selectedFilter = filter
+                    } label: {
+                        Text(filter.rawValue)
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(
+                                selectedFilter == filter ? Color.white : Color.primary
+                            )
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        selectedFilter == filter
+                                            ? Color.accentColor
+                                            : Color.secondary.opacity(0.10)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+#else
         Picker("Routine Filter", selection: $selectedFilter) {
             ForEach(RoutineListFilter.allCases) { filter in
                 Text(filter.rawValue).tag(filter)
@@ -353,6 +361,7 @@ struct HomeTCAView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal)
         .padding(.top, 4)
+#endif
     }
 
     private var overallDoneCountSummary: some View {
@@ -373,24 +382,36 @@ struct HomeTCAView: View {
     @ViewBuilder
     private var tagFilterBar: some View {
         if !availableTags.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
-                        selectedTag = nil
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+#if os(macOS)
+                Text("Tags")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+#endif
 
-                    ForEach(availableTags, id: \.self) { tag in
-                        tagFilterButton(
-                            title: "#\(tag)",
-                            isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
-                        ) {
-                            selectedTag = tag
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
+                            selectedTag = nil
+                        }
+
+                        ForEach(availableTags, id: \.self) { tag in
+                            tagFilterButton(
+                                title: "#\(tag)",
+                                isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                            ) {
+                                selectedTag = tag
+                            }
                         }
                     }
+#if !os(macOS)
+                    .padding(.horizontal)
+#endif
                 }
-                .padding(.horizontal)
             }
+#if !os(macOS)
             .padding(.top, -2)
+#endif
         }
     }
 
@@ -706,8 +727,9 @@ struct HomeTCAView: View {
             Group {
 #if os(macOS)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Filter By Place")
-                        .font(.subheadline.weight(.semibold))
+                    Text("Place")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
 
                     Picker(
                         "Place Filter",
@@ -761,6 +783,7 @@ struct HomeTCAView: View {
                 }
 #endif
             }
+#if !os(macOS)
             .padding(.horizontal)
             .padding(.vertical, 10)
             .background(
@@ -768,6 +791,7 @@ struct HomeTCAView: View {
                     .fill(Color.secondary.opacity(0.08))
             )
             .padding(.horizontal)
+#endif
         }
     }
 
@@ -1221,6 +1245,8 @@ struct HomeTCAView: View {
             return true
         case .due:
             return !task.isDoneToday && (urgencyLevel(for: task) > 0 || isYellowUrgency(task))
+        case .todos:
+            return task.isOneOffTask
         case .doneToday:
             return task.isDoneToday
         }
