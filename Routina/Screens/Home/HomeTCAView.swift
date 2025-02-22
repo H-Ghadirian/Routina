@@ -23,6 +23,9 @@ struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     private let externalSearchText: Binding<String>?
     @Environment(\.modelContext) private var modelContext
+#if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
     @State private var localSearchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
@@ -128,6 +131,8 @@ struct HomeTCAView: View {
     private var sidebarContent: some View {
 #if os(macOS)
         VStack(spacing: 12) {
+            macUtilityAccessPanel
+
             if store.routineTasks.isEmpty {
                 emptyStateView(
                     title: "No routines yet",
@@ -180,6 +185,20 @@ struct HomeTCAView: View {
 
     @ToolbarContentBuilder
     private var homeToolbarContent: some ToolbarContent {
+#if os(macOS)
+        ToolbarItemGroup(placement: .automatic) {
+            Button {
+                openWindow(id: RoutinaMacWindowID.stats)
+            } label: {
+                Label("Stats", systemImage: "chart.bar.xaxis")
+            }
+
+            SettingsLink {
+                Label("Settings", systemImage: "gearshape")
+            }
+        }
+#endif
+
         ToolbarItemGroup(placement: .primaryAction) {
             platformRefreshButton
 #if !os(macOS)
@@ -192,6 +211,89 @@ struct HomeTCAView: View {
             }
         }
     }
+
+#if os(macOS)
+    private var macUtilityAccessPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Quick Access")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+
+            HStack(spacing: 10) {
+                Button {
+                    openWindow(id: RoutinaMacWindowID.stats)
+                } label: {
+                    macUtilityAccessCard(
+                        title: "Stats",
+                        subtitle: "See streaks and completion trends",
+                        systemImage: "chart.bar.xaxis",
+                        tint: .blue
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens the Stats window.")
+
+                SettingsLink {
+                    macUtilityAccessCard(
+                        title: "Settings",
+                        subtitle: "Manage reminders, places, and backups",
+                        systemImage: "gearshape",
+                        tint: .orange
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens the Settings window.")
+            }
+            .padding(.horizontal)
+        }
+        .padding(.top, 4)
+    }
+
+    private func macUtilityAccessCard(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        tint: Color
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 34, height: 34)
+                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "arrow.up.forward")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.quaternary.opacity(0.45))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+#endif
 
     @ViewBuilder
     private var detailContent: some View {

@@ -12,6 +12,7 @@ struct RoutineCommands: Commands {
             Button("Stats") {
                 openWindow(id: RoutinaMacWindowID.stats)
             }
+            .keyboardShortcut("2", modifiers: [.command, .option])
         }
     }
 }
