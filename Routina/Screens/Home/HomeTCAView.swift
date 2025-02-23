@@ -1,6 +1,7 @@
 import Combine
 import ComposableArchitecture
 import CoreData
+import MapKit
 import SwiftData
 import SwiftUI
 
@@ -32,6 +33,9 @@ struct HomeTCAView: View {
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
     @State private var selectedManualPlaceFilterID: UUID?
+#if os(macOS)
+    @State private var isMacPlaceFilterDetailPresented = false
+#endif
     @State private var isFilterSheetPresented = false
     @State private var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
@@ -119,6 +123,12 @@ struct HomeTCAView: View {
                     self.selectedManualPlaceFilterID = nil
                 }
             }
+#if os(macOS)
+            .onChange(of: store.selectedTaskID) { _, taskID in
+                guard taskID != nil else { return }
+                isMacPlaceFilterDetailPresented = false
+            }
+#endif
     }
 
     private var navigationContent: some View {
@@ -265,6 +275,32 @@ struct HomeTCAView: View {
 
     @ViewBuilder
     private var detailContent: some View {
+#if os(macOS)
+        if isMacPlaceFilterDetailPresented {
+            MacPlaceFilterDetailView(
+                options: macPlaceFilterOptions,
+                selectedPlaceID: manualPlaceFilterBinding,
+                hideUnavailableRoutines: hideUnavailableRoutinesBinding,
+                showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
+                currentLocation: store.locationSnapshot.coordinate,
+                manualPlaceFilterDescription: manualPlaceFilterDescription,
+                locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
+                onManagePlaces: { openSettings() }
+            )
+        } else if let detailStore = self.store.scope(
+            state: \.routineDetailState,
+            action: \.routineDetail
+        ) {
+            RoutineDetailTCAView(store: detailStore)
+        } else {
+            ContentUnavailableView(
+                "Select a routine or place filter",
+                systemImage: "sidebar.right",
+                description: Text("Choose a routine from the sidebar, or open the place filter to browse routines by location.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+#else
         if let detailStore = self.store.scope(
             state: \.routineDetailState,
             action: \.routineDetail
@@ -278,6 +314,7 @@ struct HomeTCAView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+#endif
     }
 
     private var addRoutineSheetBinding: Binding<Bool> {
@@ -723,31 +760,7 @@ struct HomeTCAView: View {
         if hasPlaceAwareContent {
             Group {
 #if os(macOS)
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Place")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    Picker(
-                        "Place Filter",
-                        selection: Binding(
-                            get: { selectedManualPlaceFilterID },
-                            set: { selectedManualPlaceFilterID = $0 }
-                        )
-                    ) {
-                        Text("All routines").tag(Optional<UUID>.none)
-                        ForEach(store.routinePlaces.sorted { lhs, rhs in
-                            lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
-                        }) { place in
-                            Text(place.displayName).tag(Optional(place.id))
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    Text(manualPlaceFilterDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                macPlaceFilterSummaryRow
 #else
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
@@ -811,6 +824,100 @@ struct HomeTCAView: View {
             lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
         }
     }
+
+#if os(macOS)
+    private var macPlaceFilterOptions: [MacPlaceFilterOption] {
+        let linkedRoutineCounts = store.routineTasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        return sortedRoutinePlaces.map { place in
+            let linkedRoutineCount = linkedRoutineCounts[place.id, default: 0]
+            let status: MacPlaceFilterOption.Status
+
+            if let coordinate = store.locationSnapshot.coordinate,
+               store.locationSnapshot.authorizationStatus.isAuthorized {
+                if place.contains(coordinate) {
+                    status = .here
+                } else {
+                    status = .away(distanceMeters: place.distance(to: coordinate))
+                }
+            } else {
+                status = .unknown
+            }
+
+            return MacPlaceFilterOption(
+                place: place,
+                linkedRoutineCount: linkedRoutineCount,
+                status: status
+            )
+        }
+    }
+
+    private var macPlaceFilterSummaryRow: some View {
+        Button {
+            store.send(.setSelectedTask(nil))
+            isMacPlaceFilterDetailPresented = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.headline)
+                    .foregroundStyle(isMacPlaceFilterDetailPresented ? Color.accentColor : Color.secondary)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(
+                                isMacPlaceFilterDetailPresented
+                                    ? Color.accentColor.opacity(0.16)
+                                    : Color.secondary.opacity(0.10)
+                            )
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(selectedPlaceName ?? "Choose a place")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    Text(macPlaceFilterSummaryText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(
+                        isMacPlaceFilterDetailPresented
+                            ? Color.accentColor.opacity(0.14)
+                            : Color.secondary.opacity(0.07)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var macPlaceFilterSummaryText: String {
+        if let selectedPlaceName {
+            return "Showing routines linked to \(selectedPlaceName)"
+        }
+        if hasSavedPlaces {
+            let placeCount = sortedRoutinePlaces.count
+            return placeCount == 1 ? "1 saved place" : "\(placeCount) saved places"
+        }
+        return "Open the filter screen to choose a saved place"
+    }
+#endif
 
     private var selectedPlaceName: String? {
         guard let selectedManualPlaceFilterID else { return nil }
@@ -1117,6 +1224,9 @@ struct HomeTCAView: View {
     }
 
     private func openTask(_ taskID: UUID) {
+#if os(macOS)
+        isMacPlaceFilterDetailPresented = false
+#endif
         store.send(.setSelectedTask(taskID))
     }
 
@@ -1715,3 +1825,516 @@ struct HomeTCAView: View {
         }
     }
 }
+
+#if os(macOS)
+private struct MacPlaceFilterOption: Equatable, Identifiable {
+    enum Status: Equatable {
+        case here
+        case away(distanceMeters: Double)
+        case unknown
+    }
+
+    let place: RoutinePlace
+    let linkedRoutineCount: Int
+    let status: Status
+
+    var id: UUID { place.id }
+    var coordinate: CLLocationCoordinate2D { placeCoordinate.clLocationCoordinate2D }
+
+    var placeCoordinate: LocationCoordinate {
+        LocationCoordinate(latitude: place.latitude, longitude: place.longitude)
+    }
+
+    var subtitle: String {
+        let routineText = linkedRoutineCount == 1 ? "1 routine" : "\(linkedRoutineCount) routines"
+        return "\(routineText) • \(Int(place.radiusMeters)) m radius"
+    }
+}
+
+private struct MacPlaceFilterDetailView: View {
+    let options: [MacPlaceFilterOption]
+    @Binding var selectedPlaceID: UUID?
+    @Binding var hideUnavailableRoutines: Bool
+    let showAvailabilityToggle: Bool
+    let currentLocation: LocationCoordinate?
+    let manualPlaceFilterDescription: String
+    let locationStatusText: String?
+    let onManagePlaces: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Place Filter")
+                        .font(.largeTitle.weight(.semibold))
+
+                    Text("Choose a saved place from the list and filter the routine sidebar by that location.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+
+                MacPlaceFilterPanel(
+                    options: options,
+                    selectedPlaceID: $selectedPlaceID,
+                    hideUnavailableRoutines: $hideUnavailableRoutines,
+                    showAvailabilityToggle: showAvailabilityToggle,
+                    currentLocation: currentLocation,
+                    manualPlaceFilterDescription: manualPlaceFilterDescription,
+                    locationStatusText: locationStatusText,
+                    onManagePlaces: onManagePlaces
+                )
+            }
+            .padding(24)
+            .frame(maxWidth: 860, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+private struct MacPlaceFilterPanel: View {
+    let options: [MacPlaceFilterOption]
+    @Binding var selectedPlaceID: UUID?
+    @Binding var hideUnavailableRoutines: Bool
+    let showAvailabilityToggle: Bool
+    let currentLocation: LocationCoordinate?
+    let manualPlaceFilterDescription: String
+    let locationStatusText: String?
+    let onManagePlaces: () -> Void
+
+    @State private var mapPosition: MapCameraPosition
+
+    init(
+        options: [MacPlaceFilterOption],
+        selectedPlaceID: Binding<UUID?>,
+        hideUnavailableRoutines: Binding<Bool>,
+        showAvailabilityToggle: Bool,
+        currentLocation: LocationCoordinate?,
+        manualPlaceFilterDescription: String,
+        locationStatusText: String?,
+        onManagePlaces: @escaping () -> Void
+    ) {
+        self.options = options
+        _selectedPlaceID = selectedPlaceID
+        _hideUnavailableRoutines = hideUnavailableRoutines
+        self.showAvailabilityToggle = showAvailabilityToggle
+        self.currentLocation = currentLocation
+        self.manualPlaceFilterDescription = manualPlaceFilterDescription
+        self.locationStatusText = locationStatusText
+        self.onManagePlaces = onManagePlaces
+        _mapPosition = State(
+            initialValue: Self.mapCameraPosition(
+                options: options,
+                selectedPlaceID: selectedPlaceID.wrappedValue,
+                currentLocation: currentLocation
+            )
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            panelHeader
+            panelContent
+            panelFooter
+        }
+        .onAppear(perform: updateMapPosition)
+        .onChange(of: selectedPlaceID) { _, _ in
+            updateMapPosition()
+        }
+        .onChange(of: options) { _, _ in
+            updateMapPosition()
+        }
+        .onChange(of: currentLocation) { _, _ in
+            updateMapPosition()
+        }
+    }
+
+    private var panelHeader: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Label("Places", systemImage: "location.viewfinder")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
+
+            if selectedPlaceID != nil {
+                Button("Clear") {
+                    selectedPlaceID = nil
+                }
+                .buttonStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+            }
+
+            Button("Manage") {
+                onManagePlaces()
+            }
+            .buttonStyle(.plain)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.accentColor)
+        }
+    }
+
+    @ViewBuilder
+    private var panelContent: some View {
+        if options.isEmpty {
+            Text("Save places in Settings to filter routines with a map-based view here.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            HStack(alignment: .top, spacing: 12) {
+                placeListColumn
+
+                Divider()
+                    .padding(.vertical, 2)
+
+                mapPreview
+            }
+            .frame(height: 340)
+        }
+    }
+
+    @ViewBuilder
+    private var panelFooter: some View {
+        if showAvailabilityToggle {
+            Toggle("Hide unavailable routines", isOn: $hideUnavailableRoutines)
+                .toggleStyle(.switch)
+                .font(.caption)
+        }
+
+        Text(manualPlaceFilterDescription)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+        if let locationStatusText {
+            Text(locationStatusText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var placeListColumn: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 8) {
+                allRoutinesRow
+
+                ForEach(options) { option in
+                    MacPlaceFilterRow(
+                        option: option,
+                        isSelected: selectedPlaceID == option.id
+                    ) {
+                        selectedPlaceID = option.id
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var allRoutinesRow: some View {
+        Button {
+            selectedPlaceID = nil
+        } label: {
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: "square.grid.2x2")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(selectedPlaceID == nil ? Color.accentColor : Color.secondary)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(
+                                selectedPlaceID == nil
+                                    ? Color.accentColor.opacity(0.16)
+                                    : Color.secondary.opacity(0.10)
+                            )
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("All routines")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    Text("Show every routine without filtering by place.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(rowBackground(isSelected: selectedPlaceID == nil))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var mapPreview: some View {
+        Map(position: $mapPosition) {
+            ForEach(options) { option in
+                MapCircle(
+                    center: option.coordinate,
+                    radius: option.place.radiusMeters
+                )
+                .foregroundStyle(circleColor(for: option))
+
+                Annotation(option.place.displayName, coordinate: option.coordinate) {
+                    Circle()
+                        .fill(selectedPlaceID == option.id ? Color.accentColor : Color.white.opacity(0.92))
+                        .overlay(
+                            Circle()
+                                .stroke(selectedPlaceID == option.id ? Color.white : Color.accentColor, lineWidth: 2)
+                        )
+                        .frame(width: selectedPlaceID == option.id ? 14 : 10, height: selectedPlaceID == option.id ? 14 : 10)
+                        .shadow(color: .black.opacity(0.14), radius: 3, y: 1)
+                }
+            }
+
+            if let currentLocation {
+                Annotation("Current Location", coordinate: currentLocation.clLocationCoordinate2D) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.18))
+                            .frame(width: 20, height: 20)
+
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 8, height: 8)
+                    }
+                }
+            }
+        }
+        .mapStyle(.standard)
+        .allowsHitTesting(false)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.secondary.opacity(0.16), lineWidth: 1)
+        )
+        .overlay(alignment: .topLeading) {
+            Text(selectedPlaceMapTitle)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial, in: Capsule())
+                .padding(10)
+        }
+        .frame(maxWidth: 280, maxHeight: .infinity)
+    }
+
+    private var selectedPlaceMapTitle: String {
+        if let selectedPlaceID,
+           let option = options.first(where: { $0.id == selectedPlaceID }) {
+            return option.place.displayName
+        }
+        return "All saved places"
+    }
+
+    private func circleColor(for option: MacPlaceFilterOption) -> Color {
+        selectedPlaceID == option.id ? Color.accentColor.opacity(0.22) : Color.accentColor.opacity(0.10)
+    }
+
+    private func rowBackground(isSelected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
+    }
+
+    private func updateMapPosition() {
+        withAnimation(.snappy(duration: 0.3)) {
+            mapPosition = Self.mapCameraPosition(
+                options: options,
+                selectedPlaceID: selectedPlaceID,
+                currentLocation: currentLocation
+            )
+        }
+    }
+
+    private static func mapCameraPosition(
+        options: [MacPlaceFilterOption],
+        selectedPlaceID: UUID?,
+        currentLocation: LocationCoordinate?
+    ) -> MapCameraPosition {
+        guard !options.isEmpty else {
+            let fallbackRegion = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 52.52, longitude: 13.405),
+                span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+            )
+            return .region(fallbackRegion)
+        }
+
+        if let selectedPlaceID,
+           let selectedOption = options.first(where: { $0.id == selectedPlaceID }) {
+            return .region(region(focusingOn: selectedOption.place))
+        }
+
+        return .region(regionIncludingAllPlaces(options, currentLocation: currentLocation))
+    }
+
+    private static func region(focusingOn place: RoutinePlace) -> MKCoordinateRegion {
+        let latitudeDelta = max(latitudeDelta(forMeters: place.radiusMeters * 4), 0.01)
+        let longitudeDelta = max(
+            longitudeDelta(forMeters: place.radiusMeters * 4, latitude: place.latitude),
+            0.01
+        )
+
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude),
+            span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta)
+        )
+    }
+
+    private static func regionIncludingAllPlaces(
+        _ options: [MacPlaceFilterOption],
+        currentLocation: LocationCoordinate?
+    ) -> MKCoordinateRegion {
+        var minLatitude = Double.greatestFiniteMagnitude
+        var maxLatitude = -Double.greatestFiniteMagnitude
+        var minLongitude = Double.greatestFiniteMagnitude
+        var maxLongitude = -Double.greatestFiniteMagnitude
+
+        for option in options {
+            let latitudeInset = latitudeDelta(forMeters: option.place.radiusMeters * 1.8)
+            let longitudeInset = longitudeDelta(
+                forMeters: option.place.radiusMeters * 1.8,
+                latitude: option.place.latitude
+            )
+
+            minLatitude = min(minLatitude, option.place.latitude - latitudeInset)
+            maxLatitude = max(maxLatitude, option.place.latitude + latitudeInset)
+            minLongitude = min(minLongitude, option.place.longitude - longitudeInset)
+            maxLongitude = max(maxLongitude, option.place.longitude + longitudeInset)
+        }
+
+        if let currentLocation {
+            minLatitude = min(minLatitude, currentLocation.latitude)
+            maxLatitude = max(maxLatitude, currentLocation.latitude)
+            minLongitude = min(minLongitude, currentLocation.longitude)
+            maxLongitude = max(maxLongitude, currentLocation.longitude)
+        }
+
+        let center = CLLocationCoordinate2D(
+            latitude: (minLatitude + maxLatitude) / 2,
+            longitude: (minLongitude + maxLongitude) / 2
+        )
+
+        let latitudeDelta = max((maxLatitude - minLatitude) * 1.35, 0.02)
+        let longitudeDelta = max((maxLongitude - minLongitude) * 1.35, 0.02)
+
+        return MKCoordinateRegion(
+            center: center,
+            span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta)
+        )
+    }
+
+    private static func latitudeDelta(forMeters meters: Double) -> Double {
+        meters / 111_000
+    }
+
+    private static func longitudeDelta(forMeters meters: Double, latitude: Double) -> Double {
+        let cosine = max(abs(cos(latitude * .pi / 180)), 0.2)
+        return meters / (111_000 * cosine)
+    }
+}
+
+private struct MacPlaceFilterRow: View {
+    let option: MacPlaceFilterOption
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(option.place.displayName)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        MacPlaceStatusBadge(status: option.status)
+                    }
+
+                    Text(option.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct MacPlaceStatusBadge: View {
+    let status: MacPlaceFilterOption.Status
+
+    var body: some View {
+        Text(labelText)
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(foregroundColor)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                Capsule()
+                    .fill(backgroundColor)
+            )
+    }
+
+    private var labelText: String {
+        switch status {
+        case .here:
+            return "Here"
+        case let .away(distanceMeters):
+            if distanceMeters < 1_000 {
+                return "\(Int(distanceMeters.rounded())) m away"
+            }
+            return String(format: "%.1f km", distanceMeters / 1_000)
+        case .unknown:
+            return "Unknown"
+        }
+    }
+
+    private var foregroundColor: Color {
+        switch status {
+        case .here:
+            return .green
+        case .away:
+            return .orange
+        case .unknown:
+            return .secondary
+        }
+    }
+
+    private var backgroundColor: Color {
+        switch status {
+        case .here:
+            return Color.green.opacity(0.15)
+        case .away:
+            return Color.orange.opacity(0.16)
+        case .unknown:
+            return Color.secondary.opacity(0.12)
+        }
+    }
+}
+#endif
