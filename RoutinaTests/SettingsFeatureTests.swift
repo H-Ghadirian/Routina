@@ -147,6 +147,70 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func duplicatePlaceDraft_disablesSaveAndShowsValidationMessage() {
+        let state = SettingsFeature.State(
+            savedPlaces: [
+                RoutinePlaceSummary(
+                    id: UUID(),
+                    name: "Home",
+                    radiusMeters: 150,
+                    linkedRoutineCount: 1
+                )
+            ],
+            placeDraftName: " home "
+        )
+
+        #expect(state.hasDuplicatePlaceDraftName)
+        #expect(state.isSavePlaceDisabled)
+        #expect(state.savePlaceValidationMessage == "A place with this name already exists.")
+    }
+
+    @Test
+    func savePlaceTapped_duplicateNameShowsValidationMessageAndDoesNotPersist() async throws {
+        let context = makeInMemoryContext()
+        _ = makePlace(in: context, name: "Home")
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                savedPlaces: [
+                    RoutinePlaceSummary(
+                        id: UUID(),
+                        name: "Home",
+                        radiusMeters: 150,
+                        linkedRoutineCount: 0
+                    )
+                ],
+                placeDraftName: " home ",
+                placeDraftCoordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
+                placeDraftRadiusMeters: 180
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.savePlaceTapped) {
+            $0.isPlaceOperationInProgress = true
+            $0.placeStatusMessage = ""
+        }
+
+        await store.receive(
+            .placeOperationFinished(
+                success: false,
+                message: "A place with this name already exists."
+            )
+        ) {
+            $0.isPlaceOperationInProgress = false
+            $0.placeStatusMessage = "A place with this name already exists."
+        }
+
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        #expect(places.count == 1)
+        #expect(places.first?.displayName == "Home")
+    }
+
+    @Test
     func deletePlaceTapped_clearsRoutineLinks() async throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Home")

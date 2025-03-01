@@ -1,6 +1,25 @@
 import Foundation
 
 extension SettingsFeature.State {
+    var hasDuplicatePlaceDraftName: Bool {
+        guard let normalizedDraftName = RoutinePlace.normalizedName(placeDraftName) else {
+            return false
+        }
+
+        return savedPlaces.contains { place in
+            RoutinePlace.normalizedName(place.name) == normalizedDraftName
+        }
+    }
+
+    var savePlaceValidationMessage: String? {
+        guard hasDuplicatePlaceDraftName else { return nil }
+        return "A place with this name already exists."
+    }
+
+    var isSavePlaceDisabled: Bool {
+        isPlaceOperationInProgress || hasDuplicatePlaceDraftName
+    }
+
     var syncStatusText: String {
         if isCloudDataResetInProgress {
             return "Deleting iCloud data..."

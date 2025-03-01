@@ -2325,6 +2325,98 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func onAppear_enforcesUniquePlaceNamesByMergingDuplicates() async throws {
+        let context = makeInMemoryContext()
+        let unlinkedPlace = RoutinePlace(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            name: " Home ",
+            latitude: 52.5200,
+            longitude: 13.4050,
+            radiusMeters: 150,
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let linkedPlace = RoutinePlace(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            name: "Home",
+            latitude: 52.5200,
+            longitude: 13.4050,
+            radiusMeters: 150,
+            createdAt: makeDate("2026-03-02T08:00:00Z")
+        )
+        context.insert(unlinkedPlace)
+        context.insert(linkedPlace)
+
+        let task = makeTask(
+            in: context,
+            name: "Laundry",
+            interval: 3,
+            lastDone: nil,
+            emoji: "🧺",
+            placeID: linkedPlace.id
+        )
+        try context.save()
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.locationClient.snapshot = { _ in
+                try? await Task.sleep(nanoseconds: 20_000_000)
+                return LocationSnapshot(
+                    authorizationStatus: .notDetermined,
+                    coordinate: nil,
+                    horizontalAccuracy: nil,
+                    timestamp: nil
+                )
+            }
+        }
+
+        await store.send(.onAppear)
+        await store.receive { action in
+            guard case let .tasksLoadedSuccessfully(tasks, places, doneStats) = action else { return false }
+            #expect(tasks.count == 1)
+            #expect(places.count == 1)
+            #expect(tasks.first?.id == task.id)
+            #expect(tasks.first?.placeID == linkedPlace.id)
+            #expect(places.first?.id == linkedPlace.id)
+            #expect(doneStats.totalCount == 0)
+            return true
+        } assert: {
+            $0.routineTasks = [task]
+            $0.routinePlaces = [linkedPlace]
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Laundry",
+                    emoji: "🧺",
+                    placeID: linkedPlace.id,
+                    placeName: "Home",
+                    locationAvailability: .unknown(placeName: "Home"),
+                    interval: 3,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+        }
+        await store.receive(.locationSnapshotUpdated(
+            LocationSnapshot(
+                authorizationStatus: .notDetermined,
+                coordinate: nil,
+                horizontalAccuracy: nil,
+                timestamp: nil
+            )
+        ))
+
+        let remainingPlaces = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        #expect(remainingPlaces.count == 1)
+        #expect(remainingPlaces.first?.id == linkedPlace.id)
+        #expect(remainingTasks.first?.placeID == linkedPlace.id)
+    }
+
+    @Test
     func onAppear_backfillsMissingLogFromLastDone() async throws {
         let context = makeInMemoryContext()
         let lastDone = makeDate("2026-03-14T10:00:00Z")
@@ -2479,6 +2571,58 @@ struct HomeFeatureTests {
         #expect(detailLogs.count == 1)
         #expect(detailLogs.first?.taskID == localTask.id)
         #expect(detailLogs.first?.timestamp == timestamp)
+    }
+
+    @Test
+    func cloudKitMerge_sameNamedPlaceReusesExistingLocalPlace() throws {
+        let context = makeInMemoryContext()
+        let localPlace = RoutinePlace(
+            id: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!,
+            name: "Home",
+            latitude: 52.5200,
+            longitude: 13.4050,
+            radiusMeters: 150,
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        context.insert(localPlace)
+        try context.save()
+
+        let remotePlaceID = UUID(uuidString: "20000000-0000-0000-0000-000000000002")!
+        let remoteTaskID = UUID(uuidString: "30000000-0000-0000-0000-000000000003")!
+
+        let remotePlace = CKRecord(
+            recordType: "RoutinePlace",
+            recordID: CKRecord.ID(recordName: remotePlaceID.uuidString)
+        )
+        remotePlace["name"] = " home " as CKRecordValue
+        remotePlace["latitude"] = NSNumber(value: 52.5300)
+        remotePlace["longitude"] = NSNumber(value: 13.4100)
+        remotePlace["radiusMeters"] = NSNumber(value: 200)
+        remotePlace["createdAt"] = makeDate("2026-03-03T08:00:00Z") as CKRecordValue
+
+        let remoteTask = CKRecord(
+            recordType: "RoutineTask",
+            recordID: CKRecord.ID(recordName: remoteTaskID.uuidString)
+        )
+        remoteTask["name"] = "Stretch" as CKRecordValue
+        remoteTask["interval"] = NSNumber(value: 1)
+        remoteTask["placeID"] = remotePlaceID.uuidString as CKRecordValue
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(changedRecords: [remotePlace, remoteTask], deletedRecordIDs: []),
+            into: context
+        )
+
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        #expect(places.count == 1)
+        #expect(places.first?.id == localPlace.id)
+        #expect(places.first?.displayName == "Home")
+        #expect(places.first?.radiusMeters == 200)
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        #expect(tasks.count == 1)
+        #expect(tasks.first?.id == remoteTaskID)
+        #expect(tasks.first?.placeID == localPlace.id)
     }
 }
 

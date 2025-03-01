@@ -432,6 +432,12 @@ private struct SettingsMacPlacesDetailView: View {
                     TextField("Place name", text: placeDraftNameBinding)
                         .textFieldStyle(.roundedBorder)
 
+                    if let validationMessage = store.savePlaceValidationMessage {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+
                     HStack(spacing: 12) {
                         Button {
                             isPlacePickerPresented = true
@@ -450,7 +456,7 @@ private struct SettingsMacPlacesDetailView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(store.isPlaceOperationInProgress)
+                        .disabled(store.isSavePlaceDisabled)
 
                         if store.locationAuthorizationStatus.needsSettingsChange {
                             Button("Open System Settings") {

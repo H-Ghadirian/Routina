@@ -656,6 +656,7 @@ struct HomeFeature {
             do {
                 let context = ModelContext(self.modelContext().container)
                 try self.enforceUniqueRoutineNames(in: context)
+                try self.enforceUniquePlaceNames(in: context)
                 _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 let places = try context.fetch(FetchDescriptor<RoutinePlace>())
@@ -956,6 +957,41 @@ struct HomeFeature {
         }
     }
 
+    private func enforceUniquePlaceNames(in context: ModelContext) throws {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        var placesByNormalizedName: [String: [RoutinePlace]] = [:]
+        var removedAny = false
+
+        for place in places {
+            guard let normalized = RoutinePlace.normalizedName(place.name) else { continue }
+            placesByNormalizedName[normalized, default: []].append(place)
+        }
+
+        for sameNamedPlaces in placesByNormalizedName.values {
+            guard sameNamedPlaces.count > 1 else { continue }
+
+            let keeper = preferredPlaceToKeep(from: sameNamedPlaces, linkedCounts: linkedCounts)
+            for place in sameNamedPlaces where place.id != keeper.id {
+                for task in tasks where task.placeID == place.id {
+                    task.placeID = keeper.id
+                }
+                context.delete(place)
+                removedAny = true
+            }
+        }
+
+        if removedAny {
+            try context.save()
+            NotificationCenter.default.postRoutineDidUpdate()
+        }
+    }
+
     private func preferredTaskToKeep(from tasks: [RoutineTask]) -> RoutineTask {
         tasks.min { taskSelectionKey($0) < taskSelectionKey($1) } ?? tasks[0]
     }
@@ -966,6 +1002,33 @@ struct HomeFeature {
         let whitespacePenalty = rawName == trimmedName ? 0 : 1
         let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
         return (whitespacePenalty, foldedName, task.id.uuidString.lowercased())
+    }
+
+    private func preferredPlaceToKeep(
+        from places: [RoutinePlace],
+        linkedCounts: [UUID: Int]
+    ) -> RoutinePlace {
+        places.min { lhs, rhs in
+            placeSelectionKey(lhs, linkedCounts: linkedCounts) < placeSelectionKey(rhs, linkedCounts: linkedCounts)
+        } ?? places[0]
+    }
+
+    private func placeSelectionKey(
+        _ place: RoutinePlace,
+        linkedCounts: [UUID: Int]
+    ) -> (Int, Int, Date, String, String) {
+        let rawName = place.name
+        let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let linkedCountPenalty = -linkedCounts[place.id, default: 0]
+        let whitespacePenalty = rawName == trimmedName ? 0 : 1
+        let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        return (
+            linkedCountPenalty,
+            whitespacePenalty,
+            place.createdAt,
+            foldedName,
+            place.id.uuidString.lowercased()
+        )
     }
 
 }

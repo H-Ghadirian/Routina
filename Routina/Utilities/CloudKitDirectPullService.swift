@@ -94,6 +94,7 @@ enum CloudKitDirectPullService {
 
     @MainActor
     private static func merge(result: PullResult, into context: ModelContext) throws {
+        var mergedPlaceIDs = try deduplicatePlaces(in: context)
         var mergedTaskIDs: [UUID: UUID] = [:]
         var placePayloads: [PlacePayload] = []
         var taskPayloads: [TaskPayload] = []
@@ -116,11 +117,15 @@ enum CloudKitDirectPullService {
         }
 
         for placePayload in placePayloads {
-            try upsertPlace(placePayload, in: context)
+            mergedPlaceIDs[placePayload.id] = try upsertPlace(placePayload, in: context)
         }
 
         for taskPayload in taskPayloads {
-            mergedTaskIDs[taskPayload.id] = try upsertTask(taskPayload, in: context)
+            var canonicalPayload = taskPayload
+            canonicalPayload.placeID = canonicalPayload.placeID.flatMap { placeID in
+                canonicalPlaceID(for: placeID, mergedPlaceIDs: mergedPlaceIDs, in: context)
+            }
+            mergedTaskIDs[taskPayload.id] = try upsertTask(canonicalPayload, in: context)
         }
 
         for logPayload in logPayloads {
@@ -130,6 +135,10 @@ enum CloudKitDirectPullService {
             try upsertLog(canonicalPayload, in: context)
         }
 
+        for (sourcePlaceID, targetPlaceID) in mergedPlaceIDs where sourcePlaceID != targetPlaceID {
+            try migratePlaceReferences(from: sourcePlaceID, to: targetPlaceID, in: context)
+        }
+
         for (sourceTaskID, targetTaskID) in mergedTaskIDs where sourceTaskID != targetTaskID {
             try migrateLogs(from: sourceTaskID, to: targetTaskID, in: context)
         }
@@ -137,6 +146,9 @@ enum CloudKitDirectPullService {
         for recordID in result.deletedRecordIDs {
             guard let id = UUID(uuidString: recordID.recordName) else { continue }
             if let targetTaskID = mergedTaskIDs[id], targetTaskID != id {
+                continue
+            }
+            if let targetPlaceID = mergedPlaceIDs[id], targetPlaceID != id {
                 continue
             }
 
@@ -366,13 +378,14 @@ enum CloudKitDirectPullService {
     }
 
     @MainActor
-    private static func upsertPlace(_ payload: PlacePayload, in context: ModelContext) throws {
+    private static func upsertPlace(_ payload: PlacePayload, in context: ModelContext) throws -> UUID {
         let payloadID = payload.id
         let descriptor = FetchDescriptor<RoutinePlace>(
             predicate: #Predicate { place in
                 place.id == payloadID
             }
         )
+        let normalizedIncomingName = RoutinePlace.normalizedName(payload.name)
 
         if let existing = try context.fetch(descriptor).first {
             existing.name = RoutinePlace.cleanedName(payload.name) ?? existing.displayName
@@ -382,7 +395,18 @@ enum CloudKitDirectPullService {
             if let createdAt = payload.createdAt {
                 existing.createdAt = createdAt
             }
-            return
+            return existing.id
+        }
+
+        if let normalizedIncomingName,
+           let placeWithSameName = try place(matchingNormalizedName: normalizedIncomingName, in: context) {
+            placeWithSameName.latitude = payload.latitude
+            placeWithSameName.longitude = payload.longitude
+            placeWithSameName.radiusMeters = max(payload.radiusMeters, 25)
+            if let createdAt = payload.createdAt {
+                placeWithSameName.createdAt = createdAt
+            }
+            return placeWithSameName.id
         }
 
         context.insert(
@@ -395,6 +419,7 @@ enum CloudKitDirectPullService {
                 createdAt: payload.createdAt ?? Date()
             )
         )
+        return payload.id
     }
 
     @MainActor
@@ -571,6 +596,38 @@ enum CloudKitDirectPullService {
     }
 
     @MainActor
+    private static func deduplicatePlaces(in context: ModelContext) throws -> [UUID: UUID] {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        var placesByNormalizedName: [String: [RoutinePlace]] = [:]
+        var mergedPlaceIDs: [UUID: UUID] = [:]
+
+        for place in places {
+            guard let normalizedName = RoutinePlace.normalizedName(place.name) else { continue }
+            placesByNormalizedName[normalizedName, default: []].append(place)
+        }
+
+        for sameNamedPlaces in placesByNormalizedName.values {
+            guard sameNamedPlaces.count > 1 else { continue }
+
+            let keeper = preferredPlaceToKeep(from: sameNamedPlaces, linkedCounts: linkedCounts)
+            mergedPlaceIDs[keeper.id] = keeper.id
+            for place in sameNamedPlaces where place.id != keeper.id {
+                try migratePlaceReferences(from: place.id, to: keeper.id, in: context)
+                context.delete(place)
+                mergedPlaceIDs[place.id] = keeper.id
+            }
+        }
+
+        return mergedPlaceIDs
+    }
+
+    @MainActor
     private static func migrateLogs(
         from sourceTaskID: UUID,
         to targetTaskID: UUID,
@@ -590,6 +647,20 @@ enum CloudKitDirectPullService {
     }
 
     @MainActor
+    private static func migratePlaceReferences(
+        from sourcePlaceID: UUID,
+        to targetPlaceID: UUID,
+        in context: ModelContext
+    ) throws {
+        guard sourcePlaceID != targetPlaceID else { return }
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        for task in tasks where task.placeID == sourcePlaceID {
+            task.placeID = targetPlaceID
+        }
+    }
+
+    @MainActor
     private static func canonicalTaskID(for taskID: UUID, in context: ModelContext) -> UUID {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -598,6 +669,29 @@ enum CloudKitDirectPullService {
         )
         let task = try? context.fetch(descriptor).first
         return task?.id ?? taskID
+    }
+
+    @MainActor
+    private static func canonicalPlaceID(
+        for placeID: UUID,
+        mergedPlaceIDs: [UUID: UUID],
+        in context: ModelContext
+    ) -> UUID {
+        var currentPlaceID = placeID
+        var visitedPlaceIDs: Set<UUID> = []
+
+        while let nextPlaceID = mergedPlaceIDs[currentPlaceID], nextPlaceID != currentPlaceID {
+            guard visitedPlaceIDs.insert(currentPlaceID).inserted else { break }
+            currentPlaceID = nextPlaceID
+        }
+
+        let descriptor = FetchDescriptor<RoutinePlace>(
+            predicate: #Predicate { place in
+                place.id == currentPlaceID
+            }
+        )
+        let place = try? context.fetch(descriptor).first
+        return place?.id ?? currentPlaceID
     }
 
     private struct LogDeduplicationKey: Hashable {
@@ -760,5 +854,52 @@ enum CloudKitDirectPullService {
         return tasks.first { task in
             RoutineTask.normalizedName(task.name) == normalizedName
         }
+    }
+
+    @MainActor
+    private static func place(
+        matchingNormalizedName normalizedName: String,
+        in context: ModelContext
+    ) throws -> RoutinePlace? {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        let matchingPlaces = places.filter { place in
+            RoutinePlace.normalizedName(place.name) == normalizedName
+        }
+
+        guard !matchingPlaces.isEmpty else { return nil }
+        return preferredPlaceToKeep(from: matchingPlaces, linkedCounts: linkedCounts)
+    }
+
+    private static func preferredPlaceToKeep(
+        from places: [RoutinePlace],
+        linkedCounts: [UUID: Int]
+    ) -> RoutinePlace {
+        places.min { lhs, rhs in
+            placeSelectionKey(lhs, linkedCounts: linkedCounts) < placeSelectionKey(rhs, linkedCounts: linkedCounts)
+        } ?? places[0]
+    }
+
+    private static func placeSelectionKey(
+        _ place: RoutinePlace,
+        linkedCounts: [UUID: Int]
+    ) -> (Int, Int, Date, String, String) {
+        let rawName = place.name
+        let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let linkedCountPenalty = -linkedCounts[place.id, default: 0]
+        let whitespacePenalty = rawName == trimmedName ? 0 : 1
+        let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        return (
+            linkedCountPenalty,
+            whitespacePenalty,
+            place.createdAt,
+            foldedName,
+            place.id.uuidString.lowercased()
+        )
     }
 }

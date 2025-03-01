@@ -207,6 +207,12 @@ private struct SettingsPlacesDetailView: View {
                 Section("Add Place") {
                     TextField("Place name", text: placeDraftNameBinding)
 
+                    if let validationMessage = store.savePlaceValidationMessage {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+
                     Button {
                         isPlacePickerPresented = true
                     } label: {
@@ -230,7 +236,7 @@ private struct SettingsPlacesDetailView: View {
                             Text("Save Place")
                         }
                     }
-                    .disabled(store.isPlaceOperationInProgress)
+                    .disabled(store.isSavePlaceDisabled)
                 }
 
                 Section("Location") {
