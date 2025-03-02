@@ -35,6 +35,7 @@ struct HomeTCAView: View {
     @State private var selectedManualPlaceFilterID: UUID?
 #if os(macOS)
     @State private var isMacPlaceFilterDetailPresented = false
+    @State private var isMacFilterSectionExpanded = true
 #endif
     @State private var isFilterSheetPresented = false
     @State private var isCompactHeaderHidden = false
@@ -222,7 +223,8 @@ struct HomeTCAView: View {
 #if os(macOS)
     private var macSidebarHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
-            macFilterPanel
+            macSearchPanel
+            macFiltersPanel
             overallDoneCountSummary
         }
         .padding(.horizontal, 14)
@@ -230,21 +232,113 @@ struct HomeTCAView: View {
         .padding(.bottom, 12)
     }
 
-    private var macFilterPanel: some View {
+    private var macSearchPanel: some View {
+        platformSearchField(searchText: searchTextBinding)
+    }
+
+    private var macFiltersPanel: some View {
         macSidebarSectionCard {
             VStack(alignment: .leading, spacing: 14) {
-                platformSearchField(searchText: searchTextBinding)
-                filterPicker
+                Button {
+                    withAnimation(.snappy(duration: 0.22)) {
+                        isMacFilterSectionExpanded.toggle()
+                    }
+                } label: {
+                    HStack(alignment: .center, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Filters")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
 
-                if !availableTags.isEmpty {
-                    tagFilterBar
+                            Text(macFiltersSummaryText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+
+                        Spacer(minLength: 0)
+
+                        if macHasCustomFiltersApplied {
+                            Text("Active")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.accentColor.opacity(0.14))
+                                )
+                        }
+
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .rotationEffect(.degrees(isMacFilterSectionExpanded ? 0 : -90))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.secondary.opacity(0.07))
+                    )
                 }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
 
-                if hasPlaceAwareContent {
-                    locationFilterPanel
+                if isMacFilterSectionExpanded {
+                    VStack(alignment: .leading, spacing: 14) {
+                        filterPicker
+
+                        if !availableTags.isEmpty {
+                            tagFilterBar
+                        }
+
+                        if hasPlaceAwareContent {
+                            locationFilterPanel
+                        }
+
+                        if macHasCustomFiltersApplied {
+                            Button("Clear Filters") {
+                                clearAllMacFilters()
+                            }
+                            .font(.caption.weight(.semibold))
+                            .buttonStyle(.plain)
+                            .foregroundStyle(Color.accentColor)
+                        }
+                    }
                 }
             }
+            .clipped()
         }
+    }
+
+    private var macHasCustomFiltersApplied: Bool {
+        selectedFilter != .all || hasActiveOptionalFilters
+    }
+
+    private var macFiltersSummaryText: String {
+        var parts = [selectedFilter.rawValue]
+
+        if let selectedTag {
+            parts.append("#\(selectedTag)")
+        }
+
+        if let selectedPlaceName {
+            parts.append(selectedPlaceName)
+        }
+
+        if store.hideUnavailableRoutines {
+            parts.append("Away hidden")
+        }
+
+        return parts.joined(separator: " • ")
+    }
+
+    private func clearAllMacFilters() {
+        selectedFilter = .all
+        clearOptionalFilters()
     }
 
     private func macSidebarSectionCard<Content: View>(
