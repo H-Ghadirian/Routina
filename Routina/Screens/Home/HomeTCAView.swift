@@ -65,10 +65,10 @@ struct HomeTCAView: View {
     private func listOfSortedTasksView(_ viewStore: ViewStoreOf<HomeFeature>) -> some View {
         List {
             ForEach(sortedTasks(viewStore)) { task in
-                NavigationLink(destination: RoutineDetailView(task: task)
-                    .onDisappear {
-                        needsRefresh.toggle()  // Trigger UI refresh
-                    }) {
+                NavigationLink(
+                    destination:
+                        routineDetailTCAView(task: task)
+                ) {
                     HStack {
                         Text(task.name ?? "Unnamed task")
                         Spacer()
@@ -79,7 +79,20 @@ struct HomeTCAView: View {
             .onDelete { deleteRoutines(viewStore, offsets: $0) }
         }
     }
-
+    
+    private func routineDetailTCAView(task: RoutineTask) -> some View {
+        RoutineDetailTCAView(
+            store: Store(
+                initialState: RoutineDetailFeature.State(
+                    task: task,
+                    logs: [], //task.logs,
+                    daysSinceLastRoutine: Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0,
+                    overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0)
+                ),
+                reducer: { RoutineDetailFeature() }
+            )
+        )
+    }
     private func urgencySquare(for task: RoutineTask) -> some View {
         let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
         let progress = Double(daysSinceLastRoutine) / Double(task.interval)
