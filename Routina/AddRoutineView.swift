@@ -5,17 +5,22 @@ struct AddRoutineView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var routineName: String = ""
-    @State private var interval: Int = 7
+    @State private var interval: Int = 1
 
     var body: some View {
         NavigationStack {
             Form {
                 TextField("Routine name", text: $routineName)
 
-                Picker("Interval", selection: $interval) {
-                    ForEach([1, 3, 7, 14, 30], id: \.self) { days in
-                        Text("\(days) days").tag(days)
+                HStack {
+                    Text("Interval: ")
+                    Picker("Interval", selection: $interval) {
+                        ForEach(1...99, id: \ .self) { num in
+                            Text("\(num) days").tag(num)
+                        }
                     }
+                    .pickerStyle(WheelPickerStyle())
+                    .frame(height: 100)
                 }
             }
             .navigationTitle("Add Routine")
