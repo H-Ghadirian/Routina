@@ -48,9 +48,29 @@ struct AddRoutineView: View {
 
         do {
             try viewContext.save()
-            dismiss()  // Close the sheet
+            scheduleNotification(for: newRoutine)
+            dismiss()
         } catch {
             print("Error saving routine: \(error.localizedDescription)")
+        }
+    }
+
+    private func scheduleNotification(for task: RoutineTask) {
+        let content = UNMutableNotificationContent()
+        content.title = "Time to complete \(task.name ?? "your routine")!"
+        content.body = "Your routine is due today."
+        content.sound = .default
+
+        let dueDate = Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()
+        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+
+        let request = UNNotificationRequest(identifier: task.objectID.uriRepresentation().absoluteString, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling notification: \(error.localizedDescription)")
+            }
         }
     }
 }
