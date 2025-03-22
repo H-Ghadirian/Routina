@@ -16,14 +16,24 @@ struct HomeTCAView: View {
                     .toolbar {
     #if os(iOS)
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(action: { showingAddRoutine = true }) {
+                            Button {
+                                viewStore.send(.setAddRoutineSheet(true))
+                            } label: {
                                 Label("Add Routine", systemImage: "plus")
                             }
                         }
     #endif
                     }
-                    .sheet(isPresented: $showingAddRoutine) {
-                        AddRoutineView().environment(\.managedObjectContext, viewContext)
+                    .sheet(isPresented: viewStore.binding(
+                        get: \.isAddRoutineSheetPresented,
+                        send: HomeFeature.Action.setAddRoutineSheet
+                    )) {
+                        AddRoutineTCAView(
+                            store: Store(
+                                initialState: AddRoutineFeature.State(),
+                                reducer: { AddRoutineFeature() }
+                            )
+                        )
                     }
                     .task {
                         viewStore.send(.onAppear)

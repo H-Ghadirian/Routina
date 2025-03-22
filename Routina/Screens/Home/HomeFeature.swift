@@ -6,12 +6,14 @@ import Foundation
 struct HomeFeature {
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
+        var isAddRoutineSheetPresented: Bool = false
     }
     
     enum Action: Equatable {
         case markAsDone
         case loadTasks([RoutineTask])
         case onAppear
+        case setAddRoutineSheet(Bool)
     }
     
     @Dependency(\.managedObjectContext) var viewContext
@@ -28,6 +30,9 @@ struct HomeFeature {
                 
             case .onAppear:
                 return handleOnAppear()
+            case .setAddRoutineSheet(let isPresented):
+                state.isAddRoutineSheetPresented = isPresented
+                return .none
             }
         }
     }
