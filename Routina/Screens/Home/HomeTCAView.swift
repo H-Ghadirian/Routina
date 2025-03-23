@@ -26,6 +26,7 @@ struct HomeTCAView: View {
     @Environment(\.modelContext) private var modelContext
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 #endif
     @State private var localSearchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
@@ -187,14 +188,12 @@ struct HomeTCAView: View {
     private var homeToolbarContent: some ToolbarContent {
 #if os(macOS)
         ToolbarItemGroup(placement: .automatic) {
-            Button {
+            MacToolbarIconButton(title: "Stats", systemImage: "chart.bar.xaxis") {
                 openWindow(id: RoutinaMacWindowID.stats)
-            } label: {
-                Label("Stats", systemImage: "chart.bar.xaxis")
             }
 
-            SettingsLink {
-                Label("Settings", systemImage: "gearshape")
+            MacToolbarIconButton(title: "Settings", systemImage: "gearshape") {
+                openSettings()
             }
         }
 #endif
@@ -204,10 +203,8 @@ struct HomeTCAView: View {
 #if !os(macOS)
             filterSheetButton
 #endif
-            Button {
+            MacToolbarIconButton(title: "Add Routine", systemImage: "plus") {
                 store.send(.setAddRoutineSheet(true))
-            } label: {
-                Label("Add Routine", systemImage: "plus")
             }
         }
     }

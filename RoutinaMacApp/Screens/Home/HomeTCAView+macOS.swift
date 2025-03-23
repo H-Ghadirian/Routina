@@ -79,12 +79,10 @@ extension HomeTCAView {
 
     @ViewBuilder
     var platformRefreshButton: some View {
-        Button {
+        MacToolbarIconButton(title: "Sync with iCloud", systemImage: "arrow.clockwise") {
             Task { @MainActor in
                 await performManualRefresh()
             }
-        } label: {
-            Label("Refresh", systemImage: "arrow.clockwise")
         }
     }
 
@@ -107,5 +105,51 @@ extension HomeTCAView {
         let taskID = store.pendingDeleteTaskIDs[0]
         let routineName = store.routineTasks.first(where: { $0.id == taskID })?.name ?? "this routine"
         return "This will permanently remove \(routineName) and its logs."
+    }
+}
+
+struct MacToolbarIconButton: NSViewRepresentable {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let button = NSButton(
+            image: NSImage(systemSymbolName: systemImage, accessibilityDescription: title) ?? NSImage(),
+            target: context.coordinator,
+            action: #selector(Coordinator.performAction)
+        )
+        button.imagePosition = .imageOnly
+        button.bezelStyle = .texturedRounded
+        button.isBordered = true
+        button.toolTip = title
+        button.contentTintColor = .labelColor
+        button.setButtonType(.momentaryPushIn)
+        return button
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let button = nsView as? NSButton else {
+            return
+        }
+
+        button.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title)
+        button.toolTip = title
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(action: action)
+    }
+
+    final class Coordinator: NSObject {
+        private let action: () -> Void
+
+        init(action: @escaping () -> Void) {
+            self.action = action
+        }
+
+        @objc func performAction() {
+            action()
+        }
     }
 }
