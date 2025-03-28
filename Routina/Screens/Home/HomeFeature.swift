@@ -17,7 +17,8 @@ struct HomeFeature {
         case setAddRoutineSheet(Bool)
         case addRoutineSheet(AddRoutineFeature.Action)
     }
-    
+
+    @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.managedObjectContext) var viewContext
     
     var body: some ReducerOf<Self> {
@@ -51,9 +52,24 @@ struct HomeFeature {
                     state.isAddRoutineSheetPresented = false
                     state.addRoutineState = nil
 
-                    // You can save the routine here if needed
-                    print("✅ Saved routine: \(name), every \(freq) day(s)")
-                    return .none
+                    let context = PersistenceController.shared.container.viewContext
+                    let newRoutine = RoutineTask(context: context)
+                    newRoutine.name = name
+                    newRoutine.interval = Int16(freq)
+                    newRoutine.lastDone = Date()
+
+                    do {
+                        try context.save()
+                        let tasks = try context.fetch(NSFetchRequest<RoutineTask>(entityName: "RoutineTask"))
+                        state.routineTasks = tasks
+                        print("✅ Saved routine: \(name), every \(freq) day(s)")
+                        return .run { _ in
+                            await notificationClient.schedule(newRoutine)
+                        }
+                    } catch {
+                        print("❌ Failed to save routine: \(error.localizedDescription)")
+                        return .none
+                    }
 
                 default:
                     return .none
