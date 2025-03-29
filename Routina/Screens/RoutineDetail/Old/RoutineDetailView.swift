@@ -1,11 +1,13 @@
 import SwiftUI
 import CoreData
+import ComposableArchitecture
 
 struct RoutineDetailView: View {
     @ObservedObject var task: RoutineTask
     @Environment(\.managedObjectContext) private var viewContext
 
     @FetchRequest private var logs: FetchedResults<RoutineLog>
+    @Dependency(\.notificationClient) var notificationClient
 
     init(task: RoutineTask) {
         self.task = task
@@ -111,31 +113,10 @@ struct RoutineDetailView: View {
         newLog.task = task
 
         saveContext()
-#if os(iOS)
-        scheduleNotification(for: task)
-        #endif
-    }
-
-#if os(iOS)
-    private func scheduleNotification(for task: RoutineTask) {
-        let content = UNMutableNotificationContent()
-        content.title = "Time to complete \(task.name ?? "your routine")!"
-        content.body = "Your routine is due today."
-        content.sound = .default
-
-        let dueDate = Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()
-        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-
-        let request = UNNotificationRequest(identifier: task.objectID.uriRepresentation().absoluteString, content: content, trigger: trigger)
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            }
+        Task {
+            await notificationClient.schedule(task)
         }
     }
-    #endif
 
     private func saveContext() {
         do {

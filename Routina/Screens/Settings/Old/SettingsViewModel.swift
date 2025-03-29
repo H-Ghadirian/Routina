@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 import CoreData
+import ComposableArchitecture
 
 class SettingsViewModel: ObservableObject {
     @Published var appSettingNotifEnabled: Bool = false
@@ -10,6 +11,8 @@ class SettingsViewModel: ObservableObject {
     var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
     }
+
+    @Dependency(\.notificationClient) var notificationClient
 
     init() {
         appSettingNotifEnabled = SharedDefaults.app[.appSettingNotificationsEnabled]
@@ -84,42 +87,13 @@ class SettingsViewModel: ObservableObject {
         do {
             let routines = try PersistenceController.shared.container.viewContext.fetch(fetchRequest)
             for routine in routines {
-                scheduleNotification(for: routine)
+                Task {
+                    await notificationClient.schedule(routine)
+                }
             }
         } catch {
             print("Failed to fetch routines: \(error.localizedDescription)")
         }
-    }
-
-    func scheduleNotification(for task: RoutineTask) {
-        let request = UNNotificationRequest(
-            identifier: task.objectID.uriRepresentation().absoluteString,
-            content: createContent(for: task.name ?? "your routine"),
-            trigger: createTrigger(for: task)
-        )
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    func createTrigger(for task: RoutineTask) -> UNCalendarNotificationTrigger {
-        let dueDate = Calendar.current.date(
-            byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()
-        ) ?? Date()
-        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-        return trigger
-    }
-
-    func createContent(for taskName: String) -> UNMutableNotificationContent {
-        let content = UNMutableNotificationContent()
-        content.title = "Time to complete \(taskName)!"
-        content.body = "Your routine is due today."
-        content.sound = .default
-        return content
     }
 
     func openEmail() {

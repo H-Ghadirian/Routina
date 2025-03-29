@@ -17,6 +17,7 @@ struct RoutineDetailFeature: Reducer {
         case onAppear
     }
 
+    @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.uuid) var uuid
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
@@ -67,49 +68,11 @@ struct RoutineDetailFeature: Reducer {
                 let updatedLogs = try context.fetch(sortedDonesFetchRequest(for: task))
                 await send(.logsLoaded(updatedLogs))
                 #if os(iOS)
-                await scheduleNotification(for: task)
+                await notificationClient.schedule(task)
                 #endif
             } catch {
                 print("Error saving context: \(error)")
             }
         }
     }
-
-#if os(iOS)
-    private func scheduleNotification(for task: RoutineTask) async {
-        let request = UNNotificationRequest(
-            identifier: task.objectID.uriRepresentation().absoluteString,
-            content: createNotificationContent(for: task.name),
-            trigger: createCalendarNotificationTriggerFor(
-                interval: Int(task.interval), lastDone: task.lastDone ?? Date()
-            )
-        )
-        try? await UNUserNotificationCenter.current().add(request)
-    }
-
-    private func createCalendarNotificationTriggerFor(interval: Int, lastDone: Date) -> UNCalendarNotificationTrigger {
-        let dueDate = Calendar.current.date(
-            byAdding: .day,
-            value: interval,
-            to: lastDone
-        ) ?? Date()
-        let triggerDate = Calendar.current.dateComponents(
-            [.year, .month, .day, .hour, .minute],
-            from: dueDate
-        )
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: triggerDate,
-            repeats: false
-        )
-        return trigger
-    }
-
-    private func createNotificationContent(for name: String?) -> UNMutableNotificationContent {
-        let content = UNMutableNotificationContent()
-        content.title = "Time to complete \(name ?? "your routine")!"
-        content.body = "Your routine is due today."
-        content.sound = .default
-        return content
-    }
-#endif
 }
