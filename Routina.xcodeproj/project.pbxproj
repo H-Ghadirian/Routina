@@ -24,25 +24,25 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2A5A74BD2D7B92F600E91075 /* CallMom.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CallMom.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2A5A74CD2D7B92F900E91075 /* CallMomTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CallMomTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		2A5A74D72D7B92F900E91075 /* CallMomUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CallMomUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2A5A74BF2D7B92F600E91075 /* CallMom */ = {
+		2A5A74BF2D7B92F600E91075 /* Routina */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = CallMom;
+			path = Routina;
 			sourceTree = "<group>";
 		};
-		2A5A74D02D7B92F900E91075 /* CallMomTests */ = {
+		2A5A74D02D7B92F900E91075 /* RoutinaTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = CallMomTests;
+			path = RoutinaTests;
 			sourceTree = "<group>";
 		};
-		2A5A74DA2D7B92F900E91075 /* CallMomUITests */ = {
+		2A5A74DA2D7B92F900E91075 /* RoutinaUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = CallMomUITests;
+			path = RoutinaUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +75,9 @@
 		2A5A74B42D7B92F600E91075 = {
 			isa = PBXGroup;
 			children = (
-				2A5A74BF2D7B92F600E91075 /* CallMom */,
-				2A5A74D02D7B92F900E91075 /* CallMomTests */,
-				2A5A74DA2D7B92F900E91075 /* CallMomUITests */,
+				2A5A74BF2D7B92F600E91075 /* Routina */,
+				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
+				2A5A74DA2D7B92F900E91075 /* RoutinaUITests */,
 				2A5A74BE2D7B92F600E91075 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,9 +85,9 @@
 		2A5A74BE2D7B92F600E91075 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2A5A74BD2D7B92F600E91075 /* CallMom.app */,
-				2A5A74CD2D7B92F900E91075 /* CallMomTests.xctest */,
-				2A5A74D72D7B92F900E91075 /* CallMomUITests.xctest */,
+				2A5A74BD2D7B92F600E91075 /* Routina.app */,
+				2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */,
+				2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2A5A74BC2D7B92F600E91075 /* CallMom */ = {
+		2A5A74BC2D7B92F600E91075 /* Routina */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "CallMom" */;
+			buildConfigurationList = 2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "Routina" */;
 			buildPhases = (
 				2A5A74B92D7B92F600E91075 /* Sources */,
 				2A5A74BA2D7B92F600E91075 /* Frameworks */,
@@ -108,18 +108,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74BF2D7B92F600E91075 /* CallMom */,
+				2A5A74BF2D7B92F600E91075 /* Routina */,
 			);
-			name = CallMom;
+			name = Routina;
 			packageProductDependencies = (
 			);
 			productName = CallMom;
-			productReference = 2A5A74BD2D7B92F600E91075 /* CallMom.app */;
+			productReference = 2A5A74BD2D7B92F600E91075 /* Routina.app */;
 			productType = "com.apple.product-type.application";
 		};
-		2A5A74CC2D7B92F900E91075 /* CallMomTests */ = {
+		2A5A74CC2D7B92F900E91075 /* RoutinaTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "CallMomTests" */;
+			buildConfigurationList = 2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaTests" */;
 			buildPhases = (
 				2A5A74C92D7B92F900E91075 /* Sources */,
 				2A5A74CA2D7B92F900E91075 /* Frameworks */,
@@ -131,18 +131,18 @@
 				2A5A74CF2D7B92F900E91075 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74D02D7B92F900E91075 /* CallMomTests */,
+				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
 			);
-			name = CallMomTests;
+			name = RoutinaTests;
 			packageProductDependencies = (
 			);
 			productName = CallMomTests;
-			productReference = 2A5A74CD2D7B92F900E91075 /* CallMomTests.xctest */;
+			productReference = 2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		2A5A74D62D7B92F900E91075 /* CallMomUITests */ = {
+		2A5A74D62D7B92F900E91075 /* RoutinaUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "CallMomUITests" */;
+			buildConfigurationList = 2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaUITests" */;
 			buildPhases = (
 				2A5A74D32D7B92F900E91075 /* Sources */,
 				2A5A74D42D7B92F900E91075 /* Frameworks */,
@@ -154,13 +154,13 @@
 				2A5A74D92D7B92F900E91075 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74DA2D7B92F900E91075 /* CallMomUITests */,
+				2A5A74DA2D7B92F900E91075 /* RoutinaUITests */,
 			);
-			name = CallMomUITests;
+			name = RoutinaUITests;
 			packageProductDependencies = (
 			);
 			productName = CallMomUITests;
-			productReference = 2A5A74D72D7B92F900E91075 /* CallMomUITests.xctest */;
+			productReference = 2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "CallMom" */;
+			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "Routina" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2A5A74BC2D7B92F600E91075 /* CallMom */,
-				2A5A74CC2D7B92F900E91075 /* CallMomTests */,
-				2A5A74D62D7B92F900E91075 /* CallMomUITests */,
+				2A5A74BC2D7B92F600E91075 /* Routina */,
+				2A5A74CC2D7B92F900E91075 /* RoutinaTests */,
+				2A5A74D62D7B92F900E91075 /* RoutinaUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		2A5A74CF2D7B92F900E91075 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2A5A74BC2D7B92F600E91075 /* CallMom */;
+			target = 2A5A74BC2D7B92F600E91075 /* Routina */;
 			targetProxy = 2A5A74CE2D7B92F900E91075 /* PBXContainerItemProxy */;
 		};
 		2A5A74D92D7B92F900E91075 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2A5A74BC2D7B92F600E91075 /* CallMom */;
+			target = 2A5A74BC2D7B92F600E91075 /* Routina */;
 			targetProxy = 2A5A74D82D7B92F900E91075 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -395,7 +395,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"CallMom/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
 				DEVELOPMENT_TEAM = CDQ479VRV3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -409,7 +409,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMom;
+				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -424,7 +424,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"CallMom/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
 				DEVELOPMENT_TEAM = CDQ479VRV3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -438,7 +438,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMom;
+				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -461,7 +461,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CallMom.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CallMom";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Routina.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Routina";
 			};
 			name = Debug;
 		};
@@ -480,7 +480,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CallMom.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CallMom";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Routina.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Routina";
 			};
 			name = Release;
 		};
@@ -521,7 +521,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "CallMom" */ = {
+		2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "Routina" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74DF2D7B92F900E91075 /* Debug */,
@@ -530,7 +530,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "CallMom" */ = {
+		2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "Routina" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74E22D7B92F900E91075 /* Debug */,
@@ -539,7 +539,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "CallMomTests" */ = {
+		2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74E52D7B92F900E91075 /* Debug */,
@@ -548,7 +548,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "CallMomUITests" */ = {
+		2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74E82D7B92F900E91075 /* Debug */,

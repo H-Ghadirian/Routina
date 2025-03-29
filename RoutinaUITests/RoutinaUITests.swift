@@ -1,13 +1,9 @@
-//
-//  CallMomUITests.swift
-//  CallMomUITests
-//
 //  Created by ghadirianh on 07.03.25.
 //
 
 import XCTest
 
-final class CallMomUITests: XCTestCase {
+final class RoutinaUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.

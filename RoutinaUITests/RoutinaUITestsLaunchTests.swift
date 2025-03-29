@@ -1,13 +1,9 @@
-//
-//  CallMomUITestsLaunchTests.swift
-//  CallMomUITests
-//
 //  Created by ghadirianh on 07.03.25.
 //
 
 import XCTest
 
-final class CallMomUITestsLaunchTests: XCTestCase {
+final class RoutinaUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
