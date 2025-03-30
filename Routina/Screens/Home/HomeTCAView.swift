@@ -11,36 +11,45 @@ struct HomeTCAView: View {
     var body: some View {
         WithViewStore(store, observe: { $0 }) { viewStore in
             NavigationView {
-                listOfSortedTasksView(viewStore)
-                    .navigationTitle("Routina")
-                    .toolbar {
-    #if os(iOS)
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button {
-                                viewStore.send(.setAddRoutineSheet(true))
-                            } label: {
-                                Label("Add Routine", systemImage: "plus")
-                            }
+                Group {
+                    if viewStore.routineTasks.isEmpty {
+                        Text("No routine defined yet")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        listOfSortedTasksView(viewStore)
+                    }
+                }
+                .navigationTitle("Routina")
+                .toolbar {
+#if os(iOS)
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            viewStore.send(.setAddRoutineSheet(true))
+                        } label: {
+                            Label("Add Routine", systemImage: "plus")
                         }
-    #endif
                     }
-                    .sheet(
-                        isPresented: viewStore.binding(
-                            get: \.isAddRoutineSheetPresented,
-                            send: HomeFeature.Action.setAddRoutineSheet
-                        )
-                    ) {
-                        IfLetStore(
-                            self.store.scope(
-                                state: \.addRoutineState,
-                                action: \.addRoutineSheet
-                            ),
-                            then: AddRoutineTCAView.init(store:)
-                        )
-                    }
-                    .task {
-                        viewStore.send(.onAppear)
-                    }
+#endif
+                }
+                .sheet(
+                    isPresented: viewStore.binding(
+                        get: \.isAddRoutineSheetPresented,
+                        send: HomeFeature.Action.setAddRoutineSheet
+                    )
+                ) {
+                    IfLetStore(
+                        self.store.scope(
+                            state: \.addRoutineState,
+                            action: \.addRoutineSheet
+                        ),
+                        then: AddRoutineTCAView.init(store:)
+                    )
+                }
+                .task {
+                    viewStore.send(.onAppear)
+                }
             }
             .id(needsRefresh)  // Force UI refresh when returning from detail view
         }
