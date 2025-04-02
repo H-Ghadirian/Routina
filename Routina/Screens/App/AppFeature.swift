@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import UserNotifications
+import AmplitudeSwift
 
 @Reducer
 struct AppFeature {
@@ -29,9 +30,11 @@ struct AppFeature {
         Reduce { state, action in
             switch action {
             case .tabSelected(let tab):
+                AmplitudeTracker.shared.logEvent("Tab selected: \(tab.rawValue)")
                 state.selectedTab = tab
                 return .none
             case .onAppear:
+                AmplitudeTracker.shared.logEvent("App opened")
                 return .run { _ in
                     await requestNotificationAuthorization()
                 }

@@ -25,6 +25,7 @@ struct SettingsFeature {
         Reduce { state, action in
             switch action {
             case .toggleNotifications(let isOn):
+                AmplitudeTracker.shared.logEvent("Notifications toggled \(isOn)")
                 state.notificationsEnabled = isOn
                 SharedDefaults.app[.appSettingNotificationsEnabled] = isOn
                 return .none
@@ -44,6 +45,7 @@ struct SettingsFeature {
                 }
                 
             case .contactUsTapped:
+                AmplitudeTracker.shared.logEvent("Contact us")
 #if os(iOS)
                 if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
                     return .run { _ in
