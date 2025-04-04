@@ -2077,7 +2077,7 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func markTaskDone_forOneOffTaskArchivesItAndCancelsNotification() async throws {
+    func markTaskDone_forOneOffTaskRemovesItFromListsAndCancelsNotification() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-14T10:00:00Z")
         var calendar = Calendar(identifier: .gregorian)
@@ -2128,22 +2128,7 @@ struct HomeFeatureTests {
             $0.routineTasks[0].lastDone = now
             $0.routineTasks[0].scheduleAnchor = now
             $0.routineDisplays = []
-            $0.archivedRoutineDisplays = [
-                makeDisplay(
-                    taskID: task.id,
-                    name: "Buy milk",
-                    emoji: "🥛",
-                    interval: 1,
-                    scheduleMode: .oneOff,
-                    lastDone: now,
-                    scheduleAnchor: now,
-                    daysUntilDue: Int.max,
-                    isOneOffTask: true,
-                    isCompletedOneOff: true,
-                    isDoneToday: true,
-                    doneCount: 1
-                )
-            ]
+            $0.archivedRoutineDisplays = []
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
         }
 

@@ -1,22 +1,26 @@
 import SwiftUI
 
-enum RoutinaMacWindowID {
-    static let stats = "stats-window"
-    static let timeline = "timeline-window"
+extension Notification.Name {
+    static let routinaMacOpenRoutinesInSidebar = Notification.Name("routina.mac.openRoutinesInSidebar")
+    static let routinaMacOpenTimelineInSidebar = Notification.Name("routina.mac.openTimelineInSidebar")
+    static let routinaMacOpenStatsInSidebar = Notification.Name("routina.mac.openStatsInSidebar")
 }
 
 struct RoutineCommands: Commands {
-    @Environment(\.openWindow) private var openWindow
-
     var body: some Commands {
         CommandGroup(before: .appSettings) {
+            Button("Routines") {
+                NotificationCenter.default.post(name: .routinaMacOpenRoutinesInSidebar, object: nil)
+            }
+            .keyboardShortcut("1", modifiers: [.command, .option])
+
             Button("Stats") {
-                openWindow(id: RoutinaMacWindowID.stats)
+                NotificationCenter.default.post(name: .routinaMacOpenStatsInSidebar, object: nil)
             }
             .keyboardShortcut("2", modifiers: [.command, .option])
 
             Button("Timeline") {
-                openWindow(id: RoutinaMacWindowID.timeline)
+                NotificationCenter.default.post(name: .routinaMacOpenTimelineInSidebar, object: nil)
             }
             .keyboardShortcut("3", modifiers: [.command, .option])
         }

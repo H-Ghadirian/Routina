@@ -17,6 +17,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable {
 
 struct TimelineEntry: Identifiable, Equatable {
     let id: UUID
+    let taskID: UUID?
     let timestamp: Date
     let taskName: String
     let taskEmoji: String
@@ -57,6 +58,7 @@ enum TimelineLogic {
 
             return TimelineEntry(
                 id: log.id,
+                taskID: log.taskID,
                 timestamp: timestamp,
                 taskName: task?.name ?? "Deleted Routine",
                 taskEmoji: task?.emoji ?? "🗑️",

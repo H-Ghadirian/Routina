@@ -2,7 +2,7 @@ import AppKit
 import ComposableArchitecture
 import SwiftUI
 
-private enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
+enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
     case notifications
     case places
     case tags
@@ -179,7 +179,7 @@ struct SettingsMacView: View {
     }
 }
 
-private struct SettingsMacSidebarRow: View {
+struct SettingsMacSidebarRow: View {
     let section: SettingsMacSection
     let store: StoreOf<SettingsFeature>
 
@@ -332,7 +332,7 @@ private extension NSView {
     }
 }
 
-private struct SettingsMacDetailView: View {
+struct SettingsMacDetailView: View {
     let section: SettingsMacSection
     let store: StoreOf<SettingsFeature>
     @Binding var isPlacePickerPresented: Bool
@@ -359,6 +359,75 @@ private struct SettingsMacDetailView: View {
         case .about:
             SettingsMacAboutDetailView(store: store)
         }
+    }
+}
+
+struct EmbeddedSettingsMacDetailView: View {
+    let store: StoreOf<SettingsFeature>
+    let section: SettingsMacSection
+    @State private var isPlacePickerPresented = false
+
+    var body: some View {
+        WithPerceptionTracking {
+            SettingsMacDetailView(
+                section: section,
+                store: store,
+                isPlacePickerPresented: $isPlacePickerPresented
+            )
+            .alert(
+                "Delete iCloud Data?",
+                isPresented: cloudDataResetConfirmationBinding
+            ) {
+                Button("Delete Data", role: .destructive) {
+                    store.send(.resetCloudDataConfirmed)
+                }
+                Button("Cancel", role: .cancel) {
+                    store.send(.setCloudDataResetConfirmation(false))
+                }
+            } message: {
+                Text("This permanently deletes all Routina data from iCloud and from this device.")
+            }
+            .alert(
+                "Delete Place?",
+                isPresented: deletePlaceConfirmationBinding
+            ) {
+                Button("Delete", role: .destructive) {
+                    store.send(.deletePlaceConfirmed)
+                }
+                Button("Cancel", role: .cancel) {
+                    store.send(.setDeletePlaceConfirmation(false))
+                }
+            } message: {
+                Text(store.deletePlaceConfirmationMessage)
+            }
+            .sheet(isPresented: $isPlacePickerPresented) {
+                PlaceLocationPickerSheet(
+                    initialCoordinate: store.placeDraftCoordinate,
+                    initialRadiusMeters: store.placeDraftRadiusMeters,
+                    fallbackCoordinate: store.placeDraftCoordinate ?? store.lastKnownLocationCoordinate
+                ) { coordinate, radiusMeters in
+                    store.send(.placeDraftCoordinateChanged(coordinate))
+                    store.send(.placeDraftRadiusChanged(radiusMeters))
+                    isPlacePickerPresented = false
+                } onCancel: {
+                    isPlacePickerPresented = false
+                }
+            }
+        }
+    }
+
+    private var cloudDataResetConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.isCloudDataResetConfirmationPresented },
+            set: { store.send(.setCloudDataResetConfirmation($0)) }
+        )
+    }
+
+    private var deletePlaceConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.isDeletePlaceConfirmationPresented },
+            set: { store.send(.setDeletePlaceConfirmation($0)) }
+        )
     }
 }
 

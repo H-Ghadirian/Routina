@@ -721,10 +721,12 @@ struct HomeFeature {
                 doneStats: state.doneStats
             )
 
-            if task.isPaused || task.isCompletedOneOff {
+            if task.isPaused {
                 archived.append(display)
             } else if case .away = display.locationAvailability {
                 away.append(display)
+            } else if task.isCompletedOneOff {
+                continue
             } else {
                 active.append(display)
             }

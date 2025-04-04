@@ -10,6 +10,14 @@ struct TimelineView: View {
     @State private var selectedRange: TimelineRange = .week
     @State private var filterType: TimelineFilterType = .all
 
+    init(
+        selectedRange: TimelineRange = .week,
+        filterType: TimelineFilterType = .all
+    ) {
+        _selectedRange = State(initialValue: selectedRange)
+        _filterType = State(initialValue: filterType)
+    }
+
     private var entries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
             logs: logs,

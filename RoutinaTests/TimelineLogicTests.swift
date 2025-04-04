@@ -258,15 +258,15 @@ struct TimelineLogicTests {
     func groupedByDay_groupsEntriesByCalendarDay() {
         let calendar = makeTestCalendar()
         let entry1 = TimelineEntry(
-            id: UUID(), timestamp: makeDate("2026-03-20T08:00:00Z"),
+            id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T08:00:00Z"),
             taskName: "A", taskEmoji: "🔧", isOneOff: false
         )
         let entry2 = TimelineEntry(
-            id: UUID(), timestamp: makeDate("2026-03-20T14:00:00Z"),
+            id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T14:00:00Z"),
             taskName: "B", taskEmoji: "🔧", isOneOff: false
         )
         let entry3 = TimelineEntry(
-            id: UUID(), timestamp: makeDate("2026-03-19T10:00:00Z"),
+            id: UUID(), taskID: nil, timestamp: makeDate("2026-03-19T10:00:00Z"),
             taskName: "C", taskEmoji: "🔧", isOneOff: false
         )
 
@@ -287,11 +287,11 @@ struct TimelineLogicTests {
     func groupedByDay_sortsDaysNewestFirst() {
         let calendar = makeTestCalendar()
         let march18 = TimelineEntry(
-            id: UUID(), timestamp: makeDate("2026-03-18T10:00:00Z"),
+            id: UUID(), taskID: nil, timestamp: makeDate("2026-03-18T10:00:00Z"),
             taskName: "Old", taskEmoji: "🔧", isOneOff: false
         )
         let march20 = TimelineEntry(
-            id: UUID(), timestamp: makeDate("2026-03-20T10:00:00Z"),
+            id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T10:00:00Z"),
             taskName: "New", taskEmoji: "🔧", isOneOff: false
         )
 
