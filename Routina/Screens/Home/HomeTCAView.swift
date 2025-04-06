@@ -595,6 +595,14 @@ struct HomeTCAView: View {
         }
     }
 
+    var searchPlaceholderText: String {
+#if os(macOS)
+        macSidebarMode == .timeline ? "Search dones" : "Search routines and todos"
+#else
+        "Search routines and todos"
+#endif
+    }
+
     private var selectedTaskBinding: Binding<UUID?> {
         Binding(
             get: { store.selectedTaskID },

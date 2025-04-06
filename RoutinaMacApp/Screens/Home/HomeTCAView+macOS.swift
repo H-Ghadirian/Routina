@@ -46,7 +46,7 @@ extension HomeTCAView {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
 
-            TextField("Search routines", text: searchText)
+            TextField(searchPlaceholderText, text: searchText)
                 .textFieldStyle(.plain)
 
             if !searchText.wrappedValue.isEmpty {

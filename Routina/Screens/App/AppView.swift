@@ -42,7 +42,7 @@ struct AppView: View {
             }
             if store.selectedTab == .search {
                 tabView
-                    .searchable(text: $searchText, prompt: "Search routines")
+                    .searchable(text: $searchText, prompt: "Search routines and todos")
                     .task {
                         store.send(.onAppear)
                     }
