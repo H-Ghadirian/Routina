@@ -95,6 +95,7 @@ struct HomeFeature {
                         }
                     }
                     try? context.save()
+                    NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 }
 
             case .addRoutineSheet(.delegate(.didCancel)):
@@ -124,6 +125,7 @@ struct HomeFeature {
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
                 state.routineDisplays.append(makeRoutineDisplay(task))
+                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 let payload = makeNotificationPayload(for: task)
                 return .run { _ in
                     await self.notificationClient.schedule(payload)

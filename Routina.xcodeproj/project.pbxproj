@@ -37,6 +37,8 @@
 		4E0000132E80000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
 		4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
 		4E0000152E80000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
+		5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5F1000072E90000100000001 /* RoutinaWatchApp.app */; };
+		5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,7 +56,46 @@
 			remoteGlobalIDString = 2A5A74BC2D7B92F600E91075;
 			remoteInfo = RoutinaProd;
 		};
+		5F1000032E90000100000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5F1000132E90000100000001;
+			remoteInfo = RoutinaWatchApp;
+		};
+		5F1000042E90000100000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5F1000142E90000100000001;
+			remoteInfo = RoutinaWatchExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5F1000052E90000100000001 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5F1000062E90000100000001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -63,6 +104,8 @@
 		2C0000022E60000100000001 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D1000102E70000100000001 /* RoutinaDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E0000022E80000100000001 /* RoutinaMacDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5F1000072E90000100000001 /* RoutinaWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5F1000082E90000100000001 /* RoutinaWatchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWatchExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -114,6 +157,20 @@
 			);
 			target = 4E0000012E80000100000001 /* RoutinaMacDev */;
 		};
+		5F1000272E90000100000001 /* Exceptions for "RoutinaWatchApp" folder in "RoutinaWatchApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5F1000132E90000100000001 /* RoutinaWatchApp */;
+		};
+		5F1000282E90000100000001 /* Exceptions for "RoutinaWatchExtension" folder in "RoutinaWatchExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5F1000142E90000100000001 /* RoutinaWatchExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -136,6 +193,22 @@
 		2A5A74DA2D7B92F900E91075 /* RoutinaUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = RoutinaUITests;
+			sourceTree = "<group>";
+		};
+		5F1000092E90000100000001 /* RoutinaWatchApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5F1000272E90000100000001 /* Exceptions for "RoutinaWatchApp" folder in "RoutinaWatchApp" target */,
+			);
+			path = RoutinaWatchApp;
+			sourceTree = "<group>";
+		};
+		5F1000102E90000100000001 /* RoutinaWatchExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5F1000282E90000100000001 /* Exceptions for "RoutinaWatchExtension" folder in "RoutinaWatchExtension" target */,
+			);
+			path = RoutinaWatchExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -213,6 +286,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5F1000112E90000100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5F1000122E90000100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -229,6 +316,8 @@
 				2A5A74BF2D7B92F600E91075 /* Routina */,
 				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
 				2A5A74DA2D7B92F900E91075 /* RoutinaUITests */,
+				5F1000092E90000100000001 /* RoutinaWatchApp */,
+				5F1000102E90000100000001 /* RoutinaWatchExtension */,
 				2A4B56A92D8DB46700760BCA /* Frameworks */,
 				2A5A74BE2D7B92F600E91075 /* Products */,
 			);
@@ -241,6 +330,8 @@
 				3D1000102E70000100000001 /* RoutinaDev.app */,
 				2C0000022E60000100000001 /* Routina.app */,
 				4E0000022E80000100000001 /* RoutinaMacDev.app */,
+				5F1000072E90000100000001 /* RoutinaWatchApp.app */,
+				5F1000082E90000100000001 /* RoutinaWatchExtension.appex */,
 				2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */,
 				2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */,
 			);
@@ -257,10 +348,12 @@
 				2A5A74B92D7B92F600E91075 /* Sources */,
 				2A5A74BA2D7B92F600E91075 /* Frameworks */,
 				2A5A74BB2D7B92F600E91075 /* Resources */,
+				5F1000052E90000100000001 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5F1000192E90000100000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
@@ -414,6 +507,52 @@
 			productReference = 4E0000022E80000100000001 /* RoutinaMacDev.app */;
 			productType = "com.apple.product-type.application";
 		};
+		5F1000132E90000100000001 /* RoutinaWatchApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5F1000252E90000100000001 /* Build configuration list for PBXNativeTarget "RoutinaWatchApp" */;
+			buildPhases = (
+				5F1000172E90000100000001 /* Sources */,
+				5F1000112E90000100000001 /* Frameworks */,
+				5F1000152E90000100000001 /* Resources */,
+				5F1000062E90000100000001 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5F1000202E90000100000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5F1000092E90000100000001 /* RoutinaWatchApp */,
+			);
+			name = RoutinaWatchApp;
+			packageProductDependencies = (
+			);
+			productName = RoutinaWatchApp;
+			productReference = 5F1000072E90000100000001 /* RoutinaWatchApp.app */;
+			productType = "com.apple.product-type.application.watchapp2";
+		};
+		5F1000142E90000100000001 /* RoutinaWatchExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5F1000262E90000100000001 /* Build configuration list for PBXNativeTarget "RoutinaWatchExtension" */;
+			buildPhases = (
+				5F1000182E90000100000001 /* Sources */,
+				5F1000122E90000100000001 /* Frameworks */,
+				5F1000162E90000100000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5F1000102E90000100000001 /* RoutinaWatchExtension */,
+			);
+			name = RoutinaWatchExtension;
+			packageProductDependencies = (
+			);
+			productName = RoutinaWatchExtension;
+			productReference = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */;
+			productType = "com.apple.product-type.watchkit2-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -444,6 +583,12 @@
 					4E0000012E80000100000001 = {
 						CreatedOnToolsVersion = 16.2;
 					};
+					5F1000132E90000100000001 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					5F1000142E90000100000001 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 				};
 			};
 			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "Routina" */;
@@ -471,6 +616,8 @@
 				3D1000402E70000100000001 /* RoutinaDev */,
 				2C0000012E60000100000001 /* RoutinaMacProd */,
 				4E0000012E80000100000001 /* RoutinaMacDev */,
+				5F1000132E90000100000001 /* RoutinaWatchApp */,
+				5F1000142E90000100000001 /* RoutinaWatchExtension */,
 				2A5A74CC2D7B92F900E91075 /* RoutinaTests */,
 				2A5A74D62D7B92F900E91075 /* RoutinaUITests */,
 			);
@@ -514,6 +661,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4E0000042E80000100000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5F1000152E90000100000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5F1000162E90000100000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -565,6 +726,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5F1000172E90000100000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5F1000182E90000100000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -577,6 +752,16 @@
 			isa = PBXTargetDependency;
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
 			targetProxy = 2A5A74D82D7B92F900E91075 /* PBXContainerItemProxy */;
+		};
+		5F1000192E90000100000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5F1000132E90000100000001 /* RoutinaWatchApp */;
+			targetProxy = 5F1000032E90000100000001 /* PBXContainerItemProxy */;
+		};
+		5F1000202E90000100000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5F1000142E90000100000001 /* RoutinaWatchExtension */;
+			targetProxy = 5F1000042E90000100000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1106,6 +1291,120 @@
 			};
 			name = Release;
 		};
+		5F1000212E90000100000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RoutinaWatchApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		5F1000222E90000100000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RoutinaWatchApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		5F1000232E90000100000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RoutinaWatchExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp.watchkitextension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		5F1000242E90000100000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RoutinaWatchExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp.watchkitextension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1168,6 +1467,24 @@
 			buildConfigurations = (
 				4E0000072E80000100000001 /* Debug */,
 				4E0000082E80000100000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5F1000252E90000100000001 /* Build configuration list for PBXNativeTarget "RoutinaWatchApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F1000212E90000100000001 /* Debug */,
+				5F1000222E90000100000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5F1000262E90000100000001 /* Build configuration list for PBXNativeTarget "RoutinaWatchExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F1000232E90000100000001 /* Debug */,
+				5F1000242E90000100000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

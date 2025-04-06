@@ -9,52 +9,14 @@ struct HomeTCAView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            NavigationSplitView {
-                Group {
-                    if store.routineTasks.isEmpty {
-                        Text("No routine defined yet")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                            .padding()
-                    } else {
-                        listOfSortedTasksView(
-                            routineDisplays: store.routineDisplays,
-                            routineTasks: store.routineTasks
-                        )
-                    }
-                }
-                .navigationTitle("Routina")
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            store.send(.setAddRoutineSheet(true))
-                        } label: {
-                            Label("Add Routine", systemImage: "plus")
-                        }
-                    }
-                }
-                .routinaHomeSidebarColumnWidth()
-            } detail: {
-                Group {
-                    if let selectedTaskID {
-                        routineDetailTCAView(taskID: selectedTaskID, routineTasks: store.routineTasks)
-                    } else {
-                        Color.clear
-                    }
-                }
-            }
-            .sheet(
-                isPresented: Binding(
-                    get: { store.isAddRoutineSheetPresented },
-                    set: { store.send(.setAddRoutineSheet($0)) }
-                )
-            ) {
-                if let addRoutineStore = self.store.scope(
-                    state: \.addRoutineState,
-                    action: \.addRoutineSheet
-                ) {
-                    AddRoutineTCAView(store: addRoutineStore)
-                }
+            homeContent
+        }
+    }
+
+    private var homeContent: some View {
+        navigationContent
+            .sheet(isPresented: addRoutineSheetBinding) {
+                addRoutineSheetContent
             }
             .onAppear {
                 store.send(.onAppear)
@@ -68,6 +30,76 @@ struct HomeTCAView: View {
                     self.selectedTaskID = nil
                 }
             }
+    }
+
+    private var navigationContent: some View {
+        NavigationSplitView {
+            sidebarContent
+        } detail: {
+            detailContent
+        }
+    }
+
+    private var sidebarContent: some View {
+        applySidebarColumnWidth(
+            to: Group {
+            if store.routineTasks.isEmpty {
+                Text("No routine defined yet")
+                    .font(.headline)
+                    .foregroundColor(.gray)
+                    .padding()
+            } else {
+                listOfSortedTasksView(
+                    routineDisplays: store.routineDisplays,
+                    routineTasks: store.routineTasks
+                )
+            }
+        }
+        .navigationTitle("Routina")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    store.send(.setAddRoutineSheet(true))
+                } label: {
+                    Label("Add Routine", systemImage: "plus")
+                }
+            }
+        }
+        )
+    }
+
+    @ViewBuilder
+    private var detailContent: some View {
+        if let selectedTaskID {
+            routineDetailTCAView(taskID: selectedTaskID, routineTasks: store.routineTasks)
+        } else {
+            Color.clear
+        }
+    }
+
+    private var addRoutineSheetBinding: Binding<Bool> {
+        Binding(
+            get: { store.isAddRoutineSheetPresented },
+            set: { store.send(.setAddRoutineSheet($0)) }
+        )
+    }
+
+    @ViewBuilder
+    private func applySidebarColumnWidth<Content: View>(to view: Content) -> some View {
+#if os(macOS)
+        view.navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 520)
+#else
+        view
+#endif
+    }
+
+    @ViewBuilder
+    private var addRoutineSheetContent: some View {
+        if let addRoutineStore = self.store.scope(
+            state: \.addRoutineState,
+            action: \.addRoutineSheet
+        ) {
+            AddRoutineTCAView(store: addRoutineStore)
         }
     }
 

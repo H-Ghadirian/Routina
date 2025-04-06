@@ -28,6 +28,13 @@ struct RoutinaTCAApp: App {
             AppView(store: store)
                 .routinaAppRootWindowFrame()
                 .modelContainer(persistence.container)
+#if os(iOS)
+                .onAppear {
+                    WatchRoutineSyncBridge.shared.startIfNeeded {
+                        persistence.container.mainContext
+                    }
+                }
+#endif
         }
         .routinaAppWindowDefaults()
     }
