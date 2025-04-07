@@ -21,6 +21,8 @@ struct HomeFeature {
         var id: UUID { taskID }
         var name: String
         var emoji: String
+        var notes: String?
+        var hasImage: Bool
         var placeID: UUID?
         var placeName: String?
         var locationAvailability: RoutineLocationAvailability
@@ -440,7 +442,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, deadline, imageData, placeID, tags, steps, scheduleMode, checklistItems))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -457,6 +459,9 @@ struct HomeFeature {
                         let newRoutine = RoutineTask(
                             name: trimmedName,
                             emoji: emoji,
+                            notes: notes,
+                            deadline: deadline,
+                            imageData: imageData,
                             placeID: placeID,
                             tags: tags,
                             steps: steps,
@@ -524,8 +529,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
+                onSave: { name, freq, recurrenceRule, emoji, notes, deadline, imageData, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, deadline, imageData, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
@@ -565,9 +570,15 @@ struct HomeFeature {
 
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
-        let dueDate: Date? = !task.isPaused && !task.isOneOffTask && !task.isChecklistDriven && task.recurrenceRule.isFixedCalendar
-            ? RoutineDateMath.dueDate(for: task, referenceDate: now, calendar: calendar)
-            : nil
+        let dueDate: Date? = {
+            if task.isOneOffTask {
+                return task.deadline
+            }
+            guard !task.isPaused, !task.isChecklistDriven, task.recurrenceRule.isFixedCalendar else {
+                return nil
+            }
+            return RoutineDateMath.dueDate(for: task, referenceDate: now, calendar: calendar)
+        }()
         let daysUntilDue = task.isPaused
             ? 0
             : task.isCompletedOneOff
@@ -578,6 +589,8 @@ struct HomeFeature {
             taskID: task.id,
             name: task.name ?? "Unnamed task",
             emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
+            notes: task.notes,
+            hasImage: task.hasImage,
             placeID: task.placeID,
             placeName: linkedPlace?.displayName,
             locationAvailability: locationAvailability,

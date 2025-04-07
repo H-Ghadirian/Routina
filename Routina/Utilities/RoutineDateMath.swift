@@ -37,6 +37,10 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date {
+        if task.isOneOffTask {
+            return task.deadline ?? referenceDate
+        }
+
         if task.isChecklistDriven,
            let earliestChecklistDueDate = task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)
                 .map({ dueDate(for: $0, referenceDate: referenceDate, calendar: calendar) }) {
@@ -117,7 +121,11 @@ enum RoutineDateMath {
         calendar: Calendar = .current
     ) -> Int {
         if task.isOneOffTask {
-            return task.isCompletedOneOff ? Int.max : 0
+            guard !task.isCompletedOneOff else { return Int.max }
+            guard let deadline = task.deadline else { return 0 }
+            let todayStart = calendar.startOfDay(for: referenceDate)
+            let dueStart = calendar.startOfDay(for: deadline)
+            return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
         }
         let todayStart = calendar.startOfDay(for: referenceDate)
         let dueStart = calendar.startOfDay(for: dueDate(for: task, referenceDate: referenceDate, calendar: calendar))

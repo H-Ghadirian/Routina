@@ -416,6 +416,9 @@ final class RoutineTask {
     var id: UUID = UUID()
     var name: String?
     var emoji: String?
+    var notes: String?
+    var deadline: Date?
+    @Attribute(.externalStorage) var imageData: Data?
     var placeID: UUID?
     var tagsStorage: String = ""
     var stepsStorage: String = ""
@@ -437,6 +440,14 @@ final class RoutineTask {
 
     var isPinned: Bool {
         pinnedAt != nil
+    }
+
+    var hasNotes: Bool {
+        RoutineTask.sanitizedNotes(notes) != nil
+    }
+
+    var hasImage: Bool {
+        imageData?.isEmpty == false
     }
 
     var tags: [String] {
@@ -476,6 +487,8 @@ final class RoutineTask {
             if newValue == .oneOff {
                 checklistItemsStorage = ""
                 completedChecklistItemIDsStorage = ""
+            } else {
+                deadline = nil
             }
             sanitizeChecklistProgress()
         }
@@ -594,6 +607,9 @@ final class RoutineTask {
         id: UUID = UUID(),
         name: String? = nil,
         emoji: String? = nil,
+        notes: String? = nil,
+        deadline: Date? = nil,
+        imageData: Data? = nil,
         placeID: UUID? = nil,
         tags: [String] = [],
         steps: [RoutineStep] = [],
@@ -616,6 +632,9 @@ final class RoutineTask {
         self.id = id
         self.name = name
         self.emoji = emoji
+        self.notes = Self.sanitizedNotes(notes)
+        self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
+        self.imageData = imageData
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
         self.stepsStorage = RoutineStepStorage.serialize(steps)
@@ -846,6 +865,14 @@ final class RoutineTask {
         return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 
+    static func sanitizedNotes(_ notes: String?) -> String? {
+        guard let trimmed = notes?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
+
     static func sanitizedEmoji(_ input: String, fallback: String) -> String {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.first else { return fallback }
@@ -857,6 +884,9 @@ final class RoutineTask {
             id: id,
             name: name,
             emoji: emoji,
+            notes: notes,
+            deadline: deadline,
+            imageData: imageData,
             placeID: placeID,
             tags: tags,
             steps: steps,

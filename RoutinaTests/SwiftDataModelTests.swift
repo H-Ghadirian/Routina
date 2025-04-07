@@ -186,4 +186,24 @@ struct SwiftDataModelTests {
         #expect(task.lastDone == makeDate("2026-03-18T21:30:00Z"))
         #expect(task.scheduleAnchor == makeDate("2026-03-18T10:00:00Z"))
     }
+
+    @Test
+    func routineTask_sanitizesNotesAndKeepsDeadlineOnlyForTodos() {
+        let todoDeadline = makeDate("2026-03-21T09:00:00Z")
+        let todo = RoutineTask(
+            scheduleMode: .oneOff,
+            notes: "  pick whole milk  ",
+            deadline: todoDeadline
+        )
+        let routine = RoutineTask(
+            scheduleMode: .fixedInterval,
+            notes: " \n ",
+            deadline: todoDeadline
+        )
+
+        #expect(todo.notes == "pick whole milk")
+        #expect(todo.deadline == todoDeadline)
+        #expect(routine.notes == nil)
+        #expect(routine.deadline == nil)
+    }
 }

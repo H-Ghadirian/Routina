@@ -856,6 +856,9 @@ struct SettingsFeature {
             var id: UUID
             var name: String?
             var emoji: String?
+            var notes: String?
+            var deadline: Date?
+            var imageData: Data?
             var placeID: UUID?
             var tags: [String]?
             var steps: [RoutineStep]?
@@ -908,7 +911,7 @@ struct SettingsFeature {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = RoutineDataBackup(
-            schemaVersion: 7,
+            schemaVersion: 8,
             exportedAt: Date(),
             places: places.map {
                 .init(
@@ -925,6 +928,9 @@ struct SettingsFeature {
                     id: $0.id,
                     name: $0.name,
                     emoji: $0.emoji,
+                    notes: $0.notes,
+                    deadline: $0.deadline,
+                    imageData: $0.imageData,
                     placeID: $0.placeID,
                     tags: $0.tags,
                     steps: $0.steps,
@@ -964,7 +970,7 @@ struct SettingsFeature {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
 
-        guard (1...7).contains(backup.schemaVersion) else {
+        guard (1...8).contains(backup.schemaVersion) else {
             throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -1011,6 +1017,9 @@ struct SettingsFeature {
                     id: task.id,
                     name: task.name,
                     emoji: task.emoji,
+                    notes: task.notes,
+                    deadline: task.deadline,
+                    imageData: task.imageData,
                     placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
                     tags: task.tags ?? [],
                     steps: task.steps ?? [],

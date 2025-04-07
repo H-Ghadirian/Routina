@@ -1,10 +1,19 @@
 import SwiftUI
 import ComposableArchitecture
+#if canImport(UniformTypeIdentifiers)
+import UniformTypeIdentifiers
+#endif
+#if canImport(PhotosUI)
+import PhotosUI
+#endif
 
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
     @FocusState private var isRoutineNameFocused: Bool
     @State private var isEmojiPickerPresented = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var isImageFileImporterPresented = false
+    @State private var isImageDropTargeted = false
     @State private var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
@@ -55,6 +64,10 @@ struct AddRoutineTCAView: View {
                     store.send(.tagDeleted(tagName))
                 }
                 .routinaAddRoutineSheetFrame()
+                .onChange(of: selectedPhotoItem) { _, newItem in
+                    guard let newItem else { return }
+                    loadPickedImage(from: newItem)
+                }
             }
         }
     }
@@ -119,6 +132,28 @@ struct AddRoutineTCAView: View {
                     }
                     .padding(.vertical, 4)
                 }
+            }
+
+            Section(header: Text("Notes")) {
+                TextField("Add notes", text: routineNotesBinding, axis: .vertical)
+                    .lineLimit(4...8)
+
+                Text(notesHelpText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if store.taskType == .todo {
+                Section(header: Text("Deadline")) {
+                    Toggle("Set deadline", isOn: deadlineEnabledBinding)
+                    if store.hasDeadline {
+                        DatePicker("Deadline", selection: deadlineBinding)
+                    }
+                }
+            }
+
+            Section(header: Text("Image")) {
+                imageAttachmentContent
             }
 
             Section(header: Text("Tags")) {
@@ -198,6 +233,13 @@ struct AddRoutineTCAView: View {
         Binding(
             get: { store.routineEmoji },
             set: { store.send(.routineEmojiChanged($0)) }
+        )
+    }
+
+    private var routineNotesBinding: Binding<String> {
+        Binding(
+            get: { store.routineNotes },
+            set: { store.send(.routineNotesChanged($0)) }
         )
     }
 
@@ -292,6 +334,20 @@ struct AddRoutineTCAView: View {
         )
     }
 
+    private var deadlineEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { store.hasDeadline },
+            set: { store.send(.deadlineEnabledChanged($0)) }
+        )
+    }
+
+    private var deadlineBinding: Binding<Date> {
+        Binding(
+            get: { store.deadline ?? Date() },
+            set: { store.send(.deadlineDateChanged($0)) }
+        )
+    }
+
     private var isSaveDisabled: Bool {
         store.isSaveDisabled
     }
@@ -375,6 +431,12 @@ struct AddRoutineTCAView: View {
         return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
     }
 
+    private var notesHelpText: String {
+        store.taskType == .todo
+            ? "Capture extra context, links, or reminders for this todo."
+            : "Add any details you want to keep with this routine."
+    }
+
     private var tagComposer: some View {
         HStack(spacing: 10) {
             TextField("health, focus, morning", text: tagDraftBinding)
@@ -429,6 +491,90 @@ struct AddRoutineTCAView: View {
             }
             .disabled(isAddChecklistItemDisabled)
         }
+    }
+
+    @ViewBuilder
+    private var imageAttachmentContent: some View {
+        let imagePickerLabel = store.imageData == nil ? "Choose Image" : "Replace Image"
+
+        VStack(alignment: .leading, spacing: 10) {
+            if let imageData = store.imageData {
+                TaskImageView(data: imageData)
+                    .frame(height: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                    )
+            } else {
+                Label("No image selected", systemImage: "photo")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 10) {
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    Label(imagePickerLabel, systemImage: "photo.on.rectangle")
+                }
+                .buttonStyle(.bordered)
+
+#if os(macOS)
+                Button(store.imageData == nil ? "Browse in Finder" : "Browse Another File") {
+                    isImageFileImporterPresented = true
+                }
+                .buttonStyle(.bordered)
+#endif
+
+                if store.imageData != nil {
+                    Button("Remove") {
+                        selectedPhotoItem = nil
+                        store.send(.removeImageTapped)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+
+            Text("Images are resized and compressed before saving to keep iCloud usage low.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+#if os(macOS)
+            Text("You can also drag an image from Finder onto this area.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+#endif
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 2)
+#if os(macOS)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(isImageDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(
+                    isImageDropTargeted ? Color.accentColor : Color.secondary.opacity(0.18),
+                    style: StrokeStyle(lineWidth: isImageDropTargeted ? 2 : 1, dash: [8, 6])
+                )
+        )
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
+                return false
+            }
+            loadPickedImage(fromFileAt: imageURL)
+            return true
+        } isTargeted: { isTargeted in
+            isImageDropTargeted = isTargeted
+        }
+        .fileImporter(
+            isPresented: $isImageFileImporterPresented,
+            allowedContentTypes: [.image],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImageFileImport(result)
+        }
+#endif
     }
 
     @ViewBuilder
@@ -809,6 +955,26 @@ struct AddRoutineTCAView: View {
                             }
                         }
 
+                        macFormRow("Notes") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                TextEditor(text: routineNotesBinding)
+                                    .frame(minHeight: 96)
+                                    .padding(6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(Color(nsColor: .textBackgroundColor))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .stroke(sectionCardStroke, lineWidth: 1)
+                                    )
+
+                                Text(notesHelpText)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
                         macFormRow("Task Type") {
                             VStack(alignment: .leading, spacing: 10) {
                                 Picker("Task Type", selection: taskTypeBinding) {
@@ -861,6 +1027,18 @@ struct AddRoutineTCAView: View {
                             }
                         }
 
+                        if store.taskType == .todo {
+                            macFormRow("Deadline") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Toggle("Set deadline", isOn: deadlineEnabledBinding)
+                                    if store.hasDeadline {
+                                        DatePicker("Deadline", selection: deadlineBinding)
+                                            .labelsHidden()
+                                    }
+                                }
+                            }
+                        }
+
                         if isStepBasedMode {
                             macFormRow("Steps") {
                                 VStack(alignment: .leading, spacing: 10) {
@@ -883,6 +1061,10 @@ struct AddRoutineTCAView: View {
                             }
                         }
                     }
+                }
+
+                macSectionCard(title: "Image") {
+                    imageAttachmentContent
                 }
 
                 if showsRepeatControls {
@@ -1027,6 +1209,37 @@ struct AddRoutineTCAView: View {
                 .frame(width: formLabelWidth, alignment: .trailing)
             content()
         }
+    }
+#endif
+
+    private func loadPickedImage(from item: PhotosPickerItem) {
+        _ = Task {
+            let data = try? await item.loadTransferable(type: Data.self)
+            _ = await MainActor.run {
+                store.send(.imagePicked(data))
+            }
+        }
+    }
+
+    private func loadPickedImage(fromFileAt url: URL) {
+        let compressedData = TaskImageProcessor.compressedImageData(fromFileAt: url)
+        store.send(.imagePicked(compressedData))
+    }
+
+#if os(macOS)
+    private func handleImageFileImport(_ result: Result<[URL], Error>) {
+        guard case let .success(urls) = result,
+              let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
+            return
+        }
+        loadPickedImage(fromFileAt: imageURL)
+    }
+
+    private func isSupportedImageFile(_ url: URL) -> Bool {
+        guard let type = UTType(filenameExtension: url.pathExtension) else {
+            return false
+        }
+        return type.conforms(to: .image)
     }
 #endif
 }

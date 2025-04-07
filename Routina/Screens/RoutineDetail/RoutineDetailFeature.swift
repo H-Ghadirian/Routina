@@ -42,6 +42,9 @@ struct RoutineDetailFeature: Reducer {
         var isEditSheetPresented: Bool = false
         var editRoutineName: String = ""
         var editRoutineEmoji: String = "✨"
+        var editRoutineNotes: String = ""
+        var editDeadline: Date?
+        var editImageData: Data?
         var editRoutineTags: [String] = []
         var editTagDraft: String = ""
         var editScheduleMode: RoutineScheduleMode = .fixedInterval
@@ -75,6 +78,11 @@ struct RoutineDetailFeature: Reducer {
         case setEditSheet(Bool)
         case editRoutineNameChanged(String)
         case editRoutineEmojiChanged(String)
+        case editRoutineNotesChanged(String)
+        case editDeadlineEnabledChanged(Bool)
+        case editDeadlineDateChanged(Date)
+        case editImagePicked(Data?)
+        case editRemoveImageTapped
         case editTagDraftChanged(String)
         case editAddTagTapped
         case editRemoveTag(String)
@@ -341,6 +349,26 @@ struct RoutineDetailFeature: Reducer {
             state.editRoutineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.editRoutineEmoji)
             return .none
 
+        case let .editRoutineNotesChanged(notes):
+            state.editRoutineNotes = notes
+            return .none
+
+        case let .editDeadlineEnabledChanged(isEnabled):
+            state.editDeadline = isEnabled ? (state.editDeadline ?? now) : nil
+            return .none
+
+        case let .editDeadlineDateChanged(deadline):
+            state.editDeadline = deadline
+            return .none
+
+        case let .editImagePicked(data):
+            state.editImageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
+            return .none
+
+        case .editRemoveImageTapped:
+            state.editImageData = nil
+            return .none
+
         case let .editTagDraftChanged(value):
             state.editTagDraft = value
             return .none
@@ -376,6 +404,9 @@ struct RoutineDetailFeature: Reducer {
 
         case let .editScheduleModeChanged(mode):
             state.editScheduleMode = mode
+            if mode != .oneOff {
+                state.editDeadline = nil
+            }
             return .none
 
         case let .editStepDraftChanged(value):
@@ -500,6 +531,9 @@ struct RoutineDetailFeature: Reducer {
                 taskID: state.task.id,
                 name: trimmedName,
                 emoji: state.editRoutineEmoji,
+                notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
+                deadline: state.editScheduleMode == .oneOff ? state.editDeadline : nil,
+                imageData: state.editImageData,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
                 steps: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
@@ -550,6 +584,9 @@ struct RoutineDetailFeature: Reducer {
     private func syncEditFormFromTask(_ state: inout State) {
         state.editRoutineName = state.task.name ?? ""
         state.editRoutineEmoji = state.task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+        state.editRoutineNotes = state.task.notes ?? ""
+        state.editDeadline = state.task.deadline
+        state.editImageData = state.task.imageData
         state.editRoutineTags = state.task.tags
         state.editTagDraft = ""
         state.editScheduleMode = state.task.scheduleMode
@@ -769,6 +806,9 @@ struct RoutineDetailFeature: Reducer {
         taskID: UUID,
         name: String,
         emoji: String,
+        notes: String?,
+        deadline: Date?,
+        imageData: Data?,
         placeID: UUID?,
         tags: [String],
         steps: [RoutineStep],
@@ -787,10 +827,13 @@ struct RoutineDetailFeature: Reducer {
                 let previousRecurrenceRule = task.recurrenceRule
                 task.name = name
                 task.emoji = emoji
+                task.notes = notes
+                task.imageData = imageData
                 task.placeID = placeID
                 task.tags = tags
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
+                task.deadline = scheduleMode == .oneOff ? deadline : nil
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
                 if scheduleMode == .oneOff {

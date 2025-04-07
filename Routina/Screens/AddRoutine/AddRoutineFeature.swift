@@ -34,6 +34,9 @@ struct AddRoutineFeature: Reducer {
     struct State: Equatable {
         var routineName: String = ""
         var routineEmoji: String = "✨"
+        var routineNotes: String = ""
+        var deadline: Date?
+        var imageData: Data?
         var routineTags: [String] = []
         var availableTags: [String] = []
         var tagDraft: String = ""
@@ -56,6 +59,10 @@ struct AddRoutineFeature: Reducer {
 
         var taskType: RoutineTaskType {
             scheduleMode.taskType
+        }
+
+        var hasDeadline: Bool {
+            deadline != nil
         }
 
         var trimmedRoutineName: String {
@@ -85,6 +92,11 @@ struct AddRoutineFeature: Reducer {
     enum Action: Equatable {
         case routineNameChanged(String)
         case routineEmojiChanged(String)
+        case routineNotesChanged(String)
+        case deadlineEnabledChanged(Bool)
+        case deadlineDateChanged(Date)
+        case imagePicked(Data?)
+        case removeImageTapped
         case taskTypeChanged(RoutineTaskType)
         case availableTagsChanged([String])
         case tagDraftChanged(String)
@@ -118,13 +130,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -138,12 +150,33 @@ struct AddRoutineFeature: Reducer {
             state.routineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.routineEmoji)
             return .none
 
+        case let .routineNotesChanged(notes):
+            state.routineNotes = notes
+            return .none
+
+        case let .deadlineEnabledChanged(isEnabled):
+            state.deadline = isEnabled ? (state.deadline ?? now) : nil
+            return .none
+
+        case let .deadlineDateChanged(deadline):
+            state.deadline = deadline
+            return .none
+
+        case let .imagePicked(data):
+            state.imageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
+            return .none
+
+        case .removeImageTapped:
+            state.imageData = nil
+            return .none
+
         case let .taskTypeChanged(taskType):
             switch taskType {
             case .routine:
                 if state.scheduleMode == .oneOff {
                     state.scheduleMode = .fixedInterval
                 }
+                state.deadline = nil
             case .todo:
                 state.scheduleMode = .oneOff
             }
@@ -302,6 +335,9 @@ struct AddRoutineFeature: Reducer {
                 frequencyInDays,
                 recurrenceRule,
                 state.routineEmoji,
+                RoutineTask.sanitizedNotes(state.routineNotes),
+                state.taskType == .todo ? state.deadline : nil,
+                state.imageData,
                 state.selectedPlaceID,
                 state.routineTags,
                 (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)

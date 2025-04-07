@@ -21,6 +21,9 @@ struct RoutineDetailTCAView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
+                    if store.task.hasNotes || store.task.hasImage {
+                        taskExtrasSection
+                    }
                     if store.task.hasChecklistItems {
                         checklistItemsSection
                     }
@@ -85,6 +88,9 @@ struct RoutineDetailTCAView: View {
                                 !canSaveEdit(
                                     name: store.editRoutineName,
                                     emoji: store.editRoutineEmoji,
+                                    notes: store.editRoutineNotes,
+                                    deadline: store.editDeadline,
+                                    imageData: store.editImageData,
                                     selectedPlaceID: store.editSelectedPlaceID,
                                     tags: store.editRoutineTags,
                                     tagDraft: store.editTagDraft,
@@ -258,6 +264,33 @@ struct RoutineDetailTCAView: View {
         )
     }
 
+    private var taskExtrasSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Details")
+                .font(.headline)
+
+            if let imageData = store.task.imageData {
+                TaskImageView(data: imageData)
+                    .frame(height: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
+            if let notes = store.task.notes, !notes.isEmpty {
+                Text(notes)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .background(routineLogsBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
     private func macStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
@@ -319,6 +352,10 @@ struct RoutineDetailTCAView: View {
 
             if !store.task.tags.isEmpty {
                 statusTagsRow(tags: store.task.tags)
+            }
+
+            if store.task.hasImage {
+                statusMetadataRow(label: "Attachment", value: "1 image", systemImage: "photo")
             }
 
             if store.task.isChecklistDriven {
@@ -824,7 +861,9 @@ struct RoutineDetailTCAView: View {
     }
 
     private func dueDate(for task: RoutineTask) -> Date? {
-        guard !task.isOneOffTask else { return nil }
+        if task.isOneOffTask {
+            return task.deadline
+        }
         return RoutineDateMath.dueDate(for: task, referenceDate: Date())
     }
 
@@ -1099,6 +1138,9 @@ struct RoutineDetailTCAView: View {
     private func canSaveEdit(
         name: String,
         emoji: String,
+        notes: String,
+        deadline: Date?,
+        imageData: Data?,
         selectedPlaceID: UUID?,
         tags: [String],
         tagDraft: String,
@@ -1121,7 +1163,10 @@ struct RoutineDetailTCAView: View {
 
         let currentName = (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let currentEmoji = task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+        let currentNotes = task.notes ?? ""
         let currentTags = RoutineTag.deduplicated(task.tags)
+        let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
+        let currentImageData = task.imageData
         let candidateTags = RoutineTag.appending(tagDraft, to: tags)
         let currentSteps = RoutineStep.sanitized(task.steps)
         let candidateSteps = RoutineStep.normalizedTitle(stepDraft).map { title in
@@ -1151,6 +1196,9 @@ struct RoutineDetailTCAView: View {
 
         return trimmedName != currentName
             || emoji != currentEmoji
+            || notes != currentNotes
+            || deadline != currentDeadline
+            || imageData != currentImageData
             || selectedPlaceID != task.placeID
             || candidateTags != currentTags
             || scheduleMode != task.scheduleMode

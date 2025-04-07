@@ -1423,6 +1423,20 @@ struct HomeTCAView: View {
                     .fill(rowIconBackgroundColor(for: task))
                 Text(task.emoji)
                     .font(.title3)
+                if task.hasImage {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Image(systemName: "photo.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.primary)
+                                .padding(4)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                    }
+                    .padding(2)
+                }
             }
             .frame(width: 36, height: 36)
 
@@ -1825,6 +1839,7 @@ struct HomeTCAView: View {
         guard !trimmedSearch.isEmpty else { return true }
         return task.name.localizedCaseInsensitiveContains(trimmedSearch)
             || task.emoji.localizedCaseInsensitiveContains(trimmedSearch)
+            || (task.notes?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
     }
@@ -1950,6 +1965,10 @@ struct HomeTCAView: View {
 
     private func todoRowMetadataItems(for task: HomeFeature.RoutineDisplay) -> [String] {
         var items: [String] = []
+
+        if let deadlineText = conciseDeadlineText(for: task) {
+            items.append(deadlineText)
+        }
 
         if task.isPaused {
             items.append(pauseDescription(for: task))
@@ -2164,6 +2183,29 @@ struct HomeTCAView: View {
             return "\(task.steps.count) steps"
         }
         return nil
+    }
+
+    private func conciseDeadlineText(for task: HomeFeature.RoutineDisplay) -> String? {
+        guard task.isOneOffTask, let dueDate = task.dueDate else { return nil }
+        let calendar = Calendar.current
+        if calendar.isDateInToday(dueDate) {
+            return "Due today"
+        }
+        if calendar.isDateInTomorrow(dueDate) {
+            return "Due tomorrow"
+        }
+        if dueDate < Date() {
+            let days = max(
+                abs(calendar.dateComponents(
+                    [.day],
+                    from: calendar.startOfDay(for: dueDate),
+                    to: calendar.startOfDay(for: Date())
+                ).day ?? 0),
+                1
+            )
+            return "Overdue \(days)d"
+        }
+        return "Due \(dueDate.formatted(date: .abbreviated, time: .omitted))"
     }
 
     private func markDoneLabel(for task: HomeFeature.RoutineDisplay) -> String {

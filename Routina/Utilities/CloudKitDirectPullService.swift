@@ -194,10 +194,13 @@ enum CloudKitDirectPullService {
         var id: UUID
         var name: String?
         var emoji: String?
+        var notes: String?
+        var deadline: Date?
         var placeID: UUID?
         var tags: [String]?
         var steps: [RoutineStep]?
         var checklistItems: [RoutineChecklistItem]?
+        var imageData: Data?
         var scheduleMode: RoutineScheduleMode?
         var interval: Int16
         var recurrenceRule: RoutineRecurrenceRule?
@@ -263,6 +266,8 @@ enum CloudKitDirectPullService {
         let intervalValue = intValue(in: record, keys: ["interval", "INTERVAL", "zinterval", "ZINTERVAL", "cd_interval"])
         let nameValue = stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
         let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
+        let notesValue = stringValue(in: record, keys: ["notes", "NOTES", "znotes", "ZNOTES", "cd_notes"])
+        let deadlineValue = dateValue(in: record, keys: ["deadline", "DEADLINE", "zdeadline", "ZDEADLINE", "cd_deadline"])
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let stepsStorageValue = stringValue(in: record, keys: ["stepsStorage", "stepsstorage", "STEPSSTORAGE", "zstepsstorage", "ZSTEPSSTORAGE", "cd_stepsstorage"])
@@ -299,6 +304,10 @@ enum CloudKitDirectPullService {
                 "cd_recurrencerulestorage"
             ]
         )
+        let imageDataValue = dataValue(
+            in: record,
+            keys: ["imageData", "IMAGEDATA", "zimagedata", "ZIMAGEDATA", "cd_imagedata"]
+        )
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
         let scheduleAnchorValue = dateValue(
             in: record,
@@ -325,10 +334,13 @@ enum CloudKitDirectPullService {
             intervalValue != nil
                 || nameValue != nil
                 || emojiValue != nil
+                || notesValue != nil
+                || deadlineValue != nil
                 || placeIDValue != nil
                 || tagsStorageValue != nil
                 || stepsStorageValue != nil
                 || checklistItemsStorageValue != nil
+                || imageDataValue != nil
                 || scheduleModeValue != nil
                 || recurrenceRuleStorageValue != nil
                 || lastDoneValue != nil
@@ -361,10 +373,13 @@ enum CloudKitDirectPullService {
             id: id,
             name: nameValue,
             emoji: emojiValue,
+            notes: notesValue,
+            deadline: deadlineValue,
             placeID: placeIDValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
             steps: stepsValue,
             checklistItems: checklistItemsValue,
+            imageData: imageDataValue,
             scheduleMode: scheduleModeValue.flatMap(RoutineScheduleMode.init(rawValue:)),
             interval: Int16(clamping: intervalValue ?? 1),
             recurrenceRule: recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize),
@@ -453,6 +468,8 @@ enum CloudKitDirectPullService {
                 // Keep local uniqueness invariant if cloud data contains a duplicate name.
                 taskWithSameName.name = RoutineTask.trimmedName(payload.name)
                 taskWithSameName.emoji = payload.emoji
+                taskWithSameName.notes = RoutineTask.sanitizedNotes(payload.notes)
+                taskWithSameName.imageData = payload.imageData
                 taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
                     taskWithSameName.tags = tags
@@ -466,6 +483,7 @@ enum CloudKitDirectPullService {
                 if let scheduleMode = payload.scheduleMode {
                     taskWithSameName.scheduleMode = scheduleMode
                 }
+                taskWithSameName.deadline = taskWithSameName.scheduleMode == .oneOff ? payload.deadline : nil
                 if let recurrenceRule = payload.recurrenceRule {
                     taskWithSameName.recurrenceRule = recurrenceRule
                 } else {
@@ -483,6 +501,8 @@ enum CloudKitDirectPullService {
 
             existing.name = RoutineTask.trimmedName(payload.name)
             existing.emoji = payload.emoji
+            existing.notes = RoutineTask.sanitizedNotes(payload.notes)
+            existing.imageData = payload.imageData
             existing.placeID = payload.placeID
             if let tags = payload.tags {
                 existing.tags = tags
@@ -496,6 +516,7 @@ enum CloudKitDirectPullService {
             if let scheduleMode = payload.scheduleMode {
                 existing.scheduleMode = scheduleMode
             }
+            existing.deadline = existing.scheduleMode == .oneOff ? payload.deadline : nil
             if let recurrenceRule = payload.recurrenceRule {
                 existing.recurrenceRule = recurrenceRule
             } else {
@@ -512,6 +533,8 @@ enum CloudKitDirectPullService {
             if let normalizedIncomingName,
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context) {
                 taskWithSameName.emoji = payload.emoji
+                taskWithSameName.notes = RoutineTask.sanitizedNotes(payload.notes)
+                taskWithSameName.imageData = payload.imageData
                 taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
                     taskWithSameName.tags = tags
@@ -525,6 +548,7 @@ enum CloudKitDirectPullService {
                 if let scheduleMode = payload.scheduleMode {
                     taskWithSameName.scheduleMode = scheduleMode
                 }
+                taskWithSameName.deadline = taskWithSameName.scheduleMode == .oneOff ? payload.deadline : nil
                 if let recurrenceRule = payload.recurrenceRule {
                     taskWithSameName.recurrenceRule = recurrenceRule
                 } else {
@@ -545,6 +569,9 @@ enum CloudKitDirectPullService {
                     id: payload.id,
                     name: RoutineTask.trimmedName(payload.name),
                     emoji: payload.emoji,
+                    notes: payload.notes,
+                    deadline: payload.deadline,
+                    imageData: payload.imageData,
                     placeID: payload.placeID,
                     tags: payload.tags ?? [],
                     steps: payload.steps ?? [],
@@ -754,6 +781,33 @@ enum CloudKitDirectPullService {
             if let matchedKey = lowerLookup[key.lowercased()],
                let value = record[matchedKey] as? String {
                 return value
+            }
+        }
+        return nil
+    }
+
+    private static func dataValue(in record: CKRecord, keys: [String]) -> Data? {
+        for key in keys {
+            if let value = record[key] as? Data {
+                return value
+            }
+            if let asset = record[key] as? CKAsset,
+               let fileURL = asset.fileURL,
+               let data = try? Data(contentsOf: fileURL) {
+                return data
+            }
+        }
+
+        let lowerLookup = Dictionary(uniqueKeysWithValues: record.allKeys().map { ($0.lowercased(), $0) })
+        for key in keys {
+            guard let matchedKey = lowerLookup[key.lowercased()] else { continue }
+            if let value = record[matchedKey] as? Data {
+                return value
+            }
+            if let asset = record[matchedKey] as? CKAsset,
+               let fileURL = asset.fileURL,
+               let data = try? Data(contentsOf: fileURL) {
+                return data
             }
         }
         return nil
