@@ -247,11 +247,11 @@ struct RoutineDetailTCAView: View {
         VStack(alignment: .leading, spacing: 16) {
             statusSummaryHeader(titleFont: .title3.weight(.semibold))
 
-            Divider()
-
-            statusMetadataSection()
-
-            Divider()
+            if hasVisibleStatusMetadata {
+                Divider()
+                statusMetadataSection()
+                Divider()
+            }
 
             statusActionSection(pauseArchivePresentation: pauseArchivePresentation)
         }
@@ -297,11 +297,11 @@ struct RoutineDetailTCAView: View {
         VStack(alignment: .leading, spacing: 16) {
             statusSummaryHeader(titleFont: .title2.weight(.semibold))
 
-            Divider()
-
-            statusMetadataSection()
-
-            Divider()
+            if hasVisibleStatusMetadata {
+                Divider()
+                statusMetadataSection()
+                Divider()
+            }
 
             statusActionSection(pauseArchivePresentation: pauseArchivePresentation, useLargePrimaryControl: true)
         }
@@ -517,6 +517,20 @@ struct RoutineDetailTCAView: View {
             return store.logs.count > 0
         }
         return true
+    }
+
+    private var hasVisibleStatusMetadata: Bool {
+        !store.task.isOneOffTask
+            || shouldShowCompletionCount
+            || linkedPlaceSummary != nil
+            || store.task.pausedAt != nil
+            || dueDateMetadataText != nil
+            || shouldShowSelectedDateMetadata
+            || !store.task.tags.isEmpty
+            || store.task.hasImage
+            || store.task.isChecklistDriven
+            || store.task.isChecklistCompletionRoutine
+            || store.task.hasSequentialSteps
     }
 
     private var routineLogsSection: some View {
