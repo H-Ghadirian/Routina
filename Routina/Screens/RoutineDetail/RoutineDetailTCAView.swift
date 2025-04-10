@@ -13,31 +13,13 @@ struct RoutineDetailTCAView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            let _ = store.taskRefreshID
-            let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
-                isPaused: store.task.isPaused,
-                context: .detail
-            )
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
-                    if store.task.hasNotes || store.task.hasImage || store.task.resolvedLinkURL != nil {
-                        taskExtrasSection
-                    }
-                    if store.task.hasChecklistItems {
-                        checklistItemsSection
-                    }
-                    routineLogsSection
-                }
-                .padding(RoutineDetailPlatformStyle.detailContentPadding)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            detailBody
             .routinaInlineTitleDisplayMode()
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 8) {
-                        Text(routineEmoji(for: store.task))
-                        Text(store.task.name ?? "Routine")
+                        Text(isInlineEditPresented ? "✏️" : routineEmoji(for: store.task))
+                        Text(isInlineEditPresented ? "Edit Task" : (store.task.name ?? "Routine"))
                             .lineLimit(1)
                             .truncationMode(.tail)
                             .minimumScaleFactor(0.85)
@@ -54,12 +36,27 @@ struct RoutineDetailTCAView: View {
                             .stroke(Color.white.opacity(0.16), lineWidth: 1)
                     )
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Edit") {
-                        store.send(.setEditSheet(true))
+                if isInlineEditPresented {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            store.send(.setEditSheet(false))
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            store.send(.editSaveTapped)
+                        }
+                        .disabled(!canSaveCurrentEdit)
+                    }
+                } else {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Edit") {
+                            store.send(.setEditSheet(true))
+                        }
                     }
                 }
             }
+#if !os(macOS)
             .sheet(
                 isPresented: Binding(
                     get: { store.isEditSheetPresented },
@@ -84,58 +81,34 @@ struct RoutineDetailTCAView: View {
                             Button("Save") {
                                 store.send(.editSaveTapped)
                             }
-                            .disabled(
-                                !canSaveEdit(
-                                    name: store.editRoutineName,
-                                    emoji: store.editRoutineEmoji,
-                                    notes: store.editRoutineNotes,
-                                    link: store.editRoutineLink,
-                                    deadline: store.editDeadline,
-                                    imageData: store.editImageData,
-                                    selectedPlaceID: store.editSelectedPlaceID,
-                                    tags: store.editRoutineTags,
-                                    tagDraft: store.editTagDraft,
-                                    scheduleMode: store.editScheduleMode,
-                                    steps: store.editRoutineSteps,
-                                    stepDraft: store.editStepDraft,
-                                    checklistItems: store.editRoutineChecklistItems,
-                                    checklistItemDraftTitle: store.editChecklistItemDraftTitle,
-                                    checklistItemDraftInterval: store.editChecklistItemDraftInterval,
-                                    frequency: store.editFrequency,
-                                    frequencyValue: store.editFrequencyValue,
-                                    recurrenceKind: store.editRecurrenceKind,
-                                    recurrenceTimeOfDay: store.editRecurrenceTimeOfDay,
-                                    recurrenceWeekday: store.editRecurrenceWeekday,
-                                    recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
-                                    task: store.task
-                                )
-                            )
+                            .disabled(!canSaveCurrentEdit)
                         }
-                    }
-                    .sheet(isPresented: $isEditEmojiPickerPresented) {
-                        EmojiPickerSheet(
-                            selectedEmoji: Binding(
-                                get: { store.editRoutineEmoji },
-                                set: { store.send(.editRoutineEmojiChanged($0)) }
-                            ),
-                            emojis: allEmojiOptions
-                        )
-                    }
-                    .alert(
-                        "Delete routine?",
-                        isPresented: Binding(
-                            get: { store.isDeleteConfirmationPresented },
-                            set: { store.send(.setDeleteConfirmation($0)) }
-                        )
-                    ) {
-                        Button("Delete", role: .destructive) {
-                            store.send(.deleteRoutineConfirmed)
-                        }
-                        Button("Cancel", role: .cancel) { }
-                    } message: {
-                        Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
                     }
                 }
+            }
+#endif
+            .sheet(isPresented: $isEditEmojiPickerPresented) {
+                EmojiPickerSheet(
+                    selectedEmoji: Binding(
+                        get: { store.editRoutineEmoji },
+                        set: { store.send(.editRoutineEmojiChanged($0)) }
+                    ),
+                    emojis: allEmojiOptions
+                )
+            }
+            .alert(
+                "Delete routine?",
+                isPresented: Binding(
+                    get: { store.isDeleteConfirmationPresented },
+                    set: { store.send(.setDeleteConfirmation($0)) }
+                )
+            ) {
+                Button("Delete", role: .destructive) {
+                    store.send(.deleteRoutineConfirmed)
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
             }
             .onAppear {
                 displayedMonthStart = Calendar.current.startOfMonth(for: selectedDate)
@@ -149,6 +122,73 @@ struct RoutineDetailTCAView: View {
                 displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
             }
         }
+    }
+
+    @ViewBuilder
+    private var detailBody: some View {
+        if isInlineEditPresented {
+            RoutineDetailEditRoutineContent(
+                store: store,
+                isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
+                emojiOptions: emojiOptions
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            let _ = store.taskRefreshID
+            let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
+                isPaused: store.task.isPaused,
+                context: .detail
+            )
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
+                    if store.task.hasNotes || store.task.hasImage || store.task.resolvedLinkURL != nil {
+                        taskExtrasSection
+                    }
+                    if store.task.hasChecklistItems {
+                        checklistItemsSection
+                    }
+                    routineLogsSection
+                }
+                .padding(RoutineDetailPlatformStyle.detailContentPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private var canSaveCurrentEdit: Bool {
+        canSaveEdit(
+            name: store.editRoutineName,
+            emoji: store.editRoutineEmoji,
+            notes: store.editRoutineNotes,
+            link: store.editRoutineLink,
+            deadline: store.editDeadline,
+            imageData: store.editImageData,
+            selectedPlaceID: store.editSelectedPlaceID,
+            tags: store.editRoutineTags,
+            tagDraft: store.editTagDraft,
+            scheduleMode: store.editScheduleMode,
+            steps: store.editRoutineSteps,
+            stepDraft: store.editStepDraft,
+            checklistItems: store.editRoutineChecklistItems,
+            checklistItemDraftTitle: store.editChecklistItemDraftTitle,
+            checklistItemDraftInterval: store.editChecklistItemDraftInterval,
+            frequency: store.editFrequency,
+            frequencyValue: store.editFrequencyValue,
+            recurrenceKind: store.editRecurrenceKind,
+            recurrenceTimeOfDay: store.editRecurrenceTimeOfDay,
+            recurrenceWeekday: store.editRecurrenceWeekday,
+            recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
+            task: store.task
+        )
+    }
+
+    private var isInlineEditPresented: Bool {
+#if os(macOS)
+        store.isEditSheetPresented
+#else
+        false
+#endif
     }
 
     @ViewBuilder

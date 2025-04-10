@@ -1,10 +1,19 @@
 import ComposableArchitecture
 import SwiftUI
+#if canImport(UniformTypeIdentifiers)
+import UniformTypeIdentifiers
+#endif
+#if canImport(PhotosUI)
+import PhotosUI
+#endif
 
 struct RoutineDetailEditRoutineContent: View {
     let store: StoreOf<RoutineDetailFeature>
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var isImageFileImporterPresented = false
+    @State private var isImageDropTargeted = false
     @State private var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
@@ -80,6 +89,13 @@ struct RoutineDetailEditRoutineContent: View {
                             Text("Add a website to open from the detail screen. If you skip the scheme, https will be used.")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Image")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            editImageAttachmentContent
                         }
                     }
                 }
@@ -333,6 +349,10 @@ struct RoutineDetailEditRoutineContent: View {
             guard let tagName = notification.routineTagDeletedName else { return }
             store.send(.editTagDeleted(tagName))
         }
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            guard let newItem else { return }
+            loadPickedImage(from: newItem)
+        }
     }
 
     private var scheduleModeBinding: Binding<RoutineScheduleMode> {
@@ -389,6 +409,84 @@ struct RoutineDetailEditRoutineContent: View {
             return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
         }
         return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
+    }
+
+    @ViewBuilder
+    private var editImageAttachmentContent: some View {
+        let imagePickerLabel = store.editImageData == nil ? "Choose Image" : "Replace Image"
+
+        VStack(alignment: .leading, spacing: 10) {
+            if let imageData = store.editImageData {
+                TaskImageView(data: imageData)
+                    .frame(height: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                    )
+            } else {
+                Label("No image selected", systemImage: "photo")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 10) {
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    Label(imagePickerLabel, systemImage: "photo.on.rectangle")
+                }
+                .buttonStyle(.bordered)
+
+                Button(store.editImageData == nil ? "Browse in Finder" : "Browse Another File") {
+                    isImageFileImporterPresented = true
+                }
+                .buttonStyle(.bordered)
+
+                if store.editImageData != nil {
+                    Button("Remove") {
+                        selectedPhotoItem = nil
+                        store.send(.editRemoveImageTapped)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+
+            Text("Images are resized and compressed before saving to reduce storage use.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text("You can also drag an image from Finder onto this area.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(isImageDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(
+                    isImageDropTargeted ? Color.accentColor : Color.secondary.opacity(0.18),
+                    style: StrokeStyle(lineWidth: isImageDropTargeted ? 2 : 1, dash: [8, 6])
+                )
+        )
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
+                return false
+            }
+            loadPickedImage(fromFileAt: imageURL)
+            return true
+        } isTargeted: { isTargeted in
+            isImageDropTargeted = isTargeted
+        }
+        .fileImporter(
+            isPresented: $isImageFileImporterPresented,
+            allowedContentTypes: [.image],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImageFileImport(result)
+        }
     }
 
     @ViewBuilder
@@ -775,5 +873,34 @@ struct RoutineDetailEditRoutineContent: View {
             return "Runs out in 1 day"
         }
         return "Runs out in \(intervalDays) days"
+    }
+
+    private func loadPickedImage(from item: PhotosPickerItem) {
+        _ = Task {
+            let data = try? await item.loadTransferable(type: Data.self)
+            _ = await MainActor.run {
+                store.send(.editImagePicked(data))
+            }
+        }
+    }
+
+    private func loadPickedImage(fromFileAt url: URL) {
+        let compressedData = TaskImageProcessor.compressedImageData(fromFileAt: url)
+        store.send(.editImagePicked(compressedData))
+    }
+
+    private func handleImageFileImport(_ result: Result<[URL], Error>) {
+        guard case let .success(urls) = result,
+              let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
+            return
+        }
+        loadPickedImage(fromFileAt: imageURL)
+    }
+
+    private func isSupportedImageFile(_ url: URL) -> Bool {
+        guard let type = UTType(filenameExtension: url.pathExtension) else {
+            return false
+        }
+        return type.conforms(to: .image)
     }
 }
