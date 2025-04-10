@@ -22,7 +22,7 @@ struct HomeView: View {
         NavigationView {
             List {
                 ForEach(tasks) { task in
-                    NavigationLink(destination: TaskDetailView()) { //task: task)) {
+                    NavigationLink(destination: TaskDetailView()) {
                         Text(task.name ?? "Unnamed Task")
                     }
                 }
@@ -37,7 +37,7 @@ struct HomeView: View {
                 }
             }
             .sheet(isPresented: $showingAddTask) {
-                AddTaskView().environment(\.managedObjectContext, PersistenceController.shared.container.viewContext)
+                AddTaskView().environment(\.managedObjectContext, viewContext)
             }
         }
     }

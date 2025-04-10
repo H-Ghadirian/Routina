@@ -28,8 +28,8 @@ struct AddTaskView: View {
             .navigationTitle("Add Task")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save me") {
-                        saveContext()
+                    Button("Save") {
+                        addTask()
                     }.disabled(taskName.isEmpty)
                 }
 
@@ -42,16 +42,6 @@ struct AddTaskView: View {
         }
     }
 
-    private func saveContext() {
-        do {
-            try viewContext.save()
-        } catch {
-            print("Error saving task: \(error.localizedDescription)")
-        }
-    }
-}
-
-extension AddTaskView {
     private func addTask() {
         let newTask = RoutineTask(context: viewContext)
         newTask.name = taskName
@@ -60,7 +50,7 @@ extension AddTaskView {
 
         do {
             try viewContext.save()
-            dismiss()
+            dismiss()  // Close the sheet
         } catch {
             print("Error saving task: \(error.localizedDescription)")
         }
