@@ -8,7 +8,7 @@
 import SwiftUI
 import CoreData
 
-struct ContentView: View {
+struct TaskDetailView: View {
     @AppStorage("lastRoutineDate") private var lastRoutineDate: Date = Date()
     @AppStorage("routineInterval") private var routineInterval: Int = 7
 
