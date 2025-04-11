@@ -9,6 +9,7 @@ struct TimelineView: View {
 
     @State private var selectedRange: TimelineRange = .week
     @State private var filterType: TimelineFilterType = .all
+    @State private var selectedTag: String?
 
     init(
         selectedRange: TimelineRange = .week,
@@ -18,7 +19,7 @@ struct TimelineView: View {
         _filterType = State(initialValue: filterType)
     }
 
-    private var entries: [TimelineEntry] {
+    private var baseEntries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
             logs: logs,
             tasks: tasks,
@@ -27,6 +28,16 @@ struct TimelineView: View {
             now: Date(),
             calendar: calendar
         )
+    }
+
+    private var entries: [TimelineEntry] {
+        baseEntries.filter { entry in
+            TimelineLogic.matchesSelectedTag(selectedTag, in: entry.tags)
+        }
+    }
+
+    private var availableTags: [String] {
+        TimelineLogic.availableTags(from: baseEntries)
     }
 
     private var groupedByDay: [(date: Date, entries: [TimelineEntry])] {
@@ -87,6 +98,32 @@ struct TimelineView: View {
                 }
                 .pickerStyle(.segmented)
             }
+
+            if !availableTags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        timelineTagButton(title: "All Tags", isSelected: selectedTag == nil) {
+                            selectedTag = nil
+                        }
+
+                        ForEach(availableTags, id: \.self) { tag in
+                            timelineTagButton(
+                                title: "#\(tag)",
+                                isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                            ) {
+                                selectedTag = tag
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .onChange(of: availableTags) { _, newValue in
+            guard let selectedTag else { return }
+            if !RoutineTag.contains(selectedTag, in: newValue) {
+                self.selectedTag = nil
+            }
         }
     }
 
@@ -141,5 +178,24 @@ struct TimelineView: View {
                 .foregroundStyle(entry.isOneOff ? .purple : .accentColor)
         }
         .padding(.vertical, 2)
+    }
+
+    private func timelineTagButton(
+        title: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.12))
+                )
+                .foregroundStyle(isSelected ? Color.accentColor : .primary)
+        }
+        .buttonStyle(.plain)
     }
 }

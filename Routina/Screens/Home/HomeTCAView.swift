@@ -55,6 +55,7 @@ struct HomeTCAView: View {
     @State private var isRefreshScheduled = false
     @State private var selectedTimelineRange: TimelineRange = .week
     @State private var selectedTimelineFilterType: TimelineFilterType = .all
+    @State private var selectedTimelineTag: String?
 #if os(macOS)
     @State private var macSidebarSelection: MacSidebarSelection?
     @State private var macSidebarMode: MacSidebarMode = .routines
@@ -411,7 +412,9 @@ struct HomeTCAView: View {
 
     private var macHasCustomFiltersApplied: Bool {
         if macSidebarMode == .timeline {
-            return selectedTimelineRange != .week || selectedTimelineFilterType != .all
+            return selectedTimelineRange != .week
+                || selectedTimelineFilterType != .all
+                || selectedTimelineTag != nil
         }
         if macSidebarMode == .stats {
             return false
@@ -423,6 +426,7 @@ struct HomeTCAView: View {
         if macSidebarMode == .timeline {
             selectedTimelineRange = .week
             selectedTimelineFilterType = .all
+            selectedTimelineTag = nil
         } else {
             selectedFilter = .all
             clearOptionalFilters()
@@ -529,6 +533,15 @@ struct HomeTCAView: View {
                         timelineTypePicker
                     }
                 }
+
+                if !availableTimelineTags.isEmpty {
+                    macSidebarSectionCard(title: "Tags") {
+                        timelineTagFilterBar
+                    }
+                }
+            }
+            .onChange(of: availableTimelineTags) { _, _ in
+                validateSelectedTimelineTag()
             }
             .padding(24)
             .frame(maxWidth: 860, alignment: .leading)
@@ -954,6 +967,14 @@ struct HomeTCAView: View {
 
 #if os(macOS)
     private var timelineEntries: [TimelineEntry] {
+        baseTimelineEntries
+            .filter { entry in
+                TimelineLogic.matchesSelectedTag(selectedTimelineTag, in: entry.tags)
+            }
+            .filter(matchesTimelineSearch)
+    }
+
+    private var baseTimelineEntries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
             logs: timelineLogs,
             tasks: store.routineTasks,
@@ -962,7 +983,10 @@ struct HomeTCAView: View {
             now: Date(),
             calendar: calendar
         )
-        .filter(matchesTimelineSearch)
+    }
+
+    private var availableTimelineTags: [String] {
+        TimelineLogic.availableTags(from: baseTimelineEntries)
     }
 
     private var groupedTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
@@ -1638,6 +1662,7 @@ struct HomeTCAView: View {
 
     private func openTimelineInSidebar() {
         macSidebarMode = .timeline
+        validateSelectedTimelineTag()
         macSidebarSelection = nil
         store.send(.setMacFilterDetailPresented(false))
         store.send(.setSelectedTask(nil))
@@ -1720,6 +1745,33 @@ struct HomeTCAView: View {
             || (entry.isOneOff
                 ? "todo".localizedCaseInsensitiveContains(trimmedSearch)
                 : "routine".localizedCaseInsensitiveContains(trimmedSearch))
+    }
+
+    @ViewBuilder
+    private var timelineTagFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                tagFilterButton(title: "All Tags", isSelected: selectedTimelineTag == nil) {
+                    selectedTimelineTag = nil
+                }
+
+                ForEach(availableTimelineTags, id: \.self) { tag in
+                    tagFilterButton(
+                        title: "#\(tag)",
+                        isSelected: selectedTimelineTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                    ) {
+                        selectedTimelineTag = tag
+                    }
+                }
+            }
+        }
+    }
+
+    private func validateSelectedTimelineTag() {
+        guard let selectedTimelineTag else { return }
+        if !RoutineTag.contains(selectedTimelineTag, in: availableTimelineTags) {
+            self.selectedTimelineTag = nil
+        }
     }
 
 #endif

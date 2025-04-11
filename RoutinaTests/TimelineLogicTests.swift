@@ -10,12 +10,14 @@ struct TimelineLogicTests {
         id: UUID = UUID(),
         name: String = "Test Routine",
         emoji: String = "🔧",
+        tags: [String] = [],
         scheduleMode: RoutineScheduleMode = .fixedInterval
     ) -> RoutineTask {
         RoutineTask(
             id: id,
             name: name,
             emoji: emoji,
+            tags: tags,
             scheduleMode: scheduleMode
         )
     }
@@ -23,12 +25,14 @@ struct TimelineLogicTests {
     private func makeTodoTask(
         id: UUID = UUID(),
         name: String = "Test Todo",
-        emoji: String = "📝"
+        emoji: String = "📝",
+        tags: [String] = []
     ) -> RoutineTask {
         RoutineTask(
             id: id,
             name: name,
             emoji: emoji,
+            tags: tags,
             scheduleMode: .oneOff
         )
     }
@@ -259,15 +263,15 @@ struct TimelineLogicTests {
         let calendar = makeTestCalendar()
         let entry1 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T08:00:00Z"),
-            taskName: "A", taskEmoji: "🔧", isOneOff: false
+            taskName: "A", taskEmoji: "🔧", tags: [], isOneOff: false
         )
         let entry2 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T14:00:00Z"),
-            taskName: "B", taskEmoji: "🔧", isOneOff: false
+            taskName: "B", taskEmoji: "🔧", tags: [], isOneOff: false
         )
         let entry3 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-19T10:00:00Z"),
-            taskName: "C", taskEmoji: "🔧", isOneOff: false
+            taskName: "C", taskEmoji: "🔧", tags: [], isOneOff: false
         )
 
         let groups = TimelineLogic.groupedByDay(
@@ -288,11 +292,11 @@ struct TimelineLogicTests {
         let calendar = makeTestCalendar()
         let march18 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-18T10:00:00Z"),
-            taskName: "Old", taskEmoji: "🔧", isOneOff: false
+            taskName: "Old", taskEmoji: "🔧", tags: [], isOneOff: false
         )
         let march20 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T10:00:00Z"),
-            taskName: "New", taskEmoji: "🔧", isOneOff: false
+            taskName: "New", taskEmoji: "🔧", tags: [], isOneOff: false
         )
 
         let groups = TimelineLogic.groupedByDay(
@@ -402,5 +406,61 @@ struct TimelineLogicTests {
 
         #expect(entries.count == 3)
         #expect(entries.allSatisfy { $0.taskName == "Daily Task" })
+    }
+
+    @Test
+    func filteredEntries_preservesTaskTags() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Tagged Task", tags: ["Focus", "Morning"])
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+
+        let entries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(entries.count == 1)
+        #expect(entries[0].tags == ["Focus", "Morning"])
+    }
+
+    @Test
+    func matchesSelectedTag_returnsTrueForMatchingTag() {
+        #expect(TimelineLogic.matchesSelectedTag("focus", in: ["Morning", "Focus"]))
+    }
+
+    @Test
+    func matchesSelectedTag_returnsFalseForMissingTag() {
+        #expect(TimelineLogic.matchesSelectedTag("health", in: ["Morning", "Focus"]) == false)
+    }
+
+    @Test
+    func availableTags_collectsSortedUniqueTagsFromEntries() {
+        let entries = [
+            TimelineEntry(
+                id: UUID(),
+                taskID: UUID(),
+                timestamp: makeDate("2026-03-20T08:00:00Z"),
+                taskName: "A",
+                taskEmoji: "🔧",
+                tags: ["Focus", "Morning"],
+                isOneOff: false
+            ),
+            TimelineEntry(
+                id: UUID(),
+                taskID: UUID(),
+                timestamp: makeDate("2026-03-20T09:00:00Z"),
+                taskName: "B",
+                taskEmoji: "📝",
+                tags: ["focus", "Health"],
+                isOneOff: true
+            )
+        ]
+
+        #expect(TimelineLogic.availableTags(from: entries) == ["Focus", "Health", "Morning"])
     }
 }

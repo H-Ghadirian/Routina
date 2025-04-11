@@ -21,6 +21,7 @@ struct TimelineEntry: Identifiable, Equatable {
     let timestamp: Date
     let taskName: String
     let taskEmoji: String
+    let tags: [String]
     let isOneOff: Bool
 }
 
@@ -62,9 +63,19 @@ enum TimelineLogic {
                 timestamp: timestamp,
                 taskName: task?.name ?? "Deleted Routine",
                 taskEmoji: task?.emoji ?? "🗑️",
+                tags: task?.tags ?? [],
                 isOneOff: isOneOff
             )
         }
+    }
+
+    static func availableTags(from entries: [TimelineEntry]) -> [String] {
+        RoutineTag.allTags(from: entries.map(\.tags))
+    }
+
+    static func matchesSelectedTag(_ selectedTag: String?, in tags: [String]) -> Bool {
+        guard let selectedTag else { return true }
+        return RoutineTag.contains(selectedTag, in: tags)
     }
 
     static func groupedByDay(
