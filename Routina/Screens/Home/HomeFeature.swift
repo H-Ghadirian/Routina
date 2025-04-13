@@ -143,7 +143,8 @@ struct HomeFeature {
                     detailRefreshEffect,
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: reconciledTasks)))),
                     .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: reconciledTasks)))),
-                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: detachedPlaces, linkedTo: reconciledTasks))))
+                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: detachedPlaces, linkedTo: reconciledTasks)))),
+                    .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(reconciledTasks))))
                 )
 
             case .tasksLoadFailed:
@@ -188,6 +189,7 @@ struct HomeFeature {
                 if isPresented {
                     state.addRoutineState = AddRoutineFeature.State(
                         availableTags: availableTags(from: state.routineTasks),
+                        availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks),
                         existingRoutineNames: existingRoutineNames(from: state.routineTasks),
                         availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
                     )
@@ -442,7 +444,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, steps, scheduleMode, checklistItems))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -465,6 +467,7 @@ struct HomeFeature {
                             imageData: imageData,
                             placeID: placeID,
                             tags: tags,
+                            relationships: relationships,
                             steps: steps,
                             checklistItems: checklistItems,
                             scheduleMode: scheduleMode,
@@ -521,6 +524,14 @@ struct HomeFeature {
                 syncSelectedTaskFromRoutineDetail(&state)
                 return .none
 
+            case let .routineDetail(.openLinkedTask(taskID)):
+                guard let task = state.routineTasks.first(where: { $0.id == taskID }) else { return .none }
+                state.selectedTaskID = taskID
+                state.routineDetailState = makeRoutineDetailState(for: task)
+                state.selectedTaskReloadGuard = nil
+                state.pendingSelectedChecklistReloadGuardTaskID = nil
+                return refreshSelectedRoutineDetailEffect(for: state)
+
             case .routineDetail:
                 return .none
 
@@ -530,8 +541,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, steps, scheduleMode, checklistItems)))
+                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
@@ -633,6 +644,7 @@ struct HomeFeature {
         guard !uniqueIDs.isEmpty else { return .none }
 
         let idSet = Set(uniqueIDs)
+        RoutineTask.removeRelationships(targeting: idSet, from: state.routineTasks)
         state.routineTasks.removeAll { idSet.contains($0.id) }
         var removedDoneCount = 0
         for id in uniqueIDs {
@@ -645,6 +657,8 @@ struct HomeFeature {
 
         let deleteEffect: Effect<Action> = .run { @MainActor [uniqueIDs] _ in
             let context = self.modelContext()
+            let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
+            RoutineTask.removeRelationships(targeting: idSet, from: allTasks)
             for id in uniqueIDs {
                 let descriptor = FetchDescriptor<RoutineTask>(
                     predicate: #Predicate { task in
@@ -668,7 +682,8 @@ struct HomeFeature {
             deleteEffect,
             .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
             .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: state.routineTasks)))),
-            .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks))))
+            .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)))),
+            .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(state.routineTasks))))
         )
     }
 

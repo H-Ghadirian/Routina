@@ -163,6 +163,19 @@ struct RoutineDetailEditRoutineContent: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(header: Text("Relationships")) {
+                TaskRelationshipsEditor(
+                    relationships: store.editRelationships,
+                    candidates: store.availableRelationshipTasks,
+                    addRelationship: { store.send(.editAddRelationship($0, $1)) },
+                    removeRelationship: { store.send(.editRemoveRelationship($0)) }
+                )
+
+                Text("Link this task to another task as related work or a blocker.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             if store.editScheduleMode.taskType == .routine {
                 Section(header: Text("Schedule Type")) {
                     Picker("Schedule Type", selection: scheduleModeBinding) {

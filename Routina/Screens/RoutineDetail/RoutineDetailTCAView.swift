@@ -145,6 +145,9 @@ struct RoutineDetailTCAView: View {
                     if store.task.hasNotes || store.task.hasImage || store.task.resolvedLinkURL != nil {
                         taskExtrasSection
                     }
+                    if !resolvedRelationships.isEmpty {
+                        relationshipsSection
+                    }
                     if store.task.hasChecklistItems {
                         checklistItemsSection
                     }
@@ -166,6 +169,7 @@ struct RoutineDetailTCAView: View {
             imageData: store.editImageData,
             selectedPlaceID: store.editSelectedPlaceID,
             tags: store.editRoutineTags,
+            relationships: store.editRelationships,
             tagDraft: store.editTagDraft,
             scheduleMode: store.editScheduleMode,
             steps: store.editRoutineSteps,
@@ -489,6 +493,13 @@ struct RoutineDetailTCAView: View {
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            if !blockingRelationships.isEmpty {
+                Text(blockerSummaryText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -617,6 +628,53 @@ struct RoutineDetailTCAView: View {
                     }
                     .font(.footnote.weight(.semibold))
                     .padding(.top, 4)
+                }
+            }
+        }
+        .padding(12)
+        .background(routineLogsBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
+    private var relationshipsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Relationships")
+                .font(.headline)
+
+            ForEach(resolvedRelationships) { relationship in
+                Button {
+                    store.send(.openLinkedTask(relationship.taskID))
+                } label: {
+                    HStack(spacing: 12) {
+                        Text(relationship.taskEmoji)
+                            .font(.title3)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(relationship.taskName)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.primary)
+
+                            Label(relationship.kind.title, systemImage: relationship.kind.systemImage)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer(minLength: 0)
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+
+                if relationship.id != resolvedRelationships.last?.id {
+                    Divider()
                 }
             }
         }
@@ -770,6 +828,22 @@ struct RoutineDetailTCAView: View {
     private var linkedPlaceSummary: RoutinePlaceSummary? {
         guard let placeID = store.task.placeID else { return nil }
         return store.availablePlaces.first(where: { $0.id == placeID })
+    }
+
+    private var resolvedRelationships: [RoutineTaskResolvedRelationship] {
+        RoutineTask.resolvedRelationships(for: store.task, within: store.availableRelationshipTasks)
+    }
+
+    private var blockingRelationships: [RoutineTaskResolvedRelationship] {
+        resolvedRelationships.filter { $0.kind == .blockedBy }
+    }
+
+    private var blockerSummaryText: String {
+        let count = blockingRelationships.count
+        if count == 1, let blocker = blockingRelationships.first {
+            return "Blocked by \(blocker.taskName). You can still mark this done, but it may be worth checking that task first."
+        }
+        return "Blocked by \(count) tasks. You can still mark this done, but it may be worth checking them first."
     }
 
     private var calendarHeader: some View {
@@ -1214,6 +1288,7 @@ struct RoutineDetailTCAView: View {
         imageData: Data?,
         selectedPlaceID: UUID?,
         tags: [String],
+        relationships: [RoutineTaskRelationship],
         tagDraft: String,
         scheduleMode: RoutineScheduleMode,
         steps: [RoutineStep],
@@ -1237,9 +1312,11 @@ struct RoutineDetailTCAView: View {
         let currentNotes = task.notes ?? ""
         let currentLink = task.link ?? ""
         let currentTags = RoutineTag.deduplicated(task.tags)
+        let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
         let currentImageData = task.imageData
         let candidateTags = RoutineTag.appending(tagDraft, to: tags)
+        let candidateRelationships = RoutineTaskRelationship.sanitized(relationships, ownerID: task.id)
         let currentSteps = RoutineStep.sanitized(task.steps)
         let candidateSteps = RoutineStep.normalizedTitle(stepDraft).map { title in
             steps + [RoutineStep(title: title)]
@@ -1274,6 +1351,7 @@ struct RoutineDetailTCAView: View {
             || imageData != currentImageData
             || selectedPlaceID != task.placeID
             || candidateTags != currentTags
+            || candidateRelationships != currentRelationships
             || scheduleMode != task.scheduleMode
             || RoutineStep.sanitized(candidateSteps) != currentSteps
             || sanitizedCandidateChecklistItems != currentChecklistItems

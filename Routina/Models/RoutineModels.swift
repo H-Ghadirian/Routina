@@ -29,6 +29,123 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     case todo = "Todo"
 }
 
+enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case related
+    case blocks
+    case blockedBy
+
+    var title: String {
+        switch self {
+        case .related:
+            return "Related"
+        case .blocks:
+            return "Blocks"
+        case .blockedBy:
+            return "Blocked by"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .related:
+            return "link"
+        case .blocks:
+            return "arrow.turn.down.right"
+        case .blockedBy:
+            return "exclamationmark.triangle"
+        }
+    }
+
+    var inverse: RoutineTaskRelationshipKind {
+        switch self {
+        case .related:
+            return .related
+        case .blocks:
+            return .blockedBy
+        case .blockedBy:
+            return .blocks
+        }
+    }
+
+    var sortOrder: Int {
+        switch self {
+        case .blockedBy:
+            return 0
+        case .blocks:
+            return 1
+        case .related:
+            return 2
+        }
+    }
+}
+
+struct RoutineTaskRelationship: Codable, Equatable, Hashable, Identifiable, Sendable {
+    var targetTaskID: UUID
+    var kind: RoutineTaskRelationshipKind
+
+    var id: String {
+        "\(targetTaskID.uuidString)-\(kind.rawValue)"
+    }
+
+    static func sanitized(
+        _ relationships: [RoutineTaskRelationship],
+        ownerID: UUID? = nil
+    ) -> [RoutineTaskRelationship] {
+        var latestByTargetID: [UUID: RoutineTaskRelationship] = [:]
+        for relationship in relationships {
+            guard relationship.targetTaskID != ownerID else { continue }
+            latestByTargetID[relationship.targetTaskID] = relationship
+        }
+
+        return latestByTargetID.values.sorted {
+            if $0.kind.sortOrder != $1.kind.sortOrder {
+                return $0.kind.sortOrder < $1.kind.sortOrder
+            }
+            return $0.targetTaskID.uuidString < $1.targetTaskID.uuidString
+        }
+    }
+}
+
+struct RoutineTaskRelationshipCandidate: Equatable, Hashable, Identifiable, Sendable {
+    var id: UUID
+    var name: String
+    var emoji: String
+    var relationships: [RoutineTaskRelationship]
+
+    var displayName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled task" : name
+    }
+
+    static func from(
+        _ tasks: [RoutineTask],
+        excluding excludedTaskID: UUID? = nil
+    ) -> [RoutineTaskRelationshipCandidate] {
+        tasks.compactMap { task in
+            guard task.id != excludedTaskID else { return nil }
+            return RoutineTaskRelationshipCandidate(
+                id: task.id,
+                name: task.name ?? "Untitled task",
+                emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
+                relationships: task.relationships
+            )
+        }
+        .sorted { lhs, rhs in
+            lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+        }
+    }
+}
+
+struct RoutineTaskResolvedRelationship: Equatable, Hashable, Identifiable, Sendable {
+    var taskID: UUID
+    var taskName: String
+    var taskEmoji: String
+    var kind: RoutineTaskRelationshipKind
+
+    var id: String {
+        "\(taskID.uuidString)-\(kind.rawValue)"
+    }
+}
+
 struct RoutineTimeOfDay: Codable, Equatable, Hashable, Sendable {
     var hour: Int
     var minute: Int
@@ -391,6 +508,29 @@ private enum RoutineChecklistProgressStorage {
     }
 }
 
+private enum RoutineTaskRelationshipStorage {
+    static func serialize(_ relationships: [RoutineTaskRelationship], ownerID: UUID? = nil) -> String {
+        let sanitized = RoutineTaskRelationship.sanitized(relationships, ownerID: ownerID)
+        guard !sanitized.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(sanitized),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String, ownerID: UUID? = nil) -> [RoutineTaskRelationship] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([RoutineTaskRelationship].self, from: data) else {
+            return []
+        }
+        return RoutineTaskRelationship.sanitized(decoded, ownerID: ownerID)
+    }
+}
+
 enum RoutineRecurrenceRuleStorage {
     static func serialize(_ recurrenceRule: RoutineRecurrenceRule) -> String {
         let encoder = JSONEncoder()
@@ -425,6 +565,7 @@ final class RoutineTask {
     var stepsStorage: String = ""
     var checklistItemsStorage: String = ""
     var completedChecklistItemIDsStorage: String = ""
+    var relationshipsStorage: String = ""
     var scheduleModeRawValue: String = RoutineScheduleMode.fixedInterval.rawValue
     var recurrenceRuleStorage: String = ""
     var interval: Int16 = 1
@@ -479,6 +620,11 @@ final class RoutineTask {
     var completedChecklistItemIDs: Set<UUID> {
         get { RoutineChecklistProgressStorage.deserialize(completedChecklistItemIDsStorage) }
         set { completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(newValue) }
+    }
+
+    var relationships: [RoutineTaskRelationship] {
+        get { RoutineTaskRelationshipStorage.deserialize(relationshipsStorage, ownerID: id) }
+        set { relationshipsStorage = RoutineTaskRelationshipStorage.serialize(newValue, ownerID: id) }
     }
 
     var scheduleMode: RoutineScheduleMode {
@@ -614,6 +760,7 @@ final class RoutineTask {
         imageData: Data? = nil,
         placeID: UUID? = nil,
         tags: [String] = [],
+        relationships: [RoutineTaskRelationship] = [],
         steps: [RoutineStep] = [],
         checklistItems: [RoutineChecklistItem] = [],
         scheduleMode: RoutineScheduleMode? = nil,
@@ -640,6 +787,7 @@ final class RoutineTask {
         self.imageData = imageData
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
+        self.relationshipsStorage = RoutineTaskRelationshipStorage.serialize(relationships, ownerID: id)
         self.stepsStorage = RoutineStepStorage.serialize(steps)
         self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(resolvedChecklistItems)
         self.scheduleModeRawValue = resolvedScheduleMode.rawValue
@@ -675,6 +823,10 @@ final class RoutineTask {
     func replaceChecklistItems(_ updatedItems: [RoutineChecklistItem]) {
         checklistItemsStorage = RoutineChecklistItemStorage.serialize(updatedItems)
         sanitizeChecklistProgress()
+    }
+
+    func replaceRelationships(_ updatedRelationships: [RoutineTaskRelationship]) {
+        relationshipsStorage = RoutineTaskRelationshipStorage.serialize(updatedRelationships, ownerID: id)
     }
 
     func shiftChecklistItems(by duration: TimeInterval) {
@@ -906,6 +1058,57 @@ final class RoutineTask {
         return String(first)
     }
 
+    static func resolvedRelationships(
+        for task: RoutineTask,
+        within candidates: [RoutineTaskRelationshipCandidate]
+    ) -> [RoutineTaskResolvedRelationship] {
+        var resolvedByID: [String: RoutineTaskResolvedRelationship] = [:]
+        let candidateByID = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0) })
+
+        for relationship in task.relationships {
+            guard let candidate = candidateByID[relationship.targetTaskID] else { continue }
+            let resolved = RoutineTaskResolvedRelationship(
+                taskID: candidate.id,
+                taskName: candidate.displayName,
+                taskEmoji: candidate.emoji,
+                kind: relationship.kind
+            )
+            resolvedByID[resolved.id] = resolved
+        }
+
+        for candidate in candidates {
+            for relationship in candidate.relationships where relationship.targetTaskID == task.id {
+                let resolved = RoutineTaskResolvedRelationship(
+                    taskID: candidate.id,
+                    taskName: candidate.displayName,
+                    taskEmoji: candidate.emoji,
+                    kind: relationship.kind.inverse
+                )
+                resolvedByID[resolved.id] = resolved
+            }
+        }
+
+        return resolvedByID.values.sorted {
+            if $0.kind.sortOrder != $1.kind.sortOrder {
+                return $0.kind.sortOrder < $1.kind.sortOrder
+            }
+            return $0.taskName.localizedCaseInsensitiveCompare($1.taskName) == .orderedAscending
+        }
+    }
+
+    static func removeRelationships(
+        targeting deletedTaskIDs: Set<UUID>,
+        from tasks: [RoutineTask]
+    ) {
+        guard !deletedTaskIDs.isEmpty else { return }
+        for task in tasks where !deletedTaskIDs.contains(task.id) {
+            let updatedRelationships = task.relationships.filter { !deletedTaskIDs.contains($0.targetTaskID) }
+            if updatedRelationships != task.relationships {
+                task.replaceRelationships(updatedRelationships)
+            }
+        }
+    }
+
     func detachedCopy() -> RoutineTask {
         let copy = RoutineTask(
             id: id,
@@ -917,6 +1120,7 @@ final class RoutineTask {
             imageData: imageData,
             placeID: placeID,
             tags: tags,
+            relationships: relationships,
             steps: steps,
             checklistItems: checklistItems,
             scheduleMode: scheduleMode,

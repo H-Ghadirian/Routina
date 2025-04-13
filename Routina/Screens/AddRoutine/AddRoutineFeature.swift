@@ -39,7 +39,9 @@ struct AddRoutineFeature: Reducer {
         var deadline: Date?
         var imageData: Data?
         var routineTags: [String] = []
+        var relationships: [RoutineTaskRelationship] = []
         var availableTags: [String] = []
+        var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var tagDraft: String = ""
         var scheduleMode: RoutineScheduleMode = .fixedInterval
         var routineSteps: [RoutineStep] = []
@@ -101,10 +103,13 @@ struct AddRoutineFeature: Reducer {
         case removeImageTapped
         case taskTypeChanged(RoutineTaskType)
         case availableTagsChanged([String])
+        case availableRelationshipTasksChanged([RoutineTaskRelationshipCandidate])
         case tagDraftChanged(String)
         case addTagTapped
         case removeTag(String)
         case toggleTagSelection(String)
+        case addRelationship(UUID, RoutineTaskRelationshipKind)
+        case removeRelationship(UUID)
         case tagRenamed(oldName: String, newName: String)
         case tagDeleted(String)
         case scheduleModeChanged(RoutineScheduleMode)
@@ -132,13 +137,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -192,6 +197,15 @@ struct AddRoutineFeature: Reducer {
             state.availableTags = RoutineTag.allTags(from: [tags])
             return .none
 
+        case let .availableRelationshipTasksChanged(tasks):
+            state.availableRelationshipTasks = tasks
+            state.relationships = RoutineTaskRelationship.sanitized(
+                state.relationships.filter { relationship in
+                    tasks.contains(where: { $0.id == relationship.targetTaskID })
+                }
+            )
+            return .none
+
         case let .tagDraftChanged(value):
             state.tagDraft = value
             return .none
@@ -211,6 +225,16 @@ struct AddRoutineFeature: Reducer {
             } else {
                 state.routineTags = RoutineTag.appending(tag, to: state.routineTags)
             }
+            return .none
+
+        case let .addRelationship(taskID, kind):
+            state.relationships = RoutineTaskRelationship.sanitized(
+                state.relationships + [RoutineTaskRelationship(targetTaskID: taskID, kind: kind)]
+            )
+            return .none
+
+        case let .removeRelationship(taskID):
+            state.relationships.removeAll { $0.targetTaskID == taskID }
             return .none
 
         case let .tagRenamed(oldName, newName):
@@ -347,6 +371,7 @@ struct AddRoutineFeature: Reducer {
                 state.imageData,
                 state.selectedPlaceID,
                 state.routineTags,
+                state.relationships,
                 (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)
                     ? RoutineStep.sanitized(state.routineSteps)
                     : [],

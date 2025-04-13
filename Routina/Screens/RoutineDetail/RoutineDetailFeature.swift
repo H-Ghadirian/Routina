@@ -47,6 +47,7 @@ struct RoutineDetailFeature: Reducer {
         var editDeadline: Date?
         var editImageData: Data?
         var editRoutineTags: [String] = []
+        var editRelationships: [RoutineTaskRelationship] = []
         var editTagDraft: String = ""
         var editScheduleMode: RoutineScheduleMode = .fixedInterval
         var editRoutineSteps: [RoutineStep] = []
@@ -56,6 +57,7 @@ struct RoutineDetailFeature: Reducer {
         var editChecklistItemDraftInterval: Int = 3
         var availablePlaces: [RoutinePlaceSummary] = []
         var availableTags: [String] = []
+        var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var editSelectedPlaceID: UUID?
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
@@ -88,6 +90,8 @@ struct RoutineDetailFeature: Reducer {
         case editTagDraftChanged(String)
         case editAddTagTapped
         case editRemoveTag(String)
+        case editAddRelationship(UUID, RoutineTaskRelationshipKind)
+        case editRemoveRelationship(UUID)
         case editTagRenamed(oldName: String, newName: String)
         case editTagDeleted(String)
         case editScheduleModeChanged(RoutineScheduleMode)
@@ -102,6 +106,7 @@ struct RoutineDetailFeature: Reducer {
         case editRemoveChecklistItem(UUID)
         case availablePlacesLoaded([RoutinePlaceSummary])
         case availableTagsLoaded([String])
+        case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
         case editSelectedPlaceChanged(UUID?)
         case editToggleTagSelection(String)
         case editFrequencyChanged(EditFrequency)
@@ -116,6 +121,7 @@ struct RoutineDetailFeature: Reducer {
         case routineDeleted
         case deleteDismissHandled
         case logsLoaded([RoutineLog])
+        case openLinkedTask(UUID)
         case onAppear
     }
 
@@ -339,7 +345,7 @@ struct RoutineDetailFeature: Reducer {
             state.isEditSheetPresented = isPresented
             if isPresented {
                 syncEditFormFromTask(&state)
-                return loadEditContext()
+                return loadEditContext(excluding: state.task.id)
             }
             return .none
 
@@ -386,6 +392,17 @@ struct RoutineDetailFeature: Reducer {
 
         case let .editRemoveTag(tag):
             state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+            return .none
+
+        case let .editAddRelationship(taskID, kind):
+            state.editRelationships = RoutineTaskRelationship.sanitized(
+                state.editRelationships + [RoutineTaskRelationship(targetTaskID: taskID, kind: kind)],
+                ownerID: state.task.id
+            )
+            return .none
+
+        case let .editRemoveRelationship(taskID):
+            state.editRelationships.removeAll { $0.targetTaskID == taskID }
             return .none
 
         case let .editTagRenamed(oldName, newName):
@@ -471,6 +488,16 @@ struct RoutineDetailFeature: Reducer {
             state.availableTags = RoutineTag.allTags(from: [tags])
             return .none
 
+        case let .availableRelationshipTasksLoaded(tasks):
+            state.availableRelationshipTasks = tasks
+            state.editRelationships = RoutineTaskRelationship.sanitized(
+                state.editRelationships.filter { relationship in
+                    tasks.contains(where: { $0.id == relationship.targetTaskID })
+                },
+                ownerID: state.task.id
+            )
+            return .none
+
         case let .editSelectedPlaceChanged(placeID):
             state.editSelectedPlaceID = placeID
             return .none
@@ -543,6 +570,7 @@ struct RoutineDetailFeature: Reducer {
                 imageData: state.editImageData,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
+                relationships: state.editRelationships,
                 steps: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
                     ? state.editRoutineSteps
                     : [],
@@ -575,13 +603,16 @@ struct RoutineDetailFeature: Reducer {
             updateDerivedState(&state)
             return .none
 
+        case .openLinkedTask:
+            return .none
+
         case .onAppear:
             if state.selectedDate == nil {
                 state.selectedDate = calendar.startOfDay(for: now)
             }
             updateDerivedState(&state)
             return .concatenate(
-                loadEditContext(),
+                loadEditContext(excluding: state.task.id),
                 handleOnAppear(taskID: state.task.id)
             )
             .cancellable(id: CancelID.loadContext, cancelInFlight: true)
@@ -596,6 +627,7 @@ struct RoutineDetailFeature: Reducer {
         state.editDeadline = state.task.deadline
         state.editImageData = state.task.imageData
         state.editRoutineTags = state.task.tags
+        state.editRelationships = state.task.relationships
         state.editTagDraft = ""
         state.editScheduleMode = state.task.scheduleMode
         state.editRoutineSteps = state.task.steps
@@ -820,6 +852,7 @@ struct RoutineDetailFeature: Reducer {
         imageData: Data?,
         placeID: UUID?,
         tags: [String],
+        relationships: [RoutineTaskRelationship],
         steps: [RoutineStep],
         checklistItems: [RoutineChecklistItem],
         scheduleMode: RoutineScheduleMode,
@@ -841,6 +874,7 @@ struct RoutineDetailFeature: Reducer {
                 task.imageData = imageData
                 task.placeID = placeID
                 task.tags = tags
+                task.replaceRelationships(relationships)
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
@@ -873,13 +907,14 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
-    private func loadEditContext() -> Effect<Action> {
+    private func loadEditContext(excluding taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             let context = modelContext()
             let places = (try? context.fetch(FetchDescriptor<RoutinePlace>())) ?? []
             let tasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
             send(.availablePlacesLoaded(RoutinePlace.summaries(from: places, linkedTo: tasks)))
             send(.availableTagsLoaded(RoutineTag.allTags(from: tasks.map(\.tags))))
+            send(.availableRelationshipTasksLoaded(RoutineTaskRelationshipCandidate.from(tasks, excluding: taskID)))
         }
     }
 
@@ -893,6 +928,8 @@ struct RoutineDetailFeature: Reducer {
                 }
 
                 let identifier = task.id.uuidString
+                let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
+                RoutineTask.removeRelationships(targeting: Set([taskID]), from: allTasks)
                 context.delete(task)
                 let logs = try context.fetch(allLogsDescriptor(for: task.id))
                 for log in logs {

@@ -156,6 +156,21 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
+                sectionCard(title: "Relationships") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        TaskRelationshipsEditor(
+                            relationships: store.editRelationships,
+                            candidates: store.availableRelationshipTasks,
+                            addRelationship: { store.send(.editAddRelationship($0, $1)) },
+                            removeRelationship: { store.send(.editRemoveRelationship($0)) }
+                        )
+
+                        Text("Link this task to another task as related work or a blocker.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 sectionCard(title: "Task Type") {
                     VStack(alignment: .leading, spacing: 12) {
                         Picker("Task Type", selection: taskTypeBinding) {
