@@ -23,12 +23,9 @@ struct RoutineDetailView: View {
     private var progressColor: Color {
         let progress = Double(daysSinceLastRoutine) / Double(task.interval)
         switch progress {
-        case ..<0.33:
-            return .green
-        case ..<0.66:
-            return .yellow
-        default:
-            return .red
+        case ..<0.75: return .green
+        case ..<0.90: return .yellow
+        default: return .red
         }
     }
 

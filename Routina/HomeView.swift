@@ -1,5 +1,7 @@
 import SwiftUI
 import CoreData
+import SwiftUI
+import CoreData
 
 struct HomeView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -16,7 +18,11 @@ struct HomeView: View {
             List {
                 ForEach(routineTasks) { task in
                     NavigationLink(destination: RoutineDetailView(task: task)) {
-                        Text(task.name ?? "Unnamed task")
+                        HStack {
+                            Text(task.name ?? "Unnamed task")
+                            Spacer()
+                            urgencySquare(for: task)
+                        }
                     }
                 }
                 .onDelete(perform: deleteRoutines)
@@ -33,6 +39,24 @@ struct HomeView: View {
                 AddRoutineView().environment(\.managedObjectContext, viewContext)
             }
         }
+    }
+
+    private func urgencySquare(for task: RoutineTask) -> some View {
+        let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
+        let progress = Double(daysSinceLastRoutine) / Double(task.interval)
+        
+        let color: Color = {
+            switch progress {
+            case ..<0.75: return .green
+            case ..<0.90: return .yellow
+            default: return .red
+            }
+        }()
+
+        return Rectangle()
+            .fill(color)
+            .frame(width: 20, height: 20)
+            .cornerRadius(4)
     }
 
     private func deleteRoutines(offsets: IndexSet) {
