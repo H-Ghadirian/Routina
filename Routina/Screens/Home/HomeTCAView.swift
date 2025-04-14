@@ -214,8 +214,8 @@ struct HomeTCAView: View {
         VStack(spacing: 12) {
             if macSidebarMode == .routines && store.routineTasks.isEmpty {
                 emptyStateView(
-                    title: "No routines yet",
-                    message: "Start with one recurring task, and the sidebar will organize what needs attention for you.",
+                    title: "No tasks yet",
+                    message: "Add a routine or to-do, and the sidebar will organize what needs attention for you.",
                     systemImage: "checklist"
                 ) {
                     store.send(.setAddRoutineSheet(true))
@@ -250,8 +250,8 @@ struct HomeTCAView: View {
         Group {
             if store.routineTasks.isEmpty {
                 emptyStateView(
-                    title: "No routines yet",
-                    message: "Start with one recurring task, and the home list will organize what needs attention for you.",
+                    title: "No tasks yet",
+                    message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
                     systemImage: "checklist"
                 ) {
                     store.send(.setAddRoutineSheet(true))
@@ -285,10 +285,10 @@ struct HomeTCAView: View {
             Button {
                 store.send(.setAddRoutineSheet(true))
             } label: {
-                Label("Add Routine", systemImage: "plus")
+                Label("Add Task", systemImage: "plus")
             }
 #else
-            MacToolbarIconButton(title: "Add Routine", systemImage: "plus") {
+            MacToolbarIconButton(title: "Add Task", systemImage: "plus") {
                 store.send(.setAddRoutineSheet(true))
             }
 #endif
@@ -585,9 +585,9 @@ struct HomeTCAView: View {
             RoutineDetailTCAView(store: detailStore)
         } else {
             ContentUnavailableView(
-                "Select a routine",
+                "Select a task",
                 systemImage: "checklist.checked",
-                description: Text("Choose a routine from the sidebar to see its schedule, logs, and actions.")
+                description: Text("Choose a routine or to-do from the sidebar to see its schedule, logs, and actions.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -2105,6 +2105,9 @@ struct HomeTCAView: View {
 
         return Label(style.title, systemImage: style.systemImage)
             .font(.caption.weight(.semibold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
             .foregroundStyle(style.foregroundColor)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -2342,7 +2345,7 @@ struct HomeTCAView: View {
                 .frame(maxWidth: 320)
 
             if let action {
-                Button("Add Routine", action: action)
+                Button("Add Task", action: action)
                     .buttonStyle(.borderedProminent)
             }
         }
@@ -2476,12 +2479,18 @@ private struct MacDetailContainerView<FilterView: View>: View {
                 RoutineDetailTCAView(store: detailStore)
             } else {
                 ContentUnavailableView(
-                    isTimelinePresented ? "Select a done item or filters" : "Select a routine or open filters",
+                    isTimelinePresented
+                        ? "Select a done item or filters"
+                        : (store.routineTasks.isEmpty ? "Add a task to get started" : "Select a task"),
                     systemImage: isTimelinePresented ? "clock.arrow.circlepath" : "sidebar.right",
                     description: Text(
                         isTimelinePresented
                             ? "Choose a completed routine or todo from the sidebar, or open filters beside search to refine the done history."
-                            : "Choose a routine from the sidebar, or open filters beside search to refine the routine list."
+                            : (
+                                store.routineTasks.isEmpty
+                                    ? "Add a routine or to-do to see its details here."
+                                    : "Choose a routine or to-do from the sidebar to see its details."
+                            )
                     )
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
