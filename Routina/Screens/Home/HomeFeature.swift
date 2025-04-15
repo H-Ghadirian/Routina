@@ -187,6 +187,7 @@ struct HomeFeature {
             case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
                 if isPresented {
+                    state.isMacFilterDetailPresented = false
                     state.addRoutineState = AddRoutineFeature.State(
                         availableTags: availableTags(from: state.routineTasks),
                         availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks),
@@ -215,6 +216,8 @@ struct HomeFeature {
             case let .setMacFilterDetailPresented(isPresented):
                 state.isMacFilterDetailPresented = isPresented
                 if isPresented {
+                    state.isAddRoutineSheetPresented = false
+                    state.addRoutineState = nil
                     // Clear list selection so re-clicking the same routine
                     // triggers a fresh selection change on macOS.
                     state.selectedTaskID = nil

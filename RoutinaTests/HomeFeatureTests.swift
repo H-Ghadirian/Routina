@@ -54,6 +54,51 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func setAddRoutineSheet_hidesMacFilterDetail() async {
+        let context = makeInMemoryContext()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(isMacFilterDetailPresented: true)
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.setAddRoutineSheet(true)) {
+            $0.isAddRoutineSheetPresented = true
+            $0.isMacFilterDetailPresented = false
+            $0.addRoutineState = AddRoutineFeature.State(existingRoutineNames: [])
+        }
+    }
+
+    @Test
+    func setMacFilterDetailPresented_closesAddRoutine() async {
+        let context = makeInMemoryContext()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                selectedTaskID: UUID(),
+                isAddRoutineSheetPresented: true,
+                addRoutineState: AddRoutineFeature.State(existingRoutineNames: [])
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.setMacFilterDetailPresented(true)) {
+            $0.isMacFilterDetailPresented = true
+            $0.isAddRoutineSheetPresented = false
+            $0.addRoutineState = nil
+            $0.selectedTaskID = nil
+        }
+    }
+
+    @Test
     func setSelectedTask_populatesReducerOwnedDetailState() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-16T10:00:00Z")

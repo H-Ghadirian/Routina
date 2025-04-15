@@ -82,17 +82,16 @@ struct HomeTCAView: View {
     }
 
     private var homeContent: some View {
-        applyPlatformDeleteConfirmation(
-            to: applyPlatformRefresh(
-                to: applyPlatformSearchExperience(
-                    to: navigationContent,
-                    searchText: searchTextBinding
+        applyAddRoutinePresentation(
+            to: applyPlatformDeleteConfirmation(
+                to: applyPlatformRefresh(
+                    to: applyPlatformSearchExperience(
+                        to: navigationContent,
+                        searchText: searchTextBinding
+                    )
                 )
             )
         )
-            .sheet(isPresented: addRoutineSheetBinding) {
-                addRoutineSheetContent
-            }
             .sheet(isPresented: $isFilterSheetPresented) {
                 homeFiltersSheet
             }
@@ -157,7 +156,10 @@ struct HomeTCAView: View {
             }
             .onChange(of: store.routinePlaces) { _, places in
                 guard let selectedManualPlaceFilterID else { return }
-                if !places.contains(where: { $0.id == selectedManualPlaceFilterID }) {
+                let placeStillExists = places.contains { place in
+                    place.id == selectedManualPlaceFilterID
+                }
+                if !placeStillExists {
                     self.selectedManualPlaceFilterID = nil
                 }
             }
@@ -196,7 +198,11 @@ struct HomeTCAView: View {
                 isStatsPresented: macSidebarMode == .stats,
                 isSettingsPresented: macSidebarMode == .settings,
                 settingsStore: settingsStore,
-                selectedSettingsSection: selectedSettingsSection ?? .notifications
+                selectedSettingsSection: selectedSettingsSection ?? .notifications,
+                addRoutineStore: self.store.scope(
+                    state: \.addRoutineState,
+                    action: \.addRoutineSheet
+                )
             ) {
                 macActiveFiltersDetailView
             }
@@ -218,7 +224,7 @@ struct HomeTCAView: View {
                     message: "Add a routine or to-do, and the sidebar will organize what needs attention for you.",
                     systemImage: "checklist"
                 ) {
-                    store.send(.setAddRoutineSheet(true))
+                    openAddTask()
                 }
             } else {
                 VStack(spacing: 0) {
@@ -254,7 +260,7 @@ struct HomeTCAView: View {
                     message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
                     systemImage: "checklist"
                 ) {
-                    store.send(.setAddRoutineSheet(true))
+                    openAddTask()
                 }
             } else {
                 listOfSortedTasksView(
@@ -283,13 +289,13 @@ struct HomeTCAView: View {
 #if !os(macOS)
             filterSheetButton
             Button {
-                store.send(.setAddRoutineSheet(true))
+                openAddTask()
             } label: {
                 Label("Add Task", systemImage: "plus")
             }
 #else
             MacToolbarIconButton(title: "Add Task", systemImage: "plus") {
-                store.send(.setAddRoutineSheet(true))
+                openAddTask()
             }
 #endif
         }
@@ -631,6 +637,26 @@ struct HomeTCAView: View {
         ) {
             AddRoutineTCAView(store: addRoutineStore)
         }
+    }
+
+    @ViewBuilder
+    private func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
+#if os(macOS)
+        content
+#else
+        content.sheet(isPresented: addRoutineSheetBinding) {
+            addRoutineSheetContent
+        }
+#endif
+    }
+
+    private func openAddTask() {
+#if os(macOS)
+        macSidebarMode = .routines
+        macSidebarSelection = nil
+        store.send(.setMacFilterDetailPresented(false))
+#endif
+        store.send(.setAddRoutineSheet(true))
     }
 
     private var filterPicker: some View {
@@ -1625,9 +1651,15 @@ struct HomeTCAView: View {
                 switch selection {
                 case let .task(taskID):
                     macSidebarMode = .routines
+                    if store.isAddRoutineSheetPresented {
+                        store.send(.setAddRoutineSheet(false))
+                    }
                     store.send(.setSelectedTask(taskID))
                 case let .timelineEntry(entryID):
                     macSidebarMode = .timeline
+                    if store.isAddRoutineSheetPresented {
+                        store.send(.setAddRoutineSheet(false))
+                    }
                     store.send(.setMacFilterDetailPresented(false))
                     if let taskID = timelineEntries.first(where: { $0.id == entryID })?.taskID {
                         store.send(.setSelectedTask(taskID))
@@ -1646,6 +1678,9 @@ struct HomeTCAView: View {
     private func openTimelineEntry(_ entry: TimelineEntry) {
         macSidebarMode = .timeline
         macSidebarSelection = .timelineEntry(entry.id)
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
         store.send(.setMacFilterDetailPresented(false))
         if let taskID = entry.taskID {
             store.send(.setSelectedTask(taskID))
@@ -1664,6 +1699,9 @@ struct HomeTCAView: View {
         macSidebarMode = .timeline
         validateSelectedTimelineTag()
         macSidebarSelection = nil
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
         store.send(.setMacFilterDetailPresented(false))
         store.send(.setSelectedTask(nil))
     }
@@ -1671,6 +1709,9 @@ struct HomeTCAView: View {
     private func openStatsInSidebar() {
         macSidebarMode = .stats
         macSidebarSelection = nil
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
         store.send(.setMacFilterDetailPresented(false))
         store.send(.setSelectedTask(nil))
     }
@@ -1678,6 +1719,9 @@ struct HomeTCAView: View {
     private func openSettingsInSidebar() {
         macSidebarMode = .settings
         macSidebarSelection = nil
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
         if selectedSettingsSection == nil {
             selectedSettingsSection = .notifications
         }
@@ -2459,12 +2503,15 @@ private struct MacDetailContainerView<FilterView: View>: View {
     let isSettingsPresented: Bool
     let settingsStore: StoreOf<SettingsFeature>
     let selectedSettingsSection: SettingsMacSection
+    let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
 
     var body: some View {
         WithPerceptionTracking {
             if store.isMacFilterDetailPresented {
                 filterView()
+            } else if let addRoutineStore {
+                AddRoutineTCAView(store: addRoutineStore)
             } else if isStatsPresented {
                 StatsView()
             } else if isSettingsPresented {
