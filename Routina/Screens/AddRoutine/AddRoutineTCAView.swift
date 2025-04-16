@@ -684,7 +684,7 @@ struct AddRoutineTCAView: View {
     @ViewBuilder
     private var editableStepsContent: some View {
         if store.routineSteps.isEmpty {
-            Text("No steps yet")
+            Label("No steps yet", systemImage: "list.bullet")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
@@ -724,6 +724,11 @@ struct AddRoutineTCAView: View {
                             .buttonStyle(.borderless)
                         }
                     }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
                 }
             }
             .padding(.vertical, 4)
@@ -733,7 +738,7 @@ struct AddRoutineTCAView: View {
     @ViewBuilder
     private var editableChecklistItemsContent: some View {
         if store.routineChecklistItems.isEmpty {
-            Text("No checklist items yet")
+            Label("No checklist items yet", systemImage: "checklist")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
@@ -757,6 +762,11 @@ struct AddRoutineTCAView: View {
                         }
                         .buttonStyle(.borderless)
                     }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
                 }
             }
             .padding(.vertical, 4)
@@ -913,7 +923,8 @@ struct AddRoutineTCAView: View {
     }
 
 #if os(macOS)
-    private let formLabelWidth: CGFloat = 110
+    private let macContentMaxWidth: CGFloat = 980
+    private let macCompactControlWidth: CGFloat = 320
 
     private var sectionCardBackground: some ShapeStyle {
         Color(nsColor: .controlBackgroundColor)
@@ -924,244 +935,175 @@ struct AddRoutineTCAView: View {
     }
 
     private var macOSContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                macSectionCard(title: "Basic") {
-                    VStack(alignment: .leading, spacing: 14) {
-                        macFormRow("Name") {
-                            VStack(alignment: .leading, spacing: 6) {
-                                TextField("Task name", text: routineNameBinding)
-                                    .textFieldStyle(.roundedBorder)
-                                    .focused($isRoutineNameFocused)
-                                if let nameValidationMessage {
-                                    Text(nameValidationMessage)
-                                        .font(.caption)
-                                        .foregroundStyle(.red)
+        VStack(alignment: .leading, spacing: 20) {
+            macSectionCard(
+                title: "Identity",
+                subtitle: "Start with the essentials so the task feels defined right away."
+            ) {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .top, spacing: 16) {
+                        Text(store.routineEmoji)
+                            .font(.system(size: 30))
+                            .frame(width: 60, height: 60)
+                            .background(
+                                Circle()
+                                    .fill(Color.accentColor.opacity(0.16))
+                            )
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(macPreviewTitle)
+                                .font(.title2.weight(.semibold))
+                                .lineLimit(1)
+
+                            Text(macPreviewSubtitle)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    if let scheduleModeTitle = macScheduleModeTitle {
+                                        macInfoPill(scheduleModeTitle, systemImage: "repeat")
+                                    }
+
+                                    macInfoPill(macScheduleSummary, systemImage: "calendar")
+                                    macInfoPill(macPlaceSummary, systemImage: "mappin.and.ellipse")
                                 }
                             }
                         }
 
-                        macFormRow("Emoji") {
-                            HStack(spacing: 12) {
-                                Text(store.routineEmoji)
-                                    .font(.title2)
-                                    .frame(width: 36, height: 36)
-                                    .background(
-                                        Circle()
-                                            .fill(Color.accentColor.opacity(0.16))
-                                    )
-                                Text("Selected")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Spacer(minLength: 0)
+                        Spacer(minLength: 0)
+                    }
+
+                    macControlBlock(title: "Task name") {
+                        VStack(alignment: .leading, spacing: 6) {
+                            TextField("Task name", text: routineNameBinding)
+                                .textFieldStyle(.roundedBorder)
+                                .focused($isRoutineNameFocused)
+
+                            if let nameValidationMessage {
+                                Text(nameValidationMessage)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            }
+                        }
+                    }
+
+                    macControlBlock(title: "Emoji") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(spacing: 10) {
                                 Button("Choose Emoji") {
                                     isEmojiPickerPresented = true
                                 }
                                 .buttonStyle(.bordered)
-                            }
-                        }
 
-                        macFormRow("Quick Picks") {
-                            HStack(spacing: 6) {
-                                ForEach(Array(emojiOptions.prefix(8)), id: \.self) { emoji in
-                                    Button {
-                                        store.send(.routineEmojiChanged(emoji))
-                                    } label: {
-                                        Text(emoji)
-                                            .font(.title3)
-                                            .frame(width: 30, height: 30)
-                                            .background(
-                                                Circle()
-                                                    .fill(store.routineEmoji == emoji ? Color.accentColor.opacity(0.18) : Color.clear)
-                                            )
+                                Text("Quick picks")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(Array(emojiOptions.prefix(8)), id: \.self) { emoji in
+                                        Button {
+                                            store.send(.routineEmojiChanged(emoji))
+                                        } label: {
+                                            Text(emoji)
+                                                .font(.title3)
+                                                .frame(width: 34, height: 34)
+                                                .background(
+                                                    Circle()
+                                                        .fill(
+                                                            store.routineEmoji == emoji
+                                                                ? Color.accentColor.opacity(0.20)
+                                                                : Color.secondary.opacity(0.08)
+                                                        )
+                                                )
+                                        }
+                                        .buttonStyle(.plain)
                                     }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-
-                        macFormRow("Tags") {
-                            VStack(alignment: .leading, spacing: 10) {
-                                tagComposer
-                                availableTagSuggestionsContent
-                                manageTagsButton
-                                editableTagsContent
-                                Text(tagSectionHelpText)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        macFormRow("Links") {
-                            VStack(alignment: .leading, spacing: 10) {
-                                TaskRelationshipsEditor(
-                                    relationships: store.relationships,
-                                    candidates: store.availableRelationshipTasks,
-                                    addRelationship: { store.send(.addRelationship($0, $1)) },
-                                    removeRelationship: { store.send(.removeRelationship($0)) }
-                                )
-
-                                Text("Link this task to another task as related work or a blocker.")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        macFormRow("Notes") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                TextEditor(text: routineNotesBinding)
-                                    .frame(minHeight: 96)
-                                    .padding(6)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(Color(nsColor: .textBackgroundColor))
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .stroke(sectionCardStroke, lineWidth: 1)
-                                    )
-
-                                Text(notesHelpText)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        macFormRow("Link") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                TextField("https://example.com", text: routineLinkBinding)
-                                    .textFieldStyle(.roundedBorder)
-
-                                Text(linkHelpText)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        macFormRow("Task Type") {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Picker("Task Type", selection: taskTypeBinding) {
-                                    Text("Routine").tag(RoutineTaskType.routine)
-                                    Text("Todo").tag(RoutineTaskType.todo)
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(width: 260)
-
-                                Text(taskTypeDescription)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        if store.taskType == .routine {
-                            macFormRow("Schedule") {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Picker("Schedule Type", selection: scheduleModeBinding) {
-                                        Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                                        Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                                        Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.segmented)
-                                    .frame(width: 320)
-
-                                    Text(scheduleModeDescription)
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-
-                        macFormRow("Place") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Picker("Place", selection: selectedPlaceBinding) {
-                                    Text("Anywhere").tag(Optional<UUID>.none)
-                                    ForEach(store.availablePlaces) { place in
-                                        Text(place.name).tag(Optional(place.id))
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-
-                                Text(placeSelectionDescription)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        if store.taskType == .todo {
-                            macFormRow("Deadline") {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Toggle("Set deadline", isOn: deadlineEnabledBinding)
-                                    if store.hasDeadline {
-                                        DatePicker("Deadline", selection: deadlineBinding)
-                                            .labelsHidden()
-                                    }
-                                }
-                            }
-                        }
-
-                        if isStepBasedMode {
-                            macFormRow("Steps") {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    stepComposer
-                                    editableStepsContent
-                                    Text(stepsSectionDescription)
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        } else {
-                            macFormRow("Checklist") {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    checklistItemComposer
-                                    editableChecklistItemsContent
-                                    Text(checklistSectionDescription)
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }
                     }
                 }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 22)
 
-                macSectionCard(title: "Image") {
-                    imageAttachmentContent
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                macSectionCard(
+                    title: "Behavior",
+                    subtitle: "Choose how this task repeats, where it appears, and when it is due."
+                ) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        macControlBlock(title: "Type", caption: taskTypeDescription) {
+                            Picker("Task Type", selection: taskTypeBinding) {
+                                Text("Routine").tag(RoutineTaskType.routine)
+                                Text("Todo").tag(RoutineTaskType.todo)
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: macCompactControlWidth)
+                        }
 
-                if showsRepeatControls {
-                    macSectionCard(title: "Schedule") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            macFormRow("Pattern") {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Picker("Repeat Pattern", selection: recurrenceKindBinding) {
-                                        ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                                            Text(kind.pickerTitle).tag(kind)
-                                        }
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.segmented)
-                                    .frame(width: 320)
-
-                                    Text(recurrencePatternDescription)
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
+                        if store.taskType == .routine {
+                            macControlBlock(title: "Schedule style", caption: scheduleModeDescription) {
+                                Picker("Schedule Type", selection: scheduleModeBinding) {
+                                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
                                 }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(width: 340)
+                            }
+
+                            if !isStepBasedMode {
+                                macControlBlock(
+                                    title: "Checklist",
+                                    caption: checklistSectionDescription
+                                ) {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        checklistItemComposer
+                                        editableChecklistItemsContent
+                                    }
+                                }
+                            }
+                        }
+
+                        if showsRepeatControls {
+                            macControlBlock(title: "Repeat pattern", caption: recurrencePatternDescription) {
+                                Picker("Repeat Pattern", selection: recurrenceKindBinding) {
+                                    ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
+                                        Text(kind.pickerTitle).tag(kind)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(width: 340)
                             }
 
                             switch store.recurrenceKind {
                             case .intervalDays:
-                                macFormRow("Repeat") {
+                                macControlBlock(
+                                    title: "Repeat",
+                                    caption: stepperLabel(
+                                        frequency: store.frequency,
+                                        frequencyValue: store.frequencyValue
+                                    )
+                                ) {
                                     HStack(spacing: 10) {
                                         Text("Every")
                                             .foregroundStyle(.secondary)
+
                                         Stepper(value: frequencyValueBinding, in: 1...365) {
                                             Text("\(store.frequencyValue)")
                                                 .font(.body.monospacedDigit())
                                                 .frame(minWidth: 28, alignment: .trailing)
                                         }
                                         .fixedSize()
+
                                         Picker("Unit", selection: frequencyBinding) {
                                             ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
                                                 Text(frequency.rawValue).tag(frequency)
@@ -1170,18 +1112,16 @@ struct AddRoutineTCAView: View {
                                         .labelsHidden()
                                         .pickerStyle(.segmented)
                                         .frame(width: 220)
+
                                         Spacer(minLength: 0)
                                     }
                                 }
 
-                                macFormRow("") {
-                                    Text(stepperLabel(frequency: store.frequency, frequencyValue: store.frequencyValue))
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                }
-
                             case .dailyTime:
-                                macFormRow("Time") {
+                                macControlBlock(
+                                    title: "Time",
+                                    caption: "Due every day at \(store.recurrenceTimeOfDay.formatted())."
+                                ) {
                                     DatePicker(
                                         "Time",
                                         selection: recurrenceTimeBinding,
@@ -1190,14 +1130,11 @@ struct AddRoutineTCAView: View {
                                     .labelsHidden()
                                 }
 
-                                macFormRow("") {
-                                    Text("Due every day at \(store.recurrenceTimeOfDay.formatted()).")
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                }
-
                             case .weekly:
-                                macFormRow("Weekday") {
+                                macControlBlock(
+                                    title: "Weekday",
+                                    caption: "Due every \(weekdayName(for: store.recurrenceWeekday))."
+                                ) {
                                     Picker("Weekday", selection: recurrenceWeekdayBinding) {
                                         ForEach(weekdayOptions, id: \.id) { option in
                                             Text(option.name).tag(option.id)
@@ -1207,71 +1144,277 @@ struct AddRoutineTCAView: View {
                                     .pickerStyle(.menu)
                                 }
 
-                                macFormRow("") {
-                                    Text("Due every \(weekdayName(for: store.recurrenceWeekday)).")
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                }
-
                             case .monthlyDay:
-                                macFormRow("Month Day") {
+                                macControlBlock(
+                                    title: "Month day",
+                                    caption: "Due on the \(ordinalDay(store.recurrenceDayOfMonth)) of each month."
+                                ) {
                                     Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
                                         Text(ordinalDay(store.recurrenceDayOfMonth))
                                             .frame(minWidth: 40, alignment: .leading)
                                     }
                                     .fixedSize()
                                 }
+                            }
+                        }
 
-                                macFormRow("") {
-                                    Text("Due on the \(ordinalDay(store.recurrenceDayOfMonth)) of each month.")
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
+                        HStack(alignment: .top, spacing: 16) {
+                            macControlBlock(title: "Place", caption: placeSelectionDescription) {
+                                Picker("Place", selection: selectedPlaceBinding) {
+                                    Text("Anywhere").tag(Optional<UUID>.none)
+                                    ForEach(store.availablePlaces) { place in
+                                        Text(place.name).tag(Optional(place.id))
+                                    }
                                 }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                            if store.taskType == .todo {
+                                macControlBlock(
+                                    title: "Deadline",
+                                    caption: store.hasDeadline
+                                        ? "This todo will use the selected due date."
+                                        : "Leave this off until the task has a real deadline."
+                                ) {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Toggle("Set deadline", isOn: deadlineEnabledBinding)
+                                        if store.hasDeadline {
+                                            DatePicker("Deadline", selection: deadlineBinding)
+                                                .labelsHidden()
+                                        }
+                                    }
+                                }
+                                .frame(width: macCompactControlWidth, alignment: .leading)
                             }
                         }
                     }
                 }
+
+                macSectionCard(
+                    title: "Context",
+                    subtitle: "Keep supporting metadata lightweight and easy to scan."
+                ) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        macControlBlock(title: "Tags", caption: tagSectionHelpText) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                tagComposer
+                                editableTagsContent
+                                availableTagSuggestionsContent
+                                manageTagsButton
+                            }
+                        }
+
+                        macControlBlock(
+                            title: "Linked tasks",
+                            caption: "Link this task to another task as related work or a blocker."
+                        ) {
+                            TaskRelationshipsEditor(
+                                relationships: store.relationships,
+                                candidates: store.availableRelationshipTasks,
+                                addRelationship: { store.send(.addRelationship($0, $1)) },
+                                removeRelationship: { store.send(.removeRelationship($0)) }
+                            )
+                        }
+
+                        macControlBlock(title: "Open link", caption: linkHelpText) {
+                            TextField("https://example.com", text: routineLinkBinding)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                }
+
+                macSectionCard(
+                    title: "Notes",
+                    subtitle: notesHelpText
+                ) {
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: routineNotesBinding)
+                            .frame(minHeight: 120)
+                            .padding(6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Color(nsColor: .textBackgroundColor))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(sectionCardStroke, lineWidth: 1)
+                            )
+
+                        if store.routineNotes.isEmpty {
+                            Text("Add notes, reminders, or context")
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 14)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                }
+
+                if isStepBasedMode {
+                    macSectionCard(
+                        title: "Steps",
+                        subtitle: stepsSectionDescription
+                    ) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            stepComposer
+                            editableStepsContent
+                        }
+                    }
+                }
+
+                macSectionCard(
+                    title: "Image",
+                    subtitle: "Optional artwork or reference material for this task."
+                ) {
+                    imageAttachmentContent
+                }
+                }
+                .frame(maxWidth: macContentMaxWidth, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 22)
+                .frame(maxWidth: .infinity, alignment: .top)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var macPreviewTitle: String {
+        let trimmedName = store.trimmedRoutineName
+        return trimmedName.isEmpty ? "New \(macTaskTypeLabel.lowercased())" : trimmedName
+    }
+
+    private var macPreviewSubtitle: String {
+        if store.taskType == .todo {
+            return store.hasDeadline
+                ? "A one-off task with a deadline."
+                : "A one-off task you can finish once."
+        }
+
+        switch store.scheduleMode {
+        case .fixedInterval:
+            return "A repeating routine with one shared cadence."
+        case .fixedIntervalChecklist:
+            return "A routine you complete by finishing every checklist item."
+        case .derivedFromChecklist:
+            return "A routine driven by the due dates of its checklist items."
+        case .oneOff:
+            return "A one-off task you can finish once."
+        }
+    }
+
+    private var macTaskTypeLabel: String {
+        store.taskType == .todo ? "Todo" : "Routine"
+    }
+
+    private var macScheduleModeTitle: String? {
+        guard store.taskType == .routine else { return nil }
+
+        switch store.scheduleMode {
+        case .fixedInterval:
+            return "Fixed"
+        case .fixedIntervalChecklist:
+            return "Checklist"
+        case .derivedFromChecklist:
+            return "Runout"
+        case .oneOff:
+            return nil
+        }
+    }
+
+    private var macScheduleSummary: String {
+        if store.taskType == .todo {
+            if let deadline = store.deadline {
+                return "Due \(deadline.formatted(date: .abbreviated, time: .omitted))"
+            }
+            return "One-off"
+        }
+
+        switch store.recurrenceKind {
+        case .intervalDays:
+            return stepperLabel(
+                frequency: store.frequency,
+                frequencyValue: store.frequencyValue
+            )
+        case .dailyTime:
+            return "Daily at \(store.recurrenceTimeOfDay.formatted())"
+        case .weekly:
+            return "Every \(weekdayName(for: store.recurrenceWeekday))"
+        case .monthlyDay:
+            return "Monthly on the \(ordinalDay(store.recurrenceDayOfMonth))"
+        }
+    }
+
+    private var macPlaceSummary: String {
+        guard let selectedPlaceID = store.selectedPlaceID,
+              let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) else {
+            return "Anywhere"
+        }
+        return place.name
     }
 
     @ViewBuilder
     private func macSectionCard<Content: View>(
         title: String,
+        subtitle: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline.weight(.semibold))
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.semibold))
+
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             content()
         }
-        .padding(16)
+        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(sectionCardBackground)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(sectionCardStroke, lineWidth: 1)
         )
     }
 
     @ViewBuilder
-    private func macFormRow<Content: View>(
-        _ title: String,
+    private func macControlBlock<Content: View>(
+        title: String,
+        caption: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Text(title.isEmpty ? " " : title)
-                .font(.subheadline)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .frame(width: formLabelWidth, alignment: .trailing)
+
             content()
+
+            if let caption {
+                Text(caption)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
+    }
+
+    private func macInfoPill(_ title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color.secondary.opacity(0.10))
+            )
     }
 #endif
 
@@ -1377,10 +1520,11 @@ struct TaskRelationshipsEditor: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel("Remove relationship to \(relationship.taskName)")
                     }
-
-                    if relationship.id != resolvedRelationships.last?.id {
-                        Divider()
-                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
                 }
             }
         }
