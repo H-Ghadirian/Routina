@@ -53,6 +53,7 @@ public enum UserDefaultBoolValueKey: String {
 
 public enum UserDefaultStringValueKey: String {
     case selectedMacAppIcon
+    case appSettingRoutineListSectioningMode
 }
 
 public protocol UserDefaultsProtocol {

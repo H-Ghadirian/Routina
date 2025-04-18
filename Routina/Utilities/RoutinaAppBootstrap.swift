@@ -16,6 +16,9 @@ enum RoutinaAppBootstrap {
             .appSettingHideUnavailableRoutines: false
         ])
         SharedDefaults.app.register(defaults: [
+            UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue
+        ])
+        SharedDefaults.app.register(defaults: [
             NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,
             NotificationPreferences.reminderMinuteDefaultsKey: NotificationPreferences.defaultReminderMinute
         ])

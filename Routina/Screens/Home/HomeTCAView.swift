@@ -17,7 +17,7 @@ struct HomeTCAView: View {
 
     private struct RoutineListSection: Identifiable {
         let title: String
-        let tasks: [HomeFeature.RoutineDisplay]
+        var tasks: [HomeFeature.RoutineDisplay]
 
         var id: String { title }
     }
@@ -53,6 +53,10 @@ struct HomeTCAView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.calendar) private var calendar
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var timelineLogs: [RoutineLog]
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
+        store: SharedDefaults.app
+    ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
     @State private var localSearchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
@@ -681,6 +685,10 @@ struct HomeTCAView: View {
         } else {
             $localSearchText
         }
+    }
+
+    private var routineListSectioningMode: RoutineListSectioningMode {
+        RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
     }
 
     var searchPlaceholderText: String {
@@ -1666,14 +1674,77 @@ struct HomeTCAView: View {
         }
         let doneToday = filtered.filter(\.isDoneToday)
 
-        return [
+        let onTrackSections: [RoutineListSection]
+        switch routineListSectioningMode {
+        case .status:
+            onTrackSections = [RoutineListSection(title: "On Track", tasks: onTrack)]
+        case .deadlineDate:
+            onTrackSections = deadlineBasedSections(from: onTrack)
+        }
+
+        return (
+            [
             RoutineListSection(title: "Overdue", tasks: overdue),
-            RoutineListSection(title: "Due Soon", tasks: dueSoon),
-            RoutineListSection(title: "On Track", tasks: onTrack),
-            RoutineListSection(title: "Done Today", tasks: doneToday)
-        ]
+                RoutineListSection(title: "Due Soon", tasks: dueSoon)
+            ]
+            + onTrackSections
+            + [RoutineListSection(title: "Done Today", tasks: doneToday)]
+        )
         .filter { !$0.tasks.isEmpty }
     }
+
+    private func deadlineBasedSections(
+        from tasks: [HomeFeature.RoutineDisplay]
+    ) -> [RoutineListSection] {
+        guard !tasks.isEmpty else { return [] }
+
+        let sorted = tasks.sorted { lhs, rhs in
+            let lhsDate = sectionDateForDeadlineGrouping(for: lhs) ?? .distantFuture
+            let rhsDate = sectionDateForDeadlineGrouping(for: rhs) ?? .distantFuture
+            if lhsDate != rhsDate {
+                return lhsDate < rhsDate
+            }
+            return regularTaskSort(lhs, rhs)
+        }
+
+        var sections: [RoutineListSection] = []
+        for task in sorted {
+            let title = deadlineSectionTitle(for: task)
+            if let lastIndex = sections.indices.last, sections[lastIndex].title == title {
+                sections[lastIndex].tasks.append(task)
+            } else {
+                sections.append(RoutineListSection(title: title, tasks: [task]))
+            }
+        }
+
+        return sections
+    }
+
+    private func sectionDateForDeadlineGrouping(
+        for task: HomeFeature.RoutineDisplay
+    ) -> Date? {
+        guard task.daysUntilDue != Int.max else { return nil }
+        let today = calendar.startOfDay(for: Date())
+        return calendar.date(byAdding: .day, value: max(task.daysUntilDue, 0), to: today)
+            .map { calendar.startOfDay(for: $0) }
+    }
+
+    private func deadlineSectionTitle(for task: HomeFeature.RoutineDisplay) -> String {
+        guard let sectionDate = sectionDateForDeadlineGrouping(for: task) else {
+            return "On Track"
+        }
+        return formattedDeadlineSectionTitle(for: sectionDate)
+    }
+
+    private func formattedDeadlineSectionTitle(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = .autoupdatingCurrent
+        let includesYear = calendar.component(.year, from: date) != calendar.component(.year, from: Date())
+        formatter.setLocalizedDateFormatFromTemplate(includesYear ? "EEE MMM d yyyy" : "EEE MMM d")
+        return formatter.string(from: date)
+    }
+    
 
     private func deleteTasks(
         at offsets: IndexSet,

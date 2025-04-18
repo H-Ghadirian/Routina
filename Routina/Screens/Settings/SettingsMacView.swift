@@ -236,7 +236,7 @@ struct SettingsMacSidebarRow: View {
             return store.tagsOverviewSubtitle
 
         case .appearance:
-            return "Current icon: \(store.selectedAppIcon.title)"
+            return "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText)"
 
         case .iCloud:
             if store.isCloudSyncInProgress {
@@ -705,8 +705,21 @@ private struct SettingsMacAppearanceDetailView: View {
         WithPerceptionTracking {
             SettingsMacDetailShell(
                 title: "Appearance",
-                subtitle: "Pick the app icon you want to see in the Dock and app switcher."
+                subtitle: "Pick the app icon you want to see in the Dock and app switcher, and choose how the home list is grouped."
             ) {
+                SettingsMacDetailCard(title: "Routine List") {
+                    Picker("Grouping", selection: routineListSectioningModeBinding) {
+                        ForEach(RoutineListSectioningMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(store.routineListSectioningSubtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "App Icon") {
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(AppIconOption.allCases) { option in
@@ -733,6 +746,13 @@ private struct SettingsMacAppearanceDetailView: View {
                 }
             }
         }
+    }
+
+    private var routineListSectioningModeBinding: Binding<RoutineListSectioningMode> {
+        Binding(
+            get: { store.routineListSectioningMode },
+            set: { store.send(.routineListSectioningModeChanged($0)) }
+        )
     }
 }
 

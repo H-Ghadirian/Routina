@@ -49,7 +49,7 @@ struct SettingsIOSRootView: View {
                             icon: "app.badge.fill",
                             tint: .orange,
                             title: "Appearance",
-                            subtitle: "Current icon: \(store.selectedAppIcon.title)"
+                            subtitle: "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText)"
                         )
                     }
 
@@ -447,6 +447,18 @@ private struct SettingsAppearanceDetailView: View {
     var body: some View {
         WithPerceptionTracking {
             List {
+                Section("Routine List") {
+                    Picker("Grouping", selection: routineListSectioningModeBinding) {
+                        ForEach(RoutineListSectioningMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(store.routineListSectioningSubtitle)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("App Icon") {
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(AppIconOption.allCases) { option in
@@ -476,6 +488,13 @@ private struct SettingsAppearanceDetailView: View {
             .navigationTitle("Appearance")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+
+    private var routineListSectioningModeBinding: Binding<RoutineListSectioningMode> {
+        Binding(
+            get: { store.routineListSectioningMode },
+            set: { store.send(.routineListSectioningModeChanged($0)) }
+        )
     }
 }
 

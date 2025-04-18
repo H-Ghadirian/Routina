@@ -18,6 +18,9 @@ struct SettingsFeature {
         var isDebugSectionVisible: Bool = false
         var cloudSyncAvailable: Bool = AppEnvironment.isCloudSyncEnabled
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
+        var routineListSectioningMode: RoutineListSectioningMode = RoutineListSectioningMode(
+            rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
+        ) ?? .defaultValue
         var systemSettingsNotificationsEnabled: Bool = true
         var notificationReminderTime: Date = NotificationPreferences.reminderTimeDate()
         var isCloudSyncInProgress: Bool = false
@@ -50,6 +53,7 @@ struct SettingsFeature {
 
     enum Action: Equatable {
         case toggleNotifications(Bool)
+        case routineListSectioningModeChanged(RoutineListSectioningMode)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -99,6 +103,11 @@ struct SettingsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case let .routineListSectioningModeChanged(mode):
+                state.routineListSectioningMode = mode
+                SharedDefaults.app[.appSettingRoutineListSectioningMode] = mode.rawValue
+                return .none
+
             case .toggleNotifications(let isOn):
                 guard isOn else {
                     state.notificationsEnabled = false
@@ -144,6 +153,9 @@ struct SettingsFeature {
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
                 state.isDebugSectionVisible = false
                 state.notificationReminderTime = NotificationPreferences.reminderTimeDate()
+                state.routineListSectioningMode = RoutineListSectioningMode(
+                    rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
+                ) ?? .defaultValue
                 state.selectedAppIcon = .persistedSelection
                 state.appIconStatusMessage = ""
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
