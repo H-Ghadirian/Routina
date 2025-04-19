@@ -357,6 +357,18 @@ struct RoutineDetailEditRoutineContent: View {
                 }
             }
 
+            Section(header: Text("Priority")) {
+                Picker("Priority", selection: editPriorityBinding) {
+                    ForEach(RoutineTaskPriority.allCases, id: \.self) { priority in
+                        Text(priority.title).tag(priority)
+                    }
+                }
+
+                Text(priorityDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Image")) {
                 editImageAttachmentContent
             }
@@ -443,10 +455,24 @@ struct RoutineDetailEditRoutineContent: View {
         )
     }
 
+    private var editPriorityBinding: Binding<RoutineTaskPriority> {
+        Binding(
+            get: { store.editPriority },
+            set: { store.send(.editPriorityChanged($0)) }
+        )
+    }
+
     private var editNotesHelpText: String {
         store.editScheduleMode.taskType == .todo
             ? "Keep any extra context or reminders with this todo."
             : "Keep any details you want to remember for this routine."
+    }
+
+    private var priorityDescription: String {
+        if store.editPriority == .none {
+            return "Optional. Higher priority wins when tasks share the same due date."
+        }
+        return "\(store.editPriority.title) tasks are sorted above lower-priority tasks with the same due date."
     }
 
     private var taskTypeDescription: String {

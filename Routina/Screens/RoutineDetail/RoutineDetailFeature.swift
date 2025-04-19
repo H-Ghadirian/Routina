@@ -45,6 +45,7 @@ struct RoutineDetailFeature: Reducer {
         var editRoutineNotes: String = ""
         var editRoutineLink: String = ""
         var editDeadline: Date?
+        var editPriority: RoutineTaskPriority = .none
         var editImageData: Data?
         var editRoutineTags: [String] = []
         var editRelationships: [RoutineTaskRelationship] = []
@@ -85,6 +86,7 @@ struct RoutineDetailFeature: Reducer {
         case editRoutineLinkChanged(String)
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
+        case editPriorityChanged(RoutineTaskPriority)
         case editImagePicked(Data?)
         case editRemoveImageTapped
         case editTagDraftChanged(String)
@@ -373,6 +375,10 @@ struct RoutineDetailFeature: Reducer {
             state.editDeadline = deadline
             return .none
 
+        case let .editPriorityChanged(priority):
+            state.editPriority = priority
+            return .none
+
         case let .editImagePicked(data):
             state.editImageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
             return .none
@@ -567,6 +573,7 @@ struct RoutineDetailFeature: Reducer {
                 notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
                 link: RoutineTask.sanitizedLink(state.editRoutineLink),
                 deadline: state.editScheduleMode == .oneOff ? state.editDeadline : nil,
+                priority: state.editPriority,
                 imageData: state.editImageData,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
@@ -625,6 +632,7 @@ struct RoutineDetailFeature: Reducer {
         state.editRoutineNotes = state.task.notes ?? ""
         state.editRoutineLink = state.task.link ?? ""
         state.editDeadline = state.task.deadline
+        state.editPriority = state.task.priority
         state.editImageData = state.task.imageData
         state.editRoutineTags = state.task.tags
         state.editRelationships = state.task.relationships
@@ -849,6 +857,7 @@ struct RoutineDetailFeature: Reducer {
         notes: String?,
         link: String?,
         deadline: Date?,
+        priority: RoutineTaskPriority,
         imageData: Data?,
         placeID: UUID?,
         tags: [String],
@@ -871,6 +880,7 @@ struct RoutineDetailFeature: Reducer {
                 task.emoji = emoji
                 task.notes = notes
                 task.link = link
+                task.priority = priority
                 task.imageData = imageData
                 task.placeID = placeID
                 task.tags = tags

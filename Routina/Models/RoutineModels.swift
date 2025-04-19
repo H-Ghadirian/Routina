@@ -29,6 +29,35 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     case todo = "Todo"
 }
 
+enum RoutineTaskPriority: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case none = "None"
+    case low = "Low"
+    case medium = "Medium"
+    case high = "High"
+    case urgent = "Urgent"
+
+    var title: String { rawValue }
+
+    var sortOrder: Int {
+        switch self {
+        case .none:
+            return 0
+        case .low:
+            return 1
+        case .medium:
+            return 2
+        case .high:
+            return 3
+        case .urgent:
+            return 4
+        }
+    }
+
+    var metadataLabel: String? {
+        self == .none ? nil : title
+    }
+}
+
 enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case related
     case blocks
@@ -559,6 +588,7 @@ final class RoutineTask {
     var notes: String?
     var link: String?
     var deadline: Date?
+    var priorityRawValue: String = RoutineTaskPriority.none.rawValue
     @Attribute(.externalStorage) var imageData: Data?
     var placeID: UUID?
     var tagsStorage: String = ""
@@ -590,6 +620,11 @@ final class RoutineTask {
 
     var hasImage: Bool {
         imageData?.isEmpty == false
+    }
+
+    var priority: RoutineTaskPriority {
+        get { RoutineTaskPriority(rawValue: priorityRawValue) ?? .none }
+        set { priorityRawValue = newValue.rawValue }
     }
 
     var tags: [String] {
@@ -757,6 +792,7 @@ final class RoutineTask {
         notes: String? = nil,
         link: String? = nil,
         deadline: Date? = nil,
+        priority: RoutineTaskPriority = .none,
         imageData: Data? = nil,
         placeID: UUID? = nil,
         tags: [String] = [],
@@ -784,6 +820,7 @@ final class RoutineTask {
         self.notes = Self.sanitizedNotes(notes)
         self.link = Self.sanitizedLink(link)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
+        self.priorityRawValue = priority.rawValue
         self.imageData = imageData
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
@@ -1117,6 +1154,7 @@ final class RoutineTask {
             notes: notes,
             link: link,
             deadline: deadline,
+            priority: priority,
             imageData: imageData,
             placeID: placeID,
             tags: tags,

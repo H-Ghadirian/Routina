@@ -273,6 +273,22 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
+                sectionCard(title: "Priority") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Picker("Priority", selection: editPriorityBinding) {
+                            ForEach(RoutineTaskPriority.allCases, id: \.self) { priority in
+                                Text(priority.title).tag(priority)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+
+                        Text(priorityDescription)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 if showsRepeatControls {
                     sectionCard(title: "Schedule") {
                         VStack(alignment: .leading, spacing: 16) {
@@ -401,6 +417,13 @@ struct RoutineDetailEditRoutineContent: View {
         store.editScheduleMode != .derivedFromChecklist && store.editScheduleMode != .oneOff
     }
 
+    private var editPriorityBinding: Binding<RoutineTaskPriority> {
+        Binding(
+            get: { store.editPriority },
+            set: { store.send(.editPriorityChanged($0)) }
+        )
+    }
+
     private var taskTypeDescription: String {
         switch store.editScheduleMode.taskType {
         case .routine:
@@ -408,6 +431,13 @@ struct RoutineDetailEditRoutineContent: View {
         case .todo:
             return "Todos are one-off tasks. Once you finish one, it stays completed."
         }
+    }
+
+    private var priorityDescription: String {
+        if store.editPriority == .none {
+            return "Optional. Higher priority wins when tasks share the same due date."
+        }
+        return "\(store.editPriority.title) tasks are sorted above lower-priority tasks with the same due date."
     }
 
     private var manageTagsButton: some View {

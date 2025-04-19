@@ -49,7 +49,18 @@ struct HomeFeatureTests {
 
         await store.send(.setAddRoutineSheet(true)) {
             $0.isAddRoutineSheetPresented = true
-            $0.addRoutineState = AddRoutineFeature.State(availableTags: ["Learning"], existingRoutineNames: ["Read"])
+            $0.addRoutineState = AddRoutineFeature.State(
+                availableTags: ["Learning"],
+                availableRelationshipTasks: [
+                    RoutineTaskRelationshipCandidate(
+                        id: task.id,
+                        name: "Read",
+                        emoji: "📚",
+                        relationships: []
+                    )
+                ],
+                existingRoutineNames: ["Read"]
+            )
         }
     }
 
@@ -290,6 +301,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([log]))) {
             $0.routineDetailState?.logs = [log]
             $0.routineDetailState?.daysSinceLastRoutine = 2
@@ -366,6 +378,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         _ = sourceTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
@@ -706,6 +719,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
@@ -1379,6 +1393,23 @@ struct HomeFeatureTests {
         }
         await store.receive(.addRoutineSheet(.availableTagsChanged([])))
         await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
+        await store.receive(.addRoutineSheet(.availableRelationshipTasksChanged([
+            RoutineTaskRelationshipCandidate(
+                id: task.id,
+                name: "Read",
+                emoji: "📚",
+                relationships: []
+            )
+        ]))) {
+            $0.addRoutineState?.availableRelationshipTasks = [
+                RoutineTaskRelationshipCandidate(
+                    id: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    relationships: []
+                )
+            ]
+        }
     }
 
     @Test
@@ -2290,7 +2321,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, nil, nil, ["Evening"], [], .fixedInterval, []))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, .none, nil, nil, ["Evening"], [], [], .fixedInterval, []))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -2670,6 +2701,7 @@ private func makeDisplay(
     scheduleMode: RoutineScheduleMode = .fixedInterval,
     lastDone: Date?,
     dueDate: Date? = nil,
+    priority: RoutineTaskPriority = .none,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
     pinnedAt: Date? = nil,
@@ -2710,6 +2742,7 @@ private func makeDisplay(
         scheduleMode: scheduleMode,
         lastDone: lastDone,
         dueDate: dueDate,
+        priority: priority,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
         pinnedAt: pinnedAt,

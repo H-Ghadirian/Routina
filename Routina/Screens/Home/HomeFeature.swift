@@ -33,6 +33,7 @@ struct HomeFeature {
         var scheduleMode: RoutineScheduleMode
         var lastDone: Date?
         var dueDate: Date?
+        var priority: RoutineTaskPriority
         var scheduleAnchor: Date?
         var pausedAt: Date?
         var pinnedAt: Date?
@@ -447,7 +448,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -467,6 +468,7 @@ struct HomeFeature {
                             notes: notes,
                             link: link,
                             deadline: deadline,
+                            priority: priority,
                             imageData: imageData,
                             placeID: placeID,
                             tags: tags,
@@ -544,8 +546,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems)))
+                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
@@ -616,6 +618,7 @@ struct HomeFeature {
             scheduleMode: task.scheduleMode,
             lastDone: task.lastDone,
             dueDate: dueDate,
+            priority: task.priority,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
             pinnedAt: task.pinnedAt,

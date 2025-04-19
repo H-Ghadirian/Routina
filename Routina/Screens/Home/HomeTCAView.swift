@@ -886,7 +886,31 @@ struct HomeTCAView: View {
             return urgency1 > urgency2
         }
 
+        if let dueDateComparison = dueDateSortResult(task1, task2) {
+            return dueDateComparison
+        }
+
+        if task1.priority != task2.priority {
+            return task1.priority.sortOrder > task2.priority.sortOrder
+        }
+
         return task1.name.localizedCaseInsensitiveCompare(task2.name) == .orderedAscending
+    }
+
+    private func dueDateSortResult(
+        _ lhs: HomeFeature.RoutineDisplay,
+        _ rhs: HomeFeature.RoutineDisplay
+    ) -> Bool? {
+        switch (lhs.dueDate, rhs.dueDate) {
+        case let (lhsDate?, rhsDate?) where lhsDate != rhsDate:
+            return lhsDate < rhsDate
+        case (_?, nil):
+            return true
+        case (nil, _?):
+            return false
+        default:
+            return nil
+        }
     }
 
     private func archivedTaskSort(
@@ -2235,10 +2259,12 @@ struct HomeTCAView: View {
             return items.isEmpty ? nil : items.joined(separator: " • ")
         }
 
+        let prioritySegment = task.priority.metadataLabel.map { "\($0) • " } ?? ""
+
         if task.isPaused {
-            return "\(cadenceDescription(for: task)) • \(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+            return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
         }
-        return "\(cadenceDescription(for: task)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+        return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
     }
 
     private func todoRowMetadataItems(for task: HomeFeature.RoutineDisplay) -> [String] {
@@ -2246,6 +2272,10 @@ struct HomeTCAView: View {
 
         if let deadlineText = conciseDeadlineText(for: task) {
             items.append(deadlineText)
+        }
+
+        if let priorityText = task.priority.metadataLabel {
+            items.append(priorityText)
         }
 
         if task.isPaused {

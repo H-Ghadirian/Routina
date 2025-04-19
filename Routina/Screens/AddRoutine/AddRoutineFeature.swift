@@ -37,6 +37,7 @@ struct AddRoutineFeature: Reducer {
         var routineNotes: String = ""
         var routineLink: String = ""
         var deadline: Date?
+        var priority: RoutineTaskPriority = .none
         var imageData: Data?
         var routineTags: [String] = []
         var relationships: [RoutineTaskRelationship] = []
@@ -99,6 +100,7 @@ struct AddRoutineFeature: Reducer {
         case routineLinkChanged(String)
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
+        case priorityChanged(RoutineTaskPriority)
         case imagePicked(Data?)
         case removeImageTapped
         case taskTypeChanged(RoutineTaskType)
@@ -137,13 +139,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -171,6 +173,10 @@ struct AddRoutineFeature: Reducer {
 
         case let .deadlineDateChanged(deadline):
             state.deadline = deadline
+            return .none
+
+        case let .priorityChanged(priority):
+            state.priority = priority
             return .none
 
         case let .imagePicked(data):
@@ -368,6 +374,7 @@ struct AddRoutineFeature: Reducer {
                 RoutineTask.sanitizedNotes(state.routineNotes),
                 RoutineTask.sanitizedLink(state.routineLink),
                 state.taskType == .todo ? state.deadline : nil,
+                state.priority,
                 state.imageData,
                 state.selectedPlaceID,
                 state.routineTags,

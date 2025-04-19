@@ -20,6 +20,7 @@ struct SwiftDataModelTests {
         #expect(task.steps.isEmpty)
         #expect(task.checklistItems.isEmpty)
         #expect(task.scheduleMode == .fixedInterval)
+        #expect(task.priority == .none)
         #expect(task.completedStepCount == 0)
         #expect(task.sequenceStartedAt == nil)
     }
@@ -205,6 +206,15 @@ struct SwiftDataModelTests {
         #expect(todo.deadline == todoDeadline)
         #expect(routine.notes == nil)
         #expect(routine.deadline == nil)
+    }
+
+    @Test
+    func routineTask_persistsPriority() {
+        let task = RoutineTask(priority: .high)
+        #expect(task.priority == .high)
+
+        task.priority = .urgent
+        #expect(task.priority == .urgent)
     }
 
     @Test

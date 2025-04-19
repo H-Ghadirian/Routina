@@ -165,6 +165,18 @@ struct AddRoutineTCAView: View {
                 }
             }
 
+            Section(header: Text("Priority")) {
+                Picker("Priority", selection: priorityBinding) {
+                    ForEach(RoutineTaskPriority.allCases, id: \.self) { priority in
+                        Text(priority.title).tag(priority)
+                    }
+                }
+
+                Text(priorityDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Image")) {
                 imageAttachmentContent
             }
@@ -381,6 +393,13 @@ struct AddRoutineTCAView: View {
         )
     }
 
+    private var priorityBinding: Binding<RoutineTaskPriority> {
+        Binding(
+            get: { store.priority },
+            set: { store.send(.priorityChanged($0)) }
+        )
+    }
+
     private var isSaveDisabled: Bool {
         store.isSaveDisabled
     }
@@ -448,6 +467,13 @@ struct AddRoutineTCAView: View {
             return "Show this task when you are at \(place.name)."
         }
         return "Anywhere means the task is always visible."
+    }
+
+    private var priorityDescription: String {
+        if store.priority == .none {
+            return "Optional. When two tasks share the same due date, higher priority appears first."
+        }
+        return "\(store.priority.title) tasks rise above lower-priority tasks with the same due date."
     }
 
     private var stepsSectionDescription: String {
@@ -1188,6 +1214,17 @@ struct AddRoutineTCAView: View {
                                 }
                                 .frame(width: macCompactControlWidth, alignment: .leading)
                             }
+                        }
+
+                        macControlBlock(title: "Priority", caption: priorityDescription) {
+                            Picker("Priority", selection: priorityBinding) {
+                                ForEach(RoutineTaskPriority.allCases, id: \.self) { priority in
+                                    Text(priority.title).tag(priority)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .frame(width: macCompactControlWidth, alignment: .leading)
                         }
                     }
                 }

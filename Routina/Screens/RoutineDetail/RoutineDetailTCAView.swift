@@ -166,6 +166,7 @@ struct RoutineDetailTCAView: View {
             notes: store.editRoutineNotes,
             link: store.editRoutineLink,
             deadline: store.editDeadline,
+            priority: store.editPriority,
             imageData: store.editImageData,
             selectedPlaceID: store.editSelectedPlaceID,
             tags: store.editRoutineTags,
@@ -391,6 +392,10 @@ struct RoutineDetailTCAView: View {
 
             if shouldShowCompletionCount {
                 statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
+            }
+
+            if let priorityLabel = store.task.priority.metadataLabel {
+                statusMetadataRow(label: "Priority", value: priorityLabel, systemImage: "flag")
             }
 
             if let linkedPlace = linkedPlaceSummary {
@@ -1285,6 +1290,7 @@ struct RoutineDetailTCAView: View {
         notes: String,
         link: String,
         deadline: Date?,
+        priority: RoutineTaskPriority,
         imageData: Data?,
         selectedPlaceID: UUID?,
         tags: [String],
@@ -1311,6 +1317,7 @@ struct RoutineDetailTCAView: View {
         let currentEmoji = task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
         let currentNotes = task.notes ?? ""
         let currentLink = task.link ?? ""
+        let currentPriority = task.priority
         let currentTags = RoutineTag.deduplicated(task.tags)
         let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
@@ -1348,6 +1355,7 @@ struct RoutineDetailTCAView: View {
             || notes != currentNotes
             || link != currentLink
             || deadline != currentDeadline
+            || priority != currentPriority
             || imageData != currentImageData
             || selectedPlaceID != task.placeID
             || candidateTags != currentTags
