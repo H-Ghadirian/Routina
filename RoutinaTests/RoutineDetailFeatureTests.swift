@@ -245,6 +245,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.availableTagsLoaded(["Evening", "Mobility"])) {
             $0.availableTags = ["Evening", "Mobility"]
         }
+        await store.receive(.availableRelationshipTasksLoaded([]))
     }
 
     @Test
@@ -491,6 +492,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.availableTagsLoaded(["Focus", "Night"])) {
             $0.availableTags = ["Focus", "Night"]
         }
+        await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -542,6 +544,7 @@ struct RoutineDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -659,6 +662,7 @@ struct RoutineDetailFeatureTests {
             ]
         }
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -728,6 +732,7 @@ struct RoutineDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -796,6 +801,7 @@ struct RoutineDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -901,6 +907,7 @@ struct RoutineDetailFeatureTests {
 
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
     }
 

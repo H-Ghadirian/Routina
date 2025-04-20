@@ -14,16 +14,29 @@ struct AppView: View {
                 )
             ) {
                 SwiftUI.Tab(Tab.home.rawValue, systemImage: "house", value: Tab.home) {
+#if os(macOS)
                     HomeTCAView(
                         store: store.scope(state: \.home, action: \.home)
                     )
+#else
+                    HomeIOSView(
+                        store: store.scope(state: \.home, action: \.home)
+                    )
+#endif
                 }
 
                 SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: Tab.search, role: .search) {
+#if os(macOS)
                     HomeTCAView(
                         store: store.scope(state: \.home, action: \.home),
                         searchText: $searchText
                     )
+#else
+                    HomeIOSView(
+                        store: store.scope(state: \.home, action: \.home),
+                        searchText: $searchText
+                    )
+#endif
                 }
 
                 SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: Tab.timeline) {

@@ -162,6 +162,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([log]))) {
             $0.routineDisplays = [
                 makeDisplay(
@@ -544,6 +545,7 @@ struct HomeFeatureTests {
         }
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 1)
@@ -807,6 +809,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
@@ -905,6 +908,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], HomeFeature.DoneStats())) {
@@ -933,6 +937,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
@@ -1051,6 +1056,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], HomeFeature.DoneStats())) {
@@ -1079,6 +1085,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
@@ -1266,6 +1273,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.availableTagsLoaded([])))
+        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == nil)
@@ -1292,6 +1300,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.tasksLoadedSuccessfully([survivingTask], [], HomeFeature.DoneStats())) {
@@ -1379,6 +1388,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.tasksLoadedSuccessfully([task], [], HomeFeature.DoneStats())) {
@@ -1501,6 +1511,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.tasksLoadedSuccessfully([task], [home], HomeFeature.DoneStats())) {
@@ -1550,6 +1561,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.tasksLoadedSuccessfully([task], [home], HomeFeature.DoneStats())) {
@@ -1599,6 +1611,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.tasksLoadedSuccessfully([task], [home], HomeFeature.DoneStats())) {
@@ -1744,6 +1757,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.deleteTasks([task1.id])) {
@@ -1811,6 +1825,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.deleteTasksConfirmed) {
@@ -1850,6 +1865,7 @@ struct HomeFeatureTests {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
         }
 
         await store.send(.deleteTasks([task1.id])) {

@@ -34,20 +34,6 @@
                ReferencedContainer = "container:Routina.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "NO"
-            buildForProfiling = "NO"
-            buildForArchiving = "NO"
-            buildForAnalyzing = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2A5A74D62D7B92F900E91075"
-               BuildableName = "RoutinaUITests.xctest"
-               BlueprintName = "RoutinaUITests"
-               ReferencedContainer = "container:Routina.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -67,23 +53,12 @@
       <Testables>
          <TestableReference
             skipped = "NO"
-            parallelizable = "YES">
+            parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74CC2D7B92F900E91075"
                BuildableName = "RoutinaTests.xctest"
                BlueprintName = "RoutinaTests"
-               ReferencedContainer = "container:Routina.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2A5A74D62D7B92F900E91075"
-               BuildableName = "RoutinaUITests.xctest"
-               BlueprintName = "RoutinaUITests"
                ReferencedContainer = "container:Routina.xcodeproj">
             </BuildableReference>
          </TestableReference>

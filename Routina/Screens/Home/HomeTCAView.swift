@@ -23,19 +23,19 @@ struct HomeTCAView: View {
     }
 
 #if os(macOS)
-    private enum MacSidebarSelection: Hashable {
+    enum MacSidebarSelection: Hashable {
         case task(UUID)
         case timelineEntry(UUID)
     }
 
-    private enum MacTaskListMode: String, CaseIterable, Identifiable {
+    enum MacTaskListMode: String, CaseIterable, Identifiable {
         case routines = "Routines"
         case todos = "Todos"
 
         var id: Self { self }
     }
 
-    private enum MacSidebarMode: String, CaseIterable, Identifiable {
+    enum MacSidebarMode: String, CaseIterable, Identifiable {
         case routines = "Routines"
         case timeline = "Timeline"
         case stats = "Stats"
@@ -51,8 +51,8 @@ struct HomeTCAView: View {
 #endif
     private let externalSearchText: Binding<String>?
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.calendar) private var calendar
-    @Query(sort: \RoutineLog.timestamp, order: .reverse) private var timelineLogs: [RoutineLog]
+    @Environment(\.calendar) var calendar
+    @Query(sort: \RoutineLog.timestamp, order: .reverse) var timelineLogs: [RoutineLog]
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
@@ -69,9 +69,9 @@ struct HomeTCAView: View {
     @State private var selectedTimelineTag: String?
 #if os(macOS)
     @State private var macSidebarSelection: MacSidebarSelection?
-    @State private var macSidebarMode: MacSidebarMode = .routines
-    @State private var macTaskListMode: MacTaskListMode = .routines
-    @State private var selectedSettingsSection: SettingsMacSection? = .notifications
+    @State var macSidebarMode: MacSidebarMode = .routines
+    @State var macTaskListMode: MacTaskListMode = .routines
+    @State var selectedSettingsSection: SettingsMacSection? = .notifications
 #endif
 
     init(
@@ -87,6 +87,18 @@ struct HomeTCAView: View {
         self.externalSearchText = searchText
     }
 
+#if os(macOS)
+    init(
+        store: StoreOf<HomeFeature>,
+        settingsStore: StoreOf<SettingsFeature>,
+        searchText: Binding<String>? = nil
+    ) {
+        self.store = store
+        self.settingsStore = settingsStore
+        self.externalSearchText = searchText
+    }
+#endif
+
     var body: some View {
         WithPerceptionTracking {
             homeContent
@@ -98,7 +110,7 @@ struct HomeTCAView: View {
             to: applyPlatformDeleteConfirmation(
                 to: applyPlatformRefresh(
                     to: applyPlatformSearchExperience(
-                        to: navigationContent,
+                        to: platformNavigationContent,
                         searchText: searchTextBinding
                     )
                 )
@@ -133,18 +145,7 @@ struct HomeTCAView: View {
                     .receive(on: RunLoop.main)
             ) { _ in
                 requestRefresh()
-#if os(macOS)
-                settingsStore.send(.onAppBecameActive)
-#endif
             }
-#if os(macOS)
-            .onReceive(
-                NotificationCenter.default.publisher(for: CloudKitSyncDiagnostics.didUpdateNotification)
-                    .receive(on: RunLoop.main)
-            ) { _ in
-                settingsStore.send(.cloudDiagnosticsUpdated)
-            }
-#endif
             .onChange(of: store.routineDisplays) { _, displays in
                 validateSelectedTag(
                     activeDisplays: displays,
@@ -218,100 +219,8 @@ struct HomeTCAView: View {
 #endif
     }
 
-    private var navigationContent: some View {
-        NavigationSplitView {
-            WithPerceptionTracking {
-                sidebarContent
-            }
-        } detail: {
-#if os(macOS)
-            MacDetailContainerView(
-                store: store,
-                isTimelinePresented: macSidebarMode == .timeline,
-                isStatsPresented: macSidebarMode == .stats,
-                isSettingsPresented: macSidebarMode == .settings,
-                settingsStore: settingsStore,
-                selectedSettingsSection: selectedSettingsSection ?? .notifications,
-                addRoutineStore: self.store.scope(
-                    state: \.addRoutineState,
-                    action: \.addRoutineSheet
-                )
-            ) {
-                macActiveFiltersDetailView
-            }
-#else
-            WithPerceptionTracking {
-                detailContent
-            }
-#endif
-        }
-    }
-
-    @ViewBuilder
-    private var sidebarContent: some View {
-#if os(macOS)
-        VStack(spacing: 12) {
-            if macSidebarMode == .routines && store.routineTasks.isEmpty {
-                emptyStateView(
-                    title: "No tasks yet",
-                    message: "Add a routine or to-do, and the sidebar will organize what needs attention for you.",
-                    systemImage: "checklist"
-                ) {
-                    openAddTask()
-                }
-            } else {
-                VStack(spacing: 0) {
-                    macSidebarHeader
-
-                    Divider()
-
-                    if macSidebarMode == .timeline {
-                        macTimelineSidebarView
-                    } else if macSidebarMode == .stats {
-                        macStatsSidebarView
-                    } else if macSidebarMode == .settings {
-                        macSettingsSidebarView
-                    } else {
-                        listOfSortedTasksView(
-                            routineDisplays: store.routineDisplays,
-                            awayRoutineDisplays: store.awayRoutineDisplays,
-                            archivedRoutineDisplays: store.archivedRoutineDisplays
-                        )
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            }
-        }
-        .navigationTitle("Routina")
-        .toolbar { homeToolbarContent }
-        .routinaHomeSidebarColumnWidth()
-#else
-        Group {
-            if store.routineTasks.isEmpty {
-                emptyStateView(
-                    title: "No tasks yet",
-                    message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
-                    systemImage: "checklist"
-                ) {
-                    openAddTask()
-                }
-            } else {
-                listOfSortedTasksView(
-                    routineDisplays: store.routineDisplays,
-                    awayRoutineDisplays: store.awayRoutineDisplays,
-                    archivedRoutineDisplays: store.archivedRoutineDisplays
-                )
-            }
-        }
-        .navigationTitle("Routina")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { homeToolbarContent }
-        .routinaHomeSidebarColumnWidth()
-#endif
-    }
-
     @ToolbarContentBuilder
-    private var homeToolbarContent: some ToolbarContent {
+    var homeToolbarContent: some ToolbarContent {
 #if os(macOS)
         ToolbarItemGroup(placement: .automatic) {
         }
@@ -335,152 +244,13 @@ struct HomeTCAView: View {
     }
 
 #if os(macOS)
-    private var macSidebarHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            macSidebarModeStrip
-            if macSidebarMode == .routines {
-                macTaskListModeStrip
-            }
-            if macSidebarMode == .routines || macSidebarMode == .timeline {
-                macSearchPanel
-            }
-            if macSidebarMode == .timeline {
-                overallDoneCountSummary
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
-    }
+    var isMacTimelineMode: Bool { macSidebarMode == .timeline }
+    var isMacStatsMode: Bool { macSidebarMode == .stats }
+    var isMacSettingsMode: Bool { macSidebarMode == .settings }
+    var isMacRoutinesMode: Bool { macSidebarMode == .routines }
+    var currentSelectedSettingsSection: SettingsMacSection { selectedSettingsSection ?? .notifications }
 
-    private var macSidebarModeStrip: some View {
-        HStack(spacing: 0) {
-            ForEach(MacSidebarMode.allCases) { mode in
-                Button {
-                    macSidebarModeBinding.wrappedValue = mode
-                } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(
-                                macSidebarMode == mode
-                                    ? Color.accentColor
-                                    : Color.clear
-                            )
-
-                        Image(systemName: macSidebarModeIcon(for: mode))
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(
-                                macSidebarMode == mode
-                                    ? Color.white
-                                    : Color.secondary
-                            )
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
-                .accessibilityLabel(mode.rawValue)
-            }
-        }
-        .frame(height: 42)
-        .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .fill(Color.secondary.opacity(0.12))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-        )
-    }
-
-    private var macTaskListModeStrip: some View {
-        HStack(spacing: 8) {
-            ForEach(MacTaskListMode.allCases) { mode in
-                Button {
-                    macTaskListMode = mode
-                } label: {
-                    Text(mode.rawValue)
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(
-                            macTaskListMode == mode ? Color.white : Color.primary
-                        )
-                        .background(
-                            Capsule()
-                                .fill(
-                                    macTaskListMode == mode
-                                        ? Color.accentColor
-                                        : Color.secondary.opacity(0.10)
-                                )
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func macSidebarModeIcon(for mode: MacSidebarMode) -> String {
-        switch mode {
-        case .routines:
-            return "checklist"
-        case .timeline:
-            return "clock.arrow.circlepath"
-        case .stats:
-            return "chart.bar.xaxis"
-        case .settings:
-            return "gearshape"
-        }
-    }
-
-    private var macSearchPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 10) {
-                platformSearchField(searchText: searchTextBinding)
-
-                Button {
-                    store.send(.setMacFilterDetailPresented(!store.isMacFilterDetailPresented))
-                } label: {
-                    Image(
-                        systemName: macHasCustomFiltersApplied
-                            ? "line.3.horizontal.decrease.circle.fill"
-                            : "line.3.horizontal.decrease.circle"
-                    )
-                    .font(.title3)
-                    .foregroundStyle(
-                        store.isMacFilterDetailPresented || macHasCustomFiltersApplied
-                            ? Color.accentColor
-                            : Color.secondary
-                    )
-                    .frame(width: 38, height: 38)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(
-                                store.isMacFilterDetailPresented
-                                    ? Color.accentColor.opacity(0.14)
-                                    : Color.secondary.opacity(0.07)
-                            )
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Show filters")
-            }
-
-            if macHasCustomFiltersApplied {
-                Button("Clear All Filters") {
-                    clearAllMacFilters()
-                }
-                .font(.caption.weight(.semibold))
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-            }
-        }
-    }
-
-    private var macHasCustomFiltersApplied: Bool {
+    var macHasCustomFiltersApplied: Bool {
         if macSidebarMode == .timeline {
             return selectedTimelineRange != .week
                 || selectedTimelineFilterType != .all
@@ -492,7 +262,7 @@ struct HomeTCAView: View {
         return selectedFilter != .all || hasActiveOptionalFilters
     }
 
-    private var macFilterDetailDescription: String {
+    var macFilterDetailDescription: String {
         switch macTaskListMode {
         case .routines:
             return "Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately."
@@ -501,7 +271,7 @@ struct HomeTCAView: View {
         }
     }
 
-    private func clearAllMacFilters() {
+    func clearAllMacFilters() {
         if macSidebarMode == .timeline {
             selectedTimelineRange = .week
             selectedTimelineFilterType = .all
@@ -512,124 +282,7 @@ struct HomeTCAView: View {
         }
     }
 
-    @ViewBuilder
-    private var macActiveFiltersDetailView: some View {
-        if macSidebarMode == .timeline {
-            macTimelineFiltersDetailView
-        } else {
-            macFiltersDetailView
-        }
-    }
-
-    private var macFiltersDetailView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Filters")
-                            .font(.largeTitle.weight(.semibold))
-
-                        Text(macFilterDetailDescription)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    if macHasCustomFiltersApplied {
-                        Button("Clear All Filters") {
-                            clearAllMacFilters()
-                        }
-                        .buttonStyle(.plain)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                    }
-                }
-
-                macSidebarSectionCard {
-                    filterPicker
-                }
-
-                if !availableTags.isEmpty {
-                    macSidebarSectionCard {
-                        tagFilterBar
-                    }
-                }
-
-                if hasPlaceAwareContent {
-                    macSidebarSectionCard {
-                        MacPlaceFilterPanel(
-                            options: macPlaceFilterOptions,
-                            selectedPlaceID: manualPlaceFilterBinding,
-                            hideUnavailableRoutines: hideUnavailableRoutinesBinding,
-                            showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
-                            currentLocation: store.locationSnapshot.coordinate,
-                            manualPlaceFilterDescription: manualPlaceFilterDescription,
-                            locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
-                            onManagePlaces: { openSettingsPlacesInSidebar() }
-                        )
-                    }
-                }
-            }
-            .padding(24)
-            .frame(maxWidth: 860, alignment: .leading)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-
-    private var macTimelineFiltersDetailView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Done Filters")
-                            .font(.largeTitle.weight(.semibold))
-
-                        Text("Refine the done history in the sidebar by date range and type. Search applies to done entries while Timeline is open.")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    if macHasCustomFiltersApplied {
-                        Button("Clear Filters") {
-                            clearAllMacFilters()
-                        }
-                        .buttonStyle(.plain)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                    }
-                }
-
-                macSidebarSectionCard(title: "Range") {
-                    timelineRangePicker
-                }
-
-                if store.routineTasks.contains(where: \.isOneOffTask) {
-                    macSidebarSectionCard(title: "Type") {
-                        timelineTypePicker
-                    }
-                }
-
-                if !availableTimelineTags.isEmpty {
-                    macSidebarSectionCard(title: "Tags") {
-                        timelineTagFilterBar
-                    }
-                }
-            }
-            .onChange(of: availableTimelineTags) { _, _ in
-                validateSelectedTimelineTag()
-            }
-            .padding(24)
-            .frame(maxWidth: 860, alignment: .leading)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-
-    private func macSidebarSectionCard<Content: View>(
+    func macSidebarSectionCard<Content: View>(
         title: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
@@ -656,7 +309,7 @@ struct HomeTCAView: View {
 #endif
 
     @ViewBuilder
-    private var detailContent: some View {
+    var detailContent: some View {
         if let detailStore = self.store.scope(
             state: \.routineDetailState,
             action: \.routineDetail
@@ -679,7 +332,7 @@ struct HomeTCAView: View {
         )
     }
 
-    private var searchTextBinding: Binding<String> {
+    var searchTextBinding: Binding<String> {
         if let externalSearchText {
             externalSearchText
         } else {
@@ -735,7 +388,7 @@ struct HomeTCAView: View {
 #endif
     }
 
-    private func openAddTask() {
+    func openAddTask() {
 #if os(macOS)
         macSidebarMode = .routines
         macSidebarSelection = nil
@@ -744,7 +397,7 @@ struct HomeTCAView: View {
         store.send(.setAddRoutineSheet(true))
     }
 
-    private var filterPicker: some View {
+    var filterPicker: some View {
 #if os(macOS)
         VStack(alignment: .leading, spacing: 8) {
             Text("Show")
@@ -793,7 +446,7 @@ struct HomeTCAView: View {
 #endif
     }
 
-    private var timelineRangePicker: some View {
+    var timelineRangePicker: some View {
         Picker("Range", selection: $selectedTimelineRange) {
             ForEach(TimelineRange.allCases) { range in
                 Text(range.rawValue).tag(range)
@@ -804,7 +457,7 @@ struct HomeTCAView: View {
 #endif
     }
 
-    private var timelineTypePicker: some View {
+    var timelineTypePicker: some View {
         Picker("Type", selection: $selectedTimelineFilterType) {
             ForEach(TimelineFilterType.allCases) { type in
                 Text(type.rawValue).tag(type)
@@ -815,7 +468,7 @@ struct HomeTCAView: View {
 #endif
     }
 
-    private var overallDoneCountSummary: some View {
+    var overallDoneCountSummary: some View {
         HStack(spacing: 8) {
             Label("\(store.doneStats.totalCount) total dones", systemImage: "checkmark.seal.fill")
                 .font(.subheadline.weight(.semibold))
@@ -824,7 +477,7 @@ struct HomeTCAView: View {
     }
 
     @ViewBuilder
-    private var tagFilterBar: some View {
+    var tagFilterBar: some View {
         if !availableTags.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
 #if os(macOS)
@@ -949,7 +602,7 @@ struct HomeTCAView: View {
         return 0
     }
 
-    private func listOfSortedTasksView(
+    func listOfSortedTasksView(
         routineDisplays: [HomeFeature.RoutineDisplay],
         awayRoutineDisplays: [HomeFeature.RoutineDisplay],
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
@@ -1109,7 +762,7 @@ struct HomeTCAView: View {
     }
 
 #if os(macOS)
-    private var timelineEntries: [TimelineEntry] {
+    var timelineEntries: [TimelineEntry] {
         baseTimelineEntries
             .filter { entry in
                 TimelineLogic.matchesSelectedTag(selectedTimelineTag, in: entry.tags)
@@ -1128,83 +781,12 @@ struct HomeTCAView: View {
         )
     }
 
-    private var availableTimelineTags: [String] {
+    var availableTimelineTags: [String] {
         TimelineLogic.availableTags(from: baseTimelineEntries)
     }
 
-    private var groupedTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
+    var groupedTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
         TimelineLogic.groupedByDay(entries: timelineEntries, calendar: calendar)
-    }
-
-    private var macStatsSidebarView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Stats", systemImage: "chart.bar.xaxis")
-                .font(.title3.weight(.semibold))
-
-            Text("Use the navigator above to switch sections. Stats is shown in the right panel.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(20)
-    }
-
-    private var macSettingsSidebarView: some View {
-        List {
-            ForEach(SettingsMacSection.allCases) { section in
-                Button {
-                    selectedSettingsSection = section
-                } label: {
-                    SettingsMacSidebarRow(
-                        section: section,
-                        store: settingsStore
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(
-                            selectedSettingsSection == section
-                                ? Color.accentColor.opacity(0.9)
-                                : Color.clear
-                        )
-                        .padding(.vertical, 2)
-                )
-            }
-        }
-        .listStyle(.sidebar)
-    }
-
-    private var macTimelineSidebarView: some View {
-        Group {
-            if timelineLogs.isEmpty {
-                emptyStateView(
-                    title: "No completions yet",
-                    message: "Completed routines and todos will appear here in chronological order.",
-                    systemImage: "clock.arrow.circlepath"
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if groupedTimelineEntries.isEmpty {
-                emptyStateView(
-                    title: "No matching dones",
-                    message: "Try a different search, time range, or done type.",
-                    systemImage: "line.3.horizontal.decrease.circle"
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List(selection: macSidebarSelectionBinding) {
-                    ForEach(groupedTimelineEntries, id: \.date) { section in
-                        Section(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar)) {
-                            ForEach(section.entries) { entry in
-                                timelineSidebarRow(entry)
-                            }
-                        }
-                    }
-                }
-                .listStyle(.sidebar)
-            }
-        }
     }
 #endif
 
@@ -1219,7 +801,7 @@ struct HomeTCAView: View {
 #endif
     }
 
-    private var filterSheetButton: some View {
+    var filterSheetButton: some View {
         Button {
             isFilterSheetPresented = true
         } label: {
@@ -1347,14 +929,14 @@ struct HomeTCAView: View {
         }
     }
 
-    private var hideUnavailableRoutinesBinding: Binding<Bool> {
+    var hideUnavailableRoutinesBinding: Binding<Bool> {
         Binding(
             get: { store.hideUnavailableRoutines },
             set: { store.send(.hideUnavailableRoutinesChanged($0)) }
         )
     }
 
-    private var manualPlaceFilterBinding: Binding<UUID?> {
+    var manualPlaceFilterBinding: Binding<UUID?> {
         Binding(
             get: { selectedManualPlaceFilterID },
             set: { selectedManualPlaceFilterID = $0 }
@@ -1368,7 +950,7 @@ struct HomeTCAView: View {
     }
 
 #if os(macOS)
-    private var macPlaceFilterOptions: [MacPlaceFilterOption] {
+    var macPlaceFilterOptions: [MacPlaceFilterOption] {
         let linkedRoutineCounts = store.routineTasks.reduce(into: [UUID: Int]()) { partialResult, task in
             guard let placeID = task.placeID else { return }
             partialResult[placeID, default: 0] += 1
@@ -1427,16 +1009,16 @@ struct HomeTCAView: View {
         !sortedRoutinePlaces.isEmpty
     }
 
-    private var hasPlaceLinkedRoutines: Bool {
+    var hasPlaceLinkedRoutines: Bool {
         store.routineTasks.contains { $0.placeID != nil }
     }
 
-    private var hasPlaceAwareContent: Bool {
+    var hasPlaceAwareContent: Bool {
         hasSavedPlaces || hasPlaceLinkedRoutines
     }
 
     @ViewBuilder
-    private var homeFiltersSheet: some View {
+    var homeFiltersSheet: some View {
 #if os(macOS)
         EmptyView()
 #else
@@ -1535,7 +1117,7 @@ struct HomeTCAView: View {
         }
     }
 
-    private var manualPlaceFilterDescription: String {
+    var manualPlaceFilterDescription: String {
         guard let selectedManualPlaceFilterID,
               let place = store.routinePlaces.first(where: { $0.id == selectedManualPlaceFilterID })
         else {
@@ -1551,7 +1133,7 @@ struct HomeTCAView: View {
         return "Save a place in Settings, then link it to a routine to filter by place here."
     }
 
-    private var locationStatusText: String {
+    var locationStatusText: String {
         switch store.locationSnapshot.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             if store.awayRoutineDisplays.isEmpty {
@@ -1806,7 +1388,7 @@ struct HomeTCAView: View {
     }
 
 #if os(macOS)
-    private var macSidebarModeBinding: Binding<MacSidebarMode> {
+    var macSidebarModeBinding: Binding<MacSidebarMode> {
         Binding(
             get: { macSidebarMode },
             set: { mode in
@@ -1824,7 +1406,7 @@ struct HomeTCAView: View {
         )
     }
 
-    private var macSidebarSelectionBinding: Binding<MacSidebarSelection?> {
+    var macSidebarSelectionBinding: Binding<MacSidebarSelection?> {
         Binding(
             get: { macSidebarSelection },
             set: { selection in
@@ -1915,7 +1497,7 @@ struct HomeTCAView: View {
         settingsStore.send(.onAppear)
     }
 
-    private func openSettingsPlacesInSidebar() {
+    func openSettingsPlacesInSidebar() {
         selectedSettingsSection = .places
         openSettingsInSidebar()
     }
@@ -1925,7 +1507,7 @@ struct HomeTCAView: View {
         macTaskListMode = task.isOneOffTask ? .todos : .routines
     }
 
-    private func timelineSidebarRow(_ entry: TimelineEntry) -> some View {
+    func timelineSidebarRow(_ entry: TimelineEntry) -> some View {
         Button {
             openTimelineEntry(entry)
         } label: {
@@ -1982,7 +1564,7 @@ struct HomeTCAView: View {
     }
 
     @ViewBuilder
-    private var timelineTagFilterBar: some View {
+    var timelineTagFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 tagFilterButton(title: "All Tags", isSelected: selectedTimelineTag == nil) {
@@ -2001,7 +1583,7 @@ struct HomeTCAView: View {
         }
     }
 
-    private func validateSelectedTimelineTag() {
+    func validateSelectedTimelineTag() {
         guard let selectedTimelineTag else { return }
         if !RoutineTag.contains(selectedTimelineTag, in: availableTimelineTags) {
             self.selectedTimelineTag = nil
@@ -2580,7 +2162,7 @@ struct HomeTCAView: View {
     }
 
     @ViewBuilder
-    private func emptyStateView(
+    func emptyStateView(
         title: String,
         message: String,
         systemImage: String,
@@ -2657,7 +2239,7 @@ struct HomeTCAView: View {
         store.routineDisplays + store.awayRoutineDisplays + store.archivedRoutineDisplays
     }
 
-    private var availableTags: [String] {
+    var availableTags: [String] {
         HomeFeature.availableTags(from: allRoutineDisplays)
     }
 
@@ -2702,572 +2284,3 @@ struct HomeTCAView: View {
         }
     }
 }
-
-#if os(macOS)
-/// Separate View struct so SwiftUI gives it its own observation lifecycle.
-/// Inline closures inside `NavigationSplitView.detail` on macOS can lose
-/// observation tracking after several view swaps, causing state changes
-/// (like toggling the filter panel) to stop updating the detail column.
-private struct MacDetailContainerView<FilterView: View>: View {
-    let store: StoreOf<HomeFeature>
-    let isTimelinePresented: Bool
-    let isStatsPresented: Bool
-    let isSettingsPresented: Bool
-    let settingsStore: StoreOf<SettingsFeature>
-    let selectedSettingsSection: SettingsMacSection
-    let addRoutineStore: StoreOf<AddRoutineFeature>?
-    @ViewBuilder let filterView: () -> FilterView
-
-    var body: some View {
-        WithPerceptionTracking {
-            if store.isMacFilterDetailPresented {
-                filterView()
-            } else if let addRoutineStore {
-                AddRoutineTCAView(store: addRoutineStore)
-            } else if isStatsPresented {
-                StatsView()
-            } else if isSettingsPresented {
-                EmbeddedSettingsMacDetailView(
-                    store: settingsStore,
-                    section: selectedSettingsSection
-                )
-            } else if let detailStore = store.scope(
-                state: \.routineDetailState,
-                action: \.routineDetail
-            ) {
-                RoutineDetailTCAView(store: detailStore)
-            } else {
-                ContentUnavailableView(
-                    isTimelinePresented
-                        ? "Select a done item or filters"
-                        : (store.routineTasks.isEmpty ? "Add a task to get started" : "Select a task"),
-                    systemImage: isTimelinePresented ? "clock.arrow.circlepath" : "sidebar.right",
-                    description: Text(
-                        isTimelinePresented
-                            ? "Choose a completed routine or todo from the sidebar, or open filters beside search to refine the done history."
-                            : (
-                                store.routineTasks.isEmpty
-                                    ? "Add a routine or to-do to see its details here."
-                                    : "Choose a routine or to-do from the sidebar to see its details."
-                            )
-                    )
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-    }
-}
-#endif
-
-#if os(macOS)
-private struct MacPlaceFilterOption: Equatable, Identifiable {
-    enum Status: Equatable {
-        case here
-        case away(distanceMeters: Double)
-        case unknown
-    }
-
-    let place: RoutinePlace
-    let linkedRoutineCount: Int
-    let status: Status
-
-    var id: UUID { place.id }
-    var coordinate: CLLocationCoordinate2D { placeCoordinate.clLocationCoordinate2D }
-
-    var placeCoordinate: LocationCoordinate {
-        LocationCoordinate(latitude: place.latitude, longitude: place.longitude)
-    }
-
-    var subtitle: String {
-        let routineText = linkedRoutineCount == 1 ? "1 routine" : "\(linkedRoutineCount) routines"
-        return "\(routineText) • \(Int(place.radiusMeters)) m radius"
-    }
-}
-
-private struct MacPlaceFilterDetailView: View {
-    let options: [MacPlaceFilterOption]
-    @Binding var selectedPlaceID: UUID?
-    @Binding var hideUnavailableRoutines: Bool
-    let showAvailabilityToggle: Bool
-    let currentLocation: LocationCoordinate?
-    let manualPlaceFilterDescription: String
-    let locationStatusText: String?
-    let onManagePlaces: () -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Place Filter")
-                        .font(.largeTitle.weight(.semibold))
-
-                    Text("Choose a saved place from the list and filter the routine sidebar by that location.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-
-                MacPlaceFilterPanel(
-                    options: options,
-                    selectedPlaceID: $selectedPlaceID,
-                    hideUnavailableRoutines: $hideUnavailableRoutines,
-                    showAvailabilityToggle: showAvailabilityToggle,
-                    currentLocation: currentLocation,
-                    manualPlaceFilterDescription: manualPlaceFilterDescription,
-                    locationStatusText: locationStatusText,
-                    onManagePlaces: onManagePlaces
-                )
-            }
-            .padding(24)
-            .frame(maxWidth: 860, alignment: .leading)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-}
-
-private struct MacPlaceFilterPanel: View {
-    let options: [MacPlaceFilterOption]
-    @Binding var selectedPlaceID: UUID?
-    @Binding var hideUnavailableRoutines: Bool
-    let showAvailabilityToggle: Bool
-    let currentLocation: LocationCoordinate?
-    let manualPlaceFilterDescription: String
-    let locationStatusText: String?
-    let onManagePlaces: () -> Void
-
-    @State private var mapPosition: MapCameraPosition
-
-    init(
-        options: [MacPlaceFilterOption],
-        selectedPlaceID: Binding<UUID?>,
-        hideUnavailableRoutines: Binding<Bool>,
-        showAvailabilityToggle: Bool,
-        currentLocation: LocationCoordinate?,
-        manualPlaceFilterDescription: String,
-        locationStatusText: String?,
-        onManagePlaces: @escaping () -> Void
-    ) {
-        self.options = options
-        _selectedPlaceID = selectedPlaceID
-        _hideUnavailableRoutines = hideUnavailableRoutines
-        self.showAvailabilityToggle = showAvailabilityToggle
-        self.currentLocation = currentLocation
-        self.manualPlaceFilterDescription = manualPlaceFilterDescription
-        self.locationStatusText = locationStatusText
-        self.onManagePlaces = onManagePlaces
-        _mapPosition = State(
-            initialValue: Self.mapCameraPosition(
-                options: options,
-                selectedPlaceID: selectedPlaceID.wrappedValue,
-                currentLocation: currentLocation
-            )
-        )
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            panelHeader
-            panelContent
-            panelFooter
-        }
-        .onAppear(perform: updateMapPosition)
-        .onChange(of: selectedPlaceID) { _, _ in
-            updateMapPosition()
-        }
-        .onChange(of: options) { _, _ in
-            updateMapPosition()
-        }
-        .onChange(of: currentLocation) { _, _ in
-            updateMapPosition()
-        }
-    }
-
-    private var panelHeader: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Label("Places", systemImage: "location.viewfinder")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 0)
-
-            if selectedPlaceID != nil {
-                Button("Clear") {
-                    selectedPlaceID = nil
-                }
-                .buttonStyle(.plain)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
-            }
-
-            Button("Manage") {
-                onManagePlaces()
-            }
-            .buttonStyle(.plain)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.accentColor)
-        }
-    }
-
-    @ViewBuilder
-    private var panelContent: some View {
-        if options.isEmpty {
-            Text("Save places in Settings to filter routines with a map-based view here.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
-            HStack(alignment: .top, spacing: 12) {
-                placeListColumn
-
-                Divider()
-                    .padding(.vertical, 2)
-
-                mapPreview
-            }
-            .frame(height: 340)
-        }
-    }
-
-    @ViewBuilder
-    private var panelFooter: some View {
-        if showAvailabilityToggle {
-            Toggle("Hide unavailable routines", isOn: $hideUnavailableRoutines)
-                .toggleStyle(.switch)
-                .font(.caption)
-        }
-
-        Text(manualPlaceFilterDescription)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-        if let locationStatusText {
-            Text(locationStatusText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var placeListColumn: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 8) {
-                allRoutinesRow
-
-                ForEach(options) { option in
-                    MacPlaceFilterRow(
-                        option: option,
-                        isSelected: selectedPlaceID == option.id
-                    ) {
-                        selectedPlaceID = option.id
-                    }
-                }
-            }
-            .padding(.vertical, 2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var allRoutinesRow: some View {
-        Button {
-            selectedPlaceID = nil
-        } label: {
-            HStack(alignment: .center, spacing: 10) {
-                Image(systemName: "square.grid.2x2")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(selectedPlaceID == nil ? Color.accentColor : Color.secondary)
-                    .frame(width: 24, height: 24)
-                    .background(
-                        Circle()
-                            .fill(
-                                selectedPlaceID == nil
-                                    ? Color.accentColor.opacity(0.16)
-                                    : Color.secondary.opacity(0.10)
-                            )
-                    )
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("All routines")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-
-                    Text("Show every routine without filtering by place.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(rowBackground(isSelected: selectedPlaceID == nil))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var mapPreview: some View {
-        Map(position: $mapPosition) {
-            ForEach(options) { option in
-                MapCircle(
-                    center: option.coordinate,
-                    radius: option.place.radiusMeters
-                )
-                .foregroundStyle(circleColor(for: option))
-
-                Annotation(option.place.displayName, coordinate: option.coordinate) {
-                    Circle()
-                        .fill(selectedPlaceID == option.id ? Color.accentColor : Color.white.opacity(0.92))
-                        .overlay(
-                            Circle()
-                                .stroke(selectedPlaceID == option.id ? Color.white : Color.accentColor, lineWidth: 2)
-                        )
-                        .frame(width: selectedPlaceID == option.id ? 14 : 10, height: selectedPlaceID == option.id ? 14 : 10)
-                        .shadow(color: .black.opacity(0.14), radius: 3, y: 1)
-                }
-            }
-
-            if let currentLocation {
-                Annotation("Current Location", coordinate: currentLocation.clLocationCoordinate2D) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue.opacity(0.18))
-                            .frame(width: 20, height: 20)
-
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 8, height: 8)
-                    }
-                }
-            }
-        }
-        .mapStyle(.standard)
-        .allowsHitTesting(false)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.secondary.opacity(0.16), lineWidth: 1)
-        )
-        .overlay(alignment: .topLeading) {
-            Text(selectedPlaceMapTitle)
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.ultraThinMaterial, in: Capsule())
-                .padding(10)
-        }
-        .frame(maxWidth: 280, maxHeight: .infinity)
-    }
-
-    private var selectedPlaceMapTitle: String {
-        if let selectedPlaceID,
-           let option = options.first(where: { $0.id == selectedPlaceID }) {
-            return option.place.displayName
-        }
-        return "All saved places"
-    }
-
-    private func circleColor(for option: MacPlaceFilterOption) -> Color {
-        selectedPlaceID == option.id ? Color.accentColor.opacity(0.22) : Color.accentColor.opacity(0.10)
-    }
-
-    private func rowBackground(isSelected: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
-    }
-
-    private func updateMapPosition() {
-        withAnimation(.snappy(duration: 0.3)) {
-            mapPosition = Self.mapCameraPosition(
-                options: options,
-                selectedPlaceID: selectedPlaceID,
-                currentLocation: currentLocation
-            )
-        }
-    }
-
-    private static func mapCameraPosition(
-        options: [MacPlaceFilterOption],
-        selectedPlaceID: UUID?,
-        currentLocation: LocationCoordinate?
-    ) -> MapCameraPosition {
-        guard !options.isEmpty else {
-            let fallbackRegion = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 52.52, longitude: 13.405),
-                span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-            )
-            return .region(fallbackRegion)
-        }
-
-        if let selectedPlaceID,
-           let selectedOption = options.first(where: { $0.id == selectedPlaceID }) {
-            return .region(region(focusingOn: selectedOption.place))
-        }
-
-        return .region(regionIncludingAllPlaces(options, currentLocation: currentLocation))
-    }
-
-    private static func region(focusingOn place: RoutinePlace) -> MKCoordinateRegion {
-        let latitudeDelta = max(latitudeDelta(forMeters: place.radiusMeters * 4), 0.01)
-        let longitudeDelta = max(
-            longitudeDelta(forMeters: place.radiusMeters * 4, latitude: place.latitude),
-            0.01
-        )
-
-        return MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude),
-            span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta)
-        )
-    }
-
-    private static func regionIncludingAllPlaces(
-        _ options: [MacPlaceFilterOption],
-        currentLocation: LocationCoordinate?
-    ) -> MKCoordinateRegion {
-        var minLatitude = Double.greatestFiniteMagnitude
-        var maxLatitude = -Double.greatestFiniteMagnitude
-        var minLongitude = Double.greatestFiniteMagnitude
-        var maxLongitude = -Double.greatestFiniteMagnitude
-
-        for option in options {
-            let latitudeInset = latitudeDelta(forMeters: option.place.radiusMeters * 1.8)
-            let longitudeInset = longitudeDelta(
-                forMeters: option.place.radiusMeters * 1.8,
-                latitude: option.place.latitude
-            )
-
-            minLatitude = min(minLatitude, option.place.latitude - latitudeInset)
-            maxLatitude = max(maxLatitude, option.place.latitude + latitudeInset)
-            minLongitude = min(minLongitude, option.place.longitude - longitudeInset)
-            maxLongitude = max(maxLongitude, option.place.longitude + longitudeInset)
-        }
-
-        if let currentLocation {
-            minLatitude = min(minLatitude, currentLocation.latitude)
-            maxLatitude = max(maxLatitude, currentLocation.latitude)
-            minLongitude = min(minLongitude, currentLocation.longitude)
-            maxLongitude = max(maxLongitude, currentLocation.longitude)
-        }
-
-        let center = CLLocationCoordinate2D(
-            latitude: (minLatitude + maxLatitude) / 2,
-            longitude: (minLongitude + maxLongitude) / 2
-        )
-
-        let latitudeDelta = max((maxLatitude - minLatitude) * 1.35, 0.02)
-        let longitudeDelta = max((maxLongitude - minLongitude) * 1.35, 0.02)
-
-        return MKCoordinateRegion(
-            center: center,
-            span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta)
-        )
-    }
-
-    private static func latitudeDelta(forMeters meters: Double) -> Double {
-        meters / 111_000
-    }
-
-    private static func longitudeDelta(forMeters meters: Double, latitude: Double) -> Double {
-        let cosine = max(abs(cos(latitude * .pi / 180)), 0.2)
-        return meters / (111_000 * cosine)
-    }
-}
-
-private struct MacPlaceFilterRow: View {
-    let option: MacPlaceFilterOption
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(alignment: .center, spacing: 10) {
-                Image(systemName: "mappin.and.ellipse")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                    .frame(width: 24, height: 24)
-                    .background(
-                        Circle()
-                            .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
-                    )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(option.place.displayName)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-
-                        MacPlaceStatusBadge(status: option.status)
-                    }
-
-                    Text(option.subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct MacPlaceStatusBadge: View {
-    let status: MacPlaceFilterOption.Status
-
-    var body: some View {
-        Text(labelText)
-            .font(.caption2.weight(.bold))
-            .foregroundStyle(foregroundColor)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(
-                Capsule()
-                    .fill(backgroundColor)
-            )
-    }
-
-    private var labelText: String {
-        switch status {
-        case .here:
-            return "Here"
-        case let .away(distanceMeters):
-            if distanceMeters < 1_000 {
-                return "\(Int(distanceMeters.rounded())) m away"
-            }
-            return String(format: "%.1f km", distanceMeters / 1_000)
-        case .unknown:
-            return "Unknown"
-        }
-    }
-
-    private var foregroundColor: Color {
-        switch status {
-        case .here:
-            return .green
-        case .away:
-            return .orange
-        case .unknown:
-            return .secondary
-        }
-    }
-
-    private var backgroundColor: Color {
-        switch status {
-        case .here:
-            return Color.green.opacity(0.15)
-        case .away:
-            return Color.orange.opacity(0.16)
-        case .unknown:
-            return Color.secondary.opacity(0.12)
-        }
-    }
-}
-#endif

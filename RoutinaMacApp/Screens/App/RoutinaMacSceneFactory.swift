@@ -7,8 +7,9 @@ enum RoutinaMacSceneFactory {
         let store = RoutinaAppBootstrap.makeStore(using: persistence)
 
         return AnyView(
-            HomeTCAView(
-                store: store.scope(state: \.home, action: \.home)
+            HomeMacView(
+                store: store.scope(state: \.home, action: \.home),
+                settingsStore: store.scope(state: \.settings, action: \.settings)
             )
             .frame(
                 minWidth: RoutinaMacWindowSizing.minWidth,
