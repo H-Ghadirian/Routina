@@ -9,22 +9,15 @@ import SwiftUI
 import CoreData
 
 struct TaskDetailView: View {
-    @AppStorage("lastRoutineDate") private var lastRoutineDate: Date = Date()
-    @AppStorage("routineInterval") private var routineInterval: Int = 7
-
+    @ObservedObject var task: RoutineTask
     @Environment(\.managedObjectContext) private var viewContext
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \RoutineLog.timestamp, ascending: false)],
-        animation: .default)
-    private var logs: FetchedResults<RoutineLog>
-
     private var daysSinceLastRoutine: Int {
-        Calendar.current.dateComponents([.day], from: lastRoutineDate, to: Date()).day ?? 0
+        Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
     }
 
     private var progressColor: Color {
-        let progress = Double(daysSinceLastRoutine) / Double(routineInterval)
+        let progress = Double(daysSinceLastRoutine) / Double(task.interval)
         switch progress {
         case ..<0.33:
             return .green
@@ -41,7 +34,7 @@ struct TaskDetailView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Routina")
+            Text(task.name ?? "Unnamed Task")
                 .font(.largeTitle)
                 .bold()
 
@@ -49,7 +42,7 @@ struct TaskDetailView: View {
                 .foregroundColor(.secondary)
 
             LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(0..<routineInterval, id: \ .self) { index in
+                ForEach(0..<Int(task.interval), id: \.self) { index in
                     Rectangle()
                         .fill(index < daysSinceLastRoutine ? progressColor : Color.gray.opacity(0.3))
                         .frame(width: 40, height: 40)
@@ -58,44 +51,27 @@ struct TaskDetailView: View {
             }
             .padding()
 
-            Text("Last done: \(lastRoutineDate.formatted(date: .abbreviated, time: .omitted))")
+            Text("Last done: \(task.lastDone?.formatted(date: .abbreviated, time: .omitted) ?? "Never")")
                 .foregroundColor(.gray)
 
             Button("Mark as Done") {
-                addLog()
-                lastRoutineDate = Date()
+                markAsDone()
             }
             .buttonStyle(.borderedProminent)
-
-            List {
-                Section(header: Text("Routine Logs")) {
-                    ForEach(logs) { log in
-                        Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
-                    }
-                }
-            }
-
-            HStack {
-                Text("Do every:")
-                Picker("Interval", selection: $routineInterval) {
-                    ForEach([1, 3, 7, 14, 30], id: \ .self) { days in
-                        Text("\(days) days").tag(days)
-                    }
-                }
-                .pickerStyle(.menu)
-            }
         }
         .padding()
     }
 
-    private func addLog() {
-        let newLog = RoutineLog(context: viewContext)
-        newLog.timestamp = Date()
+    private func markAsDone() {
+        task.lastDone = Date()
+        saveContext()
+    }
 
+    private func saveContext() {
         do {
             try viewContext.save()
         } catch {
-            print("Error saving log: \(error.localizedDescription)")
+            print("Error saving task: \(error.localizedDescription)")
         }
     }
 }

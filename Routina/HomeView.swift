@@ -22,7 +22,7 @@ struct HomeView: View {
         NavigationView {
             List {
                 ForEach(tasks) { task in
-                    NavigationLink(destination: TaskDetailView()) {
+                    NavigationLink(destination: TaskDetailView(task: task)) {
                         Text(task.name ?? "Unnamed Task")
                     }
                 }
