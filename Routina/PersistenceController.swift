@@ -1,6 +1,3 @@
-//  Created by ghadirianh on 08.03.25.
-//
-
 import CoreData
 
 public struct PersistenceController {

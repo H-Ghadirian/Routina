@@ -1,6 +1,3 @@
-//  Created by ghadirianh on 10.04.25.
-//
-
 import SwiftUI
 
 struct AddRoutineView: View {
