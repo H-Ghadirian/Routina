@@ -1,16 +1,25 @@
-//
-//  ContentView.swift
-//  Routina
-//
 //  Created by ghadirianh on 07.03.25.
 //
 
 import SwiftUI
 import CoreData
+import SwiftUI
+import CoreData
 
-struct TaskDetailView: View {
+struct RoutineDetailView: View {
     @ObservedObject var task: RoutineTask
     @Environment(\.managedObjectContext) private var viewContext
+
+    @FetchRequest private var logs: FetchedResults<RoutineLog>
+
+    init(task: RoutineTask) {
+        self.task = task
+        _logs = FetchRequest(
+            entity: RoutineLog.entity(),
+            sortDescriptors: [NSSortDescriptor(keyPath: \RoutineLog.timestamp, ascending: false)],
+            predicate: NSPredicate(format: "task == %@", task)
+        )
+    }
 
     private var daysSinceLastRoutine: Int {
         Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
@@ -34,7 +43,7 @@ struct TaskDetailView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text(task.name ?? "Unnamed Task")
+            Text(task.name ?? "Unnamed Routine")
                 .font(.largeTitle)
                 .bold()
 
@@ -58,12 +67,26 @@ struct TaskDetailView: View {
                 markAsDone()
             }
             .buttonStyle(.borderedProminent)
+
+            List {
+                Section(header: Text("Routine Logs")) {
+                    ForEach(logs) { log in
+                        Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                    }
+                }
+            }
+
+            Spacer()
         }
         .padding()
     }
 
     private func markAsDone() {
         task.lastDone = Date()
+        let newLog = RoutineLog(context: viewContext)
+        newLog.timestamp = Date()
+        newLog.task = task
+
         saveContext()
     }
 
@@ -71,7 +94,7 @@ struct TaskDetailView: View {
         do {
             try viewContext.save()
         } catch {
-            print("Error saving task: \(error.localizedDescription)")
+            print("Error saving log: \(error.localizedDescription)")
         }
     }
 }

@@ -1,7 +1,3 @@
-//
-//  HomeView.swift
-//  Routina
-//
 //  Created by ghadirianh on 10.04.25.
 //
 
@@ -14,37 +10,37 @@ struct HomeView: View {
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \RoutineTask.name, ascending: true)],
         animation: .default)
-    private var tasks: FetchedResults<RoutineTask>
+    private var routines: FetchedResults<RoutineTask>
 
-    @State private var showingAddTask = false
+    @State private var showingAddRoutine = false
 
     var body: some View {
         NavigationView {
             List {
-                ForEach(tasks) { task in
-                    NavigationLink(destination: TaskDetailView(task: task)) {
-                        Text(task.name ?? "Unnamed Task")
+                ForEach(routines) { routine in
+                    NavigationLink(destination: RoutineDetailView(task: routine)) {
+                        Text(routine.name ?? "Unnamed Routine")
                     }
                 }
-                .onDelete(perform: deleteTasks)
+                .onDelete(perform: deleteRoutines)
             }
             .navigationTitle("Routina")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddTask = true }) {
-                        Label("Add Task", systemImage: "plus")
+                    Button(action: { showingAddRoutine = true }) {
+                        Label("Add Routine", systemImage: "plus")
                     }
                 }
             }
-            .sheet(isPresented: $showingAddTask) {
-                AddTaskView().environment(\.managedObjectContext, viewContext)
+            .sheet(isPresented: $showingAddRoutine) {
+                AddRoutineView().environment(\.managedObjectContext, viewContext)
             }
         }
     }
 
-    private func deleteTasks(offsets: IndexSet) {
+    private func deleteRoutines(offsets: IndexSet) {
         withAnimation {
-            offsets.map { tasks[$0] }.forEach(viewContext.delete)
+            offsets.map { routines[$0] }.forEach(viewContext.delete)
             saveContext()
         }
     }

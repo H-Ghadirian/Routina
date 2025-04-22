@@ -2,10 +2,12 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D70" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="RoutineLog" representedClassName="RoutineLog" syncable="YES" codeGenerationType="class">
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="task" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RoutineTask" inverseName="logs" inverseEntity="RoutineTask"/>
     </entity>
     <entity name="RoutineTask" representedClassName="RoutineTask" syncable="YES" codeGenerationType="class">
         <attribute name="interval" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="lastDone" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="logs" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RoutineLog" inverseName="task" inverseEntity="RoutineLog"/>
     </entity>
 </model>

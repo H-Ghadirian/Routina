@@ -1,23 +1,19 @@
-//
-//  AddTaskView.swift
-//  Routina
-//
 //  Created by ghadirianh on 10.04.25.
 //
 
 import SwiftUI
 
-struct AddTaskView: View {
+struct AddRoutineView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
-    @State private var taskName: String = ""
+    @State private var routineName: String = ""
     @State private var interval: Int = 7
 
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Task name", text: $taskName)
+                TextField("Routine name", text: $routineName)
 
                 Picker("Interval", selection: $interval) {
                     ForEach([1, 3, 7, 14, 30], id: \.self) { days in
@@ -25,12 +21,12 @@ struct AddTaskView: View {
                     }
                 }
             }
-            .navigationTitle("Add Task")
+            .navigationTitle("Add Routine")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        addTask()
-                    }.disabled(taskName.isEmpty)
+                        addRoutine()
+                    }.disabled(routineName.isEmpty)
                 }
 
                 ToolbarItem(placement: .cancellationAction) {
@@ -42,17 +38,17 @@ struct AddTaskView: View {
         }
     }
 
-    private func addTask() {
-        let newTask = RoutineTask(context: viewContext)
-        newTask.name = taskName
-        newTask.interval = Int16(interval)
-        newTask.lastDone = Date()
+    private func addRoutine() {
+        let newRoutine = RoutineTask(context: viewContext)
+        newRoutine.name = routineName
+        newRoutine.interval = Int16(interval)
+        newRoutine.lastDone = Date()
 
         do {
             try viewContext.save()
             dismiss()  // Close the sheet
         } catch {
-            print("Error saving task: \(error.localizedDescription)")
+            print("Error saving routine: \(error.localizedDescription)")
         }
     }
 }
