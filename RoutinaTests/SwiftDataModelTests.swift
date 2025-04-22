@@ -21,6 +21,8 @@ struct SwiftDataModelTests {
         #expect(task.checklistItems.isEmpty)
         #expect(task.scheduleMode == .fixedInterval)
         #expect(task.priority == .none)
+        #expect(task.importance == .level2)
+        #expect(task.urgency == .level2)
         #expect(task.completedStepCount == 0)
         #expect(task.sequenceStartedAt == nil)
     }
@@ -215,6 +217,21 @@ struct SwiftDataModelTests {
 
         task.priority = .urgent
         #expect(task.priority == .urgent)
+    }
+
+    @Test
+    func routineTask_persistsImportanceAndUrgency() {
+        let task = RoutineTask(importance: .level1, urgency: .level4)
+        #expect(task.importance == .level1)
+        #expect(task.urgency == .level4)
+        #expect(task.derivedPriorityFromMatrix == .high)
+
+        task.importance = .level4
+        task.urgency = .level4
+
+        #expect(task.importance == .level4)
+        #expect(task.urgency == .level4)
+        #expect(task.derivedPriorityFromMatrix == .urgent)
     }
 
     @Test

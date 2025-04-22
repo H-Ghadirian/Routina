@@ -280,17 +280,14 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
-                sectionCard(title: "Priority") {
+                sectionCard(title: "Importance & Urgency") {
                     VStack(alignment: .leading, spacing: 6) {
-                        Picker("Priority", selection: editPriorityBinding) {
-                            ForEach(RoutineTaskPriority.allCases, id: \.self) { priority in
-                                Text(priority.title).tag(priority)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
+                        ImportanceUrgencyMatrixPicker(
+                            importance: editImportanceBinding,
+                            urgency: editUrgencyBinding
+                        )
 
-                        Text(priorityDescription)
+                        Text(importanceUrgencyDescription)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -424,10 +421,17 @@ struct RoutineDetailEditRoutineContent: View {
         store.editScheduleMode != .derivedFromChecklist && store.editScheduleMode != .oneOff
     }
 
-    private var editPriorityBinding: Binding<RoutineTaskPriority> {
+    private var editImportanceBinding: Binding<RoutineTaskImportance> {
         Binding(
-            get: { store.editPriority },
-            set: { store.send(.editPriorityChanged($0)) }
+            get: { store.editImportance },
+            set: { store.send(.editImportanceChanged($0)) }
+        )
+    }
+
+    private var editUrgencyBinding: Binding<RoutineTaskUrgency> {
+        Binding(
+            get: { store.editUrgency },
+            set: { store.send(.editUrgencyChanged($0)) }
         )
     }
 
@@ -440,11 +444,8 @@ struct RoutineDetailEditRoutineContent: View {
         }
     }
 
-    private var priorityDescription: String {
-        if store.editPriority == .none {
-            return "Optional. Higher priority wins when tasks share the same due date."
-        }
-        return "\(store.editPriority.title) tasks are sorted above lower-priority tasks with the same due date."
+    private var importanceUrgencyDescription: String {
+        "\(store.editImportance.title) importance and \(store.editUrgency.title.lowercased()) urgency map to \(store.editPriority.title.lowercased()) priority for sorting."
     }
 
     private var manageTagsButton: some View {

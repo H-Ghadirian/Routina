@@ -37,7 +37,9 @@ struct AddRoutineFeature: Reducer {
         var routineNotes: String = ""
         var routineLink: String = ""
         var deadline: Date?
-        var priority: RoutineTaskPriority = .none
+        var priority: RoutineTaskPriority = .medium
+        var importance: RoutineTaskImportance = .level2
+        var urgency: RoutineTaskUrgency = .level2
         var imageData: Data?
         var routineTags: [String] = []
         var relationships: [RoutineTaskRelationship] = []
@@ -101,6 +103,8 @@ struct AddRoutineFeature: Reducer {
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
         case priorityChanged(RoutineTaskPriority)
+        case importanceChanged(RoutineTaskImportance)
+        case urgencyChanged(RoutineTaskUrgency)
         case imagePicked(Data?)
         case removeImageTapped
         case taskTypeChanged(RoutineTaskType)
@@ -139,13 +143,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -177,6 +181,22 @@ struct AddRoutineFeature: Reducer {
 
         case let .priorityChanged(priority):
             state.priority = priority
+            return .none
+
+        case let .importanceChanged(importance):
+            state.importance = importance
+            state.priority = matrixPriority(
+                importance: importance,
+                urgency: state.urgency
+            )
+            return .none
+
+        case let .urgencyChanged(urgency):
+            state.urgency = urgency
+            state.priority = matrixPriority(
+                importance: state.importance,
+                urgency: urgency
+            )
             return .none
 
         case let .imagePicked(data):
@@ -374,7 +394,12 @@ struct AddRoutineFeature: Reducer {
                 RoutineTask.sanitizedNotes(state.routineNotes),
                 RoutineTask.sanitizedLink(state.routineLink),
                 state.taskType == .todo ? state.deadline : nil,
-                state.priority,
+                matrixPriority(
+                    importance: state.importance,
+                    urgency: state.urgency
+                ),
+                state.importance,
+                state.urgency,
                 state.imageData,
                 state.selectedPlaceID,
                 state.routineTags,
@@ -408,6 +433,23 @@ struct AddRoutineFeature: Reducer {
         state.nameValidationMessage = hasDuplicate
             ? "A task with this name already exists."
             : nil
+    }
+
+    private func matrixPriority(
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency
+    ) -> RoutineTaskPriority {
+        let score = importance.sortOrder + urgency.sortOrder
+        switch score {
+        case ..<4:
+            return .low
+        case 4...5:
+            return .medium
+        case 6...7:
+            return .high
+        default:
+            return .urgent
+        }
     }
 
     private func appendStep(from draft: String, to currentSteps: [RoutineStep]) -> [RoutineStep] {

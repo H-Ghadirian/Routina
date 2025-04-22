@@ -165,14 +165,13 @@ struct AddRoutineTCAView: View {
                 }
             }
 
-            Section(header: Text("Priority")) {
-                Picker("Priority", selection: priorityBinding) {
-                    ForEach(RoutineTaskPriority.allCases, id: \.self) { priority in
-                        Text(priority.title).tag(priority)
-                    }
-                }
+            Section(header: Text("Importance & Urgency")) {
+                ImportanceUrgencyMatrixPicker(
+                    importance: importanceBinding,
+                    urgency: urgencyBinding
+                )
 
-                Text(priorityDescription)
+                Text(importanceUrgencyDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -393,10 +392,17 @@ struct AddRoutineTCAView: View {
         )
     }
 
-    private var priorityBinding: Binding<RoutineTaskPriority> {
+    private var importanceBinding: Binding<RoutineTaskImportance> {
         Binding(
-            get: { store.priority },
-            set: { store.send(.priorityChanged($0)) }
+            get: { store.importance },
+            set: { store.send(.importanceChanged($0)) }
+        )
+    }
+
+    private var urgencyBinding: Binding<RoutineTaskUrgency> {
+        Binding(
+            get: { store.urgency },
+            set: { store.send(.urgencyChanged($0)) }
         )
     }
 
@@ -469,11 +475,8 @@ struct AddRoutineTCAView: View {
         return "Anywhere means the task is always visible."
     }
 
-    private var priorityDescription: String {
-        if store.priority == .none {
-            return "Optional. When two tasks share the same due date, higher priority appears first."
-        }
-        return "\(store.priority.title) tasks rise above lower-priority tasks with the same due date."
+    private var importanceUrgencyDescription: String {
+        "\(store.importance.title) importance and \(store.urgency.title.lowercased()) urgency map to \(store.priority.title.lowercased()) priority for sorting."
     }
 
     private var stepsSectionDescription: String {
@@ -1225,15 +1228,12 @@ struct AddRoutineTCAView: View {
                             }
                         }
 
-                        macControlBlock(title: "Priority", caption: priorityDescription) {
-                            Picker("Priority", selection: priorityBinding) {
-                                ForEach(RoutineTaskPriority.allCases, id: \.self) { priority in
-                                    Text(priority.title).tag(priority)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .frame(width: macCompactControlWidth, alignment: .leading)
+                        macControlBlock(title: "Importance & Urgency", caption: importanceUrgencyDescription) {
+                            ImportanceUrgencyMatrixPicker(
+                                importance: importanceBinding,
+                                urgency: urgencyBinding
+                            )
+                            .frame(maxWidth: 420, alignment: .leading)
                         }
                     }
                 }

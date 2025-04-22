@@ -448,7 +448,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -469,6 +469,8 @@ struct HomeFeature {
                             link: link,
                             deadline: deadline,
                             priority: priority,
+                            importance: importance,
+                            urgency: urgency,
                             imageData: imageData,
                             placeID: placeID,
                             tags: tags,
@@ -546,8 +548,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems)))
+                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )

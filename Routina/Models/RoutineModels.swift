@@ -58,6 +58,91 @@ enum RoutineTaskPriority: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 }
 
+enum RoutineTaskImportance: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case level1 = "Low"
+    case level2 = "Medium"
+    case level3 = "High"
+    case level4 = "Critical"
+
+    var sortOrder: Int {
+        switch self {
+        case .level1:
+            return 1
+        case .level2:
+            return 2
+        case .level3:
+            return 3
+        case .level4:
+            return 4
+        }
+    }
+
+    var title: String { rawValue }
+
+    var shortTitle: String {
+        switch self {
+        case .level1:
+            return "L1"
+        case .level2:
+            return "L2"
+        case .level3:
+            return "L3"
+        case .level4:
+            return "L4"
+        }
+    }
+}
+
+enum RoutineTaskUrgency: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case level1 = "Low"
+    case level2 = "Medium"
+    case level3 = "High"
+    case level4 = "Immediate"
+
+    var sortOrder: Int {
+        switch self {
+        case .level1:
+            return 1
+        case .level2:
+            return 2
+        case .level3:
+            return 3
+        case .level4:
+            return 4
+        }
+    }
+
+    var title: String { rawValue }
+
+    var shortTitle: String {
+        switch self {
+        case .level1:
+            return "L1"
+        case .level2:
+            return "L2"
+        case .level3:
+            return "L3"
+        case .level4:
+            return "L4"
+        }
+    }
+}
+
+extension RoutineTaskPriority {
+    var defaultMatrixPosition: (importance: RoutineTaskImportance, urgency: RoutineTaskUrgency) {
+        switch self {
+        case .none, .medium:
+            return (.level2, .level2)
+        case .low:
+            return (.level1, .level1)
+        case .high:
+            return (.level3, .level3)
+        case .urgent:
+            return (.level4, .level4)
+        }
+    }
+}
+
 enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case related
     case blocks
@@ -589,6 +674,8 @@ final class RoutineTask {
     var link: String?
     var deadline: Date?
     var priorityRawValue: String = RoutineTaskPriority.none.rawValue
+    var importanceRawValue: String = RoutineTaskImportance.level2.rawValue
+    var urgencyRawValue: String = RoutineTaskUrgency.level2.rawValue
     @Attribute(.externalStorage) var imageData: Data?
     var placeID: UUID?
     var tagsStorage: String = ""
@@ -625,6 +712,34 @@ final class RoutineTask {
     var priority: RoutineTaskPriority {
         get { RoutineTaskPriority(rawValue: priorityRawValue) ?? .none }
         set { priorityRawValue = newValue.rawValue }
+    }
+
+    var importance: RoutineTaskImportance {
+        get { RoutineTaskImportance(rawValue: importanceRawValue) ?? .level2 }
+        set { importanceRawValue = newValue.rawValue }
+    }
+
+    var urgency: RoutineTaskUrgency {
+        get { RoutineTaskUrgency(rawValue: urgencyRawValue) ?? .level2 }
+        set { urgencyRawValue = newValue.rawValue }
+    }
+
+    var importanceUrgencyLabel: String {
+        "\(importance.title) • \(urgency.title)"
+    }
+
+    var derivedPriorityFromMatrix: RoutineTaskPriority {
+        let score = importance.sortOrder + urgency.sortOrder
+        switch score {
+        case ..<4:
+            return .low
+        case 4...5:
+            return .medium
+        case 6...7:
+            return .high
+        default:
+            return .urgent
+        }
     }
 
     var tags: [String] {
@@ -793,6 +908,8 @@ final class RoutineTask {
         link: String? = nil,
         deadline: Date? = nil,
         priority: RoutineTaskPriority = .none,
+        importance: RoutineTaskImportance = .level2,
+        urgency: RoutineTaskUrgency = .level2,
         imageData: Data? = nil,
         placeID: UUID? = nil,
         tags: [String] = [],
@@ -821,6 +938,8 @@ final class RoutineTask {
         self.link = Self.sanitizedLink(link)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.priorityRawValue = priority.rawValue
+        self.importanceRawValue = importance.rawValue
+        self.urgencyRawValue = urgency.rawValue
         self.imageData = imageData
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
@@ -1155,6 +1274,8 @@ final class RoutineTask {
             link: link,
             deadline: deadline,
             priority: priority,
+            importance: importance,
+            urgency: urgency,
             imageData: imageData,
             placeID: placeID,
             tags: tags,

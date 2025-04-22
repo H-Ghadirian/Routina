@@ -46,6 +46,8 @@ struct RoutineDetailFeature: Reducer {
         var editRoutineLink: String = ""
         var editDeadline: Date?
         var editPriority: RoutineTaskPriority = .none
+        var editImportance: RoutineTaskImportance = .level2
+        var editUrgency: RoutineTaskUrgency = .level2
         var editImageData: Data?
         var editRoutineTags: [String] = []
         var editRelationships: [RoutineTaskRelationship] = []
@@ -87,6 +89,8 @@ struct RoutineDetailFeature: Reducer {
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
         case editPriorityChanged(RoutineTaskPriority)
+        case editImportanceChanged(RoutineTaskImportance)
+        case editUrgencyChanged(RoutineTaskUrgency)
         case editImagePicked(Data?)
         case editRemoveImageTapped
         case editTagDraftChanged(String)
@@ -379,6 +383,22 @@ struct RoutineDetailFeature: Reducer {
             state.editPriority = priority
             return .none
 
+        case let .editImportanceChanged(importance):
+            state.editImportance = importance
+            state.editPriority = matrixPriority(
+                importance: importance,
+                urgency: state.editUrgency
+            )
+            return .none
+
+        case let .editUrgencyChanged(urgency):
+            state.editUrgency = urgency
+            state.editPriority = matrixPriority(
+                importance: state.editImportance,
+                urgency: urgency
+            )
+            return .none
+
         case let .editImagePicked(data):
             state.editImageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
             return .none
@@ -573,7 +593,12 @@ struct RoutineDetailFeature: Reducer {
                 notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
                 link: RoutineTask.sanitizedLink(state.editRoutineLink),
                 deadline: state.editScheduleMode == .oneOff ? state.editDeadline : nil,
-                priority: state.editPriority,
+                priority: matrixPriority(
+                    importance: state.editImportance,
+                    urgency: state.editUrgency
+                ),
+                importance: state.editImportance,
+                urgency: state.editUrgency,
                 imageData: state.editImageData,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
@@ -632,7 +657,18 @@ struct RoutineDetailFeature: Reducer {
         state.editRoutineNotes = state.task.notes ?? ""
         state.editRoutineLink = state.task.link ?? ""
         state.editDeadline = state.task.deadline
-        state.editPriority = state.task.priority
+        if state.task.derivedPriorityFromMatrix == state.task.priority {
+            state.editImportance = state.task.importance
+            state.editUrgency = state.task.urgency
+        } else {
+            let fallbackPosition = state.task.priority.defaultMatrixPosition
+            state.editImportance = fallbackPosition.importance
+            state.editUrgency = fallbackPosition.urgency
+        }
+        state.editPriority = matrixPriority(
+            importance: state.editImportance,
+            urgency: state.editUrgency
+        )
         state.editImageData = state.task.imageData
         state.editRoutineTags = state.task.tags
         state.editRelationships = state.task.relationships
@@ -858,6 +894,8 @@ struct RoutineDetailFeature: Reducer {
         link: String?,
         deadline: Date?,
         priority: RoutineTaskPriority,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
         imageData: Data?,
         placeID: UUID?,
         tags: [String],
@@ -881,6 +919,8 @@ struct RoutineDetailFeature: Reducer {
                 task.notes = notes
                 task.link = link
                 task.priority = priority
+                task.importance = importance
+                task.urgency = urgency
                 task.imageData = imageData
                 task.placeID = placeID
                 task.tags = tags
@@ -1137,6 +1177,23 @@ struct RoutineDetailFeature: Reducer {
 
     private func scheduleModeRequiresChecklistItems(_ scheduleMode: RoutineScheduleMode) -> Bool {
         scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
+    }
+
+    private func matrixPriority(
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency
+    ) -> RoutineTaskPriority {
+        let score = importance.sortOrder + urgency.sortOrder
+        switch score {
+        case ..<4:
+            return .low
+        case 4...5:
+            return .medium
+        case 6...7:
+            return .high
+        default:
+            return .urgent
+        }
     }
 
     private func selectedRecurrenceRule(

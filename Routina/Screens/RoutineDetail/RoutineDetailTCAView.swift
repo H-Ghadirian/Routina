@@ -167,6 +167,8 @@ struct RoutineDetailTCAView: View {
             link: store.editRoutineLink,
             deadline: store.editDeadline,
             priority: store.editPriority,
+            importance: store.editImportance,
+            urgency: store.editUrgency,
             imageData: store.editImageData,
             selectedPlaceID: store.editSelectedPlaceID,
             tags: store.editRoutineTags,
@@ -393,6 +395,12 @@ struct RoutineDetailTCAView: View {
             if shouldShowCompletionCount {
                 statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
             }
+
+            statusMetadataRow(
+                label: "Matrix",
+                value: "\(store.task.importance.title) importance • \(store.task.urgency.title) urgency",
+                systemImage: "square.grid.3x3"
+            )
 
             if let priorityLabel = store.task.priority.metadataLabel {
                 statusMetadataRow(label: "Priority", value: priorityLabel, systemImage: "flag")
@@ -1291,6 +1299,8 @@ struct RoutineDetailTCAView: View {
         link: String,
         deadline: Date?,
         priority: RoutineTaskPriority,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
         imageData: Data?,
         selectedPlaceID: UUID?,
         tags: [String],
@@ -1318,6 +1328,8 @@ struct RoutineDetailTCAView: View {
         let currentNotes = task.notes ?? ""
         let currentLink = task.link ?? ""
         let currentPriority = task.priority
+        let currentImportance = task.importance
+        let currentUrgency = task.urgency
         let currentTags = RoutineTag.deduplicated(task.tags)
         let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
@@ -1356,6 +1368,8 @@ struct RoutineDetailTCAView: View {
             || link != currentLink
             || deadline != currentDeadline
             || priority != currentPriority
+            || importance != currentImportance
+            || urgency != currentUrgency
             || imageData != currentImageData
             || selectedPlaceID != task.placeID
             || candidateTags != currentTags
