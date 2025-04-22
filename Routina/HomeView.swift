@@ -7,16 +7,16 @@ struct HomeView: View {
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \RoutineTask.name, ascending: true)],
         animation: .default)
-    private var routines: FetchedResults<RoutineTask>
+    private var routineTasks: FetchedResults<RoutineTask>
 
     @State private var showingAddRoutine = false
 
     var body: some View {
         NavigationView {
             List {
-                ForEach(routines) { routine in
-                    NavigationLink(destination: RoutineDetailView(task: routine)) {
-                        Text(routine.name ?? "Unnamed Routine")
+                ForEach(routineTasks) { task in
+                    NavigationLink(destination: RoutineDetailView(task: task)) {
+                        Text(task.name ?? "Unnamed task")
                     }
                 }
                 .onDelete(perform: deleteRoutines)
@@ -37,7 +37,7 @@ struct HomeView: View {
 
     private func deleteRoutines(offsets: IndexSet) {
         withAnimation {
-            offsets.map { routines[$0] }.forEach(viewContext.delete)
+            offsets.map { routineTasks[$0] }.forEach(viewContext.delete)
             saveContext()
         }
     }
