@@ -532,6 +532,20 @@ private struct SettingsCloudDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                Section("Estimated Usage") {
+                    infoRow(title: "Estimated iCloud Data", value: store.cloudUsageTotalText)
+                    infoRow(title: "Tasks", value: "\(store.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
+                    infoRow(title: "Logs", value: "\(store.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
+                    infoRow(title: "Places", value: "\(store.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
+                    infoRow(title: "Images", value: "\(store.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
+
+                    Text(store.cloudUsageSummaryText)
+                        .foregroundStyle(.secondary)
+                    Text(store.cloudUsageFootnoteText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .listStyle(.insetGrouped)
             .navigationTitle("iCloud")
@@ -563,6 +577,17 @@ private struct SettingsCloudDetailView: View {
             get: { store.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
         )
+    }
+
+    @ViewBuilder
+    private func infoRow(title: String, value: String) -> some View {
+        HStack(alignment: .top) {
+            Text(title)
+            Spacer()
+            Text(value)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+        }
     }
 }
 

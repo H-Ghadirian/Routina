@@ -8,6 +8,36 @@ import Testing
 @Suite(.serialized)
 struct SettingsFeatureTests {
     @Test
+    func cloudUsageEstimate_countsRecordsAndImagePayload() throws {
+        let context = makeInMemoryContext()
+        let place = makePlace(in: context, name: "Home")
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: makeDate("2026-03-20T10:00:00Z"),
+            emoji: "📚",
+            placeID: place.id,
+            tags: ["Focus", "Evening"]
+        )
+        task.imageData = Data(repeating: 0xAB, count: 1_024)
+        _ = makeLog(in: context, task: task, timestamp: makeDate("2026-03-21T08:30:00Z"))
+        try context.save()
+
+        let estimate = try CloudUsageEstimate.estimate(in: context)
+
+        #expect(estimate.taskCount == 1)
+        #expect(estimate.logCount == 1)
+        #expect(estimate.placeCount == 1)
+        #expect(estimate.imageCount == 1)
+        #expect(estimate.imagePayloadBytes == 1_024)
+        #expect(estimate.taskPayloadBytes > 0)
+        #expect(estimate.logPayloadBytes > 0)
+        #expect(estimate.placePayloadBytes > 0)
+        #expect(estimate.totalPayloadBytes >= 1_024)
+    }
+
+    @Test
     func appIconOptionMappings_matchExpectedAlternateIconNames() {
         #expect(AppIconOption.orange.iOSAlternateIconName == nil)
         #expect(AppIconOption.yellow.iOSAlternateIconName == "AppIconYellow")
@@ -100,6 +130,7 @@ struct SettingsFeatureTests {
             $0.modelContext = { context }
         }
         var loadedPlaces: [RoutinePlaceSummary] = []
+        var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.savePlaceTapped) {
             $0.isPlaceOperationInProgress = true
@@ -114,6 +145,15 @@ struct SettingsFeatureTests {
             return true
         } assert: {
             $0.savedPlaces = loadedPlaces
+        }
+        await store.receive { action in
+            guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
+            cloudEstimate = estimate
+            #expect(estimate.placeCount == 1)
+            #expect(estimate.taskCount == 0)
+            return true
+        } assert: {
+            $0.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.placeOperationFinished(success: true, message: "Saved Home.")) {
             $0.isPlaceOperationInProgress = false
@@ -228,6 +268,7 @@ struct SettingsFeatureTests {
         } withDependencies: {
             $0.modelContext = { context }
         }
+        var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.deletePlaceTapped(place.id)) {
             $0.isDeletePlaceConfirmationPresented = true
@@ -246,6 +287,15 @@ struct SettingsFeatureTests {
         }
         await store.receive(.placesLoaded([])) {
             $0.savedPlaces = []
+        }
+        await store.receive { action in
+            guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
+            cloudEstimate = estimate
+            #expect(estimate.placeCount == 0)
+            #expect(estimate.taskCount == 1)
+            return true
+        } assert: {
+            $0.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.placeOperationFinished(success: true, message: "Place deleted.")) {
             $0.isPlaceOperationInProgress = false
@@ -356,6 +406,7 @@ struct SettingsFeatureTests {
             $0.modelContext = { context }
         }
         var loadedTags: [RoutineTagSummary] = []
+        var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.saveTagRenameTapped) {
             $0.tagPendingRename = nil
@@ -372,6 +423,14 @@ struct SettingsFeatureTests {
             return true
         } assert: {
             $0.savedTags = loadedTags
+        }
+        await store.receive { action in
+            guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
+            cloudEstimate = estimate
+            #expect(estimate.taskCount == 3)
+            return true
+        } assert: {
+            $0.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Health in 2 routines.")) {
             $0.isTagOperationInProgress = false
@@ -431,6 +490,7 @@ struct SettingsFeatureTests {
             $0.modelContext = { context }
         }
         var loadedTags: [RoutineTagSummary] = []
+        var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.deleteTagConfirmed) {
             $0.tagPendingDeletion = nil
@@ -446,6 +506,14 @@ struct SettingsFeatureTests {
             return true
         } assert: {
             $0.savedTags = loadedTags
+        }
+        await store.receive { action in
+            guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
+            cloudEstimate = estimate
+            #expect(estimate.taskCount == 3)
+            return true
+        } assert: {
+            $0.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.tagOperationFinished(success: true, message: "Deleted Morning from 3 routines.")) {
             $0.isTagOperationInProgress = false

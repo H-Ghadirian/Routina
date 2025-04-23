@@ -12,6 +12,7 @@ struct SettingsFeature {
         var appVersion: String = ""
         var dataModeDescription: String = AppEnvironment.dataModeLabel
         var iCloudContainerDescription: String = AppEnvironment.cloudKitContainerIdentifier ?? "Disabled"
+        var cloudUsageEstimate: CloudUsageEstimate = .zero
         var cloudDiagnosticsSummary: String = CloudKitSyncDiagnostics.snapshot().summary
         var cloudDiagnosticsTimestamp: String = CloudKitSyncDiagnostics.snapshot().timestampText
         var pushDiagnosticsStatus: String = CloudKitSyncDiagnostics.snapshot().pushStatus
@@ -64,6 +65,7 @@ struct SettingsFeature {
         case aboutSectionLongPressed
         case systemNotificationPermissionChecked(Bool)
         case cloudDiagnosticsUpdated
+        case cloudUsageEstimateLoaded(CloudUsageEstimate)
         case syncNowTapped
         case setCloudDataResetConfirmation(Bool)
         case resetCloudDataConfirmed
@@ -167,6 +169,7 @@ struct SettingsFeature {
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
+                    send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                     let placeSummaries = try? self.fetchPlaceSummaries(in: context)
                     send(.placesLoaded(placeSummaries ?? []))
                     let tagSummaries = try? self.fetchTagSummaries(in: context)
@@ -204,6 +207,10 @@ struct SettingsFeature {
                 state.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .none
 
+            case let .cloudUsageEstimateLoaded(estimate):
+                state.cloudUsageEstimate = estimate
+                return .none
+
             case .onAppBecameActive:
                 let notificationsEnabled = state.notificationsEnabled
                 return .run { @MainActor send in
@@ -211,6 +218,7 @@ struct SettingsFeature {
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
+                    send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                     let placeSummaries = try? self.fetchPlaceSummaries(in: context)
                     send(.placesLoaded(placeSummaries ?? []))
                     let tagSummaries = try? self.fetchTagSummaries(in: context)
@@ -249,6 +257,7 @@ struct SettingsFeature {
                                 modelContext: context
                             )
                         }
+                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                         NotificationCenter.default.postRoutineDidUpdate()
                         await send(
                             .cloudSyncFinished(
@@ -294,6 +303,8 @@ struct SettingsFeature {
                             cloudKitContainerIdentifier: cloudContainerIdentifier,
                             modelContext: modelContext()
                         )
+                        let refreshedContext = modelContext()
+                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: refreshedContext)))
                         NotificationCenter.default.postRoutineDidUpdate()
                         await send(
                             .cloudDataResetFinished(
@@ -436,6 +447,7 @@ struct SettingsFeature {
                         NotificationCenter.default.postRoutineDidUpdate()
                         let summaries = try self.fetchPlaceSummaries(in: context)
                         send(.placesLoaded(summaries))
+                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                         send(
                             .placeOperationFinished(
                                 success: true,
@@ -494,6 +506,7 @@ struct SettingsFeature {
                         NotificationCenter.default.postRoutineTagDidRename(from: originalTagName, to: cleanedName)
                         let summaries = try self.fetchTagSummaries(in: context)
                         send(.tagsLoaded(summaries))
+                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                         send(
                             .tagOperationFinished(
                                 success: true,
@@ -574,6 +587,7 @@ struct SettingsFeature {
                         NotificationCenter.default.postRoutineDidUpdate()
                         let summaries = try self.fetchPlaceSummaries(in: context)
                         send(.placesLoaded(summaries))
+                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                         send(.placeOperationFinished(success: true, message: "Place deleted."))
                     } catch {
                         send(
@@ -618,6 +632,7 @@ struct SettingsFeature {
                         NotificationCenter.default.postRoutineTagDidDelete(tagName)
                         let summaries = try self.fetchTagSummaries(in: context)
                         send(.tagsLoaded(summaries))
+                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                         send(
                             .tagOperationFinished(
                                 success: true,
@@ -729,6 +744,7 @@ struct SettingsFeature {
                         let importedSummary = try replaceAllRoutineData(with: jsonData, in: context)
                         try await rescheduleNotificationsAfterImport(in: context)
 
+                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                         NotificationCenter.default.postRoutineDidUpdate()
                         await send(
                             .routineDataTransferFinished(
@@ -805,6 +821,11 @@ struct SettingsFeature {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         return RoutinePlace.summaries(from: places, linkedTo: tasks)
+    }
+
+    @MainActor
+    private func loadCloudUsageEstimate(in context: ModelContext) -> CloudUsageEstimate {
+        (try? CloudUsageEstimate.estimate(in: context)) ?? .zero
     }
 
     @MainActor

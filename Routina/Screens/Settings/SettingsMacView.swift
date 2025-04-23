@@ -795,6 +795,21 @@ private struct SettingsMacCloudDetailView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+
+                SettingsMacDetailCard(title: "Estimated Usage") {
+                    settingsInfoRow(title: "Estimated iCloud Data", value: store.cloudUsageTotalText)
+                    settingsInfoRow(title: "Tasks", value: "\(store.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
+                    settingsInfoRow(title: "Logs", value: "\(store.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
+                    settingsInfoRow(title: "Places", value: "\(store.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
+                    settingsInfoRow(title: "Images", value: "\(store.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
+
+                    Text(store.cloudUsageSummaryText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Text(store.cloudUsageFootnoteText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
