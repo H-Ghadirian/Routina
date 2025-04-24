@@ -15,6 +15,31 @@ struct HomeTCAView: View {
         var id: String { rawValue }
     }
 
+    private enum IOSTaskListMode: String, CaseIterable, Identifiable {
+        case routines = "Routines"
+        case todos = "Todos"
+
+        var id: Self { self }
+
+        var systemImage: String {
+            switch self {
+            case .routines:
+                return "repeat"
+            case .todos:
+                return "checklist"
+            }
+        }
+
+        var accessibilityLabel: String {
+            switch self {
+            case .routines:
+                return "Show routines"
+            case .todos:
+                return "Show todos"
+            }
+        }
+    }
+
     private struct RoutineListSection: Identifiable {
         let title: String
         var tasks: [HomeFeature.RoutineDisplay]
@@ -59,6 +84,7 @@ struct HomeTCAView: View {
     ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
     @State private var localSearchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
+    @State private var iosTaskListMode: IOSTaskListMode = .routines
     @State private var selectedTag: String?
     @State private var selectedManualPlaceFilterID: UUID?
     @State private var isFilterSheetPresented = false
@@ -216,6 +242,19 @@ struct HomeTCAView: View {
                     }
                 }
             }
+#else
+            .onChange(of: iosTaskListMode) { _, mode in
+                guard let selectedTaskID = store.selectedTaskID,
+                      let task = store.routineTasks.first(where: { $0.id == selectedTaskID })
+                else {
+                    return
+                }
+
+                let shouldKeepSelection = mode == .todos ? task.isOneOffTask : !task.isOneOffTask
+                if !shouldKeepSelection {
+                    store.send(.setSelectedTask(nil))
+                }
+            }
 #endif
     }
 
@@ -223,6 +262,13 @@ struct HomeTCAView: View {
     var homeToolbarContent: some ToolbarContent {
 #if os(macOS)
         ToolbarItemGroup(placement: .automatic) {
+        }
+#endif
+
+#if !os(macOS)
+        ToolbarItemGroup(placement: .topBarLeading) {
+            iosTaskListModeButton(.routines)
+            iosTaskListModeButton(.todos)
         }
 #endif
 
@@ -356,7 +402,12 @@ struct HomeTCAView: View {
             return "Search todos"
         }
 #else
-        "Search routines and todos"
+        switch iosTaskListMode {
+        case .routines:
+            return "Search routines"
+        case .todos:
+            return "Search todos"
+        }
 #endif
     }
 
@@ -436,7 +487,7 @@ struct HomeTCAView: View {
         }
 #else
         Picker("Routine Filter", selection: $selectedFilter) {
-            ForEach(RoutineListFilter.allCases) { filter in
+            ForEach(iOSAvailableFilters) { filter in
                 Text(filter.rawValue).tag(filter)
             }
         }
@@ -634,7 +685,7 @@ struct HomeTCAView: View {
             }
 
             return (
-                title: "No matching routines",
+                title: iosTaskListMode == .todos ? "No matching todos" : "No matching routines",
                 message: "Try a different search or switch back to another filter.",
                 systemImage: "magnifyingglass"
             )
@@ -1026,7 +1077,7 @@ struct HomeTCAView: View {
             List {
                 Section("Status") {
                     Picker("Show routines", selection: $selectedFilter) {
-                        ForEach(RoutineListFilter.allCases) { filter in
+                        ForEach(iOSAvailableFilters) { filter in
                             Text(filter.rawValue).tag(filter)
                         }
                     }
@@ -1156,7 +1207,8 @@ struct HomeTCAView: View {
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {
         sortedTasks(routineDisplays).filter { task in
-            matchesSearch(task)
+            matchesCurrentTaskListMode(task)
+                && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
                 && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
@@ -1663,7 +1715,7 @@ struct HomeTCAView: View {
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {
         sortedTasks(routineDisplays).filter { task in
-            matchesMacTaskListMode(task)
+            matchesCurrentTaskListMode(task)
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
@@ -1671,7 +1723,7 @@ struct HomeTCAView: View {
         }
     }
 
-    private func matchesMacTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
+    private func matchesCurrentTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
 #if os(macOS)
         switch macTaskListMode {
         case .routines:
@@ -1680,7 +1732,12 @@ struct HomeTCAView: View {
             return task.isOneOffTask
         }
 #else
-        return true
+        switch iosTaskListMode {
+        case .routines:
+            return !task.isOneOffTask
+        case .todos:
+            return task.isOneOffTask
+        }
 #endif
     }
 
@@ -1690,7 +1747,7 @@ struct HomeTCAView: View {
     ) -> [HomeFeature.RoutineDisplay] {
         routineDisplays
             .filter { task in
-                matchesMacTaskListMode(task)
+                matchesCurrentTaskListMode(task)
                     && !task.isCompletedOneOff
                     && (includePinned || !task.isPinned)
                     && matchesSearch(task)
@@ -1707,7 +1764,7 @@ struct HomeTCAView: View {
     ) -> [HomeFeature.RoutineDisplay] {
         let activePinned = sortedTasks(activeRoutineDisplays + awayRoutineDisplays).filter { task in
             task.isPinned
-                && matchesMacTaskListMode(task)
+                && matchesCurrentTaskListMode(task)
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
@@ -1941,15 +1998,19 @@ struct HomeTCAView: View {
     private func statusBadge(for task: HomeFeature.RoutineDisplay) -> some View {
         let style = badgeStyle(for: task)
 
-        return Label(style.title, systemImage: style.systemImage)
-            .font(.caption.weight(.semibold))
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(2)
-            .foregroundStyle(style.foregroundColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(style.backgroundColor, in: Capsule())
+        return HStack(spacing: 4) {
+            Image(systemName: style.systemImage)
+                .imageScale(.small)
+
+            Text(style.title)
+                .lineLimit(1)
+        }
+        .font(.subheadline.weight(.semibold))
+        .layoutPriority(2)
+        .foregroundStyle(style.foregroundColor)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(style.backgroundColor, in: Capsule())
     }
 
     private func tagFilterButton(
@@ -2239,8 +2300,12 @@ struct HomeTCAView: View {
         store.routineDisplays + store.awayRoutineDisplays + store.archivedRoutineDisplays
     }
 
+    private var iOSAvailableFilters: [RoutineListFilter] {
+        [.all, .due, .doneToday]
+    }
+
     var availableTags: [String] {
-        HomeFeature.availableTags(from: allRoutineDisplays)
+        HomeFeature.availableTags(from: allRoutineDisplays.filter(matchesCurrentTaskListMode))
     }
 
     private func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {
@@ -2266,10 +2331,32 @@ struct HomeTCAView: View {
         archivedDisplays: [HomeFeature.RoutineDisplay]
     ) {
         guard let selectedTag else { return }
-        let availableTags = HomeFeature.availableTags(from: activeDisplays + awayDisplays + archivedDisplays)
+        let availableTags = HomeFeature.availableTags(
+            from: (activeDisplays + awayDisplays + archivedDisplays).filter(matchesCurrentTaskListMode)
+        )
         if !RoutineTag.contains(selectedTag, in: availableTags) {
             self.selectedTag = nil
         }
+    }
+
+    @ViewBuilder
+    private func iosTaskListModeButton(_ mode: IOSTaskListMode) -> some View {
+        let isSelected = iosTaskListMode == mode
+
+        Button {
+            iosTaskListMode = mode
+        } label: {
+            Image(systemName: mode.systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                .frame(width: 30, height: 30)
+                .background(
+                    Circle()
+                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.clear)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(mode.accessibilityLabel)
     }
 
     @MainActor
