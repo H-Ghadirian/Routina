@@ -260,11 +260,6 @@ struct HomeTCAView: View {
 
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
-#if os(macOS)
-        ToolbarItemGroup(placement: .automatic) {
-        }
-#endif
-
 #if !os(macOS)
         ToolbarItemGroup(placement: .topBarLeading) {
             iosTaskListModeButton(.routines)
@@ -273,6 +268,9 @@ struct HomeTCAView: View {
 #endif
 
         ToolbarItemGroup(placement: .primaryAction) {
+#if os(macOS)
+            macDoneCountToolbarItem
+#endif
             platformRefreshButton
 #if !os(macOS)
             filterSheetButton

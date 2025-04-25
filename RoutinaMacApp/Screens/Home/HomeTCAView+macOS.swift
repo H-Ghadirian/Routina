@@ -180,9 +180,6 @@ extension HomeTCAView {
             if isMacRoutinesMode || isMacTimelineMode {
                 macSearchPanel
             }
-            if isMacTimelineMode {
-                overallDoneCountSummary
-            }
         }
         .padding(.horizontal, 14)
         .padding(.top, 10)
@@ -480,6 +477,15 @@ extension HomeTCAView {
                 .listStyle(.sidebar)
             }
         }
+    }
+
+    var macDoneCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(store.doneStats.totalCount) total dones",
+            systemImage: "checkmark.seal.fill",
+            tintColor: .systemGreen
+        )
+        .help("\(store.doneStats.totalCount) total dones")
     }
 }
 
@@ -1115,5 +1121,57 @@ struct MacToolbarIconButton: NSViewRepresentable {
         @objc func performAction() {
             action()
         }
+    }
+}
+
+struct MacToolbarStatusBadge: NSViewRepresentable {
+    let title: String
+    let systemImage: String
+    let tintColor: NSColor
+
+    func makeNSView(context: Context) -> NSView {
+        let imageView = NSImageView()
+        imageView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
+        imageView.contentTintColor = tintColor
+
+        let textField = NSTextField(labelWithString: title)
+        textField.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        textField.textColor = tintColor
+        textField.lineBreakMode = .byTruncatingTail
+        textField.maximumNumberOfLines = 1
+        textField.setContentCompressionResistancePriority(.required, for: .horizontal)
+        textField.setContentHuggingPriority(.required, for: .horizontal)
+
+        let stackView = NSStackView(views: [imageView, textField])
+        stackView.orientation = .horizontal
+        stackView.alignment = .centerY
+        stackView.spacing = 5
+        stackView.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+        stackView.setContentHuggingPriority(.required, for: .horizontal)
+        stackView.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        update(stackView: stackView, imageView: imageView, textField: textField)
+        return stackView
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let stackView = nsView as? NSStackView,
+              stackView.views.count == 2,
+              let imageView = stackView.views[0] as? NSImageView,
+              let textField = stackView.views[1] as? NSTextField
+        else {
+            return
+        }
+
+        update(stackView: stackView, imageView: imageView, textField: textField)
+    }
+
+    private func update(stackView: NSStackView, imageView: NSImageView, textField: NSTextField) {
+        imageView.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title)
+        imageView.toolTip = title
+        imageView.contentTintColor = tintColor
+        textField.stringValue = title
+        textField.textColor = tintColor
+        stackView.toolTip = title
     }
 }
