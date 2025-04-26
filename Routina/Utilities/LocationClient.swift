@@ -59,15 +59,15 @@ extension LocationClient {
 }
 
 @MainActor
-private final class OneShotLocationProvider: NSObject, @preconcurrency CLLocationManagerDelegate {
-    private enum Timeout {
+final class OneShotLocationProvider: NSObject, @preconcurrency CLLocationManagerDelegate {
+    enum Timeout {
         static let authorizationNanoseconds: UInt64 = 30_000_000_000
         static let locationNanoseconds: UInt64 = 15_000_000_000
     }
 
-    private let manager = CLLocationManager()
-    private var authorizationContinuation: CheckedContinuation<CLAuthorizationStatus, Never>?
-    private var locationContinuation: CheckedContinuation<CLLocation?, Never>?
+    let manager = CLLocationManager()
+    var authorizationContinuation: CheckedContinuation<CLAuthorizationStatus, Never>?
+    var locationContinuation: CheckedContinuation<CLLocation?, Never>?
 
     override init() {
         super.init()
@@ -76,51 +76,10 @@ private final class OneShotLocationProvider: NSObject, @preconcurrency CLLocatio
     }
 
     func fetchSnapshot(requestAuthorizationIfNeeded: Bool) async -> LocationSnapshot {
-#if os(macOS)
-        let initialAuthorization = manager.authorizationStatus
-        if initialAuthorization == .notDetermined && !requestAuthorizationIfNeeded {
-            return snapshot(authorizationStatus: .notDetermined)
-        }
-
-        guard await areLocationServicesEnabled() else {
-            return snapshot(authorizationStatus: .disabled)
-        }
-
-        let initialMappedAuthorization = mapAuthorizationStatus(initialAuthorization)
-        if initialAuthorization != .notDetermined && !initialMappedAuthorization.isAuthorized {
-            return snapshot(authorizationStatus: initialMappedAuthorization)
-        }
-
-        let location = await awaitCurrentLocation()
-        let mappedAuthorization = mapAuthorizationStatus(manager.authorizationStatus)
-        guard mappedAuthorization.isAuthorized else {
-            return snapshot(authorizationStatus: mappedAuthorization)
-        }
-#else
-        var authorizationStatus = manager.authorizationStatus
-        if requestAuthorizationIfNeeded && authorizationStatus == .notDetermined {
-            authorizationStatus = await awaitAuthorizationDecision()
-        }
-
-        if authorizationStatus == .notDetermined {
-            return snapshot(authorizationStatus: .notDetermined)
-        }
-
-        guard await areLocationServicesEnabled() else {
-            return snapshot(authorizationStatus: .disabled)
-        }
-
-        let mappedAuthorization = mapAuthorizationStatus(authorizationStatus)
-        guard mappedAuthorization.isAuthorized else {
-            return snapshot(authorizationStatus: mappedAuthorization)
-        }
-
-        let location = await awaitCurrentLocation()
-#endif
-        return snapshot(authorizationStatus: mappedAuthorization, location: location)
+        await fetchPlatformSnapshot(requestAuthorizationIfNeeded: requestAuthorizationIfNeeded)
     }
 
-    private func awaitAuthorizationDecision() async -> CLAuthorizationStatus {
+    func awaitAuthorizationDecision() async -> CLAuthorizationStatus {
         if manager.authorizationStatus != .notDetermined {
             return manager.authorizationStatus
         }
@@ -138,7 +97,7 @@ private final class OneShotLocationProvider: NSObject, @preconcurrency CLLocatio
         }
     }
 
-    private func awaitCurrentLocation() async -> CLLocation? {
+    func awaitCurrentLocation() async -> CLLocation? {
         if let location = manager.location {
             return location
         }
@@ -156,7 +115,7 @@ private final class OneShotLocationProvider: NSObject, @preconcurrency CLLocatio
         }
     }
 
-    private func areLocationServicesEnabled() async -> Bool {
+    func areLocationServicesEnabled() async -> Bool {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 continuation.resume(returning: CLLocationManager.locationServicesEnabled())
@@ -164,7 +123,7 @@ private final class OneShotLocationProvider: NSObject, @preconcurrency CLLocatio
         }
     }
 
-    private func snapshot(
+    func snapshot(
         authorizationStatus: LocationAuthorizationStatus,
         location: CLLocation? = nil
     ) -> LocationSnapshot {
@@ -205,7 +164,7 @@ private final class OneShotLocationProvider: NSObject, @preconcurrency CLLocatio
         continuation.resume(returning: manager.location)
     }
 
-    private func mapAuthorizationStatus(_ status: CLAuthorizationStatus) -> LocationAuthorizationStatus {
+    func mapAuthorizationStatus(_ status: CLAuthorizationStatus) -> LocationAuthorizationStatus {
         switch status {
         case .notDetermined:
             return .notDetermined

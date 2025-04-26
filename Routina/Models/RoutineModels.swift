@@ -733,9 +733,9 @@ final class RoutineTask {
         switch score {
         case ..<4:
             return .low
-        case 4...5:
+        case 4:
             return .medium
-        case 6...7:
+        case 5...6:
             return .high
         default:
             return .urgent

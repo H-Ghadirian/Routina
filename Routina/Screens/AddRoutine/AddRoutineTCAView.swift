@@ -702,20 +702,20 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var weekdayOptions: [(id: Int, name: String)] {
+    var weekdayOptions: [(id: Int, name: String)] {
         let symbols = Calendar.current.weekdaySymbols
         return symbols.enumerated().map { index, name in
             (id: index + 1, name: name)
         }
     }
 
-    private func weekdayName(for weekday: Int) -> String {
+    func weekdayName(for weekday: Int) -> String {
         let symbols = Calendar.current.weekdaySymbols
         let safeIndex = min(max(weekday - 1, 0), max(symbols.count - 1, 0))
         return symbols[safeIndex]
     }
 
-    private func ordinalDay(_ day: Int) -> String {
+    func ordinalDay(_ day: Int) -> String {
         let resolvedDay = min(max(day, 1), 31)
         let suffix: String
         switch resolvedDay % 100 {

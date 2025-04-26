@@ -667,103 +667,10 @@ struct SettingsFeature {
                 return .none
 
             case .exportRoutineDataTapped:
-#if os(macOS)
-                guard !state.isDataTransferInProgress else {
-                    return .none
-                }
-
-                state.isDataTransferInProgress = true
-                state.dataTransferStatusMessage = "Saving routine data..."
-                return .run { @MainActor send in
-                    do {
-                        guard let destinationURL = await PlatformSupport.selectRoutineDataExportURL(
-                            suggestedFileName: defaultRoutineDataBackupFileName()
-                        ) else {
-                            await send(
-                                .routineDataTransferFinished(
-                                    success: false,
-                                    message: "Save canceled."
-                                )
-                            )
-                            return
-                        }
-
-                        let context = modelContext()
-                        if context.hasChanges {
-                            try context.save()
-                        }
-
-                        let backupData = try buildRoutineDataBackupJSON(from: context)
-                        try withSecurityScopedAccess(to: destinationURL) {
-                            try backupData.write(to: destinationURL, options: .atomic)
-                        }
-
-                        await send(
-                            .routineDataTransferFinished(
-                                success: true,
-                                message: "Saved to \(destinationURL.lastPathComponent)."
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .routineDataTransferFinished(
-                                success: false,
-                                message: "Save failed: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
-#else
-                return .none
-#endif
+                return handleExportRoutineDataTapped(state: &state)
 
             case .importRoutineDataTapped:
-#if os(macOS)
-                guard !state.isDataTransferInProgress else {
-                    return .none
-                }
-
-                state.isDataTransferInProgress = true
-                state.dataTransferStatusMessage = "Loading routine data..."
-                return .run { @MainActor send in
-                    do {
-                        guard let sourceURL = await PlatformSupport.selectRoutineDataImportURL() else {
-                            await send(
-                                .routineDataTransferFinished(
-                                    success: false,
-                                    message: "Load canceled."
-                                )
-                            )
-                            return
-                        }
-
-                        let jsonData = try withSecurityScopedAccess(to: sourceURL) {
-                            try Data(contentsOf: sourceURL)
-                        }
-                        let context = modelContext()
-                        let importedSummary = try replaceAllRoutineData(with: jsonData, in: context)
-                        try await rescheduleNotificationsAfterImport(in: context)
-
-                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                        NotificationCenter.default.postRoutineDidUpdate()
-                        await send(
-                            .routineDataTransferFinished(
-                                success: true,
-                                message: "Loaded \(importedSummary.tasks) routines, \(importedSummary.places) places, and \(importedSummary.logs) logs."
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .routineDataTransferFinished(
-                                success: false,
-                                message: "Load failed: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
-#else
-                return .none
-#endif
+                return handleImportRoutineDataTapped(state: &state)
 
             case let .appIconSelected(option):
                 state.appIconStatusMessage = ""
@@ -824,7 +731,7 @@ struct SettingsFeature {
     }
 
     @MainActor
-    private func loadCloudUsageEstimate(in context: ModelContext) -> CloudUsageEstimate {
+    func loadCloudUsageEstimate(in context: ModelContext) -> CloudUsageEstimate {
         (try? CloudUsageEstimate.estimate(in: context)) ?? .zero
     }
 
@@ -915,7 +822,7 @@ struct SettingsFeature {
         }
     }
 
-    private struct ImportSummary {
+    struct ImportSummary {
         var places: Int
         var tasks: Int
         var logs: Int
@@ -932,14 +839,14 @@ struct SettingsFeature {
         }
     }
 
-    private func defaultRoutineDataBackupFileName() -> String {
+    func defaultRoutineDataBackupFileName() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmmss"
         return "routina-backup-\(formatter.string(from: Date())).json"
     }
 
     @MainActor
-    private func buildRoutineDataBackupJSON(from context: ModelContext) throws -> Data {
+    func buildRoutineDataBackupJSON(from context: ModelContext) throws -> Data {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -997,7 +904,7 @@ struct SettingsFeature {
     }
 
     @MainActor
-    private func replaceAllRoutineData(
+    func replaceAllRoutineData(
         with jsonData: Data,
         in context: ModelContext
     ) throws -> ImportSummary {
@@ -1098,11 +1005,11 @@ struct SettingsFeature {
     }
 
     @MainActor
-    private func rescheduleNotificationsAfterImport(in context: ModelContext) async throws {
+    func rescheduleNotificationsAfterImport(in context: ModelContext) async throws {
         try await rescheduleNotificationsIfNeeded(in: context)
     }
 
-    private func withSecurityScopedAccess<T>(
+    func withSecurityScopedAccess<T>(
         to url: URL,
         _ operation: () throws -> T
     ) throws -> T {

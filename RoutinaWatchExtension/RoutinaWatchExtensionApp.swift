@@ -1,5 +1,4 @@
 import SwiftUI
-import RoutinaWatchSupport
 
 @main
 struct RoutinaWatchExtensionApp: App {

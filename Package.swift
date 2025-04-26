@@ -7,7 +7,6 @@ let package = Package(
     platforms: [
         .iOS("18.0"),
         .macOS("15.0"),
-        .watchOS("11.0"),
     ],
     products: [
         .library(
@@ -17,10 +16,6 @@ let package = Package(
         .library(
             name: "RoutinaMacSupport",
             targets: ["RoutinaMacSupport"]
-        ),
-        .library(
-            name: "RoutinaWatchSupport",
-            targets: ["RoutinaWatchSupport"]
         ),
     ],
     dependencies: [
@@ -72,15 +67,14 @@ let package = Package(
                 "Routina/RoutinaMacDev.entitlements",
                 "Routina/RoutinaMacProd.entitlements",
                 "Routina/Screens/App/RoutinaTCAApp.swift",
+                "Routina/Utilities/LocationClient+iOS.swift",
                 "Routina/Utilities/RemoteNotificationIOSDelegate.swift",
                 "Routina/Utilities/WatchRoutineSyncBridge.swift",
                 "RoutinaWatchApp",
                 "RoutinaWatchExtension",
                 "RoutinaTests",
                 "RoutinaUITests",
-                "RoutinaMacApp",
-                "Modules/RoutinaMacSupport",
-                "Modules/RoutinaWatchSupport",
+                "Modules",
                 "build",
                 "mac+watch+ios",
                 "tmp-routina-unit.xcresult",
@@ -96,6 +90,8 @@ let package = Package(
                 "Routina/Screens/Settings/SettingsFeature.swift",
                 "Routina/Screens/Settings/SettingsViewSupport.swift",
                 "Routina/Utilities",
+                "RoutinaMacApp/Utilities/LocationClient+macOS.swift",
+                "RoutinaMacApp/Screens/Settings/SettingsFeature+macOS.swift",
             ]
         ),
         .target(
@@ -115,8 +111,7 @@ let package = Package(
                 "RoutinaWatchExtension",
                 "RoutinaTests",
                 "RoutinaUITests",
-                "Modules/RoutinaAppSupport",
-                "Modules/RoutinaWatchSupport",
+                "Modules",
                 "build",
                 "mac+watch+ios",
                 "tmp-routina-unit.xcresult",
@@ -126,33 +121,13 @@ let package = Package(
                 "RoutinaMacApp/Utilities/MacMenuCleanup.swift",
             ]
         ),
-        .target(
-            name: "RoutinaWatchSupport",
-            path: ".",
-            exclude: [
-                ".git",
-                ".xcresulttmp",
-                "Routina",
-                "Routina.xcworkspace",
-                "Routina.xcodeproj",
-                "RoutinaMac.xcodeproj",
-                "RoutinaMacApp",
-                "RoutinaWatchApp",
-                "RoutinaWatchExtension/Info.plist",
-                "RoutinaWatchExtension/RoutinaWatchExtensionApp.swift",
-                "RoutinaTests",
-                "RoutinaUITests",
-                "Modules/RoutinaAppSupport",
-                "Modules/RoutinaMacSupport",
-                "build",
-                "mac+watch+ios",
-                "tmp-routina-unit.xcresult",
+        .testTarget(
+            name: "RoutinaTests",
+            dependencies: [
+                "RoutinaAppSupport",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ],
-            sources: [
-                "RoutinaWatchExtension/WatchHomeView.swift",
-                "RoutinaWatchExtension/WatchRoutineSyncStore.swift",
-                "Modules/RoutinaWatchSupport",
-            ]
+            path: "RoutinaTests"
         ),
     ]
 )

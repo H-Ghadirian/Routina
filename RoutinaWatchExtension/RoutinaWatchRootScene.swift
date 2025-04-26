@@ -1,9 +1,7 @@
 import SwiftUI
 
-public struct RoutinaWatchRootScene: Scene {
-    public init() {}
-
-    public var body: some Scene {
+struct RoutinaWatchRootScene: Scene {
+    var body: some Scene {
         WindowGroup {
             RoutinaWatchRootView()
         }

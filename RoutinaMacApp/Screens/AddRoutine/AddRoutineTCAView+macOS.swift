@@ -25,7 +25,7 @@ extension View {
     }
 
     func routinaAddRoutinePlatformLinkField() -> some View {
-        keyboardType(.URL)
+        self
     }
 
     func routinaAddRoutineImageImportSupport(

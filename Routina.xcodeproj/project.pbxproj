@@ -27,7 +27,6 @@
 		3D1000062E70000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 		5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5F1000072E90000100000001 /* RoutinaWatchApp.app */; };
 		5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */; };
-		7A2100072F20000100000001 /* RoutinaWatchSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200042F20000100000001 /* RoutinaWatchSupport */; };
 		7A2100082F20000100000001 /* RoutinaAppSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200022F20000100000001 /* RoutinaAppSupport */; };
 /* End PBXBuildFile section */
 
@@ -120,8 +119,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				WatchHomeView.swift,
-				WatchRoutineSyncStore.swift,
 			);
 			target = 5F1000142E90000100000001 /* RoutinaWatchExtension */;
 		};
@@ -224,7 +221,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7A2100072F20000100000001 /* RoutinaWatchSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -418,9 +414,6 @@
 				5F1000102E90000100000001 /* RoutinaWatchExtension */,
 			);
 			name = RoutinaWatchExtension;
-			packageProductDependencies = (
-				7A2200042F20000100000001 /* RoutinaWatchSupport */,
-			);
 			productName = RoutinaWatchExtension;
 			productReference = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */;
 			productType = "com.apple.product-type.watchkit2-extension";
@@ -1290,11 +1283,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7A2200012F20000100000001 /* XCLocalSwiftPackageReference "." */;
 			productName = RoutinaAppSupport;
-		};
-		7A2200042F20000100000001 /* RoutinaWatchSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7A2200012F20000100000001 /* XCLocalSwiftPackageReference "." */;
-			productName = RoutinaWatchSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

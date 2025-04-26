@@ -657,7 +657,7 @@ struct RoutineDetailFeature: Reducer {
         state.editRoutineNotes = state.task.notes ?? ""
         state.editRoutineLink = state.task.link ?? ""
         state.editDeadline = state.task.deadline
-        if state.task.derivedPriorityFromMatrix == state.task.priority {
+        if state.task.derivedPriorityFromMatrix == state.task.priority || state.task.priority == .none {
             state.editImportance = state.task.importance
             state.editUrgency = state.task.urgency
         } else {
@@ -665,10 +665,7 @@ struct RoutineDetailFeature: Reducer {
             state.editImportance = fallbackPosition.importance
             state.editUrgency = fallbackPosition.urgency
         }
-        state.editPriority = matrixPriority(
-            importance: state.editImportance,
-            urgency: state.editUrgency
-        )
+        state.editPriority = state.task.priority
         state.editImageData = state.task.imageData
         state.editRoutineTags = state.task.tags
         state.editRelationships = state.task.relationships
@@ -1187,9 +1184,9 @@ struct RoutineDetailFeature: Reducer {
         switch score {
         case ..<4:
             return .low
-        case 4...5:
+        case 4:
             return .medium
-        case 6...7:
+        case 5...6:
             return .high
         default:
             return .urgent
