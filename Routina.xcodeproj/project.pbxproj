@@ -96,7 +96,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Screens/Settings/SettingsMacView.swift,
 			);
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
 		};
@@ -104,7 +103,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Screens/Settings/SettingsMacView.swift,
 			);
 			target = 3D1000402E70000100000001 /* RoutinaDev */;
 		};
@@ -125,6 +123,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		AA0000012F30000100000001 /* iOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = iOS;
+			sourceTree = "<group>";
+		};
 		2A5A74BF2D7B92F600E91075 /* Routina */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -238,6 +241,7 @@
 			isa = PBXGroup;
 			children = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
+				AA0000012F30000100000001 /* iOS */,
 				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
 				2A5A74DA2D7B92F900E91075 /* RoutinaUITests */,
 				5F1000092E90000100000001 /* RoutinaWatchApp */,
@@ -282,6 +286,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
+				AA0000012F30000100000001 /* iOS */,
 			);
 			name = RoutinaProd;
 			packageProductDependencies = (
@@ -360,6 +365,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
+				AA0000012F30000100000001 /* iOS */,
 			);
 			name = RoutinaDev;
 			packageProductDependencies = (

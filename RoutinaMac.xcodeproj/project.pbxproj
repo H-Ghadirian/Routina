@@ -55,25 +55,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"Screens/AddRoutine/AddRoutineTCAView+iOS.swift",
-				"Screens/App/AppView+iOS.swift",
-				Screens/App/RoutinaIOSRootScene.swift,
-				Screens/App/RoutinaTCAApp.swift,
-				"Screens/App/RoutinaTCAApp+iOS.swift",
-				"Screens/Home/HomeTCAView+iOS.swift",
-				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+iOS.swift",
-				"Screens/RoutineDetail/RoutineDetailPlatformStyle+iOS.swift",
-				"Screens/RoutineDetail/RoutineDetailTCAView+iOS.swift",
-				"Screens/Settings/PlaceLocationPickerSheet+iOS.swift",
-				"Screens/Settings/SettingsFeature+iOS.swift",
-				Screens/Settings/SettingsIOSViews.swift,
-				"Screens/Settings/SettingsTCAView+iOS.swift",
-				"Screens/Settings/SettingsTagViews+iOS.swift",
-				"Screens/Timeline/TimelineView+iOS.swift",
-				"Utilities/LocationClient+iOS.swift",
-				"Utilities/PlatformSupport+UIKit.swift",
-				Utilities/RemoteNotificationIOSDelegate.swift,
-				Utilities/WatchRoutineSyncBridge.swift,
 			);
 			target = 2C0000012E60000100000001 /* RoutinaMacProd */;
 		};
@@ -81,25 +62,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"Screens/AddRoutine/AddRoutineTCAView+iOS.swift",
-				"Screens/App/AppView+iOS.swift",
-				Screens/App/RoutinaIOSRootScene.swift,
-				Screens/App/RoutinaTCAApp.swift,
-				"Screens/App/RoutinaTCAApp+iOS.swift",
-				"Screens/Home/HomeTCAView+iOS.swift",
-				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+iOS.swift",
-				"Screens/RoutineDetail/RoutineDetailPlatformStyle+iOS.swift",
-				"Screens/RoutineDetail/RoutineDetailTCAView+iOS.swift",
-				"Screens/Settings/PlaceLocationPickerSheet+iOS.swift",
-				"Screens/Settings/SettingsFeature+iOS.swift",
-				Screens/Settings/SettingsIOSViews.swift,
-				"Screens/Settings/SettingsTCAView+iOS.swift",
-				"Screens/Settings/SettingsTagViews+iOS.swift",
-				"Screens/Timeline/TimelineView+iOS.swift",
-				"Utilities/LocationClient+iOS.swift",
-				"Utilities/PlatformSupport+UIKit.swift",
-				Utilities/RemoteNotificationIOSDelegate.swift,
-				Utilities/WatchRoutineSyncBridge.swift,
 			);
 			target = 4E0000012E80000100000001 /* RoutinaMacDev */;
 		};
