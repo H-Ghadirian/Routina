@@ -13,7 +13,7 @@ struct TaskImageView: View {
         if let image = previewImage {
             image
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
         } else {
             Rectangle()
                 .fill(Color.secondary.opacity(0.12))

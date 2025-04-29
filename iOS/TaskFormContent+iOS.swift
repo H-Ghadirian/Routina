@@ -569,7 +569,7 @@ struct TaskFormContent: View {
         VStack(alignment: .leading, spacing: 10) {
             if let imageData = model.imageData {
                 TaskImageView(data: imageData)
-                    .frame(height: 180)
+                    .frame(maxWidth: .infinity, maxHeight: 300)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)

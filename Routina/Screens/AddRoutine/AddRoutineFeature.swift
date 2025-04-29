@@ -46,7 +46,7 @@ struct AddRoutineFeature: Reducer {
         var availableTags: [String] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var tagDraft: String = ""
-        var scheduleMode: RoutineScheduleMode = .fixedInterval
+        var scheduleMode: RoutineScheduleMode = .oneOff
         var routineSteps: [RoutineStep] = []
         var stepDraft: String = ""
         var routineChecklistItems: [RoutineChecklistItem] = []

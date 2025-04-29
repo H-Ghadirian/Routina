@@ -252,7 +252,7 @@ struct RoutineDetailTCAView: View {
 
             if let imageData = store.task.imageData {
                 TaskImageView(data: imageData)
-                    .frame(height: 220)
+                    .frame(maxWidth: .infinity, maxHeight: 320)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
 
