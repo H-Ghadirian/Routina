@@ -1020,6 +1020,7 @@ struct HomeTCAView: View {
                 .lineLimit(1)
         }
         .font(.subheadline.weight(.semibold))
+        .fixedSize(horizontal: true, vertical: false)
         .layoutPriority(2)
         .foregroundStyle(style.foregroundColor)
         .padding(.horizontal, 8)
