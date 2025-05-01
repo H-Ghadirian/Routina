@@ -179,8 +179,9 @@ extension HomeTCAView {
                     settingsStore.send(.onAppear)
                 }
             }
-            .onChange(of: macTaskListMode) { _, _ in
-                selectedFilter = .all
+            .onChange(of: macTaskListMode) { oldMode, newMode in
+                saveFilterSnapshot(for: oldMode.rawValue)
+                restoreFilterSnapshot(for: newMode.rawValue)
                 store.send(.setMacFilterDetailPresented(false))
                 if let selectedTaskID = store.selectedTaskID,
                    let task = store.routineTasks.first(where: { $0.id == selectedTaskID }) {

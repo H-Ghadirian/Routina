@@ -6,15 +6,6 @@ import SwiftData
 import SwiftUI
 
 struct HomeTCAView: View {
-    enum RoutineListFilter: String, CaseIterable, Identifiable {
-        case all = "All"
-        case due = "Due"
-        case todos = "Todos"
-        case doneToday = "Done Today"
-
-        var id: String { rawValue }
-    }
-
     enum IOSTaskListMode: String, CaseIterable, Identifiable {
         case routines = "Routines"
         case todos = "Todos"
@@ -65,6 +56,7 @@ struct HomeTCAView: View {
     @State var selectedTag: String?
     @State var excludedTags: Set<String> = []
     @State var selectedManualPlaceFilterID: UUID?
+    @State private var tabFilterManager = TabFilterStateManager()
     @State var isFilterSheetPresented = false
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
@@ -509,6 +501,30 @@ struct HomeTCAView: View {
 
     var hasPlaceAwareContent: Bool {
         hasSavedPlaces || hasPlaceLinkedRoutines
+    }
+
+    func saveFilterSnapshot(for tabKey: String) {
+        tabFilterManager.save(
+            TabFilterStateManager.Snapshot(
+                selectedTag: selectedTag,
+                excludedTags: excludedTags,
+                selectedFilter: selectedFilter,
+                selectedManualPlaceFilterID: selectedManualPlaceFilterID
+            ),
+            for: tabKey
+        )
+    }
+
+    func restoreFilterSnapshot(for tabKey: String) {
+        let snapshot = tabFilterManager.snapshot(for: tabKey)
+        selectedTag = snapshot.selectedTag
+        excludedTags = snapshot.excludedTags
+        selectedFilter = snapshot.selectedFilter
+        selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
+
+        if !tabFilterManager.hasSnapshot(for: tabKey), store.hideUnavailableRoutines {
+            store.send(.hideUnavailableRoutinesChanged(false))
+        }
     }
 
     func clearOptionalFilters() {

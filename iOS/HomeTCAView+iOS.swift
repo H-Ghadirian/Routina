@@ -66,14 +66,17 @@ extension HomeTCAView {
     }
 
     func applyPlatformHomeObservers<Content: View>(to view: Content) -> some View {
-        view.onChange(of: iosTaskListMode) { _, mode in
+        view.onChange(of: iosTaskListMode) { oldMode, newMode in
+            saveFilterSnapshot(for: oldMode.rawValue)
+            restoreFilterSnapshot(for: newMode.rawValue)
+
             guard let selectedTaskID = store.selectedTaskID,
                   let task = store.routineTasks.first(where: { $0.id == selectedTaskID })
             else {
                 return
             }
 
-            let shouldKeepSelection = mode == .todos ? task.isOneOffTask : !task.isOneOffTask
+            let shouldKeepSelection = newMode == .todos ? task.isOneOffTask : !task.isOneOffTask
             if !shouldKeepSelection {
                 store.send(.setSelectedTask(nil))
             }
