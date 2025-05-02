@@ -70,6 +70,7 @@ struct AddRoutineFeatureTests {
             initialState: AddRoutineFeature.State(
                 routineName: "Read",
                 routineEmoji: "📚",
+                scheduleMode: .fixedInterval,
                 frequency: .week,
                 frequencyValue: 3,
                 existingRoutineNames: []
@@ -95,6 +96,7 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(
                 routineName: "Laundry",
+                scheduleMode: .fixedInterval,
                 availablePlaces: [
                     RoutinePlaceSummary(
                         id: placeID,
@@ -229,6 +231,7 @@ struct AddRoutineFeatureTests {
             initialState: AddRoutineFeature.State(
                 routineName: "  Read  ",
                 routineEmoji: "📚",
+                scheduleMode: .fixedInterval,
                 frequency: .day,
                 frequencyValue: 5,
                 existingRoutineNames: []
@@ -385,6 +388,7 @@ struct AddRoutineFeatureTests {
                 routineEmoji: "📚",
                 routineTags: ["Mindset"],
                 tagDraft: "night, focus",
+                scheduleMode: .fixedInterval,
                 frequency: .day,
                 frequencyValue: 1,
                 existingRoutineNames: []
@@ -545,6 +549,7 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(
                 routineName: "Stretch",
+                scheduleMode: .fixedInterval,
                 recurrenceKind: .dailyTime,
                 recurrenceTimeOfDay: RoutineTimeOfDay(hour: 21, minute: 15),
                 existingRoutineNames: []
@@ -572,6 +577,7 @@ struct AddRoutineFeatureTests {
         let weeklyStore = TestStore(
             initialState: AddRoutineFeature.State(
                 routineName: "Review Week",
+                scheduleMode: .fixedInterval,
                 recurrenceKind: .weekly,
                 recurrenceWeekday: 6,
                 existingRoutineNames: []
@@ -591,6 +597,7 @@ struct AddRoutineFeatureTests {
         let monthlyStore = TestStore(
             initialState: AddRoutineFeature.State(
                 routineName: "Pay Bills",
+                scheduleMode: .fixedInterval,
                 recurrenceKind: .monthlyDay,
                 recurrenceDayOfMonth: 21,
                 existingRoutineNames: []
