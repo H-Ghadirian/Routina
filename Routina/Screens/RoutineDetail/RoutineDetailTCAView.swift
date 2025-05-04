@@ -1,5 +1,6 @@
 import SwiftUI
 import ComposableArchitecture
+import UniformTypeIdentifiers
 
 struct RoutineDetailTCAView: View {
     let store: StoreOf<RoutineDetailFeature>
@@ -8,6 +9,8 @@ struct RoutineDetailTCAView: View {
     @State var isShowingAllLogs = false
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
+    @State var attachmentTempURL: URL?
+    @State var fileToSave: AttachmentItem?
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -97,6 +100,18 @@ struct RoutineDetailTCAView: View {
             .onChange(of: selectedDate) { _, newValue in
                 displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
             }
+            .routinaAttachmentShareSheet(url: $attachmentTempURL)
+            .fileExporter(
+                isPresented: Binding(
+                    get: { fileToSave != nil },
+                    set: { if !$0 { fileToSave = nil } }
+                ),
+                document: fileToSave.map { RoutineAttachmentFileDocument(data: $0.data) },
+                contentType: .data,
+                defaultFilename: fileToSave?.fileName
+            ) { _ in
+                fileToSave = nil
+            }
         }
     }
 
@@ -118,7 +133,7 @@ struct RoutineDetailTCAView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
-                    if store.task.hasNotes || store.task.hasImage || store.task.resolvedLinkURL != nil {
+                    if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
                         taskExtrasSection
                     }
                     if !resolvedRelationships.isEmpty {
@@ -148,6 +163,8 @@ struct RoutineDetailTCAView: View {
             importance: store.editImportance,
             urgency: store.editUrgency,
             imageData: store.editImageData,
+            editAttachments: store.editAttachments,
+            taskAttachments: store.taskAttachments,
             selectedPlaceID: store.editSelectedPlaceID,
             tags: store.editRoutineTags,
             relationships: store.editRelationships,
@@ -255,6 +272,38 @@ struct RoutineDetailTCAView: View {
                     .frame(maxWidth: .infinity, maxHeight: 320)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
+            ForEach(store.taskAttachments) { item in
+                HStack(spacing: 10) {
+                    Image(systemName: "doc.fill")
+                        .foregroundStyle(Color.accentColor)
+                    Text(item.fileName)
+                        .font(.subheadline)
+                        .lineLimit(2)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Button {
+                        saveAttachment(item: item)
+                    } label: {
+                        Image(systemName: "arrow.down.doc")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Save to Files")
+                    Button {
+                        openAttachment(data: item.data, fileName: item.fileName)
+                    } label: {
+                        Image(systemName: "arrow.up.forward.square")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open with…")
+                }
+                .padding(10)
+                .background(Color.secondary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
 
             if let notes = store.task.notes, !notes.isEmpty {
                 Text(notes)
@@ -360,8 +409,13 @@ struct RoutineDetailTCAView: View {
                 statusTagsRow(tags: store.task.tags)
             }
 
-            if store.task.hasImage {
-                statusMetadataRow(label: "Attachment", value: "1 image", systemImage: "photo")
+            if store.task.hasImage || !store.taskAttachments.isEmpty {
+                let fileCount = store.taskAttachments.count
+                let parts: [String] = [
+                    store.task.hasImage ? "1 image" : nil,
+                    fileCount > 0 ? "\(fileCount) \(fileCount == 1 ? "file" : "files")" : nil
+                ].compactMap { $0 }
+                statusMetadataRow(label: "Attachment", value: parts.joined(separator: ", "), systemImage: "paperclip")
             }
 
             if store.task.isChecklistDriven {
@@ -537,6 +591,7 @@ struct RoutineDetailTCAView: View {
             || shouldShowSelectedDateMetadata
             || !store.task.tags.isEmpty
             || store.task.hasImage
+            || !store.taskAttachments.isEmpty
             || store.task.isChecklistDriven
             || store.task.isChecklistCompletionRoutine
             || store.task.hasSequentialSteps
@@ -1231,6 +1286,8 @@ struct RoutineDetailTCAView: View {
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
         imageData: Data?,
+        editAttachments: [AttachmentItem],
+        taskAttachments: [AttachmentItem],
         selectedPlaceID: UUID?,
         tags: [String],
         relationships: [RoutineTaskRelationship],
@@ -1300,6 +1357,7 @@ struct RoutineDetailTCAView: View {
             || importance != currentImportance
             || urgency != currentUrgency
             || imageData != currentImageData
+            || editAttachments != taskAttachments
             || selectedPlaceID != task.placeID
             || candidateTags != currentTags
             || candidateRelationships != currentRelationships
@@ -1436,6 +1494,21 @@ struct RoutineDetailTCAView: View {
         abs(count) == 1 ? "day" : "days"
     }
 
+    // MARK: - Attachment actions
+
+    func saveAttachment(item: AttachmentItem) {
+        fileToSave = item
+    }
+
+    func openAttachment(data: Data, fileName: String) {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("RoutineAttachments", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        let fileURL = tempDir.appendingPathComponent(fileName)
+        try? data.write(to: fileURL)
+        platformOpenAttachment(url: fileURL)
+    }
+
 }
 
 private extension Calendar {
@@ -1470,6 +1543,23 @@ private extension Calendar {
             result.append(nil)
         }
         return result
+    }
+}
+
+struct RoutineAttachmentFileDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.data] }
+    var data: Data
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }
 

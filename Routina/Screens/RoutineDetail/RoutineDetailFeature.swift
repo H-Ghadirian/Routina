@@ -49,6 +49,8 @@ struct RoutineDetailFeature: Reducer {
         var editImportance: RoutineTaskImportance = .level2
         var editUrgency: RoutineTaskUrgency = .level2
         var editImageData: Data?
+        var taskAttachments: [AttachmentItem] = []
+        var editAttachments: [AttachmentItem] = []
         var editRoutineTags: [String] = []
         var editRelationships: [RoutineTaskRelationship] = []
         var editTagDraft: String = ""
@@ -93,6 +95,9 @@ struct RoutineDetailFeature: Reducer {
         case editUrgencyChanged(RoutineTaskUrgency)
         case editImagePicked(Data?)
         case editRemoveImageTapped
+        case editAttachmentPicked(Data, String)
+        case editRemoveAttachment(UUID)
+        case attachmentsLoaded([AttachmentItem])
         case editTagDraftChanged(String)
         case editAddTagTapped
         case editRemoveTag(String)
@@ -407,6 +412,18 @@ struct RoutineDetailFeature: Reducer {
             state.editImageData = nil
             return .none
 
+        case let .editAttachmentPicked(data, fileName):
+            state.editAttachments.append(AttachmentItem(fileName: fileName, data: data))
+            return .none
+
+        case let .editRemoveAttachment(id):
+            state.editAttachments.removeAll { $0.id == id }
+            return .none
+
+        case let .attachmentsLoaded(items):
+            state.taskAttachments = items
+            return .none
+
         case let .editTagDraftChanged(value):
             state.editTagDraft = value
             return .none
@@ -600,6 +617,7 @@ struct RoutineDetailFeature: Reducer {
                 importance: state.editImportance,
                 urgency: state.editUrgency,
                 imageData: state.editImageData,
+                attachments: state.editAttachments,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
                 relationships: state.editRelationships,

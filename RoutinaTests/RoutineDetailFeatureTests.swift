@@ -494,6 +494,7 @@ struct RoutineDetailFeatureTests {
         }
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
 
         let persistedTaskID = task.id
         let descriptor = FetchDescriptor<RoutineTask>(
@@ -546,6 +547,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.availableTagsLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -664,6 +666,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.availableTagsLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -734,6 +737,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.availableTagsLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -803,6 +807,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.availableTagsLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -909,6 +914,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.availableTagsLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
     }
 
     @Test
@@ -944,6 +950,7 @@ struct RoutineDetailFeatureTests {
 
         await store.receive {
             if case .logsLoaded = $0 { return true }
+            if case .attachmentsLoaded = $0 { return true }
             return false
         } assert: {
             let verificationContext = ModelContext(context.container)
@@ -1004,6 +1011,7 @@ struct RoutineDetailFeatureTests {
 
         await store.receive {
             if case .logsLoaded = $0 { return true }
+            if case .attachmentsLoaded = $0 { return true }
             return false
         } assert: {
             let verificationContext = ModelContext(context.container)
@@ -1076,6 +1084,7 @@ struct RoutineDetailFeatureTests {
 
         await store.receive {
             if case .logsLoaded = $0 { return true }
+            if case .attachmentsLoaded = $0 { return true }
             return false
         } assert: {
             let verificationContext = ModelContext(context.container)
@@ -1162,6 +1171,7 @@ struct RoutineDetailFeatureTests {
 
         await store.receive {
             if case .logsLoaded = $0 { return true }
+            if case .attachmentsLoaded = $0 { return true }
             return false
         } assert: {
             let verificationContext = ModelContext(context.container)
@@ -1333,6 +1343,7 @@ struct RoutineDetailFeatureTests {
         let taskID = task.id
         await store.receive {
             if case .logsLoaded = $0 { return true }
+            if case .attachmentsLoaded = $0 { return true }
             return false
         } assert: {
             let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)

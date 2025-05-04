@@ -41,6 +41,7 @@ struct AddRoutineFeature: Reducer {
         var importance: RoutineTaskImportance = .level2
         var urgency: RoutineTaskUrgency = .level2
         var imageData: Data?
+        var attachments: [AttachmentItem] = []
         var routineTags: [String] = []
         var relationships: [RoutineTaskRelationship] = []
         var availableTags: [String] = []
@@ -107,6 +108,8 @@ struct AddRoutineFeature: Reducer {
         case urgencyChanged(RoutineTaskUrgency)
         case imagePicked(Data?)
         case removeImageTapped
+        case attachmentPicked(Data, String)
+        case removeAttachment(UUID)
         case taskTypeChanged(RoutineTaskType)
         case availableTagsChanged([String])
         case availableRelationshipTasksChanged([RoutineTaskRelationshipCandidate])
@@ -143,13 +146,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem])
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -205,6 +208,14 @@ struct AddRoutineFeature: Reducer {
 
         case .removeImageTapped:
             state.imageData = nil
+            return .none
+
+        case let .attachmentPicked(data, fileName):
+            state.attachments.append(AttachmentItem(fileName: fileName, data: data))
+            return .none
+
+        case let .removeAttachment(id):
+            state.attachments.removeAll { $0.id == id }
             return .none
 
         case let .taskTypeChanged(taskType):
@@ -410,7 +421,8 @@ struct AddRoutineFeature: Reducer {
                 state.scheduleMode,
                 (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)
                     ? []
-                    : RoutineChecklistItem.sanitized(state.routineChecklistItems)
+                    : RoutineChecklistItem.sanitized(state.routineChecklistItems),
+                state.attachments
             )
 
         case .cancelTapped:

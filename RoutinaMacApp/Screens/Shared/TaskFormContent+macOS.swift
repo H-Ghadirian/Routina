@@ -10,6 +10,8 @@ struct TaskFormContent: View {
 
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isImageFileImporterPresented = false
+    @State private var isFileImporterPresented = false
+    @State private var isAttachmentDropTargeted = false
     @State private var isImageDropTargeted = false
     @State private var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
@@ -66,6 +68,7 @@ struct TaskFormContent: View {
             }
 
             imageCard
+            attachmentCard
 
             if model.onDelete != nil || model.pauseResumeAction != nil {
                 dangerZoneCard
@@ -450,6 +453,89 @@ struct TaskFormContent: View {
             imageAttachmentContent
         }
         .id("Image")
+    }
+
+    // MARK: Attachment
+
+    private var attachmentCard: some View {
+        macSectionCard(
+            title: "File Attachment",
+            subtitle: "Attach a file up to 20 MB to keep reference material with this task."
+        ) {
+            attachmentContent
+        }
+        .id("Attachment")
+    }
+
+    @ViewBuilder
+    private var attachmentContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if model.attachments.isEmpty {
+                Label("No files attached", systemImage: "doc")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(model.attachments) { item in
+                    HStack(spacing: 10) {
+                        Image(systemName: "doc.fill")
+                            .foregroundStyle(Color.accentColor)
+                            .font(.title3)
+                        Text(item.fileName)
+                            .font(.subheadline)
+                            .lineLimit(2)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Button {
+                            model.onRemoveAttachment(item.id)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(10)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+            }
+
+            Button("Add File") {
+                isFileImporterPresented = true
+            }
+            .buttonStyle(.bordered)
+
+            Text("Attach any file up to 20 MB. You can also drag a file from Finder onto this area.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(isAttachmentDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(
+                    isAttachmentDropTargeted ? Color.accentColor : Color.secondary.opacity(0.18),
+                    style: StrokeStyle(lineWidth: isAttachmentDropTargeted ? 2 : 1, dash: [8, 6])
+                )
+        )
+        .dropDestination(for: URL.self) { urls, _ in
+            guard !urls.isEmpty else { return false }
+            urls.forEach { loadAttachment(fromFileAt: $0) }
+            return true
+        } isTargeted: { isTargeted in
+            isAttachmentDropTargeted = isTargeted
+        }
+        .fileImporter(
+            isPresented: $isFileImporterPresented,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: true
+        ) { result in
+            guard case let .success(urls) = result else { return }
+            urls.forEach { loadAttachment(fromFileAt: $0) }
+        }
     }
 
     // MARK: Danger Zone
@@ -1026,5 +1112,13 @@ struct TaskFormContent: View {
     private func loadPickedImage(fromFileAt url: URL) {
         let compressedData = TaskImageProcessor.compressedImageData(fromFileAt: url)
         model.onImagePicked(compressedData)
+    }
+
+    private func loadAttachment(fromFileAt url: URL) {
+        let maxSize = 20 * 1024 * 1024  // 20 MB
+        guard url.startAccessingSecurityScopedResource() else { return }
+        defer { url.stopAccessingSecurityScopedResource() }
+        guard let data = try? Data(contentsOf: url), data.count <= maxSize else { return }
+        model.onAttachmentPicked(data, url.lastPathComponent)
     }
 }

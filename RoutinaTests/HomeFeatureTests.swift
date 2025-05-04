@@ -181,6 +181,7 @@ struct HomeFeatureTests {
             $0.routineDetailState?.overdueDays = 0
             $0.routineDetailState?.isDoneToday = false
         }
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
     }
 
     @Test
@@ -309,6 +310,7 @@ struct HomeFeatureTests {
             $0.routineDetailState?.overdueDays = 0
             $0.routineDetailState?.isDoneToday = false
         }
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
     }
 
     @Test
@@ -381,6 +383,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         _ = sourceTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
         _ = sourceTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
@@ -547,6 +550,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 1)
         #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 1)
@@ -723,6 +727,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.routineDetailState?.task.lastDone == now)
@@ -811,6 +816,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
     }
@@ -910,6 +916,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
@@ -939,6 +946,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
@@ -1058,6 +1066,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
@@ -1087,6 +1096,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
@@ -1275,6 +1285,7 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
+        await store.receive(.routineDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == nil)
         #expect(store.state.routineDetailState?.task.lastDone == nil)
@@ -2337,7 +2348,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Evening"], [], [], .fixedInterval, []))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Evening"], [], [], .fixedInterval, [], []))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())

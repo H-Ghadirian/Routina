@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
+import UniformTypeIdentifiers
 #if canImport(PhotosUI)
 import PhotosUI
 #endif
@@ -12,6 +13,7 @@ struct TaskFormContent: View {
         SettingsFeature()
     }
     @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var isFileImporterPresented = false
 
     var body: some View {
         Form {
@@ -25,6 +27,7 @@ struct TaskFormContent: View {
             }
             importanceUrgencySection
             imageSection
+            attachmentSection
             tagsSection
             relationshipsSection
             if model.scheduleMode.wrappedValue.taskType == .routine {
@@ -61,6 +64,13 @@ struct TaskFormContent: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isNameFocused = true
             }
+        }
+        .fileImporter(
+            isPresented: $isFileImporterPresented,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: false
+        ) { result in
+            handleAttachmentImport(result)
         }
     }
 
@@ -199,6 +209,15 @@ struct TaskFormContent: View {
         }
     }
 
+    private func handleAttachmentImport(_ result: Result<[URL], Error>) {
+        guard case let .success(urls) = result, let url = urls.first else { return }
+        let maxSize = 20 * 1024 * 1024  // 20 MB
+        guard url.startAccessingSecurityScopedResource() else { return }
+        defer { url.stopAccessingSecurityScopedResource() }
+        guard let data = try? Data(contentsOf: url), data.count <= maxSize else { return }
+        model.onAttachmentPicked(data, url.lastPathComponent)
+    }
+
     // MARK: - Sections
 
     private var nameSection: some View {
@@ -292,6 +311,53 @@ struct TaskFormContent: View {
         Section(header: Text("Image")) {
             imageAttachmentContent
         }
+    }
+
+    private var attachmentSection: some View {
+        Section(header: Text("File Attachment")) {
+            attachmentContent
+        }
+    }
+
+    @ViewBuilder
+    private var attachmentContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if model.attachments.isEmpty {
+                Label("No files attached", systemImage: "doc")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                ForEach(model.attachments) { item in
+                    HStack(spacing: 10) {
+                        Image(systemName: "doc.fill")
+                            .foregroundStyle(.secondary)
+                        Text(item.fileName)
+                            .font(.subheadline)
+                            .lineLimit(2)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Button {
+                            model.onRemoveAttachment(item.id)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(10)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+            }
+            Button {
+                isFileImporterPresented = true
+            } label: {
+                Label("Add File", systemImage: "doc.badge.plus")
+            }
+            .buttonStyle(.bordered)
+            Text("Attach any file up to 20 MB (PDF, document, spreadsheet, etc.).")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4).padding(.horizontal, 2)
     }
 
     private var tagsSection: some View {

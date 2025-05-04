@@ -59,6 +59,9 @@ struct RoutineDetailEditRoutineContent: View {
             imageData: store.editImageData,
             onImagePicked: { store.send(.editImagePicked($0)) },
             onRemoveImage: { store.send(.editRemoveImageTapped) },
+            attachments: store.editAttachments,
+            onAttachmentPicked: { store.send(.editAttachmentPicked($0, $1)) },
+            onRemoveAttachment: { store.send(.editRemoveAttachment($0)) },
             tagDraft: Binding(
                 get: { store.editTagDraft },
                 set: { store.send(.editTagDraftChanged($0)) }

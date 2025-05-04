@@ -18,6 +18,7 @@ public struct PersistenceController {
                 for: RoutineTask.self,
                 RoutineLog.self,
                 RoutinePlace.self,
+                RoutineAttachment.self,
                 configurations: primaryConfiguration
             )
         } catch {
@@ -37,6 +38,7 @@ public struct PersistenceController {
                         for: RoutineTask.self,
                         RoutineLog.self,
                         RoutinePlace.self,
+                        RoutineAttachment.self,
                         configurations: retriedConfiguration
                     )
                     return
@@ -51,6 +53,7 @@ public struct PersistenceController {
                     for: RoutineTask.self,
                     RoutineLog.self,
                     RoutinePlace.self,
+                    RoutineAttachment.self,
                     configurations: localFallback
                 )
             } catch {
@@ -62,6 +65,7 @@ public struct PersistenceController {
                         for: RoutineTask.self,
                         RoutineLog.self,
                         RoutinePlace.self,
+                        RoutineAttachment.self,
                         configurations: memoryFallback
                     )
                 } catch {

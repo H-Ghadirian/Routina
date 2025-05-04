@@ -38,6 +38,11 @@ struct TaskFormModel {
     var onImagePicked: (Data?) -> Void
     var onRemoveImage: () -> Void
 
+    // MARK: File Attachments
+    var attachments: [AttachmentItem]
+    var onAttachmentPicked: (Data, String) -> Void
+    var onRemoveAttachment: (UUID) -> Void
+
     // MARK: Tags
     var tagDraft: Binding<String>
     var routineTags: [String]

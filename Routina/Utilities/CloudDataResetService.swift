@@ -25,6 +25,11 @@ enum CloudDataResetService {
             context.delete(log)
         }
 
+        let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
+        for att in attachments {
+            context.delete(att)
+        }
+
         try context.save()
     }
 

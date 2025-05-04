@@ -18,6 +18,7 @@ extension RoutineDetailFeature {
         }
         state.editPriority = state.task.priority
         state.editImageData = state.task.imageData
+        state.editAttachments = state.taskAttachments
         state.editRoutineTags = state.task.tags
         state.editRelationships = state.task.relationships
         state.editTagDraft = ""

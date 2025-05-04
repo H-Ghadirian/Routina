@@ -10,6 +10,11 @@ extension RoutineDetailFeature {
                 _ = try RoutineLogHistory.backfillMissingLastDoneLog(for: taskID, in: context)
                 let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(logs))
+                let attachments = try context.fetch(attachmentDescriptor(for: taskID))
+                let items = attachments
+                    .sorted { $0.createdAt < $1.createdAt }
+                    .map { AttachmentItem(id: $0.id, fileName: $0.fileName, data: $0.data) }
+                send(.attachmentsLoaded(items))
             } catch {
                 print("Error loading logs: \(error)")
             }
@@ -110,6 +115,7 @@ extension RoutineDetailFeature {
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
         imageData: Data?,
+        attachments: [AttachmentItem],
         placeID: UUID?,
         tags: [String],
         relationships: [RoutineTaskRelationship],
@@ -135,6 +141,17 @@ extension RoutineDetailFeature {
                 task.importance = importance
                 task.urgency = urgency
                 task.imageData = imageData
+                // Sync attachments by taskID
+                let existingAtts = try context.fetch(attachmentDescriptor(for: taskID))
+                let newIDs = Set(attachments.map(\.id))
+                for att in existingAtts where !newIDs.contains(att.id) {
+                    context.delete(att)
+                }
+                let existingIDs = Set(existingAtts.map(\.id))
+                for item in attachments where !existingIDs.contains(item.id) {
+                    let newAtt = RoutineAttachment(id: item.id, taskID: taskID, fileName: item.fileName, data: item.data)
+                    context.insert(newAtt)
+                }
                 task.placeID = placeID
                 task.tags = tags
                 task.replaceRelationships(relationships)
@@ -197,6 +214,10 @@ extension RoutineDetailFeature {
                 let logs = try context.fetch(allLogsDescriptor(for: task.id))
                 for log in logs {
                     context.delete(log)
+                }
+                let attachmentsToDelete = try context.fetch(attachmentDescriptor(for: task.id))
+                for att in attachmentsToDelete {
+                    context.delete(att)
                 }
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -351,6 +372,14 @@ extension RoutineDetailFeature {
         FetchDescriptor<RoutineLog>(
             predicate: #Predicate { log in
                 log.taskID == taskID
+            }
+        )
+    }
+
+    func attachmentDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineAttachment> {
+        FetchDescriptor<RoutineAttachment>(
+            predicate: #Predicate { att in
+                att.taskID == taskID
             }
         )
     }

@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
+import UIKit
 
 extension View {
     func routinaPlatformEditPresentation(
@@ -66,4 +67,37 @@ extension RoutineDetailTCAView {
             compactStatusSection(pauseArchivePresentation: pauseArchivePresentation)
         }
     }
+
+    func platformOpenAttachment(url: URL) {
+        attachmentTempURL = url
+    }
+}
+
+// MARK: - iOS share sheet modifier
+
+extension View {
+    func routinaAttachmentShareSheet(url: Binding<URL?>) -> some View {
+        sheet(item: Binding(
+            get: { url.wrappedValue.map { IdentifiableURL(url: $0) } },
+            set: { url.wrappedValue = $0?.url }
+        )) { identifiable in
+            ActivityViewController(url: identifiable.url)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+private struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+private struct ActivityViewController: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

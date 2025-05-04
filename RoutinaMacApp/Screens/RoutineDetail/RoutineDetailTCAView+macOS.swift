@@ -1,3 +1,4 @@
+import AppKit
 import ComposableArchitecture
 import SwiftUI
 
@@ -23,10 +24,19 @@ extension View {
     func routinaPlatformSecondaryActionControlSize() -> some View {
         controlSize(.regular)
     }
+
+    /// No-op on macOS — attachment opening is handled directly via NSWorkspace.
+    func routinaAttachmentShareSheet(url: Binding<URL?>) -> some View {
+        self
+    }
 }
 
 extension RoutineDetailTCAView {
     var platformIsInlineEditPresented: Bool { store.isEditSheetPresented }
+
+    func platformOpenAttachment(url: URL) {
+        NSWorkspace.shared.open(url)
+    }
 
     func platformDetailOverviewSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
