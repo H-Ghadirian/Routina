@@ -20,7 +20,6 @@ struct HomeTCAView: View {
     let externalSearchText: Binding<String>?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.calendar) var calendar
-    @Query(sort: \RoutineLog.timestamp, order: .reverse) var timelineLogs: [RoutineLog]
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app

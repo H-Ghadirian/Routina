@@ -367,7 +367,7 @@ extension HomeTCAView {
 
     private var baseTimelineEntries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
-            logs: timelineLogs,
+            logs: store.timelineLogs,
             tasks: store.routineTasks,
             range: store.selectedTimelineRange,
             filterType: store.selectedTimelineFilterType,
@@ -1431,7 +1431,7 @@ extension HomeTCAView {
 
     var macTimelineSidebarView: some View {
         Group {
-            if timelineLogs.isEmpty {
+            if store.timelineLogs.isEmpty {
                 emptyStateView(
                     title: "No completions yet",
                     message: "Completed routines and todos will appear here in chronological order.",

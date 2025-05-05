@@ -96,6 +96,7 @@ struct HomeFeature {
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
+        var timelineLogs: [RoutineLog] = []
         var routineDisplays: [RoutineDisplay] = []
         var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
@@ -145,7 +146,7 @@ struct HomeFeature {
 
     enum Action: Equatable {
         case onAppear
-        case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], DoneStats)
+        case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineLog], DoneStats)
         case tasksLoadFailed
         case locationSnapshotUpdated(LocationSnapshot)
         case hideUnavailableRoutinesChanged(Bool)
@@ -217,12 +218,17 @@ struct HomeFeature {
                     }
                 )
 
-            case let .tasksLoadedSuccessfully(tasks, places, doneStats):
+            case let .tasksLoadedSuccessfully(tasks, places, logs, doneStats):
                 let detachedTasks = detachedTasks(from: tasks)
                 let detachedPlaces = detachedPlaces(from: places)
                 let reconciledTasks = reconcileSelectedDetailTask(detachedTasks, state: &state)
                 state.routineTasks = reconciledTasks
                 state.routinePlaces = detachedPlaces
+                state.timelineLogs = logs.sorted {
+                    let lhs = $0.timestamp ?? .distantPast
+                    let rhs = $1.timestamp ?? .distantPast
+                    return lhs > rhs
+                }
                 state.doneStats = doneStats
                 refreshDisplays(&state)
                 syncSelectedRoutineDetailState(&state)
@@ -951,7 +957,7 @@ struct HomeFeature {
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 let places = try context.fetch(FetchDescriptor<RoutinePlace>())
                 let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-                send(.tasksLoadedSuccessfully(tasks, places, self.makeDoneStats(tasks: tasks, logs: logs)))
+                send(.tasksLoadedSuccessfully(tasks, places, logs, self.makeDoneStats(tasks: tasks, logs: logs)))
             } catch {
                 send(.tasksLoadFailed)
             }

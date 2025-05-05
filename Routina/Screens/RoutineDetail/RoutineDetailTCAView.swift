@@ -19,25 +19,31 @@ struct RoutineDetailTCAView: View {
             detailBody
             .routinaInlineTitleDisplayMode()
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    HStack(spacing: 8) {
-                        Text(isInlineEditPresented ? "✏️" : routineEmoji(for: store.task))
-                        Text(isInlineEditPresented ? "Edit Task" : (store.task.name ?? "Routine"))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .minimumScaleFactor(0.85)
+                if !isInlineEditPresented {
+                    ToolbarItem(placement: .principal) {
+                        Text(routineEmoji(for: store.task))
+                            .font(RoutineDetailPlatformStyle.principalTitleFont)
                     }
-                    .font(RoutineDetailPlatformStyle.principalTitleFont)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 999, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 999, style: .continuous)
-                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                    )
+                }
+                if isInlineEditPresented {
+                    ToolbarItem(placement: .principal) {
+                        HStack(spacing: 8) {
+                            Text("✏️")
+                            Text("Edit Task")
+                                .lineLimit(1)
+                        }
+                        .font(RoutineDetailPlatformStyle.principalTitleFont)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 999, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 999, style: .continuous)
+                                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                        )
+                    }
                 }
                 if isInlineEditPresented {
                     ToolbarItem(placement: .cancellationAction) {
@@ -132,6 +138,7 @@ struct RoutineDetailTCAView: View {
             )
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    taskHeaderSection
                     detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
                     if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
                         taskExtrasSection
@@ -262,6 +269,89 @@ struct RoutineDetailTCAView: View {
         )
     }
 
+    private var taskHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(store.task.name ?? "Routine")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let statusContextMessage {
+                    Text(statusContextMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack(alignment: .top, spacing: 8) {
+                taskHeaderBadge(
+                    title: "Status",
+                    value: summaryStatusTitle,
+                    tint: summaryStatusColor
+                )
+
+                taskHeaderBadge(
+                    title: "Selected",
+                    value: selectedDateMetadataText,
+                    tint: .accentColor
+                )
+            }
+
+            if let priorityLabel = store.task.priority.metadataLabel {
+                taskHeaderBadge(
+                    title: "Priority",
+                    value: priorityMetadataText(priorityLabel: priorityLabel),
+                    tint: .secondary
+                )
+            }
+
+            if let dueDateMetadataText {
+                taskHeaderBadge(
+                    title: "Due",
+                    value: dueDateMetadataText,
+                    tint: .orange
+                )
+            }
+        }
+        .padding(16)
+        .background(RoutineDetailPlatformStyle.summaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
+    private func taskHeaderBadge(
+        title: String,
+        value: String,
+        tint: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(tint.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(tint.opacity(0.24), lineWidth: 1)
+        )
+    }
+
     private var taskExtrasSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Details")
@@ -378,14 +468,12 @@ struct RoutineDetailTCAView: View {
                 statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
             }
 
-            statusMetadataRow(
-                label: "Matrix",
-                value: "\(store.task.importance.title) importance • \(store.task.urgency.title) urgency",
-                systemImage: "square.grid.3x3"
-            )
-
             if let priorityLabel = store.task.priority.metadataLabel {
-                statusMetadataRow(label: "Priority", value: priorityLabel, systemImage: "flag")
+                statusMetadataRow(
+                    label: "Priority",
+                    value: priorityMetadataText(priorityLabel: priorityLabel),
+                    systemImage: "flag"
+                )
             }
 
             if let linkedPlace = linkedPlaceSummary {
@@ -794,6 +882,10 @@ struct RoutineDetailTCAView: View {
             return "Today"
         }
         return selectedDate.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func priorityMetadataText(priorityLabel: String) -> String {
+        "\(priorityLabel) • \(store.task.importance.title) importance • \(store.task.urgency.title) urgency"
     }
 
     private var selectedDate: Date {
