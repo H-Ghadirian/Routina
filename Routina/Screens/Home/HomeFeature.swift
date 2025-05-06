@@ -146,6 +146,7 @@ struct HomeFeature {
 
     enum Action: Equatable {
         case onAppear
+        case manualRefreshRequested
         case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineLog], DoneStats)
         case tasksLoadFailed
         case locationSnapshotUpdated(LocationSnapshot)
@@ -204,6 +205,8 @@ struct HomeFeature {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     @Dependency(\.locationClient) var locationClient
+    @Dependency(\.cloudSyncClient) var cloudSyncClient
+    @Dependency(\.continuousClock) var clock
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -217,6 +220,21 @@ struct HomeFeature {
                         send(.locationSnapshotUpdated(snapshot))
                     }
                 )
+
+            case .manualRefreshRequested:
+                return .run { @MainActor send in
+                    let context = self.modelContext()
+                    if context.hasChanges {
+                        try? context.save()
+                    }
+
+                    try? await self.cloudSyncClient.pullLatestIntoLocalStore(context)
+                    send(.onAppear)
+
+                    // CloudKit imports are asynchronous; do a second pass shortly after manual refresh.
+                    try? await self.clock.sleep(for: .seconds(2))
+                    send(.onAppear)
+                }
 
             case let .tasksLoadedSuccessfully(tasks, places, logs, doneStats):
                 let detachedTasks = detachedTasks(from: tasks)

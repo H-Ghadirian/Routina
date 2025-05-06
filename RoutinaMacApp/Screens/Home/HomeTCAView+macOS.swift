@@ -139,7 +139,7 @@ extension HomeTCAView {
     var platformRefreshButton: some View {
         MacToolbarIconButton(title: "Sync with iCloud", systemImage: "arrow.clockwise") {
             Task { @MainActor in
-                await performManualRefresh()
+                await store.send(.manualRefreshRequested).finish()
             }
         }
     }

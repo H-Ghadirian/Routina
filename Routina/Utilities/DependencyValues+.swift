@@ -19,6 +19,10 @@ private enum LocationClientKey: DependencyKey {
     static let liveValue = LocationClient.live
 }
 
+private enum CloudSyncClientKey: DependencyKey {
+    static let liveValue = CloudSyncClient.live
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -38,5 +42,10 @@ extension DependencyValues {
     var locationClient: LocationClient {
         get { self[LocationClientKey.self] }
         set { self[LocationClientKey.self] = newValue }
+    }
+
+    var cloudSyncClient: CloudSyncClient {
+        get { self[CloudSyncClientKey.self] }
+        set { self[CloudSyncClientKey.self] = newValue }
     }
 }

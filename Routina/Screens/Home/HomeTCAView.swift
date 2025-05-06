@@ -18,7 +18,6 @@ struct HomeTCAView: View {
     let settingsStore: StoreOf<SettingsFeature>
 #endif
     let externalSearchText: Binding<String>?
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.calendar) var calendar
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
@@ -565,26 +564,6 @@ struct HomeTCAView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 16)
         .padding(.vertical, 40)
-    }
-
-    @MainActor
-    func performManualRefresh() async {
-        if modelContext.hasChanges {
-            try? modelContext.save()
-        }
-
-        if let containerIdentifier = AppEnvironment.cloudKitContainerIdentifier {
-            try? await CloudKitDirectPullService.pullLatestIntoLocalStore(
-                containerIdentifier: containerIdentifier,
-                modelContext: modelContext
-            )
-        }
-
-        requestRefresh()
-
-        // CloudKit imports are asynchronous; do a second pass shortly after manual refresh.
-        try? await Task.sleep(for: .seconds(2))
-        requestRefresh()
     }
 
     private var allRoutineDisplays: [HomeFeature.RoutineDisplay] {

@@ -99,6 +99,7 @@ let package = Package(
                 "Routina/Utilities/CloudKitDirectPullService.swift",
                 "Routina/Utilities/CloudKitPushSubscriptionService.swift",
                 "Routina/Utilities/CloudKitSyncDiagnostics.swift",
+                "Routina/Utilities/CloudSyncClient.swift",
                 "Routina/Utilities/DependencyValues+.swift",
                 "Routina/Utilities/EmojiCatalog.swift",
                 "Routina/Utilities/LocationClient.swift",
