@@ -130,32 +130,65 @@ struct RoutineDetailTCAView: View {
                 emojiOptions: emojiOptions
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else if store.task.isOneOffTask {
+            todoDetailContent
         } else {
-            let _ = store.taskRefreshID
-            let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
-                isPaused: store.task.isPaused,
-                context: .detail
-            )
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    taskHeaderSection
-                    detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
-                    if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
-                        taskExtrasSection
-                    }
-                    if !resolvedRelationships.isEmpty {
-                        relationshipsSection
-                    }
-                    if store.task.hasChecklistItems {
-                        checklistItemsSection
-                    }
-                    if !store.task.isOneOffTask {
-                        routineLogsSection
-                    }
+            routineDetailContent
+        }
+    }
+
+    private var todoDetailContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                todoHeaderSection
+                if !store.task.isCompletedOneOff {
+                    calendarSection
                 }
-                .padding(RoutineDetailPlatformStyle.detailContentPadding)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                todoPrimaryActionSection
+                if hasTaskMetadata {
+                    taskMetadataSection
+                }
+                if store.task.hasChecklistItems {
+                    checklistItemsSection
+                }
+                if !resolvedRelationships.isEmpty {
+                    relationshipsSection
+                }
+                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
+                    taskExtrasSection
+                }
             }
+            .padding(RoutineDetailPlatformStyle.detailContentPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var routineDetailContent: some View {
+        let _ = store.taskRefreshID
+        let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
+            isPaused: store.task.isPaused,
+            context: .detail
+        )
+
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                routineHeaderSection
+                calendarSection
+                routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
+                routineSummarySection
+                routineLogsSection
+                if store.task.hasChecklistItems {
+                    checklistItemsSection
+                }
+                if !resolvedRelationships.isEmpty {
+                    relationshipsSection
+                }
+                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
+                    taskExtrasSection
+                }
+            }
+            .padding(RoutineDetailPlatformStyle.detailContentPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -254,7 +287,7 @@ struct RoutineDetailTCAView: View {
 
             if hasVisibleStatusMetadata {
                 Divider()
-                statusMetadataSection()
+                statusMetadataSection(showSelectedDate: true)
                 Divider()
             }
 
@@ -269,10 +302,10 @@ struct RoutineDetailTCAView: View {
         )
     }
 
-    private var taskHeaderSection: some View {
+    private var todoHeaderSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(store.task.name ?? "Routine")
+                Text(store.task.name ?? "Task")
                     .font(.title2.weight(.bold))
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -316,12 +349,63 @@ struct RoutineDetailTCAView: View {
             }
         }
         .padding(16)
-        .background(RoutineDetailPlatformStyle.summaryCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-        )
+        .detailCardStyle(cornerRadius: 16)
+    }
+
+    private var routineHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(store.task.name ?? "Routine")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let statusContextMessage {
+                    Text(statusContextMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack(alignment: .top, spacing: 8) {
+                taskHeaderBadge(
+                    title: "Status",
+                    value: summaryStatusTitle,
+                    tint: summaryStatusColor
+                )
+
+                taskHeaderBadge(
+                    title: "Frequency",
+                    value: frequencyText(for: store.task),
+                    tint: .mint
+                )
+            }
+
+            HStack(alignment: .top, spacing: 8) {
+                taskHeaderBadge(
+                    title: "Completed",
+                    value: totalDoneCountText(for: store.logs.count),
+                    tint: .green
+                )
+
+                if let dueDateMetadataText {
+                    taskHeaderBadge(
+                        title: "Due",
+                        value: dueDateMetadataText,
+                        tint: .orange
+                    )
+                } else if let linkedPlace = linkedPlaceSummary {
+                    taskHeaderBadge(
+                        title: "Location",
+                        value: linkedPlace.name,
+                        tint: .blue
+                    )
+                }
+            }
+        }
+        .padding(16)
+        .detailCardStyle(cornerRadius: 16)
     }
 
     private func taskHeaderBadge(
@@ -350,6 +434,139 @@ struct RoutineDetailTCAView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(tint.opacity(0.24), lineWidth: 1)
         )
+    }
+
+    private var todoPrimaryActionSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            primaryActionButton
+
+            if store.task.isCompletedOneOff {
+                Text("Select the completion date in the calendar if you want to undo it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if !blockingRelationships.isEmpty {
+                Text(blockerSummaryText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .detailCardStyle()
+    }
+
+    private func routinePrimaryActionSection(
+        pauseArchivePresentation: RoutinePauseArchivePresentation
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(summaryStatusTitle)
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(summaryStatusColor)
+
+                if let statusContextMessage {
+                    Text(statusContextMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            primaryActionButton
+
+            Button(pauseArchivePresentation.actionTitle) {
+                store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+            }
+            .buttonStyle(.bordered)
+            .tint(store.task.isPaused ? .teal : .orange)
+            .routinaPlatformSecondaryActionControlSize()
+            .frame(maxWidth: .infinity)
+
+            if isStepRoutineOffToday {
+                Text("Step-based routines can only be progressed for today.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if store.task.isChecklistCompletionRoutine && !canUndoSelectedDate {
+                Text("Complete checklist items below to finish this routine.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let pauseDescription = pauseArchivePresentation.description {
+                Text(pauseDescription)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !blockingRelationships.isEmpty {
+                Text(blockerSummaryText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .detailCardStyle()
+    }
+
+    private var taskMetadataSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let priorityLabel = store.task.priority.metadataLabel {
+                statusMetadataRow(
+                    label: "Priority",
+                    value: priorityMetadataText(priorityLabel: priorityLabel),
+                    systemImage: "flag"
+                )
+            }
+
+            if let linkedPlace = linkedPlaceSummary {
+                statusMetadataRow(label: "Location", value: linkedPlace.name, systemImage: "location")
+            }
+
+            if !store.task.tags.isEmpty {
+                statusTagsRow(tags: store.task.tags)
+            }
+
+        }
+        .padding(16)
+        .detailCardStyle()
+    }
+
+    private var routineSummarySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Routine Summary")
+                .font(.headline)
+
+            statusMetadataSection(showSelectedDate: false)
+        }
+        .padding(16)
+        .detailCardStyle()
+    }
+
+    private var hasTaskMetadata: Bool {
+        store.task.priority.metadataLabel != nil
+            || linkedPlaceSummary != nil
+            || !store.task.tags.isEmpty
+    }
+
+    @ViewBuilder
+    private var primaryActionButton: some View {
+        Button {
+            store.send(completionButtonAction)
+        } label: {
+            completionButtonLabel
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
+        .frame(maxWidth: .infinity)
+        .disabled(isCompletionButtonDisabled)
     }
 
     private var taskExtrasSection: some View {
@@ -434,7 +651,7 @@ struct RoutineDetailTCAView: View {
 
             if hasVisibleStatusMetadata {
                 Divider()
-                statusMetadataSection()
+                statusMetadataSection(showSelectedDate: true)
                 Divider()
             }
 
@@ -458,7 +675,7 @@ struct RoutineDetailTCAView: View {
         }
     }
 
-    private func statusMetadataSection() -> some View {
+    private func statusMetadataSection(showSelectedDate: Bool) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             if !store.task.isOneOffTask {
                 statusMetadataRow(label: "Frequency", value: frequencyText(for: store.task))
@@ -489,7 +706,7 @@ struct RoutineDetailTCAView: View {
                 statusMetadataRow(label: "Due", value: dueDateMetadataText)
             }
 
-            if shouldShowSelectedDateMetadata {
+            if showSelectedDate && shouldShowSelectedDateMetadata {
                 statusMetadataRow(label: "Selected", value: selectedDateMetadataText)
             }
 
@@ -1508,9 +1725,9 @@ struct RoutineDetailTCAView: View {
         }
         if task.isOneOffTask {
             if Calendar.current.isDateInToday(selectedDate) {
-                return "Mark Done"
+                return "Done"
             }
-            return "Mark \(selectedDate.formatted(date: .abbreviated, time: .omitted)) as Done"
+            return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
         }
         if task.isChecklistCompletionRoutine && !Calendar.current.isDateInToday(selectedDate) {
             return "Checklist progress can only be updated today"
@@ -1541,9 +1758,9 @@ struct RoutineDetailTCAView: View {
             return "Complete: \(nextStepTitle)"
         }
         if Calendar.current.isDateInToday(selectedDate) {
-            return "Mark Today as Done"
+            return "Done"
         }
-        return "Mark \(selectedDate.formatted(date: .abbreviated, time: .omitted)) as Done"
+        return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
     }
 
     private func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
@@ -1635,6 +1852,17 @@ private extension Calendar {
             result.append(nil)
         }
         return result
+    }
+}
+
+private extension View {
+    func detailCardStyle(cornerRadius: CGFloat = 12) -> some View {
+        background(RoutineDetailPlatformStyle.summaryCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+            )
     }
 }
 

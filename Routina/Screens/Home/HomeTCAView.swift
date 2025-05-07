@@ -16,6 +16,7 @@ struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
 #if os(macOS)
     let settingsStore: StoreOf<SettingsFeature>
+    @State var addEditFormCoordinator = AddEditFormCoordinator()
 #endif
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
@@ -26,9 +27,6 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
-#if os(macOS)
-    @State var addEditFormCoordinator = AddEditFormCoordinator()
-#endif
 
     init(
         store: StoreOf<HomeFeature>,
