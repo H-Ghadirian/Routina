@@ -2,9 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:Routina.xcodeproj">
+      location = "group:RoutinaiOS.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:RoutinaMac.xcodeproj">
+      location = "group:RoutinaMacOS.xcodeproj">
    </FileRef>
 </Workspace>

@@ -34,57 +34,75 @@
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 4E0000012E80000100000001;
-			remoteInfo = RoutinaMacDev;
+			remoteInfo = RoutinaMacOSDev;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74D72D7B92F900E91075 /* RoutinaiOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C0000022E60000100000001 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		3D1000102E70000100000001 /* RoutinaDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4E0000022E80000100000001 /* RoutinaMacDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D1000102E70000100000001 /* RoutinaiOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaiOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E0000022E80000100000001 /* RoutinaMacOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F1000072E90000100000001 /* RoutinaWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F1000082E90000100000001 /* RoutinaWatchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWatchExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		6B1000112F10000100000001 /* RoutinaMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaMacOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2C0000092E60000100000001 /* Exceptions for "Routina" folder in "RoutinaMacProd" target */ = {
+		2C0000092E60000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSProd" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 2C0000012E60000100000001 /* RoutinaMacProd */;
+			target = 2C0000012E60000100000001 /* RoutinaMacOSProd */;
 		};
-		4E0000092E80000100000001 /* Exceptions for "Routina" folder in "RoutinaMacDev" target */ = {
+		4E0000092E80000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 4E0000012E80000100000001 /* RoutinaMacDev */;
+			target = 4E0000012E80000100000001 /* RoutinaMacOSDev */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2A5A74BF2D7B92F600E91075 /* Routina */ = {
+		2A5A74BF2D7B92F600E91075 /* macOSConfig */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				2C0000092E60000100000001 /* Exceptions for "Routina" folder in "RoutinaMacProd" target */,
-				4E0000092E80000100000001 /* Exceptions for "Routina" folder in "RoutinaMacDev" target */,
+				2C0000092E60000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSProd" target */,
+				4E0000092E80000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSDev" target */,
 			);
-			path = Routina;
+			name = macOSConfig;
+			path = "Config/macOS";
 			sourceTree = "<group>";
 		};
-		2A5A74D02D7B92F900E91075 /* RoutinaTests */ = {
+		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			name = "Unit Tests";
 			path = RoutinaTests;
 			sourceTree = "<group>";
 		};
-		6A0000012F00000100000001 /* RoutinaMacApp */ = {
+		6A0000012F00000100000001 /* MacApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			name = MacApp;
 			path = RoutinaMacApp;
+			sourceTree = "<group>";
+		};
+		6A0000022F00000100000001 /* SharedCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharedCore;
+			sourceTree = "<group>";
+		};
+		6A0000032F00000100000001 /* AppResources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AppResources;
+			sourceTree = "<group>";
+		};
+		6A0000042F00000100000001 /* Modules */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Modules;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -143,9 +161,12 @@
 		2A5A74B42D7B92F600E91075 = {
 			isa = PBXGroup;
 			children = (
-				2A5A74BF2D7B92F600E91075 /* Routina */,
-				6A0000012F00000100000001 /* RoutinaMacApp */,
-				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
+				6A0000012F00000100000001 /* MacApp */,
+				6A0000022F00000100000001 /* SharedCore */,
+				6A0000032F00000100000001 /* AppResources */,
+				2A5A74BF2D7B92F600E91075 /* macOSConfig */,
+				6A0000042F00000100000001 /* Modules */,
+				2A5A74D02D7B92F900E91075 /* Unit Tests */,
 				2A4B56A92D8DB46700760BCA /* Frameworks */,
 				2A5A74BE2D7B92F600E91075 /* Products */,
 			);
@@ -155,14 +176,14 @@
 			isa = PBXGroup;
 			children = (
 				2A5A74BD2D7B92F600E91075 /* Routina.app */,
-				3D1000102E70000100000001 /* RoutinaDev.app */,
+				3D1000102E70000100000001 /* RoutinaiOSDev.app */,
 				2C0000022E60000100000001 /* Routina.app */,
-				4E0000022E80000100000001 /* RoutinaMacDev.app */,
+				4E0000022E80000100000001 /* RoutinaMacOSDev.app */,
 				5F1000072E90000100000001 /* RoutinaWatchApp.app */,
 				5F1000082E90000100000001 /* RoutinaWatchExtension.appex */,
-				2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */,
-				2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */,
-				6B1000112F10000100000001 /* RoutinaMacTests.xctest */,
+				2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */,
+				2A5A74D72D7B92F900E91075 /* RoutinaiOSUITests.xctest */,
+				6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -170,9 +191,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2C0000012E60000100000001 /* RoutinaMacProd */ = {
+		2C0000012E60000100000001 /* RoutinaMacOSProd */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2C0000062E60000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacProd" */;
+			buildConfigurationList = 2C0000062E60000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacOSProd" */;
 			buildPhases = (
 				2C0000052E60000100000001 /* Sources */,
 				2C0000032E60000100000001 /* Frameworks */,
@@ -183,10 +204,12 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74BF2D7B92F600E91075 /* Routina */,
-				6A0000012F00000100000001 /* RoutinaMacApp */,
+				2A5A74BF2D7B92F600E91075 /* macOSConfig */,
+				6A0000012F00000100000001 /* MacApp */,
+				6A0000022F00000100000001 /* SharedCore */,
+				6A0000032F00000100000001 /* AppResources */,
 			);
-			name = RoutinaMacProd;
+			name = RoutinaMacOSProd;
 			packageProductDependencies = (
 				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
 				2B1001012E5F000100000001 /* Dependencies */,
@@ -199,9 +222,9 @@
 			productReference = 2C0000022E60000100000001 /* Routina.app */;
 			productType = "com.apple.product-type.application";
 		};
-		4E0000012E80000100000001 /* RoutinaMacDev */ = {
+		4E0000012E80000100000001 /* RoutinaMacOSDev */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacDev" */;
+			buildConfigurationList = 4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacOSDev" */;
 			buildPhases = (
 				4E0000052E80000100000001 /* Sources */,
 				4E0000032E80000100000001 /* Frameworks */,
@@ -212,10 +235,12 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74BF2D7B92F600E91075 /* Routina */,
-				6A0000012F00000100000001 /* RoutinaMacApp */,
+				2A5A74BF2D7B92F600E91075 /* macOSConfig */,
+				6A0000012F00000100000001 /* MacApp */,
+				6A0000022F00000100000001 /* SharedCore */,
+				6A0000032F00000100000001 /* AppResources */,
 			);
-			name = RoutinaMacDev;
+			name = RoutinaMacOSDev;
 			packageProductDependencies = (
 				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
 				2B1001012E5F000100000001 /* Dependencies */,
@@ -224,13 +249,13 @@
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
 				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
-			productName = RoutinaMacDev;
-			productReference = 4E0000022E80000100000001 /* RoutinaMacDev.app */;
+			productName = RoutinaMacOSDev;
+			productReference = 4E0000022E80000100000001 /* RoutinaMacOSDev.app */;
 			productType = "com.apple.product-type.application";
 		};
-		6B1000132F10000100000001 /* RoutinaMacTests */ = {
+		6B1000132F10000100000001 /* RoutinaMacOSTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6B1000192F10000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacTests" */;
+			buildConfigurationList = 6B1000192F10000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacOSTests" */;
 			buildPhases = (
 				6B1000152F10000100000001 /* Sources */,
 				6B1000122F10000100000001 /* Frameworks */,
@@ -242,9 +267,9 @@
 				6B1000162F10000100000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
+				2A5A74D02D7B92F900E91075 /* Unit Tests */,
 			);
-			name = RoutinaMacTests;
+			name = RoutinaMacOSTests;
 			packageProductDependencies = (
 				2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */,
 				2B1001042E5F000100000001 /* Dependencies */,
@@ -254,8 +279,8 @@
 				2B1001102E5F000100000001 /* PerceptionCore */,
 				7A2200022F20000100000001 /* RoutinaAppSupport */,
 			);
-			productName = RoutinaMacTests;
-			productReference = 6B1000112F10000100000001 /* RoutinaMacTests.xctest */;
+			productName = RoutinaMacOSTests;
+			productReference = 6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -302,9 +327,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2C0000012E60000100000001 /* RoutinaMacProd */,
-				4E0000012E80000100000001 /* RoutinaMacDev */,
-				6B1000132F10000100000001 /* RoutinaMacTests */,
+				2C0000012E60000100000001 /* RoutinaMacOSProd */,
+				4E0000012E80000100000001 /* RoutinaMacOSDev */,
+				6B1000132F10000100000001 /* RoutinaMacOSTests */,
 			);
 		};
 /* End PBXProject section */
@@ -360,7 +385,7 @@
 /* Begin PBXTargetDependency section */
 		6B1000162F10000100000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 4E0000012E80000100000001 /* RoutinaMacDev */;
+			target = 4E0000012E80000100000001 /* RoutinaMacOSDev */;
 			targetProxy = 6B1000102F10000100000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -495,11 +520,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaMacProd.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSProd.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -533,11 +558,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaMacProd.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSProd.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -571,11 +596,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaMacDev.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSDev.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -590,7 +615,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
-				PRODUCT_MODULE_NAME = RoutinaMacDev;
+				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = NO;
@@ -608,11 +633,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaMacDev.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSDev.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -627,7 +652,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
-				PRODUCT_MODULE_NAME = RoutinaMacDev;
+				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = NO;
@@ -656,7 +681,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.RoutinaMacTests;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.RoutinaMacOSTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
@@ -665,7 +690,7 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 6;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoutinaMacDev.app/Contents/MacOS/RoutinaMacDev";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoutinaMacOSDev.app/Contents/MacOS/RoutinaMacOSDev";
 			};
 			name = Debug;
 		};
@@ -684,7 +709,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.RoutinaMacTests;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.RoutinaMacOSTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
@@ -693,7 +718,7 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 6;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoutinaMacDev.app/Contents/MacOS/RoutinaMacDev";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoutinaMacOSDev.app/Contents/MacOS/RoutinaMacOSDev";
 			};
 			name = Release;
 		};
@@ -709,7 +734,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2C0000062E60000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacProd" */ = {
+		2C0000062E60000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacOSProd" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2C0000072E60000100000001 /* Debug */,
@@ -718,7 +743,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacDev" */ = {
+		4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacOSDev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4E0000072E80000100000001 /* Debug */,
@@ -727,7 +752,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6B1000192F10000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacTests" */ = {
+		6B1000192F10000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacOSTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6B1000172F10000100000001 /* Debug */,

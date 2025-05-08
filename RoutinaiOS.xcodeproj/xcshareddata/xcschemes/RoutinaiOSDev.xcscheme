@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "3D1000402E70000100000001"
-               BuildableName = "RoutinaDev.app"
-               BlueprintName = "RoutinaDev"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BuildableName = "RoutinaiOSDev.app"
+               BlueprintName = "RoutinaiOSDev"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74CC2D7B92F900E91075"
-               BuildableName = "RoutinaTests.xctest"
-               BlueprintName = "RoutinaTests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BuildableName = "RoutinaiOSTests.xctest"
+               BlueprintName = "RoutinaiOSTests"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3D1000402E70000100000001"
-            BuildableName = "RoutinaDev.app"
-            BlueprintName = "RoutinaDev"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            BuildableName = "RoutinaiOSDev.app"
+            BlueprintName = "RoutinaiOSDev"
+            ReferencedContainer = "container:RoutinaiOS.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -57,9 +57,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74CC2D7B92F900E91075"
-               BuildableName = "RoutinaTests.xctest"
-               BlueprintName = "RoutinaTests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BuildableName = "RoutinaiOSTests.xctest"
+               BlueprintName = "RoutinaiOSTests"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -79,9 +79,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3D1000402E70000100000001"
-            BuildableName = "RoutinaDev.app"
-            BlueprintName = "RoutinaDev"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            BuildableName = "RoutinaiOSDev.app"
+            BlueprintName = "RoutinaiOSDev"
+            ReferencedContainer = "container:RoutinaiOS.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -96,9 +96,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3D1000402E70000100000001"
-            BuildableName = "RoutinaDev.app"
-            BlueprintName = "RoutinaDev"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            BuildableName = "RoutinaiOSDev.app"
+            BlueprintName = "RoutinaiOSDev"
+            ReferencedContainer = "container:RoutinaiOS.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

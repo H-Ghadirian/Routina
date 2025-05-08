@@ -36,7 +36,7 @@
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 2A5A74BC2D7B92F600E91075;
-			remoteInfo = RoutinaProd;
+			remoteInfo = RoutinaiOSProd;
 		};
 		5F1000032E90000100000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -81,39 +81,39 @@
 
 /* Begin PBXFileReference section */
 		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74D72D7B92F900E91075 /* RoutinaiOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C0000022E60000100000001 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		3D1000102E70000100000001 /* RoutinaDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4E0000022E80000100000001 /* RoutinaMacDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D1000102E70000100000001 /* RoutinaiOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaiOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E0000022E80000100000001 /* RoutinaMacOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F1000072E90000100000001 /* RoutinaWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F1000082E90000100000001 /* RoutinaWatchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWatchExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		6B1000112F10000100000001 /* RoutinaMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaMacOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2AF327682E3DA5400003D53E /* Exceptions for "Routina" folder in "RoutinaProd" target */ = {
+		2AF327682E3DA5400003D53E /* Exceptions for "Config" folder in "RoutinaiOSProd" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
+			target = 2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */;
 		};
-		3D1000202E70000100000001 /* Exceptions for "Routina" folder in "RoutinaDev" target */ = {
+		3D1000202E70000100000001 /* Exceptions for "Config" folder in "RoutinaiOSDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 3D1000402E70000100000001 /* RoutinaDev */;
+			target = 3D1000402E70000100000001 /* RoutinaiOSDev */;
 		};
-		5F1000272E90000100000001 /* Exceptions for "RoutinaWatchApp" folder in "RoutinaWatchApp" target */ = {
+		5F1000272E90000100000001 /* Exceptions for "Watch App" folder in "RoutinaWatchApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 5F1000132E90000100000001 /* RoutinaWatchApp */;
 		};
-		5F1000282E90000100000001 /* Exceptions for "RoutinaWatchExtension" folder in "RoutinaWatchExtension" target */ = {
+		5F1000282E90000100000001 /* Exceptions for "Watch Extension" folder in "RoutinaWatchExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -123,44 +123,65 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2A5A74BF2D7B92F600E91075 /* Routina */ = {
+		2A5A74BF2D7B92F600E91075 /* iOSConfig */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				2AF327682E3DA5400003D53E /* Exceptions for "Routina" folder in "RoutinaProd" target */,
-				3D1000202E70000100000001 /* Exceptions for "Routina" folder in "RoutinaDev" target */,
+				2AF327682E3DA5400003D53E /* Exceptions for "Config" folder in "RoutinaiOSProd" target */,
+				3D1000202E70000100000001 /* Exceptions for "Config" folder in "RoutinaiOSDev" target */,
 			);
-			path = Routina;
+			name = iOSConfig;
+			path = "Config/iOS";
 			sourceTree = "<group>";
 		};
-		2A5A74D02D7B92F900E91075 /* RoutinaTests */ = {
+		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			name = "Unit Tests";
 			path = RoutinaTests;
 			sourceTree = "<group>";
 		};
-		2A5A74DA2D7B92F900E91075 /* RoutinaUITests */ = {
+		2A5A74DA2D7B92F900E91075 /* UI Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			name = "UI Tests";
 			path = RoutinaUITests;
 			sourceTree = "<group>";
 		};
-		5F1000092E90000100000001 /* RoutinaWatchApp */ = {
+		5F1000092E90000100000001 /* Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				5F1000272E90000100000001 /* Exceptions for "RoutinaWatchApp" folder in "RoutinaWatchApp" target */,
+				5F1000272E90000100000001 /* Exceptions for "Watch App" folder in "RoutinaWatchApp" target */,
 			);
+			name = "Watch App";
 			path = RoutinaWatchApp;
 			sourceTree = "<group>";
 		};
-		5F1000102E90000100000001 /* RoutinaWatchExtension */ = {
+		5F1000102E90000100000001 /* Watch Extension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				5F1000282E90000100000001 /* Exceptions for "RoutinaWatchExtension" folder in "RoutinaWatchExtension" target */,
+				5F1000282E90000100000001 /* Exceptions for "Watch Extension" folder in "RoutinaWatchExtension" target */,
 			);
+			name = "Watch Extension";
 			path = RoutinaWatchExtension;
 			sourceTree = "<group>";
 		};
-		AA0000012F30000100000001 /* iOS */ = {
+		AA0000012F30000100000001 /* iOSApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			name = iOSApp;
 			path = iOS;
+			sourceTree = "<group>";
+		};
+		AA0000022F30000100000001 /* SharedCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharedCore;
+			sourceTree = "<group>";
+		};
+		AA0000032F30000100000001 /* AppResources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AppResources;
+			sourceTree = "<group>";
+		};
+		AA0000042F30000100000001 /* Modules */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Modules;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -240,12 +261,15 @@
 		2A5A74B42D7B92F600E91075 = {
 			isa = PBXGroup;
 			children = (
-				2A5A74BF2D7B92F600E91075 /* Routina */,
-				AA0000012F30000100000001 /* iOS */,
-				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
-				2A5A74DA2D7B92F900E91075 /* RoutinaUITests */,
-				5F1000092E90000100000001 /* RoutinaWatchApp */,
-				5F1000102E90000100000001 /* RoutinaWatchExtension */,
+				AA0000012F30000100000001 /* iOSApp */,
+				AA0000022F30000100000001 /* SharedCore */,
+				AA0000032F30000100000001 /* AppResources */,
+				2A5A74BF2D7B92F600E91075 /* iOSConfig */,
+				AA0000042F30000100000001 /* Modules */,
+				2A5A74D02D7B92F900E91075 /* Unit Tests */,
+				2A5A74DA2D7B92F900E91075 /* UI Tests */,
+				5F1000092E90000100000001 /* Watch App */,
+				5F1000102E90000100000001 /* Watch Extension */,
 				2A4B56A92D8DB46700760BCA /* Frameworks */,
 				2A5A74BE2D7B92F600E91075 /* Products */,
 			);
@@ -255,14 +279,14 @@
 			isa = PBXGroup;
 			children = (
 				2A5A74BD2D7B92F600E91075 /* Routina.app */,
-				3D1000102E70000100000001 /* RoutinaDev.app */,
+				3D1000102E70000100000001 /* RoutinaiOSDev.app */,
 				2C0000022E60000100000001 /* Routina.app */,
-				4E0000022E80000100000001 /* RoutinaMacDev.app */,
+				4E0000022E80000100000001 /* RoutinaMacOSDev.app */,
 				5F1000072E90000100000001 /* RoutinaWatchApp.app */,
 				5F1000082E90000100000001 /* RoutinaWatchExtension.appex */,
-				2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */,
-				2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */,
-				6B1000112F10000100000001 /* RoutinaMacTests.xctest */,
+				2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */,
+				2A5A74D72D7B92F900E91075 /* RoutinaiOSUITests.xctest */,
+				6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -270,9 +294,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2A5A74BC2D7B92F600E91075 /* RoutinaProd */ = {
+		2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaProd" */;
+			buildConfigurationList = 2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaiOSProd" */;
 			buildPhases = (
 				2A5A74B92D7B92F600E91075 /* Sources */,
 				2A5A74BA2D7B92F600E91075 /* Frameworks */,
@@ -285,10 +309,12 @@
 				5F1000192E90000100000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74BF2D7B92F600E91075 /* Routina */,
-				AA0000012F30000100000001 /* iOS */,
+				2A5A74BF2D7B92F600E91075 /* iOSConfig */,
+				AA0000012F30000100000001 /* iOSApp */,
+				AA0000022F30000100000001 /* SharedCore */,
+				AA0000032F30000100000001 /* AppResources */,
 			);
-			name = RoutinaProd;
+			name = RoutinaiOSProd;
 			packageProductDependencies = (
 				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
 				2B1001012E5F000100000001 /* Dependencies */,
@@ -297,13 +323,13 @@
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
 				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
-			productName = RoutinaProd;
+			productName = RoutinaiOSProd;
 			productReference = 2A5A74BD2D7B92F600E91075 /* Routina.app */;
 			productType = "com.apple.product-type.application";
 		};
-		2A5A74CC2D7B92F900E91075 /* RoutinaTests */ = {
+		2A5A74CC2D7B92F900E91075 /* RoutinaiOSTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaTests" */;
+			buildConfigurationList = 2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaiOSTests" */;
 			buildPhases = (
 				2A5A74C92D7B92F900E91075 /* Sources */,
 				2A5A74CA2D7B92F900E91075 /* Frameworks */,
@@ -314,9 +340,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
+				2A5A74D02D7B92F900E91075 /* Unit Tests */,
 			);
-			name = RoutinaTests;
+			name = RoutinaiOSTests;
 			packageProductDependencies = (
 				2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */,
 				2B1001042E5F000100000001 /* Dependencies */,
@@ -327,12 +353,12 @@
 				7A2200022F20000100000001 /* RoutinaAppSupport */,
 			);
 			productName = CallMomTests;
-			productReference = 2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */;
+			productReference = 2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		2A5A74D62D7B92F900E91075 /* RoutinaUITests */ = {
+		2A5A74D62D7B92F900E91075 /* RoutinaiOSUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaUITests" */;
+			buildConfigurationList = 2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaiOSUITests" */;
 			buildPhases = (
 				2A5A74D32D7B92F900E91075 /* Sources */,
 				2A5A74D42D7B92F900E91075 /* Frameworks */,
@@ -344,16 +370,16 @@
 				2A5A74D92D7B92F900E91075 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74DA2D7B92F900E91075 /* RoutinaUITests */,
+				2A5A74DA2D7B92F900E91075 /* UI Tests */,
 			);
-			name = RoutinaUITests;
+			name = RoutinaiOSUITests;
 			productName = CallMomUITests;
-			productReference = 2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */;
+			productReference = 2A5A74D72D7B92F900E91075 /* RoutinaiOSUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		3D1000402E70000100000001 /* RoutinaDev */ = {
+		3D1000402E70000100000001 /* RoutinaiOSDev */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3D1000432E70000100000001 /* Build configuration list for PBXNativeTarget "RoutinaDev" */;
+			buildConfigurationList = 3D1000432E70000100000001 /* Build configuration list for PBXNativeTarget "RoutinaiOSDev" */;
 			buildPhases = (
 				3D1000412E70000100000001 /* Sources */,
 				3D1000302E70000100000001 /* Frameworks */,
@@ -364,10 +390,12 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74BF2D7B92F600E91075 /* Routina */,
-				AA0000012F30000100000001 /* iOS */,
+				2A5A74BF2D7B92F600E91075 /* iOSConfig */,
+				AA0000012F30000100000001 /* iOSApp */,
+				AA0000022F30000100000001 /* SharedCore */,
+				AA0000032F30000100000001 /* AppResources */,
 			);
-			name = RoutinaDev;
+			name = RoutinaiOSDev;
 			packageProductDependencies = (
 				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
 				2B1001012E5F000100000001 /* Dependencies */,
@@ -376,8 +404,8 @@
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
 				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
-			productName = RoutinaDev;
-			productReference = 3D1000102E70000100000001 /* RoutinaDev.app */;
+			productName = RoutinaiOSDev;
+			productReference = 3D1000102E70000100000001 /* RoutinaiOSDev.app */;
 			productType = "com.apple.product-type.application";
 		};
 		5F1000132E90000100000001 /* RoutinaWatchApp */ = {
@@ -395,7 +423,7 @@
 				5F1000202E90000100000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				5F1000092E90000100000001 /* RoutinaWatchApp */,
+				5F1000092E90000100000001 /* Watch App */,
 			);
 			name = RoutinaWatchApp;
 			packageProductDependencies = (
@@ -417,7 +445,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				5F1000102E90000100000001 /* RoutinaWatchExtension */,
+				5F1000102E90000100000001 /* Watch Extension */,
 			);
 			name = RoutinaWatchExtension;
 			productName = RoutinaWatchExtension;
@@ -478,12 +506,12 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2A5A74BC2D7B92F600E91075 /* RoutinaProd */,
-				3D1000402E70000100000001 /* RoutinaDev */,
+				2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */,
+				3D1000402E70000100000001 /* RoutinaiOSDev */,
 				5F1000132E90000100000001 /* RoutinaWatchApp */,
 				5F1000142E90000100000001 /* RoutinaWatchExtension */,
-				2A5A74CC2D7B92F900E91075 /* RoutinaTests */,
-				2A5A74D62D7B92F900E91075 /* RoutinaUITests */,
+				2A5A74CC2D7B92F900E91075 /* RoutinaiOSTests */,
+				2A5A74D62D7B92F900E91075 /* RoutinaiOSUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -581,7 +609,7 @@
 /* Begin PBXTargetDependency section */
 		2A5A74D92D7B92F900E91075 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
+			target = 2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */;
 			targetProxy = 2A5A74D82D7B92F900E91075 /* PBXContainerItemProxy */;
 		};
 		5F1000192E90000100000001 /* PBXTargetDependency */ = {
@@ -728,14 +756,14 @@
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconYellow AppIconTeal AppIconLightBlue AppIconDarkBlue";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/Routina.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Routina/Info.plist;
+				INFOPLIST_FILE = Config/iOS/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Routina;
 				INFOPLIST_KEY_CFBundleName = Routina;
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
@@ -772,14 +800,14 @@
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconYellow AppIconTeal AppIconLightBlue AppIconDarkBlue";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/Routina.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Routina/Info.plist;
+				INFOPLIST_FILE = Config/iOS/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Routina;
 				INFOPLIST_KEY_CFBundleName = Routina;
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
@@ -877,7 +905,7 @@
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TESTING_FRAMEWORK_MODULE_ALIAS_FLAGS = "";
-				TEST_TARGET_NAME = RoutinaProd;
+				TEST_TARGET_NAME = RoutinaiOSProd;
 			};
 			name = Debug;
 		};
@@ -902,7 +930,7 @@
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TESTING_FRAMEWORK_MODULE_ALIAS_FLAGS = "";
-				TEST_TARGET_NAME = RoutinaProd;
+				TEST_TARGET_NAME = RoutinaiOSProd;
 			};
 			name = Release;
 		};
@@ -912,14 +940,14 @@
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconYellow AppIconTeal AppIconLightBlue AppIconDarkBlue";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaDev.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOSDev.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Routina/Info.plist;
+				INFOPLIST_FILE = Config/iOS/Info.plist;
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
 				INFOPLIST_KEY_RoutinaSandboxDataMode = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -955,14 +983,14 @@
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconYellow AppIconTeal AppIconLightBlue AppIconDarkBlue";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaDev.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOSDev.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Routina/Info.plist;
+				INFOPLIST_FILE = Config/iOS/Info.plist;
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
 				INFOPLIST_KEY_RoutinaSandboxDataMode = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1118,7 +1146,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaProd" */ = {
+		2A5A74E12D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaiOSProd" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74E22D7B92F900E91075 /* Debug */,
@@ -1127,7 +1155,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaTests" */ = {
+		2A5A74E42D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaiOSTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74E52D7B92F900E91075 /* Debug */,
@@ -1136,7 +1164,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaUITests" */ = {
+		2A5A74E72D7B92F900E91075 /* Build configuration list for PBXNativeTarget "RoutinaiOSUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74E82D7B92F900E91075 /* Debug */,
@@ -1145,7 +1173,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3D1000432E70000100000001 /* Build configuration list for PBXNativeTarget "RoutinaDev" */ = {
+		3D1000432E70000100000001 /* Build configuration list for PBXNativeTarget "RoutinaiOSDev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3D1000442E70000100000001 /* Debug */,

@@ -16,8 +16,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74BC2D7B92F600E91075"
                BuildableName = "Routina.app"
-               BlueprintName = "RoutinaProd"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BlueprintName = "RoutinaiOSProd"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74CC2D7B92F900E91075"
-               BuildableName = "RoutinaTests.xctest"
-               BlueprintName = "RoutinaTests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BuildableName = "RoutinaiOSTests.xctest"
+               BlueprintName = "RoutinaiOSTests"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -43,9 +43,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74D62D7B92F900E91075"
-               BuildableName = "RoutinaUITests.xctest"
-               BlueprintName = "RoutinaUITests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BuildableName = "RoutinaiOSUITests.xctest"
+               BlueprintName = "RoutinaiOSUITests"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -60,8 +60,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2A5A74BC2D7B92F600E91075"
             BuildableName = "Routina.app"
-            BlueprintName = "RoutinaProd"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            BlueprintName = "RoutinaiOSProd"
+            ReferencedContainer = "container:RoutinaiOS.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -71,9 +71,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74CC2D7B92F900E91075"
-               BuildableName = "RoutinaTests.xctest"
-               BlueprintName = "RoutinaTests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BuildableName = "RoutinaiOSTests.xctest"
+               BlueprintName = "RoutinaiOSTests"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -82,9 +82,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A5A74D62D7B92F900E91075"
-               BuildableName = "RoutinaUITests.xctest"
-               BlueprintName = "RoutinaUITests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               BuildableName = "RoutinaiOSUITests.xctest"
+               BlueprintName = "RoutinaiOSUITests"
+               ReferencedContainer = "container:RoutinaiOS.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -105,8 +105,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2A5A74BC2D7B92F600E91075"
             BuildableName = "Routina.app"
-            BlueprintName = "RoutinaProd"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            BlueprintName = "RoutinaiOSProd"
+            ReferencedContainer = "container:RoutinaiOS.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -122,8 +122,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2A5A74BC2D7B92F600E91075"
             BuildableName = "Routina.app"
-            BlueprintName = "RoutinaProd"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            BlueprintName = "RoutinaiOSProd"
+            ReferencedContainer = "container:RoutinaiOS.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
