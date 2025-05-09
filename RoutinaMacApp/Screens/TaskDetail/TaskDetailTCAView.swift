@@ -2,8 +2,8 @@ import SwiftUI
 import ComposableArchitecture
 import UniformTypeIdentifiers
 
-struct RoutineDetailTCAView: View {
-    let store: StoreOf<RoutineDetailFeature>
+struct TaskDetailTCAView: View {
+    let store: StoreOf<TaskDetailFeature>
     @Environment(\.dismiss) private var dismiss
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
@@ -22,7 +22,7 @@ struct RoutineDetailTCAView: View {
                 if !isInlineEditPresented {
                     ToolbarItem(placement: .principal) {
                         Text(routineEmoji(for: store.task))
-                            .font(RoutineDetailPlatformStyle.principalTitleFont)
+                            .font(TaskDetailPlatformStyle.principalTitleFont)
                     }
                 }
                 if isInlineEditPresented {
@@ -32,7 +32,7 @@ struct RoutineDetailTCAView: View {
                             Text("Edit Task")
                                 .lineLimit(1)
                         }
-                        .font(RoutineDetailPlatformStyle.principalTitleFont)
+                        .font(TaskDetailPlatformStyle.principalTitleFont)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(
@@ -124,7 +124,7 @@ struct RoutineDetailTCAView: View {
     @ViewBuilder
     private var detailBody: some View {
         if isInlineEditPresented {
-            RoutineDetailEditRoutineContent(
+            TaskDetailEditRoutineContent(
                 store: store,
                 isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
                 emojiOptions: emojiOptions
@@ -133,7 +133,7 @@ struct RoutineDetailTCAView: View {
         } else if store.task.isOneOffTask {
             todoDetailContent
         } else {
-            routineDetailContent
+            taskDetailContent
         }
     }
 
@@ -158,12 +158,12 @@ struct RoutineDetailTCAView: View {
                     taskExtrasSection
                 }
             }
-            .padding(RoutineDetailPlatformStyle.detailContentPadding)
+            .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private var routineDetailContent: some View {
+    private var taskDetailContent: some View {
         let _ = store.taskRefreshID
         let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
             isPaused: store.task.isPaused,
@@ -187,7 +187,7 @@ struct RoutineDetailTCAView: View {
                     taskExtrasSection
                 }
             }
-            .padding(RoutineDetailPlatformStyle.detailContentPadding)
+            .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -273,7 +273,7 @@ struct RoutineDetailTCAView: View {
         GeometryReader { proxy in
             Color.clear
                 .preference(
-                    key: RoutineDetailOverviewHeightsPreferenceKey.self,
+                    key: TaskDetailOverviewHeightsPreferenceKey.self,
                     value: [id: proxy.size.height]
                 )
         }
@@ -294,11 +294,11 @@ struct RoutineDetailTCAView: View {
             statusActionSection(pauseArchivePresentation: pauseArchivePresentation)
         }
         .padding(16)
-        .background(RoutineDetailPlatformStyle.summaryCardBackground)
+        .background(TaskDetailPlatformStyle.summaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
         )
     }
 
@@ -639,7 +639,7 @@ struct RoutineDetailTCAView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
         )
     }
 
@@ -938,7 +938,7 @@ struct RoutineDetailTCAView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
         )
     }
 
@@ -985,7 +985,7 @@ struct RoutineDetailTCAView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
         )
     }
 
@@ -1013,7 +1013,7 @@ struct RoutineDetailTCAView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
         )
     }
 
@@ -1049,7 +1049,7 @@ struct RoutineDetailTCAView: View {
         !store.task.isChecklistDriven && isSelectedDateDone
     }
 
-    private var completionButtonAction: RoutineDetailFeature.Action {
+    private var completionButtonAction: TaskDetailFeature.Action {
         canUndoSelectedDate ? .undoSelectedDateCompletion : .markAsDone
     }
 
@@ -1207,7 +1207,7 @@ struct RoutineDetailTCAView: View {
     }
 
     private var routineLogsBackground: Color {
-        RoutineDetailPlatformStyle.routineLogsBackground
+        TaskDetailPlatformStyle.routineLogsBackground
     }
 
     private func calendarGrid(
@@ -1450,20 +1450,20 @@ struct RoutineDetailTCAView: View {
             if task.isChecklistInProgress { return .orange }
             if isDoneToday { return .green }
             if overdueDays > 0 { return .red }
-            if daysUntilDue(task) == 0 { return RoutineDetailPlatformStyle.dueTodayTitleColor }
+            if daysUntilDue(task) == 0 { return TaskDetailPlatformStyle.dueTodayTitleColor }
             if isOrangeUrgency(task) { return .orange }
             return .primary
         }
         if task.isChecklistDriven {
             if overdueDays > 0 { return .red }
-            if daysUntilDue(task) == 0 { return RoutineDetailPlatformStyle.dueTodayTitleColor }
+            if daysUntilDue(task) == 0 { return TaskDetailPlatformStyle.dueTodayTitleColor }
             if isDoneToday { return .green }
             return .primary
         }
         if task.isInProgress { return .orange }
         if isDoneToday { return .green }
         if overdueDays > 0 { return .red }
-        if daysUntilDue(task) == 0 { return RoutineDetailPlatformStyle.dueTodayTitleColor }
+        if daysUntilDue(task) == 0 { return TaskDetailPlatformStyle.dueTodayTitleColor }
         if isOrangeUrgency(task) { return .orange }
         return .primary
     }
@@ -1607,7 +1607,7 @@ struct RoutineDetailTCAView: View {
         checklistItems: [RoutineChecklistItem],
         checklistItemDraftTitle: String,
         checklistItemDraftInterval: Int,
-        frequency: RoutineDetailFeature.EditFrequency,
+        frequency: TaskDetailFeature.EditFrequency,
         frequencyValue: Int,
         recurrenceKind: RoutineRecurrenceRule.Kind,
         recurrenceTimeOfDay: RoutineTimeOfDay,
@@ -1857,11 +1857,11 @@ private extension Calendar {
 
 private extension View {
     func detailCardStyle(cornerRadius: CGFloat = 12) -> some View {
-        background(RoutineDetailPlatformStyle.summaryCardBackground)
+        background(TaskDetailPlatformStyle.summaryCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                    .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
             )
     }
 }
@@ -1883,7 +1883,7 @@ struct RoutineAttachmentFileDocument: FileDocument {
     }
 }
 
-struct RoutineDetailOverviewHeightsPreferenceKey: PreferenceKey {
+struct TaskDetailOverviewHeightsPreferenceKey: PreferenceKey {
     nonisolated(unsafe) static var defaultValue: [String: CGFloat] = [:]
 
     static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {

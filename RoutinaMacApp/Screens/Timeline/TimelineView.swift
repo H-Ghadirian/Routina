@@ -241,11 +241,11 @@ struct TimelineView: View {
     @ViewBuilder
     private func timelineDetailDestination(taskID: UUID) -> some View {
         if let task = tasks.first(where: { $0.id == taskID }) {
-            RoutineDetailTCAView(
+            TaskDetailTCAView(
                 store: Store(
-                    initialState: makeRoutineDetailState(for: task)
+                    initialState: makeTaskDetailState(for: task)
                 ) {
-                    RoutineDetailFeature()
+                    TaskDetailFeature()
                 }
             )
         } else {
@@ -258,14 +258,14 @@ struct TimelineView: View {
         }
     }
 
-    private func makeRoutineDetailState(for task: RoutineTask) -> RoutineDetailFeature.State {
+    private func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {
         let detailTask = task.detachedCopy()
         let now = Date()
         let defaultSelectedDate = detailTask.isCompletedOneOff
             ? calendar.startOfDay(for: detailTask.lastDone ?? now)
             : calendar.startOfDay(for: now)
 
-        return RoutineDetailFeature.State(
+        return TaskDetailFeature.State(
             task: detailTask,
             logs: [],
             selectedDate: defaultSelectedDate,

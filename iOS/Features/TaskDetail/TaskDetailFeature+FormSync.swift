@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Foundation
 
-extension RoutineDetailFeature {
+extension TaskDetailFeature {
     func syncEditFormFromTask(_ state: inout State) {
         state.editRoutineName = state.task.name ?? ""
         state.editRoutineEmoji = state.task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"

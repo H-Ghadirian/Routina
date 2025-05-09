@@ -142,7 +142,7 @@ struct HomeFeatureTests {
 
         await store.send(.setSelectedTask(task.id)) {
             $0.selectedTaskID = task.id
-            $0.routineDetailState = RoutineDetailFeature.State(
+            $0.taskDetailState = TaskDetailFeature.State(
                 task: task,
                 logs: [],
                 selectedDate: calendar.startOfDay(for: now),
@@ -155,18 +155,18 @@ struct HomeFeatureTests {
 #endif
         }
 
-        let detailState = try #require(store.state.routineDetailState)
+        let detailState = try #require(store.state.taskDetailState)
         #expect(store.state.selectedTaskID == task.id)
         #expect(detailState.task.id == task.id)
         #expect(detailState.selectedDate == calendar.startOfDay(for: now))
         #expect(detailState.daysSinceLastRoutine == 2)
         #expect(!detailState.isDoneToday)
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([log]))) {
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([log]))) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: task.id,
@@ -179,12 +179,12 @@ struct HomeFeatureTests {
                     isDoneToday: false
                 )
             ]
-            $0.routineDetailState?.logs = [log]
-            $0.routineDetailState?.daysSinceLastRoutine = 2
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = false
+            $0.taskDetailState?.logs = [log]
+            $0.taskDetailState?.daysSinceLastRoutine = 2
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = false
         }
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
     }
 
     @Test
@@ -211,7 +211,7 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 routineTasks: [task.detachedCopy()],
                 selectedTaskID: task.id,
-                routineDetailState: RoutineDetailFeature.State(
+                taskDetailState: TaskDetailFeature.State(
                     task: detailTask,
                     logs: [log],
                     selectedDate: calendar.startOfDay(for: now),
@@ -238,13 +238,13 @@ struct HomeFeatureTests {
         await store.send(.setSelectedTask(task.id))
 
         #expect(store.state.selectedTaskID == task.id)
-        #expect(store.state.routineDetailState?.logs == [log])
-        #expect(store.state.routineDetailState?.task.id == detailTask.id)
+        #expect(store.state.taskDetailState?.logs == [log])
+        #expect(store.state.taskDetailState?.task.id == detailTask.id)
         #expect(store.state.selectedTaskReloadGuard?.taskID == task.id)
     }
 
     @Test
-    func tasksLoadedSuccessfully_refreshesLogsForOpenRoutineDetail() async throws {
+    func tasksLoadedSuccessfully_refreshesLogsForOpenTaskDetail() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-16T10:00:00Z")
         let lastDone = makeDate("2026-03-14T10:00:00Z")
@@ -262,7 +262,7 @@ struct HomeFeatureTests {
         let log = makeLog(in: context, task: task, timestamp: lastDone)
         try context.save()
 
-        let initialDetailState = RoutineDetailFeature.State(
+        let initialDetailState = TaskDetailFeature.State(
             task: task,
             logs: [],
             selectedDate: calendar.startOfDay(for: now),
@@ -275,7 +275,7 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 routineTasks: [task],
                 selectedTaskID: task.id,
-                routineDetailState: initialDetailState
+                taskDetailState: initialDetailState
             )
         ) {
             HomeFeature()
@@ -300,20 +300,20 @@ struct HomeFeatureTests {
                     doneCount: 1
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.taskRefreshID = 1
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([log]))) {
-            $0.routineDetailState?.logs = [log]
-            $0.routineDetailState?.daysSinceLastRoutine = 2
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = false
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([log]))) {
+            $0.taskDetailState?.logs = [log]
+            $0.taskDetailState?.daysSinceLastRoutine = 2
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = false
         }
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
     }
 
     @Test
@@ -343,7 +343,7 @@ struct HomeFeatureTests {
         let store = TestStore(
             initialState: HomeFeature.State(
                 selectedTaskID: taskID,
-                routineDetailState: RoutineDetailFeature.State(
+                taskDetailState: TaskDetailFeature.State(
                     task: sourceTask,
                     selectedDate: calendar.startOfDay(for: now)
                 )
@@ -375,31 +375,31 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = false
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = false
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         _ = sourceTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
         _ = sourceTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
 
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
         #expect(store.state.routineTasks[0].lastDone == nil)
-        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 0)
-        #expect(store.state.routineDetailState?.task.lastDone == nil)
-        #expect(store.state.routineDetailState?.isDoneToday == false)
+        #expect(store.state.taskDetailState?.task.completedChecklistItemCount == 0)
+        #expect(store.state.taskDetailState?.task.lastDone == nil)
+        #expect(store.state.taskDetailState?.isDoneToday == false)
     }
 
     @Test
-    func routineDetailLogsLoaded_syncsSelectedTaskBackIntoHomeState() async {
+    func taskDetailLogsLoaded_syncsSelectedTaskBackIntoHomeState() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-24T10:00:00Z")
         let taskID = UUID()
@@ -437,7 +437,7 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 routineTasks: [sidebarTask],
                 selectedTaskID: taskID,
-                routineDetailState: RoutineDetailFeature.State(task: detailTask)
+                taskDetailState: TaskDetailFeature.State(task: detailTask)
             )
         ) {
             HomeFeature()
@@ -448,7 +448,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.routineDetail(.logsLoaded([]))) {
+        await store.send(.taskDetail(.logsLoaded([]))) {
             $0.routineTasks[0] = detailTask
             $0.routineDisplays = [
                 makeDisplay(
@@ -465,10 +465,10 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Excel"
                 )
             ]
-            $0.routineDetailState?.logs = []
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = false
+            $0.taskDetailState?.logs = []
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = false
         }
     }
 
@@ -511,7 +511,7 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 routineTasks: [selectedDetailTask],
                 selectedTaskID: taskID,
-                routineDetailState: RoutineDetailFeature.State(task: selectedDetailTask),
+                taskDetailState: TaskDetailFeature.State(task: selectedDetailTask),
                 selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
                     taskID: taskID,
                     completedChecklistItemIDsStorage: selectedDetailTask.completedChecklistItemIDsStorage,
@@ -544,24 +544,24 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Excel"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.taskRefreshID = 1
         }
-        await store.receive(.routineDetail(.onAppear)) {
-            $0.routineDetailState?.selectedDate = calendar.startOfDay(for: now)
+        await store.receive(.taskDetail(.onAppear)) {
+            $0.taskDetailState?.selectedDate = calendar.startOfDay(for: now)
         }
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 1)
-        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 1)
+        #expect(store.state.taskDetailState?.task.completedChecklistItemCount == 1)
         #expect(store.state.selectedTaskReloadGuard?.taskID == taskID)
     }
 
     @Test
-    func routineDetailToggleChecklistItemCompletion_tracksReloadGuardForSharedSelectedTask() async throws {
+    func taskDetailToggleChecklistItemCompletion_tracksReloadGuardForSharedSelectedTask() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-24T10:00:00Z")
         let completedItemID = UUID()
@@ -586,7 +586,7 @@ struct HomeFeatureTests {
         let initialState = HomeFeature.State(
             routineTasks: [sharedTask],
             selectedTaskID: taskID,
-            routineDetailState: RoutineDetailFeature.State(
+            taskDetailState: TaskDetailFeature.State(
                 task: sharedTask,
                 selectedDate: calendar.startOfDay(for: now)
             )
@@ -601,12 +601,12 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.routineDetail(.toggleChecklistItemCompletion(completedItemID))) {
+        await store.send(.taskDetail(.toggleChecklistItemCompletion(completedItemID))) {
             $0.pendingSelectedChecklistReloadGuardTaskID = taskID
-            $0.routineDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.taskRefreshID = 1
         }
 
-        await store.receive(.routineDetail(.logsLoaded([]))) {
+        await store.receive(.taskDetail(.logsLoaded([]))) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -622,10 +622,10 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Excel"
                 )
             ]
-            $0.routineDetailState?.logs = []
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = false
+            $0.taskDetailState?.logs = []
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = false
             $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
                 taskID: taskID,
                 completedChecklistItemIDsStorage: sharedTask.completedChecklistItemIDsStorage,
@@ -678,7 +678,7 @@ struct HomeFeatureTests {
         let initialState = HomeFeature.State(
             routineTasks: [selectedDetailTask],
             selectedTaskID: taskID,
-            routineDetailState: RoutineDetailFeature.State(
+            taskDetailState: TaskDetailFeature.State(
                 task: selectedDetailTask,
                 selectedDate: calendar.startOfDay(for: now),
                 daysSinceLastRoutine: 0,
@@ -719,22 +719,22 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = true
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = true
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
-        #expect(store.state.routineDetailState?.task.lastDone == now)
-        #expect(store.state.routineDetailState?.isDoneToday == true)
+        #expect(store.state.taskDetailState?.task.lastDone == now)
+        #expect(store.state.taskDetailState?.isDoneToday == true)
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
     }
 
@@ -767,7 +767,7 @@ struct HomeFeatureTests {
         let initialState = HomeFeature.State(
             routineTasks: [completedTask],
             selectedTaskID: taskID,
-            routineDetailState: RoutineDetailFeature.State(
+            taskDetailState: TaskDetailFeature.State(
                 task: completedTask,
                 selectedDate: calendar.startOfDay(for: now),
                 daysSinceLastRoutine: 0,
@@ -808,18 +808,18 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = true
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = true
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
     }
@@ -867,7 +867,7 @@ struct HomeFeatureTests {
         let initialState = HomeFeature.State(
             routineTasks: [completedTask],
             selectedTaskID: taskID,
-            routineDetailState: RoutineDetailFeature.State(
+            taskDetailState: TaskDetailFeature.State(
                 task: completedTask,
                 selectedDate: calendar.startOfDay(for: now),
                 daysSinceLastRoutine: 0,
@@ -908,18 +908,18 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = true
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = true
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
@@ -938,23 +938,23 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 2
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = true
+            $0.taskDetailState?.taskRefreshID = 2
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = true
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
-        #expect(store.state.routineDetailState?.task.lastDone == now)
-        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 0)
+        #expect(store.state.taskDetailState?.task.lastDone == now)
+        #expect(store.state.taskDetailState?.task.completedChecklistItemCount == 0)
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
     }
 
@@ -1018,7 +1018,7 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 routineTasks: [completedTask],
                 selectedTaskID: taskID,
-                routineDetailState: RoutineDetailFeature.State(
+                taskDetailState: TaskDetailFeature.State(
                     task: completedTask,
                     selectedDate: calendar.startOfDay(for: now),
                     daysSinceLastRoutine: 0,
@@ -1058,18 +1058,18 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = true
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = true
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
@@ -1088,29 +1088,29 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 2
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = true
+            $0.taskDetailState?.taskRefreshID = 2
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = true
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
-        #expect(store.state.routineDetailState?.task.lastDone == now)
-        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 0)
-        #expect(store.state.routineDetailState?.isDoneToday == true)
+        #expect(store.state.taskDetailState?.task.lastDone == now)
+        #expect(store.state.taskDetailState?.task.completedChecklistItemCount == 0)
+        #expect(store.state.taskDetailState?.isDoneToday == true)
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
     }
 
     @Test
-    func routineDetailUndoSelectedDateCompletion_tracksReloadGuardForChecklistRoutine() async throws {
+    func taskDetailUndoSelectedDateCompletion_tracksReloadGuardForChecklistRoutine() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-24T10:00:00Z")
         let firstItemID = UUID()
@@ -1138,7 +1138,7 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 routineTasks: [sharedTask],
                 selectedTaskID: taskID,
-                routineDetailState: RoutineDetailFeature.State(
+                taskDetailState: TaskDetailFeature.State(
                     task: sharedTask,
                     logs: [todayLog],
                     selectedDate: calendar.startOfDay(for: now),
@@ -1156,18 +1156,18 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.routineDetail(.undoSelectedDateCompletion)) {
+        await store.send(.taskDetail(.undoSelectedDateCompletion)) {
             $0.pendingSelectedChecklistReloadGuardTaskID = taskID
-            $0.routineDetailState?.taskRefreshID = 1
-            $0.routineDetailState?.task.lastDone = nil
-            $0.routineDetailState?.task.scheduleAnchor = nil
-            $0.routineDetailState?.logs = []
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = false
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.task.lastDone = nil
+            $0.taskDetailState?.task.scheduleAnchor = nil
+            $0.taskDetailState?.logs = []
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = false
         }
 
-        await store.receive(.routineDetail(.logsLoaded([]))) {
+        await store.receive(.taskDetail(.logsLoaded([]))) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1237,7 +1237,7 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 routineTasks: [selectedDetailTask],
                 selectedTaskID: taskID,
-                routineDetailState: RoutineDetailFeature.State(
+                taskDetailState: TaskDetailFeature.State(
                     task: selectedDetailTask,
                     selectedDate: calendar.startOfDay(for: now),
                     daysSinceLastRoutine: 0,
@@ -1277,22 +1277,22 @@ struct HomeFeatureTests {
                     nextPendingChecklistItemTitle: "Sciforma"
                 )
             ]
-            $0.routineDetailState?.taskRefreshID = 1
-            $0.routineDetailState?.daysSinceLastRoutine = 0
-            $0.routineDetailState?.overdueDays = 0
-            $0.routineDetailState?.isDoneToday = false
+            $0.taskDetailState?.taskRefreshID = 1
+            $0.taskDetailState?.daysSinceLastRoutine = 0
+            $0.taskDetailState?.overdueDays = 0
+            $0.taskDetailState?.isDoneToday = false
         }
 
-        await store.receive(.routineDetail(.onAppear))
-        await store.receive(.routineDetail(.availablePlacesLoaded([])))
-        await store.receive(.routineDetail(.availableTagsLoaded([])))
-        await store.receive(.routineDetail(.availableRelationshipTasksLoaded([])))
-        await store.receive(.routineDetail(.logsLoaded([])))
-        await store.receive(.routineDetail(.attachmentsLoaded([])))
+        await store.receive(.taskDetail(.onAppear))
+        await store.receive(.taskDetail(.availablePlacesLoaded([])))
+        await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
+        await store.receive(.taskDetail(.logsLoaded([])))
+        await store.receive(.taskDetail(.attachmentsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == nil)
-        #expect(store.state.routineDetailState?.task.lastDone == nil)
-        #expect(store.state.routineDetailState?.isDoneToday == false)
+        #expect(store.state.taskDetailState?.task.lastDone == nil)
+        #expect(store.state.taskDetailState?.isDoneToday == false)
         #expect(store.state.selectedTaskReloadGuard?.lastDone == nil)
     }
 
@@ -1305,7 +1305,7 @@ struct HomeFeatureTests {
         let initialState = HomeFeature.State(
             routineTasks: [removedTask],
             selectedTaskID: removedTask.id,
-            routineDetailState: RoutineDetailFeature.State(task: removedTask)
+            taskDetailState: TaskDetailFeature.State(task: removedTask)
         )
 
         let store = TestStore(initialState: initialState) {
@@ -1330,12 +1330,12 @@ struct HomeFeatureTests {
                 )
             ]
             $0.selectedTaskID = nil
-            $0.routineDetailState = nil
+            $0.taskDetailState = nil
         }
 
         #expect(store.state.routineTasks == [survivingTask])
         #expect(store.state.selectedTaskID == nil)
-        #expect(store.state.routineDetailState == nil)
+        #expect(store.state.taskDetailState == nil)
     }
 
     @Test
@@ -2778,7 +2778,7 @@ struct HomeFeatureTests {
         await store.send(.taskListModeChanged(.todos)) {
             $0.taskListMode = .todos
             $0.selectedTaskID = nil
-            $0.routineDetailState = nil
+            $0.taskDetailState = nil
         }
     }
 
@@ -2809,7 +2809,7 @@ struct HomeFeatureTests {
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines
             $0.selectedTaskID = nil
-            $0.routineDetailState = nil
+            $0.taskDetailState = nil
         }
     }
 

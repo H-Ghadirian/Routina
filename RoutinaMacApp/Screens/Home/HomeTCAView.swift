@@ -93,10 +93,10 @@ struct HomeTCAView: View {
     @ViewBuilder
     var detailContent: some View {
         if let detailStore = self.store.scope(
-            state: \.routineDetailState,
-            action: \.routineDetail
+            state: \.taskDetailState,
+            action: \.taskDetail
         ) {
-            RoutineDetailTCAView(store: detailStore)
+            TaskDetailTCAView(store: detailStore)
         } else {
             ContentUnavailableView(
                 "Select a task",
@@ -381,13 +381,13 @@ struct HomeTCAView: View {
     }
 
     @ViewBuilder
-    func routineDetailDestination(taskID: UUID) -> some View {
+    func taskDetailDestination(taskID: UUID) -> some View {
         if store.selectedTaskID == taskID,
            let detailStore = self.store.scope(
-               state: \.routineDetailState,
-               action: \.routineDetail
+               state: \.taskDetailState,
+               action: \.taskDetail
            ) {
-            RoutineDetailTCAView(store: detailStore)
+            TaskDetailTCAView(store: detailStore)
         } else if store.routineTasks.contains(where: { $0.id == taskID }) {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

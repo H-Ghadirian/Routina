@@ -116,12 +116,12 @@ extension HomeFeature {
         state.archivedRoutineDisplays = archived
     }
 
-    func makeRoutineDetailState(for task: RoutineTask) -> RoutineDetailFeature.State {
+    func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {
         let detailTask = task.detachedCopy()
         let defaultSelectedDate = detailTask.isCompletedOneOff
             ? calendar.startOfDay(for: detailTask.lastDone ?? now)
             : calendar.startOfDay(for: now)
-        return RoutineDetailFeature.State(
+        return TaskDetailFeature.State(
             task: detailTask,
             logs: [],
             selectedDate: defaultSelectedDate,

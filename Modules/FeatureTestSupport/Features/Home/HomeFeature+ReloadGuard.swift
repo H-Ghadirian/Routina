@@ -52,7 +52,7 @@ extension HomeFeature {
         in state: inout State
     ) {
         guard let selectedTaskID = state.selectedTaskID,
-              let detailState = state.routineDetailState,
+              let detailState = state.taskDetailState,
               detailState.task.id == selectedTaskID,
               detailState.task.isChecklistCompletionRoutine,
               !detailState.task.isPaused,
@@ -75,7 +75,7 @@ extension HomeFeature {
 
     func trackSelectedChecklistUndoReloadGuardIfNeeded(in state: inout State) {
         guard let selectedTaskID = state.selectedTaskID,
-              let detailState = state.routineDetailState,
+              let detailState = state.taskDetailState,
               detailState.task.id == selectedTaskID,
               detailState.task.isChecklistCompletionRoutine else {
             state.pendingSelectedChecklistReloadGuardTaskID = nil
@@ -87,7 +87,7 @@ extension HomeFeature {
 
     func reconcileSelectedDetailTask(_ incomingTasks: [RoutineTask], state: inout State) -> [RoutineTask] {
         guard let selectedTaskID = state.selectedTaskID,
-              let detailTask = state.routineDetailState?.task,
+              let detailTask = state.taskDetailState?.task,
               detailTask.id == selectedTaskID else {
             state.selectedTaskReloadGuard = nil
             return incomingTasks

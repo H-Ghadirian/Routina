@@ -1,8 +1,8 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct RoutineDetailEditRoutineContent: View {
-    let store: StoreOf<RoutineDetailFeature>
+struct TaskDetailEditRoutineContent: View {
+    let store: StoreOf<TaskDetailFeature>
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
 
@@ -205,7 +205,7 @@ struct RoutineDetailEditRoutineContent: View {
     private var frequencyUnitBinding: Binding<TaskFormFrequencyUnit> {
         Binding(
             get: { TaskFormFrequencyUnit(rawValue: store.editFrequency.rawValue) ?? .day },
-            set: { store.send(.editFrequencyChanged(RoutineDetailFeature.EditFrequency(rawValue: $0.rawValue) ?? .day)) }
+            set: { store.send(.editFrequencyChanged(TaskDetailFeature.EditFrequency(rawValue: $0.rawValue) ?? .day)) }
         )
     }
 }

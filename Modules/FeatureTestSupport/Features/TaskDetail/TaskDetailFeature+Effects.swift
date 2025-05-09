@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 
-extension RoutineDetailFeature {
+extension TaskDetailFeature {
     func handleOnAppear(taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             do {

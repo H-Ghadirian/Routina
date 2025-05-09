@@ -109,7 +109,7 @@ struct HomeFeature {
         )
         var hideUnavailableRoutines: Bool = false
         var addRoutineState: AddRoutineFeature.State?
-        var routineDetailState: RoutineDetailFeature.State?
+        var taskDetailState: TaskDetailFeature.State?
         var selectedTaskReloadGuard: SelectedTaskReloadGuard?
         var pendingSelectedChecklistReloadGuardTaskID: UUID?
         var pendingDeleteTaskIDs: [UUID] = []
@@ -185,7 +185,7 @@ struct HomeFeature {
         case selectedSettingsSectionChanged(SettingsMacSection?)
 
         case addRoutineSheet(AddRoutineFeature.Action)
-        case routineDetail(RoutineDetailFeature.Action)
+        case taskDetail(TaskDetailFeature.Action)
         case routineSavedSuccessfully(RoutineTask)
         case routineSaveFailed
     }
@@ -244,9 +244,9 @@ struct HomeFeature {
                 }
                 state.doneStats = doneStats
                 refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+                syncSelectedTaskDetailState(&state)
                 validateFilterState(&state)
-                let detailRefreshEffect = refreshSelectedRoutineDetailEffect(for: state)
+                let detailRefreshEffect = refreshSelectedTaskDetailEffect(for: state)
                 guard state.addRoutineState != nil else { return detailRefreshEffect }
                 return .merge(
                     detailRefreshEffect,
@@ -273,7 +273,7 @@ struct HomeFeature {
             case let .setSelectedTask(taskID):
                 if let taskID,
                    state.selectedTaskID == taskID,
-                   state.routineDetailState?.task.id == taskID {
+                   state.taskDetailState?.task.id == taskID {
                     state.isMacFilterDetailPresented = false
                     return .none
                 }
@@ -287,15 +287,15 @@ struct HomeFeature {
                 }
                 guard let taskID,
                       let task = state.routineTasks.first(where: { $0.id == taskID }) else {
-                    state.routineDetailState = nil
+                    state.taskDetailState = nil
                     state.selectedTaskReloadGuard = nil
                     state.pendingSelectedChecklistReloadGuardTaskID = nil
                     return .none
                 }
-                state.routineDetailState = makeRoutineDetailState(for: task)
+                state.taskDetailState = makeTaskDetailState(for: task)
                 state.selectedTaskReloadGuard = nil
                 state.pendingSelectedChecklistReloadGuardTaskID = nil
-                return refreshSelectedRoutineDetailEffect(for: state)
+                return refreshSelectedTaskDetailEffect(for: state)
 
             case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
@@ -355,7 +355,7 @@ struct HomeFeature {
                     let keepSelection = mode == .todos ? task.isOneOffTask : !task.isOneOffTask
                     if !keepSelection {
                         state.selectedTaskID = nil
-                        state.routineDetailState = nil
+                        state.taskDetailState = nil
                     }
                 }
                 if state.selectedTaskID == nil {
@@ -459,7 +459,7 @@ struct HomeFeature {
                     }
                     state.macSidebarSelection = nil
                     state.selectedTaskID = nil
-                    state.routineDetailState = nil
+                    state.taskDetailState = nil
                     state.selectedTaskReloadGuard = nil
                     state.pendingSelectedChecklistReloadGuardTaskID = nil
                     if mode == .settings && state.selectedSettingsSection == nil {
@@ -570,7 +570,7 @@ struct HomeFeature {
                         state.doneStats.countsByTaskID[id, default: 0] += 1
                     }
                     refreshDisplays(&state)
-                    syncSelectedRoutineDetailState(&state)
+                    syncSelectedTaskDetailState(&state)
 
                     return .run { @MainActor [id, completionDate, currentCalendar] _ in
                         do {
@@ -603,7 +603,7 @@ struct HomeFeature {
                     state.doneStats.countsByTaskID[id, default: 0] += 1
                 }
                 refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+                syncSelectedTaskDetailState(&state)
 
                 return .run { @MainActor [id, completionDate, currentCalendar] _ in
                     do {
@@ -647,7 +647,7 @@ struct HomeFeature {
                 }
                 state.routineTasks[index].pausedAt = pauseDate
                 refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+                syncSelectedTaskDetailState(&state)
 
                 return .run { @MainActor [id, pauseDate] _ in
                     do {
@@ -677,7 +677,7 @@ struct HomeFeature {
                 )
                 state.routineTasks[index].pausedAt = nil
                 refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+                syncSelectedTaskDetailState(&state)
 
                 return .run { @MainActor [id, resumeDate, currentCalendar = self.calendar] _ in
                     do {
@@ -706,7 +706,7 @@ struct HomeFeature {
 
                 state.routineTasks[index].pinnedAt = pinDate
                 refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+                syncSelectedTaskDetailState(&state)
 
                 return .run { @MainActor [id, pinDate] _ in
                     do {
@@ -726,7 +726,7 @@ struct HomeFeature {
 
                 state.routineTasks[index].pinnedAt = nil
                 refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+                syncSelectedTaskDetailState(&state)
 
                 return .run { @MainActor [id] _ in
                     do {
@@ -795,7 +795,7 @@ struct HomeFeature {
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task.detachedCopy())
                 refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+                syncSelectedTaskDetailState(&state)
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -809,38 +809,38 @@ struct HomeFeature {
                 print("Failed to save routine.")
                 return .none
 
-            case .routineDetail(.routineDeleted):
+            case .taskDetail(.routineDeleted):
                 state.selectedTaskID = nil
-                state.routineDetailState = nil
+                state.taskDetailState = nil
                 state.selectedTaskReloadGuard = nil
                 state.pendingSelectedChecklistReloadGuardTaskID = nil
                 return .none
 
-            case let .routineDetail(.toggleChecklistItemCompletion(itemID)):
+            case let .taskDetail(.toggleChecklistItemCompletion(itemID)):
                 trackSelectedChecklistReloadGuardIfNeeded(for: itemID, in: &state)
                 return .none
 
-            case let .routineDetail(.markChecklistItemCompleted(itemID)):
+            case let .taskDetail(.markChecklistItemCompleted(itemID)):
                 trackSelectedChecklistReloadGuardIfNeeded(for: itemID, in: &state)
                 return .none
 
-            case .routineDetail(.undoSelectedDateCompletion):
+            case .taskDetail(.undoSelectedDateCompletion):
                 trackSelectedChecklistUndoReloadGuardIfNeeded(in: &state)
                 return .none
 
-            case .routineDetail(.logsLoaded):
-                syncSelectedTaskFromRoutineDetail(&state)
+            case .taskDetail(.logsLoaded):
+                syncSelectedTaskFromTaskDetail(&state)
                 return .none
 
-            case let .routineDetail(.openLinkedTask(taskID)):
+            case let .taskDetail(.openLinkedTask(taskID)):
                 guard let task = state.routineTasks.first(where: { $0.id == taskID }) else { return .none }
                 state.selectedTaskID = taskID
-                state.routineDetailState = makeRoutineDetailState(for: task)
+                state.taskDetailState = makeTaskDetailState(for: task)
                 state.selectedTaskReloadGuard = nil
                 state.pendingSelectedChecklistReloadGuardTaskID = nil
-                return refreshSelectedRoutineDetailEffect(for: state)
+                return refreshSelectedTaskDetailEffect(for: state)
 
-            case .routineDetail:
+            case .taskDetail:
                 return .none
 
             case .addRoutineSheet:
@@ -855,8 +855,8 @@ struct HomeFeature {
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }
-        .ifLet(\.routineDetailState, action: \.routineDetail) {
-            RoutineDetailFeature()
+        .ifLet(\.taskDetailState, action: \.taskDetail) {
+            TaskDetailFeature()
         }
     }
 
@@ -897,7 +897,7 @@ struct HomeFeature {
         }
         state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
         refreshDisplays(&state)
-        syncSelectedRoutineDetailState(&state)
+        syncSelectedTaskDetailState(&state)
 
         let deleteEffect: Effect<Action> = .run { @MainActor [uniqueIDs] _ in
             let context = self.modelContext()
@@ -972,9 +972,9 @@ struct HomeFeature {
         .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
     }
 
-    private func syncSelectedRoutineDetailState(_ state: inout State) {
+    private func syncSelectedTaskDetailState(_ state: inout State) {
         guard let selectedTaskID = state.selectedTaskID else {
-            state.routineDetailState = nil
+            state.taskDetailState = nil
             state.selectedTaskReloadGuard = nil
             state.pendingSelectedChecklistReloadGuardTaskID = nil
             return
@@ -982,13 +982,13 @@ struct HomeFeature {
 
         guard let task = state.routineTasks.first(where: { $0.id == selectedTaskID }) else {
             state.selectedTaskID = nil
-            state.routineDetailState = nil
+            state.taskDetailState = nil
             state.selectedTaskReloadGuard = nil
             state.pendingSelectedChecklistReloadGuardTaskID = nil
             return
         }
 
-        if var detailState = state.routineDetailState {
+        if var detailState = state.taskDetailState {
             detailState.task = task.detachedCopy()
             detailState.taskRefreshID &+= 1
             detailState.daysSinceLastRoutine = RoutineDateMath.elapsedDaysSinceLastDone(
@@ -999,19 +999,19 @@ struct HomeFeature {
                 ? 0
                 : RoutineDateMath.overdueDays(for: detailState.task, referenceDate: now, calendar: calendar)
             detailState.isDoneToday = detailState.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
-            state.routineDetailState = detailState
+            state.taskDetailState = detailState
         } else {
-            state.routineDetailState = makeRoutineDetailState(for: task)
+            state.taskDetailState = makeTaskDetailState(for: task)
         }
     }
 
-    private func refreshSelectedRoutineDetailEffect(for state: State) -> Effect<Action> {
-        guard state.routineDetailState != nil else { return .none }
-        return .send(.routineDetail(.onAppear))
+    private func refreshSelectedTaskDetailEffect(for state: State) -> Effect<Action> {
+        guard state.taskDetailState != nil else { return .none }
+        return .send(.taskDetail(.onAppear))
     }
 
-    private func syncSelectedTaskFromRoutineDetail(_ state: inout State) {
-        guard let detailTask = state.routineDetailState?.task else { return }
+    private func syncSelectedTaskFromTaskDetail(_ state: inout State) {
+        guard let detailTask = state.taskDetailState?.task else { return }
         guard let index = state.routineTasks.firstIndex(where: { $0.id == detailTask.id }) else { return }
         let syncedTask = detailTask.detachedCopy()
         state.routineTasks[index] = syncedTask

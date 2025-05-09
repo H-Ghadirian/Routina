@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 import UserNotifications
 
-struct RoutineDetailFeature: Reducer {
+struct TaskDetailFeature: Reducer {
     private enum CancelID {
         case loadContext
     }

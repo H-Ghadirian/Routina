@@ -5,14 +5,14 @@ import UIKit
 extension View {
     func routinaPlatformEditPresentation(
         isPresented: Binding<Bool>,
-        store: StoreOf<RoutineDetailFeature>,
+        store: StoreOf<TaskDetailFeature>,
         isEditEmojiPickerPresented: Binding<Bool>,
         emojiOptions: [String],
         canSaveCurrentEdit: Bool
     ) -> some View {
         sheet(isPresented: isPresented) {
             NavigationStack {
-                RoutineDetailEditRoutineContent(
+                TaskDetailEditRoutineContent(
                     store: store,
                     isEditEmojiPickerPresented: isEditEmojiPickerPresented,
                     emojiOptions: emojiOptions
@@ -37,11 +37,11 @@ extension View {
     }
 
     func routinaPlatformCalendarCardStyle() -> some View {
-        background(RoutineDetailPlatformStyle.calendarCardBackground)
+        background(TaskDetailPlatformStyle.calendarCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                    .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
             )
     }
 
@@ -54,7 +54,7 @@ extension View {
     }
 }
 
-extension RoutineDetailTCAView {
+extension TaskDetailTCAView {
     var platformIsInlineEditPresented: Bool { false }
 
     func platformDetailOverviewSection(

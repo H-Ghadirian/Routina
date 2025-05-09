@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 
-extension RoutineDetailFeature {
+extension TaskDetailFeature {
     func matrixPriority(
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency

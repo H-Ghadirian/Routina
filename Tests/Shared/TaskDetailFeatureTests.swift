@@ -6,14 +6,14 @@ import Testing
 
 @Suite(.serialized)
 @MainActor
-struct RoutineDetailFeatureTests {
+struct TaskDetailFeatureTests {
     @Test
     func setDeleteConfirmation_togglesAlertPresentation() async {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
@@ -37,7 +37,7 @@ struct RoutineDetailFeatureTests {
         try context.save()
 
         let canceledIDs = LockIsolated<[String]>([])
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [],
             daysSinceLastRoutine: 0,
@@ -53,7 +53,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
@@ -85,7 +85,7 @@ struct RoutineDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Hydrate", interval: 1, lastDone: nil, emoji: "💧")
 
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [],
             daysSinceLastRoutine: 0,
@@ -101,7 +101,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
@@ -131,8 +131,8 @@ struct RoutineDetailFeatureTests {
         try context.save()
 
         let canceledIDs = LockIsolated<[String]>([])
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -174,8 +174,8 @@ struct RoutineDetailFeatureTests {
         try context.save()
 
         let scheduledIDs = LockIsolated<[String]>([])
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -211,8 +211,8 @@ struct RoutineDetailFeatureTests {
             tags: ["Mobility", "Evening"]
         )
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
@@ -253,10 +253,10 @@ struct RoutineDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let initialState = RoutineDetailFeature.State(task: task, editRoutineTags: ["Focus"], editTagDraft: "night, focus")
+        let initialState = TaskDetailFeature.State(task: task, editRoutineTags: ["Focus"], editTagDraft: "night, focus")
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
@@ -274,8 +274,8 @@ struct RoutineDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
@@ -292,13 +292,13 @@ struct RoutineDetailFeatureTests {
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 editRoutineTags: ["Focus"],
                 availableTags: ["Focus", "Night"]
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
@@ -326,13 +326,13 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 editRoutineTags: ["Morning", "Focus"],
                 availableTags: ["Focus", "Morning"]
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
@@ -359,13 +359,13 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 editRoutineTags: ["Morning", "Deep Work"],
                 availableTags: ["Deep Work", "Morning"]
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
@@ -384,7 +384,7 @@ struct RoutineDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
 
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [],
             daysSinceLastRoutine: 0,
@@ -398,7 +398,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
@@ -418,7 +418,7 @@ struct RoutineDetailFeatureTests {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Original", interval: 10, lastDone: nil, emoji: "✨")
 
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [],
             daysSinceLastRoutine: 0,
@@ -432,7 +432,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
@@ -455,7 +455,7 @@ struct RoutineDetailFeatureTests {
         let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚", tags: ["Focus"])
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 logs: [],
                 daysSinceLastRoutine: 0,
@@ -470,7 +470,7 @@ struct RoutineDetailFeatureTests {
                 editFrequencyValue: 2
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -516,7 +516,7 @@ struct RoutineDetailFeatureTests {
         let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚")
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 logs: [],
                 isEditSheetPresented: true,
@@ -527,7 +527,7 @@ struct RoutineDetailFeatureTests {
                 editFrequencyValue: 1
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -570,7 +570,7 @@ struct RoutineDetailFeatureTests {
         let editableTask = makeTask(in: context, name: "Workout", interval: 3, lastDone: nil, emoji: "💪")
         try context.save()
 
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: editableTask,
             logs: [],
             daysSinceLastRoutine: 0,
@@ -584,7 +584,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
@@ -619,7 +619,7 @@ struct RoutineDetailFeatureTests {
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 isEditSheetPresented: true,
                 editRoutineName: "Review Tasks",
@@ -633,7 +633,7 @@ struct RoutineDetailFeatureTests {
                 editFrequencyValue: 3
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -705,7 +705,7 @@ struct RoutineDetailFeatureTests {
         ]
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 isEditSheetPresented: true,
                 editRoutineName: "Laundry",
@@ -717,7 +717,7 @@ struct RoutineDetailFeatureTests {
                 editFrequencyValue: 1
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -775,7 +775,7 @@ struct RoutineDetailFeatureTests {
         ]
 
         let store = TestStore(
-            initialState: RoutineDetailFeature.State(
+            initialState: TaskDetailFeature.State(
                 task: task,
                 isEditSheetPresented: true,
                 editRoutineName: "Pantry",
@@ -787,7 +787,7 @@ struct RoutineDetailFeatureTests {
                 editFrequencyValue: 5
             )
         ) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -839,8 +839,8 @@ struct RoutineDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -872,8 +872,8 @@ struct RoutineDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -894,8 +894,8 @@ struct RoutineDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -928,8 +928,8 @@ struct RoutineDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -991,8 +991,8 @@ struct RoutineDetailFeatureTests {
 
         let canceledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -1056,8 +1056,8 @@ struct RoutineDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
             $0.modelContext = { context }
@@ -1133,8 +1133,8 @@ struct RoutineDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
             $0.modelContext = { context }
@@ -1215,8 +1215,8 @@ struct RoutineDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
             $0.modelContext = { context }
@@ -1272,8 +1272,8 @@ struct RoutineDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
 
-        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
-            RoutineDetailFeature()
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -1316,7 +1316,7 @@ struct RoutineDetailFeatureTests {
         let scheduledIDs = LockIsolated<[String]>([])
         let selectedDayStart = calendar.startOfDay(for: selectedDate)
 
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [RoutineLog(timestamp: todayLog, taskID: task.id)],
             selectedDate: selectedDayStart,
@@ -1326,7 +1326,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -1390,7 +1390,7 @@ struct RoutineDetailFeatureTests {
         let scheduledIDs = LockIsolated<[String]>([])
         let selectedDayStart = calendar.startOfDay(for: selectedDate)
 
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [existingLog],
             selectedDate: selectedDayStart,
@@ -1400,7 +1400,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -1445,7 +1445,7 @@ struct RoutineDetailFeatureTests {
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
         let scheduledIDs = LockIsolated<[String]>([])
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [todayLog],
             selectedDate: calendar.startOfDay(for: now),
@@ -1455,7 +1455,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar
@@ -1500,7 +1500,7 @@ struct RoutineDetailFeatureTests {
 
         let scheduledIDs = LockIsolated<[String]>([])
         let selectedDayStart = calendar.startOfDay(for: olderCompletion)
-        let initialState = RoutineDetailFeature.State(
+        let initialState = TaskDetailFeature.State(
             task: task,
             logs: [todayLog, olderLog],
             selectedDate: selectedDayStart,
@@ -1510,7 +1510,7 @@ struct RoutineDetailFeatureTests {
         )
 
         let store = TestStore(initialState: initialState) {
-            RoutineDetailFeature()
+            TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.calendar = calendar

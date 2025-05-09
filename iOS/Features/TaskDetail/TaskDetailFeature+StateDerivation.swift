@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Foundation
 
-extension RoutineDetailFeature {
+extension TaskDetailFeature {
     func updateDerivedState(_ state: inout State) {
         let nowStart = calendar.startOfDay(for: now)
 

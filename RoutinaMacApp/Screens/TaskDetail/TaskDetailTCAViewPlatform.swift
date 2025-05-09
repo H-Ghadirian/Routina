@@ -5,7 +5,7 @@ import SwiftUI
 extension View {
     func routinaPlatformEditPresentation(
         isPresented: Binding<Bool>,
-        store: StoreOf<RoutineDetailFeature>,
+        store: StoreOf<TaskDetailFeature>,
         isEditEmojiPickerPresented: Binding<Bool>,
         emojiOptions: [String],
         canSaveCurrentEdit: Bool
@@ -31,7 +31,7 @@ extension View {
     }
 }
 
-extension RoutineDetailTCAView {
+extension TaskDetailTCAView {
     var platformIsInlineEditPresented: Bool { store.isEditSheetPresented }
 
     func platformOpenAttachment(url: URL) {
@@ -50,11 +50,11 @@ extension RoutineDetailTCAView {
                         minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                         alignment: .topLeading
                     )
-                    .background(RoutineDetailPlatformStyle.calendarCardBackground)
+                    .background(TaskDetailPlatformStyle.calendarCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                            .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
                     )
                     .layoutPriority(1)
             }
@@ -67,14 +67,14 @@ extension RoutineDetailTCAView {
                     minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                     alignment: .topLeading
                 )
-                .background(RoutineDetailPlatformStyle.summaryCardBackground)
+                .background(TaskDetailPlatformStyle.summaryCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                        .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
                 )
         }
-        .onPreferenceChange(RoutineDetailOverviewHeightsPreferenceKey.self) { heights in
+        .onPreferenceChange(TaskDetailOverviewHeightsPreferenceKey.self) { heights in
             let maxHeight = heights.values.max() ?? 0
             guard abs(maxHeight - syncedMacOverviewHeight) > 0.5 else { return }
             syncedMacOverviewHeight = maxHeight

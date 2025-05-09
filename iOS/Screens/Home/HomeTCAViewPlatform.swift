@@ -424,7 +424,7 @@ extension HomeTCAView {
                     handleCompactHeaderScroll(oldOffset: oldOffset, newOffset: newOffset)
                 }
                 .navigationDestination(for: UUID.self) { taskID in
-                    routineDetailDestination(taskID: taskID)
+                    taskDetailDestination(taskID: taskID)
                 }
             }
         }

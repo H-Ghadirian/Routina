@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-enum RoutineDetailPlatformStyle {
+enum TaskDetailPlatformStyle {
     static let principalTitleFont: Font = .title3.weight(.semibold)
     static let detailContentPadding: CGFloat = 20
     static let calendarCardBackground = Color(nsColor: .controlBackgroundColor)

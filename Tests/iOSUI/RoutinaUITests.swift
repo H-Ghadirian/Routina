@@ -15,7 +15,7 @@ struct RoutinaUITests {
 
     @MainActor
     @Test
-    func homeRowTapOpensRoutineDetail() {
+    func homeRowTapOpensTaskDetail() {
         let app = makeApp()
         app.launch()
         #expect(app.wait(for: .runningForeground, timeout: 10))

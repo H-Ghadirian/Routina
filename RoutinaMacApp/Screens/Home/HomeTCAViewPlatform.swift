@@ -681,7 +681,7 @@ extension HomeTCAView {
             }
             .listStyle(.sidebar)
             .navigationDestination(for: UUID.self) { taskID in
-                routineDetailDestination(taskID: taskID)
+                taskDetailDestination(taskID: taskID)
             }
         }
     }
@@ -823,7 +823,7 @@ extension HomeTCAView {
     @ViewBuilder
     private var macSidebarContent: some View {
         Group {
-            if isMacAddTaskMode || store.routineDetailState?.isEditSheetPresented == true {
+            if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
             } else if isMacRoutinesMode && store.routineTasks.isEmpty {
                 VStack(spacing: 0) {
@@ -949,7 +949,7 @@ extension HomeTCAView {
     }
 
     private var macEditFormSections: [String] {
-        guard let detail = store.routineDetailState else { return [] }
+        guard let detail = store.taskDetailState else { return [] }
         let scheduleMode = detail.editScheduleMode
         var sections = ["Basic", "Tags", "Relationships", "Task Type", "Place", "Importance & Urgency"]
         if scheduleMode != .derivedFromChecklist && scheduleMode != .oneOff {
@@ -1531,10 +1531,10 @@ struct MacDetailContainerView<FilterView: View>: View {
                     section: selectedSettingsSection
                 )
             } else if let detailStore = store.scope(
-                state: \.routineDetailState,
-                action: \.routineDetail
+                state: \.taskDetailState,
+                action: \.taskDetail
             ) {
-                RoutineDetailTCAView(store: detailStore)
+                TaskDetailTCAView(store: detailStore)
             } else {
                 ContentUnavailableView(
                     isTimelinePresented
