@@ -1,7 +1,11 @@
 import Foundation
 import ComposableArchitecture
 import SwiftData
-@testable @preconcurrency import RoutinaAppSupport
+#if os(macOS)
+@testable @preconcurrency import RoutinaMacOSDev
+#else
+@testable @preconcurrency import Routina
+#endif
 
 @MainActor
 private var retainedInMemoryControllers: [PersistenceController] = []

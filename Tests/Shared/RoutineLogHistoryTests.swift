@@ -1,7 +1,11 @@
 import Foundation
 import SwiftData
 import Testing
-@testable @preconcurrency import RoutinaAppSupport
+#if os(macOS)
+@testable @preconcurrency import RoutinaMacOSDev
+#else
+@testable @preconcurrency import Routina
+#endif
 
 @MainActor
 struct RoutineLogHistoryTests {

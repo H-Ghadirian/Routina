@@ -1,6 +1,6 @@
 import MapKit
 import Testing
-@testable @preconcurrency import RoutinaAppSupport
+@testable @preconcurrency import Routina
 
 @Suite
 struct PlaceLocationPickerCameraConfigurationTests {

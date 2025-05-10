@@ -3,7 +3,7 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 import Testing
-@testable @preconcurrency import RoutinaAppSupport
+@testable @preconcurrency import Routina
 
 @MainActor
 struct HomeFeatureTests {
@@ -150,9 +150,6 @@ struct HomeFeatureTests {
                 overdueDays: 0,
                 isDoneToday: false
             )
-#if os(macOS)
-            $0.macSidebarSelection = .task(task.id)
-#endif
         }
 
         let detailState = try #require(store.state.taskDetailState)

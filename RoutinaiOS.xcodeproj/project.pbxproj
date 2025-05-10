@@ -27,10 +27,16 @@
 		3D1000062E70000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 		5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5F1000072E90000100000001 /* RoutinaWatchApp.app */; };
 		5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */; };
-		7A2100082F20000100000001 /* RoutinaAppSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200022F20000100000001 /* RoutinaAppSupport */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		1F1000012F30000100000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D1000402E70000100000001;
+			remoteInfo = RoutinaiOSDev;
+		};
 		2A5A74D82D7B92F900E91075 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
@@ -135,8 +141,14 @@
 		};
 		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			name = "Unit Tests";
+			name = "Shared Tests";
 			path = Tests/Shared;
+			sourceTree = "<group>";
+		};
+		1F1000032F30000100000001 /* iOS Tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			name = "iOS Tests";
+			path = Tests/iOS;
 			sourceTree = "<group>";
 		};
 		2A5A74DA2D7B92F900E91075 /* UI Tests */ = {
@@ -210,7 +222,6 @@
 				2B1000062E5F000100000001 /* Perception in Frameworks */,
 				2B1000082E5F000100000001 /* ConcurrencyExtras in Frameworks */,
 				2B1000102E5F000100000001 /* PerceptionCore in Frameworks */,
-				7A2100082F20000100000001 /* RoutinaAppSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,6 +278,7 @@
 				2A5A74BF2D7B92F600E91075 /* iOSConfig */,
 				AA0000042F30000100000001 /* Modules */,
 				2A5A74D02D7B92F900E91075 /* Unit Tests */,
+				1F1000032F30000100000001 /* iOS Tests */,
 				2A5A74DA2D7B92F900E91075 /* UI Tests */,
 				5F1000092E90000100000001 /* Watch App */,
 				5F1000102E90000100000001 /* Watch Extension */,
@@ -338,9 +350,11 @@
 			buildRules = (
 			);
 			dependencies = (
+				1F1000022F30000100000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74D02D7B92F900E91075 /* Unit Tests */,
+				1F1000032F30000100000001 /* iOS Tests */,
 			);
 			name = RoutinaiOSTests;
 			packageProductDependencies = (
@@ -350,7 +364,6 @@
 				2B1001062E5F000100000001 /* Perception */,
 				2B1001082E5F000100000001 /* ConcurrencyExtras */,
 				2B1001102E5F000100000001 /* PerceptionCore */,
-				7A2200022F20000100000001 /* RoutinaAppSupport */,
 			);
 			productName = CallMomTests;
 			productReference = 2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */;
@@ -607,6 +620,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1F1000022F30000100000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D1000402E70000100000001 /* RoutinaiOSDev */;
+			targetProxy = 1F1000012F30000100000001 /* PBXContainerItemProxy */;
+		};
 		2A5A74D92D7B92F900E91075 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */;
@@ -841,6 +859,7 @@
 		2A5A74E52D7B92F900E91075 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
@@ -858,12 +877,14 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoutinaiOSDev.app/RoutinaiOSDev";
 			};
 			name = Debug;
 		};
 		2A5A74E62D7B92F900E91075 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.2;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
@@ -881,6 +902,7 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RoutinaiOSDev.app/RoutinaiOSDev";
 			};
 			name = Release;
 		};
@@ -905,7 +927,7 @@
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TESTING_FRAMEWORK_MODULE_ALIAS_FLAGS = "";
-				TEST_TARGET_NAME = RoutinaiOSProd;
+				TEST_TARGET_NAME = RoutinaiOSDev;
 			};
 			name = Debug;
 		};
@@ -930,7 +952,7 @@
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TESTING_FRAMEWORK_MODULE_ALIAS_FLAGS = "";
-				TEST_TARGET_NAME = RoutinaiOSProd;
+				TEST_TARGET_NAME = RoutinaiOSDev;
 			};
 			name = Release;
 		};
@@ -1312,11 +1334,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
 			productName = PerceptionCore;
-		};
-		7A2200022F20000100000001 /* RoutinaAppSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7A2200012F20000100000001 /* XCLocalSwiftPackageReference "." */;
-			productName = RoutinaAppSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -76,27 +76,6 @@ let package = Package(
             ],
             sources: [
                 "SharedCore/Models",
-                "Modules/FeatureTestSupport/Features/AddRoutine/AddRoutineFeature.swift",
-                "Modules/FeatureTestSupport/Features/App/AppFeature.swift",
-                "Modules/FeatureTestSupport/Features/Home/HomeFeature.swift",
-                "Modules/FeatureTestSupport/Features/Home/HomeFeature+Display.swift",
-                "Modules/FeatureTestSupport/Features/Home/HomeFeature+Deduplication.swift",
-                "Modules/FeatureTestSupport/Features/Home/HomeFeature+ReloadGuard.swift",
-                "Modules/FeatureTestSupport/Features/TaskDetail/TaskDetailFeature.swift",
-                "Modules/FeatureTestSupport/Features/TaskDetail/TaskDetailFeature+FormSync.swift",
-                "Modules/FeatureTestSupport/Features/TaskDetail/TaskDetailFeature+Helpers.swift",
-                "Modules/FeatureTestSupport/Features/TaskDetail/TaskDetailFeature+Effects.swift",
-                "Modules/FeatureTestSupport/Features/TaskDetail/TaskDetailFeature+StateDerivation.swift",
-                "Modules/FeatureTestSupport/Features/TaskDetail/RoutinePauseArchivePresentation.swift",
-                "Modules/FeatureTestSupport/Features/Settings/SettingsFeature.swift",
-                "Modules/FeatureTestSupport/Features/Settings/SettingsFeature+FeatureTestSupport.swift",
-                "Modules/FeatureTestSupport/Features/Settings/SettingsMacSection.swift",
-                "Modules/FeatureTestSupport/Features/Settings/SettingsViewSupport.swift",
-                "Modules/FeatureTestSupport/Utilities/PlaceLocationPickerCameraConfiguration.swift",
-                "Modules/FeatureTestSupport/Utilities/PlatformSupport+FeatureTestSupport.swift",
-                "SharedCore/App/AppEnvironment.swift",
-                "SharedCore/App/RoutinaAppBootstrap.swift",
-                "SharedCore/App/RoutinaAppSceneBootstrap.swift",
                 "SharedCore/Dependencies/AppIconClient.swift",
                 "SharedCore/Dependencies/DependencyValues+.swift",
                 "SharedCore/Dependencies/LocationClient.swift",
@@ -142,14 +121,6 @@ let package = Package(
                 "Commands",
                 "Utilities/MacMenuCleanup.swift",
             ]
-        ),
-        .testTarget(
-            name: "RoutinaTests",
-            dependencies: [
-                "RoutinaAppSupport",
-                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-            ],
-            path: "Tests/Shared"
         ),
     ]
 )

@@ -1,5 +1,5 @@
 import Testing
-@testable @preconcurrency import RoutinaAppSupport
+@testable @preconcurrency import RoutinaMacOSDev
 
 struct RoutinePauseArchivePresentationTests {
     @Test

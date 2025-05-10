@@ -19,7 +19,7 @@ struct StatsView: View {
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
 
-    private struct Metrics {
+    fileprivate struct Metrics {
         let chartPoints: [DoneChartPoint]
         let totalDoneCount: Int
         let activeRoutineCount: Int
@@ -143,6 +143,10 @@ struct StatsView: View {
         )
     }
 
+    private var selectorOutlineOpacity: Double {
+        colorScheme == .dark ? 0.08 : 0.45
+    }
+
     private var highlightBarFill: LinearGradient {
         LinearGradient(
             colors: [
@@ -186,43 +190,48 @@ struct StatsView: View {
         }
     }
 
-    @ViewBuilder
     private var rangeSection: some View {
         HStack(spacing: 10) {
             ForEach(DoneChartRange.allCases) { range in
-                Button {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                        store.send(.selectedRangeChanged(range))
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        Text(range.rawValue)
-                            .font(.subheadline.weight(.semibold))
-
-                        Text(rangeButtonSubtitle(for: range))
-                            .font(.caption2.weight(.medium))
-                            .opacity(selectedRange == range ? 0.9 : 0.7)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .foregroundStyle(selectedRange == range ? Color.white : Color.primary)
-                    .background {
-                        if selectedRange == range {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(selectorActiveFill)
-                                .shadow(color: Color.accentColor.opacity(0.28), radius: 16, y: 8)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
+                rangeButton(for: range)
             }
         }
         .padding(6)
-        .background(selectorBackground, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(selectorBackground)
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
+                .stroke(Color.white, lineWidth: 1)
+                .opacity(selectorOutlineOpacity)
         )
+    }
+
+    private func rangeButton(for range: DoneChartRange) -> some View {
+        let isSelected = selectedRange == range
+
+        return Button {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                _ = store.send(.selectedRangeChanged(range))
+            }
+        } label: {
+            VStack(spacing: 4) {
+                Text(range.rawValue)
+                    .font(.subheadline.weight(.semibold))
+
+                Text(rangeButtonSubtitle(for: range))
+                    .font(.caption2.weight(.medium))
+                    .opacity(isSelected ? 0.9 : 0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .background {
+                rangeButtonBackground(isSelected: isSelected)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private func heroSection(metrics: Metrics) -> some View {
@@ -777,6 +786,15 @@ struct StatsView: View {
 
     private func bestDayCaption(for point: DoneChartPoint) -> String {
         point.date.formatted(.dateTime.month(.abbreviated).day())
+    }
+
+    @ViewBuilder
+    private func rangeButtonBackground(isSelected: Bool) -> some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(selectorActiveFill)
+                .shadow(color: Color.accentColor.opacity(0.28), radius: 16, y: 8)
+        }
     }
 }
 

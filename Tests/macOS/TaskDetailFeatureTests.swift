@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 import Testing
-@testable @preconcurrency import RoutinaAppSupport
+@testable @preconcurrency import RoutinaMacOSDev
 
 @Suite(.serialized)
 @MainActor

@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 import Testing
-@testable @preconcurrency import RoutinaAppSupport
+@testable @preconcurrency import Routina
 
 @MainActor
 struct TimelineFeatureTests {
@@ -406,6 +406,10 @@ struct SettingsFeatureDependencyTests {
             horizontalAccuracy: 20,
             timestamp: makeDate("2026-03-20T10:00:00Z")
         )
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "cloudKitSyncDiagnostics.summary")
+        defaults.removeObject(forKey: "cloudKitSyncDiagnostics.timestamp")
+        defaults.removeObject(forKey: "cloudKitSyncDiagnostics.pushStatus")
 
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()

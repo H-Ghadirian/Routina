@@ -25,7 +25,6 @@
 		6B1000042F10000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001062E5F000100000001 /* Perception */; };
 		6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
 		6B1000062F10000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001102E5F000100000001 /* PerceptionCore */; };
-		7A2100092F20000100000001 /* RoutinaAppSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200022F20000100000001 /* RoutinaAppSupport */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -80,8 +79,14 @@
 		};
 		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			name = "Unit Tests";
+			name = "Shared Tests";
 			path = Tests/Shared;
+			sourceTree = "<group>";
+		};
+		6C0000012F30000100000001 /* macOS Tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			name = "macOS Tests";
+			path = Tests/macOS;
 			sourceTree = "<group>";
 		};
 		6A0000012F00000100000001 /* MacApp */ = {
@@ -144,7 +149,6 @@
 				6B1000042F10000100000001 /* Perception in Frameworks */,
 				6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */,
 				6B1000062F10000100000001 /* PerceptionCore in Frameworks */,
-				7A2100092F20000100000001 /* RoutinaAppSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -167,6 +171,7 @@
 				2A5A74BF2D7B92F600E91075 /* macOSConfig */,
 				6A0000042F00000100000001 /* Modules */,
 				2A5A74D02D7B92F900E91075 /* Unit Tests */,
+				6C0000012F30000100000001 /* macOS Tests */,
 				2A4B56A92D8DB46700760BCA /* Frameworks */,
 				2A5A74BE2D7B92F600E91075 /* Products */,
 			);
@@ -268,6 +273,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74D02D7B92F900E91075 /* Unit Tests */,
+				6C0000012F30000100000001 /* macOS Tests */,
 			);
 			name = RoutinaMacOSTests;
 			packageProductDependencies = (
@@ -277,7 +283,6 @@
 				2B1001062E5F000100000001 /* Perception */,
 				2B1001082E5F000100000001 /* ConcurrencyExtras */,
 				2B1001102E5F000100000001 /* PerceptionCore */,
-				7A2200022F20000100000001 /* RoutinaAppSupport */,
 			);
 			productName = RoutinaMacOSTests;
 			productReference = 6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */;
@@ -873,11 +878,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
 			productName = PerceptionCore;
-		};
-		7A2200022F20000100000001 /* RoutinaAppSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7A2200012F20000100000001 /* XCLocalSwiftPackageReference "." */;
-			productName = RoutinaAppSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
