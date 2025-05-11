@@ -52,6 +52,18 @@ extension View {
     func routinaPlatformSecondaryActionControlSize() -> some View {
         self
     }
+
+    func routinaPlatformPrimaryActionLabelLayout() -> some View {
+        frame(maxWidth: .infinity)
+    }
+
+    func routinaPlatformPrimaryActionButtonLayout(alignment: Alignment = .center) -> some View {
+        frame(maxWidth: .infinity, alignment: alignment)
+    }
+
+    func routinaPlatformSecondaryActionButtonLayout(alignment: Alignment = .center) -> some View {
+        frame(maxWidth: .infinity, alignment: alignment)
+    }
 }
 
 extension TaskDetailTCAView {

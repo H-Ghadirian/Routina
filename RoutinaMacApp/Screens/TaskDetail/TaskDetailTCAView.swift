@@ -145,9 +145,6 @@ struct TaskDetailTCAView: View {
                     calendarSection
                 }
                 todoPrimaryActionSection
-                if hasTaskMetadata {
-                    taskMetadataSection
-                }
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -332,12 +329,23 @@ struct TaskDetailTCAView: View {
                 )
             }
 
-            if let priorityLabel = store.task.priority.metadataLabel {
-                taskHeaderBadge(
-                    title: "Priority",
-                    value: priorityMetadataText(priorityLabel: priorityLabel),
-                    tint: .secondary
-                )
+            HStack(alignment: .top, spacing: 8) {
+                if let priorityLabel = store.task.priority.metadataLabel {
+                    taskHeaderBadge(
+                        title: "Priority",
+                        value: priorityMetadataText(priorityLabel: priorityLabel),
+                        systemImage: "flag.fill",
+                        tint: .secondary
+                    )
+                }
+
+                if let linkedPlace = linkedPlaceSummary {
+                    taskHeaderBadge(
+                        title: "Location",
+                        value: linkedPlace.name,
+                        tint: .blue
+                    )
+                }
             }
 
             if let dueDateMetadataText {
@@ -346,6 +354,10 @@ struct TaskDetailTCAView: View {
                     value: dueDateMetadataText,
                     tint: .orange
                 )
+            }
+
+            if !store.task.tags.isEmpty {
+                taskHeaderTagSection(tags: store.task.tags)
             }
         }
         .padding(16)
@@ -403,6 +415,29 @@ struct TaskDetailTCAView: View {
                     )
                 }
             }
+
+            HStack(alignment: .top, spacing: 8) {
+                if let priorityLabel = store.task.priority.metadataLabel {
+                    taskHeaderBadge(
+                        title: "Priority",
+                        value: priorityMetadataText(priorityLabel: priorityLabel),
+                        systemImage: "flag.fill",
+                        tint: .secondary
+                    )
+                }
+
+                if let linkedPlace = linkedPlaceSummary, dueDateMetadataText != nil {
+                    taskHeaderBadge(
+                        title: "Location",
+                        value: linkedPlace.name,
+                        tint: .blue
+                    )
+                }
+            }
+
+            if !store.task.tags.isEmpty {
+                taskHeaderTagSection(tags: store.task.tags)
+            }
         }
         .padding(16)
         .detailCardStyle(cornerRadius: 16)
@@ -411,6 +446,7 @@ struct TaskDetailTCAView: View {
     private func taskHeaderBadge(
         title: String,
         value: String,
+        systemImage: String? = nil,
         tint: Color
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -418,10 +454,18 @@ struct TaskDetailTCAView: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(tint)
+                }
+
+                Text(value)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
@@ -434,6 +478,24 @@ struct TaskDetailTCAView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(tint.opacity(0.24), lineWidth: 1)
         )
+    }
+
+    private func taskHeaderTagSection(tags: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("TAGS")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(tags, id: \.self) { tag in
+                    statusTagChip(tag)
+                }
+            }
+        }
     }
 
     private var todoPrimaryActionSection: some View {
@@ -515,29 +577,6 @@ struct TaskDetailTCAView: View {
         .detailCardStyle()
     }
 
-    private var taskMetadataSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if let priorityLabel = store.task.priority.metadataLabel {
-                statusMetadataRow(
-                    label: "Priority",
-                    value: priorityMetadataText(priorityLabel: priorityLabel),
-                    systemImage: "flag"
-                )
-            }
-
-            if let linkedPlace = linkedPlaceSummary {
-                statusMetadataRow(label: "Location", value: linkedPlace.name, systemImage: "location")
-            }
-
-            if !store.task.tags.isEmpty {
-                statusTagsRow(tags: store.task.tags)
-            }
-
-        }
-        .padding(16)
-        .detailCardStyle()
-    }
-
     private var routineSummarySection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Routine Summary")
@@ -549,23 +588,17 @@ struct TaskDetailTCAView: View {
         .detailCardStyle()
     }
 
-    private var hasTaskMetadata: Bool {
-        store.task.priority.metadataLabel != nil
-            || linkedPlaceSummary != nil
-            || !store.task.tags.isEmpty
-    }
-
     @ViewBuilder
     private var primaryActionButton: some View {
         Button {
             store.send(completionButtonAction)
         } label: {
             completionButtonLabel
-                .frame(maxWidth: .infinity)
+                .routinaPlatformPrimaryActionLabelLayout()
         }
         .buttonStyle(.borderedProminent)
         .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
-        .frame(maxWidth: .infinity)
+        .routinaPlatformPrimaryActionButtonLayout()
         .disabled(isCompletionButtonDisabled)
     }
 
@@ -685,18 +718,6 @@ struct TaskDetailTCAView: View {
                 statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
             }
 
-            if let priorityLabel = store.task.priority.metadataLabel {
-                statusMetadataRow(
-                    label: "Priority",
-                    value: priorityMetadataText(priorityLabel: priorityLabel),
-                    systemImage: "flag"
-                )
-            }
-
-            if let linkedPlace = linkedPlaceSummary {
-                statusMetadataRow(label: "Location", value: linkedPlace.name, systemImage: "location")
-            }
-
             if let pausedAt = store.task.pausedAt {
                 statusMetadataRow(
                     label: "Paused",
@@ -708,10 +729,6 @@ struct TaskDetailTCAView: View {
 
             if showSelectedDate && shouldShowSelectedDateMetadata {
                 statusMetadataRow(label: "Selected", value: selectedDateMetadataText)
-            }
-
-            if !store.task.tags.isEmpty {
-                statusTagsRow(tags: store.task.tags)
             }
 
             if store.task.hasImage || !store.taskAttachments.isEmpty {
@@ -758,10 +775,11 @@ struct TaskDetailTCAView: View {
                 store.send(completionButtonAction)
             } label: {
                 completionButtonLabel
+                    .routinaPlatformPrimaryActionLabelLayout()
             }
             .buttonStyle(.borderedProminent)
             .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .routinaPlatformPrimaryActionButtonLayout(alignment: .leading)
             .disabled(isCompletionButtonDisabled)
 
             if !store.task.isOneOffTask {
@@ -771,7 +789,7 @@ struct TaskDetailTCAView: View {
                 .buttonStyle(.bordered)
                 .tint(store.task.isPaused ? .teal : .orange)
                 .routinaPlatformSecondaryActionControlSize()
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
             }
 
             if isStepRoutineOffToday {
@@ -825,24 +843,6 @@ struct TaskDetailTCAView: View {
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private func statusTagsRow(tags: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("TAGS")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(tags, id: \.self) { tag in
-                    statusTagChip(tag)
-                }
             }
         }
     }

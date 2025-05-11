@@ -25,6 +25,20 @@ extension View {
         controlSize(.regular)
     }
 
+    func routinaPlatformPrimaryActionLabelLayout() -> some View {
+        self
+    }
+
+    func routinaPlatformPrimaryActionButtonLayout(alignment: Alignment = .center) -> some View {
+        fixedSize(horizontal: true, vertical: false)
+            .frame(maxWidth: .infinity, alignment: alignment)
+    }
+
+    func routinaPlatformSecondaryActionButtonLayout(alignment: Alignment = .center) -> some View {
+        fixedSize(horizontal: true, vertical: false)
+            .frame(maxWidth: .infinity, alignment: alignment)
+    }
+
     /// No-op on macOS — attachment opening is handled directly via NSWorkspace.
     func routinaAttachmentShareSheet(url: Binding<URL?>) -> some View {
         self
