@@ -29,7 +29,7 @@ extension HomeTCAView {
 
         if task.isPaused {
             items.append(pauseDescription(for: task))
-        } else if task.isCompletedOneOff || task.isInProgress {
+        } else if task.isCompletedOneOff || task.isCanceledOneOff || task.isInProgress {
             items.append(completionDescription(for: task))
         }
 
@@ -72,6 +72,12 @@ extension HomeTCAView {
                 let totalSteps = max(task.steps.count, 1)
                 return "Step \(task.completedStepCount + 1) of \(totalSteps)"
             }
+            if let canceledAt = task.canceledAt {
+                let elapsedDays = daysSince(canceledAt)
+                if elapsedDays == 0 { return "Canceled today" }
+                if elapsedDays == 1 { return "Canceled yesterday" }
+                return "Canceled \(elapsedDays) days ago"
+            }
             guard task.lastDone != nil else { return "Not completed yet" }
 
             let elapsedDays = daysSinceLastRoutine(task)
@@ -105,6 +111,15 @@ extension HomeTCAView {
         return "Completed \(elapsedDays) days ago"
     }
 
+    private func daysSince(_ date: Date) -> Int {
+        let calendar = Calendar.current
+        return calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: date),
+            to: calendar.startOfDay(for: Date())
+        ).day ?? 0
+    }
+
     func badgeStyle(
         for task: HomeFeature.RoutineDisplay
     ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color) {
@@ -120,6 +135,9 @@ extension HomeTCAView {
         if task.isOneOffTask {
             if task.isCompletedOneOff {
                 return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
+            }
+            if task.isCanceledOneOff {
+                return ("Canceled", "xmark.circle.fill", .orange, Color.orange.opacity(0.14))
             }
             return ("To Do", "circle", .blue, Color.blue.opacity(0.12))
         }
@@ -202,7 +220,7 @@ extension HomeTCAView {
 
     func conciseTodoStepText(for task: HomeFeature.RoutineDisplay) -> String? {
         guard !task.steps.isEmpty else { return nil }
-        if task.isCompletedOneOff { return nil }
+        if task.isCompletedOneOff || task.isCanceledOneOff { return nil }
         if let nextStepTitle = task.nextStepTitle {
             return "Next: \(nextStepTitle)"
         }
@@ -253,7 +271,7 @@ extension HomeTCAView {
 
     func isMarkDoneDisabled(_ task: HomeFeature.RoutineDisplay) -> Bool {
         if task.isOneOffTask {
-            return task.isCompletedOneOff || task.isPaused
+            return task.isCompletedOneOff || task.isCanceledOneOff || task.isPaused
         }
         if task.scheduleMode == .derivedFromChecklist {
             return task.isPaused || task.dueChecklistItemCount == 0

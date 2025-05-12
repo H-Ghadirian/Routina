@@ -44,7 +44,7 @@ extension HomeFeature {
         }()
         let daysUntilDue = task.isPaused
             ? 0
-            : task.isCompletedOneOff
+            : (task.isCompletedOneOff || task.isCanceledOneOff)
                 ? Int.max
                 : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
 
@@ -63,6 +63,7 @@ extension HomeFeature {
             recurrenceRule: task.recurrenceRule,
             scheduleMode: task.scheduleMode,
             lastDone: task.lastDone,
+            canceledAt: task.canceledAt,
             dueDate: dueDate,
             priority: task.priority,
             scheduleAnchor: task.scheduleAnchor,
@@ -71,6 +72,7 @@ extension HomeFeature {
             daysUntilDue: daysUntilDue,
             isOneOffTask: task.isOneOffTask,
             isCompletedOneOff: task.isCompletedOneOff,
+            isCanceledOneOff: task.isCanceledOneOff,
             isDoneToday: doneTodayFromLastDone,
             isPaused: task.isPaused,
             isPinned: task.isPinned,
@@ -104,7 +106,7 @@ extension HomeFeature {
                 archived.append(display)
             } else if case .away = display.locationAvailability {
                 away.append(display)
-            } else if task.isCompletedOneOff {
+            } else if task.isCompletedOneOff || task.isCanceledOneOff {
                 continue
             } else {
                 active.append(display)
@@ -118,8 +120,8 @@ extension HomeFeature {
 
     func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {
         let detailTask = task.detachedCopy()
-        let defaultSelectedDate = detailTask.isCompletedOneOff
-            ? calendar.startOfDay(for: detailTask.lastDone ?? now)
+        let defaultSelectedDate = (detailTask.isCompletedOneOff || detailTask.isCanceledOneOff)
+            ? calendar.startOfDay(for: detailTask.lastDone ?? detailTask.canceledAt ?? now)
             : calendar.startOfDay(for: now)
         return TaskDetailFeature.State(
             task: detailTask,
@@ -153,11 +155,19 @@ extension HomeFeature {
         let taskIDs = Set(tasks.map(\.id))
         let countsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
             guard taskIDs.contains(log.taskID) else { return }
+            guard log.kind == .completed else { return }
+            partialResult[log.taskID, default: 0] += 1
+        }
+        let canceledCountsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
+            guard taskIDs.contains(log.taskID) else { return }
+            guard log.kind == .canceled else { return }
             partialResult[log.taskID, default: 0] += 1
         }
         return DoneStats(
             totalCount: countsByTaskID.values.reduce(0, +),
-            countsByTaskID: countsByTaskID
+            countsByTaskID: countsByTaskID,
+            canceledTotalCount: canceledCountsByTaskID.values.reduce(0, +),
+            canceledCountsByTaskID: canceledCountsByTaskID
         )
     }
 }

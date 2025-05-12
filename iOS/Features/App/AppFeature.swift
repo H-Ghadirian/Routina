@@ -153,6 +153,7 @@ struct StatsFeature {
     struct Metrics: Equatable {
         var chartPoints: [DoneChartPoint] = []
         var totalDoneCount: Int = 0
+        var totalCanceledCount: Int = 0
         var activeRoutineCount: Int = 0
         var archivedRoutineCount: Int = 0
         var totalCount: Int = 0
@@ -225,7 +226,12 @@ struct StatsFeature {
             filteredLogs = state.logs
         }
 
-        let completionDates = filteredLogs.compactMap(\.timestamp)
+        let completionDates = filteredLogs
+            .filter { $0.kind == .completed }
+            .compactMap(\.timestamp)
+        let canceledDates = filteredLogs
+            .filter { $0.kind == .canceled }
+            .compactMap(\.timestamp)
         let chartPoints = RoutineCompletionStats.points(
             for: state.selectedRange,
             timestamps: completionDates,
@@ -245,6 +251,7 @@ struct StatsFeature {
         state.metrics = Metrics(
             chartPoints: chartPoints,
             totalDoneCount: completionDates.count,
+            totalCanceledCount: canceledDates.count,
             activeRoutineCount: filteredTasks.filter { !$0.isPaused }.count,
             archivedRoutineCount: filteredTasks.filter(\.isPaused).count,
             totalCount: totalCount,

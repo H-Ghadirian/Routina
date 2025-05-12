@@ -184,4 +184,35 @@ struct RoutineLogHistoryTests {
         #expect(updatedTask.sequenceStartedAt == nil)
         #expect(logs.isEmpty)
     }
+
+    @Test
+    func cancelTask_marksTodoCanceledWithoutRecordingCompletion() throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Buy milk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🥛",
+            scheduleMode: .oneOff
+        )
+        try context.save()
+
+        let canceledAt = makeDate("2026-03-15T09:00:00Z")
+        let canceledTask = try #require(
+            try RoutineLogHistory.cancelTask(
+                taskID: task.id,
+                canceledAt: canceledAt,
+                context: context
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(canceledTask.lastDone == nil)
+        #expect(canceledTask.canceledAt == canceledAt)
+        #expect(canceledTask.isCanceledOneOff)
+        #expect(logs.count == 1)
+        #expect(logs.first?.kind == .canceled)
+        #expect(logs.first?.timestamp == canceledAt)
+    }
 }

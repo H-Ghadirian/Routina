@@ -35,6 +35,8 @@ struct HomeFeature {
     struct DoneStats: Equatable {
         var totalCount: Int = 0
         var countsByTaskID: [UUID: Int] = [:]
+        var canceledTotalCount: Int = 0
+        var canceledCountsByTaskID: [UUID: Int] = [:]
     }
 
     struct RoutineDisplay: Equatable, Identifiable {
@@ -53,6 +55,7 @@ struct HomeFeature {
         var recurrenceRule: RoutineRecurrenceRule
         var scheduleMode: RoutineScheduleMode
         var lastDone: Date?
+        var canceledAt: Date?
         var dueDate: Date?
         var priority: RoutineTaskPriority
         var scheduleAnchor: Date?
@@ -61,6 +64,7 @@ struct HomeFeature {
         var daysUntilDue: Int
         var isOneOffTask: Bool
         var isCompletedOneOff: Bool
+        var isCanceledOneOff: Bool
         var isDoneToday: Bool
         var isPaused: Bool
         var isPinned: Bool
@@ -538,6 +542,9 @@ struct HomeFeature {
                 guard !state.routineTasks[index].isCompletedOneOff else {
                     return .none
                 }
+                guard !state.routineTasks[index].isCanceledOneOff else {
+                    return .none
+                }
                 if state.routineTasks[index].isChecklistCompletionRoutine {
                     return .none
                 }
@@ -891,11 +898,15 @@ struct HomeFeature {
         RoutineTask.removeRelationships(targeting: idSet, from: state.routineTasks)
         state.routineTasks.removeAll { idSet.contains($0.id) }
         var removedDoneCount = 0
+        var removedCanceledCount = 0
         for id in uniqueIDs {
             removedDoneCount += state.doneStats.countsByTaskID[id, default: 0]
+            removedCanceledCount += state.doneStats.canceledCountsByTaskID[id, default: 0]
             state.doneStats.countsByTaskID.removeValue(forKey: id)
+            state.doneStats.canceledCountsByTaskID.removeValue(forKey: id)
         }
         state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
+        state.doneStats.canceledTotalCount = max(state.doneStats.canceledTotalCount - removedCanceledCount, 0)
         refreshDisplays(&state)
         syncSelectedTaskDetailState(&state)
 

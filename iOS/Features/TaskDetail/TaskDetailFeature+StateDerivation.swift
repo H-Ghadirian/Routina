@@ -15,7 +15,7 @@ extension TaskDetailFeature {
         let doneTodayFromLastDone = state.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
         let doneTodayFromLogs = state.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
-            return calendar.isDate(timestamp, inSameDayAs: now)
+            return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: now)
         }
         state.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
 
@@ -54,10 +54,17 @@ extension TaskDetailFeature {
             return calendar.isDate(timestamp, inSameDayAs: completedDay)
         }
 
-        let remainingLatestCompletion = state.logs.compactMap(\.timestamp).max()
+        let remainingLatestCompletion = state.logs
+            .filter { $0.kind == .completed }
+            .compactMap(\.timestamp)
+            .max()
 
         if removedLatestCompletion {
             state.task.lastDone = remainingLatestCompletion
+        }
+
+        if state.task.canceledAt.map({ calendar.isDate($0, inSameDayAs: completedDay) }) == true {
+            state.task.removeCanceledState()
         }
 
         if removedLatestCompletion {
@@ -70,10 +77,10 @@ extension TaskDetailFeature {
         state.task.resetChecklistProgress()
     }
 
-    func upsertLocalLog(at timestamp: Date, in state: inout State) {
+    func upsertLocalLog(at timestamp: Date, kind: RoutineLogKind = .completed, in state: inout State) {
         if let existingIndex = state.logs.firstIndex(where: { log in
             guard let logTimestamp = log.timestamp else { return false }
-            return calendar.isDate(logTimestamp, inSameDayAs: timestamp)
+            return log.kind == kind && calendar.isDate(logTimestamp, inSameDayAs: timestamp)
         }) {
             if timestamp > (state.logs[existingIndex].timestamp ?? .distantPast) {
                 state.logs[existingIndex].timestamp = timestamp
@@ -84,6 +91,6 @@ extension TaskDetailFeature {
             return
         }
 
-        state.logs.insert(RoutineLog(timestamp: timestamp, taskID: state.task.id), at: 0)
+        state.logs.insert(RoutineLog(timestamp: timestamp, taskID: state.task.id, kind: kind), at: 0)
     }
 }

@@ -113,6 +113,11 @@ enum RoutineRecurrenceRuleStorage {
     }
 }
 
+enum RoutineLogKind: String, Codable, Equatable, Sendable {
+    case completed
+    case canceled
+}
+
 @Model
 final class RoutineTask {
     var id: UUID = UUID()
@@ -135,6 +140,7 @@ final class RoutineTask {
     var recurrenceRuleStorage: String = ""
     var interval: Int16 = 1
     var lastDone: Date?
+    var canceledAt: Date?
     var scheduleAnchor: Date?
     var pausedAt: Date?
     var pinnedAt: Date?
@@ -275,7 +281,11 @@ final class RoutineTask {
     }
 
     var isCompletedOneOff: Bool {
-        isOneOffTask && lastDone != nil && !isInProgress
+        isOneOffTask && lastDone != nil && canceledAt == nil && !isInProgress
+    }
+
+    var isCanceledOneOff: Bool {
+        isOneOffTask && canceledAt != nil
     }
 
     var completedSteps: Int {
@@ -368,6 +378,7 @@ final class RoutineTask {
         interval: Int16 = 1,
         recurrenceRule: RoutineRecurrenceRule? = nil,
         lastDone: Date? = nil,
+        canceledAt: Date? = nil,
         scheduleAnchor: Date? = nil,
         pausedAt: Date? = nil,
         pinnedAt: Date? = nil,
@@ -398,6 +409,7 @@ final class RoutineTask {
         self.recurrenceRuleStorage = RoutineRecurrenceRuleStorage.serialize(resolvedRecurrenceRule)
         self.interval = Int16(clamping: resolvedScheduleMode == .oneOff ? 1 : resolvedRecurrenceRule.approximateIntervalDays)
         self.lastDone = lastDone
+        self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
         self.scheduleAnchor = resolvedScheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
         self.pinnedAt = pinnedAt
@@ -599,9 +611,24 @@ final class RoutineTask {
     private func recordCompletion(at completedAt: Date) {
         guard shouldUpdateLastDone(with: completedAt) else { return }
         lastDone = completedAt
+        canceledAt = nil
         if usesRollingScheduleAnchor {
             scheduleAnchor = completedAt
         }
+    }
+
+    func cancelOneOff(at canceledAt: Date) -> Bool {
+        guard isOneOffTask, !isPaused, !isCompletedOneOff, !isCanceledOneOff else { return false }
+        lastDone = nil
+        self.canceledAt = canceledAt
+        scheduleAnchor = nil
+        resetStepProgress()
+        resetChecklistProgress()
+        return true
+    }
+
+    func removeCanceledState() {
+        canceledAt = nil
     }
 
     private func sanitizeChecklistProgress() {
@@ -734,6 +761,7 @@ final class RoutineTask {
             interval: interval,
             recurrenceRule: recurrenceRule,
             lastDone: lastDone,
+            canceledAt: canceledAt,
             scheduleAnchor: scheduleAnchor,
             pausedAt: pausedAt,
             pinnedAt: pinnedAt,
@@ -751,19 +779,27 @@ final class RoutineLog {
     var id: UUID = UUID()
     var timestamp: Date?
     var taskID: UUID = UUID()
+    var kindRawValue: String = RoutineLogKind.completed.rawValue
+
+    var kind: RoutineLogKind {
+        get { RoutineLogKind(rawValue: kindRawValue) ?? .completed }
+        set { kindRawValue = newValue.rawValue }
+    }
 
     init(
         id: UUID = UUID(),
         timestamp: Date? = nil,
-        taskID: UUID
+        taskID: UUID,
+        kind: RoutineLogKind = .completed
     ) {
         self.id = id
         self.timestamp = timestamp
         self.taskID = taskID
+        self.kindRawValue = kind.rawValue
     }
 
     func detachedCopy() -> RoutineLog {
-        RoutineLog(id: id, timestamp: timestamp, taskID: taskID)
+        RoutineLog(id: id, timestamp: timestamp, taskID: taskID, kind: kind)
     }
 }
 

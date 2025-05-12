@@ -36,6 +36,7 @@ extension HomeTCAView {
             .filter { task in
                 matchesCurrentTaskListMode(task)
                     && !task.isCompletedOneOff
+                    && !task.isCanceledOneOff
                     && (includePinned || !task.isPinned)
                     && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
@@ -228,7 +229,7 @@ extension HomeTCAView {
             return .orange
         }
         if task.isOneOffTask {
-            return task.isCompletedOneOff ? .green : .blue
+            return task.isCompletedOneOff ? .green : (task.isCanceledOneOff ? .orange : .blue)
         }
         if task.scheduleMode == .fixedIntervalChecklist
             && task.completedChecklistItemCount > 0

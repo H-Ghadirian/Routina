@@ -2921,6 +2921,7 @@ private func makeDisplay(
     recurrenceRule: RoutineRecurrenceRule? = nil,
     scheduleMode: RoutineScheduleMode = .fixedInterval,
     lastDone: Date?,
+    canceledAt: Date? = nil,
     dueDate: Date? = nil,
     priority: RoutineTaskPriority = .none,
     scheduleAnchor: Date? = nil,
@@ -2929,6 +2930,7 @@ private func makeDisplay(
     daysUntilDue: Int? = nil,
     isOneOffTask: Bool = false,
     isCompletedOneOff: Bool = false,
+    isCanceledOneOff: Bool = false,
     isDoneToday: Bool,
     isPaused: Bool = false,
     completedStepCount: Int = 0,
@@ -2945,7 +2947,7 @@ private func makeDisplay(
     let resolvedIsPaused = isPaused || pausedAt != nil
     let resolvedIsOneOffTask = isOneOffTask || scheduleMode == .oneOff
     let resolvedIsCompletedOneOff = isCompletedOneOff || (resolvedIsOneOffTask && lastDone != nil && !isInProgress)
-    let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : (resolvedIsCompletedOneOff ? Int.max : interval))
+    let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : ((resolvedIsCompletedOneOff || isCanceledOneOff) ? Int.max : interval))
     let resolvedRecurrenceRule = recurrenceRule ?? .interval(days: interval)
     return HomeFeature.RoutineDisplay(
         taskID: taskID,
@@ -2962,6 +2964,7 @@ private func makeDisplay(
         recurrenceRule: resolvedRecurrenceRule,
         scheduleMode: scheduleMode,
         lastDone: lastDone,
+        canceledAt: canceledAt,
         dueDate: dueDate,
         priority: priority,
         scheduleAnchor: resolvedScheduleAnchor,
@@ -2970,6 +2973,7 @@ private func makeDisplay(
         daysUntilDue: resolvedDaysUntilDue,
         isOneOffTask: resolvedIsOneOffTask,
         isCompletedOneOff: resolvedIsCompletedOneOff,
+        isCanceledOneOff: isCanceledOneOff,
         isDoneToday: isDoneToday,
         isPaused: resolvedIsPaused,
         isPinned: pinnedAt != nil,

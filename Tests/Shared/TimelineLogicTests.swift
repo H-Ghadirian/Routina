@@ -44,9 +44,10 @@ struct TimelineLogicTests {
     private func makeLog(
         id: UUID = UUID(),
         taskID: UUID,
-        timestamp: Date
+        timestamp: Date,
+        kind: RoutineLogKind = .completed
     ) -> RoutineLog {
-        RoutineLog(id: id, timestamp: timestamp, taskID: taskID)
+        RoutineLog(id: id, timestamp: timestamp, taskID: taskID, kind: kind)
     }
 
     // MARK: - filteredEntries
@@ -241,6 +242,27 @@ struct TimelineLogicTests {
         #expect(entries.count == 1)
         #expect(entries[0].taskName == "Wash Dishes")
         #expect(entries[0].taskEmoji == "🧽")
+    }
+
+    @Test
+    func filteredEntries_preservesCanceledKindForCanceledTodoLogs() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeTodoTask(name: "Skip errand")
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"), kind: .canceled)
+
+        let entries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(entries.count == 1)
+        #expect(entries[0].kind == .canceled)
+        #expect(entries[0].isOneOff)
     }
 
     @Test

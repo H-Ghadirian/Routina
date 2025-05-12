@@ -150,11 +150,15 @@ struct HomeTCAView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.green)
 
+            Label("\(store.doneStats.canceledTotalCount) cancels", systemImage: "xmark.seal.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
             Label("\(store.routineTasks.filter { !$0.isOneOffTask }.count) routines", systemImage: "arrow.clockwise")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Label("\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff }.count) todos", systemImage: "checkmark.circle")
+            Label("\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count) todos", systemImage: "checkmark.circle")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
@@ -437,7 +441,7 @@ struct HomeTCAView: View {
             } label: {
                 Label("Resume", systemImage: "play.circle")
             }
-        } else if task.isCompletedOneOff {
+        } else if task.isCompletedOneOff || task.isCanceledOneOff {
             EmptyView()
         } else {
             if includeMarkDone {

@@ -76,9 +76,9 @@ struct TimelineView: View {
     private var content: some View {
         if logs.isEmpty {
             ContentUnavailableView(
-                "No completions yet",
+                "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed routines and todos will appear here in chronological order.")
+                description: Text("Completed and canceled items will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
@@ -222,18 +222,21 @@ struct TimelineView: View {
 
                 Spacer(minLength: 0)
 
-                Text(entry.isOneOff ? "Todo" : "Routine")
+                Text(entry.kind == .canceled ? "Canceled" : (entry.isOneOff ? "Todo" : "Routine"))
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(
                         Capsule()
-                            .fill(entry.isOneOff
-                                ? Color.purple.opacity(0.15)
-                                : Color.accentColor.opacity(0.15)
+                            .fill(
+                                entry.kind == .canceled
+                                    ? Color.orange.opacity(0.15)
+                                    : (entry.isOneOff
+                                        ? Color.purple.opacity(0.15)
+                                        : Color.accentColor.opacity(0.15))
                             )
                     )
-                    .foregroundStyle(entry.isOneOff ? .purple : .accentColor)
+                    .foregroundStyle(entry.kind == .canceled ? .orange : (entry.isOneOff ? .purple : .accentColor))
             }
             .padding(.vertical, 2)
         }
@@ -262,8 +265,8 @@ struct TimelineView: View {
     private func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {
         let detailTask = task.detachedCopy()
         let now = Date()
-        let defaultSelectedDate = detailTask.isCompletedOneOff
-            ? calendar.startOfDay(for: detailTask.lastDone ?? now)
+        let defaultSelectedDate = (detailTask.isCompletedOneOff || detailTask.isCanceledOneOff)
+            ? calendar.startOfDay(for: detailTask.lastDone ?? detailTask.canceledAt ?? now)
             : calendar.startOfDay(for: now)
 
         return TaskDetailFeature.State(

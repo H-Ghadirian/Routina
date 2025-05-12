@@ -141,7 +141,7 @@ struct TaskDetailTCAView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
-                if !store.task.isCompletedOneOff {
+                if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                     calendarSection
                 }
                 todoPrimaryActionSection
@@ -397,9 +397,17 @@ struct TaskDetailTCAView: View {
             HStack(alignment: .top, spacing: 8) {
                 taskHeaderBadge(
                     title: "Completed",
-                    value: totalDoneCountText(for: store.logs.count),
+                    value: totalDoneCountText(for: completedLogCount),
                     tint: .green
                 )
+
+                if canceledLogCount > 0 {
+                    taskHeaderBadge(
+                        title: "Canceled",
+                        value: totalCanceledCountText(for: canceledLogCount),
+                        tint: .orange
+                    )
+                }
 
                 if let dueDateMetadataText {
                     taskHeaderBadge(
@@ -501,9 +509,10 @@ struct TaskDetailTCAView: View {
     private var todoPrimaryActionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             primaryActionButton
+            cancelTodoButton
 
-            if store.task.isCompletedOneOff {
-                Text("Select the completion date in the calendar if you want to undo it.")
+            if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
+                Text("Select the logged date in the calendar if you want to undo it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -600,6 +609,23 @@ struct TaskDetailTCAView: View {
         .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
         .routinaPlatformPrimaryActionButtonLayout()
         .disabled(isCompletionButtonDisabled)
+    }
+
+    @ViewBuilder
+    private var cancelTodoButton: some View {
+        if store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
+            Button {
+                store.send(.cancelTodo)
+            } label: {
+                Label(cancelTodoButtonTitle, systemImage: "xmark.circle")
+                    .routinaPlatformPrimaryActionLabelLayout()
+            }
+            .buttonStyle(.bordered)
+            .tint(.orange)
+            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
+            .routinaPlatformPrimaryActionButtonLayout()
+            .disabled(isCancelTodoButtonDisabled)
+        }
     }
 
     private var taskExtrasSection: some View {
@@ -715,7 +741,11 @@ struct TaskDetailTCAView: View {
             }
 
             if shouldShowCompletionCount {
-                statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
+                statusMetadataRow(label: "Completed", value: totalDoneCountText(for: completedLogCount))
+            }
+
+            if canceledLogCount > 0 {
+                statusMetadataRow(label: "Canceled", value: totalCanceledCountText(for: canceledLogCount), systemImage: "xmark.circle")
             }
 
             if let pausedAt = store.task.pausedAt {
@@ -869,8 +899,8 @@ struct TaskDetailTCAView: View {
             return "Resume it anytime to put it back in rotation."
         }
         if store.task.isOneOffTask {
-            if store.task.isCompletedOneOff {
-                return "Select the completion date to undo it if needed."
+            if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
+                return "Select the logged date to undo it if needed."
             }
             return nil
         }
@@ -882,7 +912,7 @@ struct TaskDetailTCAView: View {
 
     private var shouldShowCompletionCount: Bool {
         if store.task.isOneOffTask {
-            return store.logs.count > 0
+            return completedLogCount > 0 || canceledLogCount > 0
         }
         return true
     }
@@ -914,10 +944,16 @@ struct TaskDetailTCAView: View {
             } else {
                 let logs = displayedLogs(from: store.logs)
                 ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
-                    Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 8)
+                    HStack(spacing: 8) {
+                        Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text(log.kind == .completed ? "Done" : "Canceled")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(log.kind == .completed ? .green : .orange)
+                    }
+                    .padding(.vertical, 8)
 
                     if index < logs.count - 1 {
                         Divider()
@@ -1046,7 +1082,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var canUndoSelectedDate: Bool {
-        !store.task.isChecklistDriven && isSelectedDateDone
+        !store.task.isChecklistDriven && isSelectedDateTerminal
     }
 
     private var completionButtonAction: TaskDetailFeature.Action {
@@ -1056,7 +1092,7 @@ struct TaskDetailTCAView: View {
     private var completionButtonTitle: String {
         completionButtonText(
             for: selectedDate,
-            isDone: isSelectedDateDone,
+            isDone: isSelectedDateTerminal,
             isFuture: isSelectedDateInFuture,
             isPaused: store.task.isPaused,
             task: store.task
@@ -1069,7 +1105,7 @@ struct TaskDetailTCAView: View {
 
     private var isCompletionButtonDisabled: Bool {
         guard !canUndoSelectedDate else { return false }
-        if store.task.isCompletedOneOff {
+        if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
             return true
         }
         if store.task.isChecklistCompletionRoutine {
@@ -1091,7 +1127,9 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowSelectedDateMetadata: Bool {
-        !Calendar.current.isDateInToday(selectedDate) && !store.task.isCompletedOneOff
+        !Calendar.current.isDateInToday(selectedDate)
+            && !store.task.isCompletedOneOff
+            && !store.task.isCanceledOneOff
     }
 
     private var selectedDateMetadataText: String {
@@ -1114,9 +1152,30 @@ struct TaskDetailTCAView: View {
         let calendar = Calendar.current
         return store.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
-            return calendar.isDate(timestamp, inSameDayAs: selectedDate)
+            return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: selectedDate)
         }
         || store.task.lastDone.map { calendar.isDate($0, inSameDayAs: selectedDate) } == true
+    }
+
+    private var isSelectedDateCanceled: Bool {
+        let calendar = Calendar.current
+        return store.logs.contains {
+            guard let timestamp = $0.timestamp else { return false }
+            return $0.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: selectedDate)
+        }
+        || store.task.canceledAt.map { calendar.isDate($0, inSameDayAs: selectedDate) } == true
+    }
+
+    private var isSelectedDateTerminal: Bool {
+        isSelectedDateDone || isSelectedDateCanceled
+    }
+
+    private var completedLogCount: Int {
+        store.logs.filter { $0.kind == .completed }.count
+    }
+
+    private var canceledLogCount: Int {
+        store.logs.filter { $0.kind == .canceled }.count
     }
 
     private var checklistDueItemCount: Int {
@@ -1367,6 +1426,12 @@ struct TaskDetailTCAView: View {
             if task.isInProgress {
                 return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
             }
+            if let canceledAt = task.canceledAt {
+                if Calendar.current.isDateInToday(canceledAt) {
+                    return "Canceled today"
+                }
+                return "Canceled on \(canceledAt.formatted(date: .abbreviated, time: .omitted))"
+            }
             if let lastDone = task.lastDone {
                 if isDoneToday {
                     return "Completed today"
@@ -1444,6 +1509,7 @@ struct TaskDetailTCAView: View {
         if task.isOneOffTask {
             if task.isInProgress { return .orange }
             if task.isCompletedOneOff || isDoneToday { return .green }
+            if task.isCanceledOneOff { return .orange }
             return .primary
         }
         if task.isChecklistCompletionRoutine {
@@ -1690,6 +1756,10 @@ struct TaskDetailTCAView: View {
         count == 1 ? "1 completion" : "\(count) completions"
     }
 
+    private func totalCanceledCountText(for count: Int) -> String {
+        count == 1 ? "1 cancel" : "\(count) cancels"
+    }
+
     private func stepProgressText(for task: RoutineTask) -> String {
         guard task.hasSequentialSteps else { return "" }
         if task.isInProgress {
@@ -1716,6 +1786,9 @@ struct TaskDetailTCAView: View {
     ) -> String {
         if !task.isChecklistDriven && isDone {
             return "Undo"
+        }
+        if task.isCanceledOneOff {
+            return "Select the canceled date to undo"
         }
         if task.isCompletedOneOff {
             return "Select the completion date to undo"
@@ -1761,6 +1834,17 @@ struct TaskDetailTCAView: View {
             return "Done"
         }
         return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
+    }
+
+    private var cancelTodoButtonTitle: String {
+        if Calendar.current.isDateInToday(selectedDate) {
+            return "Cancel todo"
+        }
+        return "Cancel for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
+    }
+
+    private var isCancelTodoButtonDisabled: Bool {
+        store.task.isPaused || store.task.isCompletedOneOff || store.task.isCanceledOneOff || isSelectedDateInFuture
     }
 
     private func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {

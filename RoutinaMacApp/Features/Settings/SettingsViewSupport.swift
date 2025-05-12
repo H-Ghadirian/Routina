@@ -91,6 +91,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var recurrenceRuleStorage: String
         var interval: Int16
         var lastDone: Date?
+        var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
         var pinnedAt: Date?
@@ -118,6 +119,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             recurrenceRuleStorage = task.recurrenceRuleStorage
             interval = task.interval
             lastDone = task.lastDone
+            canceledAt = task.canceledAt
             scheduleAnchor = task.scheduleAnchor
             pausedAt = task.pausedAt
             pinnedAt = task.pinnedAt

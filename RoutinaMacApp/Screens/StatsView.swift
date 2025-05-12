@@ -313,6 +313,15 @@ struct StatsView: View {
             )
 
             summaryCard(
+                icon: "xmark.seal.fill",
+                accent: .orange,
+                title: "Total cancels",
+                value: metrics.totalCanceledCount.formatted(),
+                caption: "Canceled todos kept in timeline",
+                accessibilityIdentifier: "stats.summary.totalCancels"
+            )
+
+            summaryCard(
                 icon: "checklist.checked",
                 accent: .green,
                 title: "Active routines",

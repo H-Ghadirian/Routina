@@ -56,7 +56,7 @@ extension TaskDetailTCAView {
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         HStack(alignment: .top, spacing: 20) {
-            if !store.task.isCompletedOneOff {
+            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                 calendarSection
                     .background(heightReader(id: "calendar"))
                     .frame(
@@ -75,9 +75,9 @@ extension TaskDetailTCAView {
 
             macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
                 .background(heightReader(id: "status"))
-                .frame(width: store.task.isCompletedOneOff ? nil : 320)
+                .frame(width: (store.task.isCompletedOneOff || store.task.isCanceledOneOff) ? nil : 320)
                 .frame(
-                    maxWidth: store.task.isCompletedOneOff ? .infinity : nil,
+                    maxWidth: (store.task.isCompletedOneOff || store.task.isCanceledOneOff) ? .infinity : nil,
                     minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                     alignment: .topLeading
                 )

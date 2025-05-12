@@ -72,6 +72,30 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleCancelTodo(taskID: UUID, canceledAt: Date) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let updatedTask = try RoutineLogHistory.cancelTask(
+                    taskID: taskID,
+                    canceledAt: canceledAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                if updatedTask.isOneOffTask {
+                    await notificationClient.cancel(taskID.uuidString)
+                }
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error canceling todo: \(error)")
+            }
+        }
+    }
+
     func handleUndoCompletion(taskID: UUID, completedDay: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {

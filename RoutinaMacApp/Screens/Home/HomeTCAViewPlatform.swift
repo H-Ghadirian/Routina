@@ -27,6 +27,7 @@ extension HomeTCAView {
     var homeToolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             macDoneCountToolbarItem
+            macCanceledCountToolbarItem
             macRoutineCountToolbarItem
             macTodoCountToolbarItem
         }
@@ -1453,6 +1454,15 @@ extension HomeTCAView {
         .help("\(store.doneStats.totalCount) total dones")
     }
 
+    var macCanceledCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(store.doneStats.canceledTotalCount) cancels",
+            systemImage: "xmark.seal.fill",
+            tintColor: .systemOrange
+        )
+        .help("\(store.doneStats.canceledTotalCount) total cancels")
+    }
+
     var macRoutineCountToolbarItem: some View {
         MacToolbarStatusBadge(
             title: "\(store.routineTasks.filter { !$0.isOneOffTask }.count) routines",
@@ -1464,7 +1474,7 @@ extension HomeTCAView {
 
     var macTodoCountToolbarItem: some View {
         MacToolbarStatusBadge(
-            title: "\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff }.count) todos",
+            title: "\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count) todos",
             systemImage: "checkmark.circle",
             tintColor: .secondaryLabelColor
         )

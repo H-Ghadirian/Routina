@@ -805,6 +805,7 @@ struct SettingsFeature {
             var interval: Int
             var recurrenceRule: RoutineRecurrenceRule?
             var lastDone: Date?
+            var canceledAt: Date?
             var scheduleAnchor: Date?
             var pausedAt: Date?
             var pinnedAt: Date?
@@ -816,6 +817,7 @@ struct SettingsFeature {
             var id: UUID
             var timestamp: Date?
             var taskID: UUID
+            var kind: RoutineLogKind?
         }
     }
 
@@ -849,7 +851,7 @@ struct SettingsFeature {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = RoutineDataBackup(
-            schemaVersion: 9,
+            schemaVersion: 10,
             exportedAt: Date(),
             places: places.map {
                 .init(
@@ -878,6 +880,7 @@ struct SettingsFeature {
                     interval: max(Int($0.interval), 1),
                     recurrenceRule: $0.recurrenceRule,
                     lastDone: $0.lastDone,
+                    canceledAt: $0.canceledAt,
                     scheduleAnchor: $0.scheduleAnchor,
                     pausedAt: $0.pausedAt,
                     pinnedAt: $0.pinnedAt,
@@ -889,7 +892,8 @@ struct SettingsFeature {
                 .init(
                     id: $0.id,
                     timestamp: $0.timestamp,
-                    taskID: $0.taskID
+                    taskID: $0.taskID,
+                    kind: $0.kind
                 )
             }
         )
@@ -909,7 +913,7 @@ struct SettingsFeature {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
 
-        guard (1...9).contains(backup.schemaVersion) else {
+        guard (1...10).contains(backup.schemaVersion) else {
             throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -968,6 +972,7 @@ struct SettingsFeature {
                     interval: Int16(clampedInterval),
                     recurrenceRule: task.recurrenceRule,
                     lastDone: task.lastDone,
+                    canceledAt: task.canceledAt,
                     scheduleAnchor: task.scheduleAnchor,
                     pausedAt: task.pausedAt,
                     pinnedAt: task.pinnedAt,
@@ -987,7 +992,8 @@ struct SettingsFeature {
                 let importedLog = RoutineLog(
                     id: log.id,
                     timestamp: log.timestamp,
-                    taskID: log.taskID
+                    taskID: log.taskID,
+                    kind: log.kind ?? .completed
                 )
                 context.insert(importedLog)
                 importedLogCount += 1

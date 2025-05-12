@@ -85,9 +85,10 @@ func makePlace(
 func makeLog(
     in context: ModelContext,
     task: RoutineTask,
-    timestamp: Date?
+    timestamp: Date?,
+    kind: RoutineLogKind = .completed
 ) -> RoutineLog {
-    let log = RoutineLog(timestamp: timestamp, taskID: task.id)
+    let log = RoutineLog(timestamp: timestamp, taskID: task.id, kind: kind)
     context.insert(log)
     do {
         try context.save()

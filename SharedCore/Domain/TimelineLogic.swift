@@ -23,6 +23,7 @@ struct TimelineEntry: Identifiable, Equatable {
     let taskEmoji: String
     let tags: [String]
     let isOneOff: Bool
+    let kind: RoutineLogKind
 }
 
 enum TimelineLogic {
@@ -64,7 +65,8 @@ enum TimelineLogic {
                 taskName: task?.name ?? "Deleted Routine",
                 taskEmoji: task?.emoji ?? "🗑️",
                 tags: task?.tags ?? [],
-                isOneOff: isOneOff
+                isOneOff: isOneOff,
+                kind: log.kind
             )
         }
     }

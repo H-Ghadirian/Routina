@@ -76,6 +76,7 @@ struct TaskDetailFeature: Reducer {
 
     enum Action: Equatable {
         case markAsDone
+        case cancelTodo
         case markChecklistItemPurchased(UUID)
         case toggleChecklistItemCompletion(UUID)
         case markChecklistItemCompleted(UUID)
@@ -146,6 +147,7 @@ struct TaskDetailFeature: Reducer {
         case .markAsDone:
             guard !state.task.isPaused else { return .none }
             guard !state.task.isCompletedOneOff else { return .none }
+            guard !state.task.isCanceledOneOff else { return .none }
             if state.task.isChecklistDriven {
                 guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
                     return .none
@@ -195,6 +197,18 @@ struct TaskDetailFeature: Reducer {
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate)
+
+        case .cancelTodo:
+            guard state.task.isOneOffTask else { return .none }
+            guard !state.task.isPaused else { return .none }
+            guard !state.task.isCompletedOneOff else { return .none }
+            guard !state.task.isCanceledOneOff else { return .none }
+            let canceledAt = resolvedCompletionDate(for: state.selectedDate)
+            guard state.task.cancelOneOff(at: canceledAt) else { return .none }
+            refreshTaskView(&state)
+            upsertLocalLog(at: canceledAt, kind: .canceled, in: &state)
+            updateDerivedState(&state)
+            return handleCancelTodo(taskID: state.task.id, canceledAt: canceledAt)
 
         case let .markChecklistItemPurchased(itemID):
             guard !state.task.isPaused else { return .none }

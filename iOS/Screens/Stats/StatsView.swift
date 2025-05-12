@@ -22,6 +22,7 @@ struct StatsView: View {
     fileprivate struct Metrics {
         let chartPoints: [DoneChartPoint]
         let totalDoneCount: Int
+        let totalCanceledCount: Int
         let activeRoutineCount: Int
         let archivedRoutineCount: Int
         let totalCount: Int
@@ -363,6 +364,15 @@ struct StatsView: View {
                 value: metrics.totalDoneCount.formatted(),
                 caption: "All recorded completions",
                 accessibilityIdentifier: "stats.summary.totalDones"
+            )
+
+            summaryCard(
+                icon: "xmark.seal.fill",
+                accent: .orange,
+                title: "Total cancels",
+                value: metrics.totalCanceledCount.formatted(),
+                caption: "Canceled todos kept in timeline",
+                accessibilityIdentifier: "stats.summary.totalCancels"
             )
 
             summaryCard(
@@ -803,6 +813,7 @@ private extension StatsView.Metrics {
         self.init(
             chartPoints: source.chartPoints,
             totalDoneCount: source.totalDoneCount,
+            totalCanceledCount: source.totalCanceledCount,
             activeRoutineCount: source.activeRoutineCount,
             archivedRoutineCount: source.archivedRoutineCount,
             totalCount: source.totalCount,

@@ -206,6 +206,7 @@ enum CloudKitDirectPullService {
         var interval: Int16
         var recurrenceRule: RoutineRecurrenceRule?
         var lastDone: Date?
+        var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
         var pinnedAt: Date?
@@ -226,6 +227,7 @@ enum CloudKitDirectPullService {
         var id: UUID
         var timestamp: Date?
         var taskID: UUID
+        var kind: RoutineLogKind
     }
 
     private static func parsePlace(from record: CKRecord) -> PlacePayload? {
@@ -311,6 +313,7 @@ enum CloudKitDirectPullService {
             keys: ["imageData", "IMAGEDATA", "zimagedata", "ZIMAGEDATA", "cd_imagedata"]
         )
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
+        let canceledAtValue = dateValue(in: record, keys: ["canceledAt", "CANCELEDAT", "zcanceledat", "ZCANCELEDAT", "cd_canceledat"])
         let scheduleAnchorValue = dateValue(
             in: record,
             keys: ["scheduleAnchor", "SCHEDULEANCHOR", "zscheduleanchor", "ZSCHEDULEANCHOR", "cd_scheduleanchor"]
@@ -347,6 +350,7 @@ enum CloudKitDirectPullService {
                 || scheduleModeValue != nil
                 || recurrenceRuleStorageValue != nil
                 || lastDoneValue != nil
+                || canceledAtValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
                 || pinnedAtValue != nil
@@ -388,6 +392,7 @@ enum CloudKitDirectPullService {
             interval: Int16(clamping: intervalValue ?? 1),
             recurrenceRule: recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize),
             lastDone: lastDoneValue,
+            canceledAt: canceledAtValue,
             scheduleAnchor: scheduleAnchorValue,
             pausedAt: pausedAtValue,
             pinnedAt: pinnedAtValue,
@@ -407,7 +412,13 @@ enum CloudKitDirectPullService {
         }
 
         let timestamp = dateValue(in: record, keys: ["timestamp", "TIMESTAMP", "ztimestamp", "ZTIMESTAMP", "cd_timestamp"])
-        return LogPayload(id: id, timestamp: timestamp, taskID: taskID)
+        let kindRawValue = stringValue(in: record, keys: ["kindRawValue", "kind", "KINDRAWVALUE", "zkindrawvalue", "ZKINDRAWVALUE", "cd_kindrawvalue"])
+        return LogPayload(
+            id: id,
+            timestamp: timestamp,
+            taskID: taskID,
+            kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed
+        )
     }
 
     @MainActor
@@ -495,6 +506,7 @@ enum CloudKitDirectPullService {
                     taskWithSameName.interval = payload.interval
                 }
                 taskWithSameName.lastDone = payload.lastDone
+                taskWithSameName.canceledAt = payload.canceledAt
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
                 taskWithSameName.pinnedAt = payload.pinnedAt
@@ -529,6 +541,7 @@ enum CloudKitDirectPullService {
                 existing.interval = payload.interval
             }
             existing.lastDone = payload.lastDone
+            existing.canceledAt = payload.canceledAt
             existing.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? existing.scheduleAnchor
             existing.pausedAt = payload.pausedAt
             existing.pinnedAt = payload.pinnedAt
@@ -562,6 +575,7 @@ enum CloudKitDirectPullService {
                     taskWithSameName.interval = payload.interval
                 }
                 taskWithSameName.lastDone = payload.lastDone
+                taskWithSameName.canceledAt = payload.canceledAt
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
                 taskWithSameName.pinnedAt = payload.pinnedAt
@@ -588,6 +602,7 @@ enum CloudKitDirectPullService {
                     interval: payload.interval,
                     recurrenceRule: payload.recurrenceRule,
                     lastDone: payload.lastDone,
+                    canceledAt: payload.canceledAt,
                     scheduleAnchor: payload.scheduleAnchor,
                     pausedAt: payload.pausedAt,
                     pinnedAt: payload.pinnedAt,
@@ -611,15 +626,18 @@ enum CloudKitDirectPullService {
         if let existing = try context.fetch(descriptor).first {
             existing.timestamp = payload.timestamp
             existing.taskID = payload.taskID
+            existing.kind = payload.kind
         } else if let existing = try existingLog(matching: payload, in: context) {
             existing.timestamp = payload.timestamp
             existing.taskID = payload.taskID
+            existing.kind = payload.kind
         } else {
             context.insert(
                 RoutineLog(
                     id: payload.id,
                     timestamp: payload.timestamp,
-                    taskID: payload.taskID
+                    taskID: payload.taskID,
+                    kind: payload.kind
                 )
             )
         }

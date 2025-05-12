@@ -11,11 +11,13 @@ enum RoutineLogHistory {
         for task in tasks {
             guard let lastDone = task.lastDone else { continue }
             let hasMatchingLog = logs.contains { log in
-                log.taskID == task.id && isSameCompletion(log.timestamp, as: lastDone)
+                log.taskID == task.id
+                    && log.kind == .completed
+                    && isSameCompletion(log.timestamp, as: lastDone)
             }
 
             guard !hasMatchingLog else { continue }
-            context.insert(RoutineLog(timestamp: lastDone, taskID: task.id))
+            context.insert(RoutineLog(timestamp: lastDone, taskID: task.id, kind: .completed))
             didInsertAny = true
         }
 
@@ -45,11 +47,11 @@ enum RoutineLogHistory {
         )
         let logs = try context.fetch(logDescriptor)
         let hasMatchingLog = logs.contains { log in
-            isSameCompletion(log.timestamp, as: lastDone)
+            log.kind == .completed && isSameCompletion(log.timestamp, as: lastDone)
         }
 
         guard !hasMatchingLog else { return false }
-        context.insert(RoutineLog(timestamp: lastDone, taskID: taskID))
+        context.insert(RoutineLog(timestamp: lastDone, taskID: taskID, kind: .completed))
         try context.save()
         return true
     }
@@ -86,7 +88,7 @@ enum RoutineLogHistory {
         let existingLogs = detailLogs(taskID: taskID, context: context)
         let hasMatchingLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return calendar.isDate(timestamp, inSameDayAs: completedAt)
+            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: completedAt)
         }
         if hasMatchingLog {
             return (task, .ignoredAlreadyCompletedToday)
@@ -102,7 +104,7 @@ enum RoutineLogHistory {
             return (task, result)
 
         case .completedRoutine:
-            context.insert(RoutineLog(timestamp: completedAt, taskID: taskID))
+            context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
             try context.save()
             return (task, result)
         }
@@ -143,14 +145,14 @@ enum RoutineLogHistory {
         case .completedRoutine:
             if let existingLog = detailLogs(taskID: taskID, context: context).first(where: { log in
                 guard let timestamp = log.timestamp else { return false }
-                return calendar.isDate(timestamp, inSameDayAs: completedAt)
+                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: completedAt)
             }) {
                 let currentTimestamp = existingLog.timestamp ?? .distantPast
                 if completedAt > currentTimestamp {
                     existingLog.timestamp = completedAt
                 }
             } else {
-                context.insert(RoutineLog(timestamp: completedAt, taskID: taskID))
+                context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
             }
 
             try context.save()
@@ -237,18 +239,56 @@ enum RoutineLogHistory {
         let existingLogs = detailLogs(taskID: taskID, context: context)
         if let existingLog = existingLogs.first(where: { log in
             guard let timestamp = log.timestamp else { return false }
-            return calendar.isDate(timestamp, inSameDayAs: purchasedAt)
+            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: purchasedAt)
         }) {
             let currentTimestamp = existingLog.timestamp ?? .distantPast
             if purchasedAt > currentTimestamp {
                 existingLog.timestamp = purchasedAt
             }
         } else {
-            context.insert(RoutineLog(timestamp: purchasedAt, taskID: taskID))
+            context.insert(RoutineLog(timestamp: purchasedAt, taskID: taskID, kind: .completed))
         }
 
         try context.save()
         return (task, updatedItemCount)
+    }
+
+    @MainActor
+    static func cancelTask(
+        taskID: UUID,
+        canceledAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> RoutineTask? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        guard task.cancelOneOff(at: canceledAt) else {
+            return task
+        }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        if let existingLog = existingLogs.first(where: { log in
+            guard let timestamp = log.timestamp else { return false }
+            return log.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: canceledAt)
+        }) {
+            let currentTimestamp = existingLog.timestamp ?? .distantPast
+            if canceledAt > currentTimestamp {
+                existingLog.timestamp = canceledAt
+            }
+        } else {
+            context.insert(RoutineLog(timestamp: canceledAt, taskID: taskID, kind: .canceled))
+        }
+
+        try context.save()
+        return task
     }
 
     @MainActor
@@ -274,8 +314,9 @@ enum RoutineLogHistory {
             return calendar.isDate(timestamp, inSameDayAs: completedDay)
         }
         let didMatchLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: completedDay) } ?? false
+        let didMatchCanceledAt = task.canceledAt.map { calendar.isDate($0, inSameDayAs: completedDay) } ?? false
 
-        guard !matchingLogs.isEmpty || didMatchLastDone else {
+        guard !matchingLogs.isEmpty || didMatchLastDone || didMatchCanceledAt else {
             return task
         }
 
@@ -287,11 +328,16 @@ enum RoutineLogHistory {
             .filter { log in
                 !matchingLogs.contains(where: { $0.id == log.id })
             }
+            .filter { $0.kind == .completed }
             .compactMap(\.timestamp)
             .max()
 
         if didMatchLastDone {
             task.lastDone = remainingLatestCompletion
+        }
+
+        if didMatchCanceledAt {
+            task.removeCanceledState()
         }
 
         if didMatchLastDone {

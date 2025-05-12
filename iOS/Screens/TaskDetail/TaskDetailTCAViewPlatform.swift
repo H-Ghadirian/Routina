@@ -73,7 +73,7 @@ extension TaskDetailTCAView {
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         VStack(spacing: 16) {
-            if !store.task.isCompletedOneOff {
+            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                 calendarSection
             }
             compactStatusSection(pauseArchivePresentation: pauseArchivePresentation)
