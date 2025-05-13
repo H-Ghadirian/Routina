@@ -146,6 +146,7 @@ struct StatsView: View {
             NavigationStack {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
+                        rangeSection
                         heroSection(metrics: metrics)
                         summaryCards(metrics: metrics)
                         chartSection(metrics: metrics)

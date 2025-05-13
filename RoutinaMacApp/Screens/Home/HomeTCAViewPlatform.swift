@@ -1228,17 +1228,17 @@ extension HomeTCAView {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(DoneChartRange.allCases) { range in
                             Button {
-                                store.send(.statsSelectedRangeChanged(range))
+                                statsStore?.send(.selectedRangeChanged(range))
                             } label: {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(store.statsSelectedRange == range
+                                            .fill(selectedStatsRange == range
                                                 ? Color.accentColor
                                                 : Color.accentColor.opacity(0.10))
                                         Image(systemName: statsRangeIcon(for: range))
                                             .font(.system(size: 13, weight: .semibold))
-                                            .foregroundStyle(store.statsSelectedRange == range ? .white : Color.accentColor)
+                                            .foregroundStyle(selectedStatsRange == range ? .white : Color.accentColor)
                                     }
                                     .frame(width: 32, height: 32)
 
@@ -1253,7 +1253,7 @@ extension HomeTCAView {
 
                                     Spacer(minLength: 0)
 
-                                    if store.statsSelectedRange == range {
+                                    if selectedStatsRange == range {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 11, weight: .bold))
                                             .foregroundStyle(Color.accentColor)
@@ -1263,7 +1263,7 @@ extension HomeTCAView {
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(store.statsSelectedRange == range
+                                        .fill(selectedStatsRange == range
                                             ? Color.accentColor.opacity(0.08)
                                             : Color.secondary.opacity(0.07))
                                 )
@@ -1285,17 +1285,17 @@ extension HomeTCAView {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Button {
-                                store.send(.statsSelectedTagChanged(nil))
+                                statsStore?.send(.selectedTagChanged(nil))
                             } label: {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(store.statsSelectedTag == nil
+                                            .fill(selectedStatsTag == nil
                                                 ? Color.accentColor
                                                 : Color.accentColor.opacity(0.10))
                                         Image(systemName: "tag.slash.fill")
                                             .font(.system(size: 12, weight: .semibold))
-                                            .foregroundStyle(store.statsSelectedTag == nil ? .white : Color.accentColor)
+                                            .foregroundStyle(selectedStatsTag == nil ? .white : Color.accentColor)
                                     }
                                     .frame(width: 32, height: 32)
 
@@ -1305,7 +1305,7 @@ extension HomeTCAView {
 
                                     Spacer(minLength: 0)
 
-                                    if store.statsSelectedTag == nil {
+                                    if selectedStatsTag == nil {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 11, weight: .bold))
                                             .foregroundStyle(Color.accentColor)
@@ -1315,7 +1315,7 @@ extension HomeTCAView {
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(store.statsSelectedTag == nil
+                                        .fill(selectedStatsTag == nil
                                             ? Color.accentColor.opacity(0.08)
                                             : Color.secondary.opacity(0.07))
                                 )
@@ -1325,9 +1325,9 @@ extension HomeTCAView {
 
                             ForEach(statsAllTags, id: \.self) { tag in
                                 Button {
-                                    store.send(.statsSelectedTagChanged(tag))
+                                    statsStore?.send(.selectedTagChanged(tag))
                                 } label: {
-                                    let isSelected = store.statsSelectedTag == tag
+                                    let isSelected = selectedStatsTag == tag
                                     HStack(spacing: 12) {
                                         ZStack {
                                             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -1371,6 +1371,10 @@ extension HomeTCAView {
     }
 
     private var statsAllTags: [String] {
+        if let statsStore {
+            return statsStore.availableTags
+        }
+
         var seen = Set<String>()
         var result: [String] = []
         for task in store.routineTasks {
@@ -1380,6 +1384,14 @@ extension HomeTCAView {
             }
         }
         return result.sorted()
+    }
+
+    private var selectedStatsRange: DoneChartRange {
+        statsStore?.selectedRange ?? .week
+    }
+
+    private var selectedStatsTag: String? {
+        statsStore?.selectedTag
     }
 
     private func statsRangeIcon(for range: DoneChartRange) -> String {
@@ -1485,11 +1497,13 @@ extension HomeTCAView {
 struct HomeMacView: View {
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
+    let statsStore: StoreOf<StatsFeature>
 
     var body: some View {
         HomeTCAView(
             store: store,
-            settingsStore: settingsStore
+            settingsStore: settingsStore,
+            statsStore: statsStore
         )
         .onReceive(
             NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)

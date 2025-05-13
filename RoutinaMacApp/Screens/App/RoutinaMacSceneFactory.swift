@@ -12,7 +12,8 @@ enum RoutinaMacSceneFactory {
         return AnyView(
             HomeMacView(
                 store: store.scope(state: \.home, action: \.home),
-                settingsStore: store.scope(state: \.settings, action: \.settings)
+                settingsStore: store.scope(state: \.settings, action: \.settings),
+                statsStore: store.scope(state: \.stats, action: \.stats)
             )
             .frame(
                 minWidth: RoutinaMacWindowSizing.minWidth,
