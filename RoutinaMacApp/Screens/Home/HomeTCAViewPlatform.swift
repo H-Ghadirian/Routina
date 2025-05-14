@@ -1219,146 +1219,75 @@ extension HomeTCAView {
     var macStatsSidebarView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Show")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
+                        alignment: .leading,
+                        spacing: 8
+                    ) {
+                        ForEach(StatsTaskTypeFilter.allCases) { filter in
+                            statsTaskTypeChip(filter)
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Time Range")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 4)
 
-                    VStack(alignment: .leading, spacing: 6) {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
+                        alignment: .leading,
+                        spacing: 8
+                    ) {
                         ForEach(DoneChartRange.allCases) { range in
-                            Button {
-                                statsStore?.send(.selectedRangeChanged(range))
-                            } label: {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(selectedStatsRange == range
-                                                ? Color.accentColor
-                                                : Color.accentColor.opacity(0.10))
-                                        Image(systemName: statsRangeIcon(for: range))
-                                            .font(.system(size: 13, weight: .semibold))
-                                            .foregroundStyle(selectedStatsRange == range ? .white : Color.accentColor)
-                                    }
-                                    .frame(width: 32, height: 32)
-
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(range.rawValue)
-                                            .font(.body.weight(.medium))
-                                            .foregroundStyle(.primary)
-                                        Text(range.periodDescription)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    Spacer(minLength: 0)
-
-                                    if selectedStatsRange == range {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 11, weight: .bold))
-                                            .foregroundStyle(Color.accentColor)
-                                    }
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(selectedStatsRange == range
-                                            ? Color.accentColor.opacity(0.08)
-                                            : Color.secondary.opacity(0.07))
-                                )
-                                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            }
-                            .buttonStyle(.plain)
+                            statsRangeChip(range)
                         }
                     }
                 }
 
                 if !statsAllTags.isEmpty {
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Filter by Tag")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 4)
 
-                        VStack(alignment: .leading, spacing: 6) {
-                            Button {
+                        Text(statsTagSelectionSummary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+
+                        LazyVGrid(
+                            columns: [GridItem(.adaptive(minimum: 104), spacing: 8, alignment: .leading)],
+                            alignment: .leading,
+                            spacing: 8
+                        ) {
+                            statsTagChip(
+                                title: "All Tags",
+                                count: statsTaskCountForSelectedTypeFilter,
+                                systemImage: "tag.slash.fill",
+                                isSelected: selectedStatsTag == nil
+                            ) {
                                 statsStore?.send(.selectedTagChanged(nil))
-                            } label: {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(selectedStatsTag == nil
-                                                ? Color.accentColor
-                                                : Color.accentColor.opacity(0.10))
-                                        Image(systemName: "tag.slash.fill")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundStyle(selectedStatsTag == nil ? .white : Color.accentColor)
-                                    }
-                                    .frame(width: 32, height: 32)
-
-                                    Text("All Tags")
-                                        .font(.body.weight(.medium))
-                                        .foregroundStyle(.primary)
-
-                                    Spacer(minLength: 0)
-
-                                    if selectedStatsTag == nil {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 11, weight: .bold))
-                                            .foregroundStyle(Color.accentColor)
-                                    }
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(selectedStatsTag == nil
-                                            ? Color.accentColor.opacity(0.08)
-                                            : Color.secondary.opacity(0.07))
-                                )
-                                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             }
-                            .buttonStyle(.plain)
 
-                            ForEach(statsAllTags, id: \.self) { tag in
-                                Button {
-                                    statsStore?.send(.selectedTagChanged(tag))
-                                } label: {
-                                    let isSelected = selectedStatsTag == tag
-                                    HStack(spacing: 12) {
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                .fill(isSelected ? Color.accentColor : Color.accentColor.opacity(0.10))
-                                            Image(systemName: "tag.fill")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundStyle(isSelected ? .white : Color.accentColor)
-                                        }
-                                        .frame(width: 32, height: 32)
-
-                                        Text("#\(tag)")
-                                            .font(.body.weight(.medium))
-                                            .foregroundStyle(.primary)
-
-                                        Spacer(minLength: 0)
-
-                                        if isSelected {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 11, weight: .bold))
-                                                .foregroundStyle(Color.accentColor)
-                                        }
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.secondary.opacity(0.07))
-                                    )
-                                    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            ForEach(statsTagSummaries) { summary in
+                                statsTagChip(
+                                    title: "#\(summary.name)",
+                                    count: summary.linkedRoutineCount,
+                                    systemImage: "tag.fill",
+                                    isSelected: selectedStatsTag == summary.name
+                                ) {
+                                    statsStore?.send(.selectedTagChanged(summary.name))
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -1386,6 +1315,45 @@ extension HomeTCAView {
         return result.sorted()
     }
 
+    private var statsTagSummaries: [RoutineTagSummary] {
+        if let statsStore {
+            let filteredTasks = statsStore.tasks.filter { task in
+                switch statsStore.taskTypeFilter {
+                case .all:
+                    return true
+                case .routines:
+                    return !task.isOneOffTask
+                case .todos:
+                    return task.isOneOffTask
+                }
+            }
+            return RoutineTag.summaries(from: filteredTasks)
+        }
+
+        return RoutineTag.summaries(from: store.routineTasks)
+    }
+
+    private var selectedStatsTaskTypeFilter: StatsTaskTypeFilter {
+        statsStore?.taskTypeFilter ?? .all
+    }
+
+    private var statsTaskCountForSelectedTypeFilter: Int {
+        if let statsStore {
+            return statsStore.tasks.filter { task in
+                switch statsStore.taskTypeFilter {
+                case .all:
+                    return true
+                case .routines:
+                    return !task.isOneOffTask
+                case .todos:
+                    return task.isOneOffTask
+                }
+            }.count
+        }
+
+        return store.routineTasks.count
+    }
+
     private var selectedStatsRange: DoneChartRange {
         statsStore?.selectedRange ?? .week
     }
@@ -1394,12 +1362,133 @@ extension HomeTCAView {
         statsStore?.selectedTag
     }
 
+    private var statsTagSelectionSummary: String {
+        if let selectedStatsTag {
+            let matchingCount = statsTagSummaries.first(where: { $0.name == selectedStatsTag })?.linkedRoutineCount ?? 0
+            return "#\(selectedStatsTag) across \(matchingCount) \(matchingCount == 1 ? "routine" : "routines")"
+        }
+
+        let tagCount = statsTagSummaries.count
+        return "\(tagCount) \(tagCount == 1 ? "tag" : "tags") available"
+    }
+
+    @ViewBuilder
+    private func statsTaskTypeChip(_ filter: StatsTaskTypeFilter) -> some View {
+        Button {
+            statsStore?.send(.taskTypeFilterChanged(filter))
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: statsTaskTypeIcon(for: filter))
+                    .font(.caption.weight(.semibold))
+
+                Text(filter.rawValue)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(selectedStatsTaskTypeFilter == filter ? Color.white : Color.primary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(selectedStatsTaskTypeFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(selectedStatsTaskTypeFilter == filter ? Color.accentColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func statsTaskTypeIcon(for filter: StatsTaskTypeFilter) -> String {
+        switch filter {
+        case .all: return "square.grid.2x2"
+        case .routines: return "repeat"
+        case .todos: return "checklist"
+        }
+    }
+
+    @ViewBuilder
+    private func statsRangeChip(_ range: DoneChartRange) -> some View {
+        Button {
+            statsStore?.send(.selectedRangeChanged(range))
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: statsRangeIcon(for: range))
+                    .font(.caption.weight(.semibold))
+
+                Text(range.rawValue)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(selectedStatsRange == range ? Color.white : Color.primary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(selectedStatsRange == range ? Color.accentColor : Color.secondary.opacity(0.10))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(selectedStatsRange == range ? Color.accentColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private func statsRangeIcon(for range: DoneChartRange) -> String {
         switch range {
-        case .week:  return "calendar.badge.clock"
+        case .week: return "calendar.badge.clock"
         case .month: return "calendar"
-        case .year:  return "calendar.badge.plus"
+        case .year: return "calendar.badge.plus"
         }
+    }
+
+    @ViewBuilder
+    private func statsTagChip(
+        title: String,
+        count: Int,
+        systemImage: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.semibold))
+
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+
+                Text(count.formatted())
+                    .font(.caption2.weight(.bold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(isSelected ? Color.white.opacity(0.18) : Color.primary.opacity(0.08))
+                    )
+            }
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.10))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(isSelected ? Color.accentColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     var macSettingsSidebarView: some View {

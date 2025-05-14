@@ -1,6 +1,14 @@
 import ComposableArchitecture
 import Foundation
 
+enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatable {
+    case all = "All"
+    case routines = "Routines"
+    case todos = "Todos"
+
+    var id: Self { self }
+}
+
 @Reducer
 struct AppFeature {
 
@@ -171,6 +179,7 @@ struct StatsFeature {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
         var selectedRange: DoneChartRange = .week
+        var taskTypeFilter: StatsTaskTypeFilter = .all
         var selectedTag: String?
         var availableTags: [String] = []
         var filteredTaskCount: Int = 0
@@ -180,6 +189,7 @@ struct StatsFeature {
     enum Action: Equatable {
         case setData(tasks: [RoutineTask], logs: [RoutineLog])
         case selectedRangeChanged(DoneChartRange)
+        case taskTypeFilterChanged(StatsTaskTypeFilter)
         case selectedTagChanged(String?)
     }
 
@@ -200,6 +210,11 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .taskTypeFilterChanged(filter):
+                state.taskTypeFilter = filter
+                refreshDerivedState(&state)
+                return .none
+
             case let .selectedTagChanged(tag):
                 state.selectedTag = tag
                 refreshDerivedState(&state)
@@ -209,7 +224,18 @@ struct StatsFeature {
     }
 
     private func refreshDerivedState(_ state: inout State) {
-        state.availableTags = RoutineTag.allTags(from: state.tasks.map(\.tags))
+        let tasksMatchingTypeFilter = state.tasks.filter { task in
+            switch state.taskTypeFilter {
+            case .all:
+                return true
+            case .routines:
+                return !task.isOneOffTask
+            case .todos:
+                return task.isOneOffTask
+            }
+        }
+
+        state.availableTags = RoutineTag.allTags(from: tasksMatchingTypeFilter.map(\.tags))
         if let selectedTag = state.selectedTag,
            !RoutineTag.contains(selectedTag, in: state.availableTags) {
             state.selectedTag = nil
@@ -218,12 +244,13 @@ struct StatsFeature {
         let filteredTasks: [RoutineTask]
         let filteredLogs: [RoutineLog]
         if let tag = state.selectedTag {
-            let taskIDsWithTag = Set(state.tasks.filter { $0.tags.contains(tag) }.map(\.id))
-            filteredTasks = state.tasks.filter { $0.tags.contains(tag) }
+            let taskIDsWithTag = Set(tasksMatchingTypeFilter.filter { $0.tags.contains(tag) }.map(\.id))
+            filteredTasks = tasksMatchingTypeFilter.filter { $0.tags.contains(tag) }
             filteredLogs = state.logs.filter { taskIDsWithTag.contains($0.taskID) }
         } else {
-            filteredTasks = state.tasks
-            filteredLogs = state.logs
+            filteredTasks = tasksMatchingTypeFilter
+            let taskIDsMatchingTypeFilter = Set(tasksMatchingTypeFilter.map(\.id))
+            filteredLogs = state.logs.filter { taskIDsMatchingTypeFilter.contains($0.taskID) }
         }
 
         let completionDates = filteredLogs
