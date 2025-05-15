@@ -924,17 +924,13 @@ extension HomeTCAView {
         switch section {
         case "Identity":           return "person.fill"
         case "Behavior":           return "repeat"
+        case "Places":             return "mappin.fill"
+        case "Importance & Urgency": return "flag.fill"
         case "Context":            return "tag.fill"
         case "Notes":              return "note.text"
         case "Steps":              return "list.number"
         case "Image":              return "photo.fill"
-        case "Basic":              return "pencil"
-        case "Tags":               return "tag.fill"
-        case "Relationships":      return "link"
-        case "Task Type":          return "square.grid.2x2.fill"
-        case "Place":              return "mappin.fill"
-        case "Importance & Urgency": return "flag.fill"
-        case "Schedule":           return "calendar"
+        case "Attachment":         return "paperclip"
         case "Danger Zone":        return "exclamationmark.triangle.fill"
         default:                   return "circle.fill"
         }
@@ -943,22 +939,22 @@ extension HomeTCAView {
     private var macAddFormSections: [String] {
         let scheduleMode = store.addRoutineState?.scheduleMode ?? .fixedInterval
         let isStepBased = scheduleMode == .fixedInterval || scheduleMode == .oneOff
-        var sections = ["Identity", "Behavior", "Context", "Notes"]
+        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Context", "Notes"]
         if isStepBased { sections.append("Steps") }
         sections.append("Image")
+        sections.append("Attachment")
         return sections
     }
 
     private var macEditFormSections: [String] {
         guard let detail = store.taskDetailState else { return [] }
         let scheduleMode = detail.editScheduleMode
-        var sections = ["Basic", "Tags", "Relationships", "Task Type", "Place", "Importance & Urgency"]
-        if scheduleMode != .derivedFromChecklist && scheduleMode != .oneOff {
-            sections.append("Schedule")
-        }
+        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Context", "Notes"]
         if scheduleMode == .fixedInterval || scheduleMode == .oneOff {
             sections.append("Steps")
         }
+        sections.append("Image")
+        sections.append("Attachment")
         sections.append("Danger Zone")
         return sections
     }

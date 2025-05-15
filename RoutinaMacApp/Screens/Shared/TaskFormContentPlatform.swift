@@ -27,15 +27,26 @@ struct TaskFormContent: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                formSections
+            VStack(spacing: 0) {
+                identityCard
                     .padding(.horizontal, 24)
                     .padding(.top, 22)
-                    .padding(.bottom, 22)
+                    .padding(.bottom, 20)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                ScrollView {
+                    scrollableFormSections
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 22)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .onChange(of: formCoordinator.scrollTarget) { _, target in
                 guard let target else { return }
+                if target == "Identity" {
+                    formCoordinator.scrollTarget = nil
+                    return
+                }
                 withAnimation(.easeInOut(duration: 0.35)) {
                     proxy.scrollTo(target, anchor: .top)
                 }
@@ -54,10 +65,11 @@ struct TaskFormContent: View {
     // MARK: - Form sections
 
     @ViewBuilder
-    private var formSections: some View {
+    private var scrollableFormSections: some View {
         VStack(alignment: .leading, spacing: 20) {
-            identityCard
             behaviorCard
+            placesCard
+            importanceCard
             contextCard
             notesCard
 
@@ -78,15 +90,41 @@ struct TaskFormContent: View {
 
     private var identityCard: some View {
         macSectionCard(
-            title: "Identity",
-            subtitle: "Start with the essentials so the task feels defined right away."
+            title: "Identity"
         ) {
             VStack(alignment: .leading, spacing: 18) {
                 if model.autofocusName {
-                    livePreviewHeader
-                }
+                    HStack(alignment: .top, spacing: 16) {
+                        Text(model.emoji.wrappedValue)
+                            .font(.system(size: 30))
+                            .frame(width: 60, height: 60)
+                            .background(Circle().fill(Color.accentColor.opacity(0.16)))
 
-                macControlBlock(title: "Task name") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            TextField("Task name", text: model.name)
+                                .textFieldStyle(.roundedBorder)
+
+                            if let msg = model.nameValidationMessage {
+                                Text(msg)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            }
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    if let scheduleModeTitle = previewScheduleModeTitle {
+                                        macInfoPill(scheduleModeTitle, systemImage: "repeat")
+                                    }
+                                    if let previewPlaceSummary {
+                                        macInfoPill(previewPlaceSummary, systemImage: "mappin.and.ellipse")
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(minLength: 0)
+                    }
+                } else {
                     VStack(alignment: .leading, spacing: 6) {
                         TextField("Task name", text: model.name)
                             .textFieldStyle(.roundedBorder)
@@ -99,26 +137,15 @@ struct TaskFormContent: View {
                     }
                 }
 
-                macControlBlock(title: "Emoji") {
+                macControlBlock(title: "") {
                     VStack(alignment: .leading, spacing: 10) {
-                        HStack(spacing: 10) {
-                            Text(model.emoji.wrappedValue)
-                                .font(.title2)
-                                .frame(width: 44, height: 44)
-                                .background(Circle().fill(Color.accentColor.opacity(0.16)))
-
-                            Button("Choose Emoji") {
-                                model.isEmojiPickerPresented.wrappedValue = true
-                            }
-                            .buttonStyle(.bordered)
-
-                            Text("Quick picks")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
+                                Button("More Emoji") {
+                                    model.isEmojiPickerPresented.wrappedValue = true
+                                }
+                                .buttonStyle(.bordered)
+
                                 ForEach(Array(model.emojiOptions.prefix(8)), id: \.self) { emoji in
                                     Button {
                                         model.emoji.wrappedValue = emoji
@@ -145,47 +172,14 @@ struct TaskFormContent: View {
         .id("Identity")
     }
 
-    @ViewBuilder
-    private var livePreviewHeader: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Text(model.emoji.wrappedValue)
-                .font(.system(size: 30))
-                .frame(width: 60, height: 60)
-                .background(Circle().fill(Color.accentColor.opacity(0.16)))
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(previewTitle)
-                    .font(.title2.weight(.semibold))
-                    .lineLimit(1)
-
-                Text(previewSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        if let scheduleModeTitle = previewScheduleModeTitle {
-                            macInfoPill(scheduleModeTitle, systemImage: "repeat")
-                        }
-                        macInfoPill(previewScheduleSummary, systemImage: "calendar")
-                        macInfoPill(previewPlaceSummary, systemImage: "mappin.and.ellipse")
-                    }
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
-    }
-
     // MARK: Behavior
 
     private var behaviorCard: some View {
         macSectionCard(
-            title: "Behavior",
-            subtitle: "Choose how this task repeats, where it appears, and when it is due."
+            title: "Behavior"
         ) {
             VStack(alignment: .leading, spacing: 18) {
-                macControlBlock(title: "Type", caption: taskTypeDescription) {
+                macControlBlock(title: "Type") {
                     HStack(spacing: 0) {
                         Picker("Task Type", selection: model.taskType) {
                             Text("Routine").tag(RoutineTaskType.routine)
@@ -199,7 +193,7 @@ struct TaskFormContent: View {
                 }
 
                 if model.taskType.wrappedValue == .routine {
-                    macControlBlock(title: "Schedule style", caption: scheduleModeDescription) {
+                    macControlBlock(title: "Schedule style") {
                         HStack(spacing: 0) {
                             Picker("Schedule Type", selection: model.scheduleMode) {
                                 Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
@@ -214,7 +208,7 @@ struct TaskFormContent: View {
                     }
 
                     if !isStepBasedMode {
-                        macControlBlock(title: "Checklist", caption: checklistSectionDescription) {
+                        macControlBlock(title: "Checklist") {
                             VStack(alignment: .leading, spacing: 12) {
                                 checklistItemComposer
                                 checklistItemsContent
@@ -224,7 +218,7 @@ struct TaskFormContent: View {
                 }
 
                 if showsRepeatControls {
-                    macControlBlock(title: "Repeat pattern", caption: recurrencePatternDescription) {
+                    macControlBlock(title: "Repeat pattern") {
                         HStack(spacing: 0) {
                             Picker("Repeat Pattern", selection: model.recurrenceKind) {
                                 ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
@@ -240,13 +234,7 @@ struct TaskFormContent: View {
 
                     switch model.recurrenceKind.wrappedValue {
                     case .intervalDays:
-                        macControlBlock(
-                            title: "Repeat",
-                            caption: stepperLabel(
-                                frequencyUnit: model.frequencyUnit.wrappedValue,
-                                frequencyValue: model.frequencyValue.wrappedValue
-                            )
-                        ) {
+                        macControlBlock(title: "Repeat") {
                             HStack(spacing: 10) {
                                 Text("Every")
                                     .foregroundStyle(.secondary)
@@ -272,7 +260,7 @@ struct TaskFormContent: View {
                         }
 
                     case .dailyTime:
-                        macControlBlock(title: "Time", caption: "Due every day at a specific time.") {
+                        macControlBlock(title: "Time") {
                             DatePicker(
                                 "Time",
                                 selection: model.recurrenceTimeOfDay,
@@ -282,10 +270,7 @@ struct TaskFormContent: View {
                         }
 
                     case .weekly:
-                        macControlBlock(
-                            title: "Weekday",
-                            caption: "Due every \(weekdayName(for: model.recurrenceWeekday.wrappedValue))."
-                        ) {
+                        macControlBlock(title: "Weekday") {
                             Picker("Weekday", selection: model.recurrenceWeekday) {
                                 ForEach(weekdayOptions, id: \.id) { option in
                                     Text(option.name).tag(option.id)
@@ -296,10 +281,7 @@ struct TaskFormContent: View {
                         }
 
                     case .monthlyDay:
-                        macControlBlock(
-                            title: "Month day",
-                            caption: "Due on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) of each month."
-                        ) {
+                        macControlBlock(title: "Month day") {
                             Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
                                 Text(ordinalDay(model.recurrenceDayOfMonth.wrappedValue))
                                     .frame(minWidth: 40, alignment: .leading)
@@ -309,59 +291,69 @@ struct TaskFormContent: View {
                     }
                 }
 
-                HStack(alignment: .top, spacing: 16) {
-                    macControlBlock(title: "Place", caption: placeSelectionDescription) {
-                        Picker("Place", selection: model.selectedPlaceID) {
-                            Text("Anywhere").tag(Optional<UUID>.none)
-                            ForEach(model.availablePlaces) { place in
-                                Text(place.name).tag(Optional(place.id))
+                if model.taskType.wrappedValue == .todo {
+                    macControlBlock(title: "Deadline") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Toggle("Set deadline", isOn: model.deadlineEnabled)
+                            if model.deadlineEnabled.wrappedValue {
+                                DatePicker("Deadline", selection: model.deadline)
+                                    .labelsHidden()
                             }
                         }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-
-                    if model.taskType.wrappedValue == .todo {
-                        macControlBlock(
-                            title: "Deadline",
-                            caption: model.deadlineEnabled.wrappedValue
-                                ? "This todo will use the selected due date."
-                                : "Leave this off until the task has a real deadline."
-                        ) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Toggle("Set deadline", isOn: model.deadlineEnabled)
-                                if model.deadlineEnabled.wrappedValue {
-                                    DatePicker("Deadline", selection: model.deadline)
-                                        .labelsHidden()
-                                }
-                            }
-                        }
-                        .frame(width: 320, alignment: .leading)
-                    }
                 }
 
-                macControlBlock(title: "Importance & Urgency", caption: importanceUrgencyDescription) {
-                    ImportanceUrgencyMatrixPicker(
-                        importance: model.importance,
-                        urgency: model.urgency
-                    )
-                    .frame(maxWidth: 420, alignment: .leading)
-                }
             }
         }
         .id("Behavior")
+    }
+
+    // MARK: Places
+
+    private var placesCard: some View {
+        macSectionCard(
+            title: "Places"
+        ) {
+            macControlBlock(title: "Place") {
+                Picker("Place", selection: model.selectedPlaceID) {
+                    Text("Anywhere").tag(Optional<UUID>.none)
+                    ForEach(model.availablePlaces) { place in
+                        Text(place.name).tag(Optional(place.id))
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+            }
+        }
+        .id("Places")
+    }
+
+    // MARK: Importance
+
+    private var importanceCard: some View {
+        macSectionCard(
+            title: "Importance & Urgency"
+        ) {
+            macControlBlock(title: "Priority matrix") {
+                ImportanceUrgencyMatrixPicker(
+                    importance: model.importance,
+                    urgency: model.urgency
+                )
+                .frame(maxWidth: 420, alignment: .leading)
+            }
+        }
+        .id("Importance & Urgency")
     }
 
     // MARK: Context
 
     private var contextCard: some View {
         macSectionCard(
-            title: "Context",
-            subtitle: "Keep supporting metadata lightweight and easy to scan."
+            title: "Context"
         ) {
             VStack(alignment: .leading, spacing: 18) {
-                macControlBlock(title: "Tags", caption: tagSectionHelpText) {
+                macControlBlock(title: "Tags") {
                     VStack(alignment: .leading, spacing: 10) {
                         tagComposer
                         tagsContent
@@ -370,10 +362,7 @@ struct TaskFormContent: View {
                     }
                 }
 
-                macControlBlock(
-                    title: "Linked tasks",
-                    caption: "Link this task to another task as related work or a blocker."
-                ) {
+                macControlBlock(title: "Linked tasks") {
                     TaskRelationshipsEditor(
                         relationships: model.relationships,
                         candidates: model.availableRelationshipTasks,
@@ -382,10 +371,7 @@ struct TaskFormContent: View {
                     )
                 }
 
-                macControlBlock(
-                    title: "Open link",
-                    caption: "Add a website to open from the task detail screen. If you skip the scheme, https will be used."
-                ) {
+                macControlBlock(title: "Open link") {
                     TextField("https://example.com", text: model.link)
                         .textFieldStyle(.roundedBorder)
                         .routinaAddRoutinePlatformLinkField()
@@ -399,10 +385,7 @@ struct TaskFormContent: View {
 
     private var notesCard: some View {
         macSectionCard(
-            title: "Notes",
-            subtitle: model.taskType.wrappedValue == .todo
-                ? "Capture extra context, links, or reminders for this todo."
-                : "Add any details you want to keep with this routine."
+            title: "Notes"
         ) {
             ZStack(alignment: .topLeading) {
                 TextEditor(text: model.notes)
@@ -432,7 +415,7 @@ struct TaskFormContent: View {
     // MARK: Steps
 
     private var stepsCard: some View {
-        macSectionCard(title: "Steps", subtitle: stepsSectionDescription) {
+        macSectionCard(title: "Steps") {
             VStack(alignment: .leading, spacing: 12) {
                 stepComposer
                 stepsContent
@@ -445,8 +428,7 @@ struct TaskFormContent: View {
 
     private var imageCard: some View {
         macSectionCard(
-            title: "Image",
-            subtitle: "Optional artwork or reference material for this task."
+            title: "Image"
         ) {
             imageAttachmentContent
         }
@@ -457,8 +439,7 @@ struct TaskFormContent: View {
 
     private var attachmentCard: some View {
         macSectionCard(
-            title: "File Attachment",
-            subtitle: "Attach a file up to 20 MB to keep reference material with this task."
+            title: "File Attachment"
         ) {
             attachmentContent
         }
@@ -595,15 +576,13 @@ struct TaskFormContent: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                alignment: .leading,
-                spacing: 8
-            ) {
+            TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
                 ForEach(model.routineTags, id: \.self) { tag in
                     Button { model.onRemoveTag(tag) } label: {
                         HStack(spacing: 6) {
-                            Text("#\(tag)").lineLimit(1)
+                            Text("#\(tag)")
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                             Image(systemName: "xmark.circle.fill").font(.caption)
                         }
                         .padding(.horizontal, 10)
@@ -611,6 +590,7 @@ struct TaskFormContent: View {
                         .background(Color.accentColor.opacity(0.14), in: Capsule())
                     }
                     .buttonStyle(.plain)
+                    .fixedSize()
                     .accessibilityLabel("Remove tag \(tag)")
                 }
             }
@@ -626,18 +606,16 @@ struct TaskFormContent: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
 
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                    alignment: .leading,
-                    spacing: 8
-                ) {
+                TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
                     ForEach(model.availableTags, id: \.self) { tag in
                         let isSelected = RoutineTag.contains(tag, in: model.routineTags)
                         Button { model.onToggleTagSelection(tag) } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
                                     .font(.caption)
-                                Text("#\(tag)").lineLimit(1)
+                                Text("#\(tag)")
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
                             }
                             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                             .padding(.horizontal, 10)
@@ -647,10 +625,11 @@ struct TaskFormContent: View {
                                     isSelected
                                         ? Color.accentColor.opacity(0.16)
                                         : Color.secondary.opacity(0.10)
-                                )
+                                    )
                             )
                         }
                         .buttonStyle(.plain)
+                        .fixedSize()
                         .accessibilityLabel("\(isSelected ? "Remove" : "Add") tag \(tag)")
                     }
                 }
@@ -1047,10 +1026,10 @@ struct TaskFormContent: View {
         }
     }
 
-    private var previewPlaceSummary: String {
+    private var previewPlaceSummary: String? {
         guard let id = model.selectedPlaceID.wrappedValue,
               let place = model.availablePlaces.first(where: { $0.id == id }) else {
-            return "Anywhere"
+            return nil
         }
         return place.name
     }
@@ -1118,5 +1097,82 @@ struct TaskFormContent: View {
         defer { url.stopAccessingSecurityScopedResource() }
         guard let data = try? Data(contentsOf: url), data.count <= maxSize else { return }
         model.onAttachmentPicked(data, url.lastPathComponent)
+    }
+}
+
+private struct TagFlowLayout: Layout {
+    let itemSpacing: CGFloat
+    let lineSpacing: CGFloat
+
+    init(itemSpacing: CGFloat = 8, lineSpacing: CGFloat = 8) {
+        self.itemSpacing = itemSpacing
+        self.lineSpacing = lineSpacing
+    }
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .greatestFiniteMagnitude
+        var currentX: CGFloat = 0
+        var currentLineHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var maxLineWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let requiredWidth = currentX == 0 ? size.width : currentX + itemSpacing + size.width
+
+            if requiredWidth > maxWidth && currentX > 0 {
+                totalHeight += currentLineHeight + lineSpacing
+                maxLineWidth = max(maxLineWidth, currentX)
+                currentX = size.width
+                currentLineHeight = size.height
+            } else {
+                currentX = requiredWidth
+                currentLineHeight = max(currentLineHeight, size.height)
+            }
+        }
+
+        if currentLineHeight > 0 {
+            totalHeight += currentLineHeight
+            maxLineWidth = max(maxLineWidth, currentX)
+        }
+
+        return CGSize(width: maxLineWidth, height: totalHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var currentX = bounds.minX
+        var currentY = bounds.minY
+        var currentLineHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let extraSpacing = currentX == bounds.minX ? 0 : itemSpacing
+            let proposedMaxX = currentX + extraSpacing + size.width
+
+            if proposedMaxX > bounds.maxX && currentX > bounds.minX {
+                currentX = bounds.minX
+                currentY += currentLineHeight + lineSpacing
+                currentLineHeight = 0
+            }
+
+            let placementX = currentX == bounds.minX ? currentX : currentX + itemSpacing
+            subview.place(
+                at: CGPoint(x: placementX, y: currentY),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(size)
+            )
+
+            currentX = placementX + size.width
+            currentLineHeight = max(currentLineHeight, size.height)
+        }
     }
 }
