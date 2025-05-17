@@ -167,9 +167,6 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 calendarSection
-                if shouldShowRoutineSummarySection {
-                    routineSummarySection
-                }
                 routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
@@ -613,17 +610,6 @@ struct TaskDetailTCAView: View {
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-        }
-        .padding(16)
-        .detailCardStyle()
-    }
-
-    private var routineSummarySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Routine Summary")
-                .font(.headline)
-
-            statusMetadataSection(showSelectedDate: false)
         }
         .padding(16)
         .detailCardStyle()
@@ -1902,9 +1888,6 @@ struct TaskDetailTCAView: View {
         store.task.isPaused || store.task.isCompletedOneOff || store.task.isCanceledOneOff || isSelectedDateInFuture
     }
 
-    private var shouldShowRoutineSummarySection: Bool {
-        !isSelectedDateTerminal
-    }
 
     private func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
         guard store.task.isChecklistCompletionRoutine else { return false }
