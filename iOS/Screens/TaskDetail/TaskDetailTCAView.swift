@@ -246,7 +246,7 @@ struct TaskDetailTCAView: View {
                 .padding(.bottom, 8)
 
             calendarGrid(
-                doneDates: doneDates(from: store.logs),
+                doneDates: doneDates(from: store.logs, task: store.task),
                 dueDate: dueDate(for: store.task),
                 pausedAt: store.task.pausedAt,
                 isOrangeUrgencyToday: isOrangeUrgency(store.task),
@@ -511,12 +511,7 @@ struct TaskDetailTCAView: View {
             primaryActionButton
             cancelTodoButton
 
-            if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
-                Text("Select the logged date in the calendar if you want to undo it.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if !blockingRelationships.isEmpty {
+            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff && !blockingRelationships.isEmpty {
                 Text(blockerSummaryText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -900,7 +895,7 @@ struct TaskDetailTCAView: View {
         }
         if store.task.isOneOffTask {
             if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
-                return "Select the logged date to undo it if needed."
+                return nil
             }
             return nil
         }
@@ -1364,9 +1359,13 @@ struct TaskDetailTCAView: View {
         .buttonStyle(.plain)
     }
 
-    private func doneDates(from logs: [RoutineLog]) -> Set<Date> {
+    private func doneDates(from logs: [RoutineLog], task: RoutineTask) -> Set<Date> {
         let calendar = Calendar.current
-        return Set(logs.compactMap { $0.timestamp }.map { calendar.startOfDay(for: $0) })
+        var dates = Set(logs.compactMap { $0.timestamp }.map { calendar.startOfDay(for: $0) })
+        if let lastDone = task.lastDone {
+            dates.insert(calendar.startOfDay(for: lastDone))
+        }
+        return dates
     }
 
     private func dueDate(for task: RoutineTask) -> Date? {
