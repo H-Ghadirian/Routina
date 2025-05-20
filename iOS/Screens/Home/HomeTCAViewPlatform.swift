@@ -568,7 +568,7 @@ extension HomeTCAView {
                 )
             }
         }
-        .navigationTitle("Routina")
+        .navigationTitle(store.taskListMode == .todos ? "Todos" : "Routines")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { homeToolbarContent }
         .routinaHomeSidebarColumnWidth()

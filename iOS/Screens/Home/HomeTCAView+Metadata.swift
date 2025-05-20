@@ -122,7 +122,7 @@ extension HomeTCAView {
 
     func badgeStyle(
         for task: HomeFeature.RoutineDisplay
-    ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color) {
+    ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color)? {
         if task.isPaused {
             return ("Paused", "pause.circle.fill", .teal, Color.teal.opacity(0.16))
         }
@@ -139,7 +139,7 @@ extension HomeTCAView {
             if task.isCanceledOneOff {
                 return ("Canceled", "xmark.circle.fill", .orange, Color.orange.opacity(0.14))
             }
-            return ("To Do", "circle", .blue, Color.blue.opacity(0.12))
+            return nil
         }
         let dueIn = dueInDays(for: task)
 
