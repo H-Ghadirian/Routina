@@ -13,7 +13,7 @@ struct TimelineView: View {
         WithPerceptionTracking {
             NavigationStack {
                 content
-                    .navigationTitle("Timeline")
+                    .navigationTitle("Dones")
                     .routinaTimelineNavigationTitleDisplayMode()
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {

@@ -489,6 +489,18 @@ struct HomeTCAView: View {
         }
     }
 
+    func taskTypeBadge(for task: HomeFeature.RoutineDisplay) -> some View {
+        let title = task.isOneOffTask ? "Todo" : "Routine"
+        let tint: Color = task.isOneOffTask ? .blue : .green
+
+        return Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(tint.opacity(0.12), in: Capsule())
+    }
+
     func tagFilterButton(
         title: String,
         isSelected: Bool,

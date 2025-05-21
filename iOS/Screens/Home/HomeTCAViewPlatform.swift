@@ -8,9 +8,21 @@ extension View {
 }
 
 extension HomeTCAView {
+    var homeNavigationTitle: String {
+        switch store.taskListMode {
+        case .all:
+            return "All"
+        case .todos:
+            return "Todos"
+        case .routines:
+            return "Routines"
+        }
+    }
+
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarLeading) {
+            iosTaskListModeButton(.all)
             iosTaskListModeButton(.routines)
             iosTaskListModeButton(.todos)
         }
@@ -71,6 +83,8 @@ extension HomeTCAView {
 
     var searchPlaceholderText: String {
         switch store.taskListMode {
+        case .all:
+            return "Search tasks"
         case .routines:
             return "Search routines"
         case .todos:
@@ -273,6 +287,8 @@ extension HomeTCAView {
 
     func matchesCurrentTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
         switch store.taskListMode {
+        case .all:
+            return true
         case .routines:
             return !task.isOneOffTask
         case .todos:
@@ -343,6 +359,16 @@ extension HomeTCAView {
         let sections = groupedRoutineSections(from: routineDisplays)
         let awayTasks = filteredAwayTasks(awayRoutineDisplays)
         let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays)
+        let emptyStateTitle: String = {
+            switch store.taskListMode {
+            case .all:
+                return "No matching tasks"
+            case .todos:
+                return "No matching todos"
+            case .routines:
+                return "No matching routines"
+            }
+        }()
         let inlineEmptyState: (title: String, message: String, systemImage: String)? = {
             guard sections.isEmpty && archivedTasks.isEmpty && (store.hideUnavailableRoutines || awayTasks.isEmpty)
             else {
@@ -358,7 +384,7 @@ extension HomeTCAView {
             }
 
             return (
-                title: store.taskListMode == .todos ? "No matching todos" : "No matching routines",
+                title: emptyStateTitle,
                 message: "Try a different search or switch back to another filter.",
                 systemImage: "magnifyingglass"
             )
@@ -477,7 +503,12 @@ extension HomeTCAView {
                     .lineLimit(1)
                     .layoutPriority(1)
 
-                statusBadge(for: task)
+                HStack(spacing: 6) {
+                    if store.taskListMode == .all {
+                        taskTypeBadge(for: task)
+                    }
+                    statusBadge(for: task)
+                }
 
                 if let metadataText {
                     Text(metadataText)
@@ -568,7 +599,7 @@ extension HomeTCAView {
                 )
             }
         }
-        .navigationTitle(store.taskListMode == .todos ? "Todos" : "Routines")
+        .navigationTitle(homeNavigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { homeToolbarContent }
         .routinaHomeSidebarColumnWidth()

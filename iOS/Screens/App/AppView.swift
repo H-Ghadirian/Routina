@@ -21,7 +21,7 @@ struct AppView: View {
                     platformSearchHomeView(searchText: $searchText)
                 }
 
-                SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
+                SwiftUI.Tab("Dones", systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
                     TimelineView(
                         store: store.scope(state: \.timeline, action: \.timeline)
                     )
