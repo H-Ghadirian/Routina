@@ -33,6 +33,8 @@ struct SettingsFeature {
         var selectedAppIcon: AppIconOption = .orange
         var savedPlaces: [RoutinePlaceSummary] = []
         var savedTags: [RoutineTagSummary] = []
+        var hasTemporaryViewStateToReset: Bool = false
+        var temporaryViewStateStatusMessage: String = ""
         var placePendingDeletion: RoutinePlaceSummary?
         var tagPendingDeletion: RoutineTagSummary?
         var tagPendingRename: RoutineTagSummary?
@@ -89,6 +91,7 @@ struct SettingsFeature {
         case exportRoutineDataTapped
         case importRoutineDataTapped
         case appIconSelected(AppIconOption)
+        case resetTemporaryViewStateTapped
         case appIconChangeFinished(requestedOption: AppIconOption, errorMessage: String?)
         case routineDataTransferFinished(success: Bool, message: String)
         case cloudSyncFinished(success: Bool, message: String)
@@ -110,6 +113,12 @@ struct SettingsFeature {
             case let .routineListSectioningModeChanged(mode):
                 state.routineListSectioningMode = mode
                 appSettingsClient.setRoutineListSectioningMode(mode)
+                return .none
+
+            case .resetTemporaryViewStateTapped:
+                appSettingsClient.resetTemporaryViewState()
+                state.hasTemporaryViewStateToReset = false
+                state.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
                 return .none
 
             case .toggleNotifications(let isOn):
@@ -163,7 +172,9 @@ struct SettingsFeature {
                 state.notificationReminderTime = appSettingsClient.notificationReminderTime()
                 state.routineListSectioningMode = appSettingsClient.routineListSectioningMode()
                 state.selectedAppIcon = appSettingsClient.selectedAppIcon()
+                state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
                 state.appIconStatusMessage = ""
+                state.temporaryViewStateStatusMessage = ""
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
                 state.cloudDiagnosticsSummary = diagnostics.summary
                 state.cloudDiagnosticsTimestamp = diagnostics.timestampText
@@ -216,6 +227,7 @@ struct SettingsFeature {
 
             case .onAppBecameActive:
                 let notificationsEnabled = state.notificationsEnabled
+                state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
                 return .run { @MainActor send in
                     let context = self.modelContext()
                     let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
@@ -1037,5 +1049,10 @@ struct SettingsFeature {
             guard !task.isPaused, !task.isOneOffTask else { continue }
             await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
         }
+    }
+
+    private func hasTemporaryViewStateToReset() -> Bool {
+        appSettingsClient.hideUnavailableRoutines()
+        || appSettingsClient.temporaryViewState() != nil
     }
 }

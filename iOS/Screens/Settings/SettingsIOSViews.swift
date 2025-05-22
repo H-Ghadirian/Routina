@@ -439,6 +439,7 @@ struct SettingsTagsDetailView: View {
 
 private struct SettingsAppearanceDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var resetFeedbackTrigger = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 108), spacing: 12)
@@ -456,6 +457,21 @@ private struct SettingsAppearanceDetailView: View {
                     .pickerStyle(.segmented)
 
                     Text(store.routineListSectioningSubtitle)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Temporary View State") {
+                    Button {
+                        guard store.hasTemporaryViewStateToReset else { return }
+                        resetFeedbackTrigger.toggle()
+                        store.send(.resetTemporaryViewStateTapped)
+                    } label: {
+                        Label(resetButtonTitle, systemImage: resetButtonSystemImage)
+                            .foregroundStyle(resetButtonForegroundStyle)
+                    }
+                    .disabled(!store.hasTemporaryViewStateToReset)
+
+                    Text(resetButtonDescription)
                         .foregroundStyle(.secondary)
                 }
 
@@ -483,10 +499,18 @@ private struct SettingsAppearanceDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                if !store.temporaryViewStateStatusMessage.isEmpty {
+                    Section("Status") {
+                        Text(store.temporaryViewStateStatusMessage)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Appearance")
             .navigationBarTitleDisplayMode(.inline)
+            .sensoryFeedback(.success, trigger: resetFeedbackTrigger)
         }
     }
 
@@ -495,6 +519,30 @@ private struct SettingsAppearanceDetailView: View {
             get: { store.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
         )
+    }
+
+    private var resetButtonTitle: String {
+        store.hasTemporaryViewStateToReset
+            ? "Reset Filters and Selections"
+            : "Filters and Selections Are Clear"
+    }
+
+    private var resetButtonSystemImage: String {
+        store.hasTemporaryViewStateToReset
+            ? "arrow.counterclockwise"
+            : "checkmark.circle"
+    }
+
+    private var resetButtonDescription: String {
+        store.hasTemporaryViewStateToReset
+            ? "Clears saved filters, list mode choices, and other temporary view selections so the app opens with defaults again."
+            : "Everything is already using the default filters and temporary selections."
+    }
+
+    private var resetButtonForegroundStyle: AnyShapeStyle {
+        store.hasTemporaryViewStateToReset
+            ? AnyShapeStyle(Color.red)
+            : AnyShapeStyle(Color.secondary)
     }
 }
 

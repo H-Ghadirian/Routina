@@ -1,6 +1,6 @@
 import Foundation
 
-enum DoneChartRange: String, CaseIterable, Equatable, Identifiable {
+enum DoneChartRange: String, CaseIterable, Equatable, Identifiable, Codable, Sendable {
     case week = "Week"
     case month = "Month"
     case year = "Year"

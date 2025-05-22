@@ -430,7 +430,10 @@ struct SettingsFeatureDependencyTests {
                 setRoutineListSectioningMode: { _ in },
                 notificationReminderTime: { reminderTime },
                 setNotificationReminderTime: { _ in },
-                selectedAppIcon: { .teal }
+                selectedAppIcon: { .teal },
+                temporaryViewState: { nil },
+                setTemporaryViewState: { _ in },
+                resetTemporaryViewState: { }
             )
             $0.notificationClient.systemNotificationsAuthorized = { true }
             $0.locationClient.snapshot = { _ in snapshot }

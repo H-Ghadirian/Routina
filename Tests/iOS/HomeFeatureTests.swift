@@ -110,6 +110,111 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func onAppear_restoresPersistedTemporaryViewState() async {
+        let context = makeInMemoryContext()
+        let persistedState = TemporaryViewState(
+            selectedAppTabRawValue: Tab.home.rawValue,
+            homeTaskListModeRawValue: HomeFeature.TaskListMode.routines.rawValue,
+            homeSelectedFilter: .due,
+            homeSelectedTag: "Home",
+            homeExcludedTags: ["Work"],
+            homeSelectedManualPlaceFilterID: UUID(),
+            homeTabFilterSnapshots: [
+                HomeFeature.TaskListMode.routines.rawValue: TabFilterStateManager.Snapshot(
+                    selectedTag: "Home",
+                    excludedTags: ["Work"],
+                    selectedFilter: .due,
+                    selectedManualPlaceFilterID: nil
+                )
+            ],
+            hideUnavailableRoutines: true,
+            homeSelectedTimelineRange: .month,
+            homeSelectedTimelineFilterType: .todos,
+            homeSelectedTimelineTag: "Errands",
+            timelineSelectedRange: .all,
+            timelineFilterType: .all,
+            timelineSelectedTag: nil,
+            statsSelectedRange: .year,
+            statsSelectedTag: "Focus",
+            statsTaskTypeFilterRawValue: nil
+        )
+        let locationSnapshot = LocationSnapshot(
+            authorizationStatus: .authorizedAlways,
+            coordinate: nil,
+            horizontalAccuracy: nil,
+            timestamp: nil
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.locationClient.snapshot = { _ in locationSnapshot }
+            $0.appSettingsClient.temporaryViewState = { persistedState }
+            $0.appSettingsClient.hideUnavailableRoutines = { false }
+        }
+
+        await store.send(.onAppear) {
+            $0.hideUnavailableRoutines = true
+            $0.taskListMode = .routines
+            $0.selectedFilter = .due
+            $0.selectedTag = "Home"
+            $0.excludedTags = ["Work"]
+            $0.tabFilterSnapshots = persistedState.homeTabFilterSnapshots
+            $0.selectedTimelineRange = .month
+            $0.selectedTimelineFilterType = .todos
+            $0.selectedTimelineTag = "Errands"
+            $0.statsSelectedRange = .year
+            $0.statsSelectedTag = "Focus"
+        }
+
+        await store.receive(.tasksLoadedSuccessfully([], [], [], HomeFeature.DoneStats()))
+        await store.receive(.locationSnapshotUpdated(locationSnapshot)) {
+            $0.locationSnapshot = locationSnapshot
+        }
+    }
+
+    @Test
+    func selectedFilterChanged_persistsTemporaryViewState() async {
+        let context = makeInMemoryContext()
+        var persistedState: TemporaryViewState?
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                hideUnavailableRoutines: true,
+                taskListMode: .todos,
+                selectedTag: "Errands",
+                excludedTags: ["Home"],
+                selectedTimelineRange: .week,
+                selectedTimelineFilterType: .routines,
+                selectedTimelineTag: "Chores",
+                statsSelectedRange: .month,
+                statsSelectedTag: "Focus"
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState = $0 }
+        }
+
+        await store.send(.selectedFilterChanged(.doneToday)) {
+            $0.selectedFilter = .doneToday
+        }
+
+        #expect(persistedState?.homeTaskListModeRawValue == HomeFeature.TaskListMode.todos.rawValue)
+        #expect(persistedState?.homeSelectedFilter == .doneToday)
+        #expect(persistedState?.homeSelectedTag == "Errands")
+        #expect(persistedState?.homeExcludedTags == ["Home"])
+        #expect(persistedState?.hideUnavailableRoutines == true)
+        #expect(persistedState?.homeSelectedTimelineRange == .week)
+        #expect(persistedState?.homeSelectedTimelineFilterType == .routines)
+        #expect(persistedState?.homeSelectedTimelineTag == "Chores")
+        #expect(persistedState?.statsSelectedRange == .week)
+        #expect(persistedState?.statsSelectedTag == nil)
+    }
+
+    @Test
     func setSelectedTask_populatesReducerOwnedDetailState() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-16T10:00:00Z")

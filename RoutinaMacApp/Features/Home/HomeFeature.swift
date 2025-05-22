@@ -211,7 +211,7 @@ struct HomeFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.hideUnavailableRoutines = appSettingsClient.hideUnavailableRoutines()
+                applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
                 return .concatenate(
                     loadTasksEffect(),
                     .run { @MainActor send in
@@ -250,6 +250,7 @@ struct HomeFeature {
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
                 validateFilterState(&state)
+                persistTemporaryViewState(state)
                 let detailRefreshEffect = refreshSelectedTaskDetailEffect(for: state)
                 guard state.addRoutineState != nil else { return detailRefreshEffect }
                 return .merge(
@@ -272,6 +273,7 @@ struct HomeFeature {
             case let .hideUnavailableRoutinesChanged(isHidden):
                 state.hideUnavailableRoutines = isHidden
                 appSettingsClient.setHideUnavailableRoutines(isHidden)
+                persistTemporaryViewState(state)
                 return .none
 
             case let .setSelectedTask(taskID):
@@ -365,6 +367,7 @@ struct HomeFeature {
                 if state.selectedTaskID == nil {
                     state.macSidebarSelection = nil
                 }
+                persistTemporaryViewState(state)
                 return .none
 
             case let .setMacFilterDetailPresented(isPresented):
@@ -382,18 +385,22 @@ struct HomeFeature {
 
             case let .selectedFilterChanged(filter):
                 state.selectedFilter = filter
+                persistTemporaryViewState(state)
                 return .none
 
             case let .selectedTagChanged(tag):
                 state.selectedTag = tag
+                persistTemporaryViewState(state)
                 return .none
 
             case let .excludedTagsChanged(tags):
                 state.excludedTags = tags
+                persistTemporaryViewState(state)
                 return .none
 
             case let .selectedManualPlaceFilterIDChanged(id):
                 state.selectedManualPlaceFilterID = id
+                persistTemporaryViewState(state)
                 return .none
 
             case let .isFilterSheetPresentedChanged(isPresented):
@@ -408,30 +415,36 @@ struct HomeFeature {
                     state.hideUnavailableRoutines = false
                     appSettingsClient.setHideUnavailableRoutines(false)
                 }
+                persistTemporaryViewState(state)
                 return .none
 
             // MARK: - Timeline filter actions
 
             case let .selectedTimelineRangeChanged(range):
                 state.selectedTimelineRange = range
+                persistTemporaryViewState(state)
                 return .none
 
             case let .selectedTimelineFilterTypeChanged(filterType):
                 state.selectedTimelineFilterType = filterType
+                persistTemporaryViewState(state)
                 return .none
 
             case let .selectedTimelineTagChanged(tag):
                 state.selectedTimelineTag = tag
+                persistTemporaryViewState(state)
                 return .none
 
             // MARK: - Stats filter actions
 
             case let .statsSelectedRangeChanged(range):
                 state.statsSelectedRange = range
+                persistTemporaryViewState(state)
                 return .none
 
             case let .statsSelectedTagChanged(tag):
                 state.statsSelectedTag = tag
+                persistTemporaryViewState(state)
                 return .none
 
             // MARK: - macOS navigation actions
@@ -505,9 +518,10 @@ struct HomeFeature {
                             state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
                             if savedSnapshot == nil && state.hideUnavailableRoutines {
                                 state.hideUnavailableRoutines = false
-                                SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
+                                appSettingsClient.setHideUnavailableRoutines(false)
                             }
                             state.taskListMode = newMode
+                            persistTemporaryViewState(state)
                         }
                     }
                     return .send(.setSelectedTask(taskID))
@@ -1041,6 +1055,55 @@ struct HomeFeature {
 
     private func detachedPlaces(from places: [RoutinePlace]) -> [RoutinePlace] {
         places.map { $0.detachedCopy() }
+    }
+
+    private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {
+        let persistedState = persistedState ?? .default
+        state.hideUnavailableRoutines = persistedState.hideUnavailableRoutines || appSettingsClient.hideUnavailableRoutines()
+        state.selectedFilter = persistedState.homeSelectedFilter
+        state.selectedTag = persistedState.homeSelectedTag
+        state.excludedTags = persistedState.homeExcludedTags
+        state.selectedManualPlaceFilterID = persistedState.homeSelectedManualPlaceFilterID
+        state.tabFilterSnapshots = persistedState.homeTabFilterSnapshots
+        state.selectedTimelineRange = persistedState.homeSelectedTimelineRange
+        state.selectedTimelineFilterType = persistedState.homeSelectedTimelineFilterType
+        state.selectedTimelineTag = persistedState.homeSelectedTimelineTag
+        state.statsSelectedRange = persistedState.statsSelectedRange
+        state.statsSelectedTag = persistedState.statsSelectedTag
+
+        if let rawValue = persistedState.homeTaskListModeRawValue,
+           let mode = TaskListMode(rawValue: rawValue) {
+            state.taskListMode = mode
+            if let snapshot = state.tabFilterSnapshots[rawValue] {
+                state.selectedTag = snapshot.selectedTag
+                state.excludedTags = snapshot.excludedTags
+                state.selectedFilter = snapshot.selectedFilter
+                state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
+            }
+        }
+    }
+
+    private func persistTemporaryViewState(_ state: State) {
+        appSettingsClient.setTemporaryViewState(
+            TemporaryViewState(
+                homeTaskListModeRawValue: state.taskListMode.rawValue,
+                homeSelectedFilter: state.selectedFilter,
+                homeSelectedTag: state.selectedTag,
+                homeExcludedTags: state.excludedTags,
+                homeSelectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
+                homeTabFilterSnapshots: state.tabFilterSnapshots,
+                hideUnavailableRoutines: state.hideUnavailableRoutines,
+                homeSelectedTimelineRange: state.selectedTimelineRange,
+                homeSelectedTimelineFilterType: state.selectedTimelineFilterType,
+                homeSelectedTimelineTag: state.selectedTimelineTag,
+                timelineSelectedRange: .all,
+                timelineFilterType: .all,
+                timelineSelectedTag: nil,
+                statsSelectedRange: .week,
+                statsSelectedTag: nil,
+                statsTaskTypeFilterRawValue: nil
+            )
+        )
     }
 
 }

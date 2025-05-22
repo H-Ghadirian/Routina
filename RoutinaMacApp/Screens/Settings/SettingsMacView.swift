@@ -644,6 +644,22 @@ private struct SettingsMacAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                SettingsMacDetailCard(title: "Temporary View State") {
+                    Button {
+                        guard store.hasTemporaryViewStateToReset else { return }
+                        store.send(.resetTemporaryViewStateTapped)
+                    } label: {
+                        Label(resetButtonTitle, systemImage: resetButtonSystemImage)
+                    }
+                    .buttonStyle(store.hasTemporaryViewStateToReset ? .borderedProminent : .bordered)
+                    .tint(store.hasTemporaryViewStateToReset ? .red : .gray)
+                    .disabled(!store.hasTemporaryViewStateToReset)
+
+                    Text(resetButtonDescription)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "App Icon") {
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(AppIconOption.allCases) { option in
@@ -668,6 +684,14 @@ private struct SettingsMacAppearanceDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                if !store.temporaryViewStateStatusMessage.isEmpty {
+                    SettingsMacDetailCard(title: "Status") {
+                        Text(store.temporaryViewStateStatusMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
     }
@@ -677,6 +701,24 @@ private struct SettingsMacAppearanceDetailView: View {
             get: { store.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
         )
+    }
+
+    private var resetButtonTitle: String {
+        store.hasTemporaryViewStateToReset
+            ? "Reset Filters and Selections"
+            : "Filters and Selections Are Clear"
+    }
+
+    private var resetButtonSystemImage: String {
+        store.hasTemporaryViewStateToReset
+            ? "arrow.counterclockwise"
+            : "checkmark.circle"
+    }
+
+    private var resetButtonDescription: String {
+        store.hasTemporaryViewStateToReset
+            ? "Clears saved filters, list mode choices, and other temporary view selections so the app opens with defaults again."
+            : "Everything is already using the default filters and temporary selections."
     }
 }
 

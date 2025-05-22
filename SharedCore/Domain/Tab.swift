@@ -1,6 +1,6 @@
 import Foundation
 
-enum Tab: String {
+enum Tab: String, Codable, Sendable {
     case home = "Home"
     case search = "Search"
     case timeline = "Timeline"

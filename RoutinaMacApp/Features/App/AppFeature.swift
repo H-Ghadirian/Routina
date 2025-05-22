@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Foundation
 
-enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatable {
+enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatable, Codable {
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
@@ -31,6 +31,8 @@ struct AppFeature {
         case onAppear
     }
 
+    @Dependency(\.appSettingsClient) var appSettingsClient
+
     var body: some ReducerOf<Self> {
         Scope(state: \.home, action: \.home) {
             HomeFeature()
@@ -48,13 +50,104 @@ struct AppFeature {
             switch action {
             case .tabSelected(let tab):
                 state.selectedTab = tab
+                persistTemporaryViewState(state)
                 return .none
             case .onAppear:
+                applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
+                return .none
+            case .settings(.resetTemporaryViewStateTapped):
+                let timelineTasks = state.timeline.tasks
+                let timelineLogs = state.timeline.logs
+                let statsTasks = state.stats.tasks
+                let statsLogs = state.stats.logs
+                resetTemporaryViewState(&state)
+                persistTemporaryViewState(state)
+                return .merge(
+                    .send(.timeline(.setData(tasks: timelineTasks, logs: timelineLogs))),
+                    .send(.stats(.setData(tasks: statsTasks, logs: statsLogs)))
+                )
+            case .timeline(.selectedRangeChanged),
+                 .timeline(.filterTypeChanged),
+                 .timeline(.selectedTagChanged),
+                 .timeline(.clearFilters),
+                 .stats(.selectedRangeChanged),
+                 .stats(.taskTypeFilterChanged),
+                 .stats(.selectedTagChanged):
+                persistTemporaryViewState(state)
                 return .none
             default:
                 return .none
             }
         }
+    }
+
+    private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {
+        let persistedState = persistedState ?? .default
+        if let rawValue = persistedState.selectedAppTabRawValue,
+           let tab = Tab(rawValue: rawValue) {
+            state.selectedTab = tab
+        }
+        state.timeline.selectedRange = persistedState.timelineSelectedRange
+        state.timeline.filterType = persistedState.timelineFilterType
+        state.timeline.selectedTag = persistedState.timelineSelectedTag
+        state.stats.selectedRange = persistedState.statsSelectedRange
+        state.stats.selectedTag = persistedState.statsSelectedTag
+        if let rawValue = persistedState.statsTaskTypeFilterRawValue,
+           let filter = StatsTaskTypeFilter(rawValue: rawValue) {
+            state.stats.taskTypeFilter = filter
+        }
+    }
+
+    private func resetTemporaryViewState(_ state: inout State) {
+        state.home.taskListMode = .routines
+        state.home.selectedFilter = .all
+        state.home.selectedTag = nil
+        state.home.excludedTags = []
+        state.home.selectedManualPlaceFilterID = nil
+        state.home.tabFilterSnapshots = [:]
+        state.home.hideUnavailableRoutines = false
+        state.home.isFilterSheetPresented = false
+        state.home.selectedTimelineRange = .all
+        state.home.selectedTimelineFilterType = .all
+        state.home.selectedTimelineTag = nil
+        state.home.statsSelectedRange = .week
+        state.home.statsSelectedTag = nil
+
+        state.timeline.selectedRange = .all
+        state.timeline.filterType = .all
+        state.timeline.selectedTag = nil
+        state.timeline.isFilterSheetPresented = false
+        state.timeline.availableTags = []
+        state.timeline.groupedEntries = []
+
+        state.stats.selectedRange = .week
+        state.stats.selectedTag = nil
+        state.stats.taskTypeFilter = .all
+    }
+
+    private func persistTemporaryViewState(_ state: State) {
+        let existing = appSettingsClient.temporaryViewState() ?? .default
+        appSettingsClient.setTemporaryViewState(
+            TemporaryViewState(
+                selectedAppTabRawValue: state.selectedTab.rawValue,
+                homeTaskListModeRawValue: existing.homeTaskListModeRawValue,
+                homeSelectedFilter: existing.homeSelectedFilter,
+                homeSelectedTag: existing.homeSelectedTag,
+                homeExcludedTags: existing.homeExcludedTags,
+                homeSelectedManualPlaceFilterID: existing.homeSelectedManualPlaceFilterID,
+                homeTabFilterSnapshots: existing.homeTabFilterSnapshots,
+                hideUnavailableRoutines: existing.hideUnavailableRoutines,
+                homeSelectedTimelineRange: existing.homeSelectedTimelineRange,
+                homeSelectedTimelineFilterType: existing.homeSelectedTimelineFilterType,
+                homeSelectedTimelineTag: existing.homeSelectedTimelineTag,
+                timelineSelectedRange: state.timeline.selectedRange,
+                timelineFilterType: state.timeline.filterType,
+                timelineSelectedTag: state.timeline.selectedTag,
+                statsSelectedRange: state.stats.selectedRange,
+                statsSelectedTag: state.stats.selectedTag,
+                statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue
+            )
+        )
     }
 }
 

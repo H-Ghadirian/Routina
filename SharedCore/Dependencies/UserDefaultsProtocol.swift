@@ -54,6 +54,7 @@ public enum UserDefaultBoolValueKey: String {
 public enum UserDefaultStringValueKey: String {
     case selectedMacAppIcon
     case appSettingRoutineListSectioningMode
+    case appSettingTemporaryViewState
 }
 
 public protocol UserDefaultsProtocol {
@@ -72,6 +73,9 @@ struct AppSettingsClient: Sendable {
     var notificationReminderTime: @Sendable () -> Date
     var setNotificationReminderTime: @Sendable (Date) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
+    var temporaryViewState: @Sendable () -> TemporaryViewState?
+    var setTemporaryViewState: @Sendable (TemporaryViewState?) -> Void
+    var resetTemporaryViewState: @Sendable () -> Void
 }
 
 extension AppSettingsClient {
@@ -104,6 +108,33 @@ extension AppSettingsClient {
         },
         selectedAppIcon: {
             .persistedSelection
+        },
+        temporaryViewState: {
+            guard let rawValue = SharedDefaults.app[.appSettingTemporaryViewState],
+                  let data = rawValue.data(using: .utf8)
+            else {
+                return nil
+            }
+
+            return try? JSONDecoder().decode(TemporaryViewState.self, from: data)
+        },
+        setTemporaryViewState: { state in
+            guard let state else {
+                SharedDefaults.app[.appSettingTemporaryViewState] = nil
+                return
+            }
+
+            guard let data = try? JSONEncoder().encode(state),
+                  let rawValue = String(data: data, encoding: .utf8)
+            else {
+                return
+            }
+
+            SharedDefaults.app[.appSettingTemporaryViewState] = rawValue
+        },
+        resetTemporaryViewState: {
+            SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
+            SharedDefaults.app[.appSettingTemporaryViewState] = nil
         }
     )
 
@@ -116,6 +147,9 @@ extension AppSettingsClient {
         setRoutineListSectioningMode: { _ in },
         notificationReminderTime: { Date() },
         setNotificationReminderTime: { _ in },
-        selectedAppIcon: { .orange }
+        selectedAppIcon: { .orange },
+        temporaryViewState: { nil },
+        setTemporaryViewState: { _ in },
+        resetTemporaryViewState: { }
     )
 }
