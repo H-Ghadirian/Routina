@@ -50,6 +50,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedTimelineRange: TimelineRange
     var homeSelectedTimelineFilterType: TimelineFilterType
     var homeSelectedTimelineTag: String?
+    var macHomeSidebarModeRawValue: String?
+    var macSelectedSettingsSectionRawValue: String?
     var timelineSelectedRange: TimelineRange
     var timelineFilterType: TimelineFilterType
     var timelineSelectedTag: String?
@@ -69,6 +71,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTimelineRange: .all,
         homeSelectedTimelineFilterType: .all,
         homeSelectedTimelineTag: nil,
+        macHomeSidebarModeRawValue: nil,
+        macSelectedSettingsSectionRawValue: nil,
         timelineSelectedRange: .all,
         timelineFilterType: .all,
         timelineSelectedTag: nil,

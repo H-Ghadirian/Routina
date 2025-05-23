@@ -140,6 +140,8 @@ struct AppFeature {
                 homeSelectedTimelineRange: existing.homeSelectedTimelineRange,
                 homeSelectedTimelineFilterType: existing.homeSelectedTimelineFilterType,
                 homeSelectedTimelineTag: existing.homeSelectedTimelineTag,
+                macHomeSidebarModeRawValue: existing.macHomeSidebarModeRawValue,
+                macSelectedSettingsSectionRawValue: existing.macSelectedSettingsSectionRawValue,
                 timelineSelectedRange: state.timeline.selectedRange,
                 timelineFilterType: state.timeline.filterType,
                 timelineSelectedTag: state.timeline.selectedTag,

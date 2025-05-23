@@ -983,6 +983,8 @@ struct HomeFeature {
                 homeSelectedTimelineRange: state.selectedTimelineRange,
                 homeSelectedTimelineFilterType: state.selectedTimelineFilterType,
                 homeSelectedTimelineTag: state.selectedTimelineTag,
+                macHomeSidebarModeRawValue: nil,
+                macSelectedSettingsSectionRawValue: nil,
                 timelineSelectedRange: .all,
                 timelineFilterType: .all,
                 timelineSelectedTag: nil,

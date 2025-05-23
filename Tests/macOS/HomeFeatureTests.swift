@@ -131,6 +131,8 @@ struct HomeFeatureTests {
             homeSelectedTimelineRange: .month,
             homeSelectedTimelineFilterType: .todos,
             homeSelectedTimelineTag: "Errands",
+            macHomeSidebarModeRawValue: HomeFeature.MacSidebarMode.stats.rawValue,
+            macSelectedSettingsSectionRawValue: SettingsMacSection.notifications.rawValue,
             timelineSelectedRange: .all,
             timelineFilterType: .all,
             timelineSelectedTag: nil,

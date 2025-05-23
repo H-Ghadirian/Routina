@@ -1580,6 +1580,7 @@ extension HomeTCAView {
 }
 
 struct HomeMacView: View {
+    let appStore: StoreOf<AppFeature>
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>
@@ -1590,6 +1591,9 @@ struct HomeMacView: View {
             settingsStore: settingsStore,
             statsStore: statsStore
         )
+        .task {
+            appStore.send(.onAppear)
+        }
         .onReceive(
             NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)
                 .receive(on: RunLoop.main)

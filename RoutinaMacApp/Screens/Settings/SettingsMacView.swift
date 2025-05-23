@@ -651,7 +651,7 @@ private struct SettingsMacAppearanceDetailView: View {
                     } label: {
                         Label(resetButtonTitle, systemImage: resetButtonSystemImage)
                     }
-                    .buttonStyle(store.hasTemporaryViewStateToReset ? .borderedProminent : .bordered)
+                    .buttonStyle(.bordered)
                     .tint(store.hasTemporaryViewStateToReset ? .red : .gray)
                     .disabled(!store.hasTemporaryViewStateToReset)
 

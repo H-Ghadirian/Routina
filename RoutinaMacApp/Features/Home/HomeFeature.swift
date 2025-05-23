@@ -489,6 +489,7 @@ struct HomeFeature {
                         state.addRoutineState = nil
                     }
                 }
+                persistTemporaryViewState(state)
                 return .none
 
             case let .macSidebarSelectionChanged(selection):
@@ -538,6 +539,7 @@ struct HomeFeature {
 
             case let .selectedSettingsSectionChanged(section):
                 state.selectedSettingsSection = section
+                persistTemporaryViewState(state)
                 return .none
 
             case .deleteTasksConfirmed:
@@ -1070,6 +1072,13 @@ struct HomeFeature {
         state.selectedTimelineTag = persistedState.homeSelectedTimelineTag
         state.statsSelectedRange = persistedState.statsSelectedRange
         state.statsSelectedTag = persistedState.statsSelectedTag
+        if let rawValue = persistedState.macHomeSidebarModeRawValue,
+           let mode = MacSidebarMode(rawValue: rawValue) {
+            state.macSidebarMode = mode
+        }
+        if let rawValue = persistedState.macSelectedSettingsSectionRawValue {
+            state.selectedSettingsSection = SettingsMacSection(rawValue: rawValue)
+        }
 
         if let rawValue = persistedState.homeTaskListModeRawValue,
            let mode = TaskListMode(rawValue: rawValue) {
@@ -1096,6 +1105,8 @@ struct HomeFeature {
                 homeSelectedTimelineRange: state.selectedTimelineRange,
                 homeSelectedTimelineFilterType: state.selectedTimelineFilterType,
                 homeSelectedTimelineTag: state.selectedTimelineTag,
+                macHomeSidebarModeRawValue: state.macSidebarMode.rawValue,
+                macSelectedSettingsSectionRawValue: state.selectedSettingsSection?.rawValue,
                 timelineSelectedRange: .all,
                 timelineFilterType: .all,
                 timelineSelectedTag: nil,

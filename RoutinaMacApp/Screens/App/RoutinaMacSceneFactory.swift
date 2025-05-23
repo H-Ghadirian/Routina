@@ -11,6 +11,7 @@ enum RoutinaMacSceneFactory {
 
         return AnyView(
             HomeMacView(
+                appStore: store,
                 store: store.scope(state: \.home, action: \.home),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
                 statsStore: store.scope(state: \.stats, action: \.stats)
