@@ -971,8 +971,10 @@ struct HomeFeature {
     }
 
     private func persistTemporaryViewState(_ state: State) {
+        let existing = appSettingsClient.temporaryViewState() ?? .default
         appSettingsClient.setTemporaryViewState(
             TemporaryViewState(
+                selectedAppTabRawValue: existing.selectedAppTabRawValue,
                 homeTaskListModeRawValue: state.taskListMode.rawValue,
                 homeSelectedFilter: state.selectedFilter,
                 homeSelectedTag: state.selectedTag,
@@ -983,14 +985,14 @@ struct HomeFeature {
                 homeSelectedTimelineRange: state.selectedTimelineRange,
                 homeSelectedTimelineFilterType: state.selectedTimelineFilterType,
                 homeSelectedTimelineTag: state.selectedTimelineTag,
-                macHomeSidebarModeRawValue: nil,
-                macSelectedSettingsSectionRawValue: nil,
-                timelineSelectedRange: .all,
-                timelineFilterType: .all,
-                timelineSelectedTag: nil,
-                statsSelectedRange: .week,
-                statsSelectedTag: nil,
-                statsTaskTypeFilterRawValue: nil
+                macHomeSidebarModeRawValue: existing.macHomeSidebarModeRawValue,
+                macSelectedSettingsSectionRawValue: existing.macSelectedSettingsSectionRawValue,
+                timelineSelectedRange: existing.timelineSelectedRange,
+                timelineFilterType: existing.timelineFilterType,
+                timelineSelectedTag: existing.timelineSelectedTag,
+                statsSelectedRange: existing.statsSelectedRange,
+                statsSelectedTag: existing.statsSelectedTag,
+                statsTaskTypeFilterRawValue: existing.statsTaskTypeFilterRawValue
             )
         )
     }

@@ -186,6 +186,27 @@ struct HomeFeatureTests {
     func selectedFilterChanged_persistsTemporaryViewState() async {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let existingTemporaryViewState = TemporaryViewState(
+            selectedAppTabRawValue: Tab.stats.rawValue,
+            homeTaskListModeRawValue: HomeFeature.TaskListMode.routines.rawValue,
+            homeSelectedFilter: .all,
+            homeSelectedTag: nil,
+            homeExcludedTags: [],
+            homeSelectedManualPlaceFilterID: nil,
+            homeTabFilterSnapshots: [:],
+            hideUnavailableRoutines: false,
+            homeSelectedTimelineRange: .month,
+            homeSelectedTimelineFilterType: .todos,
+            homeSelectedTimelineTag: "Errands",
+            macHomeSidebarModeRawValue: HomeFeature.MacSidebarMode.stats.rawValue,
+            macSelectedSettingsSectionRawValue: SettingsMacSection.notifications.rawValue,
+            timelineSelectedRange: .month,
+            timelineFilterType: .todos,
+            timelineSelectedTag: "Deep",
+            statsSelectedRange: .year,
+            statsSelectedTag: "Focus",
+            statsTaskTypeFilterRawValue: StatsTaskTypeFilter.todos.rawValue
+        )
 
         let store = TestStore(
             initialState: HomeFeature.State(
@@ -203,6 +224,7 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
+            $0.appSettingsClient.temporaryViewState = { existingTemporaryViewState }
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
         }
 
@@ -218,8 +240,14 @@ struct HomeFeatureTests {
         #expect(persistedState.value?.homeSelectedTimelineRange == .week)
         #expect(persistedState.value?.homeSelectedTimelineFilterType == .routines)
         #expect(persistedState.value?.homeSelectedTimelineTag == "Chores")
-        #expect(persistedState.value?.statsSelectedRange == .week)
-        #expect(persistedState.value?.statsSelectedTag == nil)
+        #expect(persistedState.value?.selectedAppTabRawValue == Tab.stats.rawValue)
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
+        #expect(persistedState.value?.timelineSelectedRange == .month)
+        #expect(persistedState.value?.timelineFilterType == .todos)
+        #expect(persistedState.value?.timelineSelectedTag == "Deep")
+        #expect(persistedState.value?.statsSelectedRange == .year)
+        #expect(persistedState.value?.statsSelectedTag == "Focus")
+        #expect(persistedState.value?.statsTaskTypeFilterRawValue == StatsTaskTypeFilter.todos.rawValue)
     }
 
     @Test
