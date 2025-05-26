@@ -172,6 +172,7 @@ final class RoutineTask {
     var sequenceStartedAt: Date?
     var colorRawValue: String = RoutineTaskColor.none.rawValue
     var createdAt: Date? = nil
+    var todoStateRawValue: String? = nil
 
     var isPaused: Bool {
         pausedAt != nil
@@ -194,6 +195,17 @@ final class RoutineTask {
 
     var isPinned: Bool {
         pinnedAt != nil
+    }
+
+    /// Workflow state for one-off todos only. Nil for routines.
+    /// Behavioral fields (pausedAt, lastDone) take precedence over the stored label
+    /// so legacy tasks without todoStateRawValue are handled correctly.
+    var todoState: TodoState? {
+        guard isOneOffTask else { return nil }
+        if pausedAt != nil { return .paused }
+        if lastDone != nil || canceledAt != nil { return .done }
+        if let raw = todoStateRawValue { return TodoState(rawValue: raw) ?? .ready }
+        return .ready
     }
 
     var hasNotes: Bool {
@@ -447,7 +459,8 @@ final class RoutineTask {
         completedStepCount: Int16 = 0,
         sequenceStartedAt: Date? = nil,
         color: RoutineTaskColor = .none,
-        createdAt: Date? = Date()
+        createdAt: Date? = Date(),
+        todoStateRawValue: String? = nil
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
@@ -483,6 +496,7 @@ final class RoutineTask {
         self.sequenceStartedAt = sequenceStartedAt
         self.colorRawValue = color.rawValue
         self.createdAt = createdAt
+        self.todoStateRawValue = todoStateRawValue
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
             resetStepProgress()
         }
@@ -839,7 +853,8 @@ final class RoutineTask {
             completedStepCount: completedStepCount,
             sequenceStartedAt: sequenceStartedAt,
             color: color,
-            createdAt: createdAt
+            createdAt: createdAt,
+            todoStateRawValue: todoStateRawValue
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage

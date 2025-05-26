@@ -78,7 +78,25 @@ extension TaskDetailFeature.State {
         resolvedRelationships.filter { $0.kind == .blockedBy }
     }
 
+    /// True when at least one `.blockedBy` relationship target is not yet done/canceled.
+    var hasActiveRelationshipBlocker: Bool {
+        blockingRelationships.contains { rel in
+            rel.status != .doneToday && rel.status != .completedOneOff && rel.status != .canceledOneOff
+        }
+    }
+
     var blockerSummaryText: String {
+        if hasActiveRelationshipBlocker {
+            let count = blockingRelationships.filter { rel in
+                rel.status != .doneToday && rel.status != .completedOneOff && rel.status != .canceledOneOff
+            }.count
+            if count == 1, let blocker = blockingRelationships.first(where: { rel in
+                rel.status != .doneToday && rel.status != .completedOneOff && rel.status != .canceledOneOff
+            }) {
+                return "Blocked by \"\(blocker.taskName)\". Complete that task first."
+            }
+            return "Blocked by \(count) incomplete tasks. Complete them first."
+        }
         let count = blockingRelationships.count
         if count == 1, let blocker = blockingRelationships.first {
             return "Blocked by \(blocker.taskName). You can still mark this done, but it may be worth checking that task first."
@@ -101,6 +119,9 @@ extension TaskDetailFeature.State {
     var isCompletionButtonDisabled: Bool {
         guard !canUndoSelectedDate else { return false }
         if task.isCompletedOneOff || task.isCanceledOneOff {
+            return true
+        }
+        if task.isOneOffTask && hasActiveRelationshipBlocker {
             return true
         }
         if task.isChecklistCompletionRoutine {

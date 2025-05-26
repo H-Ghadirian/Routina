@@ -92,7 +92,8 @@ extension HomeFeature {
             nextDueChecklistItemTitle: nextDueChecklistItem?.title,
             doneCount: doneStats.countsByTaskID[task.id, default: 0],
             manualSectionOrders: task.manualSectionOrders,
-            color: task.color
+            color: task.color,
+            todoState: task.todoState
         )
     }
 

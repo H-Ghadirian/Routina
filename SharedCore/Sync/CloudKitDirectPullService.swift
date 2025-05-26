@@ -214,6 +214,7 @@ enum CloudKitDirectPullService {
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
         var createdAt: Date?
+        var todoStateRawValue: String?
     }
 
     private struct PlacePayload {
@@ -344,6 +345,10 @@ enum CloudKitDirectPullService {
             in: record,
             keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"]
         )
+        let todoStateRawValueValue = stringValue(
+            in: record,
+            keys: ["todoStateRawValue", "TODOSTATERAWVALUE", "ztodostaterawvalue", "ZTODOSTATERAWVALUE", "cd_todostaterawvalue"]
+        )
 
         guard
             intervalValue != nil
@@ -410,7 +415,8 @@ enum CloudKitDirectPullService {
             pinnedAt: pinnedAtValue,
             completedStepCount: Int16(clamping: completedStepCountValue ?? 0),
             sequenceStartedAt: sequenceStartedAtValue,
-            createdAt: createdAtValue
+            createdAt: createdAtValue,
+            todoStateRawValue: todoStateRawValueValue
         )
     }
 
@@ -529,6 +535,9 @@ enum CloudKitDirectPullService {
                 if let createdAt = payload.createdAt {
                     taskWithSameName.createdAt = createdAt
                 }
+                if let todoStateRawValue = payload.todoStateRawValue {
+                    taskWithSameName.todoStateRawValue = todoStateRawValue
+                }
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -568,6 +577,9 @@ enum CloudKitDirectPullService {
             if let createdAt = payload.createdAt {
                 existing.createdAt = createdAt
             }
+            if let todoStateRawValue = payload.todoStateRawValue {
+                existing.todoStateRawValue = todoStateRawValue
+            }
             return existing.id
         } else {
             if let normalizedIncomingName,
@@ -606,6 +618,9 @@ enum CloudKitDirectPullService {
                 if let createdAt = payload.createdAt {
                     taskWithSameName.createdAt = createdAt
                 }
+                if let todoStateRawValue = payload.todoStateRawValue {
+                    taskWithSameName.todoStateRawValue = todoStateRawValue
+                }
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -634,7 +649,8 @@ enum CloudKitDirectPullService {
                     pinnedAt: payload.pinnedAt,
                     completedStepCount: payload.completedStepCount,
                     sequenceStartedAt: payload.sequenceStartedAt,
-                    createdAt: payload.createdAt
+                    createdAt: payload.createdAt,
+                    todoStateRawValue: payload.todoStateRawValue
                 )
             )
             return payload.id

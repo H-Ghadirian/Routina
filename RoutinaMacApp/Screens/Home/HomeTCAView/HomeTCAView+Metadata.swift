@@ -144,7 +144,14 @@ extension HomeTCAView {
             if task.isCanceledOneOff {
                 return ("Canceled", "xmark.circle.fill", .orange, Color.orange.opacity(0.14))
             }
-            return ("To Do", "circle", .blue, Color.blue.opacity(0.12))
+            switch task.todoState {
+            case .inProgress:
+                return ("In Progress", "arrow.clockwise.circle.fill", .blue, Color.blue.opacity(0.14))
+            case .blocked:
+                return ("Blocked", "exclamationmark.circle.fill", .orange, Color.orange.opacity(0.14))
+            default:
+                return ("To Do", "circle", .secondary, Color.secondary.opacity(0.12))
+            }
         }
         let dueIn = dueInDays(for: task)
 

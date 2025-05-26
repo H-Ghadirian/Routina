@@ -165,6 +165,7 @@ struct TaskDetailTCAView: View {
                 todoHeaderSection
                 if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                     calendarSection
+                    todoStatePicker
                 }
                 if store.task.hasChecklistItems {
                     checklistItemsSection
@@ -176,6 +177,51 @@ struct TaskDetailTCAView: View {
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var todoStatePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("State")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Picker("State", selection: Binding(
+                get: { store.task.todoState ?? .ready },
+                set: { newState in
+                    if newState == .done && store.hasActiveRelationshipBlocker {
+                        store.send(.setBlockedStateConfirmation(true))
+                    } else {
+                        store.send(.todoStateChanged(newState))
+                    }
+                }
+            )) {
+                ForEach(TodoState.allCases, id: \.self) { state in
+                    Label(state.displayTitle, systemImage: state.systemImage).tag(state)
+                }
+            }
+            .pickerStyle(.segmented)
+            if !store.blockingRelationships.isEmpty {
+                Text(store.blockerSummaryText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .detailCardStyle()
+        .alert(
+            "Blocked Task",
+            isPresented: Binding(
+                get: { store.isBlockedStateConfirmationPresented },
+                set: { store.send(.setBlockedStateConfirmation($0)) }
+            )
+        ) {
+            Button("Mark Done Anyway", role: .destructive) {
+                store.send(.confirmBlockedStateCompletion)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(store.blockerSummaryText)
         }
     }
 

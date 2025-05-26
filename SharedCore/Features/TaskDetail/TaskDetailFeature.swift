@@ -74,6 +74,7 @@ struct TaskDetailFeature: Reducer {
         var shouldDismissAfterDelete: Bool = false
         var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
         var editColor: RoutineTaskColor = .none
+        var isBlockedStateConfirmationPresented: Bool = false
     }
 
     enum Action: Equatable {
@@ -140,6 +141,9 @@ struct TaskDetailFeature: Reducer {
         case addLinkedTaskRelationshipKindChanged(RoutineTaskRelationshipKind)
         case openAddLinkedTask
         case editColorChanged(RoutineTaskColor)
+        case todoStateChanged(TodoState)
+        case setBlockedStateConfirmation(Bool)
+        case confirmBlockedStateCompletion
         case onAppear
     }
 
@@ -701,6 +705,36 @@ struct TaskDetailFeature: Reducer {
         case let .editColorChanged(color):
             state.editColor = color
             return .none
+
+        case let .todoStateChanged(newState):
+            guard state.task.isOneOffTask else { return .none }
+            guard !state.task.isCompletedOneOff, !state.task.isCanceledOneOff else { return .none }
+            switch newState {
+            case .done:
+                return reduce(into: &state, action: .markAsDone)
+            case .paused:
+                let pauseDate = now
+                state.task.pausedAt = pauseDate
+                state.task.todoStateRawValue = nil
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleTodoStateChanged(taskID: state.task.id, rawValue: nil, pausedAt: pauseDate)
+            case .ready, .inProgress, .blocked:
+                state.task.pausedAt = nil
+                state.task.snoozedUntil = nil
+                state.task.todoStateRawValue = newState.rawValue
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleTodoStateChanged(taskID: state.task.id, rawValue: newState.rawValue, pausedAt: nil, clearSnoozed: true)
+            }
+
+        case let .setBlockedStateConfirmation(isPresented):
+            state.isBlockedStateConfirmationPresented = isPresented
+            return .none
+
+        case .confirmBlockedStateCompletion:
+            state.isBlockedStateConfirmationPresented = false
+            return reduce(into: &state, action: .markAsDone)
 
         case .onAppear:
             if state.selectedDate == nil {

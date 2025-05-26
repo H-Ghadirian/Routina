@@ -91,6 +91,7 @@ struct HomeFeature {
         var doneCount: Int
         var manualSectionOrders: [String: Int] = [:]
         var color: RoutineTaskColor = .none
+        var todoState: TodoState? = nil
     }
 
     enum MacSidebarSelection: Hashable, Equatable {

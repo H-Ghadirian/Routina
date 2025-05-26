@@ -419,6 +419,22 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleTodoStateChanged(taskID: UUID, rawValue: String?, pausedAt: Date?, clearSnoozed: Bool = false) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                task.todoStateRawValue = rawValue
+                task.pausedAt = pausedAt
+                if clearSnoozed { task.snoozedUntil = nil }
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating todo state: \(error)")
+            }
+        }
+    }
+
     func allLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
         FetchDescriptor<RoutineLog>(
             predicate: #Predicate { log in

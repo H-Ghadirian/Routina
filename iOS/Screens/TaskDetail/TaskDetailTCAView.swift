@@ -12,6 +12,7 @@ struct TaskDetailTCAView: View {
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
+    @State private var isTodoStatePickerPresented = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -505,6 +506,9 @@ struct TaskDetailTCAView: View {
 
     private var todoPrimaryActionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
+                todoStatePickerPill
+            }
             primaryActionButton
             cancelTodoButton
 
@@ -517,6 +521,61 @@ struct TaskDetailTCAView: View {
         }
         .padding(16)
         .detailCardStyle()
+    }
+
+    private var todoStatePickerPill: some View {
+        let currentState = store.task.todoState ?? .ready
+        return Button {
+            isTodoStatePickerPresented = true
+        } label: {
+            Label(currentState.displayTitle, systemImage: currentState.systemImage)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(todoStatePillColor(currentState))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(todoStatePillColor(currentState).opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .confirmationDialog("Set State", isPresented: $isTodoStatePickerPresented) {
+            ForEach(TodoState.allCases, id: \.self) { state in
+                if state != currentState {
+                    Button(state.displayTitle) {
+                        if state == .done && store.hasActiveRelationshipBlocker {
+                            store.send(.setBlockedStateConfirmation(true))
+                        } else {
+                            store.send(.todoStateChanged(state))
+                        }
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Current: \(currentState.displayTitle)")
+        }
+        .alert(
+            "Blocked Task",
+            isPresented: Binding(
+                get: { store.isBlockedStateConfirmationPresented },
+                set: { store.send(.setBlockedStateConfirmation($0)) }
+            )
+        ) {
+            Button("Mark Done Anyway", role: .destructive) {
+                store.send(.confirmBlockedStateCompletion)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(store.blockerSummaryText)
+        }
+    }
+
+    private func todoStatePillColor(_ state: TodoState) -> Color {
+        switch state {
+        case .ready: return .secondary
+        case .inProgress: return .blue
+        case .blocked: return .orange
+        case .done: return .green
+        case .paused: return .purple
+        }
     }
 
     private func routinePrimaryActionSection(
