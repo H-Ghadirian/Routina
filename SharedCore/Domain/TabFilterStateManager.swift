@@ -57,6 +57,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var timelineSelectedTag: String?
     var statsSelectedRange: DoneChartRange
     var statsSelectedTag: String?
+    var statsExcludedTags: Set<String>
     var statsTaskTypeFilterRawValue: String?
 
     static let `default` = TemporaryViewState(
@@ -78,6 +79,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         timelineSelectedTag: nil,
         statsSelectedRange: .week,
         statsSelectedTag: nil,
+        statsExcludedTags: [],
         statsTaskTypeFilterRawValue: nil
     )
 }

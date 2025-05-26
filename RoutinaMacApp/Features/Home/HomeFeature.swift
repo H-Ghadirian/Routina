@@ -1114,6 +1114,7 @@ struct HomeFeature {
                 timelineSelectedTag: existing.timelineSelectedTag,
                 statsSelectedRange: existing.statsSelectedRange,
                 statsSelectedTag: existing.statsSelectedTag,
+                statsExcludedTags: existing.statsExcludedTags,
                 statsTaskTypeFilterRawValue: existing.statsTaskTypeFilterRawValue
             )
         )

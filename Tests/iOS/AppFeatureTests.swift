@@ -26,6 +26,7 @@ struct AppFeatureTests {
             timelineSelectedTag: "Errands",
             statsSelectedRange: .year,
             statsSelectedTag: "Focus",
+            statsExcludedTags: ["Deep Work"],
             statsTaskTypeFilterRawValue: StatsTaskTypeFilter.todos.rawValue
         )
 
@@ -43,6 +44,7 @@ struct AppFeatureTests {
             $0.stats.selectedRange = .year
             $0.stats.taskTypeFilter = .todos
             $0.stats.selectedTag = "Focus"
+            $0.stats.excludedTags = ["Deep Work"]
         }
     }
 

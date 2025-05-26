@@ -384,6 +384,86 @@ struct StatsFeatureTests {
         #expect(store.state.metrics.archivedRoutineCount == 1)
         #expect(store.state.metrics.totalCount == 1)
     }
+
+    @Test
+    func excludedTags_hideMatchingTasksAndPruneUnavailableSelections() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let calendar = makeTestCalendar()
+
+        let focusTask = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            tags: ["Focus"]
+        )
+        let healthTask = makeTask(
+            in: context,
+            name: "Run",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🏃",
+            tags: ["Health"]
+        )
+        let hybridTask = makeTask(
+            in: context,
+            name: "Workout",
+            interval: 1,
+            lastDone: nil,
+            emoji: "💪",
+            tags: ["Focus", "Health"]
+        )
+
+        let focusLog = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-19T08:00:00Z"))
+        let healthLog = makeLog(in: context, task: healthTask, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let hybridLog = makeLog(in: context, task: hybridTask, timestamp: makeDate("2026-03-20T09:00:00Z"))
+
+        let store = TestStore(initialState: StatsFeature.State()) {
+            StatsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.setData(tasks: [focusTask, healthTask, hybridTask], logs: [focusLog, healthLog, hybridLog])) {
+            $0.tasks = [focusTask, healthTask, hybridTask]
+            $0.logs = [focusLog, healthLog, hybridLog]
+            $0.availableTags = ["Focus", "Health"]
+            $0.filteredTaskCount = 3
+            $0.metrics.totalDoneCount = 3
+            $0.metrics.activeRoutineCount = 3
+            $0.metrics.totalCount = 3
+        }
+
+        await store.send(.excludedTagsChanged(["Health"])) {
+            $0.excludedTags = ["Health"]
+            $0.filteredTaskCount = 1
+            $0.metrics.totalDoneCount = 1
+            $0.metrics.activeRoutineCount = 1
+            $0.metrics.totalCount = 1
+        }
+
+        await store.send(.selectedTagChanged("Focus")) {
+            $0.selectedTag = "Focus"
+        }
+
+        await store.send(.setData(tasks: [focusTask], logs: [focusLog])) {
+            $0.tasks = [focusTask]
+            $0.logs = [focusLog]
+            $0.excludedTags = []
+            $0.availableTags = ["Focus"]
+            $0.filteredTaskCount = 1
+            $0.metrics.totalDoneCount = 1
+            $0.metrics.activeRoutineCount = 1
+            $0.metrics.totalCount = 1
+        }
+
+        #expect(store.state.selectedTag == "Focus")
+        #expect(store.state.excludedTags.isEmpty)
+        #expect(store.state.availableTags == ["Focus"])
+        #expect(store.state.filteredTaskCount == 1)
+    }
 }
 
 @MainActor

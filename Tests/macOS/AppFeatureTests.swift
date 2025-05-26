@@ -26,6 +26,7 @@ struct AppFeatureTests {
             timelineSelectedTag: "Errands",
             statsSelectedRange: .year,
             statsSelectedTag: "Focus",
+            statsExcludedTags: ["Deep Work"],
             statsTaskTypeFilterRawValue: StatsTaskTypeFilter.todos.rawValue
         )
 
@@ -42,6 +43,7 @@ struct AppFeatureTests {
             $0.timeline.selectedTag = "Errands"
             $0.stats.selectedRange = .year
             $0.stats.selectedTag = "Focus"
+            $0.stats.excludedTags = ["Deep Work"]
             $0.stats.taskTypeFilter = .todos
         }
     }
@@ -89,6 +91,23 @@ struct AppFeatureTests {
     }
 
     @Test
+    func statsExcludedTagsChange_persistsSelection() async {
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.stats(.excludedTagsChanged(["Health", "Focus"]))) {
+            $0.stats.excludedTags = ["Health", "Focus"]
+        }
+
+        #expect(persistedState.value?.statsExcludedTags == ["Health", "Focus"])
+    }
+
+    @Test
     func resetTemporaryViewState_clearsLiveDonesFiltersImmediately() async {
         let now = makeDate("2026-04-10T10:00:00Z")
         let calendar = makeTestCalendar()
@@ -116,7 +135,8 @@ struct AppFeatureTests {
                     logs: [],
                     selectedRange: .year,
                     taskTypeFilter: .todos,
-                    selectedTag: "Focus"
+                    selectedTag: "Focus",
+                    excludedTags: ["Health"]
                 ),
                 settings: SettingsFeature.State()
             )
@@ -137,6 +157,7 @@ struct AppFeatureTests {
             $0.stats.selectedRange = .week
             $0.stats.taskTypeFilter = .all
             $0.stats.selectedTag = nil
+            $0.stats.excludedTags = []
             $0.settings.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
         }
         await store.receive(.timeline(.setData(tasks: [], logs: [])))

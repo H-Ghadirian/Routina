@@ -139,6 +139,7 @@ struct HomeFeatureTests {
             timelineSelectedTag: nil,
             statsSelectedRange: .year,
             statsSelectedTag: "Focus",
+            statsExcludedTags: [],
             statsTaskTypeFilterRawValue: nil
         )
         let locationSnapshot = LocationSnapshot(
@@ -205,6 +206,7 @@ struct HomeFeatureTests {
             timelineSelectedTag: "Deep",
             statsSelectedRange: .year,
             statsSelectedTag: "Focus",
+            statsExcludedTags: [],
             statsTaskTypeFilterRawValue: StatsTaskTypeFilter.todos.rawValue
         )
 

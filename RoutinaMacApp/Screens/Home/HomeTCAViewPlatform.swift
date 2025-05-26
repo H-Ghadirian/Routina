@@ -2,6 +2,80 @@ import ComposableArchitecture
 import MapKit
 import SwiftUI
 
+private struct WrappingHStack: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    init(horizontalSpacing: CGFloat = 8, verticalSpacing: CGFloat = 8) {
+        self.horizontalSpacing = horizontalSpacing
+        self.verticalSpacing = verticalSpacing
+    }
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var currentRowWidth: CGFloat = 0
+        var currentRowHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var maxRowWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let spacing = currentRowWidth == 0 ? 0 : horizontalSpacing
+
+            if currentRowWidth + spacing + size.width > maxWidth, currentRowWidth > 0 {
+                totalHeight += currentRowHeight + verticalSpacing
+                maxRowWidth = max(maxRowWidth, currentRowWidth)
+                currentRowWidth = size.width
+                currentRowHeight = size.height
+            } else {
+                currentRowWidth += spacing + size.width
+                currentRowHeight = max(currentRowHeight, size.height)
+            }
+        }
+
+        maxRowWidth = max(maxRowWidth, currentRowWidth)
+        totalHeight += currentRowHeight
+
+        return CGSize(width: maxRowWidth, height: totalHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let proposedX = x == bounds.minX ? x : x + horizontalSpacing
+
+            if proposedX + size.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + verticalSpacing
+                rowHeight = 0
+            } else if x > bounds.minX {
+                x += horizontalSpacing
+            }
+
+            subview.place(
+                at: CGPoint(x: x, y: y),
+                proposal: ProposedViewSize(width: size.width, height: size.height)
+            )
+
+            x += size.width
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
 private enum HomeSidebarSizing {
     static let minWidth: CGFloat = 320
     static let idealWidth: CGFloat = 380
@@ -1221,15 +1295,12 @@ extension HomeTCAView {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 4)
 
-                    LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
-                        alignment: .leading,
-                        spacing: 8
-                    ) {
+                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                         ForEach(StatsTaskTypeFilter.allCases) { filter in
                             statsTaskTypeChip(filter)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -1238,15 +1309,12 @@ extension HomeTCAView {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 4)
 
-                    LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
-                        alignment: .leading,
-                        spacing: 8
-                    ) {
+                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                         ForEach(DoneChartRange.allCases) { range in
                             statsRangeChip(range)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if !statsAllTags.isEmpty {
@@ -1261,11 +1329,7 @@ extension HomeTCAView {
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 4)
 
-                        LazyVGrid(
-                            columns: [GridItem(.adaptive(minimum: 104), spacing: 8, alignment: .leading)],
-                            alignment: .leading,
-                            spacing: 8
-                        ) {
+                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                             statsTagChip(
                                 title: "All Tags",
                                 count: statsTaskCountForSelectedTypeFilter,
@@ -1286,6 +1350,44 @@ extension HomeTCAView {
                                 }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Exclude Tags")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+
+                        Text(statsExcludedTagSummary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+
+                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                            ForEach(statsAvailableExcludeTags, id: \.self) { tag in
+                                let isExcluded = selectedStatsExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                statsTagChip(
+                                    title: "#\(tag)",
+                                    count: statsTagCount(for: tag),
+                                    systemImage: "tag.slash.fill",
+                                    isSelected: isExcluded,
+                                    selectedColor: .red
+                                ) {
+                                    if isExcluded {
+                                        statsStore?.send(.excludedTagsChanged(selectedStatsExcludedTags.filter { $0 != tag }))
+                                    } else {
+                                        var newTags = selectedStatsExcludedTags
+                                        newTags.insert(tag)
+                                        statsStore?.send(.excludedTagsChanged(newTags))
+                                        if selectedStatsTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                            statsStore?.send(.selectedTagChanged(nil))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             }
@@ -1358,6 +1460,10 @@ extension HomeTCAView {
         statsStore?.selectedTag
     }
 
+    private var selectedStatsExcludedTags: Set<String> {
+        statsStore?.excludedTags ?? []
+    }
+
     private var statsTagSelectionSummary: String {
         if let selectedStatsTag {
             let matchingCount = statsTagSummaries.first(where: { $0.name == selectedStatsTag })?.linkedRoutineCount ?? 0
@@ -1366,6 +1472,24 @@ extension HomeTCAView {
 
         let tagCount = statsTagSummaries.count
         return "\(tagCount) \(tagCount == 1 ? "tag" : "tags") available"
+    }
+
+    private var statsAvailableExcludeTags: [String] {
+        statsAllTags.filter { tag in
+            selectedStatsTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+        }
+    }
+
+    private var statsExcludedTagSummary: String {
+        if !selectedStatsExcludedTags.isEmpty {
+            return "Hiding tasks tagged: \(selectedStatsExcludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
+        }
+
+        return "Select tags to hide tasks that have them."
+    }
+
+    private func statsTagCount(for tag: String) -> Int {
+        statsTagSummaries.first(where: { RoutineTag.contains(tag, in: [$0.name]) })?.linkedRoutineCount ?? 0
     }
 
     @ViewBuilder
@@ -1379,12 +1503,10 @@ extension HomeTCAView {
 
                 Text(filter.rawValue)
                     .font(.caption.weight(.semibold))
-                    .lineLimit(1)
             }
             .foregroundStyle(selectedStatsTaskTypeFilter == filter ? Color.white : Color.primary)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 Capsule(style: .continuous)
                     .fill(selectedStatsTaskTypeFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
@@ -1417,12 +1539,10 @@ extension HomeTCAView {
 
                 Text(range.rawValue)
                     .font(.caption.weight(.semibold))
-                    .lineLimit(1)
             }
             .foregroundStyle(selectedStatsRange == range ? Color.white : Color.primary)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 Capsule(style: .continuous)
                     .fill(selectedStatsRange == range ? Color.accentColor : Color.secondary.opacity(0.10))
@@ -1450,6 +1570,7 @@ extension HomeTCAView {
         count: Int,
         systemImage: String,
         isSelected: Bool,
+        selectedColor: Color = .accentColor,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -1459,7 +1580,6 @@ extension HomeTCAView {
 
                 Text(title)
                     .font(.caption.weight(.semibold))
-                    .lineLimit(1)
 
                 Text(count.formatted())
                     .font(.caption2.weight(.bold))
@@ -1473,14 +1593,13 @@ extension HomeTCAView {
             .foregroundStyle(isSelected ? Color.white : Color.primary)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 Capsule(style: .continuous)
-                    .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.10))
+                    .fill(isSelected ? selectedColor : Color.secondary.opacity(0.10))
             )
             .overlay(
                 Capsule(style: .continuous)
-                    .stroke(isSelected ? Color.accentColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(isSelected ? selectedColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
             )
             .contentShape(Capsule(style: .continuous))
         }

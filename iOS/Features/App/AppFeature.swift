@@ -95,11 +95,11 @@ struct AppFeature {
         state.timeline.selectedTag = persistedState.timelineSelectedTag
         state.stats.selectedRange = persistedState.statsSelectedRange
         state.stats.selectedTag = persistedState.statsSelectedTag
+        state.stats.excludedTags = persistedState.statsExcludedTags
         if let rawValue = persistedState.statsTaskTypeFilterRawValue,
            let filter = StatsTaskTypeFilter(rawValue: rawValue) {
             state.stats.taskTypeFilter = filter
         }
-        state.stats.excludedTags = []
     }
 
     private func resetTemporaryViewState(_ state: inout State) {
@@ -154,6 +154,7 @@ struct AppFeature {
                 timelineSelectedTag: state.timeline.selectedTag,
                 statsSelectedRange: state.stats.selectedRange,
                 statsSelectedTag: state.stats.selectedTag,
+                statsExcludedTags: state.stats.excludedTags,
                 statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue
             )
         )
