@@ -358,6 +358,7 @@ extension HomeTCAView {
             return store.selectedTimelineRange != .all
                 || store.selectedTimelineFilterType != .all
                 || store.selectedTimelineTag != nil
+                || !store.selectedTimelineExcludedTags.isEmpty
         }
         if store.macSidebarMode == .stats { return false }
         return store.selectedFilter != .all || hasActiveOptionalFilters
@@ -384,6 +385,7 @@ extension HomeTCAView {
             store.send(.selectedTimelineRangeChanged(.all))
             store.send(.selectedTimelineFilterTypeChanged(.all))
             store.send(.selectedTimelineTagChanged(nil))
+            store.send(.selectedTimelineExcludedTagsChanged([]))
         } else {
             store.send(.selectedFilterChanged(.all))
             store.send(.clearOptionalFilters)
@@ -419,6 +421,7 @@ extension HomeTCAView {
         baseTimelineEntries
             .filter { entry in
                 TimelineLogic.matchesSelectedTag(store.selectedTimelineTag, in: entry.tags)
+                    && !store.selectedTimelineExcludedTags.contains { RoutineTag.contains($0, in: entry.tags) }
             }
             .filter(matchesTimelineSearch)
     }
@@ -436,6 +439,13 @@ extension HomeTCAView {
 
     var availableTimelineTags: [String] {
         TimelineLogic.availableTags(from: baseTimelineEntries)
+    }
+
+    var availableTimelineExcludeTags: [String] {
+        let availableTags = availableTimelineTags.filter { tag in
+            store.selectedTimelineTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+        }
+        return availableTags
     }
 
     var groupedTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
@@ -566,31 +576,16 @@ extension HomeTCAView {
                 : "routine".localizedCaseInsensitiveContains(trimmedSearch))
     }
 
-    @ViewBuilder
-    var timelineTagFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                tagFilterButton(title: "All Tags", isSelected: store.selectedTimelineTag == nil) {
-                    store.send(.selectedTimelineTagChanged(nil))
-                }
-
-                ForEach(availableTimelineTags, id: \.self) { tag in
-                    tagFilterButton(
-                        title: "#\(tag)",
-                        isSelected: store.selectedTimelineTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
-                    ) {
-                        store.send(.selectedTimelineTagChanged(tag))
-                    }
-                }
-            }
-        }
-    }
-
     func validateSelectedTimelineTag() {
         guard let tag = store.selectedTimelineTag else { return }
         if !RoutineTag.contains(tag, in: availableTimelineTags) {
             store.send(.selectedTimelineTagChanged(nil))
         }
+        store.send(
+            .selectedTimelineExcludedTagsChanged(
+                store.selectedTimelineExcludedTags.filter { RoutineTag.contains($0, in: availableTimelineExcludeTags) }
+            )
+        )
     }
 
     var platformTimelineRangePicker: some View {
@@ -1272,7 +1267,81 @@ extension HomeTCAView {
 
                 if !availableTimelineTags.isEmpty {
                     macSidebarSectionCard(title: "Tags") {
-                        timelineTagFilterBar
+                        VStack(alignment: .leading, spacing: 20) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Include Tag")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 4)
+
+                                Text(timelineTagSelectionSummary)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 4)
+
+                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                    statsTagChip(
+                                        title: "All Tags",
+                                        count: baseTimelineEntries.count,
+                                        systemImage: "tag.slash.fill",
+                                        isSelected: store.selectedTimelineTag == nil
+                                    ) {
+                                        store.send(.selectedTimelineTagChanged(nil))
+                                    }
+
+                                    ForEach(availableTimelineTags, id: \.self) { tag in
+                                        statsTagChip(
+                                            title: "#\(tag)",
+                                            count: timelineTagCount(for: tag),
+                                            systemImage: "tag.fill",
+                                            isSelected: store.selectedTimelineTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                        ) {
+                                            store.send(.selectedTimelineTagChanged(tag))
+                                        }
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+
+                            if !availableTimelineExcludeTags.isEmpty {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Exclude Tags")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 4)
+
+                                    Text(timelineExcludedTagSummary)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 4)
+
+                                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                        ForEach(availableTimelineExcludeTags, id: \.self) { tag in
+                                            let isExcluded = store.selectedTimelineExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                            statsTagChip(
+                                                title: "#\(tag)",
+                                                count: timelineTagCount(for: tag),
+                                                systemImage: "tag.slash.fill",
+                                                isSelected: isExcluded,
+                                                selectedColor: .red
+                                            ) {
+                                                if isExcluded {
+                                                    store.send(.selectedTimelineExcludedTagsChanged(store.selectedTimelineExcludedTags.filter { $0 != tag }))
+                                                } else {
+                                                    var newTags = store.selectedTimelineExcludedTags
+                                                    newTags.insert(tag)
+                                                    store.send(.selectedTimelineExcludedTagsChanged(newTags))
+                                                    if store.selectedTimelineTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                                        store.send(.selectedTimelineTagChanged(nil))
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1488,8 +1557,32 @@ extension HomeTCAView {
         return "Select tags to hide tasks that have them."
     }
 
+    private var timelineTagSelectionSummary: String {
+        if let selectedTimelineTag = store.selectedTimelineTag {
+            let matchingCount = timelineTagCount(for: selectedTimelineTag)
+            return "#\(selectedTimelineTag) across \(matchingCount) \(matchingCount == 1 ? "item" : "items")"
+        }
+
+        let tagCount = availableTimelineTags.count
+        return "\(tagCount) \(tagCount == 1 ? "tag" : "tags") available"
+    }
+
+    private var timelineExcludedTagSummary: String {
+        if !store.selectedTimelineExcludedTags.isEmpty {
+            return "Hiding items tagged: \(store.selectedTimelineExcludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
+        }
+
+        return "Select tags to hide done items that have them."
+    }
+
     private func statsTagCount(for tag: String) -> Int {
         statsTagSummaries.first(where: { RoutineTag.contains(tag, in: [$0.name]) })?.linkedRoutineCount ?? 0
+    }
+
+    private func timelineTagCount(for tag: String) -> Int {
+        baseTimelineEntries.filter { entry in
+            RoutineTag.contains(tag, in: entry.tags)
+        }.count
     }
 
     @ViewBuilder

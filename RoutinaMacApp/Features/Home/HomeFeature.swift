@@ -133,6 +133,7 @@ struct HomeFeature {
         var selectedTimelineRange: TimelineRange = .all
         var selectedTimelineFilterType: TimelineFilterType = .all
         var selectedTimelineTag: String? = nil
+        var selectedTimelineExcludedTags: Set<String> = []
 
         // Stats filter state
         var statsSelectedRange: DoneChartRange = .week
@@ -178,6 +179,7 @@ struct HomeFeature {
         case selectedTimelineRangeChanged(TimelineRange)
         case selectedTimelineFilterTypeChanged(TimelineFilterType)
         case selectedTimelineTagChanged(String?)
+        case selectedTimelineExcludedTagsChanged(Set<String>)
 
         // Stats filter actions
         case statsSelectedRangeChanged(DoneChartRange)
@@ -432,6 +434,11 @@ struct HomeFeature {
 
             case let .selectedTimelineTagChanged(tag):
                 state.selectedTimelineTag = tag
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .selectedTimelineExcludedTagsChanged(tags):
+                state.selectedTimelineExcludedTags = tags
                 persistTemporaryViewState(state)
                 return .none
 
@@ -1070,6 +1077,7 @@ struct HomeFeature {
         state.selectedTimelineRange = persistedState.homeSelectedTimelineRange
         state.selectedTimelineFilterType = persistedState.homeSelectedTimelineFilterType
         state.selectedTimelineTag = persistedState.homeSelectedTimelineTag
+        state.selectedTimelineExcludedTags = persistedState.homeSelectedTimelineExcludedTags
         state.statsSelectedRange = persistedState.statsSelectedRange
         state.statsSelectedTag = persistedState.statsSelectedTag
         if let rawValue = persistedState.macHomeSidebarModeRawValue,
@@ -1107,6 +1115,7 @@ struct HomeFeature {
                 homeSelectedTimelineRange: state.selectedTimelineRange,
                 homeSelectedTimelineFilterType: state.selectedTimelineFilterType,
                 homeSelectedTimelineTag: state.selectedTimelineTag,
+                homeSelectedTimelineExcludedTags: state.selectedTimelineExcludedTags,
                 macHomeSidebarModeRawValue: state.macSidebarMode.rawValue,
                 macSelectedSettingsSectionRawValue: state.selectedSettingsSection?.rawValue,
                 timelineSelectedRange: existing.timelineSelectedRange,
