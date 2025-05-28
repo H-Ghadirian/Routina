@@ -86,7 +86,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74BD2D7B92F600E91075 /* Routinam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routinam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74D72D7B92F900E91075 /* RoutinaiOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C0000022E60000100000001 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -284,7 +284,7 @@
 		2A5A74BE2D7B92F600E91075 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2A5A74BD2D7B92F600E91075 /* Routina.app */,
+				2A5A74BD2D7B92F600E91075 /* Routinam.app */,
 				3D1000102E70000100000001 /* RoutinaiOSDev.app */,
 				2C0000022E60000100000001 /* Routina.app */,
 				4E0000022E80000100000001 /* RoutinaMacOSDev.app */,
@@ -330,7 +330,7 @@
 				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
 			productName = RoutinaiOSProd;
-			productReference = 2A5A74BD2D7B92F600E91075 /* Routina.app */;
+			productReference = 2A5A74BD2D7B92F600E91075 /* Routinam.app */;
 			productType = "com.apple.product-type.application";
 		};
 		2A5A74CC2D7B92F900E91075 /* RoutinaiOSTests */ = {
@@ -770,14 +770,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/iOS/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Routina;
-				INFOPLIST_KEY_CFBundleName = Routina;
+				INFOPLIST_KEY_CFBundleDisplayName = Routinam;
+				INFOPLIST_KEY_CFBundleName = Routinam;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
 				INFOPLIST_KEY_RoutinaSandboxDataMode = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -790,10 +791,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
 				PRODUCT_MODULE_NAME = RoutinaProd;
-				PRODUCT_NAME = Routina;
+				PRODUCT_NAME = Routinam;
 				REGISTER_APP_GROUPS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -815,14 +816,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/iOS/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Routina;
-				INFOPLIST_KEY_CFBundleName = Routina;
+				INFOPLIST_KEY_CFBundleDisplayName = Routinam;
+				INFOPLIST_KEY_CFBundleName = Routinam;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
 				INFOPLIST_KEY_RoutinaSandboxDataMode = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -835,10 +837,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
 				PRODUCT_MODULE_NAME = RoutinaProd;
-				PRODUCT_NAME = Routina;
+				PRODUCT_NAME = Routinam;
 				REGISTER_APP_GROUPS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -960,7 +962,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOSDev.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
@@ -978,7 +980,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
 				PRODUCT_MODULE_NAME = Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1003,7 +1005,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/iOS/RoutinaiOSDev.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
@@ -1021,7 +1023,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
 				PRODUCT_MODULE_NAME = Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1043,7 +1045,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = RoutinaWatchApp/Info.plist;
@@ -1051,8 +1053,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1071,7 +1073,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = RoutinaWatchApp/Info.plist;
@@ -1079,8 +1081,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1099,7 +1101,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = RoutinaWatchExtension/Info.plist;
@@ -1108,8 +1110,8 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp.watchkitextension;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.watchkitapp.watchkitextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1128,7 +1130,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = RoutinaWatchExtension/Info.plist;
@@ -1137,8 +1139,8 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.prod.watchkitapp.watchkitextension;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.watchkitapp.watchkitextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;

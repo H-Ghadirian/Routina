@@ -21,9 +21,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>ir.hamedgh.Routinam.prod</string>
-	<key>WKSupportsRunningWithoutiOSApp</key>
-	<false/>
+	<string>ir.hamedgh.Routinam</string>
 	<key>WKWatchKitApp</key>
 	<true/>
 </dict>

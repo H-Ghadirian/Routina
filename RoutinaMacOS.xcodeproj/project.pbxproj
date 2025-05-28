@@ -41,7 +41,7 @@
 		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74CD2D7B92F900E91075 /* RoutinaiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74D72D7B92F900E91075 /* RoutinaiOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		2C0000022E60000100000001 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C0000022E60000100000001 /* Routinam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routinam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D1000102E70000100000001 /* RoutinaiOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaiOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E0000022E80000100000001 /* RoutinaMacOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F1000072E90000100000001 /* RoutinaWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -176,7 +176,7 @@
 			children = (
 				2A5A74BD2D7B92F600E91075 /* Routina.app */,
 				3D1000102E70000100000001 /* RoutinaiOSDev.app */,
-				2C0000022E60000100000001 /* Routina.app */,
+				2C0000022E60000100000001 /* Routinam.app */,
 				4E0000022E80000100000001 /* RoutinaMacOSDev.app */,
 				5F1000072E90000100000001 /* RoutinaWatchApp.app */,
 				5F1000082E90000100000001 /* RoutinaWatchExtension.appex */,
@@ -218,7 +218,7 @@
 				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
 			productName = Routina;
-			productReference = 2C0000022E60000100000001 /* Routina.app */;
+			productReference = 2C0000022E60000100000001 /* Routinam.app */;
 			productType = "com.apple.product-type.application";
 		};
 		4E0000012E80000100000001 /* RoutinaMacOSDev */ = {
@@ -518,25 +518,34 @@
 		2C0000072E60000100000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSProd.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
 				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
 				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Routina;
-				INFOPLIST_KEY_CFBundleName = Routina;
+				INFOPLIST_KEY_CFBundleDisplayName = Routinam;
+				INFOPLIST_KEY_CFBundleName = Routinam;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
@@ -546,9 +555,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.prod;
-				PRODUCT_NAME = Routina;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
+				PRODUCT_NAME = Routinam;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = NO;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -570,25 +579,34 @@
 		2C0000082E60000100000001 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSProd.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
 				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
 				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Routina;
-				INFOPLIST_KEY_CFBundleName = Routina;
+				INFOPLIST_KEY_CFBundleDisplayName = Routinam;
+				INFOPLIST_KEY_CFBundleName = Routinam;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
@@ -598,9 +616,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.prod;
-				PRODUCT_NAME = Routina;
+				MARKETING_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
+				PRODUCT_NAME = Routinam;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = NO;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -626,11 +644,13 @@
 				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSDev.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Routinam;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
@@ -640,7 +660,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -663,11 +683,13 @@
 				CODE_SIGN_ENTITLEMENTS = Config/macOS/RoutinaMacOSDev.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"AppResources/Preview Content\"";
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Routinam;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Routina uses your location to show place-based routines when you are at the right place.";
 				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
@@ -677,7 +699,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
