@@ -52,16 +52,10 @@
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		2C0000092E60000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSProd" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
 			target = 2C0000012E60000100000001 /* RoutinaMacOSProd */;
 		};
 		4E0000092E80000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
 			target = 4E0000012E80000100000001 /* RoutinaMacOSDev */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
