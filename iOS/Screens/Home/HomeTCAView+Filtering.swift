@@ -10,6 +10,7 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
+                && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                 && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                 && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
         }
@@ -23,6 +24,7 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
+                && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                 && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                 && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
         }
@@ -40,6 +42,7 @@ extension HomeTCAView {
                     && (includePinned || !task.isPinned)
                     && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
+                    && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                     && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                     && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
             }
@@ -57,6 +60,7 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
+                && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                 && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                 && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
         }

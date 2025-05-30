@@ -69,10 +69,12 @@ struct AppFeature {
             case .timeline(.selectedRangeChanged),
                  .timeline(.filterTypeChanged),
                  .timeline(.selectedTagChanged),
+                 .timeline(.selectedImportanceUrgencyFilterChanged),
                  .timeline(.clearFilters),
                  .stats(.selectedRangeChanged),
                  .stats(.taskTypeFilterChanged),
                  .stats(.selectedTagChanged),
+                 .stats(.selectedImportanceUrgencyFilterChanged),
                  .stats(.excludedTagsChanged):
                 persistTemporaryViewState(state)
                 return .none
@@ -91,9 +93,11 @@ struct AppFeature {
         state.timeline.selectedRange = persistedState.timelineSelectedRange
         state.timeline.filterType = persistedState.timelineFilterType
         state.timeline.selectedTag = persistedState.timelineSelectedTag
+        state.timeline.selectedImportanceUrgencyFilter = persistedState.timelineSelectedImportanceUrgencyFilter
         state.stats.selectedRange = persistedState.statsSelectedRange
         state.stats.selectedTag = persistedState.statsSelectedTag
         state.stats.excludedTags = persistedState.statsExcludedTags
+        state.stats.selectedImportanceUrgencyFilter = persistedState.statsSelectedImportanceUrgencyFilter
         if let rawValue = persistedState.statsTaskTypeFilterRawValue,
            let filter = StatsTaskTypeFilter(rawValue: rawValue) {
             state.stats.taskTypeFilter = filter
@@ -106,18 +110,21 @@ struct AppFeature {
         state.home.selectedTag = nil
         state.home.excludedTags = []
         state.home.selectedManualPlaceFilterID = nil
+        state.home.selectedImportanceUrgencyFilter = nil
         state.home.tabFilterSnapshots = [:]
         state.home.hideUnavailableRoutines = false
         state.home.isFilterSheetPresented = false
         state.home.selectedTimelineRange = .all
         state.home.selectedTimelineFilterType = .all
         state.home.selectedTimelineTag = nil
+        state.home.selectedTimelineImportanceUrgencyFilter = nil
         state.home.statsSelectedRange = .week
         state.home.statsSelectedTag = nil
 
         state.timeline.selectedRange = .all
         state.timeline.filterType = .all
         state.timeline.selectedTag = nil
+        state.timeline.selectedImportanceUrgencyFilter = nil
         state.timeline.isFilterSheetPresented = false
         state.timeline.availableTags = []
         state.timeline.groupedEntries = []
@@ -125,6 +132,7 @@ struct AppFeature {
         state.stats.selectedRange = .week
         state.stats.selectedTag = nil
         state.stats.excludedTags = []
+        state.stats.selectedImportanceUrgencyFilter = nil
         state.stats.taskTypeFilter = .all
     }
 
@@ -138,19 +146,23 @@ struct AppFeature {
                 homeSelectedTag: existing.homeSelectedTag,
                 homeExcludedTags: existing.homeExcludedTags,
                 homeSelectedManualPlaceFilterID: existing.homeSelectedManualPlaceFilterID,
+                homeSelectedImportanceUrgencyFilter: existing.homeSelectedImportanceUrgencyFilter,
                 homeTabFilterSnapshots: existing.homeTabFilterSnapshots,
                 hideUnavailableRoutines: existing.hideUnavailableRoutines,
                 homeSelectedTimelineRange: existing.homeSelectedTimelineRange,
                 homeSelectedTimelineFilterType: existing.homeSelectedTimelineFilterType,
                 homeSelectedTimelineTag: existing.homeSelectedTimelineTag,
+                homeSelectedTimelineImportanceUrgencyFilter: existing.homeSelectedTimelineImportanceUrgencyFilter,
                 macHomeSidebarModeRawValue: existing.macHomeSidebarModeRawValue,
                 macSelectedSettingsSectionRawValue: existing.macSelectedSettingsSectionRawValue,
                 timelineSelectedRange: state.timeline.selectedRange,
                 timelineFilterType: state.timeline.filterType,
                 timelineSelectedTag: state.timeline.selectedTag,
+                timelineSelectedImportanceUrgencyFilter: state.timeline.selectedImportanceUrgencyFilter,
                 statsSelectedRange: state.stats.selectedRange,
                 statsSelectedTag: state.stats.selectedTag,
                 statsExcludedTags: state.stats.excludedTags,
+                statsSelectedImportanceUrgencyFilter: state.stats.selectedImportanceUrgencyFilter,
                 statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue
             )
         )
@@ -173,12 +185,13 @@ struct TimelineFeature {
         var selectedRange: TimelineRange = .all
         var filterType: TimelineFilterType = .all
         var selectedTag: String?
+        var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var isFilterSheetPresented: Bool = false
         var availableTags: [String] = []
         var groupedEntries: [TimelineSection] = []
 
         var hasActiveFilters: Bool {
-            selectedRange != .all || filterType != .all || selectedTag != nil
+            selectedRange != .all || filterType != .all || selectedTag != nil || selectedImportanceUrgencyFilter != nil
         }
     }
 
@@ -187,6 +200,7 @@ struct TimelineFeature {
         case selectedRangeChanged(TimelineRange)
         case filterTypeChanged(TimelineFilterType)
         case selectedTagChanged(String?)
+        case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case setFilterSheet(Bool)
         case clearFilters
     }
@@ -218,6 +232,11 @@ struct TimelineFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .selectedImportanceUrgencyFilterChanged(filter):
+                state.selectedImportanceUrgencyFilter = filter
+                refreshDerivedState(&state)
+                return .none
+
             case let .setFilterSheet(isPresented):
                 state.isFilterSheetPresented = isPresented
                 return .none
@@ -226,6 +245,7 @@ struct TimelineFeature {
                 state.selectedRange = .all
                 state.filterType = .all
                 state.selectedTag = nil
+                state.selectedImportanceUrgencyFilter = nil
                 refreshDerivedState(&state)
                 return .none
             }
@@ -241,13 +261,20 @@ struct TimelineFeature {
             now: now,
             calendar: calendar
         )
-        state.availableTags = TimelineLogic.availableTags(from: baseEntries)
+        let importanceUrgencyFilteredEntries = baseEntries.filter { entry in
+            HomeFeature.matchesImportanceUrgencyFilter(
+                state.selectedImportanceUrgencyFilter,
+                importance: entry.importance,
+                urgency: entry.urgency
+            )
+        }
+        state.availableTags = TimelineLogic.availableTags(from: importanceUrgencyFilteredEntries)
         if let selectedTag = state.selectedTag,
            !RoutineTag.contains(selectedTag, in: state.availableTags) {
             state.selectedTag = nil
         }
 
-        let entries = baseEntries.filter { entry in
+        let entries = importanceUrgencyFilteredEntries.filter { entry in
             TimelineLogic.matchesSelectedTag(state.selectedTag, in: entry.tags)
         }
         state.groupedEntries = TimelineLogic.groupedByDay(entries: entries, calendar: calendar)
@@ -281,6 +308,7 @@ struct StatsFeature {
         var taskTypeFilter: StatsTaskTypeFilter = .all
         var selectedTag: String?
         var excludedTags: Set<String> = []
+        var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var availableTags: [String] = []
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
@@ -291,6 +319,7 @@ struct StatsFeature {
         case selectedRangeChanged(DoneChartRange)
         case taskTypeFilterChanged(StatsTaskTypeFilter)
         case selectedTagChanged(String?)
+        case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case excludedTagsChanged(Set<String>)
     }
 
@@ -321,6 +350,11 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .selectedImportanceUrgencyFilterChanged(filter):
+                state.selectedImportanceUrgencyFilter = filter
+                refreshDerivedState(&state)
+                return .none
+
             case let .excludedTagsChanged(tags):
                 state.excludedTags = tags
                 refreshDerivedState(&state)
@@ -341,7 +375,15 @@ struct StatsFeature {
             }
         }
 
-        state.availableTags = RoutineTag.allTags(from: tasksMatchingTypeFilter.map(\.tags))
+        let tasksMatchingMatrixFilter = tasksMatchingTypeFilter.filter { task in
+            HomeFeature.matchesImportanceUrgencyFilter(
+                state.selectedImportanceUrgencyFilter,
+                importance: task.importance,
+                urgency: task.urgency
+            )
+        }
+
+        state.availableTags = RoutineTag.allTags(from: tasksMatchingMatrixFilter.map(\.tags))
         if let selectedTag = state.selectedTag,
            !RoutineTag.contains(selectedTag, in: state.availableTags) {
             state.selectedTag = nil
@@ -355,9 +397,9 @@ struct StatsFeature {
         let filteredLogs: [RoutineLog]
         let includeFilteredTasks: [RoutineTask]
         if let tag = state.selectedTag {
-            includeFilteredTasks = tasksMatchingTypeFilter.filter { RoutineTag.contains(tag, in: $0.tags) }
+            includeFilteredTasks = tasksMatchingMatrixFilter.filter { RoutineTag.contains(tag, in: $0.tags) }
         } else {
-            includeFilteredTasks = tasksMatchingTypeFilter
+            includeFilteredTasks = tasksMatchingMatrixFilter
         }
 
         filteredTasks = includeFilteredTasks.filter { task in

@@ -9,13 +9,15 @@ struct TabFilterStateManager {
         var excludedTags: Set<String>
         var selectedFilter: RoutineListFilter
         var selectedManualPlaceFilterID: UUID?
+        var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
 
         static var `default`: Snapshot {
             Snapshot(
                 selectedTag: nil,
                 excludedTags: [],
                 selectedFilter: .all,
-                selectedManualPlaceFilterID: nil
+                selectedManualPlaceFilterID: nil,
+                selectedImportanceUrgencyFilter: nil
             )
         }
     }
@@ -45,20 +47,24 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedTag: String?
     var homeExcludedTags: Set<String>
     var homeSelectedManualPlaceFilterID: UUID?
+    var homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot]
     var hideUnavailableRoutines: Bool
     var homeSelectedTimelineRange: TimelineRange
     var homeSelectedTimelineFilterType: TimelineFilterType
     var homeSelectedTimelineTag: String?
     var homeSelectedTimelineExcludedTags: Set<String> = []
+    var homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var macHomeSidebarModeRawValue: String?
     var macSelectedSettingsSectionRawValue: String?
     var timelineSelectedRange: TimelineRange
     var timelineFilterType: TimelineFilterType
     var timelineSelectedTag: String?
+    var timelineSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var statsSelectedRange: DoneChartRange
     var statsSelectedTag: String?
     var statsExcludedTags: Set<String>
+    var statsSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var statsTaskTypeFilterRawValue: String?
 
     static let `default` = TemporaryViewState(
@@ -68,20 +74,24 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTag: nil,
         homeExcludedTags: [],
         homeSelectedManualPlaceFilterID: nil,
+        homeSelectedImportanceUrgencyFilter: nil,
         homeTabFilterSnapshots: [:],
         hideUnavailableRoutines: false,
         homeSelectedTimelineRange: .all,
         homeSelectedTimelineFilterType: .all,
         homeSelectedTimelineTag: nil,
         homeSelectedTimelineExcludedTags: [],
+        homeSelectedTimelineImportanceUrgencyFilter: nil,
         macHomeSidebarModeRawValue: nil,
         macSelectedSettingsSectionRawValue: nil,
         timelineSelectedRange: .all,
         timelineFilterType: .all,
         timelineSelectedTag: nil,
+        timelineSelectedImportanceUrgencyFilter: nil,
         statsSelectedRange: .week,
         statsSelectedTag: nil,
         statsExcludedTags: [],
+        statsSelectedImportanceUrgencyFilter: nil,
         statsTaskTypeFilterRawValue: nil
     )
 }

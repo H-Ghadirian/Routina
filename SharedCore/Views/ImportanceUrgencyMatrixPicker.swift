@@ -1,25 +1,34 @@
 import SwiftUI
 
 struct ImportanceUrgencyMatrixPicker: View {
-    @Binding var importance: RoutineTaskImportance
-    @Binding var urgency: RoutineTaskUrgency
+    private enum SelectionMode {
+        case task
+        case filter(Binding<ImportanceUrgencyFilterCell?>)
+    }
+
+    @Binding private var importance: RoutineTaskImportance
+    @Binding private var urgency: RoutineTaskUrgency
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private let selectionMode: SelectionMode
 
     private let importanceLevels = RoutineTaskImportance.allCases.sorted { $0.sortOrder > $1.sortOrder }
     private let urgencyLevels = RoutineTaskUrgency.allCases.sorted { $0.sortOrder < $1.sortOrder }
 
-    private var derivedPriority: RoutineTaskPriority {
-        let score = importance.sortOrder + urgency.sortOrder
-        switch score {
-        case ..<4:
-            return .low
-        case 4...5:
-            return .medium
-        case 6...7:
-            return .high
-        default:
-            return .urgent
-        }
+    init(
+        importance: Binding<RoutineTaskImportance>,
+        urgency: Binding<RoutineTaskUrgency>
+    ) {
+        self._importance = importance
+        self._urgency = urgency
+        self.selectionMode = .task
+    }
+
+    init(
+        selectedFilter: Binding<ImportanceUrgencyFilterCell?>
+    ) {
+        self._importance = .constant(selectedFilter.wrappedValue?.importance ?? .level2)
+        self._urgency = .constant(selectedFilter.wrappedValue?.urgency ?? .level2)
+        self.selectionMode = .filter(selectedFilter)
     }
 
     var body: some View {
@@ -28,7 +37,7 @@ struct ImportanceUrgencyMatrixPicker: View {
                 Text("Importance")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(importance.title)
+                Text(displayedImportance.title)
                     .font(.subheadline.weight(.medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -36,7 +45,7 @@ struct ImportanceUrgencyMatrixPicker: View {
                 Text("Urgency")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(urgency.title)
+                Text(displayedUrgency.title)
                     .font(.subheadline.weight(.medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -87,8 +96,8 @@ struct ImportanceUrgencyMatrixPicker: View {
 
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 8) {
-                    summaryChip(title: importance.title, systemImage: "star")
-                    summaryChip(title: urgency.title, systemImage: "bolt")
+                    summaryChip(title: displayedImportance.title, systemImage: "star")
+                    summaryChip(title: displayedUrgency.title, systemImage: "bolt")
                     summaryChip(
                         title: derivedPriority.title,
                         systemImage: "flag.fill",
@@ -99,8 +108,8 @@ struct ImportanceUrgencyMatrixPicker: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
-                        summaryChip(title: importance.title, systemImage: "star")
-                        summaryChip(title: urgency.title, systemImage: "bolt")
+                        summaryChip(title: displayedImportance.title, systemImage: "star")
+                        summaryChip(title: displayedUrgency.title, systemImage: "bolt")
                     }
 
                     summaryChip(
@@ -118,11 +127,17 @@ struct ImportanceUrgencyMatrixPicker: View {
         importanceLevel: RoutineTaskImportance,
         urgencyLevel: RoutineTaskUrgency
     ) -> some View {
-        let isSelected = importance == importanceLevel && urgency == urgencyLevel
+        let isSelected = displayedImportance == importanceLevel && displayedUrgency == urgencyLevel
 
         return Button {
-            importance = importanceLevel
-            urgency = urgencyLevel
+            switch selectionMode {
+            case .task:
+                importance = importanceLevel
+                urgency = urgencyLevel
+            case let .filter(selectedFilter):
+                let newCell = ImportanceUrgencyFilterCell(importance: importanceLevel, urgency: urgencyLevel)
+                selectedFilter.wrappedValue = selectedFilter.wrappedValue == newCell ? nil : newCell
+            }
         } label: {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(cellColor(importanceLevel: importanceLevel, urgencyLevel: urgencyLevel))
@@ -150,6 +165,24 @@ struct ImportanceUrgencyMatrixPicker: View {
         .buttonStyle(.plain)
         .accessibilityLabel("\(importanceLevel.title) importance, \(urgencyLevel.title) urgency")
         .accessibilityValue(isSelected ? "Selected" : priorityTitle(for: importanceLevel, urgencyLevel))
+    }
+
+    private var displayedImportance: RoutineTaskImportance {
+        switch selectionMode {
+        case .task:
+            return importance
+        case let .filter(selectedFilter):
+            return selectedFilter.wrappedValue?.importance ?? .level2
+        }
+    }
+
+    private var displayedUrgency: RoutineTaskUrgency {
+        switch selectionMode {
+        case .task:
+            return urgency
+        case let .filter(selectedFilter):
+            return selectedFilter.wrappedValue?.urgency ?? .level2
+        }
     }
 
     private func priorityTitle(
@@ -221,5 +254,19 @@ struct ImportanceUrgencyMatrixPicker: View {
 
     private var isCompactWidth: Bool {
         horizontalSizeClass == .compact
+    }
+
+    private var derivedPriority: RoutineTaskPriority {
+        let score = displayedImportance.sortOrder + displayedUrgency.sortOrder
+        switch score {
+        case ..<4:
+            return .low
+        case 4...5:
+            return .medium
+        case 6...7:
+            return .high
+        default:
+            return .urgent
+        }
     }
 }

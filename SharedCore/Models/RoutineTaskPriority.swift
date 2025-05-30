@@ -104,6 +104,31 @@ enum RoutineTaskUrgency: String, Codable, CaseIterable, Equatable, Hashable, Sen
     }
 }
 
+struct ImportanceUrgencyFilterCell: Codable, Equatable, Hashable, Identifiable, Sendable {
+    var importance: RoutineTaskImportance
+    var urgency: RoutineTaskUrgency
+
+    var id: String {
+        "\(importance.rawValue)-\(urgency.rawValue)"
+    }
+
+    var title: String {
+        "\(importance.title) importance • \(urgency.title) urgency"
+    }
+
+    var accessibilityLabel: String {
+        "\(importance.title) importance and \(urgency.title.lowercased()) urgency"
+    }
+
+    func matches(
+        importance candidateImportance: RoutineTaskImportance,
+        urgency candidateUrgency: RoutineTaskUrgency
+    ) -> Bool {
+        candidateImportance.sortOrder >= importance.sortOrder
+            && candidateUrgency.sortOrder >= urgency.sortOrder
+    }
+}
+
 extension RoutineTaskPriority {
     var defaultMatrixPosition: (importance: RoutineTaskImportance, urgency: RoutineTaskUrgency) {
         switch self {

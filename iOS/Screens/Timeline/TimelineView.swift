@@ -151,7 +151,11 @@ struct TimelineView: View {
             now: Date(),
             calendar: calendar
         ).filter { entry in
-            TimelineLogic.matchesSelectedTag(store.selectedTag, in: entry.tags)
+            HomeFeature.matchesImportanceUrgencyFilter(
+                store.selectedImportanceUrgencyFilter,
+                importance: entry.importance,
+                urgency: entry.urgency
+            ) && TimelineLogic.matchesSelectedTag(store.selectedTag, in: entry.tags)
         }
 
         return TimelineLogic.availableTags(from: includeScopedEntries).filter { tag in
@@ -217,6 +221,12 @@ struct TimelineView: View {
                 if let selectedTag = store.selectedTag {
                     compactFilterChip(title: "#\(selectedTag)") {
                         store.send(.selectedTagChanged(nil))
+                    }
+                }
+
+                if let selectedImportanceUrgencyFilterLabel {
+                    compactFilterChip(title: selectedImportanceUrgencyFilterLabel) {
+                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
                     }
                 }
 
@@ -306,6 +316,26 @@ struct TimelineView: View {
                     }
                 }
 
+                Section("Importance & Urgency") {
+                    Button(store.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
+                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(store.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
+
+                    ImportanceUrgencyMatrixPicker(
+                        selectedFilter: Binding(
+                            get: { store.selectedImportanceUrgencyFilter },
+                            set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                        )
+                    )
+                    .frame(maxWidth: 420, alignment: .leading)
+
+                    Text(importanceUrgencyFilterSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 if !availableTags.isEmpty {
                     Section("Include Tag") {
                         WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -390,6 +420,18 @@ struct TimelineView: View {
                 store.send(.selectedTagChanged(nil))
             }
         }
+    }
+
+    private var selectedImportanceUrgencyFilterLabel: String? {
+        guard let filter = store.selectedImportanceUrgencyFilter else { return nil }
+        return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
+    }
+
+    private var importanceUrgencyFilterSummary: String {
+        guard let filter = store.selectedImportanceUrgencyFilter else {
+            return "Choose a cell to show done items from tasks that meet or exceed that importance and urgency."
+        }
+        return "Showing done items from tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }
 
     private func timelineRow(_ entry: TimelineEntry) -> some View {

@@ -66,6 +66,8 @@ extension HomeFeature {
             canceledAt: task.canceledAt,
             dueDate: dueDate,
             priority: task.priority,
+            importance: task.importance,
+            urgency: task.urgency,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
             pinnedAt: task.pinnedAt,

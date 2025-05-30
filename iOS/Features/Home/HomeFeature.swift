@@ -61,6 +61,8 @@ struct HomeFeature {
         var canceledAt: Date?
         var dueDate: Date?
         var priority: RoutineTaskPriority
+        var importance: RoutineTaskImportance
+        var urgency: RoutineTaskUrgency
         var scheduleAnchor: Date?
         var pausedAt: Date?
         var pinnedAt: Date?
@@ -114,6 +116,7 @@ struct HomeFeature {
         var selectedTag: String? = nil
         var excludedTags: Set<String> = []
         var selectedManualPlaceFilterID: UUID? = nil
+        var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:]
         var isFilterSheetPresented: Bool = false
 
@@ -122,6 +125,7 @@ struct HomeFeature {
         var selectedTimelineFilterType: TimelineFilterType = .all
         var selectedTimelineTag: String? = nil
         var selectedTimelineExcludedTags: Set<String> = []
+        var selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
 
         // Stats filter state
         var statsSelectedRange: DoneChartRange = .week
@@ -156,6 +160,7 @@ struct HomeFeature {
         case selectedTagChanged(String?)
         case excludedTagsChanged(Set<String>)
         case selectedManualPlaceFilterIDChanged(UUID?)
+        case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
 
@@ -164,6 +169,7 @@ struct HomeFeature {
         case selectedTimelineFilterTypeChanged(TimelineFilterType)
         case selectedTimelineTagChanged(String?)
         case selectedTimelineExcludedTagsChanged(Set<String>)
+        case selectedTimelineImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
 
         // Stats filter actions
         case statsSelectedRangeChanged(DoneChartRange)
@@ -316,7 +322,8 @@ struct HomeFeature {
                     selectedTag: state.selectedTag,
                     excludedTags: state.excludedTags,
                     selectedFilter: state.selectedFilter,
-                    selectedManualPlaceFilterID: state.selectedManualPlaceFilterID
+                    selectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
+                    selectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter
                 )
                 // Restore filter state for the new mode
                 let savedSnapshot = state.tabFilterSnapshots[mode.rawValue]
@@ -325,6 +332,7 @@ struct HomeFeature {
                 state.excludedTags = snapshot.excludedTags
                 state.selectedFilter = snapshot.selectedFilter
                 state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
+                state.selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
                 // First time on a mode: also clear hideUnavailableRoutines
                 if savedSnapshot == nil && state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
@@ -385,6 +393,11 @@ struct HomeFeature {
                 persistTemporaryViewState(state)
                 return .none
 
+            case let .selectedImportanceUrgencyFilterChanged(filter):
+                state.selectedImportanceUrgencyFilter = filter
+                persistTemporaryViewState(state)
+                return .none
+
             case let .isFilterSheetPresentedChanged(isPresented):
                 state.isFilterSheetPresented = isPresented
                 return .none
@@ -393,6 +406,7 @@ struct HomeFeature {
                 state.selectedTag = nil
                 state.excludedTags = []
                 state.selectedManualPlaceFilterID = nil
+                state.selectedImportanceUrgencyFilter = nil
                 if state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
                     appSettingsClient.setHideUnavailableRoutines(false)
@@ -419,6 +433,11 @@ struct HomeFeature {
 
             case let .selectedTimelineExcludedTagsChanged(tags):
                 state.selectedTimelineExcludedTags = tags
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
+                state.selectedTimelineImportanceUrgencyFilter = filter
                 persistTemporaryViewState(state)
                 return .none
 
@@ -958,11 +977,13 @@ struct HomeFeature {
         state.selectedTag = persistedState.homeSelectedTag
         state.excludedTags = persistedState.homeExcludedTags
         state.selectedManualPlaceFilterID = persistedState.homeSelectedManualPlaceFilterID
+        state.selectedImportanceUrgencyFilter = persistedState.homeSelectedImportanceUrgencyFilter
         state.tabFilterSnapshots = persistedState.homeTabFilterSnapshots
         state.selectedTimelineRange = persistedState.homeSelectedTimelineRange
         state.selectedTimelineFilterType = persistedState.homeSelectedTimelineFilterType
         state.selectedTimelineTag = persistedState.homeSelectedTimelineTag
         state.selectedTimelineExcludedTags = persistedState.homeSelectedTimelineExcludedTags
+        state.selectedTimelineImportanceUrgencyFilter = persistedState.homeSelectedTimelineImportanceUrgencyFilter
         state.statsSelectedRange = persistedState.statsSelectedRange
         state.statsSelectedTag = persistedState.statsSelectedTag
 
@@ -974,6 +995,7 @@ struct HomeFeature {
                 state.excludedTags = snapshot.excludedTags
                 state.selectedFilter = snapshot.selectedFilter
                 state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
+                state.selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
             }
         }
     }
@@ -988,12 +1010,14 @@ struct HomeFeature {
                 homeSelectedTag: state.selectedTag,
                 homeExcludedTags: state.excludedTags,
                 homeSelectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
+                homeSelectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter,
                 homeTabFilterSnapshots: state.tabFilterSnapshots,
                 hideUnavailableRoutines: state.hideUnavailableRoutines,
                 homeSelectedTimelineRange: state.selectedTimelineRange,
                 homeSelectedTimelineFilterType: state.selectedTimelineFilterType,
                 homeSelectedTimelineTag: state.selectedTimelineTag,
                 homeSelectedTimelineExcludedTags: state.selectedTimelineExcludedTags,
+                homeSelectedTimelineImportanceUrgencyFilter: state.selectedTimelineImportanceUrgencyFilter,
                 macHomeSidebarModeRawValue: existing.macHomeSidebarModeRawValue,
                 macSelectedSettingsSectionRawValue: existing.macSelectedSettingsSectionRawValue,
                 timelineSelectedRange: existing.timelineSelectedRange,
@@ -1027,5 +1051,14 @@ extension HomeFeature {
     static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
         guard !excludedTags.isEmpty else { return true }
         return !excludedTags.contains { RoutineTag.contains($0, in: tags) }
+    }
+
+    static func matchesImportanceUrgencyFilter(
+        _ selectedFilter: ImportanceUrgencyFilterCell?,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency
+    ) -> Bool {
+        guard let selectedFilter else { return true }
+        return selectedFilter.matches(importance: importance, urgency: urgency)
     }
 }

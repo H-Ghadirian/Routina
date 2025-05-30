@@ -233,6 +233,28 @@ extension HomeTCAView {
         }
     }
 
+    private var importanceUrgencyMatrixSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button(store.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
+                store.send(.selectedImportanceUrgencyFilterChanged(nil))
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(store.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
+
+            ImportanceUrgencyMatrixPicker(
+                selectedFilter: Binding(
+                    get: { store.selectedImportanceUrgencyFilter },
+                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                )
+            )
+            .frame(maxWidth: 420, alignment: .leading)
+
+            Text(importanceUrgencyFilterSummary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     var homeFiltersSheet: some View {
         NavigationStack {
             List {
@@ -246,6 +268,11 @@ extension HomeTCAView {
                         }
                     }
                     .pickerStyle(.inline)
+                }
+
+                Section("Importance & Urgency") {
+                    importanceUrgencyMatrixSection
+                        .padding(.vertical, 4)
                 }
 
                 if !availableTags.isEmpty {

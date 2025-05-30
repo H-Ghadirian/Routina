@@ -22,8 +22,34 @@ struct TimelineEntry: Identifiable, Equatable {
     let taskName: String
     let taskEmoji: String
     let tags: [String]
+    let importance: RoutineTaskImportance
+    let urgency: RoutineTaskUrgency
     let isOneOff: Bool
     let kind: RoutineLogKind
+
+    init(
+        id: UUID,
+        taskID: UUID?,
+        timestamp: Date,
+        taskName: String,
+        taskEmoji: String,
+        tags: [String],
+        importance: RoutineTaskImportance = .level2,
+        urgency: RoutineTaskUrgency = .level2,
+        isOneOff: Bool,
+        kind: RoutineLogKind
+    ) {
+        self.id = id
+        self.taskID = taskID
+        self.timestamp = timestamp
+        self.taskName = taskName
+        self.taskEmoji = taskEmoji
+        self.tags = tags
+        self.importance = importance
+        self.urgency = urgency
+        self.isOneOff = isOneOff
+        self.kind = kind
+    }
 }
 
 enum TimelineLogic {
@@ -65,6 +91,8 @@ enum TimelineLogic {
                 taskName: task?.name ?? "Deleted Routine",
                 taskEmoji: task?.emoji ?? "🗑️",
                 tags: task?.tags ?? [],
+                importance: task?.importance ?? .level2,
+                urgency: task?.urgency ?? .level2,
                 isOneOff: isOneOff,
                 kind: log.kind
             )

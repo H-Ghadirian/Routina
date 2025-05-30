@@ -83,6 +83,12 @@ struct StatsView: View {
                 return task.isOneOffTask
             }
         }.filter { task in
+            HomeFeature.matchesImportanceUrgencyFilter(
+                store.selectedImportanceUrgencyFilter,
+                importance: task.importance,
+                urgency: task.urgency
+            )
+        }.filter { task in
             guard let selectedTag = store.selectedTag else { return true }
             return RoutineTag.contains(selectedTag, in: task.tags)
         }
@@ -97,7 +103,7 @@ struct StatsView: View {
     }
 
     private var hasActiveSheetFilters: Bool {
-        selectedTaskTypeFilter != .all || store.selectedTag != nil || !store.excludedTags.isEmpty
+        selectedTaskTypeFilter != .all || store.selectedTag != nil || !store.excludedTags.isEmpty || store.selectedImportanceUrgencyFilter != nil
     }
 
     private var activeSheetFilterCount: Int {
@@ -105,6 +111,7 @@ struct StatsView: View {
         if selectedTaskTypeFilter != .all { count += 1 }
         if store.selectedTag != nil { count += 1 }
         count += store.excludedTags.count
+        if store.selectedImportanceUrgencyFilter != nil { count += 1 }
         return count
     }
 
@@ -286,6 +293,12 @@ struct StatsView: View {
                     }
                 }
 
+                if let selectedImportanceUrgencyFilterLabel {
+                    compactFilterChip(title: selectedImportanceUrgencyFilterLabel) {
+                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
+                    }
+                }
+
                 ForEach(store.excludedTags.sorted(), id: \.self) { tag in
                     compactFilterChip(title: "not #\(tag)", tintColor: .red) {
                         store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
@@ -353,6 +366,26 @@ struct StatsView: View {
                         }
                         .pickerStyle(.inline)
                     }
+                }
+
+                Section("Importance & Urgency") {
+                    Button(store.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
+                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(store.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
+
+                    ImportanceUrgencyMatrixPicker(
+                        selectedFilter: Binding(
+                            get: { store.selectedImportanceUrgencyFilter },
+                            set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                        )
+                    )
+                    .frame(maxWidth: 420, alignment: .leading)
+
+                    Text(importanceUrgencyFilterSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 if !availableTags.isEmpty {
@@ -439,6 +472,18 @@ struct StatsView: View {
                 store.send(.selectedTagChanged(nil))
             }
         }
+    }
+
+    private var selectedImportanceUrgencyFilterLabel: String? {
+        guard let filter = store.selectedImportanceUrgencyFilter else { return nil }
+        return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
+    }
+
+    private var importanceUrgencyFilterSummary: String {
+        guard let filter = store.selectedImportanceUrgencyFilter else {
+            return "Choose a cell to show stats only for tasks that meet or exceed that importance and urgency."
+        }
+        return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }
 
     private func statsTagButton(

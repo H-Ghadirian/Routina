@@ -114,13 +114,15 @@ struct HomeFeatureTests {
         let placeID = UUID()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let hideUnavailableUpdates = LockIsolated<[Bool]>([])
+        let matrixFilter = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
 
         let store = TestStore(
             initialState: HomeFeature.State(
                 hideUnavailableRoutines: true,
                 selectedTag: "Errands",
                 excludedTags: ["Home"],
-                selectedManualPlaceFilterID: placeID
+                selectedManualPlaceFilterID: placeID,
+                selectedImportanceUrgencyFilter: matrixFilter
             )
         ) {
             HomeFeature()
@@ -138,12 +140,14 @@ struct HomeFeatureTests {
             $0.selectedTag = nil
             $0.excludedTags = []
             $0.selectedManualPlaceFilterID = nil
+            $0.selectedImportanceUrgencyFilter = nil
         }
 
         #expect(hideUnavailableUpdates.value == [false])
         #expect(persistedState.value?.homeSelectedTag == nil)
         #expect(persistedState.value?.homeExcludedTags == [])
         #expect(persistedState.value?.homeSelectedManualPlaceFilterID == nil)
+        #expect(persistedState.value?.homeSelectedImportanceUrgencyFilter == nil)
         #expect(persistedState.value?.hideUnavailableRoutines == false)
     }
 
@@ -310,6 +314,62 @@ struct HomeFeatureTests {
         #expect(persistedState.value?.statsSelectedRange == .year)
         #expect(persistedState.value?.statsSelectedTag == "Focus")
         #expect(persistedState.value?.statsTaskTypeFilterRawValue == StatsTaskTypeFilter.todos.rawValue)
+    }
+
+    @Test
+    func selectedImportanceUrgencyFilterChanged_persistsTemporaryViewState() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let existingTemporaryViewState = TemporaryViewState(
+            selectedAppTabRawValue: Tab.stats.rawValue,
+            homeTaskListModeRawValue: HomeFeature.TaskListMode.routines.rawValue,
+            homeSelectedFilter: .all,
+            homeSelectedTag: nil,
+            homeExcludedTags: [],
+            homeSelectedManualPlaceFilterID: nil,
+            homeTabFilterSnapshots: [:],
+            hideUnavailableRoutines: false,
+            homeSelectedTimelineRange: .month,
+            homeSelectedTimelineFilterType: .todos,
+            homeSelectedTimelineTag: "Errands",
+            macHomeSidebarModeRawValue: HomeFeature.MacSidebarMode.stats.rawValue,
+            macSelectedSettingsSectionRawValue: SettingsMacSection.notifications.rawValue,
+            timelineSelectedRange: .month,
+            timelineFilterType: .todos,
+            timelineSelectedTag: "Deep",
+            statsSelectedRange: .year,
+            statsSelectedTag: "Focus",
+            statsExcludedTags: [],
+            statsTaskTypeFilterRawValue: StatsTaskTypeFilter.todos.rawValue
+        )
+        let selectedCell = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
+
+        let store = TestStore(
+            initialState: HomeFeature.State()
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.temporaryViewState = { existingTemporaryViewState }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.selectedImportanceUrgencyFilterChanged(selectedCell)) {
+            $0.selectedImportanceUrgencyFilter = selectedCell
+        }
+
+        #expect(persistedState.value?.homeSelectedImportanceUrgencyFilter == selectedCell)
+        #expect(persistedState.value?.selectedAppTabRawValue == Tab.stats.rawValue)
+    }
+
+    @Test
+    func importanceUrgencyFilter_matchesTasksAtOrAboveSelectedCell() {
+        let selectedCell = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
+
+        #expect(HomeFeature.matchesImportanceUrgencyFilter(selectedCell, importance: .level3, urgency: .level2))
+        #expect(HomeFeature.matchesImportanceUrgencyFilter(selectedCell, importance: .level4, urgency: .level4))
+        #expect(!HomeFeature.matchesImportanceUrgencyFilter(selectedCell, importance: .level2, urgency: .level4))
+        #expect(!HomeFeature.matchesImportanceUrgencyFilter(selectedCell, importance: .level4, urgency: .level1))
     }
 
     @Test
@@ -3127,6 +3187,8 @@ private func makeDisplay(
     canceledAt: Date? = nil,
     dueDate: Date? = nil,
     priority: RoutineTaskPriority = .none,
+    importance: RoutineTaskImportance = .level2,
+    urgency: RoutineTaskUrgency = .level2,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
     pinnedAt: Date? = nil,
@@ -3170,6 +3232,8 @@ private func makeDisplay(
         canceledAt: canceledAt,
         dueDate: dueDate,
         priority: priority,
+        importance: importance,
+        urgency: urgency,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
         pinnedAt: pinnedAt,

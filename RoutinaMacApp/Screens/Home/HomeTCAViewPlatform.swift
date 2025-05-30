@@ -369,6 +369,7 @@ extension HomeTCAView {
             return store.selectedTimelineRange != .all
                 || store.selectedTimelineFilterType != .all
                 || store.selectedTimelineTag != nil
+                || store.selectedTimelineImportanceUrgencyFilter != nil
                 || !store.selectedTimelineExcludedTags.isEmpty
         }
         if store.macSidebarMode == .stats { return false }
@@ -385,11 +386,11 @@ extension HomeTCAView {
     var macFilterDetailDescription: String {
         switch store.taskListMode {
         case .all:
-            return "Refine the combined list by status, tag, and place. Changes apply to the sidebar immediately."
+            return "Refine the combined list by status, importance, urgency, tag, and place. Changes apply to the sidebar immediately."
         case .routines:
-            return "Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately."
+            return "Refine the routine list by status, importance, urgency, tag, and place. Changes apply to the sidebar immediately."
         case .todos:
-            return "Refine the todo list by status, tag, and place. Changes apply to the sidebar immediately."
+            return "Refine the todo list by status, importance, urgency, tag, and place. Changes apply to the sidebar immediately."
         }
     }
 
@@ -398,6 +399,7 @@ extension HomeTCAView {
             store.send(.selectedTimelineRangeChanged(.all))
             store.send(.selectedTimelineFilterTypeChanged(.all))
             store.send(.selectedTimelineTagChanged(nil))
+            store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
             store.send(.selectedTimelineExcludedTagsChanged([]))
         } else {
             store.send(.selectedFilterChanged(.all))
@@ -433,7 +435,12 @@ extension HomeTCAView {
     var timelineEntries: [TimelineEntry] {
         baseTimelineEntries
             .filter { entry in
-                TimelineLogic.matchesSelectedTag(store.selectedTimelineTag, in: entry.tags)
+                HomeFeature.matchesImportanceUrgencyFilter(
+                    store.selectedTimelineImportanceUrgencyFilter,
+                    importance: entry.importance,
+                    urgency: entry.urgency
+                )
+                    && TimelineLogic.matchesSelectedTag(store.selectedTimelineTag, in: entry.tags)
                     && !store.selectedTimelineExcludedTags.contains { RoutineTag.contains($0, in: entry.tags) }
             }
             .filter(matchesTimelineSearch)
@@ -451,7 +458,19 @@ extension HomeTCAView {
     }
 
     var availableTimelineTags: [String] {
-        TimelineLogic.availableTags(from: baseTimelineEntries)
+        TimelineLogic.availableTags(
+            from: filteredTimelineEntriesForTagging
+        )
+    }
+
+    private var filteredTimelineEntriesForTagging: [TimelineEntry] {
+        baseTimelineEntries.filter { entry in
+            HomeFeature.matchesImportanceUrgencyFilter(
+                store.selectedTimelineImportanceUrgencyFilter,
+                importance: entry.importance,
+                urgency: entry.urgency
+            )
+        }
     }
 
     var availableTimelineExcludeTags: [String] {
@@ -1235,6 +1254,10 @@ extension HomeTCAView {
                     filterPicker
                 }
 
+                macSidebarSectionCard(title: "Importance & Urgency") {
+                    macImportanceUrgencyMatrix
+                }
+
                 if !availableTags.isEmpty {
                     macSidebarSectionCard {
                         tagFilterBar
@@ -1261,6 +1284,29 @@ extension HomeTCAView {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var macImportanceUrgencyMatrix: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button(store.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
+                store.send(.selectedImportanceUrgencyFilterChanged(nil))
+            }
+            .buttonStyle(.plain)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(store.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
+
+            ImportanceUrgencyMatrixPicker(
+                selectedFilter: Binding(
+                    get: { store.selectedImportanceUrgencyFilter },
+                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                )
+            )
+            .frame(maxWidth: 420, alignment: .leading)
+
+            Text(importanceUrgencyFilterSummary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var macTimelineFiltersDetailView: some View {
@@ -1298,6 +1344,27 @@ extension HomeTCAView {
                     }
                 }
 
+                macSidebarSectionCard(title: "Importance & Urgency") {
+                    Button(store.selectedTimelineImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
+                        store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
+                    }
+                    .buttonStyle(.plain)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(store.selectedTimelineImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
+
+                    ImportanceUrgencyMatrixPicker(
+                        selectedFilter: Binding(
+                            get: { store.selectedTimelineImportanceUrgencyFilter },
+                            set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
+                        )
+                    )
+                    .frame(maxWidth: 420, alignment: .leading)
+
+                    Text(timelineImportanceUrgencySummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 if !availableTimelineTags.isEmpty {
                     macSidebarSectionCard(title: "Tags") {
                         VStack(alignment: .leading, spacing: 20) {
@@ -1315,7 +1382,7 @@ extension HomeTCAView {
                                 WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                                     statsTagChip(
                                         title: "All Tags",
-                                        count: baseTimelineEntries.count,
+                                        count: filteredTimelineEntriesForTagging.count,
                                         systemImage: "tag.slash.fill",
                                         isSelected: store.selectedTimelineTag == nil
                                     ) {
@@ -1417,6 +1484,35 @@ extension HomeTCAView {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Importance & Urgency")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+
+                    Button(statsStore?.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
+                        statsStore?.send(.selectedImportanceUrgencyFilterChanged(nil))
+                    }
+                    .buttonStyle(.plain)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(statsStore?.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
+                    .padding(.horizontal, 4)
+
+                    ImportanceUrgencyMatrixPicker(
+                        selectedFilter: Binding(
+                            get: { statsStore?.selectedImportanceUrgencyFilter },
+                            set: { statsStore?.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                        )
+                    )
+                    .frame(maxWidth: 420, alignment: .leading)
+                    .padding(.horizontal, 4)
+
+                    Text(statsImportanceUrgencySummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
                 }
 
                 if !statsAllTags.isEmpty {
@@ -1526,6 +1622,12 @@ extension HomeTCAView {
                 case .todos:
                     return task.isOneOffTask
                 }
+            }.filter { task in
+                HomeFeature.matchesImportanceUrgencyFilter(
+                    statsStore.selectedImportanceUrgencyFilter,
+                    importance: task.importance,
+                    urgency: task.urgency
+                )
             }
             return RoutineTag.summaries(from: filteredTasks)
         }
@@ -1548,6 +1650,12 @@ extension HomeTCAView {
                 case .todos:
                     return task.isOneOffTask
                 }
+            }.filter { task in
+                HomeFeature.matchesImportanceUrgencyFilter(
+                    statsStore.selectedImportanceUrgencyFilter,
+                    importance: task.importance,
+                    urgency: task.urgency
+                )
             }.count
         }
 
@@ -1590,6 +1698,20 @@ extension HomeTCAView {
         return "Select tags to hide tasks that have them."
     }
 
+    private var timelineImportanceUrgencySummary: String {
+        guard let filter = store.selectedTimelineImportanceUrgencyFilter else {
+            return "Choose a cell to show done items from tasks that meet or exceed that importance and urgency."
+        }
+        return "Showing done items from tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
+    }
+
+    private var statsImportanceUrgencySummary: String {
+        guard let filter = statsStore?.selectedImportanceUrgencyFilter else {
+            return "Choose a cell to show stats only for tasks that meet or exceed that importance and urgency."
+        }
+        return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
+    }
+
     private var timelineTagSelectionSummary: String {
         if let selectedTimelineTag = store.selectedTimelineTag {
             let matchingCount = timelineTagCount(for: selectedTimelineTag)
@@ -1613,7 +1735,7 @@ extension HomeTCAView {
     }
 
     private func timelineTagCount(for tag: String) -> Int {
-        baseTimelineEntries.filter { entry in
+        filteredTimelineEntriesForTagging.filter { entry in
             RoutineTag.contains(tag, in: entry.tags)
         }.count
     }

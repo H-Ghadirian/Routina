@@ -240,6 +240,12 @@ struct HomeTCAView: View {
                     }
                 }
 
+                if let selectedImportanceUrgencyFilterLabel {
+                    compactFilterChip(title: selectedImportanceUrgencyFilterLabel, systemImage: "square.grid.3x3.topleft.filled") {
+                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
+                    }
+                }
+
                 if store.hideUnavailableRoutines {
                     compactFilterChip(title: "Away hidden", systemImage: "location.slash") {
                         store.send(.hideUnavailableRoutinesChanged(false))
@@ -325,6 +331,7 @@ struct HomeTCAView: View {
         if store.selectedTag != nil { count += 1 }
         count += store.excludedTags.count
         if store.selectedManualPlaceFilterID != nil { count += 1 }
+        if store.selectedImportanceUrgencyFilter != nil { count += 1 }
         if store.hideUnavailableRoutines { count += 1 }
         return count
     }
@@ -359,6 +366,18 @@ struct HomeTCAView: View {
             return manualPlaceFilterDescription
         }
         return "Save a place in Settings, then link it to a routine to filter by place here."
+    }
+
+    var selectedImportanceUrgencyFilterLabel: String? {
+        guard let filter = store.selectedImportanceUrgencyFilter else { return nil }
+        return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
+    }
+
+    var importanceUrgencyFilterSummary: String {
+        guard let filter = store.selectedImportanceUrgencyFilter else {
+            return "Choose a cell to show tasks that meet or exceed that importance and urgency."
+        }
+        return "Showing tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }
 
     var locationStatusText: String {
