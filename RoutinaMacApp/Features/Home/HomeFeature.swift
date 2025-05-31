@@ -1137,6 +1137,14 @@ struct HomeFeature {
 
     private func persistTemporaryViewState(_ state: State) {
         let existing = appSettingsClient.temporaryViewState() ?? .default
+        var tabFilterSnapshots = state.tabFilterSnapshots
+        tabFilterSnapshots[state.taskListMode.rawValue] = TabFilterStateManager.Snapshot(
+            selectedTag: state.selectedTag,
+            excludedTags: state.excludedTags,
+            selectedFilter: state.selectedFilter,
+            selectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
+            selectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter
+        )
         appSettingsClient.setTemporaryViewState(
             TemporaryViewState(
                 selectedAppTabRawValue: existing.selectedAppTabRawValue,
@@ -1146,7 +1154,7 @@ struct HomeFeature {
                 homeExcludedTags: state.excludedTags,
                 homeSelectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
                 homeSelectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter,
-                homeTabFilterSnapshots: state.tabFilterSnapshots,
+                homeTabFilterSnapshots: tabFilterSnapshots,
                 hideUnavailableRoutines: state.hideUnavailableRoutines,
                 homeSelectedTimelineRange: state.selectedTimelineRange,
                 homeSelectedTimelineFilterType: state.selectedTimelineFilterType,

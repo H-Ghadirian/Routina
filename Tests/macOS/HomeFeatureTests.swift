@@ -149,6 +149,58 @@ struct HomeFeatureTests {
         #expect(persistedState.value?.homeSelectedManualPlaceFilterID == nil)
         #expect(persistedState.value?.homeSelectedImportanceUrgencyFilter == nil)
         #expect(persistedState.value?.hideUnavailableRoutines == false)
+        #expect(
+            persistedState.value?.homeTabFilterSnapshots[HomeFeature.TaskListMode.todos.rawValue]
+            == TabFilterStateManager.Snapshot(
+                selectedTag: nil,
+                excludedTags: [],
+                selectedFilter: .all,
+                selectedManualPlaceFilterID: nil,
+                selectedImportanceUrgencyFilter: nil
+            )
+        )
+    }
+
+    @Test
+    func selectedFilterChanged_overwritesPersistedSnapshotForCurrentMode() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let stalePlaceID = UUID()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                taskListMode: .routines,
+                tabFilterSnapshots: [
+                    HomeFeature.TaskListMode.routines.rawValue: TabFilterStateManager.Snapshot(
+                        selectedTag: "Errands",
+                        excludedTags: ["Home"],
+                        selectedFilter: .due,
+                        selectedManualPlaceFilterID: stalePlaceID
+                    )
+                ]
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.temporaryViewState = { .default }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.selectedFilterChanged(.doneToday)) {
+            $0.selectedFilter = .doneToday
+        }
+
+        #expect(
+            persistedState.value?.homeTabFilterSnapshots[HomeFeature.TaskListMode.routines.rawValue]
+            == TabFilterStateManager.Snapshot(
+                selectedTag: nil,
+                excludedTags: [],
+                selectedFilter: .doneToday,
+                selectedManualPlaceFilterID: nil,
+                selectedImportanceUrgencyFilter: nil
+            )
+        )
     }
 
     @Test
