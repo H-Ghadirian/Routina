@@ -207,6 +207,9 @@ extension HomeTCAView {
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenRoutinesInSidebar)) { _ in
                 showRoutinesInSidebar()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddTask)) { _ in
+                openAddTask()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenTimelineInSidebar)) { _ in
                 openTimelineInSidebar()
             }
@@ -1023,7 +1026,7 @@ extension HomeTCAView {
         switch section {
         case "Identity":           return "person.fill"
         case "Behavior":           return "repeat"
-        case "Places":             return "mappin.fill"
+        case "Places":             return "mappin.and.ellipse"
         case "Importance & Urgency": return "flag.fill"
         case "Context":            return "tag.fill"
         case "Notes":              return "note.text"

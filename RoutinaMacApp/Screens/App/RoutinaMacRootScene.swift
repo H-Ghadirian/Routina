@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct RoutinaMacRootScene: Scene {
@@ -12,8 +13,9 @@ struct RoutinaMacRootScene: Scene {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: RoutinaMacSceneID.home) {
             homeRoot
+                .background(RoutinaMacWindowRouterInstaller())
                 .onAppear {
                     MacMenuCleanup.removeUnneededMenus()
                     DispatchQueue.main.async {
@@ -30,8 +32,67 @@ struct RoutinaMacRootScene: Scene {
             RoutineCommands()
         }
 
+        MenuBarExtra {
+            RoutinaMacMenuBarContent()
+        } label: {
+            RoutinaMacMenuBarIcon()
+        }
+
         Settings {
             settingsRoot
         }
+    }
+}
+
+private enum RoutinaMacSceneID {
+    static let home = "routina-home"
+}
+
+private struct RoutinaMacMenuBarContent: View {
+    var body: some View {
+        Group {
+            Button("Add Task") {
+                openHomeWindow()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    NotificationCenter.default.post(name: .routinaMacOpenAddTask, object: nil)
+                }
+            }
+
+            Button("Open Routina") {
+                openHomeWindow()
+            }
+
+            Divider()
+
+            Button("Quit") {
+                NSApplication.shared.terminate(nil)
+            }
+            .keyboardShortcut("q")
+        }
+    }
+
+    private func openHomeWindow() {
+        RoutinaMacWindowRouter.shared.openHomeAndActivate()
+    }
+}
+
+private struct RoutinaMacWindowRouterInstaller: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onAppear {
+                RoutinaMacWindowRouter.shared.openHomeWindow = {
+                    openWindow(id: RoutinaMacSceneID.home)
+                }
+            }
+    }
+}
+
+private struct RoutinaMacMenuBarIcon: View {
+    var body: some View {
+        Image(systemName: "checklist.checked")
+            .font(.system(size: 14, weight: .semibold))
     }
 }
