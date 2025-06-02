@@ -77,7 +77,9 @@ struct TaskFormContent: View {
             behaviorCard
             placesCard
             importanceCard
-            contextCard
+            tagsCard
+            linkedTasksCard
+            linkURLCard
             notesCard
 
             if isStepBasedMode {
@@ -364,39 +366,49 @@ struct TaskFormContent: View {
         .id("Importance & Urgency")
     }
 
-    // MARK: Context
+    // MARK: Tags
 
-    private var contextCard: some View {
+    private var tagsCard: some View {
         macSectionCard(
-            title: "Context"
+            title: "Tags"
         ) {
-            VStack(alignment: .leading, spacing: 18) {
-                macControlBlock(title: "Tags") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        tagComposer
-                        tagsContent
-                        availableTagSuggestionsContent
-                        manageTagsButton
-                    }
-                }
-
-                macControlBlock(title: "Linked tasks") {
-                    TaskRelationshipsEditor(
-                        relationships: model.relationships,
-                        candidates: model.availableRelationshipTasks,
-                        addRelationship: model.onAddRelationship,
-                        removeRelationship: model.onRemoveRelationship
-                    )
-                }
-
-                macControlBlock(title: "Open link") {
-                    TextField("https://example.com", text: model.link)
-                        .textFieldStyle(.roundedBorder)
-                        .routinaAddRoutinePlatformLinkField()
-                }
+            VStack(alignment: .leading, spacing: 10) {
+                tagComposer
+                tagsContent
+                availableTagSuggestionsContent
+                manageTagsButton
             }
         }
-        .id("Context")
+        .id("Tags")
+    }
+
+    // MARK: Linked Tasks
+
+    private var linkedTasksCard: some View {
+        macSectionCard(
+            title: "Linked tasks"
+        ) {
+            TaskRelationshipsEditor(
+                relationships: model.relationships,
+                candidates: model.availableRelationshipTasks,
+                addRelationship: model.onAddRelationship,
+                removeRelationship: model.onRemoveRelationship
+            )
+        }
+        .id("Linked tasks")
+    }
+
+    // MARK: Link URL
+
+    private var linkURLCard: some View {
+        macSectionCard(
+            title: "Link URL"
+        ) {
+            TextField("https://example.com", text: model.link)
+                .textFieldStyle(.roundedBorder)
+                .routinaAddRoutinePlatformLinkField()
+        }
+        .id("Link URL")
     }
 
     // MARK: Notes

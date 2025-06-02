@@ -1028,7 +1028,9 @@ extension HomeTCAView {
         case "Behavior":           return "repeat"
         case "Places":             return "mappin.and.ellipse"
         case "Importance & Urgency": return "flag.fill"
-        case "Context":            return "tag.fill"
+        case "Tags":               return "tag.fill"
+        case "Linked tasks":       return "link"
+        case "Link URL":           return "globe"
         case "Notes":              return "note.text"
         case "Steps":              return "list.number"
         case "Image":              return "photo.fill"
@@ -1041,7 +1043,7 @@ extension HomeTCAView {
     private var macAddFormSections: [String] {
         let scheduleMode = store.addRoutineState?.scheduleMode ?? .fixedInterval
         let isStepBased = scheduleMode == .fixedInterval || scheduleMode == .oneOff
-        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Context", "Notes"]
+        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if isStepBased { sections.append("Steps") }
         sections.append("Image")
         sections.append("Attachment")
@@ -1051,7 +1053,7 @@ extension HomeTCAView {
     private var macEditFormSections: [String] {
         guard let detail = store.taskDetailState else { return [] }
         let scheduleMode = detail.editScheduleMode
-        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Context", "Notes"]
+        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if scheduleMode == .fixedInterval || scheduleMode == .oneOff {
             sections.append("Steps")
         }
