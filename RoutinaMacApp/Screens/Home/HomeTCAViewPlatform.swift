@@ -981,7 +981,8 @@ extension HomeTCAView {
 
     private var macFormSectionNav: some View {
         let isAdding = isMacAddTaskMode
-        let sections = isAdding ? macAddFormSections : macEditFormSections
+        let available = isAdding ? macAddFormSections : macEditFormSections
+        let sections = addEditFormCoordinator.orderedSections(available: available)
 
         return VStack(alignment: .leading, spacing: 0) {
             macSidebarHeader
@@ -991,6 +992,7 @@ extension HomeTCAView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(sections, id: \.self) { section in
+                        let isMovable = section != "Identity"
                         Button {
                             addEditFormCoordinator.scrollTarget = section
                         } label: {
@@ -1023,6 +1025,24 @@ extension HomeTCAView {
                             .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
                         .buttonStyle(.plain)
+                        .opacity(draggedSection == section ? 0.4 : 1)
+                        .if(isMovable) { view in
+                            view
+                                .draggable(section) {
+                                    formSectionDragPreview(for: section)
+                                }
+                                .contextMenu {
+                                    formSectionContextMenu(for: section, available: available)
+                                }
+                        }
+                        .if(isMovable) { view in
+                            view.onDrop(of: [.text], delegate: SectionDropDelegate(
+                                item: section,
+                                coordinator: addEditFormCoordinator,
+                                draggedSection: $draggedSection,
+                                available: available
+                            ))
+                        }
                     }
                 }
                 .padding(.horizontal, 12)
@@ -1030,6 +1050,49 @@ extension HomeTCAView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func formSectionDragPreview(for section: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: formSectionIcon(for: section))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            Text(section)
+                .font(.body.weight(.medium))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.ultraThickMaterial)
+        )
+        .onAppear { draggedSection = section }
+    }
+
+    @ViewBuilder
+    private func formSectionContextMenu(for section: String, available: [String]) -> some View {
+        let ordered = addEditFormCoordinator.orderedSections(available: available)
+        let movableOrdered = ordered.filter { $0 != "Identity" }
+        let isFirst = movableOrdered.first == section
+        let isLast = movableOrdered.last == section
+
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                addEditFormCoordinator.moveUp(section)
+            }
+        } label: {
+            Label("Move Up", systemImage: "arrow.up")
+        }
+        .disabled(isFirst)
+
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                addEditFormCoordinator.moveDown(section)
+            }
+        } label: {
+            Label("Move Down", systemImage: "arrow.down")
+        }
+        .disabled(isLast)
     }
 
     private func formSectionIcon(for section: String) -> String {
@@ -2658,5 +2721,54 @@ struct MacToolbarStatusBadge: NSViewRepresentable {
         textField.stringValue = title
         textField.textColor = tintColor
         stackView.toolTip = title
+    }
+}
+
+// MARK: - Conditional view modifier
+
+private extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
+
+// MARK: - Drag-and-drop delegate for sidebar section reordering
+
+private struct SectionDropDelegate: DropDelegate {
+    let item: String
+    let coordinator: AddEditFormCoordinator
+    @Binding var draggedSection: String?
+    let available: [String]
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedSection = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let dragged = draggedSection, dragged != item else { return }
+        // Work within the movable order (excludes Identity)
+        let order = coordinator.sectionOrder
+        guard let fromIndex = order.firstIndex(of: dragged),
+              let toIndex = order.firstIndex(of: item) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            coordinator.sectionOrder.move(
+                fromOffsets: IndexSet(integer: fromIndex),
+                toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex
+            )
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedSection != nil
     }
 }

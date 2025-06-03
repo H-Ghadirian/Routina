@@ -55,6 +55,7 @@ public enum UserDefaultStringValueKey: String {
     case selectedMacAppIcon
     case appSettingRoutineListSectioningMode
     case appSettingTemporaryViewState
+    case macFormSectionOrder
 }
 
 public protocol UserDefaultsProtocol {

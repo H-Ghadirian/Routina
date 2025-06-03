@@ -26,6 +26,7 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
+    @State var draggedSection: String?
 
     init(
         store: StoreOf<HomeFeature>,

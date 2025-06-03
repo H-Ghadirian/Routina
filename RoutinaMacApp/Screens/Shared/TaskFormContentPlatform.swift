@@ -83,27 +83,43 @@ struct TaskFormContent: View {
 
     // MARK: - Form sections
 
+    /// All sections that are available given the current form state (excluding Identity).
+    private var availableSections: [String] {
+        var sections = ["Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
+        if isStepBasedMode { sections.append("Steps") }
+        sections.append("Image")
+        sections.append("Attachment")
+        if model.onDelete != nil || model.pauseResumeAction != nil {
+            sections.append("Danger Zone")
+        }
+        return sections
+    }
+
     @ViewBuilder
     private var scrollableFormSections: some View {
+        let ordered = formCoordinator.orderedSections(available: availableSections)
         VStack(alignment: .leading, spacing: 20) {
-            behaviorCard
-            placesCard
-            importanceCard
-            tagsCard
-            linkedTasksCard
-            linkURLCard
-            notesCard
-
-            if isStepBasedMode {
-                stepsCard
+            ForEach(ordered, id: \.self) { section in
+                formSectionView(for: section)
             }
+        }
+    }
 
-            imageCard
-            attachmentCard
-
-            if model.onDelete != nil || model.pauseResumeAction != nil {
-                dangerZoneCard
-            }
+    @ViewBuilder
+    private func formSectionView(for section: String) -> some View {
+        switch section {
+        case "Behavior":              behaviorCard
+        case "Places":                placesCard
+        case "Importance & Urgency":  importanceCard
+        case "Tags":                  tagsCard
+        case "Linked tasks":          linkedTasksCard
+        case "Link URL":              linkURLCard
+        case "Notes":                 notesCard
+        case "Steps":                 stepsCard
+        case "Image":                 imageCard
+        case "Attachment":            attachmentCard
+        case "Danger Zone":           dangerZoneCard
+        default:                      EmptyView()
         }
     }
 
