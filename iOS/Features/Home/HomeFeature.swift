@@ -774,6 +774,20 @@ struct HomeFeature {
                 state.pendingSelectedChecklistReloadGuardTaskID = nil
                 return refreshSelectedTaskDetailEffect(for: state)
 
+            case .taskDetail(.openAddLinkedTask):
+                guard let currentTaskID = state.taskDetailState?.task.id,
+                      let kind = state.taskDetailState?.addLinkedTaskRelationshipKind else { return .none }
+                state.isAddRoutineSheetPresented = true
+                state.isMacFilterDetailPresented = false
+                state.addRoutineState = AddRoutineFeature.State(
+                    relationships: [RoutineTaskRelationship(targetTaskID: currentTaskID, kind: kind.inverse)],
+                    availableTags: availableTags(from: state.routineTasks),
+                    availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks, excluding: currentTaskID),
+                    existingRoutineNames: existingRoutineNames(from: state.routineTasks),
+                    availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
+                )
+                return .none
+
             case .taskDetail:
                 return .none
 

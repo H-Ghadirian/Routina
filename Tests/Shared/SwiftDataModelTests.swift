@@ -248,4 +248,97 @@ struct SwiftDataModelTests {
         #expect(invalid.link == nil)
         #expect(invalid.resolvedLinkURL == nil)
     }
+
+    @Test
+    func routineTaskRelationshipCandidate_from_resolvesStatuses() {
+        let referenceDate = makeDate("2026-03-20T10:00:00Z")
+        let calendar = makeTestCalendar()
+
+        let doneToday = RoutineTask(name: "Done Today", lastDone: referenceDate)
+        let completedTodo = RoutineTask(name: "Completed Todo", scheduleMode: .oneOff, lastDone: referenceDate)
+        let canceledTodo = RoutineTask(name: "Canceled Todo", scheduleMode: .oneOff, canceledAt: referenceDate)
+        let paused = RoutineTask(name: "Paused", interval: 2, pausedAt: referenceDate)
+        let pendingTodo = RoutineTask(name: "Pending Todo", scheduleMode: .oneOff)
+        let overdue = RoutineTask(
+            name: "Overdue",
+            interval: 2,
+            scheduleAnchor: makeDate("2026-03-15T10:00:00Z")
+        )
+        let dueToday = RoutineTask(
+            name: "Due Today",
+            interval: 2,
+            scheduleAnchor: makeDate("2026-03-18T10:00:00Z")
+        )
+        let onTrack = RoutineTask(
+            name: "On Track",
+            interval: 2,
+            scheduleAnchor: makeDate("2026-03-19T10:00:00Z")
+        )
+
+        let candidates = RoutineTaskRelationshipCandidate.from(
+            [doneToday, completedTodo, canceledTodo, paused, pendingTodo, overdue, dueToday, onTrack],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let statusByName = Dictionary(uniqueKeysWithValues: candidates.map { ($0.name, $0.status) })
+
+        #expect(statusByName["Done Today"] == .doneToday)
+        #expect(statusByName["Completed Todo"] == .completedOneOff)
+        #expect(statusByName["Canceled Todo"] == .canceledOneOff)
+        #expect(statusByName["Paused"] == .paused)
+        #expect(statusByName["Pending Todo"] == .pendingTodo)
+        #expect(statusByName["Overdue"] == .overdue(days: 3))
+        #expect(statusByName["Due Today"] == .dueToday)
+        #expect(statusByName["On Track"] == .onTrack)
+    }
+
+    @Test
+    func routineTaskResolvedRelationships_preserveCandidateStatuses() {
+        let referenceDate = makeDate("2026-03-20T10:00:00Z")
+        let calendar = makeTestCalendar()
+        let currentTaskID = UUID()
+        let directTaskID = UUID()
+        let inverseTaskID = UUID()
+
+        let currentTask = RoutineTask(
+            id: currentTaskID,
+            name: "Current",
+            relationships: [RoutineTaskRelationship(targetTaskID: directTaskID, kind: .blocks)]
+        )
+        let directTask = RoutineTask(
+            id: directTaskID,
+            name: "Direct",
+            pausedAt: referenceDate
+        )
+        let inverseTask = RoutineTask(
+            id: inverseTaskID,
+            name: "Inverse",
+            relationships: [RoutineTaskRelationship(targetTaskID: currentTaskID, kind: .blocks)],
+            scheduleMode: .oneOff
+        )
+
+        let candidates = RoutineTaskRelationshipCandidate.from(
+            [directTask, inverseTask],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let resolved = RoutineTask.resolvedRelationships(for: currentTask, within: candidates)
+
+        #expect(resolved == [
+            RoutineTaskResolvedRelationship(
+                taskID: inverseTaskID,
+                taskName: "Inverse",
+                taskEmoji: "✨",
+                kind: .blockedBy,
+                status: .pendingTodo
+            ),
+            RoutineTaskResolvedRelationship(
+                taskID: directTaskID,
+                taskName: "Direct",
+                taskEmoji: "✨",
+                kind: .blocks,
+                status: .paused
+            )
+        ])
+    }
 }

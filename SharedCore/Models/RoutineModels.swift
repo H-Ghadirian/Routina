@@ -702,7 +702,8 @@ final class RoutineTask {
                 taskID: candidate.id,
                 taskName: candidate.displayName,
                 taskEmoji: candidate.emoji,
-                kind: relationship.kind
+                kind: relationship.kind,
+                status: candidate.status
             )
             resolvedByID[resolved.id] = resolved
         }
@@ -713,7 +714,8 @@ final class RoutineTask {
                     taskID: candidate.id,
                     taskName: candidate.displayName,
                     taskEmoji: candidate.emoji,
-                    kind: relationship.kind.inverse
+                    kind: relationship.kind.inverse,
+                    status: candidate.status
                 )
                 resolvedByID[resolved.id] = resolved
             }

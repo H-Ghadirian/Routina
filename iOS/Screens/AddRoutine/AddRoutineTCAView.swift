@@ -764,7 +764,8 @@ struct TaskRelationshipsEditor: View {
                 taskID: candidate.id,
                 taskName: candidate.displayName,
                 taskEmoji: candidate.emoji,
-                kind: relationship.kind
+                kind: relationship.kind,
+                status: candidate.status
             )
         }
         .sorted {
@@ -802,9 +803,18 @@ struct TaskRelationshipsEditor: View {
                                     .foregroundStyle(.primary)
                             }
 
-                            Label(relationship.kind.title, systemImage: relationship.kind.systemImage)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Picker("", selection: Binding(
+                                get: { relationship.kind },
+                                set: { addRelationship(relationship.taskID, $0) }
+                            )) {
+                                ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
+                                    Label(kind.title, systemImage: kind.systemImage).tag(kind)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .font(.caption)
+                            .labelsHidden()
+                            .padding(.leading, -8)
                         }
 
                         Spacer(minLength: 0)

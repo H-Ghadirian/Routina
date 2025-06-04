@@ -30,6 +30,22 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func addLinkedTaskRelationshipKindChanged_updatesSelectedKind() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.addLinkedTaskRelationshipKindChanged(.blockedBy)) {
+            $0.addLinkedTaskRelationshipKind = .blockedBy
+        }
+    }
+
+    @Test
     func deleteRoutineConfirmed_removesTaskCancelsNotificationAndRequestsDismiss() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Stretch", interval: 3, lastDone: nil, emoji: "🤸")

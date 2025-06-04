@@ -72,6 +72,7 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var isDeleteConfirmationPresented: Bool = false
         var shouldDismissAfterDelete: Bool = false
+        var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
     }
 
     enum Action: Equatable {
@@ -134,6 +135,8 @@ struct TaskDetailFeature: Reducer {
         case deleteDismissHandled
         case logsLoaded([RoutineLog])
         case openLinkedTask(UUID)
+        case addLinkedTaskRelationshipKindChanged(RoutineTaskRelationshipKind)
+        case openAddLinkedTask
         case onAppear
     }
 
@@ -668,6 +671,13 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case .openLinkedTask:
+            return .none
+
+        case let .addLinkedTaskRelationshipKindChanged(kind):
+            state.addLinkedTaskRelationshipKind = kind
+            return .none
+
+        case .openAddLinkedTask:
             return .none
 
         case .onAppear:

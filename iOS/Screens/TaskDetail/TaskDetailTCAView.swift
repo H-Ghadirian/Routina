@@ -148,9 +148,7 @@ struct TaskDetailTCAView: View {
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
-                if !resolvedRelationships.isEmpty {
-                    relationshipsSection
-                }
+                relationshipsSection
                 if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
                     taskExtrasSection
                 }
@@ -177,9 +175,7 @@ struct TaskDetailTCAView: View {
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
-                if !resolvedRelationships.isEmpty {
-                    relationshipsSection
-                }
+                relationshipsSection
                 if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
                     taskExtrasSection
                 }
@@ -975,7 +971,7 @@ struct TaskDetailTCAView: View {
 
     private var relationshipsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Relationships")
+            Text("Linked Tasks")
                 .font(.headline)
 
             ForEach(resolvedRelationships) { relationship in
@@ -991,9 +987,21 @@ struct TaskDetailTCAView: View {
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(.primary)
 
-                            Label(relationship.kind.title, systemImage: relationship.kind.systemImage)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 6) {
+                                Label(relationship.kind.title, systemImage: relationship.kind.systemImage)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                if relationship.status != .onTrack {
+                                    Text("·")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+
+                                    Label(relationship.status.title, systemImage: relationship.status.systemImage)
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(statusColor(for: relationship.status))
+                                }
+                            }
                         }
 
                         Spacer(minLength: 0)
@@ -1006,9 +1014,31 @@ struct TaskDetailTCAView: View {
                 }
                 .buttonStyle(.plain)
 
-                if relationship.id != resolvedRelationships.last?.id {
-                    Divider()
+                Divider()
+            }
+
+            HStack(spacing: 8) {
+                Picker(
+                    "",
+                    selection: Binding(
+                        get: { store.addLinkedTaskRelationshipKind },
+                        set: { store.send(.addLinkedTaskRelationshipKindChanged($0)) }
+                    )
+                ) {
+                    ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
+                        Label(kind.title, systemImage: kind.systemImage).tag(kind)
+                    }
                 }
+                .labelsHidden()
+                .fixedSize()
+
+                Button {
+                    store.send(.openAddLinkedTask)
+                } label: {
+                    Label("Add Linked Task", systemImage: "plus")
+                        .font(.subheadline)
+                }
+                .buttonStyle(.borderless)
             }
         }
         .padding(12)
@@ -1192,6 +1222,25 @@ struct TaskDetailTCAView: View {
 
     private var resolvedRelationships: [RoutineTaskResolvedRelationship] {
         RoutineTask.resolvedRelationships(for: store.task, within: store.availableRelationshipTasks)
+    }
+
+    private func statusColor(for status: RoutineTaskRelationshipStatus) -> Color {
+        switch status {
+        case .doneToday, .completedOneOff:
+            return .green
+        case .overdue:
+            return .red
+        case .dueToday:
+            return .orange
+        case .paused:
+            return .teal
+        case .pendingTodo:
+            return .blue
+        case .canceledOneOff:
+            return .secondary
+        case .onTrack:
+            return .secondary
+        }
     }
 
     private var blockingRelationships: [RoutineTaskResolvedRelationship] {

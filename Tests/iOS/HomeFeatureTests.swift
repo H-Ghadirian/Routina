@@ -86,6 +86,99 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func openAddLinkedTask_presentsAddRoutineSeededWithInverseRelationship() async throws {
+        let context = makeInMemoryContext()
+        let place = makePlace(in: context, name: "Office")
+        let currentTask = makeTask(
+            in: context,
+            name: "Draft report",
+            interval: 2,
+            lastDone: nil,
+            emoji: "📝",
+            placeID: place.id,
+            tags: ["Focus"]
+        )
+        let relatedTask = makeTask(
+            in: context,
+            name: "Review draft",
+            interval: 3,
+            lastDone: nil,
+            emoji: "🔍",
+            placeID: place.id,
+            tags: ["Writing"]
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [currentTask, relatedTask],
+                routinePlaces: [place],
+                selectedTaskID: currentTask.id,
+                taskDetailState: TaskDetailFeature.State(
+                    task: currentTask,
+                    addLinkedTaskRelationshipKind: .blockedBy
+                ),
+                isMacFilterDetailPresented: true
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(HomeFeature.Action.taskDetail(.openAddLinkedTask)) {
+            $0.isAddRoutineSheetPresented = true
+            $0.isMacFilterDetailPresented = false
+            $0.addRoutineState = AddRoutineFeature.State(
+                relationships: [RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)],
+                availableTags: ["Focus", "Writing"],
+                availableRelationshipTasks: [
+                    RoutineTaskRelationshipCandidate(
+                        id: relatedTask.id,
+                        name: "Review draft",
+                        emoji: "🔍",
+                        relationships: [],
+                        status: .onTrack
+                    )
+                ],
+                existingRoutineNames: ["Draft report", "Review draft"],
+                availablePlaces: [
+                    RoutinePlaceSummary(
+                        id: place.id,
+                        name: "Office",
+                        radiusMeters: place.radiusMeters,
+                        linkedRoutineCount: 2
+                    )
+                ]
+            )
+        }
+
+        let addRoutineState = try #require(store.state.addRoutineState)
+        #expect(addRoutineState.relationships == [
+            RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
+        ])
+        #expect(addRoutineState.availableTags == ["Focus", "Writing"])
+        #expect(addRoutineState.existingRoutineNames == ["Draft report", "Review draft"])
+        #expect(addRoutineState.availablePlaces == [
+            RoutinePlaceSummary(
+                id: place.id,
+                name: "Office",
+                radiusMeters: place.radiusMeters,
+                linkedRoutineCount: 2
+            )
+        ])
+        #expect(addRoutineState.availableRelationshipTasks == [
+            RoutineTaskRelationshipCandidate(
+                id: relatedTask.id,
+                name: "Review draft",
+                emoji: "🔍",
+                relationships: [],
+                status: .onTrack
+            )
+        ])
+    }
+
+    @Test
     func setDeleteConfirmation_falseClearsPendingDeleteIDs() async {
         let context = makeInMemoryContext()
         let pendingID = UUID()
