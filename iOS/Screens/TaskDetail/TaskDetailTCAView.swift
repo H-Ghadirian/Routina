@@ -11,6 +11,7 @@ struct TaskDetailTCAView: View {
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
+    @State private var isRelationshipGraphPresented = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -79,6 +80,17 @@ struct TaskDetailTCAView: View {
                         set: { store.send(.editRoutineEmojiChanged($0)) }
                     ),
                     emojis: allEmojiOptions
+                )
+            }
+            .sheet(isPresented: $isRelationshipGraphPresented) {
+                TaskRelationshipGraphSheet(
+                    centerTask: store.task,
+                    relationships: resolvedRelationships,
+                    statusColor: statusColor(for:),
+                    onSelectTask: { taskID in
+                        isRelationshipGraphPresented = false
+                        store.send(.openLinkedTask(taskID))
+                    }
                 )
             }
             .alert(
@@ -971,48 +983,64 @@ struct TaskDetailTCAView: View {
 
     private var relationshipsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Linked Tasks")
-                .font(.headline)
+            HStack {
+                Text("Linked Tasks")
+                    .font(.headline)
 
-            ForEach(resolvedRelationships) { relationship in
+                Spacer(minLength: 0)
+
                 Button {
-                    store.send(.openLinkedTask(relationship.taskID))
+                    isRelationshipGraphPresented = true
                 } label: {
-                    HStack(spacing: 12) {
-                        Text(relationship.taskEmoji)
-                            .font(.title3)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(relationship.taskName)
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.primary)
-
-                            HStack(spacing: 6) {
-                                Label(relationship.kind.title, systemImage: relationship.kind.systemImage)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                if relationship.status != .onTrack {
-                                    Text("·")
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-
-                                    Label(relationship.status.title, systemImage: relationship.status.systemImage)
-                                        .font(.caption.weight(.medium))
-                                        .foregroundStyle(statusColor(for: relationship.status))
-                                }
-                            }
-                        }
-
-                        Spacer(minLength: 0)
-
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Label("Visualize", systemImage: "point.3.connected.trianglepath.dotted")
+                        .font(.caption.weight(.semibold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(resolvedRelationships.isEmpty)
+            }
+
+            ForEach(groupedResolvedRelationships, id: \.kind) { group in
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(group.kind.title, systemImage: group.kind.systemImage)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    ForEach(Array(group.items.enumerated()), id: \.element.id) { index, relationship in
+                        Button {
+                            store.send(.openLinkedTask(relationship.taskID))
+                        } label: {
+                            HStack(spacing: 12) {
+                                Text(relationship.taskEmoji)
+                                    .font(.title3)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(relationship.taskName)
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(.primary)
+
+                                    if relationship.status != .onTrack {
+                                        Label(relationship.status.title, systemImage: relationship.status.systemImage)
+                                            .font(.caption.weight(.medium))
+                                            .foregroundStyle(statusColor(for: relationship.status))
+                                    }
+                                }
+
+                                Spacer(minLength: 0)
+
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+
+                        if index < group.items.count - 1 {
+                            Divider()
+                        }
+                    }
+                }
 
                 Divider()
             }
@@ -1222,6 +1250,16 @@ struct TaskDetailTCAView: View {
 
     private var resolvedRelationships: [RoutineTaskResolvedRelationship] {
         RoutineTask.resolvedRelationships(for: store.task, within: store.availableRelationshipTasks)
+    }
+
+    private var groupedResolvedRelationships: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])] {
+        let grouped = Dictionary(grouping: resolvedRelationships, by: \.kind)
+        return RoutineTaskRelationshipKind.allCases
+            .sorted { $0.sortOrder < $1.sortOrder }
+            .compactMap { kind in
+                guard let items = grouped[kind], !items.isEmpty else { return nil }
+                return (kind: kind, items: items)
+            }
     }
 
     private func statusColor(for status: RoutineTaskRelationshipStatus) -> Color {
@@ -2020,5 +2058,392 @@ struct TaskDetailOverviewHeightsPreferenceKey: PreferenceKey {
 
     static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
         value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+private struct TaskRelationshipGraphSheet: View {
+    let centerTask: RoutineTask
+    let relationships: [RoutineTaskResolvedRelationship]
+    let statusColor: (RoutineTaskRelationshipStatus) -> Color
+    let onSelectTask: (UUID) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var zoom: CGFloat = 1
+    @State private var zoomAtGestureStart: CGFloat = 1
+    @State private var canvasOffset: CGSize = .zero
+    @State private var canvasOffsetAtDragStart: CGSize = .zero
+    @GestureState private var dragTranslation: CGSize = .zero
+
+    private let canvasPadding: CGFloat = 180
+
+    var body: some View {
+        NavigationStack {
+            GeometryReader { proxy in
+                ScrollView([.horizontal, .vertical]) {
+                    let layout = graphLayout
+                    ZStack {
+                        ForEach(layout.edges) { edge in
+                            let from = layout.positions[edge.fromID] ?? .zero
+                            let to = layout.positions[edge.toID] ?? .zero
+                            let fromNode = layout.nodes.first(where: { $0.id == edge.fromID })
+                            let toNode = layout.nodes.first(where: { $0.id == edge.toID })
+                            RelationshipGraphEdge(
+                                fromCenter: from,
+                                toCenter: to,
+                                fromSize: fromNode?.cardSize ?? CGSize(width: 190, height: 108),
+                                toSize: toNode?.cardSize ?? CGSize(width: 190, height: 108),
+                                isRelated: edge.kind == .related,
+                                color: edgeColor(for: edge.kind)
+                            )
+                        }
+
+                        ForEach(layout.nodes) { node in
+                            RelationshipGraphNodeCard(
+                                node: node,
+                                statusColor: statusColor
+                            ) {
+                                guard !node.isCenter else { return }
+                                onSelectTask(node.taskID)
+                                dismiss()
+                            }
+                            .position(layout.positions[node.id] ?? .zero)
+                        }
+                    }
+                    .frame(width: layout.size.width + canvasPadding * 2, height: layout.size.height + canvasPadding * 2)
+                    .offset(x: canvasOffset.width + dragTranslation.width, y: canvasOffset.height + dragTranslation.height)
+                    .scaleEffect(zoom)
+                    .gesture(dragGesture)
+                    .simultaneousGesture(magnificationGesture)
+                    .padding(24)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.secondarySystemBackground))
+                .onAppear {
+                    canvasOffset = CGSize(width: proxy.size.width * 0.08, height: 0)
+                    canvasOffsetAtDragStart = canvasOffset
+                }
+            }
+            .navigationTitle("Task Relationships")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Reset") {
+                        withAnimation(.spring(duration: 0.25)) {
+                            zoom = 1
+                            zoomAtGestureStart = 1
+                            canvasOffset = .zero
+                            canvasOffsetAtDragStart = .zero
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var graphLayout: TaskRelationshipGraphLayout {
+        TaskRelationshipGraphLayout(
+            centerTask: centerTask,
+            relationships: relationships
+        )
+    }
+
+    private var dragGesture: some Gesture {
+        DragGesture()
+            .updating($dragTranslation) { value, state, _ in
+                state = value.translation
+            }
+            .onChanged { value in
+                canvasOffset = CGSize(
+                    width: canvasOffsetAtDragStart.width + value.translation.width,
+                    height: canvasOffsetAtDragStart.height + value.translation.height
+                )
+            }
+            .onEnded { value in
+                canvasOffset = CGSize(
+                    width: canvasOffsetAtDragStart.width + value.translation.width,
+                    height: canvasOffsetAtDragStart.height + value.translation.height
+                )
+                canvasOffsetAtDragStart = canvasOffset
+            }
+    }
+
+    private var magnificationGesture: some Gesture {
+        MagnificationGesture()
+            .onChanged { value in
+                zoom = min(max(zoomAtGestureStart * value, 0.65), 2.2)
+            }
+            .onEnded { _ in
+                zoomAtGestureStart = zoom
+            }
+    }
+
+    private func edgeColor(for kind: RoutineTaskRelationshipKind) -> Color {
+        switch kind {
+        case .blockedBy:
+            return .orange.opacity(0.85)
+        case .blocks:
+            return .blue.opacity(0.85)
+        case .related:
+            return .secondary.opacity(0.6)
+        }
+    }
+}
+
+private struct TaskRelationshipGraphLayout {
+    var nodes: [TaskRelationshipGraphNode]
+    var edges: [TaskRelationshipGraphEdgeModel]
+    var positions: [String: CGPoint]
+    var size: CGSize
+
+    init(centerTask: RoutineTask, relationships: [RoutineTaskResolvedRelationship]) {
+        let blockedBy = relationships.filter { $0.kind == .blockedBy }
+        let blocks = relationships.filter { $0.kind == .blocks }
+        let related = relationships.filter { $0.kind == .related }
+
+        let centerNode = TaskRelationshipGraphNode(
+            id: centerTask.id.uuidString,
+            taskID: centerTask.id,
+            name: centerTask.name?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? (centerTask.name ?? "Untitled task") : "Untitled task",
+            emoji: centerTask.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
+            status: nil,
+            isCenter: true,
+            kind: nil
+        )
+
+        let blockedNodes = blockedBy.map { relationship in
+            TaskRelationshipGraphNode(
+                id: relationship.id,
+                taskID: relationship.taskID,
+                name: relationship.taskName,
+                emoji: relationship.taskEmoji,
+                status: relationship.status,
+                isCenter: false,
+                kind: .blockedBy
+            )
+        }
+
+        let blocksNodes = blocks.map { relationship in
+            TaskRelationshipGraphNode(
+                id: relationship.id,
+                taskID: relationship.taskID,
+                name: relationship.taskName,
+                emoji: relationship.taskEmoji,
+                status: relationship.status,
+                isCenter: false,
+                kind: .blocks
+            )
+        }
+
+        let relatedNodes = related.map { relationship in
+            TaskRelationshipGraphNode(
+                id: relationship.id,
+                taskID: relationship.taskID,
+                name: relationship.taskName,
+                emoji: relationship.taskEmoji,
+                status: relationship.status,
+                isCenter: false,
+                kind: .related
+            )
+        }
+
+        let columnSpacing: CGFloat = 280
+        let rowSpacing: CGFloat = 130
+        let relatedSpacing: CGFloat = 120
+        let center = CGPoint(x: 600, y: 380)
+        var positions: [String: CGPoint] = [:]
+        positions[centerNode.id] = center
+
+        func yOrigin(for count: Int, around middle: CGFloat, spacing: CGFloat) -> CGFloat {
+            middle - (CGFloat(max(count - 1, 0)) * spacing / 2)
+        }
+
+        let blockedStartY = yOrigin(for: blockedNodes.count, around: center.y, spacing: rowSpacing)
+        for (index, node) in blockedNodes.enumerated() {
+            positions[node.id] = CGPoint(
+                x: center.x - columnSpacing,
+                y: blockedStartY + CGFloat(index) * rowSpacing
+            )
+        }
+
+        let blocksStartY = yOrigin(for: blocksNodes.count, around: center.y, spacing: rowSpacing)
+        for (index, node) in blocksNodes.enumerated() {
+            positions[node.id] = CGPoint(
+                x: center.x + columnSpacing,
+                y: blocksStartY + CGFloat(index) * rowSpacing
+            )
+        }
+
+        let relatedStartY = center.y + 220
+        for (index, node) in relatedNodes.enumerated() {
+            let direction: CGFloat = index % 2 == 0 ? -1 : 1
+            let step = CGFloat((index / 2) + 1)
+            positions[node.id] = CGPoint(
+                x: center.x + direction * relatedSpacing * step,
+                y: relatedStartY + CGFloat(index / 4) * rowSpacing
+            )
+        }
+
+        var edges: [TaskRelationshipGraphEdgeModel] = []
+        for node in blockedNodes {
+            edges.append(
+                TaskRelationshipGraphEdgeModel(
+                    id: "edge-\(node.id)-center",
+                    fromID: node.id,
+                    toID: centerNode.id,
+                    kind: .blockedBy
+                )
+            )
+        }
+        for node in blocksNodes {
+            edges.append(
+                TaskRelationshipGraphEdgeModel(
+                    id: "edge-center-\(node.id)",
+                    fromID: centerNode.id,
+                    toID: node.id,
+                    kind: .blocks
+                )
+            )
+        }
+        for node in relatedNodes {
+            edges.append(
+                TaskRelationshipGraphEdgeModel(
+                    id: "edge-related-\(node.id)",
+                    fromID: centerNode.id,
+                    toID: node.id,
+                    kind: .related
+                )
+            )
+        }
+
+        let allNodes = [centerNode] + blockedNodes + blocksNodes + relatedNodes
+        let allPoints = allNodes.compactMap { positions[$0.id] }
+        let minX = (allPoints.map(\.x).min() ?? center.x) - 220
+        let maxX = (allPoints.map(\.x).max() ?? center.x) + 220
+        let minY = (allPoints.map(\.y).min() ?? center.y) - 120
+        let maxY = (allPoints.map(\.y).max() ?? center.y) + 140
+
+        var normalizedPositions: [String: CGPoint] = [:]
+        for (id, point) in positions {
+            normalizedPositions[id] = CGPoint(x: point.x - minX, y: point.y - minY)
+        }
+
+        self.nodes = allNodes
+        self.edges = edges
+        self.positions = normalizedPositions
+        self.size = CGSize(width: maxX - minX, height: maxY - minY)
+    }
+}
+
+private struct TaskRelationshipGraphNode: Identifiable {
+    let id: String
+    let taskID: UUID
+    let name: String
+    let emoji: String
+    let status: RoutineTaskRelationshipStatus?
+    let isCenter: Bool
+    let kind: RoutineTaskRelationshipKind?
+
+    var cardSize: CGSize {
+        isCenter ? CGSize(width: 220, height: 96) : CGSize(width: 190, height: 108)
+    }
+}
+
+private struct TaskRelationshipGraphEdgeModel: Identifiable {
+    let id: String
+    let fromID: String
+    let toID: String
+    let kind: RoutineTaskRelationshipKind
+}
+
+private struct RelationshipGraphNodeCard: View {
+    let node: TaskRelationshipGraphNode
+    let statusColor: (RoutineTaskRelationshipStatus) -> Color
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text(node.emoji)
+                        .font(.title3)
+                    Text(node.name)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
+                }
+
+                if let kind = node.kind {
+                    Label(kind.title, systemImage: kind.systemImage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let status = node.status {
+                    Label(status.title, systemImage: status.systemImage)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(statusColor(status))
+                } else {
+                    Text("Current task")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(12)
+            .frame(width: node.cardSize.width, height: node.cardSize.height, alignment: .leading)
+            .background(node.isCenter ? Color.accentColor.opacity(0.14) : Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(node.isCenter ? Color.accentColor.opacity(0.45) : Color.secondary.opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct RelationshipGraphEdge: View {
+    let fromCenter: CGPoint
+    let toCenter: CGPoint
+    let fromSize: CGSize
+    let toSize: CGSize
+    let isRelated: Bool
+    let color: Color
+
+    var body: some View {
+        let from = anchorPoint(center: fromCenter, toward: toCenter, size: fromSize)
+        let to = anchorPoint(center: toCenter, toward: fromCenter, size: toSize)
+        Path { path in
+            path.move(to: from)
+            let delta = max(abs(to.x - from.x) * 0.42, 40)
+            let c1 = CGPoint(x: from.x + delta, y: from.y)
+            let c2 = CGPoint(x: to.x - delta, y: to.y)
+            path.addCurve(to: to, control1: c1, control2: c2)
+        }
+        .stroke(
+            color,
+            style: StrokeStyle(lineWidth: isRelated ? 1.5 : 2, dash: isRelated ? [6, 4] : [])
+        )
+    }
+
+    private func anchorPoint(center: CGPoint, toward other: CGPoint, size: CGSize) -> CGPoint {
+        let dx = other.x - center.x
+        let dy = other.y - center.y
+        if dx == 0, dy == 0 { return center }
+
+        let halfWidth = size.width / 2
+        let halfHeight = size.height / 2
+        let tx = dx == 0 ? CGFloat.greatestFiniteMagnitude : halfWidth / abs(dx)
+        let ty = dy == 0 ? CGFloat.greatestFiniteMagnitude : halfHeight / abs(dy)
+        let t = min(tx, ty)
+
+        return CGPoint(
+            x: center.x + dx * t,
+            y: center.y + dy * t
+        )
     }
 }
