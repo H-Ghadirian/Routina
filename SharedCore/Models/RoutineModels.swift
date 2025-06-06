@@ -93,6 +93,28 @@ private enum RoutineTaskRelationshipStorage {
     }
 }
 
+private enum RoutineSectionOrderStorage {
+    static func serialize(_ orders: [String: Int]) -> String {
+        guard !orders.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(orders),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> [String: Int] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String: Int].self, from: data) else {
+            return [:]
+        }
+        return decoded
+    }
+}
+
 enum RoutineRecurrenceRuleStorage {
     static func serialize(_ recurrenceRule: RoutineRecurrenceRule) -> String {
         let encoder = JSONEncoder()
@@ -144,6 +166,7 @@ final class RoutineTask {
     var scheduleAnchor: Date?
     var pausedAt: Date?
     var pinnedAt: Date?
+    var manualSectionOrderStorage: String = ""
     var completedStepCount: Int16 = 0
     var sequenceStartedAt: Date?
 
@@ -224,6 +247,21 @@ final class RoutineTask {
     var completedChecklistItemIDs: Set<UUID> {
         get { RoutineChecklistProgressStorage.deserialize(completedChecklistItemIDsStorage) }
         set { completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(newValue) }
+    }
+
+    var manualSectionOrders: [String: Int] {
+        get { RoutineSectionOrderStorage.deserialize(manualSectionOrderStorage) }
+        set { manualSectionOrderStorage = RoutineSectionOrderStorage.serialize(newValue) }
+    }
+
+    func manualSectionOrder(for sectionKey: String) -> Int? {
+        manualSectionOrders[sectionKey]
+    }
+
+    func setManualSectionOrder(_ order: Int, for sectionKey: String) {
+        var updated = manualSectionOrders
+        updated[sectionKey] = max(order, 0)
+        manualSectionOrders = updated
     }
 
     var relationships: [RoutineTaskRelationship] {
@@ -413,6 +451,7 @@ final class RoutineTask {
         self.scheduleAnchor = resolvedScheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
         self.pinnedAt = pinnedAt
+        self.manualSectionOrderStorage = ""
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))
         self.sequenceStartedAt = sequenceStartedAt
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
@@ -771,6 +810,7 @@ final class RoutineTask {
             sequenceStartedAt: sequenceStartedAt
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
+        copy.manualSectionOrderStorage = manualSectionOrderStorage
         copy.scheduleAnchor = scheduleAnchor
         return copy
     }

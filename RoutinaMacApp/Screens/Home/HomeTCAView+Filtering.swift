@@ -1,7 +1,41 @@
 import SwiftUI
 import ComposableArchitecture
+import Foundation
 
 extension HomeTCAView {
+    var pinnedManualOrderSectionKey: String { "pinned" }
+    var archivedManualOrderSectionKey: String { "archived" }
+
+    func regularManualOrderSectionKey(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.isDoneToday {
+            return "doneToday"
+        }
+        if overdueDays(for: task) > 0 {
+            return "overdue"
+        }
+        if urgencyLevel(for: task) > 0 || isYellowUrgency(task) {
+            return "dueSoon"
+        }
+
+        switch routineListSectioningMode {
+        case .status:
+            return "onTrack"
+        case .deadlineDate:
+            guard let sectionDate = sectionDateForDeadlineGrouping(for: task) else {
+                return "onTrack"
+            }
+            return "onTrack:\(manualOrderDateKey(for: sectionDate))"
+        }
+    }
+
+    private func manualOrderDateKey(for date: Date) -> String {
+        let components = calendar.dateComponents([.year, .month, .day], from: calendar.startOfDay(for: date))
+        let year = components.year ?? 0
+        let month = components.month ?? 0
+        let day = components.day ?? 0
+        return String(format: "%04d-%02d-%02d", year, month, day)
+    }
+
     func filteredTasks(
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {

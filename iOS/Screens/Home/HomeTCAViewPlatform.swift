@@ -652,14 +652,15 @@ extension HomeTCAView {
     func platformRoutineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
-        includeMarkDone: Bool
+        includeMarkDone: Bool,
+        moveContext: ManualMoveContext?
     ) -> some View {
         NavigationLink(value: task.taskID) {
             routineRow(for: task, rowNumber: rowNumber)
         }
         .contentShape(Rectangle())
         .contextMenu {
-            routineContextMenu(for: task, includeMarkDone: includeMarkDone)
+            routineContextMenu(for: task, includeMarkDone: includeMarkDone, moveContext: moveContext)
         }
     }
 

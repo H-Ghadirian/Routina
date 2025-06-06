@@ -4,6 +4,11 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
+    enum MoveDirection: String, Equatable {
+        case up
+        case down
+    }
+
     enum TaskListMode: String, CaseIterable, Equatable, Identifiable {
         case all = "All"
         case routines = "Routines"
@@ -82,6 +87,7 @@ struct HomeFeature {
         var nextPendingChecklistItemTitle: String?
         var nextDueChecklistItemTitle: String?
         var doneCount: Int
+        var manualSectionOrders: [String: Int] = [:]
     }
 
     enum MacSidebarSelection: Hashable, Equatable {
@@ -173,6 +179,7 @@ struct HomeFeature {
         case resumeTask(UUID)
         case pinTask(UUID)
         case unpinTask(UUID)
+        case moveTaskInSection(taskID: UUID, sectionKey: String, orderedTaskIDs: [UUID], direction: MoveDirection)
 
         // Filter actions
         case selectedFilterChanged(RoutineListFilter)
@@ -802,6 +809,15 @@ struct HomeFeature {
                     }
                 }
 
+            case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
+                return moveTaskInSection(
+                    taskID: taskID,
+                    sectionKey: sectionKey,
+                    orderedTaskIDs: orderedTaskIDs,
+                    direction: direction,
+                    state: &state
+                )
+
             case .addRoutineSheet(.delegate(.didCancel)):
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
@@ -1009,6 +1025,62 @@ struct HomeFeature {
             .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)))),
             .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(state.routineTasks))))
         )
+    }
+
+    private func moveTaskInSection(
+        taskID: UUID,
+        sectionKey: String,
+        orderedTaskIDs: [UUID],
+        direction: MoveDirection,
+        state: inout State
+    ) -> Effect<Action> {
+        let existingTaskIDs = Set(state.routineTasks.map(\.id))
+        var seen: Set<UUID> = []
+        var normalizedIDs: [UUID] = []
+        normalizedIDs.reserveCapacity(orderedTaskIDs.count)
+        for id in orderedTaskIDs where existingTaskIDs.contains(id) {
+            if seen.insert(id).inserted {
+                normalizedIDs.append(id)
+            }
+        }
+
+        guard normalizedIDs.count > 1,
+              let currentIndex = normalizedIDs.firstIndex(of: taskID) else {
+            return .none
+        }
+
+        let targetIndex: Int
+        switch direction {
+        case .up:
+            targetIndex = currentIndex - 1
+        case .down:
+            targetIndex = currentIndex + 1
+        }
+        guard normalizedIDs.indices.contains(targetIndex) else { return .none }
+
+        normalizedIDs.swapAt(currentIndex, targetIndex)
+
+        for (order, id) in normalizedIDs.enumerated() {
+            guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { continue }
+            state.routineTasks[index].setManualSectionOrder(order, for: sectionKey)
+        }
+        refreshDisplays(&state)
+        syncSelectedTaskDetailState(&state)
+
+        return .run { @MainActor [normalizedIDs, sectionKey] _ in
+            do {
+                let context = self.modelContext()
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                let tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+                for (order, id) in normalizedIDs.enumerated() {
+                    tasksByID[id]?.setManualSectionOrder(order, for: sectionKey)
+                }
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to persist manual section order: \(error)")
+            }
+        }
     }
 
     private func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {

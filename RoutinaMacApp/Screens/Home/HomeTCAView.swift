@@ -13,6 +13,11 @@ struct HomeTCAView: View {
         var id: String { title }
     }
 
+    struct ManualMoveContext: Equatable {
+        let sectionKey: String
+        let orderedTaskIDs: [UUID]
+    }
+
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
@@ -446,15 +451,22 @@ struct HomeTCAView: View {
     func routineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
-        includeMarkDone: Bool = true
+        includeMarkDone: Bool = true,
+        moveContext: ManualMoveContext? = nil
     ) -> some View {
-        platformRoutineNavigationRow(for: task, rowNumber: rowNumber, includeMarkDone: includeMarkDone)
+        platformRoutineNavigationRow(
+            for: task,
+            rowNumber: rowNumber,
+            includeMarkDone: includeMarkDone,
+            moveContext: moveContext
+        )
     }
 
     @ViewBuilder
     func routineContextMenu(
         for task: HomeFeature.RoutineDisplay,
-        includeMarkDone: Bool
+        includeMarkDone: Bool,
+        moveContext: ManualMoveContext? = nil
     ) -> some View {
         Button {
             openTask(task.taskID)
@@ -487,6 +499,39 @@ struct HomeTCAView: View {
                     Label("Pause", systemImage: "pause.circle")
                 }
             }
+        }
+
+        if let moveContext,
+           let currentIndex = moveContext.orderedTaskIDs.firstIndex(of: task.taskID) {
+            Divider()
+
+            Button {
+                store.send(
+                    .moveTaskInSection(
+                        taskID: task.taskID,
+                        sectionKey: moveContext.sectionKey,
+                        orderedTaskIDs: moveContext.orderedTaskIDs,
+                        direction: .up
+                    )
+                )
+            } label: {
+                Label("Move Up", systemImage: "arrow.up")
+            }
+            .disabled(currentIndex == 0)
+
+            Button {
+                store.send(
+                    .moveTaskInSection(
+                        taskID: task.taskID,
+                        sectionKey: moveContext.sectionKey,
+                        orderedTaskIDs: moveContext.orderedTaskIDs,
+                        direction: .down
+                    )
+                )
+            } label: {
+                Label("Move Down", systemImage: "arrow.down")
+            }
+            .disabled(currentIndex == moveContext.orderedTaskIDs.count - 1)
         }
 
         platformPinMenuItem(for: task)

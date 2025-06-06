@@ -86,7 +86,8 @@ extension HomeFeature {
             dueChecklistItemCount: dueChecklistItems.count,
             nextPendingChecklistItemTitle: task.nextPendingChecklistItemTitle,
             nextDueChecklistItemTitle: nextDueChecklistItem?.title,
-            doneCount: doneStats.countsByTaskID[task.id, default: 0]
+            doneCount: doneStats.countsByTaskID[task.id, default: 0],
+            manualSectionOrders: task.manualSectionOrders
         )
     }
 

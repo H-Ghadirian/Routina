@@ -757,9 +757,17 @@ extension HomeTCAView {
             List(selection: macSidebarSelectionBinding) {
                 let pinnedOffset = 0
                 if !pinnedTasks.isEmpty {
+                    let pinnedContext = ManualMoveContext(
+                        sectionKey: pinnedManualOrderSectionKey,
+                        orderedTaskIDs: pinnedTasks.map(\.taskID)
+                    )
                     Section("Pinned") {
                         ForEach(Array(pinnedTasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(for: task, rowNumber: pinnedOffset + index + 1)
+                            routineNavigationRow(
+                                for: task,
+                                rowNumber: pinnedOffset + index + 1,
+                                moveContext: pinnedContext
+                            )
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: pinnedTasks)
@@ -770,9 +778,17 @@ extension HomeTCAView {
                 let sectionOffset = pinnedTasks.count
                 ForEach(sections) { section in
                     let sectionStart = sectionOffset + sections.prefix(while: { $0.id != section.id }).reduce(0) { $0 + $1.tasks.count }
+                    let sectionContext = ManualMoveContext(
+                        sectionKey: section.tasks.first.map { regularManualOrderSectionKey(for: $0) } ?? "onTrack",
+                        orderedTaskIDs: section.tasks.map(\.taskID)
+                    )
                     Section(section.title) {
                         ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(for: task, rowNumber: sectionStart + index + 1)
+                            routineNavigationRow(
+                                for: task,
+                                rowNumber: sectionStart + index + 1,
+                                moveContext: sectionContext
+                            )
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: section.tasks)
@@ -782,9 +798,17 @@ extension HomeTCAView {
 
                 if !archivedTasks.isEmpty {
                     let archivedOffset = sectionOffset + sections.reduce(0) { $0 + $1.tasks.count }
+                    let archivedContext = ManualMoveContext(
+                        sectionKey: archivedManualOrderSectionKey,
+                        orderedTaskIDs: archivedTasks.map(\.taskID)
+                    )
                     Section("Archived") {
                         ForEach(Array(archivedTasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(for: task, rowNumber: archivedOffset + index + 1)
+                            routineNavigationRow(
+                                for: task,
+                                rowNumber: archivedOffset + index + 1,
+                                moveContext: archivedContext
+                            )
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: archivedTasks)
@@ -881,13 +905,18 @@ extension HomeTCAView {
     func platformRoutineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
-        includeMarkDone: Bool
+        includeMarkDone: Bool,
+        moveContext: ManualMoveContext?
     ) -> some View {
         routineRow(for: task, rowNumber: rowNumber)
             .tag(MacSidebarSelection.task(task.taskID))
             .contentShape(Rectangle())
             .contextMenu {
-                routineContextMenu(for: task, includeMarkDone: includeMarkDone)
+                routineContextMenu(
+                    for: task,
+                    includeMarkDone: includeMarkDone,
+                    moveContext: moveContext
+                )
             }
     }
 

@@ -10,6 +10,10 @@ extension HomeTCAView {
         _ task1: HomeFeature.RoutineDisplay,
         _ task2: HomeFeature.RoutineDisplay
     ) -> Bool {
+        if let manualOrderComparison = manualOrderSortResult(task1, task2, sectionKey: regularManualOrderSectionKey(for: task1), otherSectionKey: regularManualOrderSectionKey(for: task2)) {
+            return manualOrderComparison
+        }
+
         let overdueDays1 = overdueDays(for: task1)
         let overdueDays2 = overdueDays(for: task2)
 
@@ -54,6 +58,10 @@ extension HomeTCAView {
         _ lhs: HomeFeature.RoutineDisplay,
         _ rhs: HomeFeature.RoutineDisplay
     ) -> Bool {
+        if let manualOrderComparison = manualOrderSortResult(lhs, rhs, sectionKey: archivedManualOrderSectionKey, otherSectionKey: archivedManualOrderSectionKey) {
+            return manualOrderComparison
+        }
+
         let lhsDate = lhs.pausedAt ?? lhs.lastDone ?? .distantPast
         let rhsDate = rhs.pausedAt ?? rhs.lastDone ?? .distantPast
         if lhsDate != rhsDate {
@@ -66,6 +74,10 @@ extension HomeTCAView {
         _ lhs: HomeFeature.RoutineDisplay,
         _ rhs: HomeFeature.RoutineDisplay
     ) -> Bool {
+        if let manualOrderComparison = manualOrderSortResult(lhs, rhs, sectionKey: pinnedManualOrderSectionKey, otherSectionKey: pinnedManualOrderSectionKey) {
+            return manualOrderComparison
+        }
+
         let lhsDate = lhs.pinnedAt ?? .distantPast
         let rhsDate = rhs.pinnedAt ?? .distantPast
         if lhsDate != rhsDate {
@@ -84,5 +96,28 @@ extension HomeTCAView {
         if dueIn == 0 { return 2 }
         if dueIn == 1 { return 1 }
         return 0
+    }
+
+    private func manualOrderSortResult(
+        _ lhs: HomeFeature.RoutineDisplay,
+        _ rhs: HomeFeature.RoutineDisplay,
+        sectionKey: String,
+        otherSectionKey: String
+    ) -> Bool? {
+        guard sectionKey == otherSectionKey else { return nil }
+
+        let lhsOrder = lhs.manualSectionOrders[sectionKey]
+        let rhsOrder = rhs.manualSectionOrders[sectionKey]
+
+        switch (lhsOrder, rhsOrder) {
+        case let (left?, right?) where left != right:
+            return left < right
+        case (_?, nil):
+            return true
+        case (nil, _?):
+            return false
+        default:
+            return nil
+        }
     }
 }
