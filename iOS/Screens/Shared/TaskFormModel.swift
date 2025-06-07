@@ -87,6 +87,9 @@ struct TaskFormModel {
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
 
+    // MARK: Color
+    var color: Binding<RoutineTaskColor>
+
     // MARK: Extras
     var autofocusName: Bool = false
     var onDelete: (() -> Void)? = nil

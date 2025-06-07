@@ -146,7 +146,8 @@ extension TaskDetailFeature {
         steps: [RoutineStep],
         checklistItems: [RoutineChecklistItem],
         scheduleMode: RoutineScheduleMode,
-        recurrenceRule: RoutineRecurrenceRule
+        recurrenceRule: RoutineRecurrenceRule,
+        color: RoutineTaskColor
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -164,6 +165,7 @@ extension TaskDetailFeature {
                 task.priority = priority
                 task.importance = importance
                 task.urgency = urgency
+                task.color = color
                 task.imageData = imageData
                 // Sync attachments by taskID
                 let existingAtts = try context.fetch(attachmentDescriptor(for: taskID))

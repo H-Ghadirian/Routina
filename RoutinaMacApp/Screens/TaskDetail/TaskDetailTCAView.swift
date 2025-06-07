@@ -145,8 +145,17 @@ struct TaskDetailTCAView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if store.task.isOneOffTask {
             todoDetailContent
+                .background { taskColorBackground }
         } else {
             taskDetailContent
+                .background { taskColorBackground }
+        }
+    }
+
+    @ViewBuilder
+    private var taskColorBackground: some View {
+        if let color = store.task.color.swiftUIColor {
+            color.opacity(0.07).ignoresSafeArea()
         }
     }
 

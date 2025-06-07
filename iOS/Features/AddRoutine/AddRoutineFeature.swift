@@ -63,6 +63,7 @@ struct AddRoutineFeature: Reducer {
         var availablePlaces: [RoutinePlaceSummary] = []
         var selectedPlaceID: UUID?
         var nameValidationMessage: String?
+        var routineColor: RoutineTaskColor = .none
 
         var taskType: RoutineTaskType {
             scheduleMode.taskType
@@ -140,19 +141,20 @@ struct AddRoutineFeature: Reducer {
         case existingRoutineNamesChanged([String])
         case availablePlacesChanged([RoutinePlaceSummary])
         case selectedPlaceChanged(UUID?)
+        case routineColorChanged(RoutineTaskColor)
         case saveTapped
         case cancelTapped
         case delegate(Delegate)
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor)
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -375,6 +377,10 @@ struct AddRoutineFeature: Reducer {
             state.selectedPlaceID = placeID
             return .none
 
+        case let .routineColorChanged(color):
+            state.routineColor = color
+            return .none
+
         case .saveTapped:
             state.routineTags = RoutineTag.appending(state.tagDraft, to: state.routineTags)
             state.tagDraft = ""
@@ -422,7 +428,8 @@ struct AddRoutineFeature: Reducer {
                 (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)
                     ? []
                     : RoutineChecklistItem.sanitized(state.routineChecklistItems),
-                state.attachments
+                state.attachments,
+                state.routineColor
             )
 
         case .cancelTapped:

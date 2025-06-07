@@ -105,6 +105,10 @@ extension AddRoutineTCAView {
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
             frequencyUnit: frequencyUnitBinding,
             frequencyValue: frequencyValueBinding,
+            color: Binding(
+                get: { store.routineColor },
+                set: { store.send(.routineColorChanged($0)) }
+            ),
             autofocusName: true,
             onDelete: nil
         )

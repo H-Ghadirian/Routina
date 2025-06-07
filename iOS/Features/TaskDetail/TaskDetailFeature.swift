@@ -73,6 +73,7 @@ struct TaskDetailFeature: Reducer {
         var isDeleteConfirmationPresented: Bool = false
         var shouldDismissAfterDelete: Bool = false
         var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
+        var editColor: RoutineTaskColor = .none
     }
 
     enum Action: Equatable {
@@ -137,6 +138,7 @@ struct TaskDetailFeature: Reducer {
         case openLinkedTask(UUID)
         case addLinkedTaskRelationshipKindChanged(RoutineTaskRelationshipKind)
         case openAddLinkedTask
+        case editColorChanged(RoutineTaskColor)
         case onAppear
     }
 
@@ -645,7 +647,8 @@ struct TaskDetailFeature: Reducer {
                     ? []
                     : state.editRoutineChecklistItems,
                 scheduleMode: state.editScheduleMode,
-                recurrenceRule: recurrenceRule
+                recurrenceRule: recurrenceRule,
+                color: state.editColor
             )
 
         case let .setDeleteConfirmation(isPresented):
@@ -678,6 +681,10 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case .openAddLinkedTask:
+            return .none
+
+        case let .editColorChanged(color):
+            state.editColor = color
             return .none
 
         case .onAppear:

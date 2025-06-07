@@ -29,6 +29,7 @@ extension TaskDetailFeature {
         state.editChecklistItemDraftTitle = ""
         state.editChecklistItemDraftInterval = 3
         state.editSelectedPlaceID = state.task.placeID
+        state.editColor = state.task.color
 
         let recurrenceRule = state.task.recurrenceRule
         state.editRecurrenceKind = recurrenceRule.kind

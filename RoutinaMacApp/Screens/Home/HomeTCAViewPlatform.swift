@@ -884,6 +884,13 @@ extension HomeTCAView {
             Spacer(minLength: 0)
         }
         .padding(.vertical, 4)
+        .padding(.horizontal, task.color != .none ? 8 : 0)
+        .background(
+            task.color.swiftUIColor.map { color in
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(color.opacity(0.12))
+            }
+        )
     }
 
     func platformDeleteTasks(

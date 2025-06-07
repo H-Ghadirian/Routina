@@ -169,6 +169,7 @@ final class RoutineTask {
     var manualSectionOrderStorage: String = ""
     var completedStepCount: Int16 = 0
     var sequenceStartedAt: Date?
+    var colorRawValue: String = RoutineTaskColor.none.rawValue
 
     var isPaused: Bool {
         pausedAt != nil
@@ -199,6 +200,11 @@ final class RoutineTask {
     var urgency: RoutineTaskUrgency {
         get { RoutineTaskUrgency(rawValue: urgencyRawValue) ?? .level2 }
         set { urgencyRawValue = newValue.rawValue }
+    }
+
+    var color: RoutineTaskColor {
+        get { RoutineTaskColor(rawValue: colorRawValue) ?? .none }
+        set { colorRawValue = newValue.rawValue }
     }
 
     var importanceUrgencyLabel: String {
@@ -421,7 +427,8 @@ final class RoutineTask {
         pausedAt: Date? = nil,
         pinnedAt: Date? = nil,
         completedStepCount: Int16 = 0,
-        sequenceStartedAt: Date? = nil
+        sequenceStartedAt: Date? = nil,
+        color: RoutineTaskColor = .none
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
@@ -454,6 +461,7 @@ final class RoutineTask {
         self.manualSectionOrderStorage = ""
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))
         self.sequenceStartedAt = sequenceStartedAt
+        self.colorRawValue = color.rawValue
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
             resetStepProgress()
         }
@@ -807,7 +815,8 @@ final class RoutineTask {
             pausedAt: pausedAt,
             pinnedAt: pinnedAt,
             completedStepCount: completedStepCount,
-            sequenceStartedAt: sequenceStartedAt
+            sequenceStartedAt: sequenceStartedAt,
+            color: color
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage

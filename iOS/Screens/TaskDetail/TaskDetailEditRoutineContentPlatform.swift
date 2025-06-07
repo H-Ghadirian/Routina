@@ -104,6 +104,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editFrequencyValue },
                 set: { store.send(.editFrequencyValueChanged($0)) }
             ),
+            color: Binding(
+                get: { store.editColor },
+                set: { store.send(.editColorChanged($0)) }
+            ),
             autofocusName: false,
             onDelete: { store.send(.setDeleteConfirmation(true)) }
         )

@@ -155,6 +155,10 @@ extension AddRoutineTCAView {
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
             frequencyUnit: frequencyUnitBinding,
             frequencyValue: frequencyValueBinding,
+            color: Binding(
+                get: { store.routineColor },
+                set: { store.send(.routineColorChanged($0)) }
+            ),
             nameFocus: $isRoutineNameFocused,
             nameFocusRequestID: formCoordinator.nameFocusRequestID,
             autofocusName: true,

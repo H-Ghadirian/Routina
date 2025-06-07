@@ -85,7 +85,7 @@ struct TaskFormContent: View {
 
     /// All sections that are available given the current form state (excluding Identity).
     private var availableSections: [String] {
-        var sections = ["Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
+        var sections = ["Color", "Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if isStepBasedMode { sections.append("Steps") }
         sections.append("Image")
         sections.append("Attachment")
@@ -108,6 +108,7 @@ struct TaskFormContent: View {
     @ViewBuilder
     private func formSectionView(for section: String) -> some View {
         switch section {
+        case "Color":                 colorCard
         case "Behavior":              behaviorCard
         case "Places":                placesCard
         case "Importance & Urgency":  importanceCard
@@ -215,6 +216,49 @@ struct TaskFormContent: View {
             focusRequestID: model.nameFocusRequestID
         )
         .frame(height: 28)
+    }
+
+    // MARK: Color
+
+    private var colorCard: some View {
+        macSectionCard(title: "Color") {
+            macControlBlock(
+                title: "Background Color",
+                caption: "Sets a tint on the task row and detail screen background."
+            ) {
+                HStack(spacing: 12) {
+                    ForEach(RoutineTaskColor.allCases, id: \.self) { color in
+                        Button {
+                            model.color.wrappedValue = color
+                        } label: {
+                            ZStack {
+                                if let c = color.swiftUIColor {
+                                    Circle()
+                                        .fill(c)
+                                        .frame(width: 26, height: 26)
+                                } else {
+                                    Circle()
+                                        .fill(Color.secondary.opacity(0.12))
+                                        .frame(width: 26, height: 26)
+                                    Image(systemName: "circle.slash")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.secondary)
+                                }
+                                if model.color.wrappedValue == color {
+                                    Circle()
+                                        .strokeBorder(Color.primary, lineWidth: 2)
+                                        .frame(width: 32, height: 32)
+                                }
+                            }
+                            .frame(width: 32, height: 32)
+                        }
+                        .buttonStyle(.plain)
+                        .help(color.displayName)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
     }
 
     // MARK: Behavior

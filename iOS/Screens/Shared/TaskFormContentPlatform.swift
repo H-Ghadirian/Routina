@@ -22,6 +22,7 @@ struct TaskFormContent: View {
             nameSection
             taskTypeSection
             emojiSection
+            colorSection
             notesSection
             linkSection
             if model.taskType.wrappedValue == .todo {
@@ -276,6 +277,46 @@ struct TaskFormContent: View {
                 }
                 .padding(.vertical, 4)
             }
+        }
+    }
+
+    private var colorSection: some View {
+        Section(header: Text("Color")) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(RoutineTaskColor.allCases, id: \.self) { color in
+                        Button {
+                            model.color.wrappedValue = color
+                        } label: {
+                            ZStack {
+                                if let c = color.swiftUIColor {
+                                    Circle()
+                                        .fill(c)
+                                        .frame(width: 30, height: 30)
+                                } else {
+                                    Circle()
+                                        .fill(Color.secondary.opacity(0.12))
+                                        .frame(width: 30, height: 30)
+                                    Image(systemName: "circle.slash")
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(.secondary)
+                                }
+                                if model.color.wrappedValue == color {
+                                    Circle()
+                                        .strokeBorder(Color.primary, lineWidth: 2.5)
+                                        .frame(width: 36, height: 36)
+                                }
+                            }
+                            .frame(width: 36, height: 36)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(color.displayName)
+                    }
+                }
+                .padding(.vertical, 6)
+            }
+            Text("Sets a tint on the task row and detail screen background.")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 

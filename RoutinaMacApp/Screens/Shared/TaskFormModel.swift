@@ -87,6 +87,9 @@ struct TaskFormModel {
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
 
+    // MARK: Color
+    var color: Binding<RoutineTaskColor>
+
     // MARK: Focus
     var nameFocus: FocusState<Bool>.Binding? = nil
     var nameFocusRequestID: Int = 0

@@ -88,6 +88,7 @@ struct HomeFeature {
         var nextDueChecklistItemTitle: String?
         var doneCount: Int
         var manualSectionOrders: [String: Int] = [:]
+        var color: RoutineTaskColor = .none
     }
 
     enum MacSidebarSelection: Hashable, Equatable {
@@ -823,7 +824,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -856,7 +857,8 @@ struct HomeFeature {
                             interval: Int16(freq),
                             recurrenceRule: recurrenceRule,
                             lastDone: nil,
-                            scheduleAnchor: scheduleMode == .oneOff ? nil : self.now
+                            scheduleAnchor: scheduleMode == .oneOff ? nil : self.now,
+                            color: color
                         )
                         context.insert(newRoutine)
                         for item in attachments {
@@ -941,8 +943,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments)))
+                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
