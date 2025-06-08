@@ -1052,6 +1052,22 @@ struct TaskDetailTCAView: View {
                             HStack(spacing: 12) {
                                 Text(relationship.taskEmoji)
                                     .font(.title3)
+                                    .overlay(alignment: .topLeading) {
+                                        if group.items.count > 1 {
+                                            Text("\(index + 1)")
+                                                .fixedSize()
+                                                .font(.caption2.monospacedDigit().weight(.semibold))
+                                                .foregroundStyle(.secondary)
+                                                .padding(.horizontal, 5)
+                                                .padding(.vertical, 2)
+                                                .background(.ultraThinMaterial, in: Capsule())
+                                                .overlay(
+                                                    Capsule()
+                                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                                )
+                                                .offset(x: -10, y: -8)
+                                        }
+                                    }
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(relationship.taskName)
