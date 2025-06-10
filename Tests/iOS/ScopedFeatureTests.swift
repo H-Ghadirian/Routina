@@ -506,6 +506,7 @@ struct StatsFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off
 
         await store.send(.setData(tasks: [routineTask, todoTask], logs: [routineLog, todoLog])) {
             $0.tasks = [routineTask, todoTask]

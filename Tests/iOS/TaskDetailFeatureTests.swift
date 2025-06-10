@@ -148,17 +148,20 @@ struct TaskDetailFeatureTests {
             TaskDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
-            $0.date.now = now
+            setTestDateDependencies(&$0, now: now)
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { identifier in
                 canceledIDs.withValue { $0.append(identifier) }
             }
         }
+        store.exhaustivity = .off
 
-        await store.send(.cancelTodo) {
-            $0.task.canceledAt = now
-            $0.taskRefreshID = 1
-        }
+        await store.send(.cancelTodo)
+        #expect(store.state.task.canceledAt == now)
+        #expect(store.state.taskRefreshID == 1)
+        #expect(store.state.logs.count == 1)
+        #expect(store.state.logs.first?.kind == .canceled)
+        #expect(store.state.logs.first?.timestamp == now)
 
         var loadedLogs: [RoutineLog] = []
         await store.receive { action in

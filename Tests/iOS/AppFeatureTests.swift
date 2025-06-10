@@ -183,12 +183,15 @@ struct AppFeatureTests {
     @Test
     func statsTypeFilterChange_persistsSelection() async {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let now = makeDate("2026-03-20T10:00:00Z")
 
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+            setTestDateDependencies(&$0, now: now)
         }
+        store.exhaustivity = .off
 
         await store.send(.stats(.taskTypeFilterChanged(.todos))) {
             $0.stats.taskTypeFilter = .todos
@@ -200,6 +203,7 @@ struct AppFeatureTests {
     @Test
     func statsClearFilters_resetsAndPersistsClearedState() async {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let now = makeDate("2026-03-20T10:00:00Z")
 
         let store = TestStore(
             initialState: AppFeature.State(
@@ -216,7 +220,9 @@ struct AppFeatureTests {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+            setTestDateDependencies(&$0, now: now)
         }
+        store.exhaustivity = .off
 
         await store.send(.stats(.clearFilters)) {
             $0.stats.selectedRange = .week

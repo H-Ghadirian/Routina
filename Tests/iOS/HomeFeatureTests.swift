@@ -408,8 +408,8 @@ struct HomeFeatureTests {
             homeSelectedTimelineRange: .month,
             homeSelectedTimelineFilterType: .todos,
             homeSelectedTimelineTag: "Errands",
-            macHomeSidebarModeRawValue: HomeFeature.MacSidebarMode.stats.rawValue,
-            macSelectedSettingsSectionRawValue: SettingsMacSection.notifications.rawValue,
+            macHomeSidebarModeRawValue: "Stats",
+            macSelectedSettingsSectionRawValue: "notifications",
             timelineSelectedRange: .month,
             timelineFilterType: .todos,
             timelineSelectedTag: "Deep",
@@ -452,7 +452,7 @@ struct HomeFeatureTests {
         #expect(persistedState.value?.homeSelectedTimelineFilterType == .routines)
         #expect(persistedState.value?.homeSelectedTimelineTag == "Chores")
         #expect(persistedState.value?.selectedAppTabRawValue == Tab.stats.rawValue)
-        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == "Stats")
         #expect(persistedState.value?.timelineSelectedRange == .month)
         #expect(persistedState.value?.timelineFilterType == .todos)
         #expect(persistedState.value?.timelineSelectedTag == "Deep")
@@ -477,8 +477,8 @@ struct HomeFeatureTests {
             homeSelectedTimelineRange: .month,
             homeSelectedTimelineFilterType: .todos,
             homeSelectedTimelineTag: "Errands",
-            macHomeSidebarModeRawValue: HomeFeature.MacSidebarMode.stats.rawValue,
-            macSelectedSettingsSectionRawValue: SettingsMacSection.notifications.rawValue,
+            macHomeSidebarModeRawValue: "Stats",
+            macSelectedSettingsSectionRawValue: "notifications",
             timelineSelectedRange: .month,
             timelineFilterType: .todos,
             timelineSelectedTag: "Deep",
