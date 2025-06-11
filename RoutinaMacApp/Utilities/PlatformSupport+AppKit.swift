@@ -93,4 +93,8 @@ extension View {
     func routinaInlineTitleDisplayMode() -> some View {
         self
     }
+
+    func routinaGraphSheetFrame() -> some View {
+        frame(minWidth: 900, minHeight: 620)
+    }
 }

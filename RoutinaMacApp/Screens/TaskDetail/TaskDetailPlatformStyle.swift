@@ -9,4 +9,6 @@ enum TaskDetailPlatformStyle {
     static let routineLogsBackground = Color(nsColor: .windowBackgroundColor)
     static let sectionCardStroke = Color.primary.opacity(0.12)
     static let dueTodayTitleColor: Color = .orange
+    static let graphSheetBackground = Color(nsColor: .windowBackgroundColor)
+    static let graphNodeCardBackground = Color(nsColor: .windowBackgroundColor)
 }

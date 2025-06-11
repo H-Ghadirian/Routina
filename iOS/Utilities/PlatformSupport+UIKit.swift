@@ -109,4 +109,8 @@ extension View {
     func routinaInlineTitleDisplayMode() -> some View {
         navigationBarTitleDisplayMode(.inline)
     }
+
+    func routinaGraphSheetFrame() -> some View {
+        self
+    }
 }
