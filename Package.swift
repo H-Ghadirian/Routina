@@ -98,6 +98,7 @@ let package = Package(
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Effects.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+FormSync.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Helpers.swift",
+                "SharedCore/Features/TaskDetail/TaskDetailFeature+Presentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+StateDerivation.swift",
                 "SharedCore/Persistence/PersistenceController.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",

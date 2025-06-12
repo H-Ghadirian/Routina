@@ -22,7 +22,7 @@ struct TaskDetailTCAView: View {
             .toolbar {
                 if !isInlineEditPresented {
                     ToolbarItem(placement: .principal) {
-                        Text(routineEmoji(for: store.task))
+                        Text(store.routineEmoji)
                             .font(TaskDetailPlatformStyle.principalTitleFont)
                     }
                 }
@@ -85,8 +85,8 @@ struct TaskDetailTCAView: View {
             .sheet(isPresented: $isRelationshipGraphPresented) {
                 TaskRelationshipGraphSheet(
                     centerTask: store.task,
-                    relationships: resolvedRelationships,
-                    statusColor: statusColor(for:),
+                    relationships: store.resolvedRelationships,
+                    statusColor: TaskDetailPresentation.statusColor(for:),
                     onSelectTask: { taskID in
                         isRelationshipGraphPresented = false
                         store.send(.openLinkedTask(taskID))
@@ -108,14 +108,14 @@ struct TaskDetailTCAView: View {
                 Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
             }
             .onAppear {
-                displayedMonthStart = Calendar.current.startOfMonth(for: selectedDate)
+                displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
             }
             .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
                 guard shouldDismiss else { return }
                 dismiss()
                 store.send(.deleteDismissHandled)
             }
-            .onChange(of: selectedDate) { _, newValue in
+            .onChange(of: store.resolvedSelectedDate) { _, newValue in
                 displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
             }
             .routinaAttachmentShareSheet(url: $attachmentTempURL)
@@ -265,10 +265,10 @@ struct TaskDetailTCAView: View {
 
             calendarGrid(
                 doneDates: doneDates(from: store.logs, task: store.task),
-                dueDate: dueDate(for: store.task),
+                dueDate: store.resolvedDueDate,
                 pausedAt: store.task.pausedAt,
-                isOrangeUrgencyToday: isOrangeUrgency(store.task),
-                selectedDate: selectedDate,
+                isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
+                selectedDate: store.resolvedSelectedDate,
                 onSelectDate: { store.send(.selectedDateChanged($0)) }
             )
             .padding(.bottom, 12)
@@ -336,13 +336,13 @@ struct TaskDetailTCAView: View {
             HStack(alignment: .top, spacing: 8) {
                 taskHeaderBadge(
                     title: "Status",
-                    value: summaryStatusTitle,
+                    value: store.summaryStatusTitle,
                     tint: summaryStatusColor
                 )
 
                 taskHeaderBadge(
                     title: "Selected",
-                    value: selectedDateMetadataText,
+                    value: store.selectedDateMetadataText,
                     tint: .accentColor
                 )
             }
@@ -351,13 +351,13 @@ struct TaskDetailTCAView: View {
                 if let priorityLabel = store.task.priority.metadataLabel {
                     taskHeaderBadge(
                         title: "Priority",
-                        value: priorityMetadataText(priorityLabel: priorityLabel),
+                        value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
                         systemImage: "flag.fill",
                         tint: .secondary
                     )
                 }
 
-                if let linkedPlace = linkedPlaceSummary {
+                if let linkedPlace = store.linkedPlaceSummary {
                     taskHeaderBadge(
                         title: "Location",
                         value: linkedPlace.name,
@@ -366,7 +366,7 @@ struct TaskDetailTCAView: View {
                 }
             }
 
-            if let dueDateMetadataText {
+            if let dueDateMetadataText = store.dueDateMetadataText {
                 taskHeaderBadge(
                     title: "Due",
                     value: dueDateMetadataText,
@@ -401,13 +401,13 @@ struct TaskDetailTCAView: View {
             HStack(alignment: .top, spacing: 8) {
                 taskHeaderBadge(
                     title: "Status",
-                    value: summaryStatusTitle,
+                    value: store.summaryStatusTitle,
                     tint: summaryStatusColor
                 )
 
                 taskHeaderBadge(
                     title: "Frequency",
-                    value: frequencyText(for: store.task),
+                    value: store.frequencyText,
                     tint: .mint
                 )
             }
@@ -415,25 +415,25 @@ struct TaskDetailTCAView: View {
             HStack(alignment: .top, spacing: 8) {
                 taskHeaderBadge(
                     title: "Completed",
-                    value: totalDoneCountText(for: completedLogCount),
+                    value: store.completedLogCountText,
                     tint: .green
                 )
 
-                if canceledLogCount > 0 {
+                if store.canceledLogCount > 0 {
                     taskHeaderBadge(
                         title: "Canceled",
-                        value: totalCanceledCountText(for: canceledLogCount),
+                        value: store.canceledLogCountText,
                         tint: .orange
                     )
                 }
 
-                if let dueDateMetadataText {
+                if let dueDateMetadataText = store.dueDateMetadataText {
                     taskHeaderBadge(
                         title: "Due",
                         value: dueDateMetadataText,
                         tint: .orange
                     )
-                } else if let linkedPlace = linkedPlaceSummary {
+                } else if let linkedPlace = store.linkedPlaceSummary {
                     taskHeaderBadge(
                         title: "Location",
                         value: linkedPlace.name,
@@ -446,13 +446,13 @@ struct TaskDetailTCAView: View {
                 if let priorityLabel = store.task.priority.metadataLabel {
                     taskHeaderBadge(
                         title: "Priority",
-                        value: priorityMetadataText(priorityLabel: priorityLabel),
+                        value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
                         systemImage: "flag.fill",
                         tint: .secondary
                     )
                 }
 
-                if let linkedPlace = linkedPlaceSummary, dueDateMetadataText != nil {
+                if let linkedPlace = store.linkedPlaceSummary, store.dueDateMetadataText != nil {
                     taskHeaderBadge(
                         title: "Location",
                         value: linkedPlace.name,
@@ -529,8 +529,8 @@ struct TaskDetailTCAView: View {
             primaryActionButton
             cancelTodoButton
 
-            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff && !blockingRelationships.isEmpty {
-                Text(blockerSummaryText)
+            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff && !store.blockingRelationships.isEmpty {
+                Text(store.blockerSummaryText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -545,7 +545,7 @@ struct TaskDetailTCAView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(summaryStatusTitle)
+                Text(store.summaryStatusTitle)
                     .font(.title3.weight(.semibold))
                     .foregroundColor(summaryStatusColor)
 
@@ -567,14 +567,14 @@ struct TaskDetailTCAView: View {
             .routinaPlatformSecondaryActionControlSize()
             .frame(maxWidth: .infinity)
 
-            if isStepRoutineOffToday {
+            if store.isStepRoutineOffToday {
                 Text("Step-based routines can only be progressed for today.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if store.task.isChecklistCompletionRoutine && !canUndoSelectedDate {
+            if store.task.isChecklistCompletionRoutine && !store.canUndoSelectedDate {
                 Text("Complete checklist items below to finish this routine.")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -588,8 +588,8 @@ struct TaskDetailTCAView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if !blockingRelationships.isEmpty {
-                Text(blockerSummaryText)
+            if !store.blockingRelationships.isEmpty {
+                Text(store.blockerSummaryText)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -613,7 +613,7 @@ struct TaskDetailTCAView: View {
     @ViewBuilder
     private var primaryActionButton: some View {
         Button {
-            store.send(completionButtonAction)
+            store.send(store.completionButtonAction)
         } label: {
             completionButtonLabel
                 .routinaPlatformPrimaryActionLabelLayout()
@@ -621,7 +621,7 @@ struct TaskDetailTCAView: View {
         .buttonStyle(.borderedProminent)
         .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
         .routinaPlatformPrimaryActionButtonLayout()
-        .disabled(isCompletionButtonDisabled)
+        .disabled(store.isCompletionButtonDisabled)
     }
 
     @ViewBuilder
@@ -630,14 +630,14 @@ struct TaskDetailTCAView: View {
             Button {
                 store.send(.cancelTodo)
             } label: {
-                Label(cancelTodoButtonTitle, systemImage: "xmark.circle")
+                Label(store.cancelTodoButtonTitle, systemImage: "xmark.circle")
                     .routinaPlatformPrimaryActionLabelLayout()
             }
             .buttonStyle(.bordered)
             .tint(.orange)
             .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
             .routinaPlatformPrimaryActionButtonLayout()
-            .disabled(isCancelTodoButtonDisabled)
+            .disabled(store.isCancelTodoButtonDisabled)
         }
     }
 
@@ -734,7 +734,7 @@ struct TaskDetailTCAView: View {
 
     private func statusSummaryHeader(titleFont: Font) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(summaryStatusTitle)
+            Text(store.summaryStatusTitle)
                 .font(titleFont)
                 .foregroundColor(summaryStatusColor)
 
@@ -750,15 +750,15 @@ struct TaskDetailTCAView: View {
     private func statusMetadataSection(showSelectedDate: Bool) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             if !store.task.isOneOffTask {
-                statusMetadataRow(label: "Frequency", value: frequencyText(for: store.task))
+                statusMetadataRow(label: "Frequency", value: store.frequencyText)
             }
 
             if shouldShowCompletionCount {
-                statusMetadataRow(label: "Completed", value: totalDoneCountText(for: completedLogCount))
+                statusMetadataRow(label: "Completed", value: store.completedLogCountText)
             }
 
-            if canceledLogCount > 0 {
-                statusMetadataRow(label: "Canceled", value: totalCanceledCountText(for: canceledLogCount), systemImage: "xmark.circle")
+            if store.canceledLogCount > 0 {
+                statusMetadataRow(label: "Canceled", value: store.canceledLogCountText, systemImage: "xmark.circle")
             }
 
             if let pausedAt = store.task.pausedAt {
@@ -766,12 +766,12 @@ struct TaskDetailTCAView: View {
                     label: "Paused",
                     value: pausedAt.formatted(date: .abbreviated, time: .omitted)
                 )
-            } else if let dueDateMetadataText {
+            } else if let dueDateMetadataText = store.dueDateMetadataText {
                 statusMetadataRow(label: "Due", value: dueDateMetadataText)
             }
 
-            if showSelectedDate && shouldShowSelectedDateMetadata {
-                statusMetadataRow(label: "Selected", value: selectedDateMetadataText)
+            if showSelectedDate && store.shouldShowSelectedDateMetadata {
+                statusMetadataRow(label: "Selected", value: store.selectedDateMetadataText)
             }
 
             if store.task.hasImage || !store.taskAttachments.isEmpty {
@@ -796,12 +796,12 @@ struct TaskDetailTCAView: View {
                     label: "Checklist",
                     value: "\(store.task.totalChecklistItemCount) \(store.task.totalChecklistItemCount == 1 ? "item" : "items")"
                 )
-                statusMetadataRow(label: "Progress", value: checklistProgressText(for: store.task))
+                statusMetadataRow(label: "Progress", value: store.checklistProgressText)
                 if let nextPendingChecklistItemTitle = store.task.nextPendingChecklistItemTitle {
                     statusMetadataRow(label: "Next Item", value: nextPendingChecklistItemTitle)
                 }
             } else if store.task.hasSequentialSteps {
-                statusMetadataRow(label: "Progress", value: stepProgressText(for: store.task))
+                statusMetadataRow(label: "Progress", value: store.stepProgressText)
                 if let nextStepTitle = store.task.nextStepTitle {
                     statusMetadataRow(label: "Next Step", value: nextStepTitle)
                 }
@@ -815,7 +815,7 @@ struct TaskDetailTCAView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Button {
-                store.send(completionButtonAction)
+                store.send(store.completionButtonAction)
             } label: {
                 completionButtonLabel
                     .routinaPlatformPrimaryActionLabelLayout()
@@ -823,7 +823,7 @@ struct TaskDetailTCAView: View {
             .buttonStyle(.borderedProminent)
             .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
             .routinaPlatformPrimaryActionButtonLayout(alignment: .leading)
-            .disabled(isCompletionButtonDisabled)
+            .disabled(store.isCompletionButtonDisabled)
 
             if !store.task.isOneOffTask {
                 Button(pauseArchivePresentation.actionTitle) {
@@ -835,14 +835,14 @@ struct TaskDetailTCAView: View {
                 .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
             }
 
-            if isStepRoutineOffToday {
+            if store.isStepRoutineOffToday {
                 Text("Step-based routines can only be progressed for today.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if store.task.isChecklistCompletionRoutine && !canUndoSelectedDate {
+            if store.task.isChecklistCompletionRoutine && !store.canUndoSelectedDate {
                 Text("Complete checklist items below to finish this routine.")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -856,8 +856,8 @@ struct TaskDetailTCAView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if !blockingRelationships.isEmpty {
-                Text(blockerSummaryText)
+            if !store.blockingRelationships.isEmpty {
+                Text(store.blockerSummaryText)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -917,15 +917,15 @@ struct TaskDetailTCAView: View {
             }
             return nil
         }
-        if Calendar.current.isDateInToday(selectedDate) {
+        if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
             return "Today is selected. Pick another date to review its history."
         }
-        return "Reviewing \(selectedDate.formatted(date: .abbreviated, time: .omitted))."
+        return "Reviewing \(store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted))."
     }
 
     private var shouldShowCompletionCount: Bool {
         if store.task.isOneOffTask {
-            return completedLogCount > 0 || canceledLogCount > 0
+            return store.completedLogCount > 0 || store.canceledLogCount > 0
         }
         return true
     }
@@ -933,10 +933,10 @@ struct TaskDetailTCAView: View {
     private var hasVisibleStatusMetadata: Bool {
         !store.task.isOneOffTask
             || shouldShowCompletionCount
-            || linkedPlaceSummary != nil
+            || store.linkedPlaceSummary != nil
             || store.task.pausedAt != nil
-            || dueDateMetadataText != nil
-            || shouldShowSelectedDateMetadata
+            || store.dueDateMetadataText != nil
+            || store.shouldShowSelectedDateMetadata
             || !store.task.tags.isEmpty
             || store.task.hasImage
             || !store.taskAttachments.isEmpty
@@ -1007,10 +1007,10 @@ struct TaskDetailTCAView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(resolvedRelationships.isEmpty)
+                .disabled(store.resolvedRelationships.isEmpty)
             }
 
-            ForEach(groupedResolvedRelationships, id: \.kind) { group in
+            ForEach(store.groupedResolvedRelationships, id: \.kind) { group in
                 VStack(alignment: .leading, spacing: 6) {
                     Label(group.kind.title, systemImage: group.kind.systemImage)
                         .font(.caption.weight(.semibold))
@@ -1048,7 +1048,7 @@ struct TaskDetailTCAView: View {
                                     if relationship.status != .onTrack {
                                         Label(relationship.status.title, systemImage: relationship.status.systemImage)
                                             .font(.caption.weight(.medium))
-                                            .foregroundStyle(statusColor(for: relationship.status))
+                                            .foregroundStyle(TaskDetailPresentation.statusColor(for: relationship.status))
                                     }
                                 }
 
@@ -1132,18 +1132,8 @@ struct TaskDetailTCAView: View {
         )
     }
 
-    private var summaryStatusTitle: String {
-        summaryTitle(
-            pausedAt: store.task.pausedAt,
-            isDoneToday: store.isDoneToday,
-            overdueDays: store.overdueDays,
-            daysSinceLastRoutine: store.daysSinceLastRoutine,
-            task: store.task
-        )
-    }
-
     private var summaryStatusColor: Color {
-        summaryTitleColor(
+        TaskDetailPresentation.summaryTitleColor(
             pausedAt: store.task.pausedAt,
             isDoneToday: store.isDoneToday,
             overdueDays: store.overdueDays,
@@ -1153,170 +1143,11 @@ struct TaskDetailTCAView: View {
 
     @ViewBuilder
     private var completionButtonLabel: some View {
-        if let systemImage = completionButtonSystemImage {
-            Label(completionButtonTitle, systemImage: systemImage)
+        if let systemImage = store.completionButtonSystemImage {
+            Label(store.completionButtonTitle, systemImage: systemImage)
         } else {
-            Text(completionButtonTitle)
+            Text(store.completionButtonTitle)
         }
-    }
-
-    private var canUndoSelectedDate: Bool {
-        !store.task.isChecklistDriven && isSelectedDateTerminal
-    }
-
-    private var completionButtonAction: TaskDetailFeature.Action {
-        canUndoSelectedDate ? .undoSelectedDateCompletion : .markAsDone
-    }
-
-    private var completionButtonTitle: String {
-        completionButtonText(
-            for: selectedDate,
-            isDone: isSelectedDateTerminal,
-            isFuture: isSelectedDateInFuture,
-            isPaused: store.task.isPaused,
-            task: store.task
-        )
-    }
-
-    private var completionButtonSystemImage: String? {
-        canUndoSelectedDate ? "arrow.uturn.backward" : nil
-    }
-
-    private var isCompletionButtonDisabled: Bool {
-        guard !canUndoSelectedDate else { return false }
-        if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
-            return true
-        }
-        if store.task.isChecklistCompletionRoutine {
-            return true
-        }
-        if store.task.isChecklistDriven {
-            return store.task.isPaused
-                || !Calendar.current.isDateInToday(selectedDate)
-                || checklistDueItemCount == 0
-        }
-        return isSelectedDateInFuture || store.task.isPaused || isStepRoutineOffToday
-    }
-
-    private var dueDateMetadataText: String? {
-        guard let dueDate = dueDate(for: store.task), !Calendar.current.isDateInToday(dueDate) else {
-            return nil
-        }
-        return dueDate.formatted(date: .abbreviated, time: .omitted)
-    }
-
-    private var shouldShowSelectedDateMetadata: Bool {
-        !Calendar.current.isDateInToday(selectedDate)
-            && !store.task.isCompletedOneOff
-            && !store.task.isCanceledOneOff
-    }
-
-    private var selectedDateMetadataText: String {
-        if Calendar.current.isDateInToday(selectedDate) {
-            return "Today"
-        }
-        return selectedDate.formatted(date: .abbreviated, time: .omitted)
-    }
-
-    private func priorityMetadataText(priorityLabel: String) -> String {
-        "\(priorityLabel) • \(store.task.importance.title) importance • \(store.task.urgency.title) urgency"
-    }
-
-    private var selectedDate: Date {
-        let calendar = Calendar.current
-        return calendar.startOfDay(for: store.selectedDate ?? Date())
-    }
-
-    private var isSelectedDateDone: Bool {
-        let calendar = Calendar.current
-        return store.logs.contains {
-            guard let timestamp = $0.timestamp else { return false }
-            return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: selectedDate)
-        }
-        || store.task.lastDone.map { calendar.isDate($0, inSameDayAs: selectedDate) } == true
-    }
-
-    private var isSelectedDateCanceled: Bool {
-        let calendar = Calendar.current
-        return store.logs.contains {
-            guard let timestamp = $0.timestamp else { return false }
-            return $0.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: selectedDate)
-        }
-        || store.task.canceledAt.map { calendar.isDate($0, inSameDayAs: selectedDate) } == true
-    }
-
-    private var isSelectedDateTerminal: Bool {
-        isSelectedDateDone || isSelectedDateCanceled
-    }
-
-    private var completedLogCount: Int {
-        store.logs.filter { $0.kind == .completed }.count
-    }
-
-    private var canceledLogCount: Int {
-        store.logs.filter { $0.kind == .canceled }.count
-    }
-
-    private var checklistDueItemCount: Int {
-        store.task.dueChecklistItems(referenceDate: Date()).count
-    }
-
-    private var isSelectedDateInFuture: Bool {
-        Calendar.current.startOfDay(for: selectedDate) > Calendar.current.startOfDay(for: Date())
-    }
-
-    private var isStepRoutineOffToday: Bool {
-        store.task.hasSequentialSteps && !Calendar.current.isDateInToday(selectedDate)
-    }
-
-    private var linkedPlaceSummary: RoutinePlaceSummary? {
-        guard let placeID = store.task.placeID else { return nil }
-        return store.availablePlaces.first(where: { $0.id == placeID })
-    }
-
-    private var resolvedRelationships: [RoutineTaskResolvedRelationship] {
-        RoutineTask.resolvedRelationships(for: store.task, within: store.availableRelationshipTasks)
-    }
-
-    private var groupedResolvedRelationships: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])] {
-        let grouped = Dictionary(grouping: resolvedRelationships, by: \.kind)
-        return RoutineTaskRelationshipKind.allCases
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .compactMap { kind in
-                guard let items = grouped[kind], !items.isEmpty else { return nil }
-                return (kind: kind, items: items)
-            }
-    }
-
-    private func statusColor(for status: RoutineTaskRelationshipStatus) -> Color {
-        switch status {
-        case .doneToday, .completedOneOff:
-            return .green
-        case .overdue:
-            return .red
-        case .dueToday:
-            return .orange
-        case .paused:
-            return .teal
-        case .pendingTodo:
-            return .blue
-        case .canceledOneOff:
-            return .secondary
-        case .onTrack:
-            return .secondary
-        }
-    }
-
-    private var blockingRelationships: [RoutineTaskResolvedRelationship] {
-        resolvedRelationships.filter { $0.kind == .blockedBy }
-    }
-
-    private var blockerSummaryText: String {
-        let count = blockingRelationships.count
-        if count == 1, let blocker = blockingRelationships.first {
-            return "Blocked by \(blocker.taskName). You can still mark this done, but it may be worth checking that task first."
-        }
-        return "Blocked by \(count) tasks. You can still mark this done, but it may be worth checking them first."
     }
 
     private var calendarHeader: some View {
@@ -1460,7 +1291,7 @@ struct TaskDetailTCAView: View {
                 .overlay(
                     Circle()
                         .stroke(
-                            selectionStrokeColor(
+                            TaskDetailPresentation.selectionStrokeColor(
                                 isSelected: isSelected,
                                 isToday: isToday,
                                 isHighlightedDay: isDoneDate || isDueToTodayRangeDate || isDueDate || isPausedDate
@@ -1479,13 +1310,6 @@ struct TaskDetailTCAView: View {
             dates.insert(calendar.startOfDay(for: lastDone))
         }
         return dates
-    }
-
-    private func dueDate(for task: RoutineTask) -> Date? {
-        if task.isOneOffTask {
-            return task.deadline
-        }
-        return RoutineDateMath.dueDate(for: task, referenceDate: Date())
     }
 
     private func isInDueToTodayRange(day: Date, dueDate: Date?) -> Bool {
@@ -1508,151 +1332,9 @@ struct TaskDetailTCAView: View {
         return dayStart >= pausedStart && dayStart <= todayStart
     }
 
-    private func isOrangeUrgency(_ task: RoutineTask) -> Bool {
-        guard !task.isPaused, !task.isChecklistDriven, !task.isOneOffTask else { return false }
-        if task.recurrenceRule.isFixedCalendar {
-            return daysUntilDue(task) == 1
-        }
-        let anchor = task.scheduleAnchor ?? task.lastDone
-        let daysSinceAnchor = RoutineDateMath.elapsedDaysSinceLastDone(from: anchor, referenceDate: Date())
-        let progress = Double(daysSinceAnchor) / Double(task.interval)
-        return progress >= 0.75 && progress < 0.90
-    }
-
-    private func daysUntilDue(_ task: RoutineTask) -> Int? {
-        guard !task.isPaused else { return nil }
-        return RoutineDateMath.daysUntilDue(for: task, referenceDate: Date())
-    }
-
-    private func summaryTitle(
-        pausedAt: Date?,
-        isDoneToday: Bool,
-        overdueDays: Int,
-        daysSinceLastRoutine: Int,
-        task: RoutineTask
-    ) -> String {
-        if let pausedAt {
-            return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
-        }
-        if task.isOneOffTask {
-            if task.isInProgress {
-                return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
-            }
-            if let canceledAt = task.canceledAt {
-                if Calendar.current.isDateInToday(canceledAt) {
-                    return "Canceled today"
-                }
-                return "Canceled on \(canceledAt.formatted(date: .abbreviated, time: .omitted))"
-            }
-            if let lastDone = task.lastDone {
-                if isDoneToday {
-                    return "Completed today"
-                }
-                return "Completed on \(lastDone.formatted(date: .abbreviated, time: .omitted))"
-            }
-            return "To do"
-        }
-        if task.isChecklistCompletionRoutine {
-            if task.isChecklistInProgress {
-                return "Checklist \(task.completedChecklistItemCount) of \(task.totalChecklistItemCount) in progress"
-            }
-            if isDoneToday {
-                return "Done today"
-            }
-            if overdueDays > 0 {
-                return "Overdue by \(overdueDays) \(dayWord(overdueDays))"
-            }
-            guard let daysUntilDue = daysUntilDue(task) else {
-                return "\(daysSinceLastRoutine) \(dayWord(daysSinceLastRoutine)) since last done"
-            }
-            if daysUntilDue == 0 {
-                return "Due today"
-            }
-            if daysUntilDue > 0 {
-                return "Due in \(daysUntilDue) \(dayWord(daysUntilDue))"
-            }
-            return "Overdue by \(-daysUntilDue) \(dayWord(-daysUntilDue))"
-        }
-        if task.isChecklistDriven {
-            if overdueDays > 0 {
-                return "Overdue by \(overdueDays) \(dayWord(overdueDays))"
-            }
-            if let daysUntilDue = daysUntilDue(task) {
-                if daysUntilDue == 0 {
-                    return "Due today"
-                }
-                if daysUntilDue > 0 {
-                    return "Due in \(daysUntilDue) \(dayWord(daysUntilDue))"
-                }
-            }
-            if isDoneToday {
-                return "Updated today"
-            }
-            return "\(daysSinceLastRoutine) \(dayWord(daysSinceLastRoutine)) since last update"
-        }
-        if task.isInProgress {
-            return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
-        }
-        if isDoneToday {
-            return "Done today"
-        }
-        if overdueDays > 0 {
-            return "Overdue by \(overdueDays) \(dayWord(overdueDays))"
-        }
-        guard let daysUntilDue = daysUntilDue(task) else {
-            return "\(daysSinceLastRoutine) \(dayWord(daysSinceLastRoutine)) since last done"
-        }
-        if daysUntilDue == 0 {
-            return "Due today"
-        }
-        if daysUntilDue > 0 {
-            return "Due in \(daysUntilDue) \(dayWord(daysUntilDue))"
-        }
-        return "Overdue by \(-daysUntilDue) \(dayWord(-daysUntilDue))"
-    }
-
-    private func summaryTitleColor(
-        pausedAt: Date?,
-        isDoneToday: Bool,
-        overdueDays: Int,
-        task: RoutineTask
-    ) -> Color {
-        if pausedAt != nil { return .teal }
-        if task.isOneOffTask {
-            if task.isInProgress { return .orange }
-            if task.isCompletedOneOff || isDoneToday { return .green }
-            if task.isCanceledOneOff { return .orange }
-            return .primary
-        }
-        if task.isChecklistCompletionRoutine {
-            if task.isChecklistInProgress { return .orange }
-            if isDoneToday { return .green }
-            if overdueDays > 0 { return .red }
-            if daysUntilDue(task) == 0 { return TaskDetailPlatformStyle.dueTodayTitleColor }
-            if isOrangeUrgency(task) { return .orange }
-            return .primary
-        }
-        if task.isChecklistDriven {
-            if overdueDays > 0 { return .red }
-            if daysUntilDue(task) == 0 { return TaskDetailPlatformStyle.dueTodayTitleColor }
-            if isDoneToday { return .green }
-            return .primary
-        }
-        if task.isInProgress { return .orange }
-        if isDoneToday { return .green }
-        if overdueDays > 0 { return .red }
-        if daysUntilDue(task) == 0 { return TaskDetailPlatformStyle.dueTodayTitleColor }
-        if isOrangeUrgency(task) { return .orange }
-        return .primary
-    }
-
     private func displayedLogs(from logs: [RoutineLog]) -> [RoutineLog] {
         if isShowingAllLogs { return logs }
         return Array(logs.prefix(3))
-    }
-
-    private func routineEmoji(for task: RoutineTask) -> String {
-        task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
     }
 
     private var sortedChecklistItems: [RoutineChecklistItem] {
@@ -1675,7 +1357,7 @@ struct TaskDetailTCAView: View {
     }
 
     private func completionChecklistRow(for item: RoutineChecklistItem) -> some View {
-        let isDone = isChecklistItemMarkedDone(item)
+        let isDone = store.state.isChecklistItemMarkedDone(item)
         let isInteractive = canToggleChecklistItem(item)
 
         return Button {
@@ -1684,7 +1366,7 @@ struct TaskDetailTCAView: View {
             HStack(alignment: .center, spacing: 12) {
                 Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(isDone ? .green : checklistCompletionControlColor(isInteractive: isInteractive))
+                    .foregroundStyle(isDone ? .green : TaskDetailPresentation.checklistCompletionControlColor(isInteractive: isInteractive))
                     .frame(width: 24, height: 24)
 
                 Text(item.title)
@@ -1708,7 +1390,7 @@ struct TaskDetailTCAView: View {
                     .font(.subheadline.weight(.semibold))
                 Text(checklistStatusText(for: item))
                     .font(.caption)
-                    .foregroundStyle(checklistStatusColor(for: item))
+                    .foregroundStyle(TaskDetailPresentation.checklistStatusColor(for: item, task: store.task, isMarkedDone: store.state.isChecklistItemMarkedDone(item)))
             }
 
             Spacer(minLength: 0)
@@ -1718,13 +1400,13 @@ struct TaskDetailTCAView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
-            .disabled(store.task.isPaused || !Calendar.current.isDateInToday(selectedDate))
+            .disabled(store.task.isPaused || !Calendar.current.isDateInToday(store.resolvedSelectedDate))
         }
     }
 
     private func checklistStatusText(for item: RoutineChecklistItem) -> String {
         if store.task.isChecklistCompletionRoutine {
-            return isChecklistItemMarkedDone(item) ? "Done" : "Pending"
+            return store.state.isChecklistItemMarkedDone(item) ? "Done" : "Pending"
         }
         let calendar = Calendar.current
         let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: Date(), calendar: calendar)
@@ -1744,23 +1426,6 @@ struct TaskDetailTCAView: View {
             return "Due tomorrow"
         }
         return "Due in \(daysUntilDue) days"
-    }
-
-    private func checklistStatusColor(for item: RoutineChecklistItem) -> Color {
-        if store.task.isChecklistCompletionRoutine {
-            return isChecklistItemMarkedDone(item) ? .green : .secondary
-        }
-        let calendar = Calendar.current
-        let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: Date(), calendar: calendar)
-        let daysUntilDue = calendar.dateComponents(
-            [.day],
-            from: calendar.startOfDay(for: Date()),
-            to: calendar.startOfDay(for: dueDate)
-        ).day ?? 0
-
-        if daysUntilDue < 0 { return .red }
-        if daysUntilDue == 0 { return .orange }
-        return .secondary
     }
 
     private func canSaveEdit(
@@ -1856,123 +1521,10 @@ struct TaskDetailTCAView: View {
             || newRecurrenceRule != currentRecurrenceRule
     }
 
-    private func frequencyText(for task: RoutineTask) -> String {
-        if task.isOneOffTask {
-            return "One-off todo"
-        }
-        if task.isChecklistDriven {
-            return "Checklist-driven"
-        }
-        return task.recurrenceRule.displayText()
-    }
-
-    private func totalDoneCountText(for count: Int) -> String {
-        count == 1 ? "1 completion" : "\(count) completions"
-    }
-
-    private func totalCanceledCountText(for count: Int) -> String {
-        count == 1 ? "1 cancel" : "\(count) cancels"
-    }
-
-    private func stepProgressText(for task: RoutineTask) -> String {
-        guard task.hasSequentialSteps else { return "" }
-        if task.isInProgress {
-            return "Step \(task.completedSteps + 1) of \(task.totalSteps)"
-        }
-        return "\(task.totalSteps) sequential \(task.totalSteps == 1 ? "step" : "steps")"
-    }
-
-    private func checklistProgressText(for task: RoutineTask) -> String {
-        if store.isDoneToday && !task.isChecklistInProgress {
-            return "All items completed today"
-        }
-        let completed = task.completedChecklistItemCount
-        let total = max(task.totalChecklistItemCount, 1)
-        return "\(completed) of \(total) items completed"
-    }
-
-    private func completionButtonText(
-        for selectedDate: Date,
-        isDone: Bool,
-        isFuture: Bool,
-        isPaused: Bool,
-        task: RoutineTask
-    ) -> String {
-        if !task.isChecklistDriven && isDone {
-            return "Undo"
-        }
-        if task.isCanceledOneOff {
-            return "Select the canceled date to undo"
-        }
-        if task.isCompletedOneOff {
-            return "Select the completion date to undo"
-        }
-        if isPaused {
-            return "Resume the routine to mark dates done"
-        }
-        if task.isOneOffTask {
-            if Calendar.current.isDateInToday(selectedDate) {
-                return "Done"
-            }
-            return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
-        }
-        if task.isChecklistCompletionRoutine && !Calendar.current.isDateInToday(selectedDate) {
-            return "Checklist progress can only be updated today"
-        }
-        if task.isChecklistCompletionRoutine {
-            return "Complete checklist items below"
-        }
-        if task.isChecklistDriven && !Calendar.current.isDateInToday(selectedDate) {
-            return "Checklist routines can only be updated today"
-        }
-        if task.isChecklistDriven {
-            let dueItems = task.dueChecklistItems(referenceDate: Date())
-            if dueItems.isEmpty {
-                return "No due items right now"
-            }
-            if dueItems.count == 1, let title = dueItems.first?.title {
-                return "Buy: \(title)"
-            }
-            return "Buy \(dueItems.count) due items"
-        }
-        if task.hasSequentialSteps && !Calendar.current.isDateInToday(selectedDate) {
-            return "Step routines can only be progressed today"
-        }
-        if isFuture {
-            return "Future dates can't be marked done"
-        }
-        if let nextStepTitle = task.nextStepTitle {
-            return "Complete: \(nextStepTitle)"
-        }
-        if Calendar.current.isDateInToday(selectedDate) {
-            return "Done"
-        }
-        return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
-    }
-
-    private var cancelTodoButtonTitle: String {
-        if Calendar.current.isDateInToday(selectedDate) {
-            return "Cancel todo"
-        }
-        return "Cancel for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
-    }
-
-    private var isCancelTodoButtonDisabled: Bool {
-        store.task.isPaused || store.task.isCompletedOneOff || store.task.isCanceledOneOff || isSelectedDateInFuture
-    }
-
-    private func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
-        guard store.task.isChecklistCompletionRoutine else { return false }
-        if store.isDoneToday && !store.task.isChecklistInProgress {
-            return true
-        }
-        return store.task.isChecklistItemCompleted(item.id)
-    }
-
     private func canToggleChecklistItem(_ item: RoutineChecklistItem) -> Bool {
         guard store.task.isChecklistCompletionRoutine,
               !store.task.isPaused,
-              Calendar.current.isDateInToday(selectedDate) else {
+              Calendar.current.isDateInToday(store.resolvedSelectedDate) else {
             return false
         }
 
@@ -1985,16 +1537,6 @@ struct TaskDetailTCAView: View {
         }
 
         return true
-    }
-
-    private func checklistCompletionControlColor(isInteractive: Bool) -> Color {
-        isInteractive ? .secondary : .secondary.opacity(0.45)
-    }
-
-    private func selectionStrokeColor(isSelected: Bool, isToday: Bool, isHighlightedDay: Bool) -> Color {
-        if isSelected { return .blue }
-        if isToday && isHighlightedDay { return .blue }
-        return .clear
     }
 
     private func dayWord(_ count: Int) -> String {
