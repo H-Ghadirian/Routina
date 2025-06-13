@@ -78,6 +78,8 @@ extension AddRoutineTCAView {
             tagDraft: tagDraftBinding,
             routineTags: store.routineTags,
             availableTags: store.availableTags,
+            availableTagSummaries: store.availableTagSummaries,
+            tagCounterDisplayMode: store.tagCounterDisplayMode,
             onAddTag: { store.send(.addTagTapped) },
             onRemoveTag: { store.send(.removeTag($0)) },
             onToggleTagSelection: { store.send(.toggleTagSelection($0)) },

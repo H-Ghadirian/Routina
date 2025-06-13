@@ -160,7 +160,7 @@ struct SettingsMacSidebarRow: View {
             return store.tagsOverviewSubtitle
 
         case .appearance:
-            return "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText)"
+            return "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText) • Tags: \(store.tagCounterDisplayMode.summaryText)"
 
         case .iCloud:
             if store.isCloudSyncInProgress {
@@ -644,6 +644,19 @@ private struct SettingsMacAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                SettingsMacDetailCard(title: "Tag Counters") {
+                    Picker("Display", selection: tagCounterDisplayModeBinding) {
+                        ForEach(TagCounterDisplayMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Text(store.tagCounterDisplayMode.subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "Temporary View State") {
                     Button {
                         guard store.hasTemporaryViewStateToReset else { return }
@@ -707,6 +720,13 @@ private struct SettingsMacAppearanceDetailView: View {
         store.hasTemporaryViewStateToReset
             ? "Reset Filters and Selections"
             : "Filters and Selections Are Clear"
+    }
+
+    private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {
+        Binding(
+            get: { store.tagCounterDisplayMode },
+            set: { store.send(.tagCounterDisplayModeChanged($0)) }
+        )
     }
 
     private var resetButtonSystemImage: String {

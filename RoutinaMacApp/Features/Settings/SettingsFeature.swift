@@ -20,6 +20,7 @@ struct SettingsFeature {
         var cloudSyncAvailable: Bool = false
         var notificationsEnabled: Bool = false
         var routineListSectioningMode: RoutineListSectioningMode = .defaultValue
+        var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
         var systemSettingsNotificationsEnabled: Bool = true
         var notificationReminderTime: Date = Date()
         var isCloudSyncInProgress: Bool = false
@@ -55,6 +56,7 @@ struct SettingsFeature {
     enum Action: Equatable {
         case toggleNotifications(Bool)
         case routineListSectioningModeChanged(RoutineListSectioningMode)
+        case tagCounterDisplayModeChanged(TagCounterDisplayMode)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -115,6 +117,11 @@ struct SettingsFeature {
                 appSettingsClient.setRoutineListSectioningMode(mode)
                 return .none
 
+            case let .tagCounterDisplayModeChanged(mode):
+                state.tagCounterDisplayMode = mode
+                appSettingsClient.setTagCounterDisplayMode(mode)
+                return .none
+
             case .resetTemporaryViewStateTapped:
                 appSettingsClient.resetTemporaryViewState()
                 state.hasTemporaryViewStateToReset = false
@@ -171,6 +178,7 @@ struct SettingsFeature {
                 state.isDebugSectionVisible = false
                 state.notificationReminderTime = appSettingsClient.notificationReminderTime()
                 state.routineListSectioningMode = appSettingsClient.routineListSectioningMode()
+                state.tagCounterDisplayMode = appSettingsClient.tagCounterDisplayMode()
                 state.selectedAppIcon = appSettingsClient.selectedAppIcon()
                 state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
                 state.appIconStatusMessage = ""

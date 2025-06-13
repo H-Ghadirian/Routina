@@ -695,11 +695,14 @@ struct TaskFormContent: View {
                 ) {
                     ForEach(model.availableTags, id: \.self) { tag in
                         let isSelected = RoutineTag.contains(tag, in: model.routineTags)
+                        let summary = model.availableTagSummaries.first(where: {
+                            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
+                        })
                         Button { model.onToggleTagSelection(tag) } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
                                     .font(.caption)
-                                Text("#\(tag)").lineLimit(1)
+                                Text(tagChipTitle(tag: tag, summary: summary)).lineLimit(1)
                             }
                             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                             .padding(.horizontal, 10).padding(.vertical, 6)
@@ -718,6 +721,14 @@ struct TaskFormContent: View {
                 .padding(.vertical, 4)
             }
         }
+    }
+
+    private func tagChipTitle(tag: String, summary: RoutineTagSummary?) -> String {
+        TagCounterFormatting.chipTitle(
+            tag: tag,
+            summary: summary,
+            mode: model.tagCounterDisplayMode
+        )
     }
 
     @ViewBuilder

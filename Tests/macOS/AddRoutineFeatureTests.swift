@@ -111,6 +111,30 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func availableTagSummariesChanged_sortsByCombinedCounterDescending() async {
+        let store = TestStore(initialState: AddRoutineFeature.State()) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        let summaries = [
+            RoutineTagSummary(name: "Calm", linkedRoutineCount: 1, doneCount: 1),
+            RoutineTagSummary(name: "Focus", linkedRoutineCount: 2, doneCount: 7),
+            RoutineTagSummary(name: "Health", linkedRoutineCount: 4, doneCount: 4),
+            RoutineTagSummary(name: "Brain", linkedRoutineCount: 3, doneCount: 5)
+        ]
+
+        await store.send(.availableTagSummariesChanged(summaries)) {
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "Brain", linkedRoutineCount: 3, doneCount: 5),
+                RoutineTagSummary(name: "Health", linkedRoutineCount: 4, doneCount: 4),
+                RoutineTagSummary(name: "Focus", linkedRoutineCount: 2, doneCount: 7),
+                RoutineTagSummary(name: "Calm", linkedRoutineCount: 1, doneCount: 1)
+            ]
+            $0.availableTags = ["Brain", "Health", "Focus", "Calm"]
+        }
+    }
+
+    @Test
     func saveTapped_sendsDelegateWithFrequencyInDays() async {
         let store = TestStore(
             initialState: AddRoutineFeature.State(
@@ -370,6 +394,33 @@ struct AddRoutineFeatureTests {
 
         await store.send(.availableTagsChanged([" health ", "Focus", "focus", "Morning"])) {
             $0.availableTags = ["Focus", "health", "Morning"]
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "Focus", linkedRoutineCount: 0),
+                RoutineTagSummary(name: "health", linkedRoutineCount: 0),
+                RoutineTagSummary(name: "Morning", linkedRoutineCount: 0)
+            ]
+        }
+    }
+
+    @Test
+    func availableTagSummariesChanged_preservesCountsAndSortsChoices() async {
+        let store = TestStore(initialState: AddRoutineFeature.State()) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        let summaries = [
+            RoutineTagSummary(name: "Morning", linkedRoutineCount: 2),
+            RoutineTagSummary(name: "focus", linkedRoutineCount: 5),
+            RoutineTagSummary(name: "Health", linkedRoutineCount: 1)
+        ]
+
+        await store.send(.availableTagSummariesChanged(summaries)) {
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "focus", linkedRoutineCount: 5),
+                RoutineTagSummary(name: "Health", linkedRoutineCount: 1),
+                RoutineTagSummary(name: "Morning", linkedRoutineCount: 2)
+            ]
+            $0.availableTags = ["focus", "Health", "Morning"]
         }
     }
 
@@ -398,7 +449,11 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(
                 routineTags: ["Morning"],
-                availableTags: ["Focus", "Morning"]
+                availableTags: ["Focus", "Morning"],
+                availableTagSummaries: [
+                    RoutineTagSummary(name: "Focus", linkedRoutineCount: 3),
+                    RoutineTagSummary(name: "Morning", linkedRoutineCount: 1)
+                ]
             )
         ) {
             AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
@@ -406,6 +461,10 @@ struct AddRoutineFeatureTests {
 
         await store.send(.tagRenamed(oldName: "focus", newName: "Deep Work")) {
             $0.availableTags = ["Deep Work", "Morning"]
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "Deep Work", linkedRoutineCount: 3),
+                RoutineTagSummary(name: "Morning", linkedRoutineCount: 1)
+            ]
         }
     }
 
@@ -414,7 +473,11 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(
                 routineTags: ["Morning", "Deep Work"],
-                availableTags: ["Deep Work", "Morning"]
+                availableTags: ["Deep Work", "Morning"],
+                availableTagSummaries: [
+                    RoutineTagSummary(name: "Deep Work", linkedRoutineCount: 4),
+                    RoutineTagSummary(name: "Morning", linkedRoutineCount: 2)
+                ]
             )
         ) {
             AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
@@ -423,6 +486,9 @@ struct AddRoutineFeatureTests {
         await store.send(.tagDeleted("morning")) {
             $0.routineTags = ["Deep Work"]
             $0.availableTags = ["Deep Work"]
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "Deep Work", linkedRoutineCount: 4)
+            ]
         }
     }
 

@@ -3,6 +3,7 @@ import Foundation
 struct RoutineTagSummary: Equatable, Identifiable, Sendable {
     var name: String
     var linkedRoutineCount: Int
+    var doneCount: Int = 0
 
     var id: String {
         RoutineTag.normalized(name) ?? name
@@ -123,6 +124,36 @@ enum RoutineTag {
             RoutineTagSummary(
                 name: tag,
                 linkedRoutineCount: tagCounts[normalized(tag) ?? tag, default: 0]
+            )
+        }
+    }
+
+    static func summaries(
+        from tasks: [RoutineTask],
+        countsByTaskID: [UUID: Int]
+    ) -> [RoutineTagSummary] {
+        let linkedTagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
+            for tag in task.tags {
+                guard let normalizedTag = normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += 1
+            }
+        }
+
+        let doneTagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
+            let doneCount = countsByTaskID[task.id, default: 0]
+            guard doneCount > 0 else { return }
+
+            for tag in task.tags {
+                guard let normalizedTag = normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += doneCount
+            }
+        }
+
+        return allTags(from: tasks.map(\.tags)).map { tag in
+            RoutineTagSummary(
+                name: tag,
+                linkedRoutineCount: linkedTagCounts[normalized(tag) ?? tag, default: 0],
+                doneCount: doneTagCounts[normalized(tag) ?? tag, default: 0]
             )
         }
     }

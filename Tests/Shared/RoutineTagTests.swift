@@ -41,4 +41,25 @@ struct RoutineTagTests {
         let tags = RoutineTag.allTags(from: [["Health", "focus"], ["Focus", "Learning"], []])
         #expect(tags == ["focus", "Health", "Learning"])
     }
+
+    @Test
+    func summaries_withDoneCounts_aggregateUsageAndCompletionCountsAcrossTaggedTasks() {
+        let taskA = RoutineTask(name: "Read", emoji: "📚", tags: ["Focus", "Learning"], scheduleMode: .fixedInterval)
+        let taskB = RoutineTask(name: "Write", emoji: "✍️", tags: ["focus"], scheduleMode: .fixedInterval)
+        let taskC = RoutineTask(name: "Walk", emoji: "🚶", tags: ["Health"], scheduleMode: .fixedInterval)
+
+        let summaries = RoutineTag.summaries(
+            from: [taskA, taskB, taskC],
+            countsByTaskID: [
+                taskA.id: 3,
+                taskB.id: 2
+            ]
+        )
+
+        #expect(summaries == [
+            RoutineTagSummary(name: "Focus", linkedRoutineCount: 2, doneCount: 5),
+            RoutineTagSummary(name: "Health", linkedRoutineCount: 1, doneCount: 0),
+            RoutineTagSummary(name: "Learning", linkedRoutineCount: 1, doneCount: 3)
+        ])
+    }
 }

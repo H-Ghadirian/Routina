@@ -140,6 +140,54 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func onAppear_loadsPersistedTagCounterDisplayMode() async {
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.tagCounterDisplayMode = { .doneOnly }
+            $0.appInfoClient = AppInfoClient(
+                versionString: { "1.0" },
+                dataModeDescription: { "Local" },
+                cloudContainerDescription: { "Disabled" },
+                isCloudSyncEnabled: { false }
+            )
+            $0.notificationClient.systemNotificationsAuthorized = { true }
+            $0.locationClient.snapshot = { _ in
+                LocationSnapshot(
+                    authorizationStatus: .notDetermined,
+                    coordinate: nil,
+                    horizontalAccuracy: nil,
+                    timestamp: nil
+                )
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear)
+
+        #expect(store.state.tagCounterDisplayMode == .doneOnly)
+    }
+
+    @Test
+    func tagCounterDisplayModeChanged_persistsSelection() async {
+        let persistedValue = LockIsolated<TagCounterDisplayMode?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setTagCounterDisplayMode = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.tagCounterDisplayModeChanged(.combinedTotal)) {
+            $0.tagCounterDisplayMode = .combinedTotal
+        }
+
+        #expect(persistedValue.value == .combinedTotal)
+    }
+
+    @Test
     func savePlaceTapped_persistsSelectedPlace() async throws {
         let context = makeInMemoryContext()
         let store = TestStore(

@@ -611,6 +611,8 @@ struct SettingsFeatureDependencyTests {
                 setHideUnavailableRoutines: { _ in },
                 routineListSectioningMode: { .deadlineDate },
                 setRoutineListSectioningMode: { _ in },
+                tagCounterDisplayMode: { .defaultValue },
+                setTagCounterDisplayMode: { _ in },
                 notificationReminderTime: { reminderTime },
                 setNotificationReminderTime: { _ in },
                 selectedAppIcon: { .teal },

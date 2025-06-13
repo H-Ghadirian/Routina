@@ -275,7 +275,12 @@ struct HomeFeature {
                 return .merge(
                     detailRefreshEffect,
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: reconciledTasks)))),
-                    .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: reconciledTasks)))),
+                    .send(.addRoutineSheet(.availableTagSummariesChanged(
+                        RoutineTag.summaries(
+                            from: reconciledTasks,
+                            countsByTaskID: doneStats.countsByTaskID
+                        )
+                    ))),
                     .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: detachedPlaces, linkedTo: reconciledTasks)))),
                     .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(reconciledTasks))))
                 )
@@ -328,6 +333,11 @@ struct HomeFeature {
                     state.isMacFilterDetailPresented = false
                     state.addRoutineState = AddRoutineFeature.State(
                         availableTags: availableTags(from: state.routineTasks),
+                        availableTagSummaries: RoutineTag.summaries(
+                            from: state.routineTasks,
+                            countsByTaskID: state.doneStats.countsByTaskID
+                        ),
+                        tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
                         availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks),
                         existingRoutineNames: existingRoutineNames(from: state.routineTasks),
                         availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
@@ -928,6 +938,11 @@ struct HomeFeature {
                 state.addRoutineState = AddRoutineFeature.State(
                     relationships: [RoutineTaskRelationship(targetTaskID: currentTaskID, kind: kind.inverse)],
                     availableTags: availableTags(from: state.routineTasks),
+                    availableTagSummaries: RoutineTag.summaries(
+                        from: state.routineTasks,
+                        countsByTaskID: state.doneStats.countsByTaskID
+                    ),
+                    tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
                     availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks, excluding: currentTaskID),
                     existingRoutineNames: existingRoutineNames(from: state.routineTasks),
                     availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
@@ -1023,7 +1038,12 @@ struct HomeFeature {
         return .merge(
             deleteEffect,
             .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
-            .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: state.routineTasks)))),
+            .send(.addRoutineSheet(.availableTagSummariesChanged(
+                RoutineTag.summaries(
+                    from: state.routineTasks,
+                    countsByTaskID: state.doneStats.countsByTaskID
+                )
+            ))),
             .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)))),
             .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(state.routineTasks))))
         )

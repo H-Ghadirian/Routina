@@ -49,7 +49,7 @@ struct SettingsIOSRootView: View {
                             icon: "app.badge.fill",
                             tint: .orange,
                             title: "Appearance",
-                            subtitle: "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText)"
+                            subtitle: "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText) • Tags: \(store.tagCounterDisplayMode.summaryText)"
                         )
                     }
 
@@ -460,6 +460,18 @@ private struct SettingsAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("Tag Counters") {
+                    Picker("Display", selection: tagCounterDisplayModeBinding) {
+                        ForEach(TagCounterDisplayMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Text(store.tagCounterDisplayMode.subtitle)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Temporary View State") {
                     Button {
                         guard store.hasTemporaryViewStateToReset else { return }
@@ -525,6 +537,13 @@ private struct SettingsAppearanceDetailView: View {
         store.hasTemporaryViewStateToReset
             ? "Reset Filters and Selections"
             : "Filters and Selections Are Clear"
+    }
+
+    private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {
+        Binding(
+            get: { store.tagCounterDisplayMode },
+            set: { store.send(.tagCounterDisplayModeChanged($0)) }
+        )
     }
 
     private var resetButtonSystemImage: String {

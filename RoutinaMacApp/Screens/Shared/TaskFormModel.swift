@@ -47,6 +47,8 @@ struct TaskFormModel {
     var tagDraft: Binding<String>
     var routineTags: [String]
     var availableTags: [String]
+    var availableTagSummaries: [RoutineTagSummary] = []
+    var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
     var onAddTag: () -> Void
     var onRemoveTag: (String) -> Void
     var onToggleTagSelection: (String) -> Void

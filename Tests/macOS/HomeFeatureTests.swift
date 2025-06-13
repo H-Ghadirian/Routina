@@ -20,7 +20,10 @@ struct HomeFeatureTests {
 
         await store.send(.setAddRoutineSheet(true)) {
             $0.isAddRoutineSheetPresented = true
-            $0.addRoutineState = AddRoutineFeature.State(existingRoutineNames: [])
+            $0.addRoutineState = AddRoutineFeature.State(
+                availableTagSummaries: [],
+                existingRoutineNames: []
+            )
         }
 
         await store.send(.setAddRoutineSheet(false)) {
@@ -37,6 +40,7 @@ struct HomeFeatureTests {
         let initialState = HomeFeature.State(
             routineTasks: [task],
             routineDisplays: [],
+            doneStats: HomeFeature.DoneStats(totalCount: 4, countsByTaskID: [task.id: 4]),
             isAddRoutineSheetPresented: false,
             addRoutineState: nil
         )
@@ -52,6 +56,9 @@ struct HomeFeatureTests {
             $0.isAddRoutineSheetPresented = true
             $0.addRoutineState = AddRoutineFeature.State(
                 availableTags: ["Learning"],
+                availableTagSummaries: [
+                    RoutineTagSummary(name: "Learning", linkedRoutineCount: 1, doneCount: 4)
+                ],
                 availableRelationshipTasks: [
                     RoutineTaskRelationshipCandidate(
                         id: task.id,
@@ -81,7 +88,10 @@ struct HomeFeatureTests {
         await store.send(.setAddRoutineSheet(true)) {
             $0.isAddRoutineSheetPresented = true
             $0.isMacFilterDetailPresented = false
-            $0.addRoutineState = AddRoutineFeature.State(existingRoutineNames: [])
+            $0.addRoutineState = AddRoutineFeature.State(
+                availableTagSummaries: [],
+                existingRoutineNames: []
+            )
         }
     }
 
@@ -132,6 +142,10 @@ struct HomeFeatureTests {
             $0.addRoutineState = AddRoutineFeature.State(
                 relationships: [RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)],
                 availableTags: ["Focus", "Writing"],
+                availableTagSummaries: [
+                    RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, doneCount: 0),
+                    RoutineTagSummary(name: "Writing", linkedRoutineCount: 1, doneCount: 0)
+                ],
                 availableRelationshipTasks: [
                     RoutineTaskRelationshipCandidate(
                         id: relatedTask.id,
@@ -1853,7 +1867,7 @@ struct HomeFeatureTests {
             $0.addRoutineState?.existingRoutineNames = ["Read"]
             $0.addRoutineState?.nameValidationMessage = "A task with this name already exists."
         }
-        await store.receive(.addRoutineSheet(.availableTagsChanged([])))
+        await store.receive(.addRoutineSheet(.availableTagSummariesChanged([])))
         await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
         await store.receive(.addRoutineSheet(.availableRelationshipTasksChanged([
             RoutineTaskRelationshipCandidate(

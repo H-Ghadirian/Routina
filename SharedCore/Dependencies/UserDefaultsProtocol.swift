@@ -54,6 +54,7 @@ public enum UserDefaultBoolValueKey: String {
 public enum UserDefaultStringValueKey: String {
     case selectedMacAppIcon
     case appSettingRoutineListSectioningMode
+    case appSettingTagCounterDisplayMode
     case appSettingTemporaryViewState
     case macFormSectionOrder
 }
@@ -71,6 +72,8 @@ struct AppSettingsClient: Sendable {
     var setHideUnavailableRoutines: @Sendable (Bool) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
     var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
+    var tagCounterDisplayMode: @Sendable () -> TagCounterDisplayMode
+    var setTagCounterDisplayMode: @Sendable (TagCounterDisplayMode) -> Void
     var notificationReminderTime: @Sendable () -> Date
     var setNotificationReminderTime: @Sendable (Date) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
@@ -100,6 +103,14 @@ extension AppSettingsClient {
         },
         setRoutineListSectioningMode: { mode in
             SharedDefaults.app[.appSettingRoutineListSectioningMode] = mode.rawValue
+        },
+        tagCounterDisplayMode: {
+            TagCounterDisplayMode(
+                rawValue: SharedDefaults.app[.appSettingTagCounterDisplayMode] ?? ""
+            ) ?? .defaultValue
+        },
+        setTagCounterDisplayMode: { mode in
+            SharedDefaults.app[.appSettingTagCounterDisplayMode] = mode.rawValue
         },
         notificationReminderTime: {
             NotificationPreferences.reminderTimeDate()
@@ -146,6 +157,8 @@ extension AppSettingsClient {
         setHideUnavailableRoutines: { _ in },
         routineListSectioningMode: { .defaultValue },
         setRoutineListSectioningMode: { _ in },
+        tagCounterDisplayMode: { .defaultValue },
+        setTagCounterDisplayMode: { _ in },
         notificationReminderTime: { Date() },
         setNotificationReminderTime: { _ in },
         selectedAppIcon: { .orange },

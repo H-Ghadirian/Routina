@@ -45,6 +45,8 @@ struct AddRoutineFeature: Reducer {
         var routineTags: [String] = []
         var relationships: [RoutineTaskRelationship] = []
         var availableTags: [String] = []
+        var availableTagSummaries: [RoutineTagSummary] = []
+        var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var tagDraft: String = ""
         var scheduleMode: RoutineScheduleMode = .oneOff
@@ -113,6 +115,7 @@ struct AddRoutineFeature: Reducer {
         case removeAttachment(UUID)
         case taskTypeChanged(RoutineTaskType)
         case availableTagsChanged([String])
+        case availableTagSummariesChanged([RoutineTagSummary])
         case availableRelationshipTasksChanged([RoutineTaskRelationshipCandidate])
         case tagDraftChanged(String)
         case addTagTapped
@@ -234,6 +237,12 @@ struct AddRoutineFeature: Reducer {
 
         case let .availableTagsChanged(tags):
             state.availableTags = RoutineTag.allTags(from: [tags])
+            state.availableTagSummaries = state.availableTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) }
+            return .none
+
+        case let .availableTagSummariesChanged(summaries):
+            state.availableTagSummaries = sortTagSummaries(summaries)
+            state.availableTags = state.availableTagSummaries.map(\.name)
             return .none
 
         case let .availableRelationshipTasksChanged(tasks):
@@ -278,6 +287,12 @@ struct AddRoutineFeature: Reducer {
 
         case let .tagRenamed(oldName, newName):
             state.availableTags = RoutineTag.replacing(oldName, with: newName, in: state.availableTags)
+            if let index = state.availableTagSummaries.firstIndex(where: {
+                RoutineTag.normalized($0.name) == RoutineTag.normalized(oldName)
+            }) {
+                state.availableTagSummaries[index].name = RoutineTag.cleaned(newName) ?? newName
+                state.availableTagSummaries = sortTagSummaries(state.availableTagSummaries)
+            }
             if RoutineTag.contains(oldName, in: state.routineTags) {
                 state.routineTags = RoutineTag.replacing(oldName, with: newName, in: state.routineTags)
             }
@@ -285,6 +300,9 @@ struct AddRoutineFeature: Reducer {
 
         case let .tagDeleted(tag):
             state.availableTags = RoutineTag.removing(tag, from: state.availableTags)
+            state.availableTagSummaries.removeAll {
+                RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
+            }
             state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
             return .none
 
@@ -468,6 +486,24 @@ struct AddRoutineFeature: Reducer {
             return .high
         default:
             return .urgent
+        }
+    }
+
+    private func sortTagSummaries(_ summaries: [RoutineTagSummary]) -> [RoutineTagSummary] {
+        summaries.sorted { lhs, rhs in
+            let lhsTotal = lhs.linkedRoutineCount + lhs.doneCount
+            let rhsTotal = rhs.linkedRoutineCount + rhs.doneCount
+
+            if lhsTotal != rhsTotal {
+                return lhsTotal > rhsTotal
+            }
+            if lhs.doneCount != rhs.doneCount {
+                return lhs.doneCount > rhs.doneCount
+            }
+            if lhs.linkedRoutineCount != rhs.linkedRoutineCount {
+                return lhs.linkedRoutineCount > rhs.linkedRoutineCount
+            }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
     }
 

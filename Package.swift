@@ -91,6 +91,8 @@ let package = Package(
                 "SharedCore/Domain/RoutineListSectioningMode.swift",
                 "SharedCore/Domain/RoutineLogHistory.swift",
                 "SharedCore/Domain/RoutineTag.swift",
+                "SharedCore/Domain/TagCounterDisplayMode.swift",
+                "SharedCore/Domain/TagCounterFormatting.swift",
                 "SharedCore/Domain/Tab.swift",
                 "SharedCore/Domain/TabFilterStateManager.swift",
                 "SharedCore/Domain/TaskImageProcessor.swift",
