@@ -2,7 +2,13 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 import Testing
+#if SWIFT_PACKAGE
+@testable @preconcurrency import RoutinaAppSupport
+#elseif os(macOS)
+@testable @preconcurrency import RoutinaMacOSDev
+#else
 @testable @preconcurrency import Routina
+#endif
 
 @MainActor
 struct AddRoutineFeatureTests {
@@ -125,12 +131,12 @@ struct AddRoutineFeatureTests {
 
         await store.send(.availableTagSummariesChanged(summaries)) {
             $0.availableTagSummaries = [
+                RoutineTagSummary(name: "Focus", linkedRoutineCount: 2, doneCount: 7),
                 RoutineTagSummary(name: "Brain", linkedRoutineCount: 3, doneCount: 5),
                 RoutineTagSummary(name: "Health", linkedRoutineCount: 4, doneCount: 4),
-                RoutineTagSummary(name: "Focus", linkedRoutineCount: 2, doneCount: 7),
                 RoutineTagSummary(name: "Calm", linkedRoutineCount: 1, doneCount: 1)
             ]
-            $0.availableTags = ["Brain", "Health", "Focus", "Calm"]
+            $0.availableTags = ["Focus", "Brain", "Health", "Calm"]
         }
     }
 
@@ -417,10 +423,10 @@ struct AddRoutineFeatureTests {
         await store.send(.availableTagSummariesChanged(summaries)) {
             $0.availableTagSummaries = [
                 RoutineTagSummary(name: "focus", linkedRoutineCount: 5),
-                RoutineTagSummary(name: "Health", linkedRoutineCount: 1),
-                RoutineTagSummary(name: "Morning", linkedRoutineCount: 2)
+                RoutineTagSummary(name: "Morning", linkedRoutineCount: 2),
+                RoutineTagSummary(name: "Health", linkedRoutineCount: 1)
             ]
-            $0.availableTags = ["focus", "Health", "Morning"]
+            $0.availableTags = ["focus", "Morning", "Health"]
         }
     }
 
