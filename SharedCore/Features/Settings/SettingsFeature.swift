@@ -108,6 +108,7 @@ struct SettingsFeature {
     @Dependency(\.appInfoClient) var appInfoClient
     @Dependency(\.urlOpenerClient) var urlOpenerClient
     @Dependency(\.cloudSyncClient) var cloudSyncClient
+    @Dependency(\.routineDataTransferClient) var routineDataTransferClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -737,6 +738,99 @@ struct SettingsFeature {
             return "iCloud is temporarily unavailable. Please try again shortly."
         default:
             return "Data reset failed: \(cloudError.localizedDescription)"
+        }
+    }
+
+    private func handleExportRoutineDataTapped(state: inout State) -> Effect<Action> {
+        guard !state.isDataTransferInProgress else {
+            return .none
+        }
+
+        state.isDataTransferInProgress = true
+        state.dataTransferStatusMessage = "Saving routine data..."
+        return .run { @MainActor send in
+            do {
+                guard let destinationURL = await self.routineDataTransferClient.selectExportURL(
+                    self.defaultRoutineDataBackupFileName()
+                ) else {
+                    await send(
+                        .routineDataTransferFinished(
+                            success: false,
+                            message: "Save canceled."
+                        )
+                    )
+                    return
+                }
+
+                let context = self.modelContext()
+                if context.hasChanges {
+                    try context.save()
+                }
+
+                let backupData = try self.buildRoutineDataBackupJSON(from: context)
+                try self.withSecurityScopedAccess(to: destinationURL) {
+                    try backupData.write(to: destinationURL, options: .atomic)
+                }
+
+                await send(
+                    .routineDataTransferFinished(
+                        success: true,
+                        message: "Saved to \(destinationURL.lastPathComponent)."
+                    )
+                )
+            } catch {
+                await send(
+                    .routineDataTransferFinished(
+                        success: false,
+                        message: "Save failed: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    private func handleImportRoutineDataTapped(state: inout State) -> Effect<Action> {
+        guard !state.isDataTransferInProgress else {
+            return .none
+        }
+
+        state.isDataTransferInProgress = true
+        state.dataTransferStatusMessage = "Loading routine data..."
+        return .run { @MainActor send in
+            do {
+                guard let sourceURL = await self.routineDataTransferClient.selectImportURL() else {
+                    await send(
+                        .routineDataTransferFinished(
+                            success: false,
+                            message: "Load canceled."
+                        )
+                    )
+                    return
+                }
+
+                let jsonData = try self.withSecurityScopedAccess(to: sourceURL) {
+                    try Data(contentsOf: sourceURL)
+                }
+                let context = self.modelContext()
+                let importedSummary = try self.replaceAllRoutineData(with: jsonData, in: context)
+                try await self.rescheduleNotificationsAfterImport(in: context)
+
+                send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
+                NotificationCenter.default.postRoutineDidUpdate()
+                await send(
+                    .routineDataTransferFinished(
+                        success: true,
+                        message: "Loaded \(importedSummary.tasks) routines, \(importedSummary.places) places, and \(importedSummary.logs) logs."
+                    )
+                )
+            } catch {
+                await send(
+                    .routineDataTransferFinished(
+                        success: false,
+                        message: "Load failed: \(error.localizedDescription)"
+                    )
+                )
+            }
         }
     }
 

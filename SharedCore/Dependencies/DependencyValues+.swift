@@ -38,6 +38,11 @@ private enum URLOpenerClientKey: DependencyKey {
     static let testValue = URLOpenerClient.noop
 }
 
+private enum RoutineDataTransferClientKey: DependencyKey {
+    static let liveValue = RoutineDataTransferClient.live
+    static let testValue = RoutineDataTransferClient.noop
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -77,5 +82,10 @@ extension DependencyValues {
     var urlOpenerClient: URLOpenerClient {
         get { self[URLOpenerClientKey.self] }
         set { self[URLOpenerClientKey.self] = newValue }
+    }
+
+    var routineDataTransferClient: RoutineDataTransferClient {
+        get { self[RoutineDataTransferClientKey.self] }
+        set { self[RoutineDataTransferClientKey.self] = newValue }
     }
 }

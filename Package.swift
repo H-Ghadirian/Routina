@@ -81,8 +81,6 @@ let package = Package(
                 // the per-app Xcode targets):
                 "SharedCore/App/RoutinaAppBootstrap.swift",
                 "SharedCore/App/RoutinaAppSceneBootstrap.swift",
-                "SharedCore/Features/Settings/SettingsFeature.swift",
-                "SharedCore/Features/Settings/SettingsViewSupport.swift",
                 // TODO(styling-injection): These reference TaskDetailPlatformStyle,
                 // a per-app enum of UI constants (fonts/colors/padding). The two
                 // per-app copies share an API but no implementation, so a naive
@@ -124,7 +122,10 @@ let package = Package(
                 "SharedCore/Domain/TabFilterStateManager.swift",
                 "SharedCore/Domain/TaskImageProcessor.swift",
                 "SharedCore/Domain/TimelineLogic.swift",
+                "SharedCore/Dependencies/RoutineDataTransferClient.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineFeature.swift",
+                "SharedCore/Features/Settings/SettingsFeature.swift",
+                "SharedCore/Features/Settings/SettingsViewSupport.swift",
                 "SharedCore/Features/TaskDetail/RoutinePauseArchivePresentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Effects.swift",

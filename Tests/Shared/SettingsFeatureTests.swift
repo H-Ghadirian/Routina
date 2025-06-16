@@ -3,7 +3,13 @@ import ConcurrencyExtras
 import Foundation
 import SwiftData
 import Testing
+#if SWIFT_PACKAGE
+@testable @preconcurrency import RoutinaAppSupport
+#elseif os(macOS)
 @testable @preconcurrency import RoutinaMacOSDev
+#else
+@testable @preconcurrency import Routina
+#endif
 
 @MainActor
 @Suite(.serialized)
@@ -617,5 +623,45 @@ struct SettingsFeatureTests {
         }
 
         #expect(resetCallCount.value == 1)
+    }
+
+    @Test
+    func exportRoutineDataTapped_cancelledSelectionFinishesGracefully() async {
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.routineDataTransferClient.selectExportURL = { _ in nil }
+        }
+
+        await store.send(.exportRoutineDataTapped) {
+            $0.isDataTransferInProgress = true
+            $0.dataTransferStatusMessage = "Saving routine data..."
+        }
+
+        await store.receive(.routineDataTransferFinished(success: false, message: "Save canceled.")) {
+            $0.isDataTransferInProgress = false
+            $0.dataTransferStatusMessage = "Save canceled."
+        }
+    }
+
+    @Test
+    func importRoutineDataTapped_cancelledSelectionFinishesGracefully() async {
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.routineDataTransferClient.selectImportURL = { nil }
+        }
+
+        await store.send(.importRoutineDataTapped) {
+            $0.isDataTransferInProgress = true
+            $0.dataTransferStatusMessage = "Loading routine data..."
+        }
+
+        await store.receive(.routineDataTransferFinished(success: false, message: "Load canceled.")) {
+            $0.isDataTransferInProgress = false
+            $0.dataTransferStatusMessage = "Load canceled."
+        }
     }
 }
