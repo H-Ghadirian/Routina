@@ -30,74 +30,7 @@ struct AddRoutineFeature: Reducer {
         }
     }
 
-    @ObservableState
-    struct State: Equatable {
-        var routineName: String = ""
-        var routineEmoji: String = "✨"
-        var routineNotes: String = ""
-        var routineLink: String = ""
-        var deadline: Date?
-        var priority: RoutineTaskPriority = .medium
-        var importance: RoutineTaskImportance = .level2
-        var urgency: RoutineTaskUrgency = .level2
-        var imageData: Data?
-        var attachments: [AttachmentItem] = []
-        var routineTags: [String] = []
-        var relationships: [RoutineTaskRelationship] = []
-        var availableTags: [String] = []
-        var availableTagSummaries: [RoutineTagSummary] = []
-        var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
-        var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
-        var tagDraft: String = ""
-        var scheduleMode: RoutineScheduleMode = .oneOff
-        var routineSteps: [RoutineStep] = []
-        var stepDraft: String = ""
-        var routineChecklistItems: [RoutineChecklistItem] = []
-        var checklistItemDraftTitle: String = ""
-        var checklistItemDraftInterval: Int = 3
-        var frequency: Frequency = .day
-        var frequencyValue: Int = 1
-        var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
-        var recurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
-        var recurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
-        var recurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
-        var existingRoutineNames: [String] = []
-        var availablePlaces: [RoutinePlaceSummary] = []
-        var selectedPlaceID: UUID?
-        var nameValidationMessage: String?
-        var routineColor: RoutineTaskColor = .none
-
-        var taskType: RoutineTaskType {
-            scheduleMode.taskType
-        }
-
-        var hasDeadline: Bool {
-            deadline != nil
-        }
-
-        var trimmedRoutineName: String {
-            RoutineTask.trimmedName(routineName) ?? ""
-        }
-
-        var candidateChecklistItems: [RoutineChecklistItem] {
-            if let pendingItem = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle).map({
-                RoutineChecklistItem(title: $0, intervalDays: checklistItemDraftInterval)
-            }) {
-                return routineChecklistItems + [pendingItem]
-            }
-            return routineChecklistItems
-        }
-
-        var isSaveDisabled: Bool {
-            trimmedRoutineName.isEmpty
-                || nameValidationMessage != nil
-                || (requiresChecklistItems && candidateChecklistItems.isEmpty)
-        }
-
-        var requiresChecklistItems: Bool {
-            scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
-        }
-    }
+    typealias State = AddRoutineFeatureState
 
     enum Action: Equatable {
         case routineNameChanged(String)

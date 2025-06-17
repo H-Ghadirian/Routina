@@ -74,9 +74,9 @@ struct SettingsMacView: View {
             }
             .sheet(isPresented: $isPlacePickerPresented) {
                 PlaceLocationPickerSheet(
-                    initialCoordinate: store.placeDraftCoordinate,
-                    initialRadiusMeters: store.placeDraftRadiusMeters,
-                    fallbackCoordinate: store.placeDraftCoordinate ?? store.lastKnownLocationCoordinate
+                    initialCoordinate: store.places.placeDraftCoordinate,
+                    initialRadiusMeters: store.places.placeDraftRadiusMeters,
+                    fallbackCoordinate: store.places.placeDraftCoordinate ?? store.places.lastKnownLocationCoordinate
                 ) { coordinate, radiusMeters in
                     store.send(.placeDraftCoordinateChanged(coordinate))
                     store.send(.placeDraftRadiusChanged(radiusMeters))
@@ -90,14 +90,14 @@ struct SettingsMacView: View {
 
     private var cloudDataResetConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isCloudDataResetConfirmationPresented },
+            get: { store.cloud.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
         )
     }
 
     private var deletePlaceConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isDeletePlaceConfirmationPresented },
+            get: { store.places.isDeletePlaceConfirmationPresented },
             set: { store.send(.setDeletePlaceConfirmation($0)) }
         )
     }
@@ -137,75 +137,37 @@ struct SettingsMacSidebarRow: View {
     private var subtitle: String {
         switch section {
         case .notifications:
-            if store.notificationsEnabled {
-                let time = store.notificationReminderTime.formatted(date: .omitted, time: .shortened)
-                return "Daily reminder at \(time)"
-            }
-            if store.systemSettingsNotificationsEnabled == false {
-                return "Disabled in System Settings"
-            }
-            return "Routine reminders are turned off"
+            return store.notificationsOverviewSubtitle
 
         case .places:
-            switch store.savedPlaces.count {
-            case 0:
-                return "Save locations for place-based routines"
-            case 1:
-                return "1 saved place"
-            default:
-                return "\(store.savedPlaces.count) saved places"
-            }
+            return store.placesOverviewSubtitle
 
         case .tags:
             return store.tagsOverviewSubtitle
 
         case .appearance:
-            return "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText) • Tags: \(store.tagCounterDisplayMode.summaryText)"
+            return store.appearanceOverviewSubtitle
 
         case .iCloud:
-            if store.isCloudSyncInProgress {
-                return "Syncing with iCloud"
-            }
-            if store.isCloudDataResetInProgress {
-                return "Deleting iCloud data"
-            }
-            if !store.cloudStatusMessage.isEmpty {
-                return store.cloudStatusMessage
-            }
-            if !store.cloudSyncAvailable {
-                return "Unavailable in this build"
-            }
-            return "Sync routines across devices"
+            return store.cloudOverviewSubtitle
 
         case .backup:
-            if store.isDataTransferInProgress {
-                return "Importing or exporting JSON"
-            }
-            if !store.dataTransferStatusMessage.isEmpty {
-                return store.dataTransferStatusMessage
-            }
-            return "Export or import your routine data"
+            return store.backupOverviewSubtitle
 
         case .support:
             return "Contact us by email"
 
         case .about:
-            if store.isDebugSectionVisible {
-                return "Version \(store.appVersion) • Diagnostics unlocked"
-            }
-            if store.appVersion.isEmpty {
-                return "App details"
-            }
-            return "Version \(store.appVersion)"
+            return store.aboutOverviewSubtitle
         }
     }
 
     private var value: String? {
         switch section {
         case .notifications:
-            return store.notificationsEnabled ? "On" : "Off"
+            return store.notifications.notificationsEnabled ? "On" : "Off"
         case .iCloud:
-            return store.cloudSyncAvailable ? nil : "Off"
+            return store.cloud.cloudSyncAvailable ? nil : "Off"
         default:
             return nil
         }
@@ -326,9 +288,9 @@ struct EmbeddedSettingsMacDetailView: View {
             }
             .sheet(isPresented: $isPlacePickerPresented) {
                 PlaceLocationPickerSheet(
-                    initialCoordinate: store.placeDraftCoordinate,
-                    initialRadiusMeters: store.placeDraftRadiusMeters,
-                    fallbackCoordinate: store.placeDraftCoordinate ?? store.lastKnownLocationCoordinate
+                    initialCoordinate: store.places.placeDraftCoordinate,
+                    initialRadiusMeters: store.places.placeDraftRadiusMeters,
+                    fallbackCoordinate: store.places.placeDraftCoordinate ?? store.places.lastKnownLocationCoordinate
                 ) { coordinate, radiusMeters in
                     store.send(.placeDraftCoordinateChanged(coordinate))
                     store.send(.placeDraftRadiusChanged(radiusMeters))
@@ -342,14 +304,14 @@ struct EmbeddedSettingsMacDetailView: View {
 
     private var cloudDataResetConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isCloudDataResetConfirmationPresented },
+            get: { store.cloud.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
         )
     }
 
     private var deletePlaceConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isDeletePlaceConfirmationPresented },
+            get: { store.places.isDeletePlaceConfirmationPresented },
             set: { store.send(.setDeletePlaceConfirmation($0)) }
         )
     }
@@ -373,14 +335,14 @@ private struct SettingsMacNotificationsDetailView: View {
                         selection: reminderTimeBinding,
                         displayedComponents: .hourAndMinute
                     )
-                    .disabled(store.notificationsEnabled == false)
+                    .disabled(store.notifications.notificationsEnabled == false)
 
                     Text("Notifications include quick actions for Done and Snooze.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
 
-                if store.systemSettingsNotificationsEnabled == false {
+                if store.notifications.systemSettingsNotificationsEnabled == false {
                     SettingsMacDetailCard(title: "System Settings") {
                         Text("Notifications are disabled in system settings.")
                             .font(.footnote)
@@ -398,14 +360,14 @@ private struct SettingsMacNotificationsDetailView: View {
 
     private var notificationsBinding: Binding<Bool> {
         Binding(
-            get: { store.notificationsEnabled },
+            get: { store.notifications.notificationsEnabled },
             set: { store.send(.toggleNotifications($0)) }
         )
     }
 
     private var reminderTimeBinding: Binding<Date> {
         Binding(
-            get: { store.notificationReminderTime },
+            get: { store.notifications.notificationReminderTime },
             set: { store.send(.notificationReminderTimeChanged($0)) }
         )
     }
@@ -442,7 +404,7 @@ struct SettingsMacPlacesDetailView: View {
                         Button {
                             store.send(.savePlaceTapped)
                         } label: {
-                            if store.isPlaceOperationInProgress {
+                            if store.places.isPlaceOperationInProgress {
                                 ProgressView()
                             } else {
                                 Label("Save Place", systemImage: "mappin.and.ellipse")
@@ -451,7 +413,7 @@ struct SettingsMacPlacesDetailView: View {
                         .buttonStyle(.borderedProminent)
                         .disabled(store.isSavePlaceDisabled)
 
-                        if store.locationAuthorizationStatus.needsSettingsChange {
+                        if store.places.locationAuthorizationStatus.needsSettingsChange {
                             Button("Open System Settings") {
                                 store.send(.openAppSettingsTapped)
                             }
@@ -469,21 +431,21 @@ struct SettingsMacPlacesDetailView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
-                    if !store.placeStatusMessage.isEmpty {
-                        Text(store.placeStatusMessage)
+                    if !store.places.placeStatusMessage.isEmpty {
+                        Text(store.places.placeStatusMessage)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 SettingsMacDetailCard(title: "Saved Places") {
-                    if store.savedPlaces.isEmpty {
+                    if store.places.savedPlaces.isEmpty {
                         Text("No places saved yet.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     } else {
                         VStack(spacing: 0) {
-                            ForEach(Array(store.savedPlaces.enumerated()), id: \.element.id) { index, place in
+                            ForEach(Array(store.places.savedPlaces.enumerated()), id: \.element.id) { index, place in
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(place.name)
@@ -500,11 +462,11 @@ struct SettingsMacPlacesDetailView: View {
                                         Label("Delete", systemImage: "trash")
                                     }
                                     .buttonStyle(.borderless)
-                                    .disabled(store.isPlaceOperationInProgress)
+                                    .disabled(store.places.isPlaceOperationInProgress)
                                 }
                                 .padding(.vertical, 12)
 
-                                if index < store.savedPlaces.count - 1 {
+                                if index < store.places.savedPlaces.count - 1 {
                                     Divider()
                                 }
                             }
@@ -517,7 +479,7 @@ struct SettingsMacPlacesDetailView: View {
 
     private var placeDraftNameBinding: Binding<String> {
         Binding(
-            get: { store.placeDraftName },
+            get: { store.places.placeDraftName },
             set: { store.send(.placeDraftNameChanged($0)) }
         )
     }
@@ -533,13 +495,13 @@ struct SettingsMacTagsDetailView: View {
                 subtitle: "Review every tag in Routina and rename or remove them globally."
             ) {
                 SettingsMacDetailCard(title: "All Tags") {
-                    if store.savedTags.isEmpty {
+                    if store.tags.savedTags.isEmpty {
                         Text("No tags yet. Tags you add to routines will appear here.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     } else {
                         VStack(spacing: 0) {
-                            ForEach(Array(store.savedTags.enumerated()), id: \.element.id) { index, tag in
+                            ForEach(Array(store.tags.savedTags.enumerated()), id: \.element.id) { index, tag in
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(tag.name)
@@ -556,7 +518,7 @@ struct SettingsMacTagsDetailView: View {
                                         Label("Rename", systemImage: "pencil")
                                     }
                                     .buttonStyle(.borderless)
-                                    .disabled(store.isTagOperationInProgress)
+                                    .disabled(store.tags.isTagOperationInProgress)
 
                                     Button(role: .destructive) {
                                         store.send(.deleteTagTapped(tag.name))
@@ -564,11 +526,11 @@ struct SettingsMacTagsDetailView: View {
                                         Label("Delete", systemImage: "trash")
                                     }
                                     .buttonStyle(.borderless)
-                                    .disabled(store.isTagOperationInProgress)
+                                    .disabled(store.tags.isTagOperationInProgress)
                                 }
                                 .padding(.vertical, 12)
 
-                                if index < store.savedTags.count - 1 {
+                                if index < store.tags.savedTags.count - 1 {
                                     Divider()
                                 }
                             }
@@ -576,9 +538,9 @@ struct SettingsMacTagsDetailView: View {
                     }
                 }
 
-                if !store.tagStatusMessage.isEmpty {
+                if !store.tags.tagStatusMessage.isEmpty {
                     SettingsMacDetailCard(title: "Status") {
-                        Text(store.tagStatusMessage)
+                        Text(store.tags.tagStatusMessage)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -605,14 +567,14 @@ struct SettingsMacTagsDetailView: View {
 
     private var deleteTagConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isDeleteTagConfirmationPresented },
+            get: { store.tags.isDeleteTagConfirmationPresented },
             set: { store.send(.setDeleteTagConfirmation($0)) }
         )
     }
 
     private var renameTagSheetBinding: Binding<Bool> {
         Binding(
-            get: { store.isTagRenameSheetPresented },
+            get: { store.tags.isTagRenameSheetPresented },
             set: { store.send(.setTagRenameSheet($0)) }
         )
     }
@@ -652,21 +614,21 @@ private struct SettingsMacAppearanceDetailView: View {
                     }
                     .pickerStyle(.menu)
 
-                    Text(store.tagCounterDisplayMode.subtitle)
+                    Text(store.appearance.tagCounterDisplayMode.subtitle)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
 
                 SettingsMacDetailCard(title: "Temporary View State") {
                     Button {
-                        guard store.hasTemporaryViewStateToReset else { return }
+                        guard store.appearance.hasTemporaryViewStateToReset else { return }
                         store.send(.resetTemporaryViewStateTapped)
                     } label: {
                         Label(resetButtonTitle, systemImage: resetButtonSystemImage)
                     }
                     .buttonStyle(.bordered)
-                    .tint(store.hasTemporaryViewStateToReset ? .red : .gray)
-                    .disabled(!store.hasTemporaryViewStateToReset)
+                    .tint(store.appearance.hasTemporaryViewStateToReset ? .red : .gray)
+                    .disabled(!store.appearance.hasTemporaryViewStateToReset)
 
                     Text(resetButtonDescription)
                         .font(.footnote)
@@ -678,7 +640,7 @@ private struct SettingsMacAppearanceDetailView: View {
                         ForEach(AppIconOption.allCases) { option in
                             SettingsMacAppIconButton(
                                 option: option,
-                                isSelected: store.selectedAppIcon == option
+                                isSelected: store.appearance.selectedAppIcon == option
                             ) {
                                 store.send(.appIconSelected(option))
                             }
@@ -690,17 +652,17 @@ private struct SettingsMacAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if !store.appIconStatusMessage.isEmpty {
+                if !store.appearance.appIconStatusMessage.isEmpty {
                     SettingsMacDetailCard(title: "Status") {
-                        Text(store.appIconStatusMessage)
+                        Text(store.appearance.appIconStatusMessage)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                if !store.temporaryViewStateStatusMessage.isEmpty {
+                if !store.appearance.temporaryViewStateStatusMessage.isEmpty {
                     SettingsMacDetailCard(title: "Status") {
-                        Text(store.temporaryViewStateStatusMessage)
+                        Text(store.appearance.temporaryViewStateStatusMessage)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -711,32 +673,32 @@ private struct SettingsMacAppearanceDetailView: View {
 
     private var routineListSectioningModeBinding: Binding<RoutineListSectioningMode> {
         Binding(
-            get: { store.routineListSectioningMode },
+            get: { store.appearance.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
         )
     }
 
     private var resetButtonTitle: String {
-        store.hasTemporaryViewStateToReset
+        store.appearance.hasTemporaryViewStateToReset
             ? "Reset Filters and Selections"
             : "Filters and Selections Are Clear"
     }
 
     private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {
         Binding(
-            get: { store.tagCounterDisplayMode },
+            get: { store.appearance.tagCounterDisplayMode },
             set: { store.send(.tagCounterDisplayModeChanged($0)) }
         )
     }
 
     private var resetButtonSystemImage: String {
-        store.hasTemporaryViewStateToReset
+        store.appearance.hasTemporaryViewStateToReset
             ? "arrow.counterclockwise"
             : "checkmark.circle"
     }
 
     private var resetButtonDescription: String {
-        store.hasTemporaryViewStateToReset
+        store.appearance.hasTemporaryViewStateToReset
             ? "Clears saved filters, list mode choices, and other temporary view selections so the app opens with defaults again."
             : "Everything is already using the default filters and temporary selections."
     }
@@ -769,7 +731,7 @@ private struct SettingsMacCloudDetailView: View {
                         .buttonStyle(.bordered)
                         .disabled(actionsDisabled)
 
-                        if store.isCloudSyncInProgress || store.isCloudDataResetInProgress {
+                        if store.cloud.isCloudSyncInProgress || store.cloud.isCloudDataResetInProgress {
                             ProgressView()
                                 .controlSize(.small)
                         }
@@ -784,10 +746,10 @@ private struct SettingsMacCloudDetailView: View {
 
                 SettingsMacDetailCard(title: "Estimated Usage") {
                     settingsInfoRow(title: "Estimated iCloud Data", value: store.cloudUsageTotalText)
-                    settingsInfoRow(title: "Tasks", value: "\(store.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
-                    settingsInfoRow(title: "Logs", value: "\(store.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
-                    settingsInfoRow(title: "Places", value: "\(store.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
-                    settingsInfoRow(title: "Images", value: "\(store.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
+                    settingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
+                    settingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
+                    settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
+                    settingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
 
                     Text(store.cloudUsageSummaryText)
                         .font(.footnote)
@@ -801,9 +763,9 @@ private struct SettingsMacCloudDetailView: View {
     }
 
     private var actionsDisabled: Bool {
-        store.isCloudSyncInProgress ||
-        store.isCloudDataResetInProgress ||
-        !store.cloudSyncAvailable
+        store.cloud.isCloudSyncInProgress ||
+        store.cloud.isCloudDataResetInProgress ||
+        !store.cloud.cloudSyncAvailable
     }
 }
 
@@ -824,7 +786,7 @@ private struct SettingsMacBackupDetailView: View {
                             Label("Save JSON", systemImage: "square.and.arrow.down")
                         }
                         .buttonStyle(.bordered)
-                        .disabled(store.isDataTransferInProgress)
+                        .disabled(store.dataTransfer.isDataTransferInProgress)
 
                         Button {
                             store.send(.importRoutineDataTapped)
@@ -832,9 +794,9 @@ private struct SettingsMacBackupDetailView: View {
                             Label("Load JSON", systemImage: "square.and.arrow.up")
                         }
                         .buttonStyle(.bordered)
-                        .disabled(store.isDataTransferInProgress)
+                        .disabled(store.dataTransfer.isDataTransferInProgress)
 
-                        if store.isDataTransferInProgress {
+                        if store.dataTransfer.isDataTransferInProgress {
                             ProgressView()
                                 .controlSize(.small)
                         }
@@ -883,25 +845,25 @@ private struct SettingsMacAboutDetailView: View {
                 subtitle: "Version details and, if unlocked, the app’s diagnostic information."
             ) {
                 SettingsMacDetailCard(title: "App") {
-                    settingsInfoRow(title: "Version", value: store.appVersion)
+                    settingsInfoRow(title: "Version", value: store.diagnostics.appVersion)
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 5) {
                             store.send(.aboutSectionLongPressed)
                         }
                 }
 
-                if store.isDebugSectionVisible {
+                if store.diagnostics.isDebugSectionVisible {
                     SettingsMacDetailCard(title: "Diagnostics") {
-                        settingsInfoRow(title: "Data Mode", value: store.dataModeDescription)
-                        settingsInfoRow(title: "iCloud Container", value: store.iCloudContainerDescription)
+                        settingsInfoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)
+                        settingsInfoRow(title: "iCloud Container", value: store.diagnostics.iCloudContainerDescription)
 
-                        Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
+                        Text("Last CloudKit Event: \(store.diagnostics.cloudDiagnosticsTimestamp)")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                        Text(store.cloudDiagnosticsSummary)
+                        Text(store.diagnostics.cloudDiagnosticsSummary)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                        Text(store.pushDiagnosticsStatus)
+                        Text(store.diagnostics.pushDiagnosticsStatus)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }

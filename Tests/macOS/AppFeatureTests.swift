@@ -279,7 +279,7 @@ struct AppFeatureTests {
             $0.stats.taskTypeFilter = .all
             $0.stats.selectedTag = nil
             $0.stats.excludedTags = []
-            $0.settings.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
+            $0.settings.appearance.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
         }
         await store.receive(.timeline(.setData(tasks: [], logs: [])))
         await store.receive(.stats(.setData(tasks: [], logs: []))) {

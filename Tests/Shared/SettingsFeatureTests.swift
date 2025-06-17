@@ -63,7 +63,9 @@ struct SettingsFeatureTests {
         SharedDefaults.app[.selectedMacAppIcon] = AppIconOption.orange.rawValue
 
         let store = TestStore(
-            initialState: SettingsFeature.State(selectedAppIcon: .orange)
+            initialState: SettingsFeature.State(
+                appearance: .init(selectedAppIcon: .orange)
+            )
         ) {
             SettingsFeature()
         } withDependencies: {
@@ -77,7 +79,7 @@ struct SettingsFeatureTests {
         await store.send(.appIconSelected(.yellow))
 
         await store.receive(.appIconChangeFinished(requestedOption: .yellow, errorMessage: nil)) {
-            $0.selectedAppIcon = .yellow
+            $0.appearance.selectedAppIcon = .yellow
         }
     }
 
@@ -92,8 +94,10 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                appIconStatusMessage: "Old status",
-                selectedAppIcon: .orange
+                appearance: .init(
+                    appIconStatusMessage: "Old status",
+                    selectedAppIcon: .orange
+                )
             )
         ) {
             SettingsFeature()
@@ -106,7 +110,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.appIconSelected(.darkBlue)) {
-            $0.appIconStatusMessage = ""
+            $0.appearance.appIconStatusMessage = ""
         }
 
         await store.receive(
@@ -115,10 +119,10 @@ struct SettingsFeatureTests {
                 errorMessage: "Resource temporarily unavailable"
             )
         ) {
-            $0.appIconStatusMessage = "App icon update failed: Resource temporarily unavailable"
+            $0.appearance.appIconStatusMessage = "App icon update failed: Resource temporarily unavailable"
         }
 
-        #expect(store.state.selectedAppIcon == .orange)
+        #expect(store.state.appearance.selectedAppIcon == .orange)
         #expect(SharedDefaults.app[.selectedMacAppIcon] == AppIconOption.orange.rawValue)
     }
 
@@ -128,7 +132,9 @@ struct SettingsFeatureTests {
         let persistedValue = LockIsolated<Bool?>(nil)
 
         let store = TestStore(
-            initialState: SettingsFeature.State(notificationsEnabled: true)
+            initialState: SettingsFeature.State(
+                notifications: .init(notificationsEnabled: true)
+            )
         ) {
             SettingsFeature()
         } withDependencies: {
@@ -138,7 +144,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.toggleNotifications(false)) {
-            $0.notificationsEnabled = false
+            $0.notifications.notificationsEnabled = false
         }
 
         #expect(persistedValue.value == false)
@@ -172,7 +178,7 @@ struct SettingsFeatureTests {
 
         await store.send(.onAppear)
 
-        #expect(store.state.tagCounterDisplayMode == .doneOnly)
+        #expect(store.state.appearance.tagCounterDisplayMode == .doneOnly)
     }
 
     @Test
@@ -187,7 +193,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.tagCounterDisplayModeChanged(.combinedTotal)) {
-            $0.tagCounterDisplayMode = .combinedTotal
+            $0.appearance.tagCounterDisplayMode = .combinedTotal
         }
 
         #expect(persistedValue.value == .combinedTotal)
@@ -198,9 +204,11 @@ struct SettingsFeatureTests {
         let context = makeInMemoryContext()
         let store = TestStore(
             initialState: SettingsFeature.State(
-                placeDraftName: "Home",
-                placeDraftCoordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
-                placeDraftRadiusMeters: 180
+                places: .init(
+                    placeDraftName: "Home",
+                    placeDraftCoordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
+                    placeDraftRadiusMeters: 180
+                )
             )
         ) {
             SettingsFeature()
@@ -211,8 +219,8 @@ struct SettingsFeatureTests {
         var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.savePlaceTapped) {
-            $0.isPlaceOperationInProgress = true
-            $0.placeStatusMessage = ""
+            $0.places.isPlaceOperationInProgress = true
+            $0.places.placeStatusMessage = ""
         }
         await store.receive { action in
             guard case let .placesLoaded(places) = action else { return false }
@@ -222,7 +230,7 @@ struct SettingsFeatureTests {
             #expect(places.first?.radiusMeters == 180)
             return true
         } assert: {
-            $0.savedPlaces = loadedPlaces
+            $0.places.savedPlaces = loadedPlaces
         }
         await store.receive { action in
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
@@ -231,13 +239,13 @@ struct SettingsFeatureTests {
             #expect(estimate.taskCount == 0)
             return true
         } assert: {
-            $0.cloudUsageEstimate = cloudEstimate
+            $0.cloud.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.placeOperationFinished(success: true, message: "Saved Home.")) {
-            $0.isPlaceOperationInProgress = false
-            $0.placeDraftName = ""
-            $0.placeDraftCoordinate = nil
-            $0.placeStatusMessage = "Saved Home."
+            $0.places.isPlaceOperationInProgress = false
+            $0.places.placeDraftName = ""
+            $0.places.placeDraftCoordinate = nil
+            $0.places.placeStatusMessage = "Saved Home."
         }
 
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
@@ -251,7 +259,7 @@ struct SettingsFeatureTests {
         let context = makeInMemoryContext()
         let store = TestStore(
             initialState: SettingsFeature.State(
-                placeDraftName: "Home"
+                places: .init(placeDraftName: "Home")
             )
         ) {
             SettingsFeature()
@@ -260,22 +268,24 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.savePlaceTapped) {
-            $0.placeStatusMessage = "Choose a location on the map first."
+            $0.places.placeStatusMessage = "Choose a location on the map first."
         }
     }
 
     @Test
     func duplicatePlaceDraft_disablesSaveAndShowsValidationMessage() {
         let state = SettingsFeature.State(
-            savedPlaces: [
-                RoutinePlaceSummary(
-                    id: UUID(),
-                    name: "Home",
-                    radiusMeters: 150,
-                    linkedRoutineCount: 1
-                )
-            ],
-            placeDraftName: " home "
+            places: .init(
+                savedPlaces: [
+                    RoutinePlaceSummary(
+                        id: UUID(),
+                        name: "Home",
+                        radiusMeters: 150,
+                        linkedRoutineCount: 1
+                    )
+                ],
+                placeDraftName: " home "
+            )
         )
 
         #expect(state.hasDuplicatePlaceDraftName)
@@ -290,17 +300,19 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                savedPlaces: [
-                    RoutinePlaceSummary(
-                        id: UUID(),
-                        name: "Home",
-                        radiusMeters: 150,
-                        linkedRoutineCount: 0
-                    )
-                ],
-                placeDraftName: " home ",
-                placeDraftCoordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
-                placeDraftRadiusMeters: 180
+                places: .init(
+                    savedPlaces: [
+                        RoutinePlaceSummary(
+                            id: UUID(),
+                            name: "Home",
+                            radiusMeters: 150,
+                            linkedRoutineCount: 0
+                        )
+                    ],
+                    placeDraftName: " home ",
+                    placeDraftCoordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
+                    placeDraftRadiusMeters: 180
+                )
             )
         ) {
             SettingsFeature()
@@ -309,8 +321,8 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.savePlaceTapped) {
-            $0.isPlaceOperationInProgress = true
-            $0.placeStatusMessage = ""
+            $0.places.isPlaceOperationInProgress = true
+            $0.places.placeStatusMessage = ""
         }
 
         await store.receive(
@@ -319,8 +331,8 @@ struct SettingsFeatureTests {
                 message: "A place with this name already exists."
             )
         ) {
-            $0.isPlaceOperationInProgress = false
-            $0.placeStatusMessage = "A place with this name already exists."
+            $0.places.isPlaceOperationInProgress = false
+            $0.places.placeStatusMessage = "A place with this name already exists."
         }
 
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
@@ -337,9 +349,11 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                savedPlaces: [
-                    RoutinePlaceSummary(id: place.id, name: "Home", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)
-                ]
+                places: .init(
+                    savedPlaces: [
+                        RoutinePlaceSummary(id: place.id, name: "Home", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)
+                    ]
+                )
             )
         ) {
             SettingsFeature()
@@ -349,8 +363,8 @@ struct SettingsFeatureTests {
         var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.deletePlaceTapped(place.id)) {
-            $0.isDeletePlaceConfirmationPresented = true
-            $0.placePendingDeletion = RoutinePlaceSummary(
+            $0.places.isDeletePlaceConfirmationPresented = true
+            $0.places.placePendingDeletion = RoutinePlaceSummary(
                 id: place.id,
                 name: "Home",
                 radiusMeters: place.radiusMeters,
@@ -358,13 +372,13 @@ struct SettingsFeatureTests {
             )
         }
         await store.send(.deletePlaceConfirmed) {
-            $0.isDeletePlaceConfirmationPresented = false
-            $0.placePendingDeletion = nil
-            $0.isPlaceOperationInProgress = true
-            $0.placeStatusMessage = ""
+            $0.places.isDeletePlaceConfirmationPresented = false
+            $0.places.placePendingDeletion = nil
+            $0.places.isPlaceOperationInProgress = true
+            $0.places.placeStatusMessage = ""
         }
         await store.receive(.placesLoaded([])) {
-            $0.savedPlaces = []
+            $0.places.savedPlaces = []
         }
         await store.receive { action in
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
@@ -373,11 +387,11 @@ struct SettingsFeatureTests {
             #expect(estimate.taskCount == 1)
             return true
         } assert: {
-            $0.cloudUsageEstimate = cloudEstimate
+            $0.cloud.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.placeOperationFinished(success: true, message: "Place deleted.")) {
-            $0.isPlaceOperationInProgress = false
-            $0.placeStatusMessage = "Place deleted."
+            $0.places.isPlaceOperationInProgress = false
+            $0.places.placeStatusMessage = "Place deleted."
         }
 
         let remainingPlaces = try context.fetch(FetchDescriptor<RoutinePlace>())
@@ -394,7 +408,7 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                savedPlaces: [summary]
+                places: .init(savedPlaces: [summary])
             )
         ) {
             SettingsFeature()
@@ -403,13 +417,13 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.deletePlaceTapped(placeID)) {
-            $0.isDeletePlaceConfirmationPresented = true
-            $0.placePendingDeletion = summary
+            $0.places.isDeletePlaceConfirmationPresented = true
+            $0.places.placePendingDeletion = summary
         }
 
         await store.send(.setDeletePlaceConfirmation(false)) {
-            $0.isDeletePlaceConfirmationPresented = false
-            $0.placePendingDeletion = nil
+            $0.places.isDeletePlaceConfirmationPresented = false
+            $0.places.placePendingDeletion = nil
         }
     }
 
@@ -422,9 +436,11 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                isDeletePlaceConfirmationPresented: true,
-                savedPlaces: [initialSummary],
-                placePendingDeletion: initialSummary
+                places: .init(
+                    savedPlaces: [initialSummary],
+                    placePendingDeletion: initialSummary,
+                    isDeletePlaceConfirmationPresented: true
+                )
             )
         ) {
             SettingsFeature()
@@ -433,8 +449,8 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.placesLoaded([updatedSummary])) {
-            $0.savedPlaces = [updatedSummary]
-            $0.placePendingDeletion = updatedSummary
+            $0.places.savedPlaces = [updatedSummary]
+            $0.places.placePendingDeletion = updatedSummary
         }
     }
 
@@ -445,7 +461,7 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                savedTags: [summary]
+                tags: .init(savedTags: [summary])
             )
         ) {
             SettingsFeature()
@@ -454,9 +470,9 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.renameTagTapped("Fitness")) {
-            $0.tagPendingRename = summary
-            $0.tagRenameDraft = "Fitness"
-            $0.isTagRenameSheetPresented = true
+            $0.tags.tagPendingRename = summary
+            $0.tags.tagRenameDraft = "Fitness"
+            $0.tags.isTagRenameSheetPresented = true
         }
     }
 
@@ -473,10 +489,12 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                savedTags: [fitnessSummary, morningSummary],
-                tagPendingRename: fitnessSummary,
-                tagRenameDraft: "Health",
-                isTagRenameSheetPresented: true
+                tags: .init(
+                    savedTags: [fitnessSummary, morningSummary],
+                    tagPendingRename: fitnessSummary,
+                    tagRenameDraft: "Health",
+                    isTagRenameSheetPresented: true
+                )
             )
         ) {
             SettingsFeature()
@@ -487,11 +505,11 @@ struct SettingsFeatureTests {
         var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.saveTagRenameTapped) {
-            $0.tagPendingRename = nil
-            $0.tagRenameDraft = ""
-            $0.isTagOperationInProgress = true
-            $0.isTagRenameSheetPresented = false
-            $0.tagStatusMessage = ""
+            $0.tags.tagPendingRename = nil
+            $0.tags.tagRenameDraft = ""
+            $0.tags.isTagOperationInProgress = true
+            $0.tags.isTagRenameSheetPresented = false
+            $0.tags.tagStatusMessage = ""
         }
         await store.receive { action in
             guard case let .tagsLoaded(tags) = action else { return false }
@@ -500,7 +518,7 @@ struct SettingsFeatureTests {
             #expect(tags.map(\.linkedRoutineCount) == [2, 2])
             return true
         } assert: {
-            $0.savedTags = loadedTags
+            $0.tags.savedTags = loadedTags
         }
         await store.receive { action in
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
@@ -508,11 +526,11 @@ struct SettingsFeatureTests {
             #expect(estimate.taskCount == 3)
             return true
         } assert: {
-            $0.cloudUsageEstimate = cloudEstimate
+            $0.cloud.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Health in 2 routines.")) {
-            $0.isTagOperationInProgress = false
-            $0.tagStatusMessage = "Updated tag to Health in 2 routines."
+            $0.tags.isTagOperationInProgress = false
+            $0.tags.tagStatusMessage = "Updated tag to Health in 2 routines."
         }
 
         let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -529,9 +547,11 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                tagPendingRename: summary,
-                tagRenameDraft: "   ",
-                isTagRenameSheetPresented: true
+                tags: .init(
+                    tagPendingRename: summary,
+                    tagRenameDraft: "   ",
+                    isTagRenameSheetPresented: true
+                )
             )
         ) {
             SettingsFeature()
@@ -540,7 +560,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.saveTagRenameTapped) {
-            $0.tagStatusMessage = "Enter a tag name first."
+            $0.tags.tagStatusMessage = "Enter a tag name first."
         }
     }
 
@@ -558,9 +578,11 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                savedTags: [eveningSummary, healthSummary, morningSummary],
-                tagPendingDeletion: morningSummary,
-                isDeleteTagConfirmationPresented: true
+                tags: .init(
+                    savedTags: [eveningSummary, healthSummary, morningSummary],
+                    tagPendingDeletion: morningSummary,
+                    isDeleteTagConfirmationPresented: true
+                )
             )
         ) {
             SettingsFeature()
@@ -571,10 +593,10 @@ struct SettingsFeatureTests {
         var cloudEstimate = CloudUsageEstimate.zero
 
         await store.send(.deleteTagConfirmed) {
-            $0.tagPendingDeletion = nil
-            $0.isDeleteTagConfirmationPresented = false
-            $0.isTagOperationInProgress = true
-            $0.tagStatusMessage = ""
+            $0.tags.tagPendingDeletion = nil
+            $0.tags.isDeleteTagConfirmationPresented = false
+            $0.tags.isTagOperationInProgress = true
+            $0.tags.tagStatusMessage = ""
         }
         await store.receive { action in
             guard case let .tagsLoaded(tags) = action else { return false }
@@ -583,7 +605,7 @@ struct SettingsFeatureTests {
             #expect(tags.map(\.linkedRoutineCount) == [1, 1])
             return true
         } assert: {
-            $0.savedTags = loadedTags
+            $0.tags.savedTags = loadedTags
         }
         await store.receive { action in
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
@@ -591,11 +613,11 @@ struct SettingsFeatureTests {
             #expect(estimate.taskCount == 3)
             return true
         } assert: {
-            $0.cloudUsageEstimate = cloudEstimate
+            $0.cloud.cloudUsageEstimate = cloudEstimate
         }
         await store.receive(.tagOperationFinished(success: true, message: "Deleted Morning from 3 routines.")) {
-            $0.isTagOperationInProgress = false
-            $0.tagStatusMessage = "Deleted Morning from 3 routines."
+            $0.tags.isTagOperationInProgress = false
+            $0.tags.tagStatusMessage = "Deleted Morning from 3 routines."
         }
 
         let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -619,7 +641,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.resetTemporaryViewStateTapped) {
-            $0.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
+            $0.appearance.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
         }
 
         #expect(resetCallCount.value == 1)
@@ -635,13 +657,13 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.exportRoutineDataTapped) {
-            $0.isDataTransferInProgress = true
-            $0.dataTransferStatusMessage = "Saving routine data..."
+            $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: false, message: "Save canceled.")) {
-            $0.isDataTransferInProgress = false
-            $0.dataTransferStatusMessage = "Save canceled."
+            $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.dataTransferStatusMessage = "Save canceled."
         }
     }
 
@@ -655,13 +677,13 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.importRoutineDataTapped) {
-            $0.isDataTransferInProgress = true
-            $0.dataTransferStatusMessage = "Loading routine data..."
+            $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: false, message: "Load canceled.")) {
-            $0.isDataTransferInProgress = false
-            $0.dataTransferStatusMessage = "Load canceled."
+            $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.dataTransferStatusMessage = "Load canceled."
         }
     }
 }

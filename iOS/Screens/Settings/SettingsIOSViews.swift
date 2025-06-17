@@ -15,8 +15,8 @@ struct SettingsIOSRootView: View {
                             icon: "bell.badge.fill",
                             tint: .red,
                             title: "Notifications",
-                            subtitle: notificationsOverviewSubtitle,
-                            value: store.notificationsEnabled ? "On" : "Off"
+                            subtitle: store.notificationsOverviewSubtitle,
+                            value: store.notifications.notificationsEnabled ? "On" : "Off"
                         )
                     }
 
@@ -27,7 +27,7 @@ struct SettingsIOSRootView: View {
                             icon: "mappin.and.ellipse",
                             tint: .blue,
                             title: "Places",
-                            subtitle: placesOverviewSubtitle
+                            subtitle: store.placesOverviewSubtitle
                         )
                     }
 
@@ -49,7 +49,7 @@ struct SettingsIOSRootView: View {
                             icon: "app.badge.fill",
                             tint: .orange,
                             title: "Appearance",
-                            subtitle: "Icon: \(store.selectedAppIcon.title) • List: \(store.routineListSectioningMode.summaryText) • Tags: \(store.tagCounterDisplayMode.summaryText)"
+                            subtitle: store.appearanceOverviewSubtitle
                         )
                     }
 
@@ -60,8 +60,8 @@ struct SettingsIOSRootView: View {
                             icon: "icloud.fill",
                             tint: .cyan,
                             title: "iCloud",
-                            subtitle: cloudOverviewSubtitle,
-                            value: store.cloudSyncAvailable ? nil : "Off"
+                            subtitle: store.cloudOverviewSubtitle,
+                            value: store.cloud.cloudSyncAvailable ? nil : "Off"
                         )
                     }
                 }
@@ -85,7 +85,7 @@ struct SettingsIOSRootView: View {
                             icon: "info.circle.fill",
                             tint: .gray,
                             title: "About",
-                            subtitle: aboutOverviewSubtitle
+                            subtitle: store.aboutOverviewSubtitle
                         )
                     }
                 }
@@ -94,54 +94,6 @@ struct SettingsIOSRootView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
         }
-    }
-
-    private var notificationsOverviewSubtitle: String {
-        if store.notificationsEnabled {
-            let time = store.notificationReminderTime.formatted(date: .omitted, time: .shortened)
-            return "Daily reminder at \(time)"
-        }
-        if store.systemSettingsNotificationsEnabled == false {
-            return "Disabled in System Settings"
-        }
-        return "Routine reminders are turned off"
-    }
-
-    private var placesOverviewSubtitle: String {
-        switch store.savedPlaces.count {
-        case 0:
-            return "Save locations for place-based routines"
-        case 1:
-            return "1 saved place"
-        default:
-            return "\(store.savedPlaces.count) saved places"
-        }
-    }
-
-    private var cloudOverviewSubtitle: String {
-        if store.isCloudSyncInProgress {
-            return "Syncing with iCloud"
-        }
-        if store.isCloudDataResetInProgress {
-            return "Deleting iCloud data"
-        }
-        if !store.cloudStatusMessage.isEmpty {
-            return store.cloudStatusMessage
-        }
-        if !store.cloudSyncAvailable {
-            return "Unavailable in this build"
-        }
-        return "Sync routines across devices"
-    }
-
-    private var aboutOverviewSubtitle: String {
-        if store.isDebugSectionVisible {
-            return "Version \(store.appVersion) • Diagnostics unlocked"
-        }
-        if store.appVersion.isEmpty {
-            return "App details"
-        }
-        return "Version \(store.appVersion)"
     }
 }
 
@@ -159,7 +111,7 @@ private struct SettingsNotificationsDetailView: View {
                         selection: reminderTimeBinding,
                         displayedComponents: .hourAndMinute
                     )
-                    .disabled(store.notificationsEnabled == false)
+                    .disabled(store.notifications.notificationsEnabled == false)
                 }
 
                 Section("Info") {
@@ -167,7 +119,7 @@ private struct SettingsNotificationsDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if store.systemSettingsNotificationsEnabled == false {
+                if store.notifications.systemSettingsNotificationsEnabled == false {
                     Section("System Settings") {
                         Button("Allow Notifications in System Settings") {
                             store.send(.openAppSettingsTapped)
@@ -184,14 +136,14 @@ private struct SettingsNotificationsDetailView: View {
 
     private var notificationsBinding: Binding<Bool> {
         Binding(
-            get: { store.notificationsEnabled },
+            get: { store.notifications.notificationsEnabled },
             set: { store.send(.toggleNotifications($0)) }
         )
     }
 
     private var reminderTimeBinding: Binding<Date> {
         Binding(
-            get: { store.notificationReminderTime },
+            get: { store.notifications.notificationReminderTime },
             set: { store.send(.notificationReminderTimeChanged($0)) }
         )
     }
@@ -227,7 +179,7 @@ struct SettingsPlacesDetailView: View {
                         store.send(.savePlaceTapped)
                     } label: {
                         HStack {
-                            if store.isPlaceOperationInProgress {
+                            if store.places.isPlaceOperationInProgress {
                                 ProgressView()
                             } else {
                                 Image(systemName: "mappin.and.ellipse")
@@ -243,26 +195,26 @@ struct SettingsPlacesDetailView: View {
                     Text(store.placeLocationHelpText)
                         .foregroundStyle(.secondary)
 
-                    if store.locationAuthorizationStatus.needsSettingsChange {
+                    if store.places.locationAuthorizationStatus.needsSettingsChange {
                         Button("Open System Settings") {
                             store.send(.openAppSettingsTapped)
                         }
                     }
                 }
 
-                if !store.placeStatusMessage.isEmpty {
+                if !store.places.placeStatusMessage.isEmpty {
                     Section("Status") {
-                        Text(store.placeStatusMessage)
+                        Text(store.places.placeStatusMessage)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 Section("Saved Places") {
-                    if store.savedPlaces.isEmpty {
+                    if store.places.savedPlaces.isEmpty {
                         Text("No places saved yet.")
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(store.savedPlaces) { place in
+                        ForEach(store.places.savedPlaces) { place in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(place.name)
                                 Text(settingsPlaceSubtitle(for: place))
@@ -275,7 +227,7 @@ struct SettingsPlacesDetailView: View {
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
-                                .disabled(store.isPlaceOperationInProgress)
+                                .disabled(store.places.isPlaceOperationInProgress)
                             }
                         }
                     }
@@ -299,9 +251,9 @@ struct SettingsPlacesDetailView: View {
             }
             .sheet(isPresented: $isPlacePickerPresented) {
                 PlaceLocationPickerSheet(
-                    initialCoordinate: store.placeDraftCoordinate,
-                    initialRadiusMeters: store.placeDraftRadiusMeters,
-                    fallbackCoordinate: store.placeDraftCoordinate ?? store.lastKnownLocationCoordinate
+                    initialCoordinate: store.places.placeDraftCoordinate,
+                    initialRadiusMeters: store.places.placeDraftRadiusMeters,
+                    fallbackCoordinate: store.places.placeDraftCoordinate ?? store.places.lastKnownLocationCoordinate
                 ) { coordinate, radiusMeters in
                     store.send(.placeDraftCoordinateChanged(coordinate))
                     store.send(.placeDraftRadiusChanged(radiusMeters))
@@ -315,14 +267,14 @@ struct SettingsPlacesDetailView: View {
 
     private var placeDraftNameBinding: Binding<String> {
         Binding(
-            get: { store.placeDraftName },
+            get: { store.places.placeDraftName },
             set: { store.send(.placeDraftNameChanged($0)) }
         )
     }
 
     private var deletePlaceConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isDeletePlaceConfirmationPresented },
+            get: { store.places.isDeletePlaceConfirmationPresented },
             set: { store.send(.setDeletePlaceConfirmation($0)) }
         )
     }
@@ -340,11 +292,11 @@ struct SettingsTagsDetailView: View {
                 }
 
                 Section("Saved Tags") {
-                    if store.savedTags.isEmpty {
+                    if store.tags.savedTags.isEmpty {
                         Text("No tags yet. Tags you add to routines will appear here.")
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(store.savedTags) { tag in
+                        ForEach(store.tags.savedTags) { tag in
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(tag.name)
@@ -372,7 +324,7 @@ struct SettingsTagsDetailView: View {
                                         .font(.title3)
                                         .foregroundStyle(.secondary)
                                 }
-                                .disabled(store.isTagOperationInProgress)
+                                .disabled(store.tags.isTagOperationInProgress)
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button {
@@ -392,9 +344,9 @@ struct SettingsTagsDetailView: View {
                     }
                 }
 
-                if !store.tagStatusMessage.isEmpty {
+                if !store.tags.tagStatusMessage.isEmpty {
                     Section("Status") {
-                        Text(store.tagStatusMessage)
+                        Text(store.tags.tagStatusMessage)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -424,14 +376,14 @@ struct SettingsTagsDetailView: View {
 
     private var deleteTagConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isDeleteTagConfirmationPresented },
+            get: { store.tags.isDeleteTagConfirmationPresented },
             set: { store.send(.setDeleteTagConfirmation($0)) }
         )
     }
 
     private var renameTagSheetBinding: Binding<Bool> {
         Binding(
-            get: { store.isTagRenameSheetPresented },
+            get: { store.tags.isTagRenameSheetPresented },
             set: { store.send(.setTagRenameSheet($0)) }
         )
     }
@@ -468,20 +420,20 @@ private struct SettingsAppearanceDetailView: View {
                     }
                     .pickerStyle(.menu)
 
-                    Text(store.tagCounterDisplayMode.subtitle)
+                    Text(store.appearance.tagCounterDisplayMode.subtitle)
                         .foregroundStyle(.secondary)
                 }
 
                 Section("Temporary View State") {
                     Button {
-                        guard store.hasTemporaryViewStateToReset else { return }
+                        guard store.appearance.hasTemporaryViewStateToReset else { return }
                         resetFeedbackTrigger.toggle()
                         store.send(.resetTemporaryViewStateTapped)
                     } label: {
                         Label(resetButtonTitle, systemImage: resetButtonSystemImage)
                             .foregroundStyle(resetButtonForegroundStyle)
                     }
-                    .disabled(!store.hasTemporaryViewStateToReset)
+                    .disabled(!store.appearance.hasTemporaryViewStateToReset)
 
                     Text(resetButtonDescription)
                         .foregroundStyle(.secondary)
@@ -492,7 +444,7 @@ private struct SettingsAppearanceDetailView: View {
                         ForEach(AppIconOption.allCases) { option in
                             SettingsAppIconButton(
                                 option: option,
-                                isSelected: store.selectedAppIcon == option
+                                isSelected: store.appearance.selectedAppIcon == option
                             ) {
                                 store.send(.appIconSelected(option))
                             }
@@ -505,16 +457,16 @@ private struct SettingsAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if !store.appIconStatusMessage.isEmpty {
+                if !store.appearance.appIconStatusMessage.isEmpty {
                     Section("Status") {
-                        Text(store.appIconStatusMessage)
+                        Text(store.appearance.appIconStatusMessage)
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                if !store.temporaryViewStateStatusMessage.isEmpty {
+                if !store.appearance.temporaryViewStateStatusMessage.isEmpty {
                     Section("Status") {
-                        Text(store.temporaryViewStateStatusMessage)
+                        Text(store.appearance.temporaryViewStateStatusMessage)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -528,38 +480,38 @@ private struct SettingsAppearanceDetailView: View {
 
     private var routineListSectioningModeBinding: Binding<RoutineListSectioningMode> {
         Binding(
-            get: { store.routineListSectioningMode },
+            get: { store.appearance.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
         )
     }
 
     private var resetButtonTitle: String {
-        store.hasTemporaryViewStateToReset
+        store.appearance.hasTemporaryViewStateToReset
             ? "Reset Filters and Selections"
             : "Filters and Selections Are Clear"
     }
 
     private var tagCounterDisplayModeBinding: Binding<TagCounterDisplayMode> {
         Binding(
-            get: { store.tagCounterDisplayMode },
+            get: { store.appearance.tagCounterDisplayMode },
             set: { store.send(.tagCounterDisplayModeChanged($0)) }
         )
     }
 
     private var resetButtonSystemImage: String {
-        store.hasTemporaryViewStateToReset
+        store.appearance.hasTemporaryViewStateToReset
             ? "arrow.counterclockwise"
             : "checkmark.circle"
     }
 
     private var resetButtonDescription: String {
-        store.hasTemporaryViewStateToReset
+        store.appearance.hasTemporaryViewStateToReset
             ? "Clears saved filters, list mode choices, and other temporary view selections so the app opens with defaults again."
             : "Everything is already using the default filters and temporary selections."
     }
 
     private var resetButtonForegroundStyle: AnyShapeStyle {
-        store.hasTemporaryViewStateToReset
+        store.appearance.hasTemporaryViewStateToReset
             ? AnyShapeStyle(Color.red)
             : AnyShapeStyle(Color.secondary)
     }
@@ -588,7 +540,7 @@ private struct SettingsCloudDetailView: View {
                 }
 
                 Section("Status") {
-                    if store.isCloudSyncInProgress || store.isCloudDataResetInProgress {
+                    if store.cloud.isCloudSyncInProgress || store.cloud.isCloudDataResetInProgress {
                         HStack(spacing: 10) {
                             ProgressView()
                             Text(store.syncStatusText)
@@ -602,10 +554,10 @@ private struct SettingsCloudDetailView: View {
 
                 Section("Estimated Usage") {
                     infoRow(title: "Estimated iCloud Data", value: store.cloudUsageTotalText)
-                    infoRow(title: "Tasks", value: "\(store.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
-                    infoRow(title: "Logs", value: "\(store.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
-                    infoRow(title: "Places", value: "\(store.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
-                    infoRow(title: "Images", value: "\(store.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
+                    infoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
+                    infoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
+                    infoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
+                    infoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
 
                     Text(store.cloudUsageSummaryText)
                         .foregroundStyle(.secondary)
@@ -634,14 +586,14 @@ private struct SettingsCloudDetailView: View {
     }
 
     private var actionsDisabled: Bool {
-        store.isCloudSyncInProgress ||
-        store.isCloudDataResetInProgress ||
-        !store.cloudSyncAvailable
+        store.cloud.isCloudSyncInProgress ||
+        store.cloud.isCloudDataResetInProgress ||
+        !store.cloud.cloudSyncAvailable
     }
 
     private var cloudDataResetConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isCloudDataResetConfirmationPresented },
+            get: { store.cloud.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
         )
     }
@@ -696,7 +648,7 @@ private struct SettingsAboutDetailView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text(store.appVersion)
+                        Text(store.diagnostics.appVersion)
                             .foregroundStyle(.secondary)
                     }
                     .contentShape(Rectangle())
@@ -705,16 +657,16 @@ private struct SettingsAboutDetailView: View {
                     }
                 }
 
-                if store.isDebugSectionVisible {
+                if store.diagnostics.isDebugSectionVisible {
                     Section("Diagnostics") {
-                        infoRow(title: "Data Mode", value: store.dataModeDescription)
-                        infoRow(title: "iCloud Container", value: store.iCloudContainerDescription)
+                        infoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)
+                        infoRow(title: "iCloud Container", value: store.diagnostics.iCloudContainerDescription)
 
-                        Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
+                        Text("Last CloudKit Event: \(store.diagnostics.cloudDiagnosticsTimestamp)")
                             .foregroundStyle(.secondary)
-                        Text(store.cloudDiagnosticsSummary)
+                        Text(store.diagnostics.cloudDiagnosticsSummary)
                             .foregroundStyle(.secondary)
-                        Text(store.pushDiagnosticsStatus)
+                        Text(store.diagnostics.pushDiagnosticsStatus)
                             .foregroundStyle(.secondary)
                     }
                 }

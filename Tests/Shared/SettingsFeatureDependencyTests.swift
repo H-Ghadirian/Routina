@@ -76,16 +76,16 @@ struct SettingsFeatureDependencyTests {
         var loadedTags: [RoutineTagSummary] = []
 
         await store.send(.onAppear) {
-            $0.appVersion = "9.9.9"
-            $0.dataModeDescription = "Local + Cloud"
-            $0.iCloudContainerDescription = "iCloud.com.routina"
-            $0.cloudSyncAvailable = true
-            $0.notificationsEnabled = true
-            $0.notificationReminderTime = reminderTime
-            $0.routineListSectioningMode = .deadlineDate
-            $0.selectedAppIcon = .teal
-            $0.appIconStatusMessage = ""
-            $0.isDebugSectionVisible = false
+            $0.diagnostics.appVersion = "9.9.9"
+            $0.diagnostics.dataModeDescription = "Local + Cloud"
+            $0.diagnostics.iCloudContainerDescription = "iCloud.com.routina"
+            $0.cloud.cloudSyncAvailable = true
+            $0.notifications.notificationsEnabled = true
+            $0.notifications.notificationReminderTime = reminderTime
+            $0.appearance.routineListSectioningMode = .deadlineDate
+            $0.appearance.selectedAppIcon = .teal
+            $0.appearance.appIconStatusMessage = ""
+            $0.diagnostics.isDebugSectionVisible = false
         }
 
         await store.receive(.systemNotificationPermissionChecked(true))
@@ -97,7 +97,7 @@ struct SettingsFeatureDependencyTests {
             #expect(estimate.logCount == 1)
             return true
         } assert: {
-            $0.cloudUsageEstimate = loadedEstimate
+            $0.cloud.cloudUsageEstimate = loadedEstimate
         }
         await store.receive { action in
             guard case let .placesLoaded(places) = action else { return false }
@@ -107,7 +107,7 @@ struct SettingsFeatureDependencyTests {
             #expect(places.first?.linkedRoutineCount == 1)
             return true
         } assert: {
-            $0.savedPlaces = loadedPlaces
+            $0.places.savedPlaces = loadedPlaces
         }
         await store.receive { action in
             guard case let .tagsLoaded(tags) = action else { return false }
@@ -117,11 +117,11 @@ struct SettingsFeatureDependencyTests {
             #expect(tags.first?.linkedRoutineCount == 1)
             return true
         } assert: {
-            $0.savedTags = loadedTags
+            $0.tags.savedTags = loadedTags
         }
         await store.receive(.locationSnapshotUpdated(snapshot)) {
-            $0.locationAuthorizationStatus = .authorizedAlways
-            $0.lastKnownLocationCoordinate = snapshot.coordinate
+            $0.places.locationAuthorizationStatus = .authorizedAlways
+            $0.places.lastKnownLocationCoordinate = snapshot.coordinate
         }
     }
 
@@ -132,7 +132,9 @@ struct SettingsFeatureDependencyTests {
         let cancelAllCallCount = LockIsolated(0)
 
         let store = TestStore(
-            initialState: SettingsFeature.State(notificationsEnabled: true)
+            initialState: SettingsFeature.State(
+                notifications: .init(notificationsEnabled: true)
+            )
         ) {
             SettingsFeature()
         } withDependencies: {
@@ -146,7 +148,7 @@ struct SettingsFeatureDependencyTests {
         }
 
         await store.send(.toggleNotifications(false)) {
-            $0.notificationsEnabled = false
+            $0.notifications.notificationsEnabled = false
         }
 
         #expect(capturedNotificationPreference.value == false)

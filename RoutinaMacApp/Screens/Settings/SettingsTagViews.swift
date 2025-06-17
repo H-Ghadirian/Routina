@@ -35,7 +35,7 @@ struct SettingsTagRenameSheet: View {
                         store.send(.saveTagRenameTapped)
                     }
 
-                if let pendingTag = store.tagPendingRename {
+                if let pendingTag = store.tags.tagPendingRename {
                     Text(settingsTagSubtitle(for: pendingTag))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -62,7 +62,7 @@ struct SettingsTagRenameSheet: View {
 
     private var tagRenameDraftBinding: Binding<String> {
         Binding(
-            get: { store.tagRenameDraft },
+            get: { store.tags.tagRenameDraft },
             set: { store.send(.tagRenameDraftChanged($0)) }
         )
     }

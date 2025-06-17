@@ -6,52 +6,7 @@ import UserNotifications
 
 @Reducer
 struct SettingsFeature {
-
-    @ObservableState
-    struct State: Equatable {
-        var appVersion: String = ""
-        var dataModeDescription: String = ""
-        var iCloudContainerDescription: String = "Disabled"
-        var cloudUsageEstimate: CloudUsageEstimate = .zero
-        var cloudDiagnosticsSummary: String = "No CloudKit event yet"
-        var cloudDiagnosticsTimestamp: String = "Never"
-        var pushDiagnosticsStatus: String = "Push not registered yet"
-        var isDebugSectionVisible: Bool = false
-        var cloudSyncAvailable: Bool = false
-        var notificationsEnabled: Bool = false
-        var routineListSectioningMode: RoutineListSectioningMode = .defaultValue
-        var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
-        var systemSettingsNotificationsEnabled: Bool = true
-        var notificationReminderTime: Date = Date()
-        var isCloudSyncInProgress: Bool = false
-        var isCloudDataResetInProgress: Bool = false
-        var isCloudDataResetConfirmationPresented: Bool = false
-        var isDeletePlaceConfirmationPresented: Bool = false
-        var cloudStatusMessage: String = ""
-        var isDataTransferInProgress: Bool = false
-        var dataTransferStatusMessage: String = ""
-        var appIconStatusMessage: String = ""
-        var selectedAppIcon: AppIconOption = .orange
-        var savedPlaces: [RoutinePlaceSummary] = []
-        var savedTags: [RoutineTagSummary] = []
-        var hasTemporaryViewStateToReset: Bool = false
-        var temporaryViewStateStatusMessage: String = ""
-        var placePendingDeletion: RoutinePlaceSummary?
-        var tagPendingDeletion: RoutineTagSummary?
-        var tagPendingRename: RoutineTagSummary?
-        var placeDraftName: String = ""
-        var tagRenameDraft: String = ""
-        var placeDraftCoordinate: LocationCoordinate?
-        var placeDraftRadiusMeters: Double = 150
-        var placeStatusMessage: String = ""
-        var tagStatusMessage: String = ""
-        var isPlaceOperationInProgress: Bool = false
-        var isTagOperationInProgress: Bool = false
-        var locationAuthorizationStatus: LocationAuthorizationStatus = .notDetermined
-        var lastKnownLocationCoordinate: LocationCoordinate?
-        var isDeleteTagConfirmationPresented: Bool = false
-        var isTagRenameSheetPresented: Bool = false
-    }
+    typealias State = SettingsFeatureState
 
     enum Action: Equatable {
         case toggleNotifications(Bool)
@@ -114,24 +69,24 @@ struct SettingsFeature {
         Reduce { state, action in
             switch action {
             case let .routineListSectioningModeChanged(mode):
-                state.routineListSectioningMode = mode
+                state.appearance.routineListSectioningMode = mode
                 appSettingsClient.setRoutineListSectioningMode(mode)
                 return .none
 
             case let .tagCounterDisplayModeChanged(mode):
-                state.tagCounterDisplayMode = mode
+                state.appearance.tagCounterDisplayMode = mode
                 appSettingsClient.setTagCounterDisplayMode(mode)
                 return .none
 
             case .resetTemporaryViewStateTapped:
                 appSettingsClient.resetTemporaryViewState()
-                state.hasTemporaryViewStateToReset = false
-                state.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
+                state.appearance.hasTemporaryViewStateToReset = false
+                state.appearance.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
                 return .none
 
             case .toggleNotifications(let isOn):
                 guard isOn else {
-                    state.notificationsEnabled = false
+                    state.notifications.notificationsEnabled = false
                     appSettingsClient.setNotificationsEnabled(false)
                     return .run { _ in
                         await self.notificationClient.cancelAll()
@@ -144,8 +99,8 @@ struct SettingsFeature {
                 }
 
             case .notificationAuthorizationFinished(let isGranted):
-                state.notificationsEnabled = isGranted
-                state.systemSettingsNotificationsEnabled = isGranted
+                state.notifications.notificationsEnabled = isGranted
+                state.notifications.systemSettingsNotificationsEnabled = isGranted
                 appSettingsClient.setNotificationsEnabled(isGranted)
 
                 guard isGranted else { return .none }
@@ -154,10 +109,10 @@ struct SettingsFeature {
                 }
 
             case .notificationReminderTimeChanged(let reminderTime):
-                state.notificationReminderTime = reminderTime
+                state.notifications.notificationReminderTime = reminderTime
                 appSettingsClient.setNotificationReminderTime(reminderTime)
 
-                guard state.notificationsEnabled else { return .none }
+                guard state.notifications.notificationsEnabled else { return .none }
                 return .run { @MainActor _ in
                     try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
                 }
@@ -171,23 +126,23 @@ struct SettingsFeature {
                 return .none
 
             case .onAppear:
-                state.appVersion = appInfoClient.versionString()
-                state.dataModeDescription = appInfoClient.dataModeDescription()
-                state.iCloudContainerDescription = appInfoClient.cloudContainerDescription()
-                state.cloudSyncAvailable = appInfoClient.isCloudSyncEnabled()
-                state.notificationsEnabled = appSettingsClient.notificationsEnabled()
-                state.isDebugSectionVisible = false
-                state.notificationReminderTime = appSettingsClient.notificationReminderTime()
-                state.routineListSectioningMode = appSettingsClient.routineListSectioningMode()
-                state.tagCounterDisplayMode = appSettingsClient.tagCounterDisplayMode()
-                state.selectedAppIcon = appSettingsClient.selectedAppIcon()
-                state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
-                state.appIconStatusMessage = ""
-                state.temporaryViewStateStatusMessage = ""
+                state.diagnostics.appVersion = appInfoClient.versionString()
+                state.diagnostics.dataModeDescription = appInfoClient.dataModeDescription()
+                state.diagnostics.iCloudContainerDescription = appInfoClient.cloudContainerDescription()
+                state.cloud.cloudSyncAvailable = appInfoClient.isCloudSyncEnabled()
+                state.notifications.notificationsEnabled = appSettingsClient.notificationsEnabled()
+                state.diagnostics.isDebugSectionVisible = false
+                state.notifications.notificationReminderTime = appSettingsClient.notificationReminderTime()
+                state.appearance.routineListSectioningMode = appSettingsClient.routineListSectioningMode()
+                state.appearance.tagCounterDisplayMode = appSettingsClient.tagCounterDisplayMode()
+                state.appearance.selectedAppIcon = appSettingsClient.selectedAppIcon()
+                state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
+                state.appearance.appIconStatusMessage = ""
+                state.appearance.temporaryViewStateStatusMessage = ""
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
-                state.cloudDiagnosticsSummary = diagnostics.summary
-                state.cloudDiagnosticsTimestamp = diagnostics.timestampText
-                state.pushDiagnosticsStatus = diagnostics.pushStatus
+                state.diagnostics.cloudDiagnosticsSummary = diagnostics.summary
+                state.diagnostics.cloudDiagnosticsTimestamp = diagnostics.timestampText
+                state.diagnostics.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .run { @MainActor send in
                     let context = self.modelContext()
                     let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
@@ -216,27 +171,27 @@ struct SettingsFeature {
                 return .none
 
             case .aboutSectionLongPressed:
-                state.isDebugSectionVisible = true
+                state.diagnostics.isDebugSectionVisible = true
                 return .none
 
             case let .systemNotificationPermissionChecked(value):
-                state.systemSettingsNotificationsEnabled = value
+                state.notifications.systemSettingsNotificationsEnabled = value
                 return .none
 
             case .cloudDiagnosticsUpdated:
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
-                state.cloudDiagnosticsSummary = diagnostics.summary
-                state.cloudDiagnosticsTimestamp = diagnostics.timestampText
-                state.pushDiagnosticsStatus = diagnostics.pushStatus
+                state.diagnostics.cloudDiagnosticsSummary = diagnostics.summary
+                state.diagnostics.cloudDiagnosticsTimestamp = diagnostics.timestampText
+                state.diagnostics.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .none
 
             case let .cloudUsageEstimateLoaded(estimate):
-                state.cloudUsageEstimate = estimate
+                state.cloud.cloudUsageEstimate = estimate
                 return .none
 
             case .onAppBecameActive:
-                let notificationsEnabled = state.notificationsEnabled
-                state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
+                let notificationsEnabled = state.notifications.notificationsEnabled
+                state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
                 return .run { @MainActor send in
                     let context = self.modelContext()
                     let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
@@ -258,16 +213,16 @@ struct SettingsFeature {
                 }
 
             case .syncNowTapped:
-                guard !state.isCloudDataResetInProgress else {
+                guard !state.cloud.isCloudDataResetInProgress else {
                     return .none
                 }
-                guard state.cloudSyncAvailable else {
-                    state.cloudStatusMessage = "iCloud sync is disabled in this build."
+                guard state.cloud.cloudSyncAvailable else {
+                    state.cloud.cloudStatusMessage = "iCloud sync is disabled in this build."
                     return .none
                 }
 
-                state.isCloudSyncInProgress = true
-                state.cloudStatusMessage = "Syncing with iCloud..."
+                state.cloud.isCloudSyncInProgress = true
+                state.cloud.cloudStatusMessage = "Syncing with iCloud..."
                 return .run { @MainActor send in
                     do {
                         let context = modelContext()
@@ -294,27 +249,27 @@ struct SettingsFeature {
                 }
 
             case let .setCloudDataResetConfirmation(isPresented):
-                state.isCloudDataResetConfirmationPresented = isPresented
+                state.cloud.isCloudDataResetConfirmationPresented = isPresented
                 return .none
 
             case .resetCloudDataConfirmed:
-                state.isCloudDataResetConfirmationPresented = false
+                state.cloud.isCloudDataResetConfirmationPresented = false
 
-                guard !state.isCloudSyncInProgress,
-                      !state.isCloudDataResetInProgress
+                guard !state.cloud.isCloudSyncInProgress,
+                      !state.cloud.isCloudDataResetInProgress
                 else {
                     return .none
                 }
 
-                guard state.cloudSyncAvailable,
+                guard state.cloud.cloudSyncAvailable,
                       let cloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier
                 else {
-                    state.cloudStatusMessage = "iCloud sync is disabled in this build."
+                    state.cloud.cloudStatusMessage = "iCloud sync is disabled in this build."
                     return .none
                 }
 
-                state.isCloudDataResetInProgress = true
-                state.cloudStatusMessage = "Deleting iCloud data..."
+                state.cloud.isCloudDataResetInProgress = true
+                state.cloud.cloudStatusMessage = "Deleting iCloud data..."
                 return .run { @MainActor send in
                     do {
                         try await CloudDataResetService.resetAllUserData(
@@ -341,104 +296,104 @@ struct SettingsFeature {
                 }
 
             case let .setDeletePlaceConfirmation(isPresented):
-                state.isDeletePlaceConfirmationPresented = isPresented
+                state.places.isDeletePlaceConfirmationPresented = isPresented
                 if !isPresented {
-                    state.placePendingDeletion = nil
+                    state.places.placePendingDeletion = nil
                 }
                 return .none
 
             case let .setDeleteTagConfirmation(isPresented):
-                state.isDeleteTagConfirmationPresented = isPresented
+                state.tags.isDeleteTagConfirmationPresented = isPresented
                 if !isPresented {
-                    state.tagPendingDeletion = nil
+                    state.tags.tagPendingDeletion = nil
                 }
                 return .none
 
             case let .setTagRenameSheet(isPresented):
-                state.isTagRenameSheetPresented = isPresented
+                state.tags.isTagRenameSheetPresented = isPresented
                 if !isPresented {
-                    state.tagPendingRename = nil
-                    state.tagRenameDraft = ""
+                    state.tags.tagPendingRename = nil
+                    state.tags.tagRenameDraft = ""
                 }
                 return .none
 
             case let .placesLoaded(places):
-                state.savedPlaces = places
-                if let pendingPlace = state.placePendingDeletion,
+                state.places.savedPlaces = places
+                if let pendingPlace = state.places.placePendingDeletion,
                    let updatedPlace = places.first(where: { $0.id == pendingPlace.id }) {
-                    state.placePendingDeletion = updatedPlace
+                    state.places.placePendingDeletion = updatedPlace
                 }
                 return .none
 
             case let .tagsLoaded(tags):
-                state.savedTags = tags
-                if let pendingTag = state.tagPendingDeletion,
+                state.tags.savedTags = tags
+                if let pendingTag = state.tags.tagPendingDeletion,
                    let updatedTag = self.tagSummary(named: pendingTag.name, in: tags) {
-                    state.tagPendingDeletion = updatedTag
+                    state.tags.tagPendingDeletion = updatedTag
                 }
-                if let pendingTag = state.tagPendingRename,
+                if let pendingTag = state.tags.tagPendingRename,
                    let updatedTag = self.tagSummary(named: pendingTag.name, in: tags) {
-                    state.tagPendingRename = updatedTag
+                    state.tags.tagPendingRename = updatedTag
                 }
                 return .none
 
             case let .locationSnapshotUpdated(snapshot):
-                state.locationAuthorizationStatus = snapshot.authorizationStatus
+                state.places.locationAuthorizationStatus = snapshot.authorizationStatus
                 if let coordinate = snapshot.coordinate {
-                    state.lastKnownLocationCoordinate = coordinate
+                    state.places.lastKnownLocationCoordinate = coordinate
                 }
                 return .none
 
             case let .placeDraftNameChanged(name):
-                state.placeDraftName = name
-                state.placeStatusMessage = ""
+                state.places.placeDraftName = name
+                state.places.placeStatusMessage = ""
                 return .none
 
             case let .tagRenameDraftChanged(name):
-                state.tagRenameDraft = name
-                state.tagStatusMessage = ""
+                state.tags.tagRenameDraft = name
+                state.tags.tagStatusMessage = ""
                 return .none
 
             case let .placeDraftCoordinateChanged(coordinate):
-                state.placeDraftCoordinate = coordinate
-                state.placeStatusMessage = ""
+                state.places.placeDraftCoordinate = coordinate
+                state.places.placeStatusMessage = ""
                 return .none
 
             case let .placeDraftRadiusChanged(radius):
-                state.placeDraftRadiusMeters = min(max(radius, 25), 2_000)
-                state.placeStatusMessage = ""
+                state.places.placeDraftRadiusMeters = min(max(radius, 25), 2_000)
+                state.places.placeStatusMessage = ""
                 return .none
 
             case let .renameTagTapped(tagName):
-                guard !state.isTagOperationInProgress,
-                      let tag = self.tagSummary(named: tagName, in: state.savedTags)
+                guard !state.tags.isTagOperationInProgress,
+                      let tag = self.tagSummary(named: tagName, in: state.tags.savedTags)
                 else {
                     return .none
                 }
 
-                state.tagPendingRename = tag
-                state.tagRenameDraft = tag.name
-                state.tagStatusMessage = ""
-                state.isTagRenameSheetPresented = true
+                state.tags.tagPendingRename = tag
+                state.tags.tagRenameDraft = tag.name
+                state.tags.tagStatusMessage = ""
+                state.tags.isTagRenameSheetPresented = true
                 return .none
 
             case .savePlaceTapped:
-                let cleanedName = RoutinePlace.cleanedName(state.placeDraftName)
+                let cleanedName = RoutinePlace.cleanedName(state.places.placeDraftName)
                 guard let cleanedName else {
-                    state.placeStatusMessage = "Enter a place name first."
+                    state.places.placeStatusMessage = "Enter a place name first."
                     return .none
                 }
-                guard let coordinate = state.placeDraftCoordinate else {
-                    state.placeStatusMessage = "Choose a location on the map first."
+                guard let coordinate = state.places.placeDraftCoordinate else {
+                    state.places.placeStatusMessage = "Choose a location on the map first."
                     return .none
                 }
-                guard !state.isPlaceOperationInProgress else {
+                guard !state.places.isPlaceOperationInProgress else {
                     return .none
                 }
 
-                state.isPlaceOperationInProgress = true
-                state.placeStatusMessage = ""
-                let radiusMeters = state.placeDraftRadiusMeters
+                state.places.isPlaceOperationInProgress = true
+                state.places.placeStatusMessage = ""
+                let radiusMeters = state.places.placeDraftRadiusMeters
 
                 return .run { @MainActor send in
                     do {
@@ -483,22 +438,22 @@ struct SettingsFeature {
                 }
 
             case .saveTagRenameTapped:
-                guard !state.isTagOperationInProgress else {
+                guard !state.tags.isTagOperationInProgress else {
                     return .none
                 }
-                guard let pendingTag = state.tagPendingRename else {
+                guard let pendingTag = state.tags.tagPendingRename else {
                     return .none
                 }
-                guard let cleanedName = RoutineTag.cleaned(state.tagRenameDraft) else {
-                    state.tagStatusMessage = "Enter a tag name first."
+                guard let cleanedName = RoutineTag.cleaned(state.tags.tagRenameDraft) else {
+                    state.tags.tagStatusMessage = "Enter a tag name first."
                     return .none
                 }
 
-                state.isTagRenameSheetPresented = false
-                state.tagPendingRename = nil
-                state.tagRenameDraft = ""
-                state.isTagOperationInProgress = true
-                state.tagStatusMessage = ""
+                state.tags.isTagRenameSheetPresented = false
+                state.tags.tagPendingRename = nil
+                state.tags.tagRenameDraft = ""
+                state.tags.isTagOperationInProgress = true
+                state.tags.tagStatusMessage = ""
                 let originalTagName = pendingTag.name
 
                 return .run { @MainActor send in
@@ -545,42 +500,42 @@ struct SettingsFeature {
                 }
 
             case let .deletePlaceTapped(placeID):
-                guard !state.isPlaceOperationInProgress else {
+                guard !state.places.isPlaceOperationInProgress else {
                     return .none
                 }
 
-                guard let place = state.savedPlaces.first(where: { $0.id == placeID }) else {
+                guard let place = state.places.savedPlaces.first(where: { $0.id == placeID }) else {
                     return .none
                 }
 
-                state.placePendingDeletion = place
-                state.isDeletePlaceConfirmationPresented = true
+                state.places.placePendingDeletion = place
+                state.places.isDeletePlaceConfirmationPresented = true
                 return .none
 
             case let .deleteTagTapped(tagName):
-                guard !state.isTagOperationInProgress,
-                      let tag = self.tagSummary(named: tagName, in: state.savedTags)
+                guard !state.tags.isTagOperationInProgress,
+                      let tag = self.tagSummary(named: tagName, in: state.tags.savedTags)
                 else {
                     return .none
                 }
 
-                state.tagPendingDeletion = tag
-                state.tagStatusMessage = ""
-                state.isDeleteTagConfirmationPresented = true
+                state.tags.tagPendingDeletion = tag
+                state.tags.tagStatusMessage = ""
+                state.tags.isDeleteTagConfirmationPresented = true
                 return .none
 
             case .deletePlaceConfirmed:
-                guard !state.isPlaceOperationInProgress else {
+                guard !state.places.isPlaceOperationInProgress else {
                     return .none
                 }
-                guard let pendingPlace = state.placePendingDeletion else {
+                guard let pendingPlace = state.places.placePendingDeletion else {
                     return .none
                 }
 
-                state.isDeletePlaceConfirmationPresented = false
-                state.placePendingDeletion = nil
-                state.isPlaceOperationInProgress = true
-                state.placeStatusMessage = ""
+                state.places.isDeletePlaceConfirmationPresented = false
+                state.places.placePendingDeletion = nil
+                state.places.isPlaceOperationInProgress = true
+                state.places.placeStatusMessage = ""
                 let placeID = pendingPlace.id
 
                 return .run { @MainActor send in
@@ -618,17 +573,17 @@ struct SettingsFeature {
                 }
 
             case .deleteTagConfirmed:
-                guard !state.isTagOperationInProgress else {
+                guard !state.tags.isTagOperationInProgress else {
                     return .none
                 }
-                guard let pendingTag = state.tagPendingDeletion else {
+                guard let pendingTag = state.tags.tagPendingDeletion else {
                     return .none
                 }
 
-                state.isDeleteTagConfirmationPresented = false
-                state.tagPendingDeletion = nil
-                state.isTagOperationInProgress = true
-                state.tagStatusMessage = ""
+                state.tags.isDeleteTagConfirmationPresented = false
+                state.tags.tagPendingDeletion = nil
+                state.tags.isTagOperationInProgress = true
+                state.tags.tagStatusMessage = ""
                 let tagName = pendingTag.name
 
                 return .run { @MainActor send in
@@ -671,17 +626,17 @@ struct SettingsFeature {
                 }
 
             case let .placeOperationFinished(success, message):
-                state.isPlaceOperationInProgress = false
-                state.placeStatusMessage = message
+                state.places.isPlaceOperationInProgress = false
+                state.places.placeStatusMessage = message
                 if success {
-                    state.placeDraftName = ""
-                    state.placeDraftCoordinate = nil
+                    state.places.placeDraftName = ""
+                    state.places.placeDraftCoordinate = nil
                 }
                 return .none
 
             case let .tagOperationFinished(_, message):
-                state.isTagOperationInProgress = false
-                state.tagStatusMessage = message
+                state.tags.isTagOperationInProgress = false
+                state.tags.tagStatusMessage = message
                 return .none
 
             case .exportRoutineDataTapped:
@@ -691,7 +646,7 @@ struct SettingsFeature {
                 return handleImportRoutineDataTapped(state: &state)
 
             case let .appIconSelected(option):
-                state.appIconStatusMessage = ""
+                state.appearance.appIconStatusMessage = ""
                 return .run { send in
                     let errorMessage = await self.appIconClient.requestChange(option)
                     await send(.appIconChangeFinished(requestedOption: option, errorMessage: errorMessage))
@@ -699,26 +654,26 @@ struct SettingsFeature {
 
             case let .appIconChangeFinished(option, errorMessage):
                 if let errorMessage {
-                    state.appIconStatusMessage = "App icon update failed: \(errorMessage)"
+                    state.appearance.appIconStatusMessage = "App icon update failed: \(errorMessage)"
                 } else {
-                    state.selectedAppIcon = option
+                    state.appearance.selectedAppIcon = option
                     AppIconOption.persist(option)
                 }
                 return .none
 
             case let .routineDataTransferFinished(_, message):
-                state.isDataTransferInProgress = false
-                state.dataTransferStatusMessage = message
+                state.dataTransfer.isDataTransferInProgress = false
+                state.dataTransfer.dataTransferStatusMessage = message
                 return .none
 
             case let .cloudSyncFinished(_, message):
-                state.isCloudSyncInProgress = false
-                state.cloudStatusMessage = message
+                state.cloud.isCloudSyncInProgress = false
+                state.cloud.cloudStatusMessage = message
                 return .none
 
             case let .cloudDataResetFinished(_, message):
-                state.isCloudDataResetInProgress = false
-                state.cloudStatusMessage = message
+                state.cloud.isCloudDataResetInProgress = false
+                state.cloud.cloudStatusMessage = message
                 return .none
             }
         }
@@ -742,12 +697,12 @@ struct SettingsFeature {
     }
 
     private func handleExportRoutineDataTapped(state: inout State) -> Effect<Action> {
-        guard !state.isDataTransferInProgress else {
+        guard !state.dataTransfer.isDataTransferInProgress else {
             return .none
         }
 
-        state.isDataTransferInProgress = true
-        state.dataTransferStatusMessage = "Saving routine data..."
+        state.dataTransfer.isDataTransferInProgress = true
+        state.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
         return .run { @MainActor send in
             do {
                 guard let destinationURL = await self.routineDataTransferClient.selectExportURL(
@@ -790,12 +745,12 @@ struct SettingsFeature {
     }
 
     private func handleImportRoutineDataTapped(state: inout State) -> Effect<Action> {
-        guard !state.isDataTransferInProgress else {
+        guard !state.dataTransfer.isDataTransferInProgress else {
             return .none
         }
 
-        state.isDataTransferInProgress = true
-        state.dataTransferStatusMessage = "Loading routine data..."
+        state.dataTransfer.isDataTransferInProgress = true
+        state.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
         return .run { @MainActor send in
             do {
                 guard let sourceURL = await self.routineDataTransferClient.selectImportURL() else {

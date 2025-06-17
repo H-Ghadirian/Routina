@@ -22,9 +22,9 @@ struct SettingsPlaceManagerPresentationView: View {
         }
         .sheet(isPresented: $isPlacePickerPresented) {
             PlaceLocationPickerSheet(
-                initialCoordinate: store.placeDraftCoordinate,
-                initialRadiusMeters: store.placeDraftRadiusMeters,
-                fallbackCoordinate: store.placeDraftCoordinate ?? store.lastKnownLocationCoordinate
+                initialCoordinate: store.places.placeDraftCoordinate,
+                initialRadiusMeters: store.places.placeDraftRadiusMeters,
+                fallbackCoordinate: store.places.placeDraftCoordinate ?? store.places.lastKnownLocationCoordinate
             ) { coordinate, radiusMeters in
                 store.send(.placeDraftCoordinateChanged(coordinate))
                 store.send(.placeDraftRadiusChanged(radiusMeters))
@@ -53,7 +53,7 @@ struct SettingsPlaceManagerPresentationView: View {
 
     private var deletePlaceConfirmationBinding: Binding<Bool> {
         Binding(
-            get: { store.isDeletePlaceConfirmationPresented },
+            get: { store.places.isDeletePlaceConfirmationPresented },
             set: { store.send(.setDeletePlaceConfirmation($0)) }
         )
     }

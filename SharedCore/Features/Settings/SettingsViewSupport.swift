@@ -159,31 +159,31 @@ struct CloudUsageEstimate: Equatable, Sendable {
     }
 }
 
-extension SettingsFeature.State {
+extension SettingsFeatureState {
     var cloudUsageTotalText: String {
-        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.totalPayloadBytes, countStyle: .file)
+        ByteCountFormatter.string(fromByteCount: cloud.cloudUsageEstimate.totalPayloadBytes, countStyle: .file)
     }
 
     var cloudUsageTaskPayloadText: String {
-        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.taskPayloadBytes, countStyle: .file)
+        ByteCountFormatter.string(fromByteCount: cloud.cloudUsageEstimate.taskPayloadBytes, countStyle: .file)
     }
 
     var cloudUsageLogPayloadText: String {
-        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.logPayloadBytes, countStyle: .file)
+        ByteCountFormatter.string(fromByteCount: cloud.cloudUsageEstimate.logPayloadBytes, countStyle: .file)
     }
 
     var cloudUsagePlacePayloadText: String {
-        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.placePayloadBytes, countStyle: .file)
+        ByteCountFormatter.string(fromByteCount: cloud.cloudUsageEstimate.placePayloadBytes, countStyle: .file)
     }
 
     var cloudUsageImagePayloadText: String {
-        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.imagePayloadBytes, countStyle: .file)
+        ByteCountFormatter.string(fromByteCount: cloud.cloudUsageEstimate.imagePayloadBytes, countStyle: .file)
     }
 
     var cloudUsageSummaryText: String {
-        switch (cloudUsageEstimate.totalRecordCount, cloudUsageEstimate.imageCount) {
+        switch (cloud.cloudUsageEstimate.totalRecordCount, cloud.cloudUsageEstimate.imageCount) {
         case (0, 0):
-            return cloudSyncAvailable
+            return cloud.cloudSyncAvailable
                 ? "No Routina data is estimated to be using iCloud yet."
                 : "No Routina data is available to estimate yet."
         case let (recordCount, 0):
@@ -197,12 +197,74 @@ extension SettingsFeature.State {
         "Estimate based on local Routina data. Actual iCloud storage can be higher because CloudKit adds its own metadata and history."
     }
 
+    var notificationsOverviewSubtitle: String {
+        if notifications.notificationsEnabled {
+            let time = notifications.notificationReminderTime.formatted(date: .omitted, time: .shortened)
+            return "Daily reminder at \(time)"
+        }
+        if notifications.systemSettingsNotificationsEnabled == false {
+            return "Disabled in System Settings"
+        }
+        return "Routine reminders are turned off"
+    }
+
+    var placesOverviewSubtitle: String {
+        switch places.savedPlaces.count {
+        case 0:
+            return "Save locations for place-based routines"
+        case 1:
+            return "1 saved place"
+        default:
+            return "\(places.savedPlaces.count) saved places"
+        }
+    }
+
+    var appearanceOverviewSubtitle: String {
+        "Icon: \(appearance.selectedAppIcon.title) • List: \(appearance.routineListSectioningMode.summaryText) • Tags: \(appearance.tagCounterDisplayMode.summaryText)"
+    }
+
+    var cloudOverviewSubtitle: String {
+        if cloud.isCloudSyncInProgress {
+            return "Syncing with iCloud"
+        }
+        if cloud.isCloudDataResetInProgress {
+            return "Deleting iCloud data"
+        }
+        if !cloud.cloudStatusMessage.isEmpty {
+            return cloud.cloudStatusMessage
+        }
+        if !cloud.cloudSyncAvailable {
+            return "Unavailable in this build"
+        }
+        return "Sync routines across devices"
+    }
+
+    var backupOverviewSubtitle: String {
+        if dataTransfer.isDataTransferInProgress {
+            return "Importing or exporting JSON"
+        }
+        if !dataTransfer.dataTransferStatusMessage.isEmpty {
+            return dataTransfer.dataTransferStatusMessage
+        }
+        return "Export or import your routine data"
+    }
+
+    var aboutOverviewSubtitle: String {
+        if diagnostics.isDebugSectionVisible {
+            return "Version \(diagnostics.appVersion) • Diagnostics unlocked"
+        }
+        if diagnostics.appVersion.isEmpty {
+            return "App details"
+        }
+        return "Version \(diagnostics.appVersion)"
+    }
+
     var hasDuplicatePlaceDraftName: Bool {
-        guard let normalizedDraftName = RoutinePlace.normalizedName(placeDraftName) else {
+        guard let normalizedDraftName = RoutinePlace.normalizedName(places.placeDraftName) else {
             return false
         }
 
-        return savedPlaces.contains { place in
+        return places.savedPlaces.contains { place in
             RoutinePlace.normalizedName(place.name) == normalizedDraftName
         }
     }
@@ -213,48 +275,48 @@ extension SettingsFeature.State {
     }
 
     var isSavePlaceDisabled: Bool {
-        isPlaceOperationInProgress || hasDuplicatePlaceDraftName
+        places.isPlaceOperationInProgress || hasDuplicatePlaceDraftName
     }
 
     var syncStatusText: String {
-        if isCloudDataResetInProgress {
+        if cloud.isCloudDataResetInProgress {
             return "Deleting iCloud data..."
         }
-        if isCloudSyncInProgress {
+        if cloud.isCloudSyncInProgress {
             return "Syncing..."
         }
-        if !cloudStatusMessage.isEmpty {
-            return cloudStatusMessage
+        if !cloud.cloudStatusMessage.isEmpty {
+            return cloud.cloudStatusMessage
         }
-        if !cloudSyncAvailable {
+        if !cloud.cloudSyncAvailable {
             return "iCloud sync is disabled in this build."
         }
         return "Ready to sync."
     }
 
     var dataTransferStatusText: String {
-        if isDataTransferInProgress {
+        if dataTransfer.isDataTransferInProgress {
             return "Processing JSON file..."
         }
-        if !dataTransferStatusMessage.isEmpty {
-            return dataTransferStatusMessage
+        if !dataTransfer.dataTransferStatusMessage.isEmpty {
+            return dataTransfer.dataTransferStatusMessage
         }
         return "Export or import all routine data as JSON."
     }
 
     var tagsOverviewSubtitle: String {
-        switch savedTags.count {
+        switch tags.savedTags.count {
         case 0:
             return "Review and manage tags across routines"
         case 1:
             return "1 saved tag"
         default:
-            return "\(savedTags.count) saved tags"
+            return "\(tags.savedTags.count) saved tags"
         }
     }
 
     var deletePlaceConfirmationMessage: String {
-        guard let place = placePendingDeletion else {
+        guard let place = places.placePendingDeletion else {
             return "This will remove the place."
         }
 
@@ -269,7 +331,7 @@ extension SettingsFeature.State {
     }
 
     var deleteTagConfirmationMessage: String {
-        guard let tag = tagPendingDeletion else {
+        guard let tag = tags.tagPendingDeletion else {
             return "This will remove the tag from every routine that uses it."
         }
 
@@ -285,33 +347,33 @@ extension SettingsFeature.State {
 
     var isSaveTagRenameDisabled: Bool {
         guard
-            !isTagOperationInProgress,
-            let cleanedTagName = RoutineTag.cleaned(tagRenameDraft)
+            !tags.isTagOperationInProgress,
+            let cleanedTagName = RoutineTag.cleaned(tags.tagRenameDraft)
         else {
             return true
         }
 
-        guard let pendingTag = tagPendingRename else { return false }
+        guard let pendingTag = tags.tagPendingRename else { return false }
         return cleanedTagName == pendingTag.name
     }
 
     var placeSelectionButtonTitle: String {
-        placeDraftCoordinate == nil ? "Choose Location on Map" : "Edit Location on Map"
+        places.placeDraftCoordinate == nil ? "Choose Location on Map" : "Edit Location on Map"
     }
 
     var placeDraftSelectionSummary: String {
-        guard let coordinate = placeDraftCoordinate else {
-            if lastKnownLocationCoordinate != nil {
+        guard let coordinate = places.placeDraftCoordinate else {
+            if places.lastKnownLocationCoordinate != nil {
                 return "No location selected yet. The map will open near your current location."
             }
             return "No location selected yet. Open the map and tap where this place should be centered."
         }
 
-        return "Selected center: \(coordinate.formattedForPlaceSelection) • \(Int(placeDraftRadiusMeters)) m radius"
+        return "Selected center: \(coordinate.formattedForPlaceSelection) • \(Int(places.placeDraftRadiusMeters)) m radius"
     }
 
     var placeLocationHelpText: String {
-        switch locationAuthorizationStatus {
+        switch places.locationAuthorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             return "Choose a point on the map and adjust the radius. Routina will show place-based routines when you are inside that circle."
         case .notDetermined:
@@ -324,7 +386,7 @@ extension SettingsFeature.State {
     }
 
     var routineListSectioningSubtitle: String {
-        routineListSectioningMode.subtitle
+        appearance.routineListSectioningMode.subtitle
     }
 }
 
