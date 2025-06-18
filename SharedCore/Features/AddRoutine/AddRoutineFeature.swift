@@ -96,400 +96,360 @@ struct AddRoutineFeature: Reducer {
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .routineNameChanged(name):
-            state.routineName = name
-            updateNameValidation(&state)
+            AddRoutineValidationEditor.setRoutineName(
+                name,
+                state: &state
+            )
             return .none
 
         case let .routineEmojiChanged(emoji):
-            state.routineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.routineEmoji)
+            AddRoutineBasicsEditor.setEmoji(
+                emoji,
+                basics: &state.basics
+            )
             return .none
 
         case let .routineNotesChanged(notes):
-            state.routineNotes = notes
+            AddRoutineBasicsEditor.setNotes(
+                notes,
+                basics: &state.basics
+            )
             return .none
 
         case let .routineLinkChanged(link):
-            state.routineLink = link
+            AddRoutineBasicsEditor.setLink(
+                link,
+                basics: &state.basics
+            )
             return .none
 
         case let .deadlineEnabledChanged(isEnabled):
-            state.deadline = isEnabled ? (state.deadline ?? now) : nil
+            AddRoutineFormEditor.setDeadlineEnabled(
+                isEnabled,
+                now: now,
+                basics: &state.basics
+            )
             return .none
 
         case let .deadlineDateChanged(deadline):
-            state.deadline = deadline
+            AddRoutineBasicsEditor.setDeadlineDate(
+                deadline,
+                basics: &state.basics
+            )
             return .none
 
         case let .priorityChanged(priority):
-            state.priority = priority
+            AddRoutineBasicsEditor.setPriority(
+                priority,
+                basics: &state.basics
+            )
             return .none
 
         case let .importanceChanged(importance):
-            state.importance = importance
-            state.priority = matrixPriority(
-                importance: importance,
-                urgency: state.urgency
+            AddRoutineBasicsEditor.setImportance(
+                importance,
+                basics: &state.basics
             )
             return .none
 
         case let .urgencyChanged(urgency):
-            state.urgency = urgency
-            state.priority = matrixPriority(
-                importance: state.importance,
-                urgency: urgency
+            AddRoutineBasicsEditor.setUrgency(
+                urgency,
+                basics: &state.basics
             )
             return .none
 
         case let .imagePicked(data):
-            state.imageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
+            AddRoutineBasicsEditor.setImage(
+                data,
+                basics: &state.basics
+            )
             return .none
 
         case .removeImageTapped:
-            state.imageData = nil
+            AddRoutineBasicsEditor.removeImage(
+                basics: &state.basics
+            )
             return .none
 
         case let .attachmentPicked(data, fileName):
-            state.attachments.append(AttachmentItem(fileName: fileName, data: data))
+            AddRoutineBasicsEditor.addAttachment(
+                data: data,
+                fileName: fileName,
+                basics: &state.basics
+            )
             return .none
 
         case let .removeAttachment(id):
-            state.attachments.removeAll { $0.id == id }
+            AddRoutineBasicsEditor.removeAttachment(
+                id,
+                basics: &state.basics
+            )
             return .none
 
         case let .taskTypeChanged(taskType):
-            switch taskType {
-            case .routine:
-                if state.scheduleMode == .oneOff {
-                    state.scheduleMode = .fixedInterval
-                }
-                state.deadline = nil
-            case .todo:
-                state.scheduleMode = .oneOff
-            }
+            var basics = state.basics
+            var schedule = state.schedule
+            AddRoutineFormEditor.setTaskType(
+                taskType,
+                basics: &basics,
+                schedule: &schedule
+            )
+            state.basics = basics
+            state.schedule = schedule
             return .none
 
         case let .availableTagsChanged(tags):
-            state.availableTags = RoutineTag.allTags(from: [tags])
-            state.availableTagSummaries = state.availableTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) }
+            AddRoutineOrganizationEditor.setAvailableTags(
+                tags,
+                organization: &state.organization
+            )
             return .none
 
         case let .availableTagSummariesChanged(summaries):
-            state.availableTagSummaries = sortTagSummaries(summaries)
-            state.availableTags = state.availableTagSummaries.map(\.name)
+            AddRoutineOrganizationEditor.setAvailableTagSummaries(
+                summaries,
+                organization: &state.organization
+            )
             return .none
 
         case let .availableRelationshipTasksChanged(tasks):
-            state.availableRelationshipTasks = tasks
-            state.relationships = RoutineTaskRelationship.sanitized(
-                state.relationships.filter { relationship in
-                    tasks.contains(where: { $0.id == relationship.targetTaskID })
-                }
+            AddRoutineOrganizationEditor.setAvailableRelationshipTasks(
+                tasks,
+                organization: &state.organization
             )
             return .none
 
         case let .tagDraftChanged(value):
-            state.tagDraft = value
+            state.organization.tagDraft = value
             return .none
 
         case .addTagTapped:
-            state.routineTags = RoutineTag.appending(state.tagDraft, to: state.routineTags)
-            state.tagDraft = ""
+            AddRoutineOrganizationEditor.commitDraftTag(
+                organization: &state.organization
+            )
             return .none
 
         case let .removeTag(tag):
-            state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
+            AddRoutineOrganizationEditor.removeTag(
+                tag,
+                organization: &state.organization
+            )
             return .none
 
         case let .toggleTagSelection(tag):
-            if RoutineTag.contains(tag, in: state.routineTags) {
-                state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
-            } else {
-                state.routineTags = RoutineTag.appending(tag, to: state.routineTags)
-            }
+            AddRoutineOrganizationEditor.toggleTagSelection(
+                tag,
+                organization: &state.organization
+            )
             return .none
 
         case let .addRelationship(taskID, kind):
-            state.relationships = RoutineTaskRelationship.sanitized(
-                state.relationships + [RoutineTaskRelationship(targetTaskID: taskID, kind: kind)]
+            AddRoutineOrganizationEditor.addRelationship(
+                targetTaskID: taskID,
+                kind: kind,
+                organization: &state.organization
             )
             return .none
 
         case let .removeRelationship(taskID):
-            state.relationships.removeAll { $0.targetTaskID == taskID }
+            AddRoutineOrganizationEditor.removeRelationship(
+                targetTaskID: taskID,
+                organization: &state.organization
+            )
             return .none
 
         case let .tagRenamed(oldName, newName):
-            state.availableTags = RoutineTag.replacing(oldName, with: newName, in: state.availableTags)
-            if let index = state.availableTagSummaries.firstIndex(where: {
-                RoutineTag.normalized($0.name) == RoutineTag.normalized(oldName)
-            }) {
-                state.availableTagSummaries[index].name = RoutineTag.cleaned(newName) ?? newName
-                state.availableTagSummaries = sortTagSummaries(state.availableTagSummaries)
-            }
-            if RoutineTag.contains(oldName, in: state.routineTags) {
-                state.routineTags = RoutineTag.replacing(oldName, with: newName, in: state.routineTags)
-            }
+            AddRoutineOrganizationEditor.renameTag(
+                oldName: oldName,
+                newName: newName,
+                organization: &state.organization
+            )
             return .none
 
         case let .tagDeleted(tag):
-            state.availableTags = RoutineTag.removing(tag, from: state.availableTags)
-            state.availableTagSummaries.removeAll {
-                RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
-            }
-            state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
+            AddRoutineOrganizationEditor.deleteTag(
+                tag,
+                organization: &state.organization
+            )
             return .none
 
         case let .scheduleModeChanged(mode):
-            state.scheduleMode = mode
+            AddRoutineScheduleEditor.setScheduleMode(
+                mode,
+                schedule: &state.schedule
+            )
             return .none
 
         case let .stepDraftChanged(value):
-            state.stepDraft = value
+            AddRoutineChecklistEditor.setStepDraft(
+                value,
+                checklist: &state.checklist
+            )
             return .none
 
         case .addStepTapped:
-            state.routineSteps = appendStep(from: state.stepDraft, to: state.routineSteps)
-            state.stepDraft = ""
+            AddRoutineChecklistEditor.addStep(
+                checklist: &state.checklist
+            )
             return .none
 
         case let .removeStep(stepID):
-            state.routineSteps.removeAll { $0.id == stepID }
+            AddRoutineChecklistEditor.removeStep(
+                stepID,
+                checklist: &state.checklist
+            )
             return .none
 
         case let .moveStepUp(stepID):
-            moveStep(stepID, by: -1, state: &state)
+            AddRoutineChecklistEditor.moveStep(
+                stepID,
+                by: -1,
+                checklist: &state.checklist
+            )
             return .none
 
         case let .moveStepDown(stepID):
-            moveStep(stepID, by: 1, state: &state)
+            AddRoutineChecklistEditor.moveStep(
+                stepID,
+                by: 1,
+                checklist: &state.checklist
+            )
             return .none
 
         case let .checklistItemDraftTitleChanged(value):
-            state.checklistItemDraftTitle = value
+            AddRoutineChecklistEditor.setChecklistItemDraftTitle(
+                value,
+                checklist: &state.checklist
+            )
             return .none
 
         case let .checklistItemDraftIntervalChanged(value):
-            state.checklistItemDraftInterval = RoutineChecklistItem.clampedIntervalDays(value)
+            AddRoutineChecklistEditor.setChecklistItemDraftInterval(
+                value,
+                checklist: &state.checklist
+            )
             return .none
 
         case .addChecklistItemTapped:
-            state.routineChecklistItems = appendChecklistItem(
-                from: state.checklistItemDraftTitle,
-                intervalDays: state.checklistItemDraftInterval,
+            AddRoutineChecklistEditor.addChecklistItem(
                 createdAt: now,
-                to: state.routineChecklistItems
+                checklist: &state.checklist
             )
-            state.checklistItemDraftTitle = ""
-            state.checklistItemDraftInterval = 3
             return .none
 
         case let .removeChecklistItem(itemID):
-            state.routineChecklistItems.removeAll { $0.id == itemID }
+            AddRoutineChecklistEditor.removeChecklistItem(
+                itemID,
+                checklist: &state.checklist
+            )
             return .none
 
         case let .frequencyChanged(freq):
-            state.frequency = freq
+            AddRoutineScheduleEditor.setFrequency(
+                freq,
+                schedule: &state.schedule
+            )
             return .none
 
         case let .frequencyValueChanged(value):
-            state.frequencyValue = value
+            AddRoutineScheduleEditor.setFrequencyValue(
+                value,
+                schedule: &state.schedule
+            )
             return .none
 
         case let .recurrenceKindChanged(kind):
-            state.recurrenceKind = kind
+            AddRoutineScheduleEditor.setRecurrenceKind(
+                kind,
+                schedule: &state.schedule
+            )
             return .none
 
         case let .recurrenceTimeOfDayChanged(timeOfDay):
-            state.recurrenceTimeOfDay = timeOfDay
+            AddRoutineScheduleEditor.setRecurrenceTimeOfDay(
+                timeOfDay,
+                schedule: &state.schedule
+            )
             return .none
 
         case let .recurrenceWeekdayChanged(weekday):
-            state.recurrenceWeekday = min(max(weekday, 1), 7)
+            AddRoutineScheduleEditor.setRecurrenceWeekday(
+                weekday,
+                schedule: &state.schedule
+            )
             return .none
 
         case let .recurrenceDayOfMonthChanged(dayOfMonth):
-            state.recurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+            AddRoutineScheduleEditor.setRecurrenceDayOfMonth(
+                dayOfMonth,
+                schedule: &state.schedule
+            )
             return .none
 
         case let .existingRoutineNamesChanged(names):
-            state.existingRoutineNames = names
-            updateNameValidation(&state)
+            AddRoutineValidationEditor.setExistingRoutineNames(
+                names,
+                state: &state
+            )
             return .none
 
         case let .availablePlacesChanged(places):
-            state.availablePlaces = places
-            if let selectedPlaceID = state.selectedPlaceID,
-               !places.contains(where: { $0.id == selectedPlaceID }) {
-                state.selectedPlaceID = nil
-            }
+            var basics = state.basics
+            var organization = state.organization
+            AddRoutineFormEditor.setAvailablePlaces(
+                places,
+                basics: &basics,
+                organization: &organization
+            )
+            state.basics = basics
+            state.organization = organization
             return .none
 
         case let .selectedPlaceChanged(placeID):
-            state.selectedPlaceID = placeID
+            AddRoutineFormEditor.setSelectedPlace(
+                placeID,
+                basics: &state.basics
+            )
             return .none
 
         case let .routineColorChanged(color):
-            state.routineColor = color
+            AddRoutineBasicsEditor.setColor(
+                color,
+                basics: &state.basics
+            )
             return .none
 
         case .saveTapped:
-            state.routineTags = RoutineTag.appending(state.tagDraft, to: state.routineTags)
-            state.tagDraft = ""
-            state.routineSteps = appendStep(from: state.stepDraft, to: state.routineSteps)
-            state.stepDraft = ""
-            state.routineChecklistItems = appendChecklistItem(
-                from: state.checklistItemDraftTitle,
-                intervalDays: state.checklistItemDraftInterval,
-                createdAt: now,
-                to: state.routineChecklistItems
-            )
-            state.checklistItemDraftTitle = ""
-            state.checklistItemDraftInterval = 3
-            updateNameValidation(&state)
-            guard !state.isSaveDisabled else { return .none }
-            let frequencyInDays = state.scheduleMode == .oneOff
-                ? 1
-                : state.frequencyValue * state.frequency.daysMultiplier
-            let recurrenceRule = selectedRecurrenceRule(
-                for: state,
-                fallbackInterval: frequencyInDays
-            )
+            AddRoutineDraftFinalizer(now: now).apply(to: &state)
+            AddRoutineValidationEditor.refreshNameValidation(state: &state)
+            guard let request = AddRoutineSaveRequest(state: state) else { return .none }
             return onSave(
-                state.trimmedRoutineName,
-                frequencyInDays,
-                recurrenceRule,
-                state.routineEmoji,
-                RoutineTask.sanitizedNotes(state.routineNotes),
-                RoutineTask.sanitizedLink(state.routineLink),
-                state.taskType == .todo ? state.deadline : nil,
-                matrixPriority(
-                    importance: state.importance,
-                    urgency: state.urgency
-                ),
-                state.importance,
-                state.urgency,
-                state.imageData,
-                state.selectedPlaceID,
-                state.routineTags,
-                state.relationships,
-                (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)
-                    ? RoutineStep.sanitized(state.routineSteps)
-                    : [],
-                state.scheduleMode,
-                (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)
-                    ? []
-                    : RoutineChecklistItem.sanitized(state.routineChecklistItems),
-                state.attachments,
-                state.routineColor
+                request.name,
+                request.frequencyInDays,
+                request.recurrenceRule,
+                request.emoji,
+                request.notes,
+                request.link,
+                request.deadline,
+                request.priority,
+                request.importance,
+                request.urgency,
+                request.imageData,
+                request.selectedPlaceID,
+                request.tags,
+                request.relationships,
+                request.steps,
+                request.scheduleMode,
+                request.checklistItems,
+                request.attachments,
+                request.color
             )
 
         case .cancelTapped:
             return onCancel()
         case .delegate(_):
             return .none
-        }
-    }
-
-    private func updateNameValidation(_ state: inout State) {
-        guard let normalizedName = RoutineTask.normalizedName(state.routineName) else {
-            state.nameValidationMessage = nil
-            return
-        }
-
-        let hasDuplicate = state.existingRoutineNames.contains { existingName in
-            RoutineTask.normalizedName(existingName) == normalizedName
-        }
-
-        state.nameValidationMessage = hasDuplicate
-            ? "A task with this name already exists."
-            : nil
-    }
-
-    private func matrixPriority(
-        importance: RoutineTaskImportance,
-        urgency: RoutineTaskUrgency
-    ) -> RoutineTaskPriority {
-        let score = importance.sortOrder + urgency.sortOrder
-        switch score {
-        case ..<4:
-            return .low
-        case 4...5:
-            return .medium
-        case 6...7:
-            return .high
-        default:
-            return .urgent
-        }
-    }
-
-    private func sortTagSummaries(_ summaries: [RoutineTagSummary]) -> [RoutineTagSummary] {
-        summaries.sorted { lhs, rhs in
-            let lhsTotal = lhs.linkedRoutineCount + lhs.doneCount
-            let rhsTotal = rhs.linkedRoutineCount + rhs.doneCount
-
-            if lhsTotal != rhsTotal {
-                return lhsTotal > rhsTotal
-            }
-            if lhs.doneCount != rhs.doneCount {
-                return lhs.doneCount > rhs.doneCount
-            }
-            if lhs.linkedRoutineCount != rhs.linkedRoutineCount {
-                return lhs.linkedRoutineCount > rhs.linkedRoutineCount
-            }
-            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-        }
-    }
-
-    private func appendStep(from draft: String, to currentSteps: [RoutineStep]) -> [RoutineStep] {
-        guard let title = RoutineStep.normalizedTitle(draft) else { return currentSteps }
-        return currentSteps + [RoutineStep(title: title)]
-    }
-
-    private func appendChecklistItem(
-        from draftTitle: String,
-        intervalDays: Int,
-        createdAt: Date,
-        to currentItems: [RoutineChecklistItem]
-    ) -> [RoutineChecklistItem] {
-        guard let title = RoutineChecklistItem.normalizedTitle(draftTitle) else { return currentItems }
-        return currentItems + [
-            RoutineChecklistItem(
-                title: title,
-                intervalDays: intervalDays,
-                createdAt: createdAt
-            )
-        ]
-    }
-
-    private func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {
-        guard let index = state.routineSteps.firstIndex(where: { $0.id == stepID }) else { return }
-        let targetIndex = index + offset
-        guard state.routineSteps.indices.contains(targetIndex) else { return }
-        let step = state.routineSteps.remove(at: index)
-        state.routineSteps.insert(step, at: targetIndex)
-    }
-
-    private func selectedRecurrenceRule(
-        for state: State,
-        fallbackInterval: Int
-    ) -> RoutineRecurrenceRule {
-        guard state.scheduleMode != .oneOff else {
-            return .interval(days: 1)
-        }
-
-        guard state.scheduleMode != .derivedFromChecklist else {
-            return .interval(days: max(fallbackInterval, 1))
-        }
-
-        switch state.recurrenceKind {
-        case .intervalDays:
-            return .interval(days: max(fallbackInterval, 1))
-        case .dailyTime:
-            return .daily(at: state.recurrenceTimeOfDay)
-        case .weekly:
-            return .weekly(on: state.recurrenceWeekday)
-        case .monthlyDay:
-            return .monthly(on: state.recurrenceDayOfMonth)
         }
     }
 }

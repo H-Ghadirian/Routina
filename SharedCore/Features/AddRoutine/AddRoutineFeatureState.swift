@@ -55,6 +55,18 @@ struct AddRoutineFeatureState: Equatable {
     var checklist = AddRoutineChecklistState()
 
     init(
+        basics: AddRoutineBasicsState = AddRoutineBasicsState(),
+        organization: AddRoutineOrganizationState,
+        schedule: AddRoutineScheduleState = AddRoutineScheduleState(),
+        checklist: AddRoutineChecklistState = AddRoutineChecklistState()
+    ) {
+        self.basics = basics
+        self.organization = organization
+        self.schedule = schedule
+        self.checklist = checklist
+    }
+
+    init(
         routineName: String = "",
         routineEmoji: String = "✨",
         routineNotes: String = "",
@@ -305,33 +317,33 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     var taskType: RoutineTaskType {
-        scheduleMode.taskType
+        schedule.scheduleMode.taskType
     }
 
     var hasDeadline: Bool {
-        deadline != nil
+        basics.deadline != nil
     }
 
     var trimmedRoutineName: String {
-        RoutineTask.trimmedName(routineName) ?? ""
+        RoutineTask.trimmedName(basics.routineName) ?? ""
     }
 
     var candidateChecklistItems: [RoutineChecklistItem] {
-        if let pendingItem = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle).map({
-            RoutineChecklistItem(title: $0, intervalDays: checklistItemDraftInterval)
+        if let pendingItem = RoutineChecklistItem.normalizedTitle(checklist.checklistItemDraftTitle).map({
+            RoutineChecklistItem(title: $0, intervalDays: checklist.checklistItemDraftInterval)
         }) {
-            return routineChecklistItems + [pendingItem]
+            return checklist.routineChecklistItems + [pendingItem]
         }
-        return routineChecklistItems
+        return checklist.routineChecklistItems
     }
 
     var isSaveDisabled: Bool {
         trimmedRoutineName.isEmpty
-            || nameValidationMessage != nil
+            || organization.nameValidationMessage != nil
             || (requiresChecklistItems && candidateChecklistItems.isEmpty)
     }
 
     var requiresChecklistItems: Bool {
-        scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
+        schedule.scheduleMode == .fixedIntervalChecklist || schedule.scheduleMode == .derivedFromChecklist
     }
 }

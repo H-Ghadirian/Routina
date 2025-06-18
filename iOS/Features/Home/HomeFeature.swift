@@ -304,15 +304,17 @@ struct HomeFeature {
                 if isPresented {
                     state.isMacFilterDetailPresented = false
                     state.addRoutineState = AddRoutineFeature.State(
-                        availableTags: availableTags(from: state.routineTasks),
-                        availableTagSummaries: RoutineTag.summaries(
-                            from: state.routineTasks,
-                            countsByTaskID: state.doneStats.countsByTaskID
-                        ),
-                        tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
-                        availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks),
-                        existingRoutineNames: existingRoutineNames(from: state.routineTasks),
-                        availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
+                        organization: AddRoutineOrganizationState(
+                            availableTags: availableTags(from: state.routineTasks),
+                            availableTagSummaries: RoutineTag.summaries(
+                                from: state.routineTasks,
+                                countsByTaskID: state.doneStats.countsByTaskID
+                            ),
+                            tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
+                            availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks),
+                            existingRoutineNames: existingRoutineNames(from: state.routineTasks),
+                            availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
+                        )
                     )
                 } else {
                     state.addRoutineState = nil
@@ -808,16 +810,18 @@ struct HomeFeature {
                 state.isAddRoutineSheetPresented = true
                 state.isMacFilterDetailPresented = false
                 state.addRoutineState = AddRoutineFeature.State(
-                    relationships: [RoutineTaskRelationship(targetTaskID: currentTaskID, kind: kind.inverse)],
-                    availableTags: availableTags(from: state.routineTasks),
-                    availableTagSummaries: RoutineTag.summaries(
-                        from: state.routineTasks,
-                        countsByTaskID: state.doneStats.countsByTaskID
-                    ),
-                    tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
-                    availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks, excluding: currentTaskID),
-                    existingRoutineNames: existingRoutineNames(from: state.routineTasks),
-                    availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
+                    organization: AddRoutineOrganizationState(
+                        relationships: [RoutineTaskRelationship(targetTaskID: currentTaskID, kind: kind.inverse)],
+                        availableTags: availableTags(from: state.routineTasks),
+                        availableTagSummaries: RoutineTag.summaries(
+                            from: state.routineTasks,
+                            countsByTaskID: state.doneStats.countsByTaskID
+                        ),
+                        tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
+                        availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(state.routineTasks, excluding: currentTaskID),
+                        existingRoutineNames: existingRoutineNames(from: state.routineTasks),
+                        availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
+                    )
                 )
                 return .none
 

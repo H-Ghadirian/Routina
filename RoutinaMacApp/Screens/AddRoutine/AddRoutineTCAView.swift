@@ -76,28 +76,28 @@ struct AddRoutineTCAView: View {
 
     var routineNameBinding: Binding<String> {
         Binding(
-            get: { store.routineName },
+            get: { store.basics.routineName },
             set: { store.send(.routineNameChanged($0)) }
         )
     }
 
     var routineEmojiBinding: Binding<String> {
         Binding(
-            get: { store.routineEmoji },
+            get: { store.basics.routineEmoji },
             set: { store.send(.routineEmojiChanged($0)) }
         )
     }
 
     var routineNotesBinding: Binding<String> {
         Binding(
-            get: { store.routineNotes },
+            get: { store.basics.routineNotes },
             set: { store.send(.routineNotesChanged($0)) }
         )
     }
 
     var routineLinkBinding: Binding<String> {
         Binding(
-            get: { store.routineLink },
+            get: { store.basics.routineLink },
             set: { store.send(.routineLinkChanged($0)) }
         )
     }
@@ -111,84 +111,84 @@ struct AddRoutineTCAView: View {
 
     var tagDraftBinding: Binding<String> {
         Binding(
-            get: { store.tagDraft },
+            get: { store.organization.tagDraft },
             set: { store.send(.tagDraftChanged($0)) }
         )
     }
 
     var stepDraftBinding: Binding<String> {
         Binding(
-            get: { store.stepDraft },
+            get: { store.checklist.stepDraft },
             set: { store.send(.stepDraftChanged($0)) }
         )
     }
 
     var checklistItemDraftTitleBinding: Binding<String> {
         Binding(
-            get: { store.checklistItemDraftTitle },
+            get: { store.checklist.checklistItemDraftTitle },
             set: { store.send(.checklistItemDraftTitleChanged($0)) }
         )
     }
 
     var checklistItemDraftIntervalBinding: Binding<Int> {
         Binding(
-            get: { store.checklistItemDraftInterval },
+            get: { store.checklist.checklistItemDraftInterval },
             set: { store.send(.checklistItemDraftIntervalChanged($0)) }
         )
     }
 
     var scheduleModeBinding: Binding<RoutineScheduleMode> {
         Binding(
-            get: { store.scheduleMode },
+            get: { store.schedule.scheduleMode },
             set: { store.send(.scheduleModeChanged($0)) }
         )
     }
 
     var frequencyBinding: Binding<AddRoutineFeature.Frequency> {
         Binding(
-            get: { store.frequency },
+            get: { store.schedule.frequency },
             set: { store.send(.frequencyChanged($0)) }
         )
     }
 
     var frequencyValueBinding: Binding<Int> {
         Binding(
-            get: { store.frequencyValue },
+            get: { store.schedule.frequencyValue },
             set: { store.send(.frequencyValueChanged($0)) }
         )
     }
 
     var recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind> {
         Binding(
-            get: { store.recurrenceKind },
+            get: { store.schedule.recurrenceKind },
             set: { store.send(.recurrenceKindChanged($0)) }
         )
     }
 
     var recurrenceTimeBinding: Binding<Date> {
         Binding(
-            get: { store.recurrenceTimeOfDay.date(on: Date()) },
+            get: { store.schedule.recurrenceTimeOfDay.date(on: Date()) },
             set: { store.send(.recurrenceTimeOfDayChanged(RoutineTimeOfDay.from($0))) }
         )
     }
 
     var recurrenceWeekdayBinding: Binding<Int> {
         Binding(
-            get: { store.recurrenceWeekday },
+            get: { store.schedule.recurrenceWeekday },
             set: { store.send(.recurrenceWeekdayChanged($0)) }
         )
     }
 
     var recurrenceDayOfMonthBinding: Binding<Int> {
         Binding(
-            get: { store.recurrenceDayOfMonth },
+            get: { store.schedule.recurrenceDayOfMonth },
             set: { store.send(.recurrenceDayOfMonthChanged($0)) }
         )
     }
 
     var selectedPlaceBinding: Binding<UUID?> {
         Binding(
-            get: { store.selectedPlaceID },
+            get: { store.basics.selectedPlaceID },
             set: { store.send(.selectedPlaceChanged($0)) }
         )
     }
@@ -202,21 +202,21 @@ struct AddRoutineTCAView: View {
 
     var deadlineBinding: Binding<Date> {
         Binding(
-            get: { store.deadline ?? Date() },
+            get: { store.basics.deadline ?? Date() },
             set: { store.send(.deadlineDateChanged($0)) }
         )
     }
 
     var importanceBinding: Binding<RoutineTaskImportance> {
         Binding(
-            get: { store.importance },
+            get: { store.basics.importance },
             set: { store.send(.importanceChanged($0)) }
         )
     }
 
     var urgencyBinding: Binding<RoutineTaskUrgency> {
         Binding(
-            get: { store.urgency },
+            get: { store.basics.urgency },
             set: { store.send(.urgencyChanged($0)) }
         )
     }
@@ -226,27 +226,27 @@ struct AddRoutineTCAView: View {
     }
 
     var nameValidationMessage: String? {
-        store.nameValidationMessage
+        store.organization.nameValidationMessage
     }
 
     private var isAddTagDisabled: Bool {
-        RoutineTag.parseDraft(store.tagDraft).isEmpty
+        RoutineTag.parseDraft(store.organization.tagDraft).isEmpty
     }
 
     private var isAddStepDisabled: Bool {
-        RoutineStep.normalizedTitle(store.stepDraft) == nil
+        RoutineStep.normalizedTitle(store.checklist.stepDraft) == nil
     }
 
     private var isAddChecklistItemDisabled: Bool {
-        RoutineChecklistItem.normalizedTitle(store.checklistItemDraftTitle) == nil
+        RoutineChecklistItem.normalizedTitle(store.checklist.checklistItemDraftTitle) == nil
     }
 
     var isStepBasedMode: Bool {
-        store.scheduleMode == .fixedInterval || store.scheduleMode == .oneOff
+        store.schedule.scheduleMode == .fixedInterval || store.schedule.scheduleMode == .oneOff
     }
 
     var showsRepeatControls: Bool {
-        store.scheduleMode != .derivedFromChecklist && store.scheduleMode != .oneOff
+        store.schedule.scheduleMode != .derivedFromChecklist && store.schedule.scheduleMode != .oneOff
     }
 
     var taskTypeDescription: String {
@@ -259,7 +259,7 @@ struct AddRoutineTCAView: View {
     }
 
     var scheduleModeDescription: String {
-        switch store.scheduleMode {
+        switch store.schedule.scheduleMode {
         case .fixedInterval:
             return "Use one overall repeat interval for the whole routine."
         case .fixedIntervalChecklist:
@@ -272,7 +272,7 @@ struct AddRoutineTCAView: View {
     }
 
     var checklistSectionDescription: String {
-        switch store.scheduleMode {
+        switch store.schedule.scheduleMode {
         case .fixedIntervalChecklist:
             return "The routine is done when every checklist item is completed."
         case .derivedFromChecklist:
@@ -283,26 +283,26 @@ struct AddRoutineTCAView: View {
     }
 
     var placeSelectionDescription: String {
-        if let selectedPlaceID = store.selectedPlaceID,
-           let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
+        if let selectedPlaceID = store.basics.selectedPlaceID,
+           let place = store.organization.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
             return "Show this task when you are at \(place.name)."
         }
         return "Anywhere means the task is always visible."
     }
 
     var importanceUrgencyDescription: String {
-        "\(store.importance.title) importance and \(store.urgency.title.lowercased()) urgency map to \(store.priority.title.lowercased()) priority for sorting."
+        "\(store.basics.importance.title) importance and \(store.basics.urgency.title.lowercased()) urgency map to \(store.basics.priority.title.lowercased()) priority for sorting."
     }
 
     var stepsSectionDescription: String {
-        if store.scheduleMode == .oneOff {
+        if store.schedule.scheduleMode == .oneOff {
             return "Steps run in order. Leave this empty for a single-step todo."
         }
         return "Steps run in order. Leave this empty for a one-step routine."
     }
 
     var tagSectionHelpText: String {
-        if store.availableTags.isEmpty {
+        if store.organization.availableTags.isEmpty {
             return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
         }
         return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
@@ -361,9 +361,9 @@ struct AddRoutineTCAView: View {
                     store.send(.addChecklistItemTapped)
                 }
 
-            if store.scheduleMode == .derivedFromChecklist {
+            if store.schedule.scheduleMode == .derivedFromChecklist {
                 Stepper(value: checklistItemDraftIntervalBinding, in: 1...365) {
-                    Text(checklistIntervalLabel(for: store.checklistItemDraftInterval))
+                    Text(checklistIntervalLabel(for: store.checklist.checklistItemDraftInterval))
                 }
             }
 
@@ -376,10 +376,10 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var imageAttachmentContent: some View {
-        let imagePickerLabel = store.imageData == nil ? "Choose Image" : "Replace Image"
+        let imagePickerLabel = store.basics.imageData == nil ? "Choose Image" : "Replace Image"
 
         VStack(alignment: .leading, spacing: 10) {
-            if let imageData = store.imageData {
+            if let imageData = store.basics.imageData {
                 TaskImageView(data: imageData)
                     .frame(height: 180)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -401,7 +401,7 @@ struct AddRoutineTCAView: View {
 
                 platformImageImportButton
 
-                if store.imageData != nil {
+                if store.basics.imageData != nil {
                     Button("Remove") {
                         selectedPhotoItem = nil
                         store.send(.removeImageTapped)
@@ -427,15 +427,15 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var availableTagSuggestionsContent: some View {
-        if !store.availableTags.isEmpty {
+        if !store.organization.availableTags.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Choose from existing tags")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
-                    ForEach(store.availableTags, id: \.self) { tag in
-                        let isSelected = RoutineTag.contains(tag, in: store.routineTags)
+                    ForEach(store.organization.availableTags, id: \.self) { tag in
+                        let isSelected = RoutineTag.contains(tag, in: store.organization.routineTags)
                         Button {
                             store.send(.toggleTagSelection(tag))
                         } label: {
@@ -464,13 +464,13 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var editableTagsContent: some View {
-        if store.routineTags.isEmpty {
-            Text(store.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
+        if store.organization.routineTags.isEmpty {
+            Text(store.organization.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
-                ForEach(store.routineTags, id: \.self) { tag in
+                ForEach(store.organization.routineTags, id: \.self) { tag in
                     Button {
                         store.send(.removeTag(tag))
                     } label: {
@@ -494,13 +494,13 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var editableStepsContent: some View {
-        if store.routineSteps.isEmpty {
+        if store.checklist.routineSteps.isEmpty {
             Label("No steps yet", systemImage: "list.bullet")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
             VStack(spacing: 8) {
-                ForEach(Array(store.routineSteps.enumerated()), id: \.element.id) { index, step in
+                ForEach(Array(store.checklist.routineSteps.enumerated()), id: \.element.id) { index, step in
                     HStack(spacing: 10) {
                         Text("\(index + 1).")
                             .font(.caption.weight(.semibold))
@@ -525,7 +525,7 @@ struct AddRoutineTCAView: View {
                                 Image(systemName: "arrow.down")
                             }
                             .buttonStyle(.borderless)
-                            .disabled(index == store.routineSteps.count - 1)
+                            .disabled(index == store.checklist.routineSteps.count - 1)
 
                             Button(role: .destructive) {
                                 store.send(.removeStep(step.id))
@@ -548,18 +548,18 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var editableChecklistItemsContent: some View {
-        if store.routineChecklistItems.isEmpty {
+        if store.checklist.routineChecklistItems.isEmpty {
             Label("No checklist items yet", systemImage: "checklist")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
             VStack(spacing: 8) {
-                ForEach(store.routineChecklistItems) { item in
+                ForEach(store.checklist.routineChecklistItems) { item in
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.title)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            if store.scheduleMode == .derivedFromChecklist {
+                            if store.schedule.scheduleMode == .derivedFromChecklist {
                                 Text(checklistIntervalLabel(for: item.intervalDays))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -625,7 +625,7 @@ struct AddRoutineTCAView: View {
                 .foregroundStyle(.secondary)
         }
 
-        switch store.recurrenceKind {
+        switch store.schedule.recurrenceKind {
         case .intervalDays:
             Section(header: Text("Frequency")) {
                 Picker("Frequency", selection: frequencyBinding) {
@@ -640,8 +640,8 @@ struct AddRoutineTCAView: View {
                 Stepper(value: frequencyValueBinding, in: 1...365) {
                     Text(
                         stepperLabel(
-                            frequency: store.frequency,
-                            frequencyValue: store.frequencyValue
+                            frequency: store.schedule.frequency,
+                            frequencyValue: store.schedule.frequencyValue
                         )
                     )
                 }
@@ -655,7 +655,7 @@ struct AddRoutineTCAView: View {
                     displayedComponents: .hourAndMinute
                 )
 
-                Text("Due every day at \(store.recurrenceTimeOfDay.formatted()).")
+                Text("Due every day at \(store.schedule.recurrenceTimeOfDay.formatted()).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -668,7 +668,7 @@ struct AddRoutineTCAView: View {
                     }
                 }
 
-                Text("Due every \(weekdayName(for: store.recurrenceWeekday)).")
+                Text("Due every \(weekdayName(for: store.schedule.recurrenceWeekday)).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -676,10 +676,10 @@ struct AddRoutineTCAView: View {
         case .monthlyDay:
             Section(header: Text("Day of Month")) {
                 Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
-                    Text("Every \(ordinalDay(store.recurrenceDayOfMonth))")
+                    Text("Every \(ordinalDay(store.schedule.recurrenceDayOfMonth))")
                 }
 
-                Text("Due on the \(ordinalDay(store.recurrenceDayOfMonth)) of each month.")
+                Text("Due on the \(ordinalDay(store.schedule.recurrenceDayOfMonth)) of each month.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -687,7 +687,7 @@ struct AddRoutineTCAView: View {
     }
 
     var recurrencePatternDescription: String {
-        switch store.recurrenceKind {
+        switch store.schedule.recurrenceKind {
         case .intervalDays:
             return "Repeat after a fixed number of days, weeks, or months."
         case .dailyTime:

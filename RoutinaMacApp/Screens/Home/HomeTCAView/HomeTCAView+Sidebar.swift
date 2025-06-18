@@ -188,7 +188,7 @@ extension HomeTCAView {
     }
 
     var macAddFormSections: [String] {
-        let scheduleMode = store.addRoutineState?.scheduleMode ?? .fixedInterval
+        let scheduleMode = store.addRoutineState?.schedule.scheduleMode ?? .fixedInterval
         let isStepBased = scheduleMode == .fixedInterval || scheduleMode == .oneOff
         var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if isStepBased { sections.append("Steps") }

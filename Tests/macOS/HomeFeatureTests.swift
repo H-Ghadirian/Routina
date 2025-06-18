@@ -21,8 +21,10 @@ struct HomeFeatureTests {
         await store.send(.setAddRoutineSheet(true)) {
             $0.isAddRoutineSheetPresented = true
             $0.addRoutineState = AddRoutineFeature.State(
-                availableTagSummaries: [],
-                existingRoutineNames: []
+                organization: AddRoutineOrganizationState(
+                    availableTagSummaries: [],
+                    existingRoutineNames: []
+                )
             )
         }
 
@@ -55,19 +57,21 @@ struct HomeFeatureTests {
         await store.send(.setAddRoutineSheet(true)) {
             $0.isAddRoutineSheetPresented = true
             $0.addRoutineState = AddRoutineFeature.State(
-                availableTags: ["Learning"],
-                availableTagSummaries: [
-                    RoutineTagSummary(name: "Learning", linkedRoutineCount: 1, doneCount: 4)
-                ],
-                availableRelationshipTasks: [
-                    RoutineTaskRelationshipCandidate(
-                        id: task.id,
-                        name: "Read",
-                        emoji: "📚",
-                        relationships: []
-                    )
-                ],
-                existingRoutineNames: ["Read"]
+                organization: AddRoutineOrganizationState(
+                    availableTags: ["Learning"],
+                    availableTagSummaries: [
+                        RoutineTagSummary(name: "Learning", linkedRoutineCount: 1, doneCount: 4)
+                    ],
+                    availableRelationshipTasks: [
+                        RoutineTaskRelationshipCandidate(
+                            id: task.id,
+                            name: "Read",
+                            emoji: "📚",
+                            relationships: []
+                        )
+                    ],
+                    existingRoutineNames: ["Read"]
+                )
             )
         }
     }
@@ -89,8 +93,10 @@ struct HomeFeatureTests {
             $0.isAddRoutineSheetPresented = true
             $0.isMacFilterDetailPresented = false
             $0.addRoutineState = AddRoutineFeature.State(
-                availableTagSummaries: [],
-                existingRoutineNames: []
+                organization: AddRoutineOrganizationState(
+                    availableTagSummaries: [],
+                    existingRoutineNames: []
+                )
             )
         }
     }
@@ -168,12 +174,12 @@ struct HomeFeatureTests {
         }
 
         let addRoutineState = try #require(store.state.addRoutineState)
-        #expect(addRoutineState.relationships == [
+        #expect(addRoutineState.organization.relationships == [
             RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
         ])
-        #expect(addRoutineState.availableTags == ["Focus", "Writing"])
-        #expect(addRoutineState.existingRoutineNames == ["Draft report", "Review draft"])
-        #expect(addRoutineState.availablePlaces == [
+        #expect(addRoutineState.organization.availableTags == ["Focus", "Writing"])
+        #expect(addRoutineState.organization.existingRoutineNames == ["Draft report", "Review draft"])
+        #expect(addRoutineState.organization.availablePlaces == [
             RoutinePlaceSummary(
                 id: place.id,
                 name: "Office",
@@ -181,7 +187,7 @@ struct HomeFeatureTests {
                 linkedRoutineCount: 2
             )
         ])
-        #expect(addRoutineState.availableRelationshipTasks == [
+        #expect(addRoutineState.organization.availableRelationshipTasks == [
             RoutineTaskRelationshipCandidate(
                 id: relatedTask.id,
                 name: "Review draft",
@@ -318,7 +324,9 @@ struct HomeFeatureTests {
             initialState: HomeFeature.State(
                 selectedTaskID: UUID(),
                 isAddRoutineSheetPresented: true,
-                addRoutineState: AddRoutineFeature.State(existingRoutineNames: [])
+                addRoutineState: AddRoutineFeature.State(
+                    organization: AddRoutineOrganizationState(existingRoutineNames: [])
+                )
             )
         ) {
             HomeFeature()
@@ -1845,7 +1853,10 @@ struct HomeFeatureTests {
             routineTasks: [],
             routineDisplays: [],
             isAddRoutineSheetPresented: true,
-            addRoutineState: AddRoutineFeature.State(routineName: "read")
+            addRoutineState: AddRoutineFeature.State(
+                basics: AddRoutineBasicsState(routineName: "read"),
+                organization: AddRoutineOrganizationState()
+            )
         )
 
         let store = TestStore(initialState: initialState) {
@@ -1864,8 +1875,8 @@ struct HomeFeatureTests {
             ]
         }
         await store.receive(.addRoutineSheet(.existingRoutineNamesChanged(["Read"]))) {
-            $0.addRoutineState?.existingRoutineNames = ["Read"]
-            $0.addRoutineState?.nameValidationMessage = "A task with this name already exists."
+            $0.addRoutineState?.organization.existingRoutineNames = ["Read"]
+            $0.addRoutineState?.organization.nameValidationMessage = "A task with this name already exists."
         }
         await store.receive(.addRoutineSheet(.availableTagSummariesChanged([])))
         await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
@@ -1877,7 +1888,7 @@ struct HomeFeatureTests {
                 relationships: []
             )
         ]))) {
-            $0.addRoutineState?.availableRelationshipTasks = [
+            $0.addRoutineState?.organization.availableRelationshipTasks = [
                 RoutineTaskRelationshipCandidate(
                     id: task.id,
                     name: "Read",
@@ -2117,7 +2128,9 @@ struct HomeFeatureTests {
             routineTasks: [],
             routineDisplays: [],
             isAddRoutineSheetPresented: true,
-            addRoutineState: AddRoutineFeature.State(existingRoutineNames: [])
+            addRoutineState: AddRoutineFeature.State(
+                organization: AddRoutineOrganizationState(existingRoutineNames: [])
+            )
         )
 
         let store = TestStore(initialState: initialState) {
@@ -2178,7 +2191,10 @@ struct HomeFeatureTests {
             routineTasks: [],
             routineDisplays: [],
             isAddRoutineSheetPresented: true,
-            addRoutineState: AddRoutineFeature.State(routineName: "Walk")
+            addRoutineState: AddRoutineFeature.State(
+                basics: AddRoutineBasicsState(routineName: "Walk"),
+                organization: AddRoutineOrganizationState()
+            )
         )
 
         let store = TestStore(initialState: initialState) {
@@ -2793,7 +2809,9 @@ struct HomeFeatureTests {
             routineTasks: [],
             routineDisplays: [],
             isAddRoutineSheetPresented: true,
-            addRoutineState: AddRoutineFeature.State(existingRoutineNames: [])
+            addRoutineState: AddRoutineFeature.State(
+                organization: AddRoutineOrganizationState(existingRoutineNames: [])
+            )
         )
 
         let store = TestStore(initialState: initialState) {
