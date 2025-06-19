@@ -146,30 +146,32 @@ struct HomeFeatureTests {
             $0.isAddRoutineSheetPresented = true
             $0.isMacFilterDetailPresented = false
             $0.addRoutineState = AddRoutineFeature.State(
-                relationships: [RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)],
-                availableTags: ["Focus", "Writing"],
-                availableTagSummaries: [
-                    RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, doneCount: 0),
-                    RoutineTagSummary(name: "Writing", linkedRoutineCount: 1, doneCount: 0)
-                ],
-                availableRelationshipTasks: [
-                    RoutineTaskRelationshipCandidate(
-                        id: relatedTask.id,
-                        name: "Review draft",
-                        emoji: "🔍",
-                        relationships: [],
-                        status: .onTrack
-                    )
-                ],
-                existingRoutineNames: ["Draft report", "Review draft"],
-                availablePlaces: [
-                    RoutinePlaceSummary(
-                        id: place.id,
-                        name: "Office",
-                        radiusMeters: place.radiusMeters,
-                        linkedRoutineCount: 2
-                    )
-                ]
+                organization: AddRoutineOrganizationState(
+                    relationships: [RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)],
+                    availableTags: ["Focus", "Writing"],
+                    availableTagSummaries: [
+                        RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, doneCount: 0),
+                        RoutineTagSummary(name: "Writing", linkedRoutineCount: 1, doneCount: 0)
+                    ],
+                    availableRelationshipTasks: [
+                        RoutineTaskRelationshipCandidate(
+                            id: relatedTask.id,
+                            name: "Review draft",
+                            emoji: "🔍",
+                            relationships: [],
+                            status: .onTrack
+                        )
+                    ],
+                    existingRoutineNames: ["Draft report", "Review draft"],
+                    availablePlaces: [
+                        RoutinePlaceSummary(
+                            id: place.id,
+                            name: "Office",
+                            radiusMeters: place.radiusMeters,
+                            linkedRoutineCount: 2
+                        )
+                    ]
+                )
             )
         }
 
