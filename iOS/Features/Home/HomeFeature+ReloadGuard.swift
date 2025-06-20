@@ -55,7 +55,7 @@ extension HomeFeature {
               let detailState = state.taskDetailState,
               detailState.task.id == selectedTaskID,
               detailState.task.isChecklistCompletionRoutine,
-              !detailState.task.isPaused,
+              !detailState.task.isArchived(),
               detailState.task.checklistItems.contains(where: { $0.id == itemID }),
               calendar.isDate(detailState.selectedDate ?? now, inSameDayAs: now) else {
             state.pendingSelectedChecklistReloadGuardTaskID = nil

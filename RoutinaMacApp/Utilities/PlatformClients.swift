@@ -31,7 +31,7 @@ extension NotificationClient {
     static let live = NotificationClient(
         schedule: { payload in
             guard NotificationPreferences.notificationsEnabled else { return }
-            guard !payload.isPaused else {
+            guard !payload.isArchived else {
                 let center = UNUserNotificationCenter.current()
                 center.removePendingNotificationRequests(withIdentifiers: [payload.identifier])
                 center.removeDeliveredNotifications(withIdentifiers: [payload.identifier])

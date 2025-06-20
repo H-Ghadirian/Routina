@@ -165,6 +165,7 @@ final class RoutineTask {
     var canceledAt: Date?
     var scheduleAnchor: Date?
     var pausedAt: Date?
+    var snoozedUntil: Date?
     var pinnedAt: Date?
     var manualSectionOrderStorage: String = ""
     var completedStepCount: Int16 = 0
@@ -173,6 +174,21 @@ final class RoutineTask {
 
     var isPaused: Bool {
         pausedAt != nil
+    }
+
+    func isSnoozed(
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard let snoozedUntil else { return false }
+        return calendar.startOfDay(for: referenceDate) < calendar.startOfDay(for: snoozedUntil)
+    }
+
+    func isArchived(
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Bool {
+        isPaused || isSnoozed(referenceDate: referenceDate, calendar: calendar)
     }
 
     var isPinned: Bool {
@@ -425,6 +441,7 @@ final class RoutineTask {
         canceledAt: Date? = nil,
         scheduleAnchor: Date? = nil,
         pausedAt: Date? = nil,
+        snoozedUntil: Date? = nil,
         pinnedAt: Date? = nil,
         completedStepCount: Int16 = 0,
         sequenceStartedAt: Date? = nil,
@@ -457,6 +474,7 @@ final class RoutineTask {
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
         self.scheduleAnchor = resolvedScheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
+        self.snoozedUntil = snoozedUntil
         self.pinnedAt = pinnedAt
         self.manualSectionOrderStorage = ""
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))
@@ -523,7 +541,7 @@ final class RoutineTask {
         _ itemIDs: Set<UUID>,
         purchasedAt: Date
     ) -> Int {
-        guard !isPaused, isChecklistDriven, !itemIDs.isEmpty else { return 0 }
+        guard !isArchived(), isChecklistDriven, !itemIDs.isEmpty else { return 0 }
 
         var updatedCount = 0
         let updatedItems = checklistItems.map { item in
@@ -550,7 +568,7 @@ final class RoutineTask {
         completedAt: Date,
         calendar: Calendar = .current
     ) -> RoutineAdvanceResult {
-        guard !isPaused else { return .ignoredPaused }
+        guard !isArchived() else { return .ignoredPaused }
         guard isChecklistCompletionRoutine,
               checklistItems.contains(where: { $0.id == itemID }) else {
             return .ignoredAlreadyCompletedToday
@@ -596,7 +614,7 @@ final class RoutineTask {
 
     @discardableResult
     func advance(completedAt: Date, calendar: Calendar = .current) -> RoutineAdvanceResult {
-        guard !isPaused else { return .ignoredPaused }
+        guard !isArchived() else { return .ignoredPaused }
 
         if !hasSequentialSteps {
             if let lastDone, calendar.isDate(lastDone, inSameDayAs: completedAt) {
@@ -631,7 +649,7 @@ final class RoutineTask {
         remainingLatestCompletion: Date?
     ) {
         if usesRollingScheduleAnchor {
-            if isPaused {
+            if isArchived() {
                 if let remainingLatestCompletion {
                     scheduleAnchor = remainingLatestCompletion
                 } else {
@@ -643,7 +661,7 @@ final class RoutineTask {
             return
         }
 
-        if isPaused {
+        if isArchived() {
             scheduleAnchor = pausedAt ?? scheduleAnchor
         } else if scheduleAnchor == nil {
             scheduleAnchor = remainingLatestCompletion
@@ -665,7 +683,7 @@ final class RoutineTask {
     }
 
     func cancelOneOff(at canceledAt: Date) -> Bool {
-        guard isOneOffTask, !isPaused, !isCompletedOneOff, !isCanceledOneOff else { return false }
+        guard isOneOffTask, !isArchived(), !isCompletedOneOff, !isCanceledOneOff else { return false }
         lastDone = nil
         self.canceledAt = canceledAt
         scheduleAnchor = nil
@@ -813,6 +831,7 @@ final class RoutineTask {
             canceledAt: canceledAt,
             scheduleAnchor: scheduleAnchor,
             pausedAt: pausedAt,
+            snoozedUntil: snoozedUntil,
             pinnedAt: pinnedAt,
             completedStepCount: completedStepCount,
             sequenceStartedAt: sequenceStartedAt,

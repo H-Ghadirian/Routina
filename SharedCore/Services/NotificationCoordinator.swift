@@ -85,6 +85,7 @@ enum NotificationCoordinator {
     static func notificationPayload(
         for task: RoutineTask,
         triggerDate: Date? = nil,
+        isArchivedOverride: Bool? = nil,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> NotificationPayload {
@@ -102,7 +103,7 @@ enum NotificationCoordinator {
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
             triggerDate: resolvedTriggerDate,
-            isPaused: task.isPaused,
+            isArchived: isArchivedOverride ?? task.isArchived(referenceDate: referenceDate, calendar: calendar),
             isChecklistDriven: task.isChecklistDriven,
             isChecklistCompletionRoutine: task.isChecklistCompletionRoutine,
             nextDueChecklistItemTitle: task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)?.title
@@ -180,11 +181,12 @@ enum NotificationCoordinator {
 
         do {
             guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
-            guard !task.isPaused else { return }
+            guard !task.isArchived() else { return }
             let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
             let payload = notificationPayload(
                 for: task,
                 triggerDate: NotificationPreferences.reminderDate(on: tomorrow),
+                isArchivedOverride: false,
                 referenceDate: Date()
             )
             await scheduleNotification(payload)
@@ -247,7 +249,7 @@ enum NotificationCoordinator {
 
     private static func scheduleNotification(_ payload: NotificationPayload) async {
         guard NotificationPreferences.notificationsEnabled else { return }
-        guard !payload.isPaused else {
+        guard !payload.isArchived else {
             cancelNotification(payload.identifier)
             return
         }

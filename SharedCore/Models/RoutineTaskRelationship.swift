@@ -103,7 +103,7 @@ enum RoutineTaskRelationshipStatus: Equatable, Hashable, Sendable {
         referenceDate: Date,
         calendar: Calendar
     ) -> RoutineTaskRelationshipStatus {
-        if task.isPaused { return .paused }
+        if task.isArchived() { return .paused }
         if task.isCanceledOneOff { return .canceledOneOff }
         if task.isCompletedOneOff { return .completedOneOff }
         if let lastDone = task.lastDone, calendar.isDate(lastDone, inSameDayAs: referenceDate) {

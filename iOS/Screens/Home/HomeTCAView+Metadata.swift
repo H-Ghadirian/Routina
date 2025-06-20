@@ -45,6 +45,9 @@ extension HomeTCAView {
     }
 
     func pauseDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.isSnoozed {
+            return "Not today"
+        }
         guard let pausedAt = task.pausedAt else { return "Paused" }
         let elapsedDays = RoutineDateMath.elapsedDaysSinceLastDone(from: pausedAt, referenceDate: Date())
         if elapsedDays == 0 { return "Paused today" }
@@ -124,7 +127,9 @@ extension HomeTCAView {
         for task: HomeFeature.RoutineDisplay
     ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color)? {
         if task.isPaused {
-            return ("Paused", "pause.circle.fill", .teal, Color.teal.opacity(0.16))
+            return task.isSnoozed
+                ? ("Not today", "moon.zzz.fill", .indigo, Color.indigo.opacity(0.16))
+                : ("Paused", "pause.circle.fill", .teal, Color.teal.opacity(0.16))
         }
         if case .away = task.locationAvailability {
             return ("Away", "location.slash.fill", .blue, Color.blue.opacity(0.14))

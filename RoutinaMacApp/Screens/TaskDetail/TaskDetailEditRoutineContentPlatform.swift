@@ -26,7 +26,7 @@ struct TaskDetailEditRoutineContent: View {
 
     private func makeTaskFormModel() -> TaskFormModel {
         let pausePresentation = RoutinePauseArchivePresentation.make(
-            isPaused: store.task.isPaused,
+            isPaused: store.task.isArchived(),
             context: .editSheet
         )
         let showsPauseResume = !store.task.isOneOffTask
@@ -117,12 +117,12 @@ struct TaskDetailEditRoutineContent: View {
             autofocusName: false,
             onDelete: { store.send(.setDeleteConfirmation(true)) },
             pauseResumeAction: showsPauseResume
-                ? { store.send(store.task.isPaused ? .resumeTapped : .pauseTapped) }
+                ? { store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped) }
                 : nil,
             pauseResumeTitle: showsPauseResume ? pausePresentation.actionTitle : nil,
             pauseResumeDescription: showsPauseResume ? pausePresentation.description : nil,
             pauseResumeTint: showsPauseResume
-                ? (store.task.isPaused ? Color.teal : Color.orange)
+                ? (store.task.isArchived() ? Color.teal : Color.orange)
                 : nil
         )
     }

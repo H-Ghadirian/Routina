@@ -72,6 +72,7 @@ enum TaskDetailPresentation {
         task: RoutineTask,
         referenceDate: Date = Date()
     ) -> Color {
+        if task.isSnoozed(referenceDate: referenceDate) { return .indigo }
         if pausedAt != nil { return .teal }
         if task.isOneOffTask {
             if task.isInProgress { return .orange }
@@ -110,7 +111,7 @@ enum TaskDetailPresentation {
     // MARK: - Urgency helpers
 
     static func isOrangeUrgency(_ task: RoutineTask, referenceDate: Date = Date()) -> Bool {
-        guard !task.isPaused, !task.isChecklistDriven, !task.isOneOffTask else { return false }
+        guard !task.isArchived(referenceDate: referenceDate), !task.isChecklistDriven, !task.isOneOffTask else { return false }
         if task.recurrenceRule.isFixedCalendar {
             return daysUntilDueIfActive(task, referenceDate: referenceDate) == 1
         }
@@ -121,7 +122,7 @@ enum TaskDetailPresentation {
     }
 
     static func daysUntilDueIfActive(_ task: RoutineTask, referenceDate: Date = Date()) -> Int? {
-        guard !task.isPaused else { return nil }
+        guard !task.isArchived(referenceDate: referenceDate) else { return nil }
         return RoutineDateMath.daysUntilDue(for: task, referenceDate: referenceDate)
     }
 }

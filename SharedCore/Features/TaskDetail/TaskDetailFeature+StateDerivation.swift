@@ -19,7 +19,7 @@ extension TaskDetailFeature {
         }
         state.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
 
-        if state.task.isPaused {
+        if state.task.isArchived(referenceDate: now, calendar: calendar) {
             state.overdueDays = 0
         } else {
             state.overdueDays = RoutineDateMath.overdueDays(for: state.task, referenceDate: now, calendar: calendar)

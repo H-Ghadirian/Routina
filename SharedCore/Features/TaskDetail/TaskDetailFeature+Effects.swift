@@ -196,7 +196,7 @@ extension TaskDetailFeature {
                 }
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
-                if task.isPaused || task.isOneOffTask {
+                if task.isArchived() || task.isOneOffTask {
                     await notificationClient.cancel(task.id.uuidString)
                 } else {
                     let payload = NotificationCoordinator.notificationPayload(
@@ -264,11 +264,35 @@ extension TaskDetailFeature {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pausedAt)
                 }
                 task.pausedAt = pausedAt
+                task.snoozedUntil = nil
                 try context.save()
                 await notificationClient.cancel(taskID.uuidString)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error pausing routine: \(error)")
+            }
+        }
+    }
+
+    func handleNotTodayRoutine(taskID: UUID, snoozedUntil: Date) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                task.snoozedUntil = snoozedUntil
+                try context.save()
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: task,
+                        triggerDate: NotificationPreferences.reminderDate(on: snoozedUntil, calendar: calendar),
+                        isArchivedOverride: false,
+                        referenceDate: snoozedUntil,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error archiving routine for today: \(error)")
             }
         }
     }
@@ -283,6 +307,7 @@ extension TaskDetailFeature {
                 }
                 task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumedAt)
                 task.pausedAt = nil
+                task.snoozedUntil = nil
                 try context.save()
                 let payload = NotificationCoordinator.notificationPayload(
                     for: task,

@@ -84,6 +84,7 @@ struct TaskDetailFeature: Reducer {
         case markChecklistItemCompleted(UUID)
         case undoSelectedDateCompletion
         case pauseTapped
+        case notTodayTapped
         case resumeTapped
         case selectedDateChanged(Date)
         case setEditSheet(Bool)
@@ -150,7 +151,7 @@ struct TaskDetailFeature: Reducer {
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
-            guard !state.task.isPaused else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             guard !state.task.isCompletedOneOff else { return .none }
             guard !state.task.isCanceledOneOff else { return .none }
             if state.task.isChecklistDriven {
@@ -205,7 +206,7 @@ struct TaskDetailFeature: Reducer {
 
         case .cancelTodo:
             guard state.task.isOneOffTask else { return .none }
-            guard !state.task.isPaused else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             guard !state.task.isCompletedOneOff else { return .none }
             guard !state.task.isCanceledOneOff else { return .none }
             let canceledAt = resolvedCompletionDate(for: state.selectedDate)
@@ -216,7 +217,7 @@ struct TaskDetailFeature: Reducer {
             return handleCancelTodo(taskID: state.task.id, canceledAt: canceledAt)
 
         case let .markChecklistItemPurchased(itemID):
-            guard !state.task.isPaused else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             let completionDate = now
             let updatedItemCount = state.task.markChecklistItemsPurchased([itemID], purchasedAt: completionDate)
             guard updatedItemCount > 0 else { return .none }
@@ -230,7 +231,7 @@ struct TaskDetailFeature: Reducer {
             )
 
         case let .toggleChecklistItemCompletion(itemID):
-            guard !state.task.isPaused else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
                 return .none
             }
@@ -288,7 +289,7 @@ struct TaskDetailFeature: Reducer {
             }
 
         case let .markChecklistItemCompleted(itemID):
-            guard !state.task.isPaused else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
                 return .none
             }
@@ -344,7 +345,7 @@ struct TaskDetailFeature: Reducer {
 
         case .pauseTapped:
             guard !state.task.isOneOffTask else { return .none }
-            guard !state.task.isPaused else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             let pauseDate = now
             if state.task.scheduleAnchor == nil {
                 state.task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: state.task, referenceDate: pauseDate)
@@ -354,15 +355,29 @@ struct TaskDetailFeature: Reducer {
             updateDerivedState(&state)
             return handlePauseRoutine(taskID: state.task.id, pausedAt: pauseDate)
 
+        case .notTodayTapped:
+            guard !state.task.isOneOffTask else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
+            let tomorrowStart = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: now)
+            ) ?? now
+            state.task.snoozedUntil = tomorrowStart
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleNotTodayRoutine(taskID: state.task.id, snoozedUntil: tomorrowStart)
+
         case .resumeTapped:
             guard !state.task.isOneOffTask else { return .none }
-            guard state.task.isPaused else { return .none }
+            guard state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             let resumeDate = now
             if let pausedAt = state.task.pausedAt, state.task.isChecklistDriven {
                 state.task.shiftChecklistItems(by: max(resumeDate.timeIntervalSince(pausedAt), 0))
             }
             state.task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: state.task, resumedAt: resumeDate)
             state.task.pausedAt = nil
+            state.task.snoozedUntil = nil
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleResumeRoutine(taskID: state.task.id, resumedAt: resumeDate)

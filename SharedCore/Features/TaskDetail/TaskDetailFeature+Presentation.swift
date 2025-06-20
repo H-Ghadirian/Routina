@@ -107,11 +107,11 @@ extension TaskDetailFeature.State {
             return true
         }
         if task.isChecklistDriven {
-            return task.isPaused
+            return task.isArchived()
                 || !Calendar.current.isDateInToday(resolvedSelectedDate)
                 || checklistDueItemCount == 0
         }
-        return isSelectedDateInFuture || task.isPaused || isStepRoutineOffToday
+        return isSelectedDateInFuture || task.isArchived() || isStepRoutineOffToday
     }
 
     /// Due date resolved from the task (one-off deadline or next recurrence).
@@ -150,7 +150,7 @@ extension TaskDetailFeature.State {
     }
 
     var isCancelTodoButtonDisabled: Bool {
-        task.isPaused || task.isCompletedOneOff || task.isCanceledOneOff || isSelectedDateInFuture
+        task.isArchived() || task.isCompletedOneOff || task.isCanceledOneOff || isSelectedDateInFuture
     }
 
     var routineEmoji: String {
@@ -200,10 +200,14 @@ extension TaskDetailFeature.State {
 
     var summaryStatusTitle: String {
         let pausedAt = task.pausedAt
+        let snoozedUntil = task.isSnoozed() ? task.snoozedUntil : nil
         let overdueDays = self.overdueDays
         let daysSinceLastRoutine = self.daysSinceLastRoutine
         let isDoneToday = self.isDoneToday
 
+        if let snoozedUntil {
+            return "Not today. Back on \(snoozedUntil.formatted(date: .abbreviated, time: .omitted))"
+        }
         if let pausedAt {
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
         }
@@ -290,7 +294,7 @@ extension TaskDetailFeature.State {
         let selectedDate = resolvedSelectedDate
         let isDone = isSelectedDateTerminal
         let isFuture = isSelectedDateInFuture
-        let isPaused = task.isPaused
+        let isPaused = task.isArchived()
 
         if !task.isChecklistDriven && isDone {
             return "Undo"
@@ -346,9 +350,9 @@ extension TaskDetailFeature.State {
 
     // MARK: - Helpers
 
-    /// Days until the task is due, or nil if the task is paused.
+    /// Days until the task is due, or nil if the task is archived for now.
     var daysUntilDueIfActive: Int? {
-        guard !task.isPaused else { return nil }
+        guard !task.isArchived() else { return nil }
         return RoutineDateMath.daysUntilDue(for: task, referenceDate: Date())
     }
 

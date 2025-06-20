@@ -145,7 +145,7 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Bool {
-        guard !task.isPaused else { return false }
+        guard !task.isArchived(referenceDate: referenceDate, calendar: calendar) else { return false }
 
         if task.isOneOffTask {
             return !task.isCompletedOneOff

@@ -70,6 +70,7 @@ struct HomeFeature {
         var urgency: RoutineTaskUrgency
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var snoozedUntil: Date?
         var pinnedAt: Date?
         var daysUntilDue: Int
         var isOneOffTask: Bool
@@ -77,6 +78,7 @@ struct HomeFeature {
         var isCanceledOneOff: Bool
         var isDoneToday: Bool
         var isPaused: Bool
+        var isSnoozed: Bool
         var isPinned: Bool
         var completedStepCount: Int
         var isInProgress: Bool
@@ -176,6 +178,7 @@ struct HomeFeature {
         case deleteTasksConfirmed
         case deleteTasks([UUID])
         case markTaskDone(UUID)
+        case notTodayTask(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
         case pinTask(UUID)
@@ -611,7 +614,9 @@ struct HomeFeature {
                 return handleDeleteTasks(ids, state: &state)
 
             case let .markTaskDone(id):
-                guard let index = state.routineTasks.firstIndex(where: { $0.id == id && !$0.isPaused }) else {
+                guard let index = state.routineTasks.firstIndex(where: {
+                    $0.id == id && !$0.isArchived(referenceDate: now, calendar: calendar)
+                }) else {
                     return .none
                 }
                 guard !state.routineTasks[index].isCompletedOneOff else {
@@ -719,7 +724,7 @@ struct HomeFeature {
                 let pauseDate = now
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
                 guard !state.routineTasks[index].isOneOffTask else { return .none }
-                guard !state.routineTasks[index].isPaused else { return .none }
+                guard !state.routineTasks[index].isArchived(referenceDate: pauseDate, calendar: calendar) else { return .none }
 
                 if state.routineTasks[index].scheduleAnchor == nil {
                     state.routineTasks[index].scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(
@@ -751,13 +756,14 @@ struct HomeFeature {
                 let resumeDate = now
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
                 guard !state.routineTasks[index].isOneOffTask else { return .none }
-                guard state.routineTasks[index].isPaused else { return .none }
+                guard state.routineTasks[index].isArchived(referenceDate: resumeDate, calendar: calendar) else { return .none }
 
                 state.routineTasks[index].scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
                     for: state.routineTasks[index],
                     resumedAt: resumeDate
                 )
                 state.routineTasks[index].pausedAt = nil
+                state.routineTasks[index].snoozedUntil = nil
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
 
@@ -767,6 +773,7 @@ struct HomeFeature {
                         guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
                         task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumeDate)
                         task.pausedAt = nil
+                        task.snoozedUntil = nil
                         try context.save()
                         await self.notificationClient.schedule(
                             NotificationCoordinator.notificationPayload(
@@ -778,6 +785,41 @@ struct HomeFeature {
                         NotificationCenter.default.postRoutineDidUpdate()
                     } catch {
                         print("Failed to resume routine from home list: \(error)")
+                    }
+                }
+
+            case let .notTodayTask(id):
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard !state.routineTasks[index].isOneOffTask else { return .none }
+                guard !state.routineTasks[index].isArchived(referenceDate: now, calendar: calendar) else { return .none }
+
+                let tomorrowStart = calendar.date(
+                    byAdding: .day,
+                    value: 1,
+                    to: calendar.startOfDay(for: now)
+                ) ?? now
+                state.routineTasks[index].snoozedUntil = tomorrowStart
+                refreshDisplays(&state)
+                syncSelectedTaskDetailState(&state)
+
+                return .run { @MainActor [id, tomorrowStart, currentCalendar = self.calendar] _ in
+                    do {
+                        let context = self.modelContext()
+                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                        task.snoozedUntil = tomorrowStart
+                        try context.save()
+                        await self.notificationClient.schedule(
+                            NotificationCoordinator.notificationPayload(
+                                for: task,
+                                triggerDate: NotificationPreferences.reminderDate(on: tomorrowStart, calendar: currentCalendar),
+                                isArchivedOverride: false,
+                                referenceDate: tomorrowStart,
+                                calendar: currentCalendar
+                            )
+                        )
+                        NotificationCenter.default.postRoutineDidUpdate()
+                    } catch {
+                        print("Failed to archive routine for today from home list: \(error)")
                     }
                 }
 
@@ -1173,7 +1215,7 @@ struct HomeFeature {
                 from: detailState.task.lastDone,
                 referenceDate: now
             )
-            detailState.overdueDays = detailState.task.isPaused
+            detailState.overdueDays = detailState.task.isArchived(referenceDate: now, calendar: calendar)
                 ? 0
                 : RoutineDateMath.overdueDays(for: detailState.task, referenceDate: now, calendar: calendar)
             detailState.isDoneToday = detailState.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false

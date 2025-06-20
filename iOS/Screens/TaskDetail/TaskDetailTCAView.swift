@@ -182,7 +182,7 @@ struct TaskDetailTCAView: View {
     private var taskDetailContent: some View {
         let _ = store.taskRefreshID
         let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
-            isPaused: store.task.isPaused,
+            isPaused: store.task.isArchived(),
             context: .detail
         )
 
@@ -517,12 +517,22 @@ struct TaskDetailTCAView: View {
             primaryActionButton
 
             Button(pauseArchivePresentation.actionTitle) {
-                store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
             }
             .buttonStyle(.bordered)
-            .tint(store.task.isPaused ? .teal : .orange)
+            .tint(store.task.isArchived() ? .teal : .orange)
             .routinaPlatformSecondaryActionControlSize()
             .frame(maxWidth: .infinity)
+
+            if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
+                Button(secondaryActionTitle) {
+                    store.send(.notTodayTapped)
+                }
+                .buttonStyle(.bordered)
+                .tint(.indigo)
+                .routinaPlatformSecondaryActionControlSize()
+                .frame(maxWidth: .infinity)
+            }
 
             if store.isStepRoutineOffToday {
                 Text("Step-based routines can only be progressed for today.")
@@ -540,6 +550,13 @@ struct TaskDetailTCAView: View {
 
             if let pauseDescription = pauseArchivePresentation.description {
                 Text(pauseDescription)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let secondaryActionDescription = pauseArchivePresentation.secondaryActionDescription {
+                Text(secondaryActionDescription)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -784,12 +801,22 @@ struct TaskDetailTCAView: View {
 
             if !store.task.isOneOffTask {
                 Button(pauseArchivePresentation.actionTitle) {
-                    store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                    store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
                 }
                 .buttonStyle(.bordered)
-                .tint(store.task.isPaused ? .teal : .orange)
+                .tint(store.task.isArchived() ? .teal : .orange)
                 .routinaPlatformSecondaryActionControlSize()
                 .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
+
+                if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
+                    Button(secondaryActionTitle) {
+                        store.send(.notTodayTapped)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.indigo)
+                    .routinaPlatformSecondaryActionControlSize()
+                    .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
+                }
             }
 
             if store.isStepRoutineOffToday {
@@ -808,6 +835,13 @@ struct TaskDetailTCAView: View {
 
             if let pauseDescription = pauseArchivePresentation.description {
                 Text(pauseDescription)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let secondaryActionDescription = pauseArchivePresentation.secondaryActionDescription {
+                Text(secondaryActionDescription)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -865,7 +899,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var statusContextMessage: String? {
-        if store.task.isPaused {
+        if store.task.isArchived() {
             return "Resume it anytime to put it back in rotation."
         }
         if store.task.isOneOffTask {
@@ -1357,7 +1391,7 @@ struct TaskDetailTCAView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
-            .disabled(store.task.isPaused || !Calendar.current.isDateInToday(store.resolvedSelectedDate))
+            .disabled(store.task.isArchived() || !Calendar.current.isDateInToday(store.resolvedSelectedDate))
         }
     }
 
@@ -1480,7 +1514,7 @@ struct TaskDetailTCAView: View {
 
     private func canToggleChecklistItem(_ item: RoutineChecklistItem) -> Bool {
         guard store.task.isChecklistCompletionRoutine,
-              !store.task.isPaused,
+              !store.task.isArchived(),
               Calendar.current.isDateInToday(store.resolvedSelectedDate) else {
             return false
         }

@@ -28,6 +28,7 @@ func makeTask(
     recurrenceRule: RoutineRecurrenceRule? = nil,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
+    snoozedUntil: Date? = nil,
     pinnedAt: Date? = nil
 ) -> RoutineTask {
     let task = RoutineTask(
@@ -43,6 +44,7 @@ func makeTask(
         lastDone: lastDone,
         scheduleAnchor: scheduleAnchor,
         pausedAt: pausedAt,
+        snoozedUntil: snoozedUntil,
         pinnedAt: pinnedAt
     )
     context.insert(task)

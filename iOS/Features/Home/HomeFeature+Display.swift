@@ -31,18 +31,20 @@ extension HomeFeature {
             locationAvailability = .unrestricted
         }
 
+        let isArchived = task.isArchived(referenceDate: now, calendar: calendar)
+        let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
         let dueDate: Date? = {
             if task.isOneOffTask {
                 return task.deadline
             }
-            guard !task.isPaused, !task.isChecklistDriven, task.recurrenceRule.isFixedCalendar else {
+            guard !isArchived, !task.isChecklistDriven, task.recurrenceRule.isFixedCalendar else {
                 return nil
             }
             return RoutineDateMath.dueDate(for: task, referenceDate: now, calendar: calendar)
         }()
-        let daysUntilDue = task.isPaused
+        let daysUntilDue = isArchived
             ? 0
             : (task.isCompletedOneOff || task.isCanceledOneOff)
                 ? Int.max
@@ -70,13 +72,15 @@ extension HomeFeature {
             urgency: task.urgency,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
+            snoozedUntil: task.snoozedUntil,
             pinnedAt: task.pinnedAt,
             daysUntilDue: daysUntilDue,
             isOneOffTask: task.isOneOffTask,
             isCompletedOneOff: task.isCompletedOneOff,
             isCanceledOneOff: task.isCanceledOneOff,
             isDoneToday: doneTodayFromLastDone,
-            isPaused: task.isPaused,
+            isPaused: isArchived,
+            isSnoozed: isSnoozed,
             isPinned: task.isPinned,
             completedStepCount: task.completedSteps,
             isInProgress: task.isInProgress,
@@ -106,7 +110,7 @@ extension HomeFeature {
                 doneStats: state.doneStats
             )
 
-            if task.isPaused {
+            if task.isArchived(referenceDate: now, calendar: calendar) {
                 archived.append(display)
             } else if case .away = display.locationAvailability {
                 away.append(display)
@@ -135,7 +139,7 @@ extension HomeFeature {
                 from: detailTask.lastDone,
                 referenceDate: now
             ),
-            overdueDays: detailTask.isPaused
+            overdueDays: detailTask.isArchived(referenceDate: now, calendar: calendar)
                 ? 0
                 : RoutineDateMath.overdueDays(for: detailTask, referenceDate: now, calendar: calendar),
             isDoneToday: detailTask.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false

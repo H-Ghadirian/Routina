@@ -512,7 +512,7 @@ struct TimelineView: View {
                 from: detailTask.lastDone,
                 referenceDate: now
             ),
-            overdueDays: detailTask.isPaused
+            overdueDays: detailTask.isArchived()
                 ? 0
                 : RoutineDateMath.overdueDays(for: detailTask, referenceDate: now, calendar: calendar),
             isDoneToday: detailTask.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false

@@ -268,6 +268,49 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func notTodayTapped_snoozesRoutineUntilTomorrowAndSchedulesReminder() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        let tomorrowStart = makeDate("2026-03-15T00:00:00Z")
+        let anchorDate = makeDate("2026-03-10T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 5,
+            lastDone: nil,
+            emoji: "📚",
+            scheduleAnchor: anchorDate
+        )
+        try context.save()
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.notTodayTapped) {
+            $0.task.snoozedUntil = tomorrowStart
+            $0.taskRefreshID = 1
+        }
+
+        #expect(store.state.task.pausedAt == nil)
+        #expect(store.state.task.snoozedUntil == tomorrowStart)
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pausedAt == nil)
+        #expect(savedTask.snoozedUntil == tomorrowStart)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func setEditSheetTrue_syncsEditFormFromTask_weekFrequency() async {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Gym")

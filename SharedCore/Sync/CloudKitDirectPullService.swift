@@ -209,6 +209,7 @@ enum CloudKitDirectPullService {
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var snoozedUntil: Date?
         var pinnedAt: Date?
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
@@ -322,6 +323,10 @@ enum CloudKitDirectPullService {
             in: record,
             keys: ["pausedAt", "PAUSEDAT", "zpausedat", "ZPAUSEDAT", "cd_pausedat"]
         )
+        let snoozedUntilValue = dateValue(
+            in: record,
+            keys: ["snoozedUntil", "SNOOZEDUNTIL", "zsnoozeduntil", "ZSNOOZEDUNTIL", "cd_snoozeduntil"]
+        )
         let pinnedAtValue = dateValue(
             in: record,
             keys: ["pinnedAt", "PINNEDAT", "zpinnedat", "ZPINNEDAT", "cd_pinnedat"]
@@ -353,6 +358,7 @@ enum CloudKitDirectPullService {
                 || canceledAtValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
+                || snoozedUntilValue != nil
                 || pinnedAtValue != nil
                 || completedStepCountValue != nil
                 || sequenceStartedAtValue != nil
@@ -395,6 +401,7 @@ enum CloudKitDirectPullService {
             canceledAt: canceledAtValue,
             scheduleAnchor: scheduleAnchorValue,
             pausedAt: pausedAtValue,
+            snoozedUntil: snoozedUntilValue,
             pinnedAt: pinnedAtValue,
             completedStepCount: Int16(clamping: completedStepCountValue ?? 0),
             sequenceStartedAt: sequenceStartedAtValue
@@ -509,6 +516,7 @@ enum CloudKitDirectPullService {
                 taskWithSameName.canceledAt = payload.canceledAt
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
+                taskWithSameName.snoozedUntil = payload.snoozedUntil
                 taskWithSameName.pinnedAt = payload.pinnedAt
                 taskWithSameName.completedStepCount = payload.completedStepCount
                 taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
@@ -544,6 +552,7 @@ enum CloudKitDirectPullService {
             existing.canceledAt = payload.canceledAt
             existing.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? existing.scheduleAnchor
             existing.pausedAt = payload.pausedAt
+            existing.snoozedUntil = payload.snoozedUntil
             existing.pinnedAt = payload.pinnedAt
             existing.completedStepCount = payload.completedStepCount
             existing.sequenceStartedAt = payload.sequenceStartedAt
@@ -578,6 +587,7 @@ enum CloudKitDirectPullService {
                 taskWithSameName.canceledAt = payload.canceledAt
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
+                taskWithSameName.snoozedUntil = payload.snoozedUntil
                 taskWithSameName.pinnedAt = payload.pinnedAt
                 taskWithSameName.completedStepCount = payload.completedStepCount
                 taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
@@ -605,6 +615,7 @@ enum CloudKitDirectPullService {
                     canceledAt: payload.canceledAt,
                     scheduleAnchor: payload.scheduleAnchor,
                     pausedAt: payload.pausedAt,
+                    snoozedUntil: payload.snoozedUntil,
                     pinnedAt: payload.pinnedAt,
                     completedStepCount: payload.completedStepCount,
                     sequenceStartedAt: payload.sequenceStartedAt

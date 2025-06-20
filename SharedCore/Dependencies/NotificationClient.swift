@@ -8,7 +8,7 @@ struct NotificationPayload: Sendable {
     let interval: Int
     let lastDone: Date?
     let triggerDate: Date?
-    let isPaused: Bool
+    let isArchived: Bool
     let isChecklistDriven: Bool
     let isChecklistCompletionRoutine: Bool
     let nextDueChecklistItemTitle: String?

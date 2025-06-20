@@ -37,6 +37,7 @@ enum SettingsRoutineDataPersistence {
             var canceledAt: Date?
             var scheduleAnchor: Date?
             var pausedAt: Date?
+            var snoozedUntil: Date?
             var pinnedAt: Date?
             var completedStepCount: Int?
             var sequenceStartedAt: Date?
@@ -83,7 +84,7 @@ enum SettingsRoutineDataPersistence {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = Backup(
-            schemaVersion: 10,
+            schemaVersion: 11,
             exportedAt: exportedAt,
             places: places.map {
                 .init(
@@ -115,6 +116,7 @@ enum SettingsRoutineDataPersistence {
                     canceledAt: $0.canceledAt,
                     scheduleAnchor: $0.scheduleAnchor,
                     pausedAt: $0.pausedAt,
+                    snoozedUntil: $0.snoozedUntil,
                     pinnedAt: $0.pinnedAt,
                     completedStepCount: $0.completedSteps,
                     sequenceStartedAt: $0.sequenceStartedAt
@@ -146,7 +148,7 @@ enum SettingsRoutineDataPersistence {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(Backup.self, from: jsonData)
 
-        guard (1...10).contains(backup.schemaVersion) else {
+        guard (1...11).contains(backup.schemaVersion) else {
             throw Error.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -208,6 +210,7 @@ enum SettingsRoutineDataPersistence {
                     canceledAt: task.canceledAt,
                     scheduleAnchor: task.scheduleAnchor,
                     pausedAt: task.pausedAt,
+                    snoozedUntil: task.snoozedUntil,
                     pinnedAt: task.pinnedAt,
                     completedStepCount: Int16(clamping: task.completedStepCount ?? 0),
                     sequenceStartedAt: task.sequenceStartedAt

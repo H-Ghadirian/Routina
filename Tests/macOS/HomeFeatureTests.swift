@@ -2506,6 +2506,76 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func notTodayTask_movesRoutineToArchivedForTodayAndSchedulesTomorrowReminder() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        let tomorrowStart = makeDate("2026-03-15T00:00:00Z")
+        let anchorDate = makeDate("2026-03-12T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 3,
+            lastDone: nil,
+            emoji: "📚",
+            scheduleAnchor: anchorDate
+        )
+        try context.save()
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let initialState = HomeFeature.State(
+            routineTasks: [task],
+            routineDisplays: [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    scheduleAnchor: anchorDate,
+                    isDoneToday: false
+                )
+            ]
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.notTodayTask(task.id)) {
+            $0.routineTasks[0].snoozedUntil = tomorrowStart
+            $0.routineDisplays = []
+            $0.archivedRoutineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    scheduleAnchor: anchorDate,
+                    snoozedUntil: tomorrowStart,
+                    isDoneToday: false,
+                    isPaused: true
+                )
+            ]
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pausedAt == nil)
+        #expect(savedTask.snoozedUntil == tomorrowStart)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func pinTask_marksRoutinePinnedAndPersists() async throws {
         let context = makeInMemoryContext()
         let pinDate = makeDate("2026-03-15T10:00:00Z")
@@ -3498,6 +3568,7 @@ private func makeDisplay(
     urgency: RoutineTaskUrgency = .level2,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
+    snoozedUntil: Date? = nil,
     pinnedAt: Date? = nil,
     daysUntilDue: Int? = nil,
     isOneOffTask: Bool = false,
@@ -3516,7 +3587,7 @@ private func makeDisplay(
     doneCount: Int = 0
 ) -> HomeFeature.RoutineDisplay {
     let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
-    let resolvedIsPaused = isPaused || pausedAt != nil
+    let resolvedIsPaused = isPaused || pausedAt != nil || snoozedUntil != nil
     let resolvedIsOneOffTask = isOneOffTask || scheduleMode == .oneOff
     let resolvedIsCompletedOneOff = isCompletedOneOff || (resolvedIsOneOffTask && lastDone != nil && !isInProgress)
     let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : ((resolvedIsCompletedOneOff || isCanceledOneOff) ? Int.max : interval))
@@ -3543,6 +3614,7 @@ private func makeDisplay(
         urgency: urgency,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
+        snoozedUntil: snoozedUntil,
         pinnedAt: pinnedAt,
         daysUntilDue: resolvedDaysUntilDue,
         isOneOffTask: resolvedIsOneOffTask,
@@ -3550,6 +3622,7 @@ private func makeDisplay(
         isCanceledOneOff: isCanceledOneOff,
         isDoneToday: isDoneToday,
         isPaused: resolvedIsPaused,
+        isSnoozed: snoozedUntil != nil,
         isPinned: pinnedAt != nil,
         completedStepCount: completedStepCount,
         isInProgress: isInProgress,

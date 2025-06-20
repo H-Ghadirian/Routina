@@ -73,7 +73,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                 let tasks = try context.fetch(descriptor)
                 let payload: [String: Any] = [
                     "routines": tasks.compactMap { task -> [String: Any]? in
-                        guard !task.isPaused, !task.isCompletedOneOff, !task.isCanceledOneOff else { return nil }
+                        guard !task.isArchived(), !task.isCompletedOneOff, !task.isCanceledOneOff else { return nil }
                         var routinePayload: [String: Any] = [
                             "id": task.id.uuidString,
                             "name": (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
@@ -194,7 +194,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             )
 
             guard let task = try context.fetch(descriptor).first else { return }
-            guard !task.isPaused else { return }
+            guard !task.isArchived() else { return }
             guard !task.isCompletedOneOff, !task.isCanceledOneOff else { return }
             guard !task.isChecklistCompletionRoutine else { return }
             if task.isChecklistDriven {

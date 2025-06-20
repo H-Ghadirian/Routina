@@ -494,6 +494,12 @@ struct HomeTCAView: View {
 
             if !task.isOneOffTask {
                 Button {
+                    store.send(.notTodayTask(task.taskID))
+                } label: {
+                    Label("Not today!", systemImage: "moon.zzz")
+                }
+
+                Button {
                     store.send(.pauseTask(task.taskID))
                 } label: {
                     Label("Pause", systemImage: "pause.circle")
