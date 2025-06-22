@@ -383,6 +383,17 @@ struct TaskDetailTCAView: View {
             ])
         }
 
+        if let createdAtBadgeValue = store.state.createdAtBadgeValue {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Created",
+                    value: createdAtBadgeValue,
+                    systemImage: nil,
+                    tint: .secondary
+                )
+            ])
+        }
+
         return rows
     }
 
@@ -466,6 +477,17 @@ struct TaskDetailTCAView: View {
         }
         if !thirdRow.isEmpty {
             rows.append(thirdRow)
+        }
+
+        if let createdAtBadgeValue = store.state.createdAtBadgeValue {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Created",
+                    value: createdAtBadgeValue,
+                    systemImage: nil,
+                    tint: .secondary
+                )
+            ])
         }
 
         return rows

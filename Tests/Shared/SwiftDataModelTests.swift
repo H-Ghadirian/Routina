@@ -343,4 +343,52 @@ struct SwiftDataModelTests {
             )
         ])
     }
+
+    // MARK: - createdAt
+
+    @Test
+    func routineTask_createdAtIsSetByInit() throws {
+        let before = Date()
+        let task = RoutineTask(name: "Run")
+        let after = Date()
+        let createdAt = try #require(task.createdAt)
+        #expect(createdAt >= before)
+        #expect(createdAt <= after)
+    }
+
+    @Test
+    func routineTask_createdAtCanBeExplicitlyNil() {
+        let task = RoutineTask(name: "Run", createdAt: nil)
+        #expect(task.createdAt == nil)
+    }
+
+    @Test
+    func routineTask_createdAtCanBeExplicitlySet() {
+        let date = makeDate("2025-01-15T09:00:00Z")
+        let task = RoutineTask(name: "Run", createdAt: date)
+        #expect(task.createdAt == date)
+    }
+
+    @Test
+    func routineTask_createdAtPersistsAfterSaveAndFetch() async throws {
+        let context = makeInMemoryContext()
+        let date = makeDate("2025-06-01T08:00:00Z")
+        let task = RoutineTask(name: "Meditate", createdAt: date)
+        context.insert(task)
+        try context.save()
+
+        let fetched = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(fetched.createdAt == date)
+    }
+
+    @Test
+    func routineTask_nilCreatedAtPersistsAfterSaveAndFetch() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Legacy task", createdAt: nil)
+        context.insert(task)
+        try context.save()
+
+        let fetched = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(fetched.createdAt == nil)
+    }
 }

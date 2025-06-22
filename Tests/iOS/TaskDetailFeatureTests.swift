@@ -1654,3 +1654,44 @@ struct TaskDetailFeatureTests {
         #expect(scheduledIDs.value == [task.id.uuidString])
     }
 }
+
+@Suite(.serialized)
+@MainActor
+struct TaskDetailCreatedAtPresentationTests {
+    @Test
+    func createdAtBadgeValue_returnsNilWhenCreatedAtIsNil() {
+        let task = RoutineTask(name: "Old task", createdAt: nil)
+        let state = TaskDetailFeature.State(task: task)
+        #expect(state.createdAtBadgeValue == nil)
+    }
+
+    @Test
+    func createdAtBadgeValue_showsTodayLabelWhenCreatedToday() {
+        let task = RoutineTask(name: "New task", createdAt: Date())
+        let state = TaskDetailFeature.State(task: task)
+        let value = state.createdAtBadgeValue
+        #expect(value != nil)
+        #expect(value?.hasSuffix("· Today") == true)
+    }
+
+    @Test
+    func createdAtBadgeValue_showsDaysAgoAndDateForPastDate() throws {
+        let calendar = Calendar.current
+        let tenDaysAgo = calendar.date(byAdding: .day, value: -10, to: calendar.startOfDay(for: Date()))!
+        let task = RoutineTask(name: "Run", createdAt: tenDaysAgo)
+        let state = TaskDetailFeature.State(task: task)
+        let value = try #require(state.createdAtBadgeValue)
+        #expect(value.contains("10 days ago"))
+        #expect(value.contains("·"))
+    }
+
+    @Test
+    func createdAtBadgeValue_usesSingularDayWordForOneDay() throws {
+        let calendar = Calendar.current
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: Date()))!
+        let task = RoutineTask(name: "Walk", createdAt: yesterday)
+        let state = TaskDetailFeature.State(task: task)
+        let value = try #require(state.createdAtBadgeValue)
+        #expect(value.contains("1 day ago"))
+    }
+}

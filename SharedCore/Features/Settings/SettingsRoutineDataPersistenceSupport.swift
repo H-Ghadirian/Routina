@@ -41,6 +41,7 @@ enum SettingsRoutineDataPersistence {
             var pinnedAt: Date?
             var completedStepCount: Int?
             var sequenceStartedAt: Date?
+            var createdAt: Date?
         }
 
         struct Log: Codable {
@@ -119,7 +120,8 @@ enum SettingsRoutineDataPersistence {
                     snoozedUntil: $0.snoozedUntil,
                     pinnedAt: $0.pinnedAt,
                     completedStepCount: $0.completedSteps,
-                    sequenceStartedAt: $0.sequenceStartedAt
+                    sequenceStartedAt: $0.sequenceStartedAt,
+                    createdAt: $0.createdAt
                 )
             },
             logs: logs.map {
@@ -213,7 +215,8 @@ enum SettingsRoutineDataPersistence {
                     snoozedUntil: task.snoozedUntil,
                     pinnedAt: task.pinnedAt,
                     completedStepCount: Int16(clamping: task.completedStepCount ?? 0),
-                    sequenceStartedAt: task.sequenceStartedAt
+                    sequenceStartedAt: task.sequenceStartedAt,
+                    createdAt: task.createdAt
                 )
                 context.insert(importedTask)
                 importedTaskCount += 1

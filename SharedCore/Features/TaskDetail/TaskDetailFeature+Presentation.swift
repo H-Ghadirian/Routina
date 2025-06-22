@@ -348,6 +348,19 @@ extension TaskDetailFeature.State {
         return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
     }
 
+    var createdAtBadgeValue: String? {
+        guard let created = task.createdAt else { return nil }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let createdDay = calendar.startOfDay(for: created)
+        let days = calendar.dateComponents([.day], from: createdDay, to: today).day ?? 0
+        let dateText = created.formatted(date: .abbreviated, time: .omitted)
+        if days == 0 {
+            return "\(dateText) · Today"
+        }
+        return "\(dateText) · \(days) \(Self.dayWord(days)) ago"
+    }
+
     // MARK: - Helpers
 
     /// Days until the task is due, or nil if the task is archived for now.

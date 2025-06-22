@@ -213,6 +213,7 @@ enum CloudKitDirectPullService {
         var pinnedAt: Date?
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
+        var createdAt: Date?
     }
 
     private struct PlacePayload {
@@ -339,6 +340,10 @@ enum CloudKitDirectPullService {
             in: record,
             keys: ["sequenceStartedAt", "SEQUENCESTARTEDAT", "zsequencestartedat", "ZSEQUENCESTARTEDAT", "cd_sequencestartedat"]
         )
+        let createdAtValue = dateValue(
+            in: record,
+            keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"]
+        )
 
         guard
             intervalValue != nil
@@ -404,7 +409,8 @@ enum CloudKitDirectPullService {
             snoozedUntil: snoozedUntilValue,
             pinnedAt: pinnedAtValue,
             completedStepCount: Int16(clamping: completedStepCountValue ?? 0),
-            sequenceStartedAt: sequenceStartedAtValue
+            sequenceStartedAt: sequenceStartedAtValue,
+            createdAt: createdAtValue
         )
     }
 
@@ -520,6 +526,9 @@ enum CloudKitDirectPullService {
                 taskWithSameName.pinnedAt = payload.pinnedAt
                 taskWithSameName.completedStepCount = payload.completedStepCount
                 taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
+                if let createdAt = payload.createdAt {
+                    taskWithSameName.createdAt = createdAt
+                }
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -556,6 +565,9 @@ enum CloudKitDirectPullService {
             existing.pinnedAt = payload.pinnedAt
             existing.completedStepCount = payload.completedStepCount
             existing.sequenceStartedAt = payload.sequenceStartedAt
+            if let createdAt = payload.createdAt {
+                existing.createdAt = createdAt
+            }
             return existing.id
         } else {
             if let normalizedIncomingName,
@@ -591,6 +603,9 @@ enum CloudKitDirectPullService {
                 taskWithSameName.pinnedAt = payload.pinnedAt
                 taskWithSameName.completedStepCount = payload.completedStepCount
                 taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
+                if let createdAt = payload.createdAt {
+                    taskWithSameName.createdAt = createdAt
+                }
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -618,7 +633,8 @@ enum CloudKitDirectPullService {
                     snoozedUntil: payload.snoozedUntil,
                     pinnedAt: payload.pinnedAt,
                     completedStepCount: payload.completedStepCount,
-                    sequenceStartedAt: payload.sequenceStartedAt
+                    sequenceStartedAt: payload.sequenceStartedAt,
+                    createdAt: payload.createdAt
                 )
             )
             return payload.id
