@@ -1,6 +1,5 @@
 import Foundation
 import ComposableArchitecture
-import AmplitudeSwift
 
 struct AddRoutineFeature: Reducer {
     struct State: Equatable {
@@ -35,11 +34,9 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case .saveTapped:
-            AmplitudeTracker.shared.logEvent("Save routine")
             return onSave(state.routineName, state.frequency)
 
         case .cancelTapped:
-            AmplitudeTracker.shared.logEvent("Cancel routine")
             return onCancel()
         case .delegate(_):
             return .none

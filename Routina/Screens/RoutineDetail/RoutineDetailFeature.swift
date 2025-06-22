@@ -24,7 +24,6 @@ struct RoutineDetailFeature: Reducer {
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
-            AmplitudeTracker.shared.logEvent("Mark as done")
             state.task.lastDone = Date()
             return handleMarkAsDone(task: state.task)
 
