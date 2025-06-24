@@ -543,6 +543,7 @@ struct StatsView: View {
                 .frame(minWidth: chartMinWidth, minHeight: 260)
                 .padding(.top, 4)
             }
+            .defaultScrollAnchor(.trailing)
 
             HStack(spacing: 10) {
                 bottomInsightPill(
