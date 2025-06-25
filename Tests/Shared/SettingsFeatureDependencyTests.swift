@@ -154,4 +154,27 @@ struct SettingsFeatureDependencyTests {
         #expect(capturedNotificationPreference.value == false)
         #expect(cancelAllCallCount.value == 1)
     }
+
+    @Test
+    func openAppSettingsTapped_opensNotificationSettingsURLWhenAvailable() async {
+        let context = makeInMemoryContext()
+        let openedURL = LockIsolated<URL?>(nil)
+        let settingsURL = URL(string: "app-settings:notifications")!
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.urlOpenerClient = URLOpenerClient(
+                open: { url in
+                    openedURL.setValue(url)
+                },
+                notificationSettingsURL: { settingsURL }
+            )
+        }
+
+        await store.send(.openAppSettingsTapped)
+
+        #expect(openedURL.value == settingsURL)
+    }
 }
