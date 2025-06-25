@@ -23,11 +23,9 @@ struct RoutinaApp: App {
 
             }
             .environmentObject(addRoutineViewModel)
-#if os(iOS)
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 requestNotificationPermission()
             }
-#endif
         }
     }
 

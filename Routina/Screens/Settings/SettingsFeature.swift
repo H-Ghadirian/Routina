@@ -44,7 +44,6 @@ struct SettingsFeature {
                 }
                 
             case .contactUsTapped:
-#if os(iOS)
                 if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
                     return .run { _ in
                         await MainActor.run {
@@ -52,7 +51,6 @@ struct SettingsFeature {
                         }
                     }
                 }
-#endif
                 return .none
 
             case let .systemNotificationPermissionChecked(value):

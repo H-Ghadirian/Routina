@@ -61,11 +61,9 @@ class SettingsViewModel: ObservableObject {
     }
 
     func openAppNotificationSystemSettings() {
-#if os(iOS)
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
         }
-#endif
     }
 
     func disableNotifications() {
@@ -97,10 +95,8 @@ class SettingsViewModel: ObservableObject {
     }
 
     func openEmail() {
-#if os(iOS)
         if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
             UIApplication.shared.open(emailURL)
         }
-#endif
     }
 }

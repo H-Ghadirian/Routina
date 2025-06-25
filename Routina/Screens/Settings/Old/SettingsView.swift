@@ -6,18 +6,15 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
-#if os(iOS)
                 notificationSectionView
 
                 supportSectionView
-#endif
                 aboutSectionView
             }
             .navigationTitle("Settings")
             .onAppear {
                 viewModel.checkNotificationStatus()
             }
-#if os(iOS)
             .onReceive(
                 NotificationCenter.default.publisher(
                     for: UIApplication.didBecomeActiveNotification
@@ -25,7 +22,6 @@ struct SettingsView: View {
             ) { _ in
                 viewModel.checkNotificationStatus()
             }
-#endif
             .alert("Enable Notifications", isPresented: $viewModel.showNotificationAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("OK") {
@@ -37,7 +33,6 @@ struct SettingsView: View {
         }
     }
 
-#if os(iOS)
     private var notificationSectionView: some View {
         Section(header: Text("Notifications")) {
             Toggle("Enable Notifications", isOn: $viewModel.appSettingNotifEnabled)
@@ -73,7 +68,6 @@ struct SettingsView: View {
             }
         }
     }
-#endif
 
     private var aboutSectionView: some View {
         Section(header: Text("About")) {

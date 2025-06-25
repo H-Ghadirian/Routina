@@ -19,7 +19,6 @@ class AddRoutineViewModel: ObservableObject {
         }
     }
 
-#if os(iOS)
     func openSettings(dismiss: DismissAction) {
         if !SharedDefaults.app[.requestNotificationPermission] {
             showNotificationAlert = true
@@ -28,7 +27,6 @@ class AddRoutineViewModel: ObservableObject {
         selectedTab = Tab.settings.rawValue
         dismiss()
     }
-#endif
 
     func addRoutine(context: NSManagedObjectContext, dismiss: DismissAction) {
         if notificationsDisabled, !SharedDefaults.app[.requestNotificationPermission] {

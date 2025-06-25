@@ -23,13 +23,11 @@ struct HomeView: View {
             listOfSortedTasksView
             .navigationTitle("Routina")
             .toolbar {
-#if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddRoutine = true }) {
                         Label("Add Routine", systemImage: "plus")
                     }
                 }
-#endif
             }
             .sheet(isPresented: $showingAddRoutine) {
                 AddRoutineView().environment(\.managedObjectContext, viewContext)

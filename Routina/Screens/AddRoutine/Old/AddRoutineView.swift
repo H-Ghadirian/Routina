@@ -32,11 +32,10 @@ struct AddRoutineView: View {
             }
         }
         .onAppear(perform: viewModel.checkNotificationStatus)
-#if os(iOS)
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             viewModel.checkNotificationStatus()
         }
-#endif
+
     }
 
     private var addRoutineForm: some View {
@@ -48,15 +47,12 @@ struct AddRoutineView: View {
                 intervalPickerView
             }
 
-#if os(iOS)
             if viewModel.notificationsDisabled {
                 enableNotificationsButtonView
             }
-#endif
         }
     }
 
-#if os(iOS)
     private var enableNotificationsButtonView: some View {
         Button(action: { viewModel.openSettings(dismiss: dismiss) }) {
             Text("Enable Notifications")
@@ -67,7 +63,6 @@ struct AddRoutineView: View {
                 .cornerRadius(10)
         }
     }
-#endif
 
     private var intervalPickerView: some View {
         Picker("Interval", selection: $viewModel.interval) {
@@ -75,9 +70,7 @@ struct AddRoutineView: View {
                 Text("\(num) days").tag(num)
             }
         }
-#if os(iOS)
         .pickerStyle(WheelPickerStyle())
-#endif
         .frame(height: 100)
     }
 }

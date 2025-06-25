@@ -23,7 +23,6 @@ struct HomeTCAView: View {
                 }
                 .navigationTitle("Routina")
                 .toolbar {
-#if os(iOS)
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
                             viewStore.send(.setAddRoutineSheet(true))
@@ -31,7 +30,6 @@ struct HomeTCAView: View {
                             Label("Add Routine", systemImage: "plus")
                         }
                     }
-#endif
                 }
                 .sheet(
                     isPresented: viewStore.binding(

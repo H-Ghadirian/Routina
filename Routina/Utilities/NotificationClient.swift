@@ -4,7 +4,7 @@ import UserNotifications
 struct NotificationClient {
     var schedule: (_ task: RoutineTask) async -> Void
 }
-#if os(iOS)
+
 extension NotificationClient {
     static let live = NotificationClient(
         schedule: { task in
@@ -37,4 +37,3 @@ extension NotificationClient {
         return content
     }
 }
-#endif

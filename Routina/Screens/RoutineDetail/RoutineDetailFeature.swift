@@ -67,9 +67,7 @@ struct RoutineDetailFeature: Reducer {
                 try context.save()
                 let updatedLogs = try context.fetch(sortedDonesFetchRequest(for: task))
                 await send(.logsLoaded(updatedLogs))
-                #if os(iOS)
                 await notificationClient.schedule(task)
-                #endif
             } catch {
                 print("Error saving context: \(error)")
             }
