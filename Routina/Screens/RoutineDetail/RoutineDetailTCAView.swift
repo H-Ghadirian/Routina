@@ -5,7 +5,7 @@ struct RoutineDetailTCAView: View {
     let store: StoreOf<RoutineDetailFeature>
 
     private let columns = [
-        GridItem(.adaptive(minimum: 40), spacing: 10)
+        GridItem(.adaptive(minimum: 40), spacing: 5)
     ]
 
     var body: some View {
@@ -40,6 +40,7 @@ struct RoutineDetailTCAView: View {
                     viewStore.send(.markAsDone)
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(viewStore.daysSinceLastRoutine == 0)
 
                 if viewStore.logs.isEmpty {
                     Text("Never done yet")
