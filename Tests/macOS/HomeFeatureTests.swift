@@ -2124,6 +2124,22 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func tagSummaries_countsAndSortsByLinkedRoutineCount() {
+        let displays = [
+            makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", tags: ["Focus", "Learning"], interval: 1, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Run", emoji: "🏃", tags: ["health", "focus"], interval: 2, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Plan", emoji: "🗓️", tags: ["Learning"], interval: 3, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Shop", emoji: "🛒", tags: ["Errands"], interval: 1, lastDone: nil, isDoneToday: false)
+        ]
+
+        let summaries = HomeFeature.tagSummaries(from: displays)
+
+        #expect(summaries.map(\.name) == ["Focus", "Learning", "Errands", "health"])
+        #expect(summaries.map(\.linkedRoutineCount) == [2, 2, 1, 1])
+        #expect(HomeFeature.availableTags(from: displays) == ["Focus", "Learning", "Errands", "health"])
+    }
+
+    @Test
     func addRoutineSheetCancel_closesSheet() async {
         let context = makeInMemoryContext()
         let initialState = HomeFeature.State(

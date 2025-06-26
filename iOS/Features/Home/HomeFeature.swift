@@ -1203,7 +1203,30 @@ extension HomeFeature {
     }
 
     static func availableTags(from routineDisplays: [RoutineDisplay]) -> [String] {
-        RoutineTag.allTags(from: routineDisplays.map(\.tags))
+        tagSummaries(from: routineDisplays).map(\.name)
+    }
+
+    static func tagSummaries(from routineDisplays: [RoutineDisplay]) -> [RoutineTagSummary] {
+        let tagCounts = routineDisplays.reduce(into: [String: Int]()) { partialResult, task in
+            for tag in task.tags {
+                guard let normalizedTag = RoutineTag.normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += 1
+            }
+        }
+
+        return RoutineTag.allTags(from: routineDisplays.map(\.tags))
+            .map { tag in
+                RoutineTagSummary(
+                    name: tag,
+                    linkedRoutineCount: tagCounts[RoutineTag.normalized(tag) ?? tag, default: 0]
+                )
+            }
+            .sorted { lhs, rhs in
+                if lhs.linkedRoutineCount != rhs.linkedRoutineCount {
+                    return lhs.linkedRoutineCount > rhs.linkedRoutineCount
+                }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
     }
 
     static func matchesSelectedTag(_ selectedTag: String?, in tags: [String]) -> Bool {

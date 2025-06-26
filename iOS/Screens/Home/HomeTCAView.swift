@@ -652,17 +652,29 @@ struct HomeTCAView: View {
     }
 
     var availableTags: [String] {
-        HomeFeature.availableTags(from: allRoutineDisplays.filter(matchesCurrentTaskListMode))
+        tagSummaries.map(\.name)
+    }
+
+    var tagSummaries: [RoutineTagSummary] {
+        HomeFeature.tagSummaries(from: allRoutineDisplays.filter(matchesCurrentTaskListMode))
+    }
+
+    var allTagTaskCount: Int {
+        allRoutineDisplays.filter(matchesCurrentTaskListMode).count
     }
 
     /// Tags available for exclusion — scoped to tasks that already match the selected include tag.
     var availableExcludeTags: [String] {
+        availableExcludeTagSummaries.map(\.name)
+    }
+
+    var availableExcludeTagSummaries: [RoutineTagSummary] {
         let base = allRoutineDisplays.filter(matchesCurrentTaskListMode).filter { task in
             HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
         }
-        return HomeFeature.availableTags(from: base).filter { tag in
+        return HomeFeature.tagSummaries(from: base).filter { summary in
             // Don't offer the include tag itself as an exclude option
-            store.selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+            store.selectedTag.map { !RoutineTag.contains($0, in: [summary.name]) } ?? true
         }
     }
 

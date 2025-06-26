@@ -269,22 +269,28 @@ extension HomeTCAView {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            tagFilterButton(title: "All Tags", isSelected: store.selectedTag == nil) {
-                                store.send(.selectedTagChanged(nil))
-                            }
+                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                        HomeMacTagChipView(
+                            title: "All Tags",
+                            count: allTagTaskCount,
+                            systemImage: "tag.slash.fill",
+                            isSelected: store.selectedTag == nil
+                        ) {
+                            store.send(.selectedTagChanged(nil))
+                        }
 
-                            ForEach(availableTags, id: \.self) { tag in
-                                tagFilterButton(
-                                    title: "#\(tag)",
-                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
-                                ) {
-                                    store.send(.selectedTagChanged(tag))
-                                }
+                        ForEach(tagSummaries) { summary in
+                            HomeMacTagChipView(
+                                title: "#\(summary.name)",
+                                count: summary.linkedRoutineCount,
+                                systemImage: "tag.fill",
+                                isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [summary.name]) } ?? false
+                            ) {
+                                store.send(.selectedTagChanged(summary.name))
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -292,29 +298,30 @@ extension HomeTCAView {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(availableExcludeTags, id: \.self) { tag in
-                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                                tagFilterButton(
-                                    title: "#\(tag)",
-                                    isSelected: isExcluded,
-                                    selectedColor: .red
-                                ) {
-                                    if isExcluded {
-                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
-                                    } else {
-                                        var newTags = store.excludedTags
-                                        newTags.insert(tag)
-                                        store.send(.excludedTagsChanged(newTags))
-                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                                            store.send(.selectedTagChanged(nil))
-                                        }
+                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                        ForEach(availableExcludeTagSummaries) { summary in
+                            let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
+                            HomeMacTagChipView(
+                                title: "#\(summary.name)",
+                                count: summary.linkedRoutineCount,
+                                systemImage: "tag.slash.fill",
+                                isSelected: isExcluded,
+                                selectedColor: .red
+                            ) {
+                                if isExcluded {
+                                    store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != summary.name }))
+                                } else {
+                                    var newTags = store.excludedTags
+                                    newTags.insert(summary.name)
+                                    store.send(.excludedTagsChanged(newTags))
+                                    if store.selectedTag.map({ RoutineTag.contains($0, in: [summary.name]) }) == true {
+                                        store.send(.selectedTagChanged(nil))
                                     }
                                 }
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     if !store.excludedTags.isEmpty {
                         Text("Hiding tasks tagged: \(store.excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")

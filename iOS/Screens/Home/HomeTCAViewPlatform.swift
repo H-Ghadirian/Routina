@@ -278,16 +278,16 @@ extension HomeTCAView {
                 if !availableTags.isEmpty {
                     Section("Include Tag") {
                         WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            tagFilterButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                            tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: store.selectedTag == nil) {
                                 store.send(.selectedTagChanged(nil))
                             }
 
-                            ForEach(availableTags, id: \.self) { tag in
+                            ForEach(tagSummaries) { summary in
                                 tagFilterButton(
-                                    title: "#\(tag)",
-                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                    title: "#\(summary.name) \(summary.linkedRoutineCount)",
+                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [summary.name]) } ?? false
                                 ) {
-                                    store.send(.selectedTagChanged(tag))
+                                    store.send(.selectedTagChanged(summary.name))
                                 }
                             }
                         }
@@ -296,20 +296,20 @@ extension HomeTCAView {
 
                     Section("Exclude Tags") {
                         WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            ForEach(availableExcludeTags, id: \.self) { tag in
-                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                            ForEach(availableExcludeTagSummaries) { summary in
+                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
                                 tagFilterButton(
-                                    title: "#\(tag)",
+                                    title: "#\(summary.name) \(summary.linkedRoutineCount)",
                                     isSelected: isExcluded,
                                     selectedColor: .red
                                 ) {
                                     if isExcluded {
-                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
+                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != summary.name }))
                                     } else {
                                         var newTags = store.excludedTags
-                                        newTags.insert(tag)
+                                        newTags.insert(summary.name)
                                         store.send(.excludedTagsChanged(newTags))
-                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [summary.name]) }) == true {
                                             store.send(.selectedTagChanged(nil))
                                         }
                                     }
@@ -421,16 +421,16 @@ extension HomeTCAView {
             VStack(alignment: .leading, spacing: 8) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        tagFilterButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                        tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: store.selectedTag == nil) {
                             store.send(.selectedTagChanged(nil))
                         }
 
-                        ForEach(availableTags, id: \.self) { tag in
+                        ForEach(tagSummaries) { summary in
                             tagFilterButton(
-                                title: "#\(tag)",
-                                isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                title: "#\(summary.name) \(summary.linkedRoutineCount)",
+                                isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [summary.name]) } ?? false
                             ) {
-                                store.send(.selectedTagChanged(tag))
+                                store.send(.selectedTagChanged(summary.name))
                             }
                         }
                     }
