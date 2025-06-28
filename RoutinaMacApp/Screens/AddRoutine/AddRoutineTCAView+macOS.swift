@@ -1,4 +1,3 @@
-#if os(macOS)
 import SwiftUI
 
 extension View {
@@ -22,4 +21,3 @@ extension View {
         }
     }
 }
-#endif

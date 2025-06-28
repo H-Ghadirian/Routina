@@ -1,6 +1,4 @@
 import SwiftUI
-import RoutinaAppSupport
-import RoutinaMacSupport
 
 @main
 struct RoutinaMacApp: App {

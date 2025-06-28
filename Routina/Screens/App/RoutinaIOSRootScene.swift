@@ -1,21 +1,20 @@
-#if os(iOS)
 import ComposableArchitecture
 import SwiftData
 import SwiftUI
 import UIKit
 
-public struct RoutinaIOSRootScene: Scene {
+struct RoutinaIOSRootScene: Scene {
     private let persistence: PersistenceController
     private let store: StoreOf<AppFeature>
 
     @MainActor
-    public init() {
-        let persistence = RoutinaSupportBootstrap.prepare()
+    init() {
+        let persistence = RoutinaAppSceneBootstrap.preparePersistence()
         self.persistence = persistence
         self.store = RoutinaAppBootstrap.makeStore(using: persistence)
     }
 
-    public var body: some Scene {
+    var body: some Scene {
         WindowGroup {
             AppView(store: store)
                 .routinaAppRootWindowFrame()
@@ -36,4 +35,3 @@ public struct RoutinaIOSRootScene: Scene {
         .routinaAppWindowDefaults()
     }
 }
-#endif

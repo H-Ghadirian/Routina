@@ -1,4 +1,3 @@
-#if os(macOS)
 import AppKit
 import SwiftUI
 
@@ -11,4 +10,3 @@ enum RoutineDetailPlatformStyle {
     static let sectionCardStroke = Color.primary.opacity(0.12)
     static let dueTodayTitleColor: Color = .orange
 }
-#endif

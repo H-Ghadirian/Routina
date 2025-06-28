@@ -1,6 +1,4 @@
 import Foundation
-
-#if os(iOS)
 import SwiftData
 import UIKit
 import WatchConnectivity
@@ -239,4 +237,3 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         return .ignore
     }
 }
-#endif

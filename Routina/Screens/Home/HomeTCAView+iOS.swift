@@ -1,4 +1,3 @@
-#if !os(macOS)
 import SwiftUI
 
 extension View {
@@ -35,4 +34,3 @@ extension HomeTCAView {
         EmptyView()
     }
 }
-#endif

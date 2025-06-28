@@ -1,5 +1,4 @@
 import SwiftUI
-import RoutinaAppSupport
 
 @main
 struct RoutinaTCAApp: App {

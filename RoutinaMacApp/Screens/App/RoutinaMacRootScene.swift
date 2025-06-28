@@ -1,21 +1,19 @@
-import Foundation
-import RoutinaAppSupport
 import SwiftUI
 
-public struct RoutinaMacRootScene: Scene {
+struct RoutinaMacRootScene: Scene {
     private let homeRoot: AnyView
     private let statsRoot: AnyView
     private let settingsRoot: AnyView
 
     @MainActor
-    public init() {
-        let persistence = RoutinaSupportBootstrap.prepare()
+    init() {
+        let persistence = RoutinaAppSceneBootstrap.preparePersistence()
         self.homeRoot = RoutinaMacSceneFactory.makeHomeRoot(persistence: persistence)
         self.statsRoot = RoutinaMacSceneFactory.makeStatsRoot(persistence: persistence)
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
     }
 
-    public var body: some Scene {
+    var body: some Scene {
         WindowGroup {
             homeRoot
                 .onAppear {

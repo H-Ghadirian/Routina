@@ -1,4 +1,3 @@
-#if os(macOS)
 import ComposableArchitecture
 import SwiftUI
 
@@ -611,4 +610,3 @@ struct RoutineDetailEditRoutineContent: View {
         return "Runs out in \(intervalDays) days"
     }
 }
-#endif

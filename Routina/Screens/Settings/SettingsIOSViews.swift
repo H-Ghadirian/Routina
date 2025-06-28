@@ -1,4 +1,3 @@
-#if !os(macOS)
 import ComposableArchitecture
 import SwiftUI
 
@@ -711,4 +710,3 @@ private struct SettingsAppIconButton: View {
         .buttonStyle(.plain)
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if os(macOS)
 import AppKit
 import ComposableArchitecture
 import SwiftUI
@@ -955,4 +954,3 @@ private func settingsInfoRow(title: String, value: String) -> some View {
             .multilineTextAlignment(.trailing)
     }
 }
-#endif

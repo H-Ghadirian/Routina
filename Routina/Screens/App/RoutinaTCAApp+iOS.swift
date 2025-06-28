@@ -1,4 +1,3 @@
-#if !os(macOS)
 import SwiftUI
 
 extension View {
@@ -12,4 +11,3 @@ extension Scene {
         self
     }
 }
-#endif

@@ -72,13 +72,14 @@ let package = Package(
                 "Routina/RoutinaMacDev.entitlements",
                 "Routina/RoutinaMacProd.entitlements",
                 "Routina/Screens/App/RoutinaTCAApp.swift",
-                "RoutinaMacApp/Commands",
-                "RoutinaMacApp/RoutinaMacApp.swift",
-                "RoutinaMacApp/Utilities/MacMenuCleanup.swift",
+                "Routina/Utilities/PlatformSupport+UIKit.swift",
+                "Routina/Utilities/RemoteNotificationIOSDelegate.swift",
+                "Routina/Utilities/WatchRoutineSyncBridge.swift",
                 "RoutinaWatchApp",
                 "RoutinaWatchExtension",
                 "RoutinaTests",
                 "RoutinaUITests",
+                "RoutinaMacApp",
                 "Modules/RoutinaMacSupport",
                 "Modules/RoutinaWatchSupport",
                 "build",
@@ -87,18 +88,19 @@ let package = Package(
             ],
             sources: [
                 "Routina/Models",
-                "Routina/Screens",
+                "Routina/Screens/AddRoutine/AddRoutineFeature.swift",
+                "Routina/Screens/App/AppFeature.swift",
+                "Routina/Screens/Home/HomeFeature.swift",
+                "Routina/Screens/RoutineDetail/RoutineDetailFeature.swift",
+                "Routina/Screens/RoutineDetail/RoutinePauseArchivePresentation.swift",
+                "Routina/Screens/Settings/PlaceLocationPickerCameraConfiguration.swift",
+                "Routina/Screens/Settings/SettingsFeature.swift",
+                "Routina/Screens/Settings/SettingsViewSupport.swift",
                 "Routina/Utilities",
-                "RoutinaMacApp/Screens",
-                "RoutinaMacApp/Utilities/PlatformSupport+AppKit.swift",
-                "Modules/RoutinaAppSupport",
             ]
         ),
         .target(
             name: "RoutinaMacSupport",
-            dependencies: [
-                "RoutinaAppSupport",
-            ],
             path: ".",
             exclude: [
                 ".git",
@@ -123,7 +125,6 @@ let package = Package(
             sources: [
                 "RoutinaMacApp/Commands",
                 "RoutinaMacApp/Utilities/MacMenuCleanup.swift",
-                "Modules/RoutinaMacSupport",
             ]
         ),
         .target(

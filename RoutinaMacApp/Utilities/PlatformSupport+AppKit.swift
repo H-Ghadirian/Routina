@@ -1,4 +1,3 @@
-#if canImport(AppKit)
 import AppKit
 import Foundation
 import SwiftUI
@@ -95,4 +94,3 @@ extension View {
         self
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if os(macOS)
 import SwiftUI
 
 private enum RoutinaAppWindowSizing {
@@ -26,4 +25,3 @@ extension Scene {
         .windowResizability(.contentMinSize)
     }
 }
-#endif

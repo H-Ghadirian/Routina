@@ -1,8 +1,8 @@
 import SwiftData
 
-package enum RoutinaSupportBootstrap {
+enum RoutinaAppSceneBootstrap {
     @MainActor
-    package static func prepare() -> PersistenceController {
+    static func preparePersistence() -> PersistenceController {
         RoutinaAppBootstrap.configure()
         return PersistenceController.shared
     }

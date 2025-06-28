@@ -1,4 +1,3 @@
-#if os(macOS)
 import SwiftUI
 
 private enum HomeSidebarSizing {
@@ -107,4 +106,3 @@ extension HomeTCAView {
         return "This will permanently remove \(routineName) and its logs."
     }
 }
-#endif

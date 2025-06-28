@@ -27,8 +27,6 @@
 		3D1000062E70000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 		5F1000012E90000100000001 /* RoutinaWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5F1000072E90000100000001 /* RoutinaWatchApp.app */; };
 		5F1000022E90000100000001 /* RoutinaWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5F1000082E90000100000001 /* RoutinaWatchExtension.appex */; };
-		7A2100012F20000100000001 /* RoutinaAppSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200022F20000100000001 /* RoutinaAppSupport */; };
-		7A2100022F20000100000001 /* RoutinaAppSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200022F20000100000001 /* RoutinaAppSupport */; };
 		7A2100072F20000100000001 /* RoutinaWatchSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200042F20000100000001 /* RoutinaWatchSupport */; };
 		7A2100082F20000100000001 /* RoutinaAppSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 7A2200022F20000100000001 /* RoutinaAppSupport */; };
 /* End PBXBuildFile section */
@@ -106,57 +104,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Models/RoutineModels.swift,
-				Models/RoutinePlaceModels.swift,
-				Screens/AddRoutine/AddRoutineFeature.swift,
-				Screens/AddRoutine/AddRoutineTCAView.swift,
-				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
-				Screens/App/AppFeature.swift,
-				Screens/App/AppView.swift,
-				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
-				Screens/Home/HomeFeature.swift,
-				Screens/Home/HomeTCAView.swift,
-				"Screens/Home/HomeTCAView+nonmacOS.swift",
-				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
-				Screens/RoutineDetail/RoutineDetailFeature.swift,
-				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",
-				Screens/RoutineDetail/RoutineDetailTCAView.swift,
-				Screens/RoutineDetail/RoutinePauseArchivePresentation.swift,
-				Screens/Settings/PlaceLocationPickerCameraConfiguration.swift,
-				Screens/Settings/PlaceLocationPickerSheet.swift,
-				Screens/Settings/SettingsFeature.swift,
-				Screens/Settings/SettingsIOSViews.swift,
 				Screens/Settings/SettingsMacView.swift,
-				Screens/Settings/SettingsTagViews.swift,
-				Screens/Settings/SettingsTCAView.swift,
-				Screens/Settings/SettingsViewSupport.swift,
-				Screens/Shared/EmojiPickerSheet.swift,
-				Screens/Stats/StatsView.swift,
-				Utilities/AppEnvironment.swift,
-				Utilities/AppIconClient.swift,
-				Utilities/CloudDataResetService.swift,
-				Utilities/CloudKitDirectPullService.swift,
-				Utilities/CloudKitPushSubscriptionService.swift,
-				Utilities/CloudKitSyncDiagnostics.swift,
-				"Utilities/DependencyValues+.swift",
-				Utilities/EmojiCatalog.swift,
-				Utilities/LocationClient.swift,
-				Utilities/NotificationClient.swift,
-				Utilities/NotificationCoordinator.swift,
-				Utilities/NotificationPreferences.swift,
-				Utilities/PersistenceController.swift,
-				Utilities/PlatformSupport.swift,
-				"Utilities/PlatformSupport+Fallback.swift",
-				"Utilities/PlatformSupport+UIKit.swift",
-				Utilities/RemoteNotificationDelegates.swift,
-				Utilities/RoutinaAppBootstrap.swift,
-				Utilities/RoutineCompletionStats.swift,
-				Utilities/RoutineDateMath.swift,
-				Utilities/RoutineLogHistory.swift,
-				Utilities/RoutineTag.swift,
-				Utilities/Tab.swift,
-				Utilities/UserDefaultsProtocol.swift,
-				Utilities/WatchRoutineSyncBridge.swift,
 			);
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
 		};
@@ -164,57 +112,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Models/RoutineModels.swift,
-				Models/RoutinePlaceModels.swift,
-				Screens/AddRoutine/AddRoutineFeature.swift,
-				Screens/AddRoutine/AddRoutineTCAView.swift,
-				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
-				Screens/App/AppFeature.swift,
-				Screens/App/AppView.swift,
-				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
-				Screens/Home/HomeFeature.swift,
-				Screens/Home/HomeTCAView.swift,
-				"Screens/Home/HomeTCAView+nonmacOS.swift",
-				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
-				Screens/RoutineDetail/RoutineDetailFeature.swift,
-				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",
-				Screens/RoutineDetail/RoutineDetailTCAView.swift,
-				Screens/RoutineDetail/RoutinePauseArchivePresentation.swift,
-				Screens/Settings/PlaceLocationPickerCameraConfiguration.swift,
-				Screens/Settings/PlaceLocationPickerSheet.swift,
-				Screens/Settings/SettingsFeature.swift,
-				Screens/Settings/SettingsIOSViews.swift,
 				Screens/Settings/SettingsMacView.swift,
-				Screens/Settings/SettingsTagViews.swift,
-				Screens/Settings/SettingsTCAView.swift,
-				Screens/Settings/SettingsViewSupport.swift,
-				Screens/Shared/EmojiPickerSheet.swift,
-				Screens/Stats/StatsView.swift,
-				Utilities/AppEnvironment.swift,
-				Utilities/AppIconClient.swift,
-				Utilities/CloudDataResetService.swift,
-				Utilities/CloudKitDirectPullService.swift,
-				Utilities/CloudKitPushSubscriptionService.swift,
-				Utilities/CloudKitSyncDiagnostics.swift,
-				"Utilities/DependencyValues+.swift",
-				Utilities/EmojiCatalog.swift,
-				Utilities/LocationClient.swift,
-				Utilities/NotificationClient.swift,
-				Utilities/NotificationCoordinator.swift,
-				Utilities/NotificationPreferences.swift,
-				Utilities/PersistenceController.swift,
-				Utilities/PlatformSupport.swift,
-				"Utilities/PlatformSupport+Fallback.swift",
-				"Utilities/PlatformSupport+UIKit.swift",
-				Utilities/RemoteNotificationDelegates.swift,
-				Utilities/RoutinaAppBootstrap.swift,
-				Utilities/RoutineCompletionStats.swift,
-				Utilities/RoutineDateMath.swift,
-				Utilities/RoutineLogHistory.swift,
-				Utilities/RoutineTag.swift,
-				Utilities/Tab.swift,
-				Utilities/UserDefaultsProtocol.swift,
-				Utilities/WatchRoutineSyncBridge.swift,
 			);
 			target = 3D1000402E70000100000001 /* RoutinaDev */;
 		};
@@ -285,7 +183,6 @@
 				2B1000032E5F000100000001 /* Perception in Frameworks */,
 				2B1000072E5F000100000001 /* ConcurrencyExtras in Frameworks */,
 				2B1000092E5F000100000001 /* PerceptionCore in Frameworks */,
-				7A2100012F20000100000001 /* RoutinaAppSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,7 +217,6 @@
 				3D1000042E70000100000001 /* Perception in Frameworks */,
 				3D1000052E70000100000001 /* ConcurrencyExtras in Frameworks */,
 				3D1000062E70000100000001 /* PerceptionCore in Frameworks */,
-				7A2100022F20000100000001 /* RoutinaAppSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -406,7 +302,6 @@
 				2B1001032E5F000100000001 /* Perception */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
 				2B1001092E5F000100000001 /* PerceptionCore */,
-				7A2200022F20000100000001 /* RoutinaAppSupport */,
 			);
 			productName = RoutinaProd;
 			productReference = 2A5A74BD2D7B92F600E91075 /* Routina.app */;
@@ -486,7 +381,6 @@
 				2B1001032E5F000100000001 /* Perception */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
 				2B1001092E5F000100000001 /* PerceptionCore */,
-				7A2200022F20000100000001 /* RoutinaAppSupport */,
 			);
 			productName = RoutinaDev;
 			productReference = 3D1000102E70000100000001 /* RoutinaDev.app */;

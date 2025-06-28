@@ -1,10 +1,9 @@
-#if os(macOS)
 import AppKit
 import SwiftUI
 
-package enum RoutinaMacSceneFactory {
+enum RoutinaMacSceneFactory {
     @MainActor
-    package static func makeHomeRoot(persistence: PersistenceController) -> AnyView {
+    static func makeHomeRoot(persistence: PersistenceController) -> AnyView {
         let store = RoutinaAppBootstrap.makeStore(using: persistence)
 
         return AnyView(
@@ -29,7 +28,7 @@ package enum RoutinaMacSceneFactory {
     }
 
     @MainActor
-    package static func makeStatsRoot(persistence: PersistenceController) -> AnyView {
+    static func makeStatsRoot(persistence: PersistenceController) -> AnyView {
         AnyView(
             StatsView()
                 .frame(
@@ -41,7 +40,7 @@ package enum RoutinaMacSceneFactory {
     }
 
     @MainActor
-    package static func makeSettingsRoot(persistence: PersistenceController) -> AnyView {
+    static func makeSettingsRoot(persistence: PersistenceController) -> AnyView {
         let store = RoutinaAppBootstrap.makeStore(using: persistence)
 
         return AnyView(
@@ -57,22 +56,21 @@ package enum RoutinaMacSceneFactory {
     }
 }
 
-package enum RoutinaMacWindowSizing {
-    package static let defaultWidth: CGFloat = 1080
-    package static let defaultHeight: CGFloat = 680
-    package static let minWidth: CGFloat = 900
-    package static let minHeight: CGFloat = 560
+enum RoutinaMacWindowSizing {
+    static let defaultWidth: CGFloat = 1080
+    static let defaultHeight: CGFloat = 680
+    static let minWidth: CGFloat = 900
+    static let minHeight: CGFloat = 560
 }
 
-package enum RoutinaMacSettingsSizing {
-    package static let minWidth: CGFloat = 640
-    package static let minHeight: CGFloat = 560
+enum RoutinaMacSettingsSizing {
+    static let minWidth: CGFloat = 640
+    static let minHeight: CGFloat = 560
 }
 
-package enum RoutinaMacStatsSizing {
-    package static let defaultWidth: CGFloat = 900
-    package static let defaultHeight: CGFloat = 620
-    package static let minWidth: CGFloat = 760
-    package static let minHeight: CGFloat = 520
+enum RoutinaMacStatsSizing {
+    static let defaultWidth: CGFloat = 900
+    static let defaultHeight: CGFloat = 620
+    static let minWidth: CGFloat = 760
+    static let minHeight: CGFloat = 520
 }
-#endif
