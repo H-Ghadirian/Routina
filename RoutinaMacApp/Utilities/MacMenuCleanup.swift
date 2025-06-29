@@ -4,7 +4,6 @@ import AppKit
 enum MacMenuCleanup {
     private static let rootMenusToRemove: Set<String> = [
         "File",
-        "Edit",
         "View",
         "Window",
         "Help"
