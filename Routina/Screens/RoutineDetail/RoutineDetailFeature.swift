@@ -25,6 +25,8 @@ struct RoutineDetailFeature: Reducer {
         switch action {
         case .markAsDone:
             state.task.lastDone = Date()
+            state.daysSinceLastRoutine = 0
+            state.overdueDays = 0
             return handleMarkAsDone(task: state.task)
 
         case let .logsLoaded(logs):
