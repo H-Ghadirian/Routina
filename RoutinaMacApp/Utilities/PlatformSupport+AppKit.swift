@@ -47,6 +47,19 @@ extension PlatformSupport {
     }
 
     @MainActor
+    static func selectTaskImageURL() async -> URL? {
+        let panel = NSOpenPanel()
+        panel.title = "Choose Task Image"
+        panel.prompt = "Choose"
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.image]
+
+        return await presentDataTransferPanel(panel)
+    }
+
+    @MainActor
     static func applyAppIcon(_ option: AppIconOption) {
         guard let image = NSImage(named: option.assetName) else {
             NSLog("Missing app icon asset named '\(option.assetName)'")

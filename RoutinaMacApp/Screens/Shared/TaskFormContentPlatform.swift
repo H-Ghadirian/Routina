@@ -9,7 +9,6 @@ struct TaskFormContent: View {
 
     @FocusState private var fallbackNameFocused: Bool
     @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var isImageFileImporterPresented = false
     @State private var isFileImporterPresented = false
     @State private var isAttachmentDropTargeted = false
     @State private var isImageDropTargeted = false
@@ -946,7 +945,7 @@ struct TaskFormContent: View {
                 .buttonStyle(.bordered)
 
                 Button(model.imageData == nil ? "Browse in Finder" : "Browse Another File") {
-                    isImageFileImporterPresented = true
+                    browseForImageFile()
                 }
                 .buttonStyle(.bordered)
 
@@ -986,15 +985,6 @@ struct TaskFormContent: View {
             return true
         } isTargeted: { isTargeted in
             isImageDropTargeted = isTargeted
-        }
-        .fileImporter(
-            isPresented: $isImageFileImporterPresented,
-            allowedContentTypes: [.image],
-            allowsMultipleSelection: false
-        ) { result in
-            guard case let .success(urls) = result,
-                  let imageURL = urls.first(where: { isSupportedImageFile($0) }) else { return }
-            loadPickedImage(fromFileAt: imageURL)
         }
     }
 
@@ -1246,6 +1236,17 @@ struct TaskFormContent: View {
     private func loadPickedImage(fromFileAt url: URL) {
         let compressedData = TaskImageProcessor.compressedImageData(fromFileAt: url)
         model.onImagePicked(compressedData)
+    }
+
+    private func browseForImageFile() {
+        Task { @MainActor in
+            guard let url = await PlatformSupport.selectTaskImageURL(),
+                  isSupportedImageFile(url)
+            else {
+                return
+            }
+            loadPickedImage(fromFileAt: url)
+        }
     }
 
     private func loadAttachment(fromFileAt url: URL) {
