@@ -1,6 +1,11 @@
 import Foundation
 
-enum TodoState: String, Codable, CaseIterable, Equatable, Sendable {
+enum TodoState: String, Codable, CaseIterable, Equatable, Sendable, Identifiable {
+    var id: String { rawValue }
+
+    static var filterableCases: [TodoState] { [.ready, .inProgress, .blocked, .paused] }
+
+
     case ready
     case inProgress
     case blocked

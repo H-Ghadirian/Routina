@@ -142,6 +142,7 @@ struct HomeFeature {
         var excludedTags: Set<String> = []
         var selectedManualPlaceFilterID: UUID? = nil
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+        var selectedTodoStateFilter: TodoState? = nil
         var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:]
         var isFilterSheetPresented: Bool = false
 
@@ -192,6 +193,7 @@ struct HomeFeature {
         case excludedTagsChanged(Set<String>)
         case selectedManualPlaceFilterIDChanged(UUID?)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
+        case selectedTodoStateFilterChanged(TodoState?)
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
 
@@ -375,7 +377,8 @@ struct HomeFeature {
                     excludedTags: state.excludedTags,
                     selectedFilter: state.selectedFilter,
                     selectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
-                    selectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter
+                    selectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter,
+                    selectedTodoStateFilter: state.selectedTodoStateFilter
                 )
                 // Restore filter state for the new mode
                 let savedSnapshot = state.tabFilterSnapshots[mode.rawValue]
@@ -385,6 +388,7 @@ struct HomeFeature {
                 state.selectedFilter = snapshot.selectedFilter
                 state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
                 state.selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
+                state.selectedTodoStateFilter = snapshot.selectedTodoStateFilter
                 // First time on a mode: also clear hideUnavailableRoutines
                 if savedSnapshot == nil && state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
@@ -453,6 +457,11 @@ struct HomeFeature {
                 persistTemporaryViewState(state)
                 return .none
 
+            case let .selectedTodoStateFilterChanged(filter):
+                state.selectedTodoStateFilter = filter
+                persistTemporaryViewState(state)
+                return .none
+
             case let .isFilterSheetPresentedChanged(isPresented):
                 state.isFilterSheetPresented = isPresented
                 return .none
@@ -462,6 +471,7 @@ struct HomeFeature {
                 state.excludedTags = []
                 state.selectedManualPlaceFilterID = nil
                 state.selectedImportanceUrgencyFilter = nil
+                state.selectedTodoStateFilter = nil
                 if state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
                     appSettingsClient.setHideUnavailableRoutines(false)
@@ -1261,6 +1271,7 @@ struct HomeFeature {
         state.excludedTags = persistedState.homeExcludedTags
         state.selectedManualPlaceFilterID = persistedState.homeSelectedManualPlaceFilterID
         state.selectedImportanceUrgencyFilter = persistedState.homeSelectedImportanceUrgencyFilter
+        state.selectedTodoStateFilter = persistedState.homeSelectedTodoStateFilter
         state.tabFilterSnapshots = persistedState.homeTabFilterSnapshots
         state.selectedTimelineRange = persistedState.homeSelectedTimelineRange
         state.selectedTimelineFilterType = persistedState.homeSelectedTimelineFilterType
@@ -1286,6 +1297,7 @@ struct HomeFeature {
                 state.selectedFilter = snapshot.selectedFilter
                 state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
                 state.selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
+                state.selectedTodoStateFilter = snapshot.selectedTodoStateFilter
             }
         }
     }
@@ -1298,7 +1310,8 @@ struct HomeFeature {
             excludedTags: state.excludedTags,
             selectedFilter: state.selectedFilter,
             selectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
-            selectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter
+            selectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter,
+            selectedTodoStateFilter: state.selectedTodoStateFilter
         )
         appSettingsClient.setTemporaryViewState(
             TemporaryViewState(
@@ -1309,6 +1322,7 @@ struct HomeFeature {
                 homeExcludedTags: state.excludedTags,
                 homeSelectedManualPlaceFilterID: state.selectedManualPlaceFilterID,
                 homeSelectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter,
+                homeSelectedTodoStateFilter: state.selectedTodoStateFilter,
                 homeTabFilterSnapshots: tabFilterSnapshots,
                 hideUnavailableRoutines: state.hideUnavailableRoutines,
                 homeSelectedTimelineRange: state.selectedTimelineRange,
@@ -1381,5 +1395,11 @@ extension HomeFeature {
     ) -> Bool {
         guard let selectedFilter else { return true }
         return selectedFilter.matches(importance: importance, urgency: urgency)
+    }
+
+    static func matchesTodoStateFilter(_ filter: TodoState?, task: RoutineDisplay) -> Bool {
+        guard let filter else { return true }
+        guard task.isOneOffTask else { return true }
+        return task.todoState == filter
     }
 }

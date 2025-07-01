@@ -10,6 +10,7 @@ struct TabFilterStateManager {
         var selectedFilter: RoutineListFilter
         var selectedManualPlaceFilterID: UUID?
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+        var selectedTodoStateFilter: TodoState? = nil
 
         static var `default`: Snapshot {
             Snapshot(
@@ -17,7 +18,8 @@ struct TabFilterStateManager {
                 excludedTags: [],
                 selectedFilter: .all,
                 selectedManualPlaceFilterID: nil,
-                selectedImportanceUrgencyFilter: nil
+                selectedImportanceUrgencyFilter: nil,
+                selectedTodoStateFilter: nil
             )
         }
     }
@@ -48,6 +50,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeExcludedTags: Set<String>
     var homeSelectedManualPlaceFilterID: UUID?
     var homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+    var homeSelectedTodoStateFilter: TodoState? = nil
     var homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot]
     var hideUnavailableRoutines: Bool
     var homeSelectedTimelineRange: TimelineRange
@@ -75,6 +78,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeExcludedTags: [],
         homeSelectedManualPlaceFilterID: nil,
         homeSelectedImportanceUrgencyFilter: nil,
+        homeSelectedTodoStateFilter: nil,
         homeTabFilterSnapshots: [:],
         hideUnavailableRoutines: false,
         homeSelectedTimelineRange: .all,

@@ -44,6 +44,7 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
+                && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                 && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                 && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
@@ -58,6 +59,7 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
+                && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                 && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                 && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
@@ -76,6 +78,7 @@ extension HomeTCAView {
                     && (includePinned || !task.isPinned)
                     && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
+                    && matchesTodoStateFilter(task)
                     && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                     && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                     && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
@@ -94,6 +97,7 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
+                && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
                 && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
                 && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
@@ -129,6 +133,10 @@ extension HomeTCAView {
     func matchesManualPlaceFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
         guard let selectedManualPlaceFilterID = store.selectedManualPlaceFilterID else { return true }
         return task.placeID == selectedManualPlaceFilterID
+    }
+
+    func matchesTodoStateFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        HomeFeature.matchesTodoStateFilter(store.selectedTodoStateFilter, task: task)
     }
 
     func groupedRoutineSections(

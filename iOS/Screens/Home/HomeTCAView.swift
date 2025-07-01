@@ -328,6 +328,7 @@ struct HomeTCAView: View {
         count += store.excludedTags.count
         if store.selectedManualPlaceFilterID != nil { count += 1 }
         if store.selectedImportanceUrgencyFilter != nil { count += 1 }
+        if store.selectedTodoStateFilter != nil { count += 1 }
         if store.hideUnavailableRoutines { count += 1 }
         return count
     }

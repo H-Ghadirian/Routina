@@ -270,6 +270,27 @@ extension HomeTCAView {
                     .pickerStyle(.inline)
                 }
 
+                if store.taskListMode == .todos || store.taskListMode == .all {
+                    Section("Todo State") {
+                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                            tagFilterButton(title: "Any State", isSelected: store.selectedTodoStateFilter == nil) {
+                                store.send(.selectedTodoStateFilterChanged(nil))
+                            }
+                            ForEach(TodoState.filterableCases) { state in
+                                tagFilterButton(
+                                    title: state.displayTitle,
+                                    isSelected: store.selectedTodoStateFilter == state
+                                ) {
+                                    store.send(.selectedTodoStateFilterChanged(
+                                        store.selectedTodoStateFilter == state ? nil : state
+                                    ))
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
                 Section("Importance & Urgency") {
                     importanceUrgencyMatrixSection
                         .padding(.vertical, 4)
