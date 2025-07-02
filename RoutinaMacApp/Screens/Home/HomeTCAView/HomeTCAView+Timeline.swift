@@ -157,6 +157,37 @@ extension HomeTCAView {
         return "Select tags to hide done items that have them."
     }
 
+    var macActiveTimelineFiltersSummary: String? {
+        var labels: [String] = []
+
+        if store.selectedTimelineRange != .all {
+            labels.append(store.selectedTimelineRange.rawValue)
+        }
+
+        if store.selectedTimelineFilterType != .all {
+            labels.append(store.selectedTimelineFilterType.rawValue)
+        }
+
+        if let filter = store.selectedTimelineImportanceUrgencyFilter {
+            labels.append("\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+")
+        }
+
+        if let selectedTag = store.selectedTimelineTag {
+            labels.append("#\(selectedTag)")
+        }
+
+        if !store.selectedTimelineExcludedTags.isEmpty {
+            if store.selectedTimelineExcludedTags.count == 1, let tag = store.selectedTimelineExcludedTags.first {
+                labels.append("not #\(tag)")
+            } else {
+                labels.append("not \(store.selectedTimelineExcludedTags.count) tags")
+            }
+        }
+
+        let summary = summarizedFilterLabels(from: labels, maxVisibleCount: 4)
+        return summary.isEmpty ? nil : summary
+    }
+
     private func timelineTagCount(for tag: String) -> Int {
         filteredTimelineEntriesForTagging.filter { entry in
             RoutineTag.contains(tag, in: entry.tags)
@@ -165,8 +196,6 @@ extension HomeTCAView {
 
     var macTimelineFiltersDetailView: some View {
         HomeMacTimelineFilterDetailContainerView(
-            showsClearButton: macHasCustomFiltersApplied,
-            onClear: { clearAllMacFilters() },
             onAvailableTagsChange: { validateSelectedTimelineTag() },
             availableTags: availableTimelineTags
         ) {

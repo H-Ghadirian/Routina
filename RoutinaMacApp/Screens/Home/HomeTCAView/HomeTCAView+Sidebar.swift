@@ -9,6 +9,28 @@ extension HomeTCAView {
     var isMacAddTaskMode: Bool  { store.macSidebarMode == .addTask }
 
     var macSidebarNavigationTitle: String {
+        if store.isMacFilterDetailPresented {
+            switch store.macSidebarMode {
+            case .routines:
+                switch store.taskListMode {
+                case .all:
+                    return "Filter All"
+                case .routines:
+                    return "Filter Routines"
+                case .todos:
+                    return "Filter Todos"
+                }
+            case .timeline:
+                return "Filter Dones"
+            case .stats:
+                return "Stats"
+            case .settings:
+                return "Settings"
+            case .addTask:
+                return "Add Task"
+            }
+        }
+
         switch store.macSidebarMode {
         case .routines:
             switch store.taskListMode {
@@ -53,15 +75,60 @@ extension HomeTCAView {
         )
     }
 
-    var macFilterDetailDescription: String {
-        switch store.taskListMode {
-        case .all:
-            return "Refine the combined list by status, importance, urgency, tag, and place. Changes apply to the sidebar immediately."
-        case .routines:
-            return "Refine the routine list by status, importance, urgency, tag, and place. Changes apply to the sidebar immediately."
-        case .todos:
-            return "Refine the todo list by status, importance, urgency, tag, and place. Changes apply to the sidebar immediately."
+    var macActiveTaskFiltersSummary: String? {
+        let summary = summarizedFilterLabels(from: taskFilterLabels, maxVisibleCount: 4)
+        return summary.isEmpty ? nil : summary
+    }
+
+    var macSidebarSearchFiltersSummary: String? {
+        isMacTimelineMode ? macActiveTimelineFiltersSummary : macActiveTaskFiltersSummary
+    }
+
+    private var taskFilterLabels: [String] {
+        var labels: [String] = []
+
+        if store.selectedFilter != .all {
+            labels.append(store.selectedFilter.rawValue)
         }
+
+        if let todoState = store.selectedTodoStateFilter {
+            labels.append(todoState.displayTitle)
+        }
+
+        if let selectedTag = store.selectedTag {
+            labels.append("#\(selectedTag)")
+        }
+
+        if !store.excludedTags.isEmpty {
+            if store.excludedTags.count == 1, let tag = store.excludedTags.first {
+                labels.append("not #\(tag)")
+            } else {
+                labels.append("not \(store.excludedTags.count) tags")
+            }
+        }
+
+        if let selectedPlaceName {
+            labels.append(selectedPlaceName)
+        }
+
+        if let selectedImportanceUrgencyFilterLabel {
+            labels.append(selectedImportanceUrgencyFilterLabel)
+        }
+
+        if store.hideUnavailableRoutines {
+            labels.append("Away hidden")
+        }
+
+        return labels
+    }
+
+    func summarizedFilterLabels(from labels: [String], maxVisibleCount: Int) -> String {
+        guard !labels.isEmpty else { return "" }
+        let visibleLabels = Array(labels.prefix(maxVisibleCount))
+        let remainderCount = labels.count - visibleLabels.count
+        let baseSummary = visibleLabels.joined(separator: " • ")
+        guard remainderCount > 0 else { return baseSummary }
+        return "\(baseSummary) +\(remainderCount)"
     }
 
     func clearAllMacFilters() {
@@ -249,6 +316,7 @@ extension HomeTCAView {
     var macSearchPanel: some View {
         HomeMacSearchPanelView(
             hasCustomFiltersApplied: macHasCustomFiltersApplied,
+            activeFiltersSummary: macSidebarSearchFiltersSummary,
             isFilterDetailPresented: store.isMacFilterDetailPresented,
             onToggleFilters: {
                 store.send(.setMacFilterDetailPresented(!store.isMacFilterDetailPresented))
@@ -272,11 +340,6 @@ extension HomeTCAView {
 
     var macFiltersDetailView: some View {
         HomeMacFilterDetailContainerView(
-            title: "Filters",
-            description: macFilterDetailDescription,
-            clearButtonTitle: "Clear All Filters",
-            showsClearButton: macHasCustomFiltersApplied,
-            onClear: { clearAllMacFilters() }
         ) {
             HomeMacRoutineFiltersDetailView(
                 availableFilters: macAvailableFilters,

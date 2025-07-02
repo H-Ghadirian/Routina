@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeMacSearchPanelView<SearchField: View>: View {
     let hasCustomFiltersApplied: Bool
+    let activeFiltersSummary: String?
     let isFilterDetailPresented: Bool
     let onToggleFilters: () -> Void
     let onClearFilters: () -> Void
@@ -39,10 +40,20 @@ struct HomeMacSearchPanelView<SearchField: View>: View {
             }
 
             if hasCustomFiltersApplied {
-                Button("Clear All Filters", action: onClearFilters)
-                    .font(.caption.weight(.semibold))
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.accentColor)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Button("Clear All Filters", action: onClearFilters)
+                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.accentColor)
+
+                    if let activeFiltersSummary, !activeFiltersSummary.isEmpty {
+                        Text(activeFiltersSummary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                }
             }
         }
     }
