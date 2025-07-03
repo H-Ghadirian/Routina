@@ -41,6 +41,7 @@ extension HomeTCAView {
         } detail: {
             MacDetailContainerView(
                 store: store,
+                isBoardPresented: isMacBoardMode,
                 isTimelinePresented: isMacTimelineMode,
                 isStatsPresented: isMacStatsMode,
                 isSettingsPresented: isMacSettingsMode,
@@ -53,6 +54,8 @@ extension HomeTCAView {
                 )
             ) {
                 macActiveFiltersDetailView
+            } boardView: {
+                macTodoBoardDetailView
             }
             .navigationTitle(macSidebarNavigationTitle)
             .environment(\.addEditFormCoordinator, addEditFormCoordinator)

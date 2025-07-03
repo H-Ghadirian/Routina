@@ -102,6 +102,7 @@ extension HomeFeature {
         var active: [RoutineDisplay] = []
         var away: [RoutineDisplay] = []
         var archived: [RoutineDisplay] = []
+        var boardTodos: [RoutineDisplay] = []
 
         for task in state.routineTasks {
             let display = makeRoutineDisplay(
@@ -110,6 +111,10 @@ extension HomeFeature {
                 locationSnapshot: state.locationSnapshot,
                 doneStats: state.doneStats
             )
+
+            if task.isOneOffTask {
+                boardTodos.append(display)
+            }
 
             if task.isArchived(referenceDate: now, calendar: calendar) {
                 archived.append(display)
@@ -125,6 +130,7 @@ extension HomeFeature {
         state.routineDisplays = active
         state.awayRoutineDisplays = away
         state.archivedRoutineDisplays = archived
+        state.boardTodoDisplays = boardTodos
     }
 
     func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {

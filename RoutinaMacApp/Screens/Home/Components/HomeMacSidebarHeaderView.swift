@@ -4,6 +4,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     let selectedTaskListMode: HomeFeature.TaskListMode
     let isRoutinesMode: Bool
+    let isBoardMode: Bool
     let isTimelineMode: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     @ViewBuilder let searchPanel: () -> SearchPanel
@@ -18,7 +19,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
                 }
             }
 
-            if isRoutinesMode || isTimelineMode {
+            if isRoutinesMode || isBoardMode || isTimelineMode {
                 searchPanel()
             }
         }

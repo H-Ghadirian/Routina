@@ -5,8 +5,9 @@ import SwiftUI
 /// Inline closures inside `NavigationSplitView.detail` on macOS can lose
 /// observation tracking after several view swaps, causing state changes
 /// (like toggling the filter panel) to stop updating the detail column.
-struct MacDetailContainerView<FilterView: View>: View {
+struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
     let store: StoreOf<HomeFeature>
+    let isBoardPresented: Bool
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
@@ -15,11 +16,14 @@ struct MacDetailContainerView<FilterView: View>: View {
     let selectedSettingsSection: SettingsMacSection
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
+    @ViewBuilder let boardView: () -> BoardView
 
     var body: some View {
         WithPerceptionTracking {
             if store.isMacFilterDetailPresented {
                 filterView()
+            } else if isBoardPresented {
+                boardView()
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
             } else if isStatsPresented, let statsStore {

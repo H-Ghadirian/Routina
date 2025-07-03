@@ -6,6 +6,7 @@ extension HomeTCAView {
     var isMacStatsMode: Bool    { store.macSidebarMode == .stats }
     var isMacSettingsMode: Bool { store.macSidebarMode == .settings }
     var isMacRoutinesMode: Bool { store.macSidebarMode == .routines }
+    var isMacBoardMode: Bool    { store.macSidebarMode == .board }
     var isMacAddTaskMode: Bool  { store.macSidebarMode == .addTask }
 
     var macSidebarNavigationTitle: String {
@@ -20,6 +21,8 @@ extension HomeTCAView {
                 case .todos:
                     return "Filter Todos"
                 }
+            case .board:
+                return "Filter Board"
             case .timeline:
                 return "Filter Dones"
             case .stats:
@@ -41,6 +44,8 @@ extension HomeTCAView {
             case .todos:
                 return "Todos"
             }
+        case .board:
+            return "Board"
         case .timeline:
             return "Dones"
         case .stats:
@@ -172,6 +177,7 @@ extension HomeTCAView {
             set: { mode in
                 switch mode {
                 case .routines:  showRoutinesInSidebar()
+                case .board:     openBoardInSidebar()
                 case .timeline:  openTimelineInSidebar()
                 case .stats:     openStatsInSidebar()
                 case .settings:  openSettingsInSidebar()
@@ -201,6 +207,10 @@ extension HomeTCAView {
 
     func showRoutinesInSidebar() {
         store.send(.macSidebarModeChanged(.routines))
+    }
+
+    func openBoardInSidebar() {
+        store.send(.macSidebarModeChanged(.board))
     }
 
     func openStatsInSidebar() {
@@ -236,6 +246,19 @@ extension HomeTCAView {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            } else if isMacBoardMode && !store.routineTasks.contains(where: \.isOneOffTask) {
+                VStack(spacing: 0) {
+                    macSidebarHeader
+                    Divider()
+                    emptyStateView(
+                        title: "No todos yet",
+                        message: "Add a to-do, and the board will group it by workflow state here.",
+                        systemImage: "square.grid.3x3.topleft.filled"
+                    ) {
+                        openAddTask()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 VStack(spacing: 0) {
                     macSidebarHeader
@@ -248,6 +271,12 @@ extension HomeTCAView {
                         macStatsSidebarView
                     } else if isMacSettingsMode {
                         macSettingsSidebarView
+                    } else if isMacBoardMode {
+                        listOfSortedTasksView(
+                            routineDisplays: store.routineDisplays.filter(\.isOneOffTask),
+                            awayRoutineDisplays: store.awayRoutineDisplays.filter(\.isOneOffTask),
+                            archivedRoutineDisplays: []
+                        )
                     } else {
                         listOfSortedTasksView(
                             routineDisplays: store.routineDisplays,
@@ -304,6 +333,7 @@ extension HomeTCAView {
             selectedSidebarMode: macSidebarModeBinding,
             selectedTaskListMode: store.taskListMode,
             isRoutinesMode: isMacRoutinesMode,
+            isBoardMode: isMacBoardMode,
             isTimelineMode: isMacTimelineMode,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))

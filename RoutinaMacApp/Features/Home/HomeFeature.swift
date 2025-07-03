@@ -101,6 +101,7 @@ struct HomeFeature {
 
     enum MacSidebarMode: String, CaseIterable, Identifiable, Equatable {
         case routines = "Routines"
+        case board = "Board"
         case timeline = "Timeline"
         case stats    = "Stats"
         case settings = "Settings"
@@ -117,6 +118,7 @@ struct HomeFeature {
         var routineDisplays: [RoutineDisplay] = []
         var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
+        var boardTodoDisplays: [RoutineDisplay] = []
         var doneStats: DoneStats = DoneStats()
         var selectedTaskID: UUID?
         var isAddRoutineSheetPresented: Bool = false
@@ -180,6 +182,7 @@ struct HomeFeature {
         case deleteTasksConfirmed
         case deleteTasks([UUID])
         case markTaskDone(UUID)
+        case moveTodoToState(UUID, TodoState)
         case notTodayTask(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
@@ -318,7 +321,7 @@ struct HomeFeature {
                     state.isMacFilterDetailPresented = false
                 }
                 // Keep macSidebarSelection in sync when in routines mode
-                if state.macSidebarMode == .routines {
+                if state.macSidebarMode == .routines || state.macSidebarMode == .board {
                     state.macSidebarSelection = taskID.map(MacSidebarSelection.task)
                 }
                 guard let taskID,
@@ -540,6 +543,25 @@ struct HomeFeature {
                             return .send(.taskListModeChanged(newMode))
                         }
                     }
+                case .board:
+                    if state.isAddRoutineSheetPresented {
+                        state.isAddRoutineSheetPresented = false
+                        state.addRoutineState = nil
+                    }
+                    if let taskID = state.selectedTaskID,
+                       let task = state.routineTasks.first(where: { $0.id == taskID }),
+                       task.isOneOffTask {
+                        state.macSidebarSelection = .task(taskID)
+                    } else {
+                        state.macSidebarSelection = nil
+                        state.selectedTaskID = nil
+                        state.taskDetailState = nil
+                        state.selectedTaskReloadGuard = nil
+                        state.pendingSelectedChecklistReloadGuardTaskID = nil
+                    }
+                    if state.taskListMode != .todos {
+                        return .send(.taskListModeChanged(.todos))
+                    }
                 case .timeline, .stats, .settings:
                     if state.isAddRoutineSheetPresented {
                         state.isAddRoutineSheetPresented = false
@@ -570,7 +592,9 @@ struct HomeFeature {
                 state.isMacFilterDetailPresented = false
                 switch selection {
                 case let .task(taskID):
-                    state.macSidebarMode = .routines
+                    if state.macSidebarMode != .board {
+                        state.macSidebarMode = .routines
+                    }
                     // Sync taskListMode and save/restore filter snapshots inline
                     if let task = state.routineTasks.first(where: { $0.id == taskID }) {
                         let newMode: TaskListMode = task.isOneOffTask ? .todos : .routines
@@ -729,6 +753,74 @@ struct HomeFeature {
                     } catch {
                         print("Failed to mark routine as done from home list: \(error)")
                     }
+                }
+
+            case let .moveTodoToState(id, newState):
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard state.routineTasks[index].isOneOffTask else { return .none }
+
+                if newState == .done {
+                    guard !state.routineTasks[index].isCompletedOneOff,
+                          !state.routineTasks[index].isCanceledOneOff else { return .none }
+                    return reduce(into: &state, action: .markTaskDone(id))
+                }
+
+                guard !state.routineTasks[index].isCompletedOneOff,
+                      !state.routineTasks[index].isCanceledOneOff else { return .none }
+
+                let targetSectionKey = Self.boardSectionKey(for: newState)
+                let nextOrder = nextManualOrder(in: targetSectionKey, tasks: state.routineTasks)
+
+                switch newState {
+                case .paused:
+                    let pauseDate = now
+                    state.routineTasks[index].pausedAt = pauseDate
+                    state.routineTasks[index].snoozedUntil = nil
+                    state.routineTasks[index].todoStateRawValue = nil
+                    state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
+                    refreshDisplays(&state)
+                    syncSelectedTaskDetailState(&state)
+
+                    return .run { @MainActor [id, pauseDate, targetSectionKey, nextOrder] _ in
+                        do {
+                            let context = self.modelContext()
+                            guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                            task.pausedAt = pauseDate
+                            task.snoozedUntil = nil
+                            task.todoStateRawValue = nil
+                            task.setManualSectionOrder(nextOrder, for: targetSectionKey)
+                            try context.save()
+                            NotificationCenter.default.postRoutineDidUpdate()
+                        } catch {
+                            print("Failed to move todo to paused from board: \(error)")
+                        }
+                    }
+
+                case .ready, .inProgress, .blocked:
+                    state.routineTasks[index].pausedAt = nil
+                    state.routineTasks[index].snoozedUntil = nil
+                    state.routineTasks[index].todoStateRawValue = newState.rawValue
+                    state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
+                    refreshDisplays(&state)
+                    syncSelectedTaskDetailState(&state)
+
+                    return .run { @MainActor [id, rawValue = newState.rawValue, targetSectionKey, nextOrder] _ in
+                        do {
+                            let context = self.modelContext()
+                            guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                            task.pausedAt = nil
+                            task.snoozedUntil = nil
+                            task.todoStateRawValue = rawValue
+                            task.setManualSectionOrder(nextOrder, for: targetSectionKey)
+                            try context.save()
+                            NotificationCenter.default.postRoutineDidUpdate()
+                        } catch {
+                            print("Failed to move todo to \(rawValue) from board: \(error)")
+                        }
+                    }
+
+                case .done:
+                    return .none
                 }
 
             case let .pauseTask(id):
@@ -1183,6 +1275,24 @@ struct HomeFeature {
         referenceDate: Date
     ) -> NotificationPayload {
         NotificationCoordinator.notificationPayload(for: task, referenceDate: referenceDate, calendar: calendar)
+    }
+
+    static func boardSectionKey(for state: TodoState) -> String {
+        switch state {
+        case .ready, .paused:
+            return "todoBoard.ready"
+        case .inProgress:
+            return "todoBoard.inProgress"
+        case .blocked:
+            return "todoBoard.blocked"
+        case .done:
+            return "todoBoard.done"
+        }
+    }
+
+    private func nextManualOrder(in sectionKey: String, tasks: [RoutineTask]) -> Int {
+        let maxOrder = tasks.compactMap { $0.manualSectionOrders[sectionKey] }.max() ?? -1
+        return maxOrder + 1
     }
 
     private func loadTasksEffect() -> Effect<Action> {

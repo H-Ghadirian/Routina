@@ -8,6 +8,7 @@ public struct PersistenceController {
 
     init(inMemory: Bool = false) {
         let primaryCloudDatabase = Self.cloudKitDatabase(inMemory: inMemory)
+        let hasExistingPersistentStore = !inMemory && Self.persistentStoreExists()
 
         do {
             let primaryConfiguration = Self.makeConfiguration(
@@ -26,9 +27,21 @@ public struct PersistenceController {
                 "Primary ModelContainer init failed: \(error.localizedDescription)."
             )
 
-            if !inMemory {
-                Self.removePersistentStoreFiles()
-
+            switch Self.strategyAfterPrimaryInitializationFailure(
+                inMemory: inMemory,
+                hasExistingPersistentStore: hasExistingPersistentStore
+            ) {
+            case .abortToProtectExistingStore:
+                let diagnosticsURL = Self.writeStoreOpenFailureDiagnostics(
+                    underlyingError: error
+                )
+                fatalError(
+                    Self.storeOpenFailureMessage(
+                        underlyingError: error,
+                        diagnosticsPath: diagnosticsURL?.path
+                    )
+                )
+            case .retryPrimaryPersistentStore:
                 do {
                     let retriedConfiguration = Self.makeConfiguration(
                         inMemory: inMemory,
@@ -43,8 +56,10 @@ public struct PersistenceController {
                     )
                     return
                 } catch {
-                    NSLog("Retry after store reset failed: \(error.localizedDescription). Falling back to local-only store.")
+                    NSLog("Retry with the same persistent-store configuration failed: \(error.localizedDescription). Falling back to local-only store.")
                 }
+            case .skipRetryAndUseFallbacks:
+                break
             }
 
             do {
@@ -73,6 +88,27 @@ public struct PersistenceController {
                 }
             }
         }
+    }
+
+    enum PrimaryInitializationFailureStrategy: Equatable {
+        case abortToProtectExistingStore
+        case retryPrimaryPersistentStore
+        case skipRetryAndUseFallbacks
+    }
+
+    static func strategyAfterPrimaryInitializationFailure(
+        inMemory: Bool,
+        hasExistingPersistentStore: Bool
+    ) -> PrimaryInitializationFailureStrategy {
+        if inMemory {
+            return .skipRetryAndUseFallbacks
+        }
+
+        if hasExistingPersistentStore {
+            return .abortToProtectExistingStore
+        }
+
+        return .retryPrimaryPersistentStore
     }
 
     private static func cloudKitDatabase(inMemory: Bool) -> ModelConfiguration.CloudKitDatabase {
@@ -138,19 +174,104 @@ public struct PersistenceController {
         }
     }
 
-    private static func removePersistentStoreFiles() {
-        guard let storeURL = persistentStoreURL() else { return }
+    private static func persistentStoreExists() -> Bool {
+        guard let storeURL = persistentStoreURL() else { return false }
+        return FileManager.default.fileExists(atPath: storeURL.path)
+    }
 
-        let walURL = URL(fileURLWithPath: storeURL.path + "-wal")
-        let shmURL = URL(fileURLWithPath: storeURL.path + "-shm")
-        let fileManager = FileManager.default
+    static func storeOpenFailureMessage(
+        underlyingError: Error,
+        storePath: String? = nil,
+        diagnosticsPath: String? = nil
+    ) -> String {
+        let resolvedStorePath = storePath ?? persistentStoreURL()?.path ?? "unknown location"
+        let diagnosticsLine: String
+        if let diagnosticsPath {
+            diagnosticsLine = "\nDiagnostics were written to: \(diagnosticsPath)"
+        } else {
+            diagnosticsLine = ""
+        }
+        return """
+        Routina refused to open an existing persistent store at \(resolvedStorePath) because the store could not be read with the current app schema.
 
-        [storeURL, walURL, shmURL].forEach { url in
-            if fileManager.fileExists(atPath: url.path) {
-                try? fileManager.removeItem(at: url)
-            }
+        To protect user data, the app will not fall back to a new empty store when an existing store is present.
+        Underlying error: \(underlyingError.localizedDescription)
+        \(diagnosticsLine)
+        """
+    }
+
+    static func writeStoreOpenFailureDiagnostics(
+        underlyingError: Error,
+        storePath: String? = nil,
+        diagnosticsURL: URL? = nil,
+        now: Date = Date()
+    ) -> URL? {
+        let targetURL = diagnosticsURL ?? defaultStoreOpenFailureDiagnosticsURL()
+        guard let targetURL else { return nil }
+
+        let diagnostics = storeOpenFailureDiagnosticsReport(
+            underlyingError: underlyingError,
+            storePath: storePath,
+            now: now
+        )
+
+        do {
+            let directoryURL = targetURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(
+                at: directoryURL,
+                withIntermediateDirectories: true
+            )
+            try diagnostics.write(to: targetURL, atomically: true, encoding: .utf8)
+            NSLog("Persistence diagnostics written to \(targetURL.path)")
+            return targetURL
+        } catch {
+            NSLog("Failed to write persistence diagnostics: \(error.localizedDescription)")
+            return nil
         }
     }
+
+    static func storeOpenFailureDiagnosticsReport(
+        underlyingError: Error,
+        storePath: String? = nil,
+        now: Date = Date()
+    ) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let timestamp = formatter.string(from: now)
+        let resolvedStorePath = storePath ?? persistentStoreURL()?.path ?? "unknown location"
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "unknown bundle"
+
+        return """
+        Routina Persistence Failure Diagnostics
+        Timestamp: \(timestamp)
+        Bundle: \(bundleIdentifier)
+        Data Mode: \(AppEnvironment.dataModeLabel)
+        Store Path: \(resolvedStorePath)
+        Underlying Error: \(underlyingError.localizedDescription)
+        """
+    }
+
+    private static func defaultStoreOpenFailureDiagnosticsURL() -> URL? {
+        if let storeURL = persistentStoreURL() {
+            return storeURL.deletingLastPathComponent().appendingPathComponent("PersistenceFailure.txt")
+        }
+
+        do {
+            let applicationSupportDirectory = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+            return applicationSupportDirectory
+                .appendingPathComponent("RoutinaData", isDirectory: true)
+                .appendingPathComponent("PersistenceFailure.txt")
+        } catch {
+            NSLog("Failed to resolve diagnostics URL: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
 }
 
 extension PersistenceController: @unchecked Sendable {}
