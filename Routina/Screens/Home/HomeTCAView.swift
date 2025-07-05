@@ -46,10 +46,12 @@ struct HomeTCAView: View {
     }
 
     private var homeContent: some View {
-        applyPlatformRefresh(
-            to: applyPlatformSearchExperience(
-                to: navigationContent,
-                searchText: searchTextBinding
+        applyPlatformDeleteConfirmation(
+            to: applyPlatformRefresh(
+                to: applyPlatformSearchExperience(
+                    to: navigationContent,
+                    searchText: searchTextBinding
+                )
             )
         )
             .sheet(isPresented: addRoutineSheetBinding) {
@@ -1063,10 +1065,14 @@ struct HomeTCAView: View {
         from sectionTasks: [HomeFeature.RoutineDisplay]
     ) {
         let ids = offsets.compactMap { sectionTasks[$0].taskID }
+#if os(macOS)
+        store.send(.deleteTasksTapped(ids))
+#else
         if let selectedTaskID = store.selectedTaskID, ids.contains(selectedTaskID) {
             store.send(.setSelectedTask(nil))
         }
         store.send(.deleteTasks(ids))
+#endif
     }
 
     private func openTask(_ taskID: UUID) {
@@ -1074,10 +1080,14 @@ struct HomeTCAView: View {
     }
 
     private func deleteTask(_ taskID: UUID) {
+#if os(macOS)
+        store.send(.deleteTasksTapped([taskID]))
+#else
         if store.selectedTaskID == taskID {
             store.send(.setSelectedTask(nil))
         }
         store.send(.deleteTasks([taskID]))
+#endif
     }
 
     private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {

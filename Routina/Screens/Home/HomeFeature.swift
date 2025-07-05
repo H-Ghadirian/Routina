@@ -66,6 +66,8 @@ struct HomeFeature {
         var routineDetailState: RoutineDetailFeature.State?
         var selectedTaskReloadGuard: SelectedTaskReloadGuard?
         var pendingSelectedChecklistReloadGuardTaskID: UUID?
+        var pendingDeleteTaskIDs: [UUID] = []
+        var isDeleteConfirmationPresented: Bool = false
     }
 
     enum Action: Equatable {
@@ -77,6 +79,9 @@ struct HomeFeature {
         case setSelectedTask(UUID?)
 
         case setAddRoutineSheet(Bool)
+        case deleteTasksTapped([UUID])
+        case setDeleteConfirmation(Bool)
+        case deleteTasksConfirmed
         case deleteTasks([UUID])
         case markTaskDone(UUID)
         case pauseTask(UUID)
@@ -175,45 +180,28 @@ struct HomeFeature {
                 }
                 return .none
 
-            case let .deleteTasks(ids):
-                let idSet = Set(ids)
-                state.routineTasks.removeAll { idSet.contains($0.id) }
-                var removedDoneCount = 0
-                for id in ids {
-                    removedDoneCount += state.doneStats.countsByTaskID[id, default: 0]
-                    state.doneStats.countsByTaskID.removeValue(forKey: id)
-                }
-                state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
-                refreshDisplays(&state)
-                syncSelectedRoutineDetailState(&state)
+            case let .deleteTasksTapped(ids):
+                let uniqueIDs = uniqueTaskIDs(ids)
+                guard !uniqueIDs.isEmpty else { return .none }
+                state.pendingDeleteTaskIDs = uniqueIDs
+                state.isDeleteConfirmationPresented = true
+                return .none
 
-                let deleteEffect: Effect<Action> = .run { @MainActor [ids] _ in
-                    let context = self.modelContext()
-                    for id in ids {
-                        let descriptor = FetchDescriptor<RoutineTask>(
-                            predicate: #Predicate { task in
-                                task.id == id
-                            }
-                        )
-                        if let task = try context.fetch(descriptor).first {
-                            context.delete(task)
-                        }
-                        let logs = try context.fetch(logsDescriptor(for: id))
-                        for log in logs {
-                            context.delete(log)
-                        }
-                        await self.notificationClient.cancel(id.uuidString)
-                    }
-                    try? context.save()
-                    NotificationCenter.default.postRoutineDidUpdate()
+            case let .setDeleteConfirmation(isPresented):
+                state.isDeleteConfirmationPresented = isPresented
+                if !isPresented {
+                    state.pendingDeleteTaskIDs = []
                 }
-                guard state.addRoutineState != nil else { return deleteEffect }
-                return .merge(
-                    deleteEffect,
-                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
-                    .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: state.routineTasks)))),
-                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks))))
-                )
+                return .none
+
+            case .deleteTasksConfirmed:
+                let ids = state.pendingDeleteTaskIDs
+                state.pendingDeleteTaskIDs = []
+                state.isDeleteConfirmationPresented = false
+                return handleDeleteTasks(ids, state: &state)
+
+            case let .deleteTasks(ids):
+                return handleDeleteTasks(ids, state: &state)
 
             case let .markTaskDone(id):
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id && !$0.isPaused }) else {
@@ -525,6 +513,55 @@ struct HomeFeature {
             nextPendingChecklistItemTitle: task.nextPendingChecklistItemTitle,
             nextDueChecklistItemTitle: nextDueChecklistItem?.title,
             doneCount: doneStats.countsByTaskID[task.id, default: 0]
+        )
+    }
+
+    private func uniqueTaskIDs(_ ids: [UUID]) -> [UUID] {
+        var seen: Set<UUID> = []
+        return ids.filter { seen.insert($0).inserted }
+    }
+
+    private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {
+        let uniqueIDs = uniqueTaskIDs(ids)
+        guard !uniqueIDs.isEmpty else { return .none }
+
+        let idSet = Set(uniqueIDs)
+        state.routineTasks.removeAll { idSet.contains($0.id) }
+        var removedDoneCount = 0
+        for id in uniqueIDs {
+            removedDoneCount += state.doneStats.countsByTaskID[id, default: 0]
+            state.doneStats.countsByTaskID.removeValue(forKey: id)
+        }
+        state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
+        refreshDisplays(&state)
+        syncSelectedRoutineDetailState(&state)
+
+        let deleteEffect: Effect<Action> = .run { @MainActor [uniqueIDs] _ in
+            let context = self.modelContext()
+            for id in uniqueIDs {
+                let descriptor = FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate { task in
+                        task.id == id
+                    }
+                )
+                if let task = try context.fetch(descriptor).first {
+                    context.delete(task)
+                }
+                let logs = try context.fetch(logsDescriptor(for: id))
+                for log in logs {
+                    context.delete(log)
+                }
+                await self.notificationClient.cancel(id.uuidString)
+            }
+            try? context.save()
+            NotificationCenter.default.postRoutineDidUpdate()
+        }
+        guard state.addRoutineState != nil else { return deleteEffect }
+        return .merge(
+            deleteEffect,
+            .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
+            .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: state.routineTasks)))),
+            .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks))))
         )
     }
 

@@ -8,6 +8,10 @@ extension View {
 }
 
 extension HomeTCAView {
+    func applyPlatformDeleteConfirmation<Content: View>(to view: Content) -> some View {
+        view
+    }
+
     func applyPlatformSearchExperience<Content: View>(
         to view: Content,
         searchText: Binding<String>

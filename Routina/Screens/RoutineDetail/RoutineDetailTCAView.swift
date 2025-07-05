@@ -306,6 +306,10 @@ struct RoutineDetailTCAView: View {
                 statusMetadataRow(label: "Selected", value: selectedDateMetadataText)
             }
 
+            if !store.task.tags.isEmpty {
+                statusTagsRow(tags: store.task.tags)
+            }
+
             if store.task.isChecklistDriven {
                 statusMetadataRow(
                     label: "Checklist",
@@ -405,6 +409,41 @@ struct RoutineDetailTCAView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private func statusTagsRow(tags: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("TAGS")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(tags, id: \.self) { tag in
+                    statusTagChip(tag)
+                }
+            }
+        }
+    }
+
+    private func statusTagChip(_ tag: String) -> some View {
+        Text("#\(tag)")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.primary)
+            .lineLimit(1)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color.accentColor.opacity(0.12))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(Color.accentColor.opacity(0.22), lineWidth: 1)
+            )
     }
 
     private var statusContextMessage: String {

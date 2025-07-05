@@ -1680,6 +1680,75 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func deleteTasksTapped_presentsConfirmationAndStoresPendingIDs() async {
+        let taskID = UUID()
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        }
+
+        await store.send(.deleteTasksTapped([taskID])) {
+            $0.pendingDeleteTaskIDs = [taskID]
+            $0.isDeleteConfirmationPresented = true
+        }
+    }
+
+    @Test
+    func setDeleteConfirmation_false_clearsPendingDeletion() async {
+        let taskID = UUID()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                pendingDeleteTaskIDs: [taskID],
+                isDeleteConfirmationPresented: true
+            )
+        ) {
+            HomeFeature()
+        }
+
+        await store.send(.setDeleteConfirmation(false)) {
+            $0.pendingDeleteTaskIDs = []
+            $0.isDeleteConfirmationPresented = false
+        }
+    }
+
+    @Test
+    func deleteTasksConfirmed_removesPendingIDsFromState() async {
+        let context = makeInMemoryContext()
+        let task1 = makeTask(in: context, name: "A", interval: 1, lastDone: nil, emoji: "🅰️")
+        let task2 = makeTask(in: context, name: "B", interval: 2, lastDone: nil, emoji: "🅱️")
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task1, task2],
+                routineDisplays: [
+                    makeDisplay(taskID: task1.id, name: "A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false, doneCount: 2),
+                    makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1)
+                ],
+                doneStats: HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task1.id: 2, task2.id: 1]),
+                pendingDeleteTaskIDs: [task1.id],
+                isDeleteConfirmationPresented: true
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.deleteTasksConfirmed) {
+            $0.routineTasks = [task2]
+            $0.routineDisplays = [
+                makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1)
+            ]
+            $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task2.id: 1])
+            $0.pendingDeleteTaskIDs = []
+            $0.isDeleteConfirmationPresented = false
+        }
+    }
+
+    @Test
     func deleteTasks_removesAssociatedLogsFromPersistence() async throws {
         let context = makeInMemoryContext()
         let task1 = makeTask(in: context, name: "A", interval: 1, lastDone: nil, emoji: "🅰️")

@@ -18,6 +18,22 @@ extension View {
 }
 
 extension HomeTCAView {
+    func applyPlatformDeleteConfirmation<Content: View>(to view: Content) -> some View {
+        view.alert(
+            deleteConfirmationTitle,
+            isPresented: deleteConfirmationBinding
+        ) {
+            Button("Delete", role: .destructive) {
+                store.send(.deleteTasksConfirmed)
+            }
+            Button("Cancel", role: .cancel) {
+                store.send(.setDeleteConfirmation(false))
+            }
+        } message: {
+            Text(deleteConfirmationMessage)
+        }
+    }
+
     func applyPlatformSearchExperience<Content: View>(
         to view: Content,
         searchText: Binding<String>
@@ -68,6 +84,27 @@ extension HomeTCAView {
         } label: {
             Label("Refresh", systemImage: "arrow.clockwise")
         }
+    }
+
+    private var deleteConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.isDeleteConfirmationPresented },
+            set: { store.send(.setDeleteConfirmation($0)) }
+        )
+    }
+
+    private var deleteConfirmationTitle: String {
+        store.pendingDeleteTaskIDs.count == 1 ? "Delete routine?" : "Delete routines?"
+    }
+
+    private var deleteConfirmationMessage: String {
+        guard store.pendingDeleteTaskIDs.count == 1 else {
+            return "This will permanently remove \(store.pendingDeleteTaskIDs.count) routines and their logs."
+        }
+
+        let taskID = store.pendingDeleteTaskIDs[0]
+        let routineName = store.routineTasks.first(where: { $0.id == taskID })?.name ?? "this routine"
+        return "This will permanently remove \(routineName) and its logs."
     }
 }
 #endif
