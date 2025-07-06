@@ -59,6 +59,15 @@ extension HomeTCAView {
             onMoveTask: { taskID, state in
                 store.send(.moveTodoToState(taskID, state))
             },
+            onDropTask: { taskID, state, orderedTaskIDs in
+                store.send(
+                    .moveTodoOnBoard(
+                        taskID: taskID,
+                        targetState: state,
+                        orderedTaskIDs: orderedTaskIDs
+                    )
+                )
+            },
             onMoveUp: { taskID, state, orderedTaskIDs in
                 store.send(
                     .moveTaskInSection(

@@ -183,12 +183,14 @@ struct HomeFeature {
         case deleteTasks([UUID])
         case markTaskDone(UUID)
         case moveTodoToState(UUID, TodoState)
+        case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
         case notTodayTask(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
         case pinTask(UUID)
         case unpinTask(UUID)
         case moveTaskInSection(taskID: UUID, sectionKey: String, orderedTaskIDs: [UUID], direction: MoveDirection)
+        case setTaskOrderInSection(sectionKey: String, orderedTaskIDs: [UUID])
 
         // Filter actions
         case selectedFilterChanged(RoutineListFilter)
@@ -823,6 +825,36 @@ struct HomeFeature {
                     return .none
                 }
 
+            case let .moveTodoOnBoard(taskID, targetState, orderedTaskIDs):
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == taskID }) else { return .none }
+                guard state.routineTasks[index].isOneOffTask else { return .none }
+
+                let currentState = state.routineTasks[index].todoState ?? .ready
+                let targetSectionKey = Self.boardSectionKey(for: targetState)
+
+                if currentState == targetState {
+                    return reduce(
+                        into: &state,
+                        action: .setTaskOrderInSection(
+                            sectionKey: targetSectionKey,
+                            orderedTaskIDs: orderedTaskIDs
+                        )
+                    )
+                }
+
+                if currentState == .done && targetState != .done {
+                    return .none
+                }
+
+                let moveEffect = reduce(into: &state, action: .moveTodoToState(taskID, targetState))
+                let reorderEffect: Effect<Action> = .send(
+                    .setTaskOrderInSection(
+                        sectionKey: targetSectionKey,
+                        orderedTaskIDs: orderedTaskIDs
+                    )
+                )
+                return .merge(moveEffect, reorderEffect)
+
             case let .pauseTask(id):
                 let pauseDate = now
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
@@ -973,6 +1005,13 @@ struct HomeFeature {
                     sectionKey: sectionKey,
                     orderedTaskIDs: orderedTaskIDs,
                     direction: direction,
+                    state: &state
+                )
+
+            case let .setTaskOrderInSection(sectionKey, orderedTaskIDs):
+                return setTaskOrderInSection(
+                    sectionKey: sectionKey,
+                    orderedTaskIDs: orderedTaskIDs,
                     state: &state
                 )
 
@@ -1250,6 +1289,47 @@ struct HomeFeature {
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Failed to persist manual section order: \(error)")
+            }
+        }
+    }
+
+    private func setTaskOrderInSection(
+        sectionKey: String,
+        orderedTaskIDs: [UUID],
+        state: inout State
+    ) -> Effect<Action> {
+        let existingTaskIDs = Set(state.routineTasks.map(\.id))
+        var seen: Set<UUID> = []
+        var normalizedIDs: [UUID] = []
+        normalizedIDs.reserveCapacity(orderedTaskIDs.count)
+
+        for id in orderedTaskIDs where existingTaskIDs.contains(id) {
+            if seen.insert(id).inserted {
+                normalizedIDs.append(id)
+            }
+        }
+
+        guard !normalizedIDs.isEmpty else { return .none }
+
+        for (order, id) in normalizedIDs.enumerated() {
+            guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { continue }
+            state.routineTasks[index].setManualSectionOrder(order, for: sectionKey)
+        }
+        refreshDisplays(&state)
+        syncSelectedTaskDetailState(&state)
+
+        return .run { @MainActor [normalizedIDs, sectionKey] _ in
+            do {
+                let context = self.modelContext()
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                let tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+                for (order, id) in normalizedIDs.enumerated() {
+                    tasksByID[id]?.setManualSectionOrder(order, for: sectionKey)
+                }
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to persist board section order: \(error)")
             }
         }
     }

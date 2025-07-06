@@ -14,8 +14,12 @@ struct HomeMacTodoBoardView: View {
     let selectedTaskID: UUID?
     let onSelectTask: (UUID) -> Void
     let onMoveTask: (UUID, TodoState) -> Void
+    let onDropTask: (UUID, TodoState, [UUID]) -> Void
     let onMoveUp: (UUID, TodoState, [UUID]) -> Void
     let onMoveDown: (UUID, TodoState, [UUID]) -> Void
+
+    @State private var draggedTaskID: UUID?
+    @State private var highlightedColumnState: TodoState?
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -60,20 +64,44 @@ struct HomeMacTodoBoardView: View {
                             canMoveUp: index > 0,
                             canMoveDown: index < column.tasks.count - 1
                         )
+                        .onDrop(
+                            of: [.text],
+                            delegate: BoardCardDropDelegate(
+                                destinationTaskID: task.id,
+                                columnState: column.state,
+                                orderedTaskIDs: column.tasks.map(\.id),
+                                draggedTaskID: $draggedTaskID,
+                                highlightedColumnState: $highlightedColumnState,
+                                onDropTask: onDropTask
+                            )
+                        )
                     }
+
+                    boardColumnDropSpacer(column)
                 }
                 .padding(.bottom, 4)
             }
+            .onDrop(
+                of: [.text],
+                delegate: BoardColumnDropDelegate(
+                    columnState: column.state,
+                    orderedTaskIDs: column.tasks.map(\.id),
+                    draggedTaskID: $draggedTaskID,
+                    highlightedColumnState: $highlightedColumnState,
+                    onDropTask: onDropTask
+                )
+            )
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.secondary.opacity(0.08))
+                .fill(backgroundFill(for: column.state))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                .stroke(borderColor(for: column.state), lineWidth: highlightedColumnState == column.state ? 1.5 : 1)
         )
+        .animation(.easeInOut(duration: 0.12), value: highlightedColumnState)
     }
 
     @ViewBuilder
@@ -132,6 +160,10 @@ struct HomeMacTodoBoardView: View {
             }
 
             HStack(spacing: 8) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+
                 Button {
                     onMoveUp(task.id, columnState, orderedTaskIDs)
                 } label: {
@@ -170,6 +202,11 @@ struct HomeMacTodoBoardView: View {
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .onTapGesture {
             onSelectTask(task.id)
+        }
+        .onDrag {
+            draggedTaskID = task.id
+            onSelectTask(task.id)
+            return NSItemProvider(object: task.id.uuidString as NSString)
         }
         .contextMenu {
             moveMenuItems(for: task)
@@ -222,5 +259,129 @@ struct HomeMacTodoBoardView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+
+    @ViewBuilder
+    private func boardColumnDropSpacer(_ column: Column) -> some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(
+                highlightedColumnState == column.state
+                    ? column.tint.opacity(0.14)
+                    : Color.clear
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        highlightedColumnState == column.state
+                            ? column.tint.opacity(0.45)
+                            : Color.primary.opacity(0.06),
+                        style: StrokeStyle(lineWidth: 1, dash: [6, 6])
+                    )
+            )
+            .frame(maxWidth: .infinity, minHeight: column.tasks.isEmpty ? 160 : 72)
+    }
+
+    private func backgroundFill(for state: TodoState) -> Color {
+        if highlightedColumnState == state {
+            return Color.accentColor.opacity(0.08)
+        }
+        return Color.secondary.opacity(0.08)
+    }
+
+    private func borderColor(for state: TodoState) -> Color {
+        if highlightedColumnState == state {
+            return Color.accentColor.opacity(0.5)
+        }
+        return Color.primary.opacity(0.06)
+    }
+}
+
+private struct BoardCardDropDelegate: DropDelegate {
+    let destinationTaskID: UUID
+    let columnState: TodoState
+    let orderedTaskIDs: [UUID]
+    @Binding var draggedTaskID: UUID?
+    @Binding var highlightedColumnState: TodoState?
+    let onDropTask: (UUID, TodoState, [UUID]) -> Void
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedTaskID != nil
+    }
+
+    func dropEntered(info: DropInfo) {
+        highlightedColumnState = columnState
+    }
+
+    func dropExited(info: DropInfo) {
+        if highlightedColumnState == columnState {
+            highlightedColumnState = nil
+        }
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer {
+            highlightedColumnState = nil
+            draggedTaskID = nil
+        }
+
+        guard let draggedTaskID,
+              draggedTaskID != destinationTaskID,
+              let destinationIndex = orderedTaskIDs.firstIndex(of: destinationTaskID) else {
+            return false
+        }
+
+        let reorderedIDs = reorderedTaskIDs(
+            draggedTaskID: draggedTaskID,
+            destinationIndex: destinationIndex,
+            orderedTaskIDs: orderedTaskIDs
+        )
+        onDropTask(draggedTaskID, columnState, reorderedIDs)
+        return true
+    }
+
+    private func reorderedTaskIDs(
+        draggedTaskID: UUID,
+        destinationIndex: Int,
+        orderedTaskIDs: [UUID]
+    ) -> [UUID] {
+        var result = orderedTaskIDs.filter { $0 != draggedTaskID }
+        let boundedIndex = min(max(destinationIndex, 0), result.count)
+        result.insert(draggedTaskID, at: boundedIndex)
+        return result
+    }
+}
+
+private struct BoardColumnDropDelegate: DropDelegate {
+    let columnState: TodoState
+    let orderedTaskIDs: [UUID]
+    @Binding var draggedTaskID: UUID?
+    @Binding var highlightedColumnState: TodoState?
+    let onDropTask: (UUID, TodoState, [UUID]) -> Void
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedTaskID != nil
+    }
+
+    func dropEntered(info: DropInfo) {
+        highlightedColumnState = columnState
+    }
+
+    func dropExited(info: DropInfo) {
+        if highlightedColumnState == columnState {
+            highlightedColumnState = nil
+        }
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer {
+            highlightedColumnState = nil
+            draggedTaskID = nil
+        }
+
+        guard let draggedTaskID else { return false }
+        var reorderedIDs = orderedTaskIDs.filter { $0 != draggedTaskID }
+        reorderedIDs.append(draggedTaskID)
+        onDropTask(draggedTaskID, columnState, reorderedIDs)
+        return true
     }
 }
