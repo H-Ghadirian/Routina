@@ -2876,7 +2876,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Evening"], [], [], .fixedInterval, [], [], .none))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Evening"], [], [], .fixedInterval, [], [], .none, false))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())

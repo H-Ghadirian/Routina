@@ -876,110 +876,45 @@ struct HomeFeature {
                 return handleDeleteTasks(ids, state: &state)
 
             case let .markTaskDone(id):
-                guard let index = state.routineTasks.firstIndex(where: {
-                    $0.id == id && !$0.isArchived(referenceDate: now, calendar: calendar)
-                }) else {
-                    return .none
-                }
-                guard !state.routineTasks[index].isCompletedOneOff else {
-                    return .none
-                }
-                guard !state.routineTasks[index].isCanceledOneOff else {
-                    return .none
-                }
-                if state.routineTasks[index].isChecklistCompletionRoutine {
-                    return .none
-                }
-                let completionDate = now
-                let currentCalendar = calendar
-                guard RoutineDateMath.canMarkDone(
-                    for: state.routineTasks[index],
-                    referenceDate: completionDate,
-                    calendar: currentCalendar
+                var routineTasks = state.routineTasks
+                var doneStats = state.doneStats
+                guard let update = HomeTaskLifecycleSupport.markTaskDone(
+                    taskID: id,
+                    referenceDate: now,
+                    calendar: calendar,
+                    tasks: &routineTasks,
+                    doneStats: &doneStats
                 ) else {
                     return .none
                 }
-
-                if state.routineTasks[index].isChecklistDriven {
-                    let hadCompletionToday = state.routineTasks[index].lastDone.map {
-                        currentCalendar.isDate($0, inSameDayAs: completionDate)
-                    } ?? false
-                    let dueItemIDs = Set(
-                        state.routineTasks[index]
-                            .dueChecklistItems(referenceDate: completionDate, calendar: currentCalendar)
-                            .map(\.id)
-                    )
-                    let updatedItemCount = state.routineTasks[index].markChecklistItemsPurchased(
-                        dueItemIDs,
-                        purchasedAt: completionDate
-                    )
-                    guard updatedItemCount > 0 else { return .none }
-                    if !hadCompletionToday {
-                        state.doneStats.totalCount += 1
-                        state.doneStats.countsByTaskID[id, default: 0] += 1
-                    }
-                    refreshDisplays(&state)
-                    syncSelectedTaskDetailState(&state)
-
-                    return .run { @MainActor [id, completionDate, currentCalendar] _ in
-                        do {
-                            let context = ModelContext(self.modelContext().container)
-                            guard let taskState = try RoutineLogHistory.markDueChecklistItemsPurchased(
-                                taskID: id,
-                                purchasedAt: completionDate,
-                                context: context,
-                                calendar: currentCalendar
-                            ) else {
-                                return
-                            }
-                            await self.notificationClient.schedule(
-                                NotificationCoordinator.notificationPayload(
-                                    for: taskState.task,
-                                    referenceDate: completionDate,
-                                    calendar: currentCalendar
-                                )
-                            )
-                            NotificationCenter.default.postRoutineDidUpdate()
-                        } catch {
-                            print("Failed to update checklist routine from home list: \(error)")
-                        }
-                    }
-                }
-
-                let result = state.routineTasks[index].advance(completedAt: completionDate, calendar: calendar)
-                if case .completedRoutine = result {
-                    state.doneStats.totalCount += 1
-                    state.doneStats.countsByTaskID[id, default: 0] += 1
-                }
+                state.routineTasks = routineTasks
+                state.doneStats = doneStats
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
 
-                return .run { @MainActor [id, completionDate, currentCalendar] _ in
-                    do {
-                        let context = ModelContext(self.modelContext().container)
-                        guard let taskState = try RoutineLogHistory.advanceTask(
-                            taskID: id,
-                            completedAt: completionDate,
-                            context: context,
-                            calendar: currentCalendar
-                        ) else {
-                            return
+                switch update {
+                case let .checklist(checklistUpdate):
+                    return HomeTaskLifecycleExecutionSupport.markChecklistItemsPurchased(
+                        checklistUpdate,
+                        calendar: calendar,
+                        modelContext: { self.modelContext() },
+                        scheduleNotification: { payload in
+                            await self.notificationClient.schedule(payload)
                         }
-                        if taskState.task.isOneOffTask {
-                            await self.notificationClient.cancel(id.uuidString)
-                        } else {
-                            await self.notificationClient.schedule(
-                                NotificationCoordinator.notificationPayload(
-                                    for: taskState.task,
-                                    referenceDate: completionDate,
-                                    calendar: currentCalendar
-                                )
-                            )
+                    )
+
+                case let .advance(advanceUpdate):
+                    return HomeTaskLifecycleExecutionSupport.advanceTask(
+                        advanceUpdate,
+                        calendar: calendar,
+                        modelContext: { self.modelContext() },
+                        cancelNotification: { identifier in
+                            await self.notificationClient.cancel(identifier)
+                        },
+                        scheduleNotification: { payload in
+                            await self.notificationClient.schedule(payload)
                         }
-                        NotificationCenter.default.postRoutineDidUpdate()
-                    } catch {
-                        print("Failed to mark routine as done from home list: \(error)")
-                    }
+                    )
                 }
 
             case let .moveTodoToState(id, newState):
@@ -1024,148 +959,97 @@ struct HomeFeature {
                 )
 
             case let .pauseTask(id):
-                let pauseDate = now
-                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
-                guard !state.routineTasks[index].isOneOffTask else { return .none }
-                guard !state.routineTasks[index].isArchived(referenceDate: pauseDate, calendar: calendar) else { return .none }
-
-                if state.routineTasks[index].scheduleAnchor == nil {
-                    state.routineTasks[index].scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(
-                        for: state.routineTasks[index],
-                        referenceDate: pauseDate
-                    )
+                guard let update = HomeTaskLifecycleSupport.pauseTask(
+                    taskID: id,
+                    pauseDate: now,
+                    calendar: calendar,
+                    tasks: &state.routineTasks
+                ) else {
+                    return .none
                 }
-                state.routineTasks[index].pausedAt = pauseDate
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
 
-                return .run { @MainActor [id, pauseDate] _ in
-                    do {
-                        let context = self.modelContext()
-                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
-                        if task.scheduleAnchor == nil {
-                            task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pauseDate)
-                        }
-                        task.pausedAt = pauseDate
-                        try context.save()
-                        await self.notificationClient.cancel(id.uuidString)
-                        NotificationCenter.default.postRoutineDidUpdate()
-                    } catch {
-                        print("Failed to pause routine from home list: \(error)")
+                return HomeTaskLifecycleExecutionSupport.pauseTask(
+                    update,
+                    modelContext: { self.modelContext() },
+                    cancelNotification: { identifier in
+                        await self.notificationClient.cancel(identifier)
                     }
-                }
+                )
 
             case let .resumeTask(id):
-                let resumeDate = now
-                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
-                guard !state.routineTasks[index].isOneOffTask else { return .none }
-                guard state.routineTasks[index].isArchived(referenceDate: resumeDate, calendar: calendar) else { return .none }
-
-                state.routineTasks[index].scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
-                    for: state.routineTasks[index],
-                    resumedAt: resumeDate
-                )
-                state.routineTasks[index].pausedAt = nil
-                state.routineTasks[index].snoozedUntil = nil
+                guard let update = HomeTaskLifecycleSupport.resumeTask(
+                    taskID: id,
+                    resumeDate: now,
+                    calendar: calendar,
+                    tasks: &state.routineTasks
+                ) else {
+                    return .none
+                }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
 
-                return .run { @MainActor [id, resumeDate, currentCalendar = self.calendar] _ in
-                    do {
-                        let context = self.modelContext()
-                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
-                        task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumeDate)
-                        task.pausedAt = nil
-                        task.snoozedUntil = nil
-                        try context.save()
-                        await self.notificationClient.schedule(
-                            NotificationCoordinator.notificationPayload(
-                                for: task,
-                                referenceDate: resumeDate,
-                                calendar: currentCalendar
-                            )
-                        )
-                        NotificationCenter.default.postRoutineDidUpdate()
-                    } catch {
-                        print("Failed to resume routine from home list: \(error)")
+                return HomeTaskLifecycleExecutionSupport.resumeTask(
+                    update,
+                    calendar: calendar,
+                    modelContext: { self.modelContext() },
+                    scheduleNotification: { payload in
+                        await self.notificationClient.schedule(payload)
                     }
-                }
+                )
 
             case let .notTodayTask(id):
-                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
-                guard !state.routineTasks[index].isOneOffTask else { return .none }
-                guard !state.routineTasks[index].isArchived(referenceDate: now, calendar: calendar) else { return .none }
-
-                let tomorrowStart = calendar.date(
-                    byAdding: .day,
-                    value: 1,
-                    to: calendar.startOfDay(for: now)
-                ) ?? now
-                state.routineTasks[index].snoozedUntil = tomorrowStart
+                guard let update = HomeTaskLifecycleSupport.notTodayTask(
+                    taskID: id,
+                    referenceDate: now,
+                    calendar: calendar,
+                    tasks: &state.routineTasks
+                ) else {
+                    return .none
+                }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
 
-                return .run { @MainActor [id, tomorrowStart, currentCalendar = self.calendar] _ in
-                    do {
-                        let context = self.modelContext()
-                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
-                        task.snoozedUntil = tomorrowStart
-                        try context.save()
-                        await self.notificationClient.schedule(
-                            NotificationCoordinator.notificationPayload(
-                                for: task,
-                                triggerDate: NotificationPreferences.reminderDate(on: tomorrowStart, calendar: currentCalendar),
-                                isArchivedOverride: false,
-                                referenceDate: tomorrowStart,
-                                calendar: currentCalendar
-                            )
-                        )
-                        NotificationCenter.default.postRoutineDidUpdate()
-                    } catch {
-                        print("Failed to archive routine for today from home list: \(error)")
+                return HomeTaskLifecycleExecutionSupport.notTodayTask(
+                    update,
+                    calendar: calendar,
+                    modelContext: { self.modelContext() },
+                    scheduleNotification: { payload in
+                        await self.notificationClient.schedule(payload)
                     }
-                }
+                )
 
             case let .pinTask(id):
-                let pinDate = now
-                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
-                guard state.routineTasks[index].pinnedAt == nil else { return .none }
-
-                state.routineTasks[index].pinnedAt = pinDate
+                guard let update = HomeTaskLifecycleSupport.pinTask(
+                    taskID: id,
+                    pinnedAt: now,
+                    tasks: &state.routineTasks
+                ) else {
+                    return .none
+                }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
 
-                return .run { @MainActor [id, pinDate] _ in
-                    do {
-                        let context = self.modelContext()
-                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
-                        task.pinnedAt = pinDate
-                        try context.save()
-                        NotificationCenter.default.postRoutineDidUpdate()
-                    } catch {
-                        print("Failed to pin routine from home list: \(error)")
-                    }
-                }
+                return HomeTaskLifecycleExecutionSupport.pinTask(
+                    update,
+                    modelContext: { self.modelContext() }
+                )
 
             case let .unpinTask(id):
-                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
-                guard state.routineTasks[index].pinnedAt != nil else { return .none }
-
-                state.routineTasks[index].pinnedAt = nil
+                guard let update = HomeTaskLifecycleSupport.unpinTask(
+                    taskID: id,
+                    tasks: &state.routineTasks
+                ) else {
+                    return .none
+                }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
 
-                return .run { @MainActor [id] _ in
-                    do {
-                        let context = self.modelContext()
-                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
-                        task.pinnedAt = nil
-                        try context.save()
-                        NotificationCenter.default.postRoutineDidUpdate()
-                    } catch {
-                        print("Failed to unpin routine from home list: \(error)")
-                    }
-                }
+                return HomeTaskLifecycleExecutionSupport.unpinTask(
+                    update,
+                    modelContext: { self.modelContext() }
+                )
 
             case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
                 return moveTaskInSection(

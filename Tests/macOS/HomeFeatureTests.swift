@@ -2926,7 +2926,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Evening"], [], [], .fixedInterval, [], [], .none))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Evening"], [], [], .fixedInterval, [], [], .none, false))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -3620,7 +3620,9 @@ private func makeDisplay(
     dueChecklistItemCount: Int = 0,
     nextPendingChecklistItemTitle: String? = nil,
     nextDueChecklistItemTitle: String? = nil,
-    doneCount: Int = 0
+    doneCount: Int = 0,
+    assignedSprintID: UUID? = nil,
+    assignedSprintTitle: String? = nil
 ) -> HomeFeature.RoutineDisplay {
     let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
     let resolvedIsPaused = isPaused || pausedAt != nil || snoozedUntil != nil
@@ -3668,6 +3670,8 @@ private func makeDisplay(
         dueChecklistItemCount: dueChecklistItemCount,
         nextPendingChecklistItemTitle: nextPendingChecklistItemTitle,
         nextDueChecklistItemTitle: nextDueChecklistItemTitle,
-        doneCount: doneCount
+        doneCount: doneCount,
+        assignedSprintID: assignedSprintID,
+        assignedSprintTitle: assignedSprintTitle
     )
 }

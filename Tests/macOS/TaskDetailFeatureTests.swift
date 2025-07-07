@@ -610,7 +610,9 @@ struct TaskDetailFeatureTests {
 
         let persistedTaskID = task.id
         let descriptor = FetchDescriptor<RoutineTask>(
-            predicate: #Predicate<RoutineTask> { $0.id == persistedTaskID }
+            predicate: #Predicate<RoutineTask> { task in
+                task.id == persistedTaskID
+            }
         )
         let persistedTask = try #require(context.fetch(descriptor).first)
         #expect(persistedTask.name == "Deep Read")
@@ -844,11 +846,12 @@ struct TaskDetailFeatureTests {
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
 
+        let persistedTaskID = task.id
         let persistedTask = try #require(
             context.fetch(
                 FetchDescriptor<RoutineTask>(
                     predicate: #Predicate<RoutineTask> { persistedTask in
-                        persistedTask.id == task.id
+                        persistedTask.id == persistedTaskID
                     }
                 )
             ).first

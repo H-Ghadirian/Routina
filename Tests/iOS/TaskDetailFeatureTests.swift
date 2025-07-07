@@ -611,7 +611,9 @@ struct TaskDetailFeatureTests {
 
         let persistedTaskID = task.id
         let descriptor = FetchDescriptor<RoutineTask>(
-            predicate: #Predicate<RoutineTask> { $0.id == persistedTaskID }
+            predicate: #Predicate<RoutineTask> { task in
+                task.id == persistedTaskID
+            }
         )
         let persistedTask = try #require(context.fetch(descriptor).first)
         #expect(persistedTask.name == "Deep Read")
@@ -845,11 +847,12 @@ struct TaskDetailFeatureTests {
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
 
+        let persistedTaskID = task.id
         let persistedTask = try #require(
             context.fetch(
                 FetchDescriptor<RoutineTask>(
                     predicate: #Predicate<RoutineTask> { persistedTask in
-                        persistedTask.id == task.id
+                        persistedTask.id == persistedTaskID
                     }
                 )
             ).first
@@ -1648,19 +1651,29 @@ struct TaskDetailFeatureTests {
             $0.notificationClient.cancel = { _ in }
         }
 
-        await store.send(.confirmAssumedPastDays) {
-            $0.taskRefreshID = 1
-            $0.task.lastDone = makeDate("2026-02-24T12:00:00Z")
-            $0.task.scheduleAnchor = nil
-            $0.logs = [
-                RoutineLog(timestamp: makeDate("2026-02-24T12:00:00Z"), taskID: task.id, kind: .completed),
-                RoutineLog(timestamp: makeDate("2026-02-23T12:00:00Z"), taskID: task.id, kind: .completed),
-            ]
-            $0.daysSinceLastRoutine = 1
-            $0.overdueDays = 0
-            $0.isDoneToday = false
-            $0.isAssumedDoneToday = false
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.confirmAssumedPastDays) {
+                $0.taskRefreshID = 1
+                $0.daysSinceLastRoutine = 1
+                $0.overdueDays = 1
+                $0.isDoneToday = false
+                $0.isAssumedDoneToday = false
+                #expect($0.logs.count == 2)
+            }
         }
+        #expect(store.state.taskRefreshID == 1)
+        #expect(store.state.task.lastDone == makeDate("2026-02-24T12:00:00Z"))
+        #expect(store.state.task.scheduleAnchor == nil)
+        #expect(store.state.logs.count == 2)
+        #expect(store.state.logs.map(\.kind) == [.completed, .completed])
+        #expect(store.state.logs.compactMap(\.timestamp) == [
+            makeDate("2026-02-24T12:00:00Z"),
+            makeDate("2026-02-23T12:00:00Z"),
+        ])
+        #expect(store.state.daysSinceLastRoutine == 1)
+        #expect(store.state.overdueDays == 1)
+        #expect(store.state.isDoneToday == false)
+        #expect(store.state.isAssumedDoneToday == false)
 
         let taskID = task.id
         await store.receive {
@@ -1676,7 +1689,7 @@ struct TaskDetailFeatureTests {
                 makeDate("2026-02-23T12:00:00Z"),
             ])
             $0.daysSinceLastRoutine = 1
-            $0.overdueDays = 0
+            $0.overdueDays = 1
             $0.isDoneToday = false
             $0.isAssumedDoneToday = false
         }

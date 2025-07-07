@@ -143,6 +143,8 @@ let package = Package(
                 "SharedCore/Features/Home/HomeReloadGuardSupport.swift",
                 "SharedCore/Features/Home/HomeSelectionSupport.swift",
                 "SharedCore/Features/Home/HomeTaskSupport.swift",
+                "SharedCore/Features/Home/HomeTaskLifecycleSupport.swift",
+                "SharedCore/Features/Home/HomeTaskLifecycleExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsFeature.swift",
                 "SharedCore/Features/Settings/SettingsFeatureState.swift",
                 "SharedCore/Features/Settings/SettingsAppearanceSupport.swift",
