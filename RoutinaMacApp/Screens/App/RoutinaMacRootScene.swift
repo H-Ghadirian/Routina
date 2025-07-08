@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import SwiftData
 import WidgetKit
 
 struct RoutinaMacRootScene: Scene {
@@ -24,12 +25,10 @@ struct RoutinaMacRootScene: Scene {
                     DispatchQueue.main.async {
                         MacMenuCleanup.removeUnneededMenus()
                     }
-                    WidgetStatsService.refresh(using: persistence.container)
-                    WidgetCenter.shared.reloadAllTimelines()
+                    refreshWidgetStats()
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-                    WidgetStatsService.refresh(using: persistence.container)
-                    WidgetCenter.shared.reloadAllTimelines()
+                .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+                    refreshWidgetStats()
                 }
         }
         .defaultSize(
@@ -50,6 +49,12 @@ struct RoutinaMacRootScene: Scene {
         Settings {
             settingsRoot
         }
+    }
+
+    @MainActor
+    private func refreshWidgetStats() {
+        WidgetStatsService.refresh(using: persistence.container)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 

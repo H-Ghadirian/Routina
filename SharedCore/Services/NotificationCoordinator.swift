@@ -1,6 +1,9 @@
 import Foundation
 import SwiftData
 import UserNotifications
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 extension Notification.Name {
     static let routineDidUpdate = Notification.Name("routineDidUpdate")
@@ -11,6 +14,12 @@ extension Notification.Name {
 extension NotificationCenter {
     func postRoutineDidUpdate() {
         post(name: .routineDidUpdate, object: nil)
+#if canImport(WidgetKit)
+        Task { @MainActor in
+            WidgetStatsService.refresh(using: PersistenceController.shared.container)
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+#endif
     }
 
     func postRoutineTagDidRename(from oldName: String, to newName: String) {

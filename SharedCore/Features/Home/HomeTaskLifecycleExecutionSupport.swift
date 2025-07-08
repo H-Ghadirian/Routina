@@ -27,6 +27,7 @@ enum HomeTaskLifecycleExecutionSupport {
                         calendar: calendar
                     )
                 )
+                WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Failed to update checklist routine from home list: \(error)")
@@ -63,6 +64,7 @@ enum HomeTaskLifecycleExecutionSupport {
                         )
                     )
                 }
+                WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Failed to mark routine as done from home list: \(error)")

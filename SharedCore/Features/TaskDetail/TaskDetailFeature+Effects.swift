@@ -65,6 +65,7 @@ extension TaskDetailFeature {
                         )
                     }
                 }
+                WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error saving context: \(error)")
@@ -89,6 +90,7 @@ extension TaskDetailFeature {
                 if updatedTask.isOneOffTask {
                     await notificationClient.cancel(taskID.uuidString)
                 }
+                WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error canceling todo: \(error)")
@@ -121,6 +123,7 @@ extension TaskDetailFeature {
                         )
                     )
                 }
+                WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error undoing routine completion: \(error)")
@@ -256,6 +259,7 @@ extension TaskDetailFeature {
                         )
                     )
                 }
+                WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error confirming assumed routine days: \(error)")
