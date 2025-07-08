@@ -3,7 +3,7 @@ import CoreData
 import SwiftUI
 
 struct HomeTCAView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+//    @Environment(\.managedObjectContext) private var viewContext
     let store: StoreOf<HomeFeature>
     @State private var needsRefresh = false  // Added State to trigger UI refresh
     @State private var showingAddRoutine = false
@@ -83,7 +83,7 @@ struct HomeTCAView: View {
                     }
                 }
             }
-            .onDelete { deleteRoutines(viewStore, offsets: $0) }
+            .onDelete { viewStore.send(.deleteTask($0)) }
         }
     }
     
@@ -100,6 +100,7 @@ struct HomeTCAView: View {
             )
         )
     }
+
     private func urgencySquare(for task: RoutineTask) -> some View {
         let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
         let progress = Double(daysSinceLastRoutine) / Double(task.interval)
@@ -116,20 +117,5 @@ struct HomeTCAView: View {
             .fill(color)
             .frame(width: 20, height: 20)
             .cornerRadius(4)
-    }
-
-    private func deleteRoutines(_ viewStore: ViewStoreOf<HomeFeature>, offsets: IndexSet) {
-        withAnimation {
-            offsets.map { viewStore.routineTasks[$0] }.forEach(viewContext.delete)
-            saveContext()
-        }
-    }
-
-    private func saveContext() {
-        do {
-            try viewContext.save()
-        } catch {
-            print("Unresolved error: \(error.localizedDescription)")
-        }
     }
 }

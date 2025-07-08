@@ -16,6 +16,7 @@ struct HomeFeature {
         case onAppear
         case setAddRoutineSheet(Bool)
         case addRoutineSheet(AddRoutineFeature.Action)
+        case deleteTask(IndexSet)
     }
 
     @Dependency(\.notificationClient) var notificationClient
@@ -74,6 +75,20 @@ struct HomeFeature {
                 default:
                     return .none
                 }
+            case let .deleteTask(offsetscho):
+                // 1. Grab the objects that correspond to the tapped rows
+                let tasksToDelete = offsets.map { state.routineTasks[$0] }
+
+                // 2. Delete them in *their* context
+                tasksToDelete.forEach(viewContext.delete)
+
+                // 3. Persist the change (wrap in `try?` or an Effect if you want error handling)
+                try? viewContext.save()
+
+                // 4. Keep state in sync so the list animates away the rows
+                state.routineTasks.remove(atOffsets: offsets)
+
+                return .none
             }
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
