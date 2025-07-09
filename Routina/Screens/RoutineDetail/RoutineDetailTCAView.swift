@@ -19,8 +19,10 @@ struct RoutineDetailTCAView: View {
                     Text("Overdue by \(viewStore.overdueDays) day(s)")
                         .foregroundColor(.red)
                         .fontWeight(.bold)
+                } else if viewStore.daysSinceLastRoutine == 0 {
+                    Text(viewStore.logs.isEmpty ? "Created Today!" : "Done Today!")
                 } else {
-                    Text(viewStore.daysSinceLastRoutine == 0 ? "Done Today!" : "\(viewStore.daysSinceLastRoutine) day(s) since last done")
+                    Text("\(viewStore.daysSinceLastRoutine) day(s) since last done")
                 }
 
                 if let dueDate = Calendar.current.date(byAdding: .day, value: Int(viewStore.task.interval), to: viewStore.task.lastDone ?? Date()) {
