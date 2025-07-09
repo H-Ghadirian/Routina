@@ -64,6 +64,18 @@ struct SettingsIOSRootView: View {
                             value: store.cloud.cloudSyncAvailable ? nil : "Off"
                         )
                     }
+
+                    NavigationLink {
+                        SettingsGitHubDetailView(store: store)
+                    } label: {
+                        SettingsNavigationRow(
+                            icon: "point.3.connected.trianglepath.dotted",
+                            tint: .indigo,
+                            title: "GitHub",
+                            subtitle: store.github.overviewSubtitle,
+                            value: store.github.connectedRepository == nil ? nil : "Live"
+                        )
+                    }
                 }
 
                 Section {
@@ -94,6 +106,103 @@ struct SettingsIOSRootView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+}
+
+private struct SettingsGitHubDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            List {
+                Section("Repository") {
+                    TextField("Owner", text: repositoryOwnerBinding)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    TextField("Repository", text: repositoryNameBinding)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    Text(store.github.repositorySummaryText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    if let validationMessage = store.github.saveValidationMessage {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Section("Access Token") {
+                    SecureField("Personal access token", text: accessTokenBinding)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    Text(store.github.tokenStatusText)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Actions") {
+                    Button {
+                        store.send(.saveGitHubConnectionTapped)
+                    } label: {
+                        HStack {
+                            if store.github.isOperationInProgress {
+                                ProgressView()
+                            } else {
+                                Label("Save Connection", systemImage: "link.badge.plus")
+                            }
+                        }
+                    }
+                    .disabled(store.github.isSaveDisabled)
+
+                    Button(role: .destructive) {
+                        store.send(.clearGitHubConnectionTapped)
+                    } label: {
+                        Label("Remove Connection", systemImage: "trash")
+                    }
+                    .disabled(store.github.isOperationInProgress || store.github.connectedRepository == nil)
+                }
+
+                Section("Info") {
+                    Text("Use a fine-grained or classic GitHub personal access token with read access to the repository if it is private. The token is stored in Keychain.")
+                        .foregroundStyle(.secondary)
+                }
+
+                if !store.github.statusMessage.isEmpty {
+                    Section("Status") {
+                        Text(store.github.statusMessage)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("GitHub")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var repositoryOwnerBinding: Binding<String> {
+        Binding(
+            get: { store.github.repositoryOwner },
+            set: { store.send(.gitHubOwnerChanged($0)) }
+        )
+    }
+
+    private var repositoryNameBinding: Binding<String> {
+        Binding(
+            get: { store.github.repositoryName },
+            set: { store.send(.gitHubRepositoryChanged($0)) }
+        )
+    }
+
+    private var accessTokenBinding: Binding<String> {
+        Binding(
+            get: { store.github.accessTokenDraft },
+            set: { store.send(.gitHubTokenChanged($0)) }
+        )
     }
 }
 

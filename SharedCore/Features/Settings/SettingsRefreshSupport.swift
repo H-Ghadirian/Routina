@@ -5,6 +5,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var dataModeDescription: String
     var iCloudContainerDescription: String
     var cloudSyncAvailable: Bool
+    var gitHubConnection: GitHubConnectionStatus
     var notificationsEnabled: Bool
     var notificationReminderTime: Date
     var routineListSectioningMode: RoutineListSectioningMode
@@ -29,6 +30,13 @@ enum SettingsRefreshEditor {
         state.diagnostics.cloudDiagnosticsTimestamp = snapshot.cloudDiagnosticsTimestamp
         state.diagnostics.pushDiagnosticsStatus = snapshot.pushDiagnosticsStatus
         state.cloud.cloudSyncAvailable = snapshot.cloudSyncAvailable
+        state.github.repositoryOwner = snapshot.gitHubConnection.repository?.owner ?? ""
+        state.github.repositoryName = snapshot.gitHubConnection.repository?.name ?? ""
+        state.github.connectedRepository = snapshot.gitHubConnection.repository
+        state.github.hasSavedAccessToken = snapshot.gitHubConnection.hasAccessToken
+        state.github.accessTokenDraft = ""
+        state.github.isOperationInProgress = false
+        state.github.statusMessage = ""
 
         SettingsNotificationsEditor.refreshFromSettings(
             notificationsEnabled: snapshot.notificationsEnabled,

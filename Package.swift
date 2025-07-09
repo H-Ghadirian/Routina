@@ -118,6 +118,7 @@ let package = Package(
                 "SharedCore/Domain/RoutineListSectioningMode.swift",
                 "SharedCore/Domain/RoutineLogHistory.swift",
                 "SharedCore/Domain/RoutineTag.swift",
+                "SharedCore/Domain/GitHubStatsModels.swift",
                 "SharedCore/Domain/SprintBoardModels.swift",
                 "SharedCore/Domain/TagCounterDisplayMode.swift",
                 "SharedCore/Domain/TagCounterFormatting.swift",
@@ -194,6 +195,7 @@ let package = Package(
                 "SharedCore/Sync/CloudKitSyncDiagnostics.swift",
                 "SharedCore/Sync/CloudSyncClient.swift",
                 "SharedCore/Views/ImportanceUrgencyMatrixPicker.swift",
+                "SharedCore/Services/GitHubStatsClient.swift",
             ]
         ),
         .target(

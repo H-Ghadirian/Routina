@@ -48,6 +48,11 @@ private enum SprintBoardClientKey: DependencyKey {
     static let testValue = SprintBoardClient.noop
 }
 
+private enum GitHubStatsClientKey: DependencyKey {
+    static let liveValue = GitHubStatsClient.live
+    static let testValue = GitHubStatsClient.noop
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -97,5 +102,10 @@ extension DependencyValues {
     var sprintBoardClient: SprintBoardClient {
         get { self[SprintBoardClientKey.self] }
         set { self[SprintBoardClientKey.self] = newValue }
+    }
+
+    var gitHubStatsClient: GitHubStatsClient {
+        get { self[GitHubStatsClientKey.self] }
+        set { self[GitHubStatsClientKey.self] = newValue }
     }
 }

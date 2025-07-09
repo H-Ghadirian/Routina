@@ -313,20 +313,29 @@ struct StatsFeature {
         var availableTags: [String] = []
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
+        var gitHubConnection = GitHubConnectionStatus.disconnected
+        var gitHubStats: GitHubRepositoryStats?
+        var isGitHubStatsLoading: Bool = false
+        var gitHubStatsErrorMessage: String?
     }
 
     enum Action: Equatable {
         case setData(tasks: [RoutineTask], logs: [RoutineLog])
+        case onAppear
         case selectedRangeChanged(DoneChartRange)
         case taskTypeFilterChanged(StatsTaskTypeFilter)
         case selectedTagChanged(String?)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case excludedTagsChanged(Set<String>)
+        case gitHubStatsRefreshRequested
+        case gitHubStatsLoaded(GitHubRepositoryStats)
+        case gitHubStatsFailed(String)
         case clearFilters
     }
 
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
+    @Dependency(\.gitHubStatsClient) var gitHubStatsClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -337,10 +346,23 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case .onAppear:
+                state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
+                guard state.gitHubConnection.isConnected else {
+                    state.isGitHubStatsLoading = false
+                    state.gitHubStats = nil
+                    state.gitHubStatsErrorMessage = nil
+                    return .none
+                }
+                return refreshGitHubStatsEffect(state: &state)
+
             case let .selectedRangeChanged(range):
                 state.selectedRange = range
                 refreshDerivedState(&state)
-                return .none
+                guard state.gitHubConnection.isConnected else {
+                    return .none
+                }
+                return refreshGitHubStatsEffect(state: &state)
 
             case let .taskTypeFilterChanged(filter):
                 state.taskTypeFilter = filter
@@ -362,6 +384,27 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case .gitHubStatsRefreshRequested:
+                state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
+                guard state.gitHubConnection.isConnected else {
+                    state.gitHubStats = nil
+                    state.gitHubStatsErrorMessage = nil
+                    state.isGitHubStatsLoading = false
+                    return .none
+                }
+                return refreshGitHubStatsEffect(state: &state)
+
+            case let .gitHubStatsLoaded(stats):
+                state.isGitHubStatsLoading = false
+                state.gitHubStats = stats
+                state.gitHubStatsErrorMessage = nil
+                return .none
+
+            case let .gitHubStatsFailed(message):
+                state.isGitHubStatsLoading = false
+                state.gitHubStatsErrorMessage = message
+                return .none
+
             case .clearFilters:
                 state.selectedRange = .week
                 state.taskTypeFilter = .all
@@ -370,6 +413,21 @@ struct StatsFeature {
                 state.selectedImportanceUrgencyFilter = nil
                 refreshDerivedState(&state)
                 return .none
+            }
+        }
+    }
+
+    private func refreshGitHubStatsEffect(state: inout State) -> Effect<Action> {
+        state.isGitHubStatsLoading = true
+        state.gitHubStatsErrorMessage = nil
+        let range = state.selectedRange
+
+        return .run { send in
+            do {
+                let stats = try await self.gitHubStatsClient.fetchStats(range)
+                await send(.gitHubStatsLoaded(stats))
+            } catch {
+                await send(.gitHubStatsFailed(error.localizedDescription))
             }
         }
     }

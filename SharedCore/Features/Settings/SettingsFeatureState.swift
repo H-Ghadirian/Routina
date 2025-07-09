@@ -40,6 +40,16 @@ struct SettingsDataTransferState: Equatable {
     var dataTransferStatusMessage: String = ""
 }
 
+struct SettingsGitHubState: Equatable {
+    var repositoryOwner: String = ""
+    var repositoryName: String = ""
+    var accessTokenDraft: String = ""
+    var connectedRepository: GitHubRepositoryReference?
+    var hasSavedAccessToken: Bool = false
+    var isOperationInProgress: Bool = false
+    var statusMessage: String = ""
+}
+
 struct SettingsPlacesState: Equatable {
     var savedPlaces: [RoutinePlaceSummary] = []
     var placePendingDeletion: RoutinePlaceSummary?
@@ -71,6 +81,7 @@ struct SettingsFeatureState: Equatable {
     var appearance = SettingsAppearanceState()
     var cloud = SettingsCloudState()
     var dataTransfer = SettingsDataTransferState()
+    var github = SettingsGitHubState()
     var places = SettingsPlacesState()
     var tags = SettingsTagsState()
 }

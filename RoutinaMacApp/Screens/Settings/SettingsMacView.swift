@@ -150,6 +150,8 @@ struct SettingsMacSidebarRow: View {
 
         case .iCloud:
             return store.cloud.overviewSubtitle
+        case .github:
+            return store.github.overviewSubtitle
 
         case .backup:
             return store.dataTransfer.overviewSubtitle
@@ -168,6 +170,8 @@ struct SettingsMacSidebarRow: View {
             return store.notifications.notificationsEnabled ? "On" : "Off"
         case .iCloud:
             return store.cloud.cloudSyncAvailable ? nil : "Off"
+        case .github:
+            return store.github.connectedRepository == nil ? nil : "Live"
         default:
             return nil
         }
@@ -238,6 +242,8 @@ struct SettingsMacDetailView: View {
             SettingsMacAppearanceDetailView(store: store)
         case .iCloud:
             SettingsMacCloudDetailView(store: store)
+        case .github:
+            SettingsMacGitHubDetailView(store: store)
         case .backup:
             SettingsMacBackupDetailView(store: store)
         case .support:
@@ -369,6 +375,103 @@ private struct SettingsMacNotificationsDetailView: View {
         Binding(
             get: { store.notifications.notificationReminderTime },
             set: { store.send(.notificationReminderTimeChanged($0)) }
+        )
+    }
+}
+
+private struct SettingsMacGitHubDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            SettingsMacDetailShell(
+                title: "GitHub",
+                subtitle: "Connect a repository to show commit activity, merged pull requests, and contributor counts in Stats."
+            ) {
+                SettingsMacDetailCard(title: "Repository") {
+                    TextField("Owner", text: repositoryOwnerBinding)
+                        .textFieldStyle(.roundedBorder)
+
+                    TextField("Repository", text: repositoryNameBinding)
+                        .textFieldStyle(.roundedBorder)
+
+                    Text(store.github.repositorySummaryText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    if let validationMessage = store.github.saveValidationMessage {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                SettingsMacDetailCard(title: "Access Token") {
+                    SecureField("Personal access token", text: accessTokenBinding)
+                        .textFieldStyle(.roundedBorder)
+
+                    Text(store.github.tokenStatusText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                SettingsMacDetailCard(title: "Actions") {
+                    HStack(spacing: 12) {
+                        Button {
+                            store.send(.saveGitHubConnectionTapped)
+                        } label: {
+                            if store.github.isOperationInProgress {
+                                ProgressView()
+                            } else {
+                                Label("Save Connection", systemImage: "link.badge.plus")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(store.github.isSaveDisabled)
+
+                        Button(role: .destructive) {
+                            store.send(.clearGitHubConnectionTapped)
+                        } label: {
+                            Label("Remove Connection", systemImage: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(store.github.isOperationInProgress || store.github.connectedRepository == nil)
+                    }
+
+                    Text("Use a fine-grained or classic personal access token with read access for private repositories. The token is stored in Keychain.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !store.github.statusMessage.isEmpty {
+                    SettingsMacDetailCard(title: "Status") {
+                        Text(store.github.statusMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private var repositoryOwnerBinding: Binding<String> {
+        Binding(
+            get: { store.github.repositoryOwner },
+            set: { store.send(.gitHubOwnerChanged($0)) }
+        )
+    }
+
+    private var repositoryNameBinding: Binding<String> {
+        Binding(
+            get: { store.github.repositoryName },
+            set: { store.send(.gitHubRepositoryChanged($0)) }
+        )
+    }
+
+    private var accessTokenBinding: Binding<String> {
+        Binding(
+            get: { store.github.accessTokenDraft },
+            set: { store.send(.gitHubTokenChanged($0)) }
         )
     }
 }

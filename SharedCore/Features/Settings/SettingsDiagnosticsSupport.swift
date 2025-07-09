@@ -3,7 +3,8 @@ import Foundation
 enum SettingsDiagnosticsLoader {
     static func makeOnAppearSnapshot(
         appInfoClient: AppInfoClient,
-        appSettingsClient: AppSettingsClient
+        appSettingsClient: AppSettingsClient,
+        gitHubConnection: GitHubConnectionStatus
     ) -> SettingsOnAppearSnapshot {
         let diagnostics = CloudKitSyncDiagnostics.snapshot()
         return SettingsOnAppearSnapshot(
@@ -11,6 +12,7 @@ enum SettingsDiagnosticsLoader {
             dataModeDescription: appInfoClient.dataModeDescription(),
             iCloudContainerDescription: appInfoClient.cloudContainerDescription(),
             cloudSyncAvailable: appInfoClient.isCloudSyncEnabled(),
+            gitHubConnection: gitHubConnection,
             notificationsEnabled: appSettingsClient.notificationsEnabled(),
             notificationReminderTime: appSettingsClient.notificationReminderTime(),
             routineListSectioningMode: appSettingsClient.routineListSectioningMode(),

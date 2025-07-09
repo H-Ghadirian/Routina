@@ -119,6 +119,22 @@ struct StatsView: View {
         store.filteredTaskCount
     }
 
+    private var gitHubConnection: GitHubConnectionStatus {
+        store.gitHubConnection
+    }
+
+    private var gitHubStats: GitHubRepositoryStats? {
+        store.gitHubStats
+    }
+
+    private var isGitHubStatsLoading: Bool {
+        store.isGitHubStatsLoading
+    }
+
+    private var gitHubStatsErrorMessage: String? {
+        store.gitHubStatsErrorMessage
+    }
+
     private var surfaceGradient: LinearGradient {
         LinearGradient(
             colors: colorScheme == .dark
@@ -235,6 +251,7 @@ struct StatsView: View {
                         }
                         heroSection(metrics: metrics)
                         summaryCards(metrics: metrics)
+                        gitHubSection
                         chartSection(metrics: metrics)
                     }
                     .padding(.horizontal, 20)
@@ -256,6 +273,7 @@ struct StatsView: View {
                 }
             }
             .task {
+                store.send(.onAppear)
                 store.send(.setData(tasks: tasks, logs: logs))
             }
             .onChange(of: tasks) { _, newValue in
@@ -796,6 +814,195 @@ struct StatsView: View {
         }
     }
 
+    private var gitHubSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("GitHub activity")
+                        .font(.title3.weight(.semibold))
+
+                    Text(gitHubSectionSubtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                if gitHubConnection.isConnected {
+                    Button {
+                        store.send(.gitHubStatsRefreshRequested)
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isGitHubStatsLoading)
+                }
+            }
+
+            if isGitHubStatsLoading {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("Loading GitHub stats...")
+                        .foregroundStyle(.secondary)
+                }
+            } else if let gitHubStats {
+                LazyVGrid(
+                    columns: [
+                        GridItem(
+                            .adaptive(
+                                minimum: horizontalSizeClass == .compact ? 160 : 220,
+                                maximum: 280
+                            ),
+                            spacing: 14
+                        )
+                    ],
+                    spacing: 14
+                ) {
+                    summaryCard(
+                        icon: "point.topleft.down.curvedto.point.bottomright.up.fill",
+                        accent: .indigo,
+                        title: "Commits",
+                        value: gitHubStats.totalCommitCount.formatted(),
+                        caption: gitHubStats.repository.fullName,
+                        accessibilityIdentifier: "stats.github.commits"
+                    )
+
+                    summaryCard(
+                        icon: "arrow.merge",
+                        accent: .green,
+                        title: "Merged PRs",
+                        value: gitHubStats.mergedPullRequestCount.formatted(),
+                        caption: selectedRange.periodDescription,
+                        accessibilityIdentifier: "stats.github.mergedPRs"
+                    )
+
+                    summaryCard(
+                        icon: "tray.full.fill",
+                        accent: .orange,
+                        title: "Open PRs",
+                        value: gitHubStats.openPullRequestCount.formatted(),
+                        caption: "Current open pull requests",
+                        accessibilityIdentifier: "stats.github.openPRs"
+                    )
+
+                    summaryCard(
+                        icon: "person.2.fill",
+                        accent: .blue,
+                        title: "Contributors",
+                        value: gitHubStats.contributorCount.formatted(),
+                        caption: "Active in this range",
+                        accessibilityIdentifier: "stats.github.contributors"
+                    )
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    Chart {
+                        ForEach(gitHubStats.commitPoints) { point in
+                            let isHighlighted = point.date == gitHubStats.busiestCommitDay?.date
+
+                            BarMark(
+                                x: .value("Date", point.date, unit: .day),
+                                y: .value("Commits", point.count)
+                            )
+                            .cornerRadius(7)
+                            .foregroundStyle(
+                                isHighlighted
+                                    ? AnyShapeStyle(highlightBarFill)
+                                    : AnyShapeStyle(baseBarFill)
+                            )
+                            .opacity(point.count == 0 ? 0.35 : 1)
+                        }
+
+                        if gitHubStats.averageCommitCount > 0 {
+                            RuleMark(y: .value("Average", gitHubStats.averageCommitCount))
+                                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
+                                .foregroundStyle(Color.secondary.opacity(0.65))
+                        }
+                    }
+                    .chartYScale(domain: 0...gitHubChartUpperBound(for: gitHubStats))
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { value in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
+                                .foregroundStyle(Color.secondary.opacity(0.2))
+                            AxisValueLabel()
+                        }
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: makeXAxisDates(from: gitHubStats.commitPoints)) { value in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
+                                .foregroundStyle(Color.secondary.opacity(0.12))
+                            AxisTick()
+                            AxisValueLabel {
+                                if let date = value.as(Date.self) {
+                                    Text(xAxisLabel(for: date))
+                                }
+                            }
+                        }
+                    }
+                    .chartPlotStyle { plotArea in
+                        plotArea
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
+                            )
+                    }
+                    .frame(minWidth: chartMinWidth, minHeight: 220)
+                    .padding(.top, 4)
+                }
+                .defaultScrollAnchor(.trailing)
+
+                HStack(spacing: 10) {
+                    bottomInsightPill(
+                        icon: "calendar",
+                        text: selectedRange.periodDescription
+                    )
+
+                    if let busiestCommitDay = gitHubStats.busiestCommitDay {
+                        bottomInsightPill(
+                            icon: "sparkles",
+                            text: "Best day: \(bestDayCaption(for: busiestCommitDay))"
+                        )
+                    } else {
+                        bottomInsightPill(
+                            icon: "arrow.trianglehead.2.clockwise.rotate.90",
+                            text: "No commits in this range"
+                        )
+                    }
+                }
+            } else if let gitHubStatsErrorMessage {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(gitHubStatsErrorMessage)
+                        .foregroundStyle(.secondary)
+
+                    Button {
+                        store.send(.gitHubStatsRefreshRequested)
+                    } label: {
+                        Label("Try Again", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!gitHubConnection.isConnected)
+                }
+            } else {
+                Text("Connect a GitHub repository in Settings to show commits, pull requests, and contributor activity here.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(20)
+        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
+        )
+    }
+
+    private var gitHubSectionSubtitle: String {
+        if let repository = gitHubConnection.repository {
+            return "Repo: \(repository.fullName)"
+        }
+
+        return "No repository connected"
+    }
+
     private func activeRoutineCardCaption(metrics: Metrics) -> String {
         if filteredTaskCount == 0 {
             return "No routines created yet"
@@ -1125,6 +1332,11 @@ struct StatsView: View {
     private func sparklineBarHeight(for point: DoneChartPoint, metrics: Metrics) -> CGFloat {
         let normalized = max(CGFloat(point.count) / CGFloat(metrics.sparklineMaxCount), 0.12)
         return 16 + (normalized * 54)
+    }
+
+    private func gitHubChartUpperBound(for stats: GitHubRepositoryStats) -> Double {
+        let maxCount = stats.commitPoints.map(\.count).max() ?? 0
+        return Double(max(maxCount, Int(ceil(stats.averageCommitCount))) + 1)
     }
 
     private var chartMinWidth: CGFloat {

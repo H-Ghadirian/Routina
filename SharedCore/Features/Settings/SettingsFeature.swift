@@ -15,6 +15,12 @@ struct SettingsFeature {
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
+        case gitHubOwnerChanged(String)
+        case gitHubRepositoryChanged(String)
+        case gitHubTokenChanged(String)
+        case saveGitHubConnectionTapped
+        case clearGitHubConnectionTapped
+        case gitHubConnectionUpdateFinished(connection: GitHubConnectionStatus, success: Bool, message: String)
         case onAppear
         case tagManagerAppeared
         case onAppBecameActive
@@ -64,6 +70,7 @@ struct SettingsFeature {
     @Dependency(\.urlOpenerClient) var urlOpenerClient
     @Dependency(\.cloudSyncClient) var cloudSyncClient
     @Dependency(\.routineDataTransferClient) var routineDataTransferClient
+    @Dependency(\.gitHubStatsClient) var gitHubStatsClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -156,13 +163,104 @@ struct SettingsFeature {
                 SettingsRefreshEditor.hydrateOnAppear(
                     SettingsDiagnosticsLoader.makeOnAppearSnapshot(
                         appInfoClient: appInfoClient,
-                        appSettingsClient: appSettingsClient
+                        appSettingsClient: appSettingsClient,
+                        gitHubConnection: gitHubStatsClient.loadConnectionStatus()
                     ),
                     state: &state
                 )
                 return refreshSettingsContext(
                     reconcileNotificationsIfEnabled: false
                 )
+
+            case let .gitHubOwnerChanged(owner):
+                state.github.repositoryOwner = owner
+                return .none
+
+            case let .gitHubRepositoryChanged(name):
+                state.github.repositoryName = name
+                return .none
+
+            case let .gitHubTokenChanged(token):
+                state.github.accessTokenDraft = token
+                return .none
+
+            case .saveGitHubConnectionTapped:
+                guard !state.github.isSaveDisabled else {
+                    if let validationMessage = state.github.saveValidationMessage {
+                        state.github.statusMessage = validationMessage
+                    }
+                    return .none
+                }
+
+                state.github.isOperationInProgress = true
+                state.github.statusMessage = ""
+
+                let repository = GitHubRepositoryReference(
+                    owner: state.github.repositoryOwner,
+                    name: state.github.repositoryName
+                )
+                let accessToken = state.github.accessTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                return .run { send in
+                    do {
+                        let connection = try await self.gitHubStatsClient.saveConnection(
+                            repository,
+                            accessToken.isEmpty ? nil : accessToken
+                        )
+                        await send(
+                            .gitHubConnectionUpdateFinished(
+                                connection: connection,
+                                success: true,
+                                message: "Connected to \(repository.fullName)."
+                            )
+                        )
+                    } catch {
+                        await send(
+                            .gitHubConnectionUpdateFinished(
+                                connection: self.gitHubStatsClient.loadConnectionStatus(),
+                                success: false,
+                                message: error.localizedDescription
+                            )
+                        )
+                    }
+                }
+
+            case .clearGitHubConnectionTapped:
+                state.github.isOperationInProgress = true
+                state.github.statusMessage = ""
+
+                return .run { send in
+                    do {
+                        try self.gitHubStatsClient.clearConnection()
+                        await send(
+                            .gitHubConnectionUpdateFinished(
+                                connection: .disconnected,
+                                success: true,
+                                message: "GitHub connection removed."
+                            )
+                        )
+                    } catch {
+                        await send(
+                            .gitHubConnectionUpdateFinished(
+                                connection: self.gitHubStatsClient.loadConnectionStatus(),
+                                success: false,
+                                message: error.localizedDescription
+                            )
+                        )
+                    }
+                }
+
+            case let .gitHubConnectionUpdateFinished(connection, success, message):
+                state.github.isOperationInProgress = false
+                state.github.connectedRepository = connection.repository
+                state.github.hasSavedAccessToken = connection.hasAccessToken
+                state.github.statusMessage = message
+                state.github.accessTokenDraft = ""
+                if success {
+                    state.github.repositoryOwner = connection.repository?.owner ?? ""
+                    state.github.repositoryName = connection.repository?.name ?? ""
+                }
+                return .none
 
             case .tagManagerAppeared:
                 return .run { @MainActor send in
