@@ -123,7 +123,7 @@ struct StatsView: View {
         store.gitHubConnection
     }
 
-    private var gitHubStats: GitHubRepositoryStats? {
+    private var gitHubStats: GitHubStatsSnapshot? {
         store.gitHubStats
     }
 
@@ -846,128 +846,11 @@ struct StatsView: View {
                         .foregroundStyle(.secondary)
                 }
             } else if let gitHubStats {
-                LazyVGrid(
-                    columns: [
-                        GridItem(
-                            .adaptive(
-                                minimum: horizontalSizeClass == .compact ? 160 : 220,
-                                maximum: 280
-                            ),
-                            spacing: 14
-                        )
-                    ],
-                    spacing: 14
-                ) {
-                    summaryCard(
-                        icon: "point.topleft.down.curvedto.point.bottomright.up.fill",
-                        accent: .indigo,
-                        title: "Commits",
-                        value: gitHubStats.totalCommitCount.formatted(),
-                        caption: gitHubStats.repository.fullName,
-                        accessibilityIdentifier: "stats.github.commits"
-                    )
-
-                    summaryCard(
-                        icon: "arrow.merge",
-                        accent: .green,
-                        title: "Merged PRs",
-                        value: gitHubStats.mergedPullRequestCount.formatted(),
-                        caption: selectedRange.periodDescription,
-                        accessibilityIdentifier: "stats.github.mergedPRs"
-                    )
-
-                    summaryCard(
-                        icon: "tray.full.fill",
-                        accent: .orange,
-                        title: "Open PRs",
-                        value: gitHubStats.openPullRequestCount.formatted(),
-                        caption: "Current open pull requests",
-                        accessibilityIdentifier: "stats.github.openPRs"
-                    )
-
-                    summaryCard(
-                        icon: "person.2.fill",
-                        accent: .blue,
-                        title: "Contributors",
-                        value: gitHubStats.contributorCount.formatted(),
-                        caption: "Active in this range",
-                        accessibilityIdentifier: "stats.github.contributors"
-                    )
-                }
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    Chart {
-                        ForEach(gitHubStats.commitPoints) { point in
-                            let isHighlighted = point.date == gitHubStats.busiestCommitDay?.date
-
-                            BarMark(
-                                x: .value("Date", point.date, unit: .day),
-                                y: .value("Commits", point.count)
-                            )
-                            .cornerRadius(7)
-                            .foregroundStyle(
-                                isHighlighted
-                                    ? AnyShapeStyle(highlightBarFill)
-                                    : AnyShapeStyle(baseBarFill)
-                            )
-                            .opacity(point.count == 0 ? 0.35 : 1)
-                        }
-
-                        if gitHubStats.averageCommitCount > 0 {
-                            RuleMark(y: .value("Average", gitHubStats.averageCommitCount))
-                                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
-                                .foregroundStyle(Color.secondary.opacity(0.65))
-                        }
-                    }
-                    .chartYScale(domain: 0...gitHubChartUpperBound(for: gitHubStats))
-                    .chartYAxis {
-                        AxisMarks(position: .leading) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
-                                .foregroundStyle(Color.secondary.opacity(0.2))
-                            AxisValueLabel()
-                        }
-                    }
-                    .chartXAxis {
-                        AxisMarks(values: makeXAxisDates(from: gitHubStats.commitPoints)) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
-                                .foregroundStyle(Color.secondary.opacity(0.12))
-                            AxisTick()
-                            AxisValueLabel {
-                                if let date = value.as(Date.self) {
-                                    Text(xAxisLabel(for: date))
-                                }
-                            }
-                        }
-                    }
-                    .chartPlotStyle { plotArea in
-                        plotArea
-                            .background(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
-                            )
-                    }
-                    .frame(minWidth: chartMinWidth, minHeight: 220)
-                    .padding(.top, 4)
-                }
-                .defaultScrollAnchor(.trailing)
-
-                HStack(spacing: 10) {
-                    bottomInsightPill(
-                        icon: "calendar",
-                        text: selectedRange.periodDescription
-                    )
-
-                    if let busiestCommitDay = gitHubStats.busiestCommitDay {
-                        bottomInsightPill(
-                            icon: "sparkles",
-                            text: "Best day: \(bestDayCaption(for: busiestCommitDay))"
-                        )
-                    } else {
-                        bottomInsightPill(
-                            icon: "arrow.trianglehead.2.clockwise.rotate.90",
-                            text: "No commits in this range"
-                        )
-                    }
+                switch gitHubStats {
+                case let .repository(stats):
+                    gitHubRepositoryContent(stats)
+                case let .profile(stats):
+                    gitHubProfileContent(stats)
                 }
             } else if let gitHubStatsErrorMessage {
                 VStack(alignment: .leading, spacing: 12) {
@@ -983,7 +866,11 @@ struct StatsView: View {
                     .disabled(!gitHubConnection.isConnected)
                 }
             } else {
-                Text("Connect a GitHub repository in Settings to show commits, pull requests, and contributor activity here.")
+                Text(
+                    gitHubConnection.scope == .profile
+                        ? "Connect your GitHub profile in Settings to show overall contributions, commits, reviews, and issue activity here."
+                        : "Connect a GitHub repository in Settings to show commits, pull requests, and contributor activity here."
+                )
                     .foregroundStyle(.secondary)
             }
         }
@@ -999,8 +886,262 @@ struct StatsView: View {
         if let repository = gitHubConnection.repository {
             return "Repo: \(repository.fullName)"
         }
+        if let viewerLogin = gitHubConnection.viewerLogin, !viewerLogin.isEmpty {
+            return "Profile: @\(viewerLogin)"
+        }
+
+        if gitHubConnection.scope == .profile {
+            return "No profile connected"
+        }
 
         return "No repository connected"
+    }
+
+    @ViewBuilder
+    private func gitHubRepositoryContent(_ stats: GitHubRepositoryStats) -> some View {
+        LazyVGrid(
+            columns: [
+                GridItem(
+                    .adaptive(
+                        minimum: horizontalSizeClass == .compact ? 160 : 220,
+                        maximum: 280
+                    ),
+                    spacing: 14
+                )
+            ],
+            spacing: 14
+        ) {
+            summaryCard(
+                icon: "point.topleft.down.curvedto.point.bottomright.up.fill",
+                accent: .indigo,
+                title: "Commits",
+                value: stats.totalCommitCount.formatted(),
+                caption: stats.repository.fullName,
+                accessibilityIdentifier: "stats.github.commits"
+            )
+
+            summaryCard(
+                icon: "arrow.merge",
+                accent: .green,
+                title: "Merged PRs",
+                value: stats.mergedPullRequestCount.formatted(),
+                caption: selectedRange.periodDescription,
+                accessibilityIdentifier: "stats.github.mergedPRs"
+            )
+
+            summaryCard(
+                icon: "tray.full.fill",
+                accent: .orange,
+                title: "Open PRs",
+                value: stats.openPullRequestCount.formatted(),
+                caption: "Current open pull requests",
+                accessibilityIdentifier: "stats.github.openPRs"
+            )
+
+            summaryCard(
+                icon: "person.2.fill",
+                accent: .blue,
+                title: "Contributors",
+                value: stats.contributorCount.formatted(),
+                caption: "Active in this range",
+                accessibilityIdentifier: "stats.github.contributors"
+            )
+        }
+
+        gitHubChart(
+            points: stats.commitPoints,
+            averageCount: stats.averageCommitCount,
+            busiestDay: stats.busiestCommitDay,
+            yAxisLabel: "Commits",
+            averageLabel: "Average"
+        )
+
+        HStack(spacing: 10) {
+            bottomInsightPill(
+                icon: "calendar",
+                text: selectedRange.periodDescription
+            )
+
+            if let busiestCommitDay = stats.busiestCommitDay {
+                bottomInsightPill(
+                    icon: "sparkles",
+                    text: "Best day: \(bestDayCaption(for: busiestCommitDay))"
+                )
+            } else {
+                bottomInsightPill(
+                    icon: "arrow.trianglehead.2.clockwise.rotate.90",
+                    text: "No commits in this range"
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func gitHubProfileContent(_ stats: GitHubProfileStats) -> some View {
+        LazyVGrid(
+            columns: [
+                GridItem(
+                    .adaptive(
+                        minimum: horizontalSizeClass == .compact ? 160 : 220,
+                        maximum: 280
+                    ),
+                    spacing: 14
+                )
+            ],
+            spacing: 14
+        ) {
+            summaryCard(
+                icon: "chart.bar.xaxis",
+                accent: .indigo,
+                title: "Contributions",
+                value: stats.totalContributionCount.formatted(),
+                caption: "@\(stats.login) across GitHub",
+                accessibilityIdentifier: "stats.github.profile.contributions"
+            )
+
+            summaryCard(
+                icon: "point.topleft.down.curvedto.point.bottomright.up.fill",
+                accent: .blue,
+                title: "Commits",
+                value: stats.totalCommitCount.formatted(),
+                caption: selectedRange.periodDescription,
+                accessibilityIdentifier: "stats.github.profile.commits"
+            )
+
+            summaryCard(
+                icon: "arrow.triangle.pull",
+                accent: .green,
+                title: "Pull Requests",
+                value: stats.totalPullRequestCount.formatted(),
+                caption: "Opened in this range",
+                accessibilityIdentifier: "stats.github.profile.pullRequests"
+            )
+
+            summaryCard(
+                icon: "text.bubble.fill",
+                accent: .orange,
+                title: "Reviews",
+                value: stats.totalPullRequestReviewCount.formatted(),
+                caption: "Review contributions",
+                accessibilityIdentifier: "stats.github.profile.reviews"
+            )
+
+            summaryCard(
+                icon: "exclamationmark.circle.fill",
+                accent: .pink,
+                title: "Issues",
+                value: stats.totalIssueCount.formatted(),
+                caption: "Issue contributions",
+                accessibilityIdentifier: "stats.github.profile.issues"
+            )
+
+            summaryCard(
+                icon: "shippingbox.fill",
+                accent: .teal,
+                title: "Repos",
+                value: stats.contributedRepositoryCount.formatted(),
+                caption: "Repos with commits",
+                accessibilityIdentifier: "stats.github.profile.repositories"
+            )
+        }
+
+        gitHubChart(
+            points: stats.contributionPoints,
+            averageCount: stats.averageContributionCount,
+            busiestDay: stats.busiestContributionDay,
+            yAxisLabel: "Contributions",
+            averageLabel: "Average"
+        )
+
+        HStack(spacing: 10) {
+            bottomInsightPill(
+                icon: "calendar",
+                text: selectedRange.periodDescription
+            )
+
+            if let busiestContributionDay = stats.busiestContributionDay {
+                bottomInsightPill(
+                    icon: "sparkles",
+                    text: "Best day: \(bestDayCaption(for: busiestContributionDay))"
+                )
+            } else {
+                bottomInsightPill(
+                    icon: "arrow.trianglehead.2.clockwise.rotate.90",
+                    text: "No contributions in this range"
+                )
+            }
+
+            if stats.restrictedContributionCount > 0 {
+                bottomInsightPill(
+                    icon: "lock.fill",
+                    text: "Private: \(stats.restrictedContributionCount.formatted()) hidden"
+                )
+            }
+        }
+    }
+
+    private func gitHubChart(
+        points: [DoneChartPoint],
+        averageCount: Double,
+        busiestDay: DoneChartPoint?,
+        yAxisLabel: String,
+        averageLabel: String
+    ) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            Chart {
+                ForEach(points) { point in
+                    let isHighlighted = point.date == busiestDay?.date
+
+                    BarMark(
+                        x: .value("Date", point.date, unit: .day),
+                        y: .value(yAxisLabel, point.count)
+                    )
+                    .cornerRadius(7)
+                    .foregroundStyle(
+                        isHighlighted
+                            ? AnyShapeStyle(highlightBarFill)
+                            : AnyShapeStyle(baseBarFill)
+                    )
+                    .opacity(point.count == 0 ? 0.35 : 1)
+                }
+
+                if averageCount > 0 {
+                    RuleMark(y: .value(averageLabel, averageCount))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
+                        .foregroundStyle(Color.secondary.opacity(0.65))
+                }
+            }
+            .chartYScale(domain: 0...gitHubChartUpperBound(points: points, averageCount: averageCount))
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
+                        .foregroundStyle(Color.secondary.opacity(0.2))
+                    AxisValueLabel()
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: makeXAxisDates(from: points)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
+                        .foregroundStyle(Color.secondary.opacity(0.12))
+                    AxisTick()
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(xAxisLabel(for: date))
+                        }
+                    }
+                }
+            }
+            .chartPlotStyle { plotArea in
+                plotArea
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
+                    )
+            }
+            .frame(minWidth: chartMinWidth, minHeight: 220)
+            .padding(.top, 4)
+        }
+        .defaultScrollAnchor(.trailing)
     }
 
     private func activeRoutineCardCaption(metrics: Metrics) -> String {
@@ -1334,9 +1475,9 @@ struct StatsView: View {
         return 16 + (normalized * 54)
     }
 
-    private func gitHubChartUpperBound(for stats: GitHubRepositoryStats) -> Double {
-        let maxCount = stats.commitPoints.map(\.count).max() ?? 0
-        return Double(max(maxCount, Int(ceil(stats.averageCommitCount))) + 1)
+    private func gitHubChartUpperBound(points: [DoneChartPoint], averageCount: Double) -> Double {
+        let maxCount = points.map(\.count).max() ?? 0
+        return Double(max(maxCount, Int(ceil(averageCount))) + 1)
     }
 
     private var chartMinWidth: CGFloat {

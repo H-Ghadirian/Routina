@@ -41,13 +41,20 @@ struct SettingsDataTransferState: Equatable {
 }
 
 struct SettingsGitHubState: Equatable {
+    var scope: GitHubStatsScope = .repository
     var repositoryOwner: String = ""
     var repositoryName: String = ""
     var accessTokenDraft: String = ""
+    var connectedScope: GitHubStatsScope = .repository
     var connectedRepository: GitHubRepositoryReference?
+    var connectedViewerLogin: String?
     var hasSavedAccessToken: Bool = false
     var isOperationInProgress: Bool = false
     var statusMessage: String = ""
+
+    var hasConnectedConfiguration: Bool {
+        connectedRepository != nil || connectedViewerLogin?.isEmpty == false
+    }
 }
 
 struct SettingsPlacesState: Equatable {

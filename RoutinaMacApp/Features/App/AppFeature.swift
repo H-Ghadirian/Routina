@@ -314,7 +314,7 @@ struct StatsFeature {
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
         var gitHubConnection = GitHubConnectionStatus.disconnected
-        var gitHubStats: GitHubRepositoryStats?
+        var gitHubStats: GitHubStatsSnapshot?
         var isGitHubStatsLoading: Bool = false
         var gitHubStatsErrorMessage: String?
     }
@@ -328,7 +328,7 @@ struct StatsFeature {
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case excludedTagsChanged(Set<String>)
         case gitHubStatsRefreshRequested
-        case gitHubStatsLoaded(GitHubRepositoryStats)
+        case gitHubStatsLoaded(GitHubStatsSnapshot)
         case gitHubStatsFailed(String)
         case clearFilters
     }

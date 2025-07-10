@@ -30,9 +30,12 @@ enum SettingsRefreshEditor {
         state.diagnostics.cloudDiagnosticsTimestamp = snapshot.cloudDiagnosticsTimestamp
         state.diagnostics.pushDiagnosticsStatus = snapshot.pushDiagnosticsStatus
         state.cloud.cloudSyncAvailable = snapshot.cloudSyncAvailable
+        state.github.scope = snapshot.gitHubConnection.scope
+        state.github.connectedScope = snapshot.gitHubConnection.scope
         state.github.repositoryOwner = snapshot.gitHubConnection.repository?.owner ?? ""
         state.github.repositoryName = snapshot.gitHubConnection.repository?.name ?? ""
         state.github.connectedRepository = snapshot.gitHubConnection.repository
+        state.github.connectedViewerLogin = snapshot.gitHubConnection.viewerLogin
         state.github.hasSavedAccessToken = snapshot.gitHubConnection.hasAccessToken
         state.github.accessTokenDraft = ""
         state.github.isOperationInProgress = false

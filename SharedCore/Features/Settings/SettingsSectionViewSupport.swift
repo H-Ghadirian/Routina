@@ -28,8 +28,11 @@ extension SettingsGitHubState {
         if let connectedRepository {
             return connectedRepository.fullName
         }
+        if let connectedViewerLogin, !connectedViewerLogin.isEmpty {
+            return "@\(connectedViewerLogin) profile activity"
+        }
 
-        return "Connect a repository to show commit and PR stats"
+        return "Connect GitHub to show repository or profile activity"
     }
 
     var repositorySummaryText: String {
@@ -43,33 +46,112 @@ extension SettingsGitHubState {
         return "\(owner)/\(name)"
     }
 
+    var profileSummaryText: String {
+        if let connectedViewerLogin, !connectedViewerLogin.isEmpty {
+            return "@\(connectedViewerLogin)"
+        }
+
+        return "Uses the authenticated GitHub account"
+    }
+
     var saveValidationMessage: String? {
-        let owner = repositoryOwner.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = repositoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch scope {
+        case .repository:
+            let owner = repositoryOwner.trimmingCharacters(in: .whitespacesAndNewlines)
+            let name = repositoryName.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !owner.isEmpty || !name.isEmpty else {
+            guard !owner.isEmpty || !name.isEmpty else {
+                return nil
+            }
+
+            if owner.isEmpty || name.isEmpty {
+                return "Enter both the repository owner and repository name."
+            }
+
             return nil
-        }
 
-        if owner.isEmpty || name.isEmpty {
-            return "Enter both the repository owner and repository name."
+        case .profile:
+            let trimmedToken = accessTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+            if hasSavedAccessToken || !trimmedToken.isEmpty {
+                return nil
+            }
+            return "Add a personal access token to load profile activity."
         }
-
-        return nil
     }
 
     var tokenStatusText: String {
-        if hasSavedAccessToken {
-            return accessTokenDraft.isEmpty
+        let savedTokenStatus = if hasSavedAccessToken {
+            accessTokenDraft.isEmpty
                 ? "A token is already saved in Keychain. Leave the field empty to keep it."
                 : "A new token will replace the saved one."
+        } else {
+            "The token is stored securely in Keychain."
         }
 
-        return "Optional for public repositories. Add a token for private repos or higher API limits."
+        switch scope {
+        case .repository:
+            if hasSavedAccessToken {
+                return savedTokenStatus
+            }
+            return "Optional for public repositories. Add a token for private repos or higher API limits."
+
+        case .profile:
+            if hasSavedAccessToken {
+                return savedTokenStatus
+            }
+            return "Required for profile activity. Use a personal access token that can read your contribution data."
+        }
+    }
+
+    var detailSubtitle: String {
+        switch scope {
+        case .repository:
+            return "Connect one repository to show commits, merged pull requests, and contributor counts in Stats."
+        case .profile:
+            return "Connect your GitHub account to show your full contribution activity across repositories."
+        }
+    }
+
+    var infoText: String {
+        switch scope {
+        case .repository:
+            return "Use a fine-grained or classic GitHub personal access token with read access to the repository if it is private. The token is stored in Keychain."
+        case .profile:
+            return "Profile mode reads the authenticated account's contribution calendar and totals. A GitHub personal access token is required and stored in Keychain."
+        }
+    }
+
+    var saveButtonTitle: String {
+        switch scope {
+        case .repository:
+            return "Save Connection"
+        case .profile:
+            return "Connect Profile"
+        }
+    }
+
+    var removeButtonDisabled: Bool {
+        isOperationInProgress || !hasConnectedConfiguration
+    }
+
+    var activeModeSummary: String {
+        switch scope {
+        case .repository:
+            return repositorySummaryText
+        case .profile:
+            return profileSummaryText
+        }
     }
 
     var isSaveDisabled: Bool {
-        isOperationInProgress || saveValidationMessage != nil || repositorySummaryText == "No repository selected"
+        switch scope {
+        case .repository:
+            return isOperationInProgress
+                || saveValidationMessage != nil
+                || repositorySummaryText == "No repository selected"
+        case .profile:
+            return isOperationInProgress || saveValidationMessage != nil
+        }
     }
 }
 

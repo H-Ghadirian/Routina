@@ -115,23 +115,50 @@ private struct SettingsGitHubDetailView: View {
     var body: some View {
         WithPerceptionTracking {
             List {
-                Section("Repository") {
-                    TextField("Owner", text: repositoryOwnerBinding)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
+                Section("Mode") {
+                    Picker("Source", selection: scopeBinding) {
+                        ForEach(GitHubStatsScope.allCases) { scope in
+                            Text(scope.title).tag(scope)
+                        }
+                    }
+                    .pickerStyle(.segmented)
 
-                    TextField("Repository", text: repositoryNameBinding)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-
-                    Text(store.github.repositorySummaryText)
+                    Text(store.github.scope.subtitle)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
 
-                    if let validationMessage = store.github.saveValidationMessage {
-                        Text(validationMessage)
+                if store.github.scope == .repository {
+                    Section("Repository") {
+                        TextField("Owner", text: repositoryOwnerBinding)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+
+                        TextField("Repository", text: repositoryNameBinding)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+
+                        Text(store.github.repositorySummaryText)
                             .font(.footnote)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.secondary)
+
+                        if let validationMessage = store.github.saveValidationMessage {
+                            Text(validationMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                } else {
+                    Section("Profile") {
+                        Text(store.github.profileSummaryText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        if let validationMessage = store.github.saveValidationMessage {
+                            Text(validationMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        }
                     }
                 }
 
@@ -152,7 +179,7 @@ private struct SettingsGitHubDetailView: View {
                             if store.github.isOperationInProgress {
                                 ProgressView()
                             } else {
-                                Label("Save Connection", systemImage: "link.badge.plus")
+                                Label(store.github.saveButtonTitle, systemImage: "link.badge.plus")
                             }
                         }
                     }
@@ -163,11 +190,11 @@ private struct SettingsGitHubDetailView: View {
                     } label: {
                         Label("Remove Connection", systemImage: "trash")
                     }
-                    .disabled(store.github.isOperationInProgress || store.github.connectedRepository == nil)
+                    .disabled(store.github.removeButtonDisabled)
                 }
 
                 Section("Info") {
-                    Text("Use a fine-grained or classic GitHub personal access token with read access to the repository if it is private. The token is stored in Keychain.")
+                    Text(store.github.infoText)
                         .foregroundStyle(.secondary)
                 }
 
@@ -182,6 +209,13 @@ private struct SettingsGitHubDetailView: View {
             .navigationTitle("GitHub")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+
+    private var scopeBinding: Binding<GitHubStatsScope> {
+        Binding(
+            get: { store.github.scope },
+            set: { store.send(.gitHubScopeChanged($0)) }
+        )
     }
 
     private var repositoryOwnerBinding: Binding<String> {

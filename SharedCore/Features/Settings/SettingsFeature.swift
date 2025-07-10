@@ -15,6 +15,7 @@ struct SettingsFeature {
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
+        case gitHubScopeChanged(GitHubStatsScope)
         case gitHubOwnerChanged(String)
         case gitHubRepositoryChanged(String)
         case gitHubTokenChanged(String)
@@ -172,6 +173,11 @@ struct SettingsFeature {
                     reconcileNotificationsIfEnabled: false
                 )
 
+            case let .gitHubScopeChanged(scope):
+                state.github.scope = scope
+                state.github.statusMessage = ""
+                return .none
+
             case let .gitHubOwnerChanged(owner):
                 state.github.repositoryOwner = owner
                 return .none
@@ -195,23 +201,35 @@ struct SettingsFeature {
                 state.github.isOperationInProgress = true
                 state.github.statusMessage = ""
 
-                let repository = GitHubRepositoryReference(
-                    owner: state.github.repositoryOwner,
-                    name: state.github.repositoryName
+                let configuration = GitHubStatsConfiguration(
+                    scope: state.github.scope,
+                    repository: state.github.scope == .repository
+                        ? GitHubRepositoryReference(
+                            owner: state.github.repositoryOwner,
+                            name: state.github.repositoryName
+                        )
+                        : nil,
+                    viewerLogin: nil
                 )
                 let accessToken = state.github.accessTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
 
                 return .run { send in
                     do {
                         let connection = try await self.gitHubStatsClient.saveConnection(
-                            repository,
+                            configuration,
                             accessToken.isEmpty ? nil : accessToken
                         )
+                        let message: String = switch connection.scope {
+                        case .repository:
+                            "Connected to \(connection.repository?.fullName ?? "repository")."
+                        case .profile:
+                            "Connected to @\(connection.viewerLogin ?? "viewer") GitHub profile."
+                        }
                         await send(
                             .gitHubConnectionUpdateFinished(
                                 connection: connection,
                                 success: true,
-                                message: "Connected to \(repository.fullName)."
+                                message: message
                             )
                         )
                     } catch {
@@ -228,13 +246,14 @@ struct SettingsFeature {
             case .clearGitHubConnectionTapped:
                 state.github.isOperationInProgress = true
                 state.github.statusMessage = ""
+                let draftScope = state.github.scope
 
                 return .run { send in
                     do {
                         try self.gitHubStatsClient.clearConnection()
                         await send(
                             .gitHubConnectionUpdateFinished(
-                                connection: .disconnected,
+                                connection: .disconnected(scope: draftScope),
                                 success: true,
                                 message: "GitHub connection removed."
                             )
@@ -250,16 +269,17 @@ struct SettingsFeature {
                     }
                 }
 
-            case let .gitHubConnectionUpdateFinished(connection, success, message):
+            case let .gitHubConnectionUpdateFinished(connection, _, message):
                 state.github.isOperationInProgress = false
+                state.github.scope = connection.scope
+                state.github.connectedScope = connection.scope
                 state.github.connectedRepository = connection.repository
+                state.github.connectedViewerLogin = connection.viewerLogin
                 state.github.hasSavedAccessToken = connection.hasAccessToken
                 state.github.statusMessage = message
                 state.github.accessTokenDraft = ""
-                if success {
-                    state.github.repositoryOwner = connection.repository?.owner ?? ""
-                    state.github.repositoryName = connection.repository?.name ?? ""
-                }
+                state.github.repositoryOwner = connection.repository?.owner ?? ""
+                state.github.repositoryName = connection.repository?.name ?? ""
                 return .none
 
             case .tagManagerAppeared:

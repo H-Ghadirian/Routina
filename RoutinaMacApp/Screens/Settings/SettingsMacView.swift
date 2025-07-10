@@ -386,23 +386,50 @@ private struct SettingsMacGitHubDetailView: View {
         WithPerceptionTracking {
             SettingsMacDetailShell(
                 title: "GitHub",
-                subtitle: "Connect a repository to show commit activity, merged pull requests, and contributor counts in Stats."
+                subtitle: store.github.detailSubtitle
             ) {
-                SettingsMacDetailCard(title: "Repository") {
-                    TextField("Owner", text: repositoryOwnerBinding)
-                        .textFieldStyle(.roundedBorder)
+                SettingsMacDetailCard(title: "Mode") {
+                    Picker("Source", selection: scopeBinding) {
+                        ForEach(GitHubStatsScope.allCases) { scope in
+                            Text(scope.title).tag(scope)
+                        }
+                    }
+                    .pickerStyle(.segmented)
 
-                    TextField("Repository", text: repositoryNameBinding)
-                        .textFieldStyle(.roundedBorder)
-
-                    Text(store.github.repositorySummaryText)
+                    Text(store.github.scope.subtitle)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
 
-                    if let validationMessage = store.github.saveValidationMessage {
-                        Text(validationMessage)
+                if store.github.scope == .repository {
+                    SettingsMacDetailCard(title: "Repository") {
+                        TextField("Owner", text: repositoryOwnerBinding)
+                            .textFieldStyle(.roundedBorder)
+
+                        TextField("Repository", text: repositoryNameBinding)
+                            .textFieldStyle(.roundedBorder)
+
+                        Text(store.github.repositorySummaryText)
                             .font(.footnote)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.secondary)
+
+                        if let validationMessage = store.github.saveValidationMessage {
+                            Text(validationMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                } else {
+                    SettingsMacDetailCard(title: "Profile") {
+                        Text(store.github.profileSummaryText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        if let validationMessage = store.github.saveValidationMessage {
+                            Text(validationMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        }
                     }
                 }
 
@@ -423,7 +450,7 @@ private struct SettingsMacGitHubDetailView: View {
                             if store.github.isOperationInProgress {
                                 ProgressView()
                             } else {
-                                Label("Save Connection", systemImage: "link.badge.plus")
+                                Label(store.github.saveButtonTitle, systemImage: "link.badge.plus")
                             }
                         }
                         .buttonStyle(.borderedProminent)
@@ -435,10 +462,10 @@ private struct SettingsMacGitHubDetailView: View {
                             Label("Remove Connection", systemImage: "trash")
                         }
                         .buttonStyle(.bordered)
-                        .disabled(store.github.isOperationInProgress || store.github.connectedRepository == nil)
+                        .disabled(store.github.removeButtonDisabled)
                     }
 
-                    Text("Use a fine-grained or classic personal access token with read access for private repositories. The token is stored in Keychain.")
+                    Text(store.github.infoText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -452,6 +479,13 @@ private struct SettingsMacGitHubDetailView: View {
                 }
             }
         }
+    }
+
+    private var scopeBinding: Binding<GitHubStatsScope> {
+        Binding(
+            get: { store.github.scope },
+            set: { store.send(.gitHubScopeChanged($0)) }
+        )
     }
 
     private var repositoryOwnerBinding: Binding<String> {
