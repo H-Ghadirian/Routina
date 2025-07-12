@@ -17,7 +17,7 @@
                BlueprintIdentifier = "4E0000012E80000100000001"
                BuildableName = "RoutinaMacDev.app"
                BlueprintName = "RoutinaMacDev"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               ReferencedContainer = "container:RoutinaMac.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -31,7 +31,7 @@
                BlueprintIdentifier = "6B1000132F10000100000001"
                BuildableName = "RoutinaMacTests.xctest"
                BlueprintName = "RoutinaMacTests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               ReferencedContainer = "container:RoutinaMac.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,7 +47,7 @@
             BlueprintIdentifier = "4E0000012E80000100000001"
             BuildableName = "RoutinaMacDev.app"
             BlueprintName = "RoutinaMacDev"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            ReferencedContainer = "container:RoutinaMac.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -59,7 +59,7 @@
                BlueprintIdentifier = "6B1000132F10000100000001"
                BuildableName = "RoutinaMacTests.xctest"
                BlueprintName = "RoutinaMacTests"
-               ReferencedContainer = "container:Routina.xcodeproj">
+               ReferencedContainer = "container:RoutinaMac.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -81,7 +81,7 @@
             BlueprintIdentifier = "4E0000012E80000100000001"
             BuildableName = "RoutinaMacDev.app"
             BlueprintName = "RoutinaMacDev"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            ReferencedContainer = "container:RoutinaMac.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -98,7 +98,7 @@
             BlueprintIdentifier = "4E0000012E80000100000001"
             BuildableName = "RoutinaMacDev.app"
             BlueprintName = "RoutinaMacDev"
-            ReferencedContainer = "container:Routina.xcodeproj">
+            ReferencedContainer = "container:RoutinaMac.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -1,7 +1,7 @@
 import Foundation
 import ComposableArchitecture
 import SwiftData
-@testable @preconcurrency import Routina
+@testable @preconcurrency import RoutinaAppSupport
 
 @MainActor
 private var retainedInMemoryControllers: [PersistenceController] = []

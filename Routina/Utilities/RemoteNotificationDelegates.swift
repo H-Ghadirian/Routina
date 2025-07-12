@@ -4,8 +4,8 @@ import Foundation
 import UIKit
 import UserNotifications
 
-final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
-    func application(
+public final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
+    public func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
@@ -14,21 +14,21 @@ final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 
-    func application(
+    public func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         CloudKitSyncDiagnostics.recordPushRegistrationSuccess(tokenByteCount: deviceToken.count)
     }
 
-    func application(
+    public func application(
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         CloudKitSyncDiagnostics.recordPushRegistrationFailure(error)
     }
 
-    func application(
+    public func application(
         _ application: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
@@ -41,7 +41,7 @@ final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
 }
 
 extension RemoteNotificationIOSDelegate: UNUserNotificationCenterDelegate {
-    nonisolated func userNotificationCenter(
+    public nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
@@ -55,31 +55,28 @@ extension RemoteNotificationIOSDelegate: UNUserNotificationCenterDelegate {
 import AppKit
 import UserNotifications
 
-final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
-    func applicationDidFinishLaunching(_ notification: Notification) {
+public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
+    public func applicationDidFinishLaunching(_ notification: Notification) {
         guard !AppEnvironment.isAutomatedTestMode else { return }
         NotificationCoordinator.configureCurrentCenter(delegate: self)
         NSWindow.allowsAutomaticWindowTabbing = false
-        DispatchQueue.main.async {
-            MacMenuCleanup.removeUnneededMenus()
-        }
     }
 
-    func application(
+    public func application(
         _ application: NSApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         CloudKitSyncDiagnostics.recordPushRegistrationSuccess(tokenByteCount: deviceToken.count)
     }
 
-    func application(
+    public func application(
         _ application: NSApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         CloudKitSyncDiagnostics.recordPushRegistrationFailure(error)
     }
 
-    func application(
+    public func application(
         _ application: NSApplication,
         didReceiveRemoteNotification userInfo: [String: Any]
     ) {
@@ -90,7 +87,7 @@ final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension RemoteNotificationMacDelegate: UNUserNotificationCenterDelegate {
-    nonisolated func userNotificationCenter(
+    public nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {

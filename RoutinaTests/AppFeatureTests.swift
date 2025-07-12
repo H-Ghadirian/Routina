@@ -1,6 +1,6 @@
 import ComposableArchitecture
 import Testing
-@testable @preconcurrency import Routina
+@testable @preconcurrency import RoutinaAppSupport
 
 @MainActor
 struct AppFeatureTests {

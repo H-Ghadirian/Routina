@@ -1,5 +1,5 @@
 import Testing
-@testable import Routina
+@testable @preconcurrency import RoutinaAppSupport
 
 struct EmojiCatalogTests {
     @Test

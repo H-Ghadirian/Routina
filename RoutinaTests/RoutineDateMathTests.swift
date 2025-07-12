@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable @preconcurrency import Routina
+@testable @preconcurrency import RoutinaAppSupport
 
 struct RoutineDateMathTests {
     @Test

@@ -1,5 +1,5 @@
 import Testing
-@testable @preconcurrency import Routina
+@testable @preconcurrency import RoutinaAppSupport
 
 struct RoutineTagTests {
     @Test

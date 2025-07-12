@@ -3,7 +3,7 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 import Testing
-@testable @preconcurrency import Routina
+@testable @preconcurrency import RoutinaAppSupport
 
 @MainActor
 struct HomeFeatureTests {
