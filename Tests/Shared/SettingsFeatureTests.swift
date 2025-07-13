@@ -200,6 +200,71 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func appLockToggled_onAuthenticatesThenPersistsSetting() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAppLockEnabled = { persistedValue.setValue($0) }
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: true,
+                    methodDescription: "Face ID or your device passcode",
+                    unavailableReason: nil
+                )
+            }
+            $0.deviceAuthenticationClient.authenticate = { reason in
+                #expect(reason == "Enable app lock for Routina")
+                return .success
+            }
+        }
+
+        await store.send(.appLockToggled(true)) {
+            $0.appearance.isAppLockToggleInProgress = true
+            $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
+        }
+
+        await store.receive(.appLockEnableFinished(.success)) {
+            $0.appearance.isAppLockEnabled = true
+            $0.appearance.isAppLockToggleInProgress = false
+            $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
+            $0.appearance.appLockStatusMessage = "App lock is on."
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
+    func appLockToggled_onWithoutAvailableAuthenticationShowsError() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAppLockEnabled = { persistedValue.setValue($0) }
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: false,
+                    methodDescription: "Face ID or your device passcode",
+                    unavailableReason: "Set up a device passcode before enabling app lock."
+                )
+            }
+        }
+
+        await store.send(.appLockToggled(true)) {
+            $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
+            $0.appearance.appLockUnavailableReason = "Set up a device passcode before enabling app lock."
+            $0.appearance.appLockStatusMessage = "Set up a device passcode before enabling app lock."
+        }
+
+        #expect(persistedValue.value == nil)
+        #expect(store.state.appearance.isAppLockEnabled == false)
+    }
+
+    @Test
     func savePlaceTapped_persistsSelectedPlace() async throws {
         let context = makeInMemoryContext()
         let store = TestStore(

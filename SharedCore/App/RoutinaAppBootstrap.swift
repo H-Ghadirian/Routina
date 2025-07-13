@@ -19,7 +19,8 @@ enum RoutinaAppBootstrap {
         }
         SharedDefaults.app.register(defaults: [
             .appSettingNotificationsEnabled: false,
-            .appSettingHideUnavailableRoutines: false
+            .appSettingHideUnavailableRoutines: false,
+            .appSettingAppLockEnabled: false
         ])
         SharedDefaults.app.register(defaults: [
             UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue

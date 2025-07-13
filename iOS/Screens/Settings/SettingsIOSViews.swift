@@ -567,6 +567,18 @@ private struct SettingsAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("App Lock") {
+                    Toggle("Require unlock when opening Routina", isOn: appLockBinding)
+                        .disabled(store.appearance.isAppLockToggleInProgress)
+
+                    if store.appearance.isAppLockToggleInProgress {
+                        ProgressView("Verifying device authentication…")
+                    }
+
+                    Text(store.appearance.appLockDetailText)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Temporary View State") {
                     Button {
                         guard store.appearance.hasTemporaryViewStateToReset else { return }
@@ -607,6 +619,13 @@ private struct SettingsAppearanceDetailView: View {
                     }
                 }
 
+                if !store.appearance.appLockStatusMessage.isEmpty {
+                    Section("Status") {
+                        Text(store.appearance.appLockStatusMessage)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 if !store.appearance.temporaryViewStateStatusMessage.isEmpty {
                     Section("Status") {
                         Text(store.appearance.temporaryViewStateStatusMessage)
@@ -625,6 +644,13 @@ private struct SettingsAppearanceDetailView: View {
         Binding(
             get: { store.appearance.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
+        )
+    }
+
+    private var appLockBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isAppLockEnabled },
+            set: { store.send(.appLockToggled($0)) }
         )
     }
 

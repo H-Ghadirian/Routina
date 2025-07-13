@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Routina uses your location to show place-based routines when you are at the right place.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Routina uses Face ID to protect your routines when app lock is enabled.</string>
 	<key>RoutinaCloudKitContainerIdentifier</key>
 	<string>iCloud.ir.hamedgh.Routinam.prod</string>
 	<key>RoutinaSandboxDataMode</key>

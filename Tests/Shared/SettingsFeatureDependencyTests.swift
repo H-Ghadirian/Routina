@@ -56,6 +56,8 @@ struct SettingsFeatureDependencyTests {
                 setNotificationsEnabled: { _ in },
                 hideUnavailableRoutines: { false },
                 setHideUnavailableRoutines: { _ in },
+                appLockEnabled: { true },
+                setAppLockEnabled: { _ in },
                 routineListSectioningMode: { .deadlineDate },
                 setRoutineListSectioningMode: { _ in },
                 tagCounterDisplayMode: { .defaultValue },
@@ -67,6 +69,13 @@ struct SettingsFeatureDependencyTests {
                 setTemporaryViewState: { _ in },
                 resetTemporaryViewState: { }
             )
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: true,
+                    methodDescription: "Face ID or your device passcode",
+                    unavailableReason: nil
+                )
+            }
             $0.notificationClient.systemNotificationsAuthorized = { true }
             $0.locationClient.snapshot = { _ in snapshot }
         }
@@ -83,6 +92,8 @@ struct SettingsFeatureDependencyTests {
             $0.notifications.notificationsEnabled = true
             $0.notifications.notificationReminderTime = reminderTime
             $0.appearance.routineListSectioningMode = .deadlineDate
+            $0.appearance.isAppLockEnabled = true
+            $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
             $0.appearance.selectedAppIcon = .teal
             $0.appearance.appIconStatusMessage = ""
             $0.diagnostics.isDebugSectionVisible = false

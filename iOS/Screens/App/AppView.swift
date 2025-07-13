@@ -40,16 +40,20 @@ struct AppView: View {
                 }
             }
             if store.selectedTab == .search {
-                tabView
-                    .searchable(text: $searchText, prompt: "Search routines and todos")
-                    .task {
-                        store.send(.onAppear)
-                    }
+                AppLockGate {
+                    tabView
+                        .searchable(text: $searchText, prompt: "Search routines and todos")
+                        .task {
+                            store.send(.onAppear)
+                        }
+                }
             } else {
-                tabView
-                    .task {
-                        store.send(.onAppear)
-                    }
+                AppLockGate {
+                    tabView
+                        .task {
+                            store.send(.onAppear)
+                        }
+                }
             }
         }
     }

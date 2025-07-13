@@ -12,6 +12,8 @@ struct SettingsFeature {
         case toggleNotifications(Bool)
         case routineListSectioningModeChanged(RoutineListSectioningMode)
         case tagCounterDisplayModeChanged(TagCounterDisplayMode)
+        case appLockToggled(Bool)
+        case appLockEnableFinished(DeviceAuthenticationResult)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -65,6 +67,7 @@ struct SettingsFeature {
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.appIconClient) var appIconClient
+    @Dependency(\.deviceAuthenticationClient) var deviceAuthenticationClient
     @Dependency(\.locationClient) var locationClient
     @Dependency(\.appSettingsClient) var appSettingsClient
     @Dependency(\.appInfoClient) var appInfoClient
@@ -90,6 +93,64 @@ struct SettingsFeature {
                     state: &state.appearance
                 )
                 appSettingsClient.setTagCounterDisplayMode(mode)
+                return .none
+
+            case let .appLockToggled(isEnabled):
+                let authenticationStatus = deviceAuthenticationClient.status()
+                SettingsAppearanceEditor.beginAppLockToggle(
+                    enabling: isEnabled,
+                    deviceAuthenticationStatus: authenticationStatus,
+                    state: &state.appearance
+                )
+
+                guard isEnabled else {
+                    appSettingsClient.setAppLockEnabled(false)
+                    SettingsAppearanceEditor.finishAppLockToggle(
+                        enabled: false,
+                        message: "",
+                        deviceAuthenticationStatus: authenticationStatus,
+                        state: &state.appearance
+                    )
+                    return .none
+                }
+
+                guard authenticationStatus.isAvailable else {
+                    SettingsAppearanceEditor.finishAppLockToggle(
+                        enabled: false,
+                        message: authenticationStatus.unavailableReason
+                            ?? "Device authentication is unavailable.",
+                        deviceAuthenticationStatus: authenticationStatus,
+                        state: &state.appearance
+                    )
+                    return .none
+                }
+
+                return .run { send in
+                    let result = await self.deviceAuthenticationClient.authenticate(
+                        "Enable app lock for Routina"
+                    )
+                    await send(.appLockEnableFinished(result))
+                }
+
+            case let .appLockEnableFinished(result):
+                let authenticationStatus = deviceAuthenticationClient.status()
+                switch result {
+                case .success:
+                    appSettingsClient.setAppLockEnabled(true)
+                    SettingsAppearanceEditor.finishAppLockToggle(
+                        enabled: true,
+                        message: "App lock is on.",
+                        deviceAuthenticationStatus: authenticationStatus,
+                        state: &state.appearance
+                    )
+                case .failure(let message):
+                    SettingsAppearanceEditor.finishAppLockToggle(
+                        enabled: false,
+                        message: message,
+                        deviceAuthenticationStatus: authenticationStatus,
+                        state: &state.appearance
+                    )
+                }
                 return .none
 
             case .resetTemporaryViewStateTapped:
@@ -165,6 +226,7 @@ struct SettingsFeature {
                     SettingsDiagnosticsLoader.makeOnAppearSnapshot(
                         appInfoClient: appInfoClient,
                         appSettingsClient: appSettingsClient,
+                        deviceAuthenticationClient: deviceAuthenticationClient,
                         gitHubConnection: gitHubStatsClient.loadConnectionStatus()
                     ),
                     state: &state
@@ -321,6 +383,8 @@ struct SettingsFeature {
                     hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(
                         appSettingsClient: appSettingsClient
                     ),
+                    appLockEnabled: appSettingsClient.appLockEnabled(),
+                    deviceAuthenticationStatus: deviceAuthenticationClient.status(),
                     state: &state
                 )
                 return refreshSettingsContext(
@@ -505,7 +569,6 @@ struct SettingsFeature {
             }
         }
     }
-
     private func refreshSettingsContext(
         reconcileNotificationsIfEnabled notificationsEnabled: Bool
     ) -> Effect<Action> {

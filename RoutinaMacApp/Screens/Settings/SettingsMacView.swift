@@ -772,6 +772,21 @@ private struct SettingsMacAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                SettingsMacDetailCard(title: "App Lock") {
+                    Toggle("Require unlock when opening Routina", isOn: appLockBinding)
+                        .toggleStyle(.switch)
+                        .disabled(store.appearance.isAppLockToggleInProgress)
+
+                    if store.appearance.isAppLockToggleInProgress {
+                        ProgressView("Verifying device authentication…")
+                            .controlSize(.small)
+                    }
+
+                    Text(store.appearance.appLockDetailText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "Temporary View State") {
                     Button {
                         guard store.appearance.hasTemporaryViewStateToReset else { return }
@@ -813,6 +828,14 @@ private struct SettingsMacAppearanceDetailView: View {
                     }
                 }
 
+                if !store.appearance.appLockStatusMessage.isEmpty {
+                    SettingsMacDetailCard(title: "Status") {
+                        Text(store.appearance.appLockStatusMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 if !store.appearance.temporaryViewStateStatusMessage.isEmpty {
                     SettingsMacDetailCard(title: "Status") {
                         Text(store.appearance.temporaryViewStateStatusMessage)
@@ -828,6 +851,13 @@ private struct SettingsMacAppearanceDetailView: View {
         Binding(
             get: { store.appearance.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
+        )
+    }
+
+    private var appLockBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isAppLockEnabled },
+            set: { store.send(.appLockToggled($0)) }
         )
     }
 

@@ -103,6 +103,7 @@ let package = Package(
                 "SharedCore/App/AppEnvironment.swift",
                 "SharedCore/Models",
                 "SharedCore/Dependencies/AppIconClient.swift",
+                "SharedCore/Dependencies/DeviceAuthenticationClient.swift",
                 "SharedCore/Dependencies/DependencyValues+.swift",
                 "SharedCore/Dependencies/LocationClient.swift",
                 "SharedCore/Dependencies/NotificationClient.swift",
@@ -196,6 +197,7 @@ let package = Package(
                 "SharedCore/Sync/CloudSyncClient.swift",
                 "SharedCore/Views/ImportanceUrgencyMatrixPicker.swift",
                 "SharedCore/Services/GitHubStatsClient.swift",
+                "SharedCore/Views/AppLockGate.swift",
             ]
         ),
         .target(

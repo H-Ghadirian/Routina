@@ -20,6 +20,11 @@ struct SettingsNotificationsState: Equatable {
 struct SettingsAppearanceState: Equatable {
     var routineListSectioningMode: RoutineListSectioningMode = .defaultValue
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
+    var isAppLockEnabled: Bool = false
+    var isAppLockToggleInProgress: Bool = false
+    var appLockMethodDescription: String = DeviceAuthenticationClient.defaultMethodDescription
+    var appLockUnavailableReason: String?
+    var appLockStatusMessage: String = ""
     var appIconStatusMessage: String = ""
     var selectedAppIcon: AppIconOption = .orange
     var hasTemporaryViewStateToReset: Bool = false

@@ -10,24 +10,26 @@ enum RoutinaMacSceneFactory {
         )
 
         return AnyView(
-            HomeMacView(
-                appStore: store,
-                store: store.scope(state: \.home, action: \.home),
-                settingsStore: store.scope(state: \.settings, action: \.settings),
-                statsStore: store.scope(state: \.stats, action: \.stats)
-            )
-            .frame(
-                minWidth: RoutinaMacWindowSizing.minWidth,
-                minHeight: RoutinaMacWindowSizing.minHeight
-            )
-            .modelContainer(persistence.container)
-            .onAppear {
-                NSApplication.shared.registerForRemoteNotifications()
-                PlatformSupport.applyAppIcon(.persistedSelection)
-                Task {
-                    await CloudKitPushSubscriptionService.ensureSubscriptionIfNeeded(
-                        containerIdentifier: AppEnvironment.cloudKitContainerIdentifier
-                    )
+            AppLockGate {
+                HomeMacView(
+                    appStore: store,
+                    store: store.scope(state: \.home, action: \.home),
+                    settingsStore: store.scope(state: \.settings, action: \.settings),
+                    statsStore: store.scope(state: \.stats, action: \.stats)
+                )
+                .frame(
+                    minWidth: RoutinaMacWindowSizing.minWidth,
+                    minHeight: RoutinaMacWindowSizing.minHeight
+                )
+                .modelContainer(persistence.container)
+                .onAppear {
+                    NSApplication.shared.registerForRemoteNotifications()
+                    PlatformSupport.applyAppIcon(.persistedSelection)
+                    Task {
+                        await CloudKitPushSubscriptionService.ensureSubscriptionIfNeeded(
+                            containerIdentifier: AppEnvironment.cloudKitContainerIdentifier
+                        )
+                    }
                 }
             }
         )
@@ -41,14 +43,16 @@ enum RoutinaMacSceneFactory {
         )
 
         return AnyView(
-            SettingsTCAView(
-                store: store.scope(state: \.settings, action: \.settings)
-            )
-            .frame(
-                minWidth: RoutinaMacSettingsSizing.minWidth,
-                minHeight: RoutinaMacSettingsSizing.minHeight
-            )
-            .modelContainer(persistence.container)
+            AppLockGate {
+                SettingsTCAView(
+                    store: store.scope(state: \.settings, action: \.settings)
+                )
+                .frame(
+                    minWidth: RoutinaMacSettingsSizing.minWidth,
+                    minHeight: RoutinaMacSettingsSizing.minHeight
+                )
+                .modelContainer(persistence.container)
+            }
         )
     }
 }

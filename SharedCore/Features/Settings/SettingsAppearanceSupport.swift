@@ -16,10 +16,17 @@ enum SettingsAppearanceEditor {
     }
 
     static func refreshFromSettings(
+        appLockEnabled: Bool,
+        deviceAuthenticationStatus: DeviceAuthenticationStatus,
         selectedAppIcon: AppIconOption,
         hasTemporaryViewStateToReset: Bool,
         state: inout SettingsAppearanceState
     ) {
+        state.isAppLockEnabled = appLockEnabled
+        state.isAppLockToggleInProgress = false
+        state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
+        state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
+        state.appLockStatusMessage = ""
         state.selectedAppIcon = selectedAppIcon
         state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
         state.appIconStatusMessage = ""
@@ -37,6 +44,30 @@ enum SettingsAppearanceEditor {
         state: inout SettingsAppearanceState
     ) {
         state.appIconStatusMessage = ""
+    }
+
+    static func beginAppLockToggle(
+        enabling: Bool,
+        deviceAuthenticationStatus: DeviceAuthenticationStatus,
+        state: inout SettingsAppearanceState
+    ) {
+        state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
+        state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
+        state.appLockStatusMessage = ""
+        state.isAppLockToggleInProgress = enabling && deviceAuthenticationStatus.isAvailable
+    }
+
+    static func finishAppLockToggle(
+        enabled: Bool,
+        message: String?,
+        deviceAuthenticationStatus: DeviceAuthenticationStatus,
+        state: inout SettingsAppearanceState
+    ) {
+        state.isAppLockEnabled = enabled
+        state.isAppLockToggleInProgress = false
+        state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
+        state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
+        state.appLockStatusMessage = message ?? ""
     }
 
     static func finishAppIconChange(

@@ -10,6 +10,8 @@ struct SettingsOnAppearSnapshot: Equatable {
     var notificationReminderTime: Date
     var routineListSectioningMode: RoutineListSectioningMode
     var tagCounterDisplayMode: TagCounterDisplayMode
+    var appLockEnabled: Bool
+    var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
     var hasTemporaryViewStateToReset: Bool
     var cloudDiagnosticsSummary: String
@@ -55,6 +57,8 @@ enum SettingsRefreshEditor {
             state: &state.appearance
         )
         SettingsAppearanceEditor.refreshFromSettings(
+            appLockEnabled: snapshot.appLockEnabled,
+            deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,
             selectedAppIcon: snapshot.selectedAppIcon,
             hasTemporaryViewStateToReset: snapshot.hasTemporaryViewStateToReset,
             state: &state.appearance
@@ -63,8 +67,13 @@ enum SettingsRefreshEditor {
 
     static func refreshOnAppBecameActive(
         hasTemporaryViewStateToReset: Bool,
+        appLockEnabled: Bool,
+        deviceAuthenticationStatus: DeviceAuthenticationStatus,
         state: inout SettingsFeatureState
     ) {
         state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
+        state.appearance.isAppLockEnabled = appLockEnabled
+        state.appearance.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
+        state.appearance.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
     }
 }

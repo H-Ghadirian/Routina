@@ -4,6 +4,7 @@ enum SettingsDiagnosticsLoader {
     static func makeOnAppearSnapshot(
         appInfoClient: AppInfoClient,
         appSettingsClient: AppSettingsClient,
+        deviceAuthenticationClient: DeviceAuthenticationClient,
         gitHubConnection: GitHubConnectionStatus
     ) -> SettingsOnAppearSnapshot {
         let diagnostics = CloudKitSyncDiagnostics.snapshot()
@@ -17,6 +18,8 @@ enum SettingsDiagnosticsLoader {
             notificationReminderTime: appSettingsClient.notificationReminderTime(),
             routineListSectioningMode: appSettingsClient.routineListSectioningMode(),
             tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
+            appLockEnabled: appSettingsClient.appLockEnabled(),
+            deviceAuthenticationStatus: deviceAuthenticationClient.status(),
             selectedAppIcon: appSettingsClient.selectedAppIcon(),
             hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(
                 appSettingsClient: appSettingsClient

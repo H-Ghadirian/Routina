@@ -15,6 +15,11 @@ private enum AppIconClientKey: DependencyKey {
     static let liveValue = AppIconClient.noop
 }
 
+private enum DeviceAuthenticationClientKey: DependencyKey {
+    static let liveValue = DeviceAuthenticationClient.live
+    static let testValue = DeviceAuthenticationClient.noop
+}
+
 private enum LocationClientKey: DependencyKey {
     static let liveValue = LocationClient.noop
 }
@@ -67,6 +72,11 @@ extension DependencyValues {
     var appIconClient: AppIconClient {
         get { self[AppIconClientKey.self] }
         set { self[AppIconClientKey.self] = newValue }
+    }
+
+    var deviceAuthenticationClient: DeviceAuthenticationClient {
+        get { self[DeviceAuthenticationClientKey.self] }
+        set { self[DeviceAuthenticationClientKey.self] = newValue }
     }
 
     var locationClient: LocationClient {

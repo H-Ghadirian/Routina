@@ -15,11 +15,23 @@ extension SettingsNotificationsState {
 
 extension SettingsAppearanceState {
     var overviewSubtitle: String {
-        "Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText) • Tags: \(tagCounterDisplayMode.summaryText)"
+        "Lock: \(isAppLockEnabled ? "On" : "Off") • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)"
     }
 
     var routineListSectioningSubtitle: String {
         routineListSectioningMode.subtitle
+    }
+
+    var appLockDetailText: String {
+        if let appLockUnavailableReason, isAppLockEnabled == false {
+            return appLockUnavailableReason
+        }
+
+        if isAppLockEnabled {
+            return "Routina will ask for \(appLockMethodDescription) whenever the app becomes active."
+        }
+
+        return "Require \(appLockMethodDescription) before showing your routines."
     }
 }
 

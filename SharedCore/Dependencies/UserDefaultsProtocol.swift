@@ -48,6 +48,7 @@ enum SharedDefaults: SharedDefaultsProtocol {
 public enum UserDefaultBoolValueKey: String {
     case appSettingNotificationsEnabled
     case appSettingHideUnavailableRoutines
+    case appSettingAppLockEnabled
     case requestNotificationPermission
 }
 
@@ -70,6 +71,8 @@ struct AppSettingsClient: Sendable {
     var setNotificationsEnabled: @Sendable (Bool) -> Void
     var hideUnavailableRoutines: @Sendable () -> Bool
     var setHideUnavailableRoutines: @Sendable (Bool) -> Void
+    var appLockEnabled: @Sendable () -> Bool
+    var setAppLockEnabled: @Sendable (Bool) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
     var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
     var tagCounterDisplayMode: @Sendable () -> TagCounterDisplayMode
@@ -95,6 +98,12 @@ extension AppSettingsClient {
         },
         setHideUnavailableRoutines: { isHidden in
             SharedDefaults.app[.appSettingHideUnavailableRoutines] = isHidden
+        },
+        appLockEnabled: {
+            SharedDefaults.app[.appSettingAppLockEnabled]
+        },
+        setAppLockEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingAppLockEnabled] = isEnabled
         },
         routineListSectioningMode: {
             RoutineListSectioningMode(
@@ -155,6 +164,8 @@ extension AppSettingsClient {
         setNotificationsEnabled: { _ in },
         hideUnavailableRoutines: { false },
         setHideUnavailableRoutines: { _ in },
+        appLockEnabled: { false },
+        setAppLockEnabled: { _ in },
         routineListSectioningMode: { .defaultValue },
         setRoutineListSectioningMode: { _ in },
         tagCounterDisplayMode: { .defaultValue },
