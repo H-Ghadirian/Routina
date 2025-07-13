@@ -75,8 +75,15 @@ struct RoutinaUITests {
         #expect(statsTab.waitForExistence(timeout: 10))
         statsTab.tap()
 
-        #expect(app.staticTexts["1 active routine"].waitForExistence(timeout: 10))
-        #expect(app.staticTexts["1 archived routine"].waitForExistence(timeout: 10))
+        let activeRoutinesTitle = app.staticTexts["Active routines"].firstMatch
+        let archivedRoutinesTitle = app.staticTexts["Archived routines"].firstMatch
+        let activeRoutinesCaption = app.staticTexts["1 paused routine excluded"].firstMatch
+        let archivedRoutinesCaption = app.staticTexts["1 routine is paused and hidden from Home"].firstMatch
+
+        #expect(reveal(activeRoutinesTitle, in: app))
+        #expect(reveal(archivedRoutinesTitle, in: app))
+        #expect(reveal(activeRoutinesCaption, in: app))
+        #expect(reveal(archivedRoutinesCaption, in: app))
     }
 
     @MainActor
@@ -112,5 +119,25 @@ struct RoutinaUITests {
 
         let row = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", routineName)).firstMatch
         #expect(row.waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    private func reveal(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        maxSwipes: Int = 6
+    ) -> Bool {
+        if element.waitForExistence(timeout: 1) {
+            return true
+        }
+
+        for _ in 0..<maxSwipes {
+            app.swipeUp()
+            if element.waitForExistence(timeout: 1) {
+                return true
+            }
+        }
+
+        return false
     }
 }

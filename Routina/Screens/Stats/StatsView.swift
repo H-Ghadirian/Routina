@@ -355,7 +355,8 @@ struct StatsView: View {
                 accent: .mint,
                 title: "Daily average",
                 value: averagePerDayText,
-                caption: "Across \(chartPoints.count) days"
+                caption: "Across \(chartPoints.count) days",
+                accessibilityIdentifier: "stats.summary.dailyAverage"
             )
 
             summaryCard(
@@ -363,7 +364,8 @@ struct StatsView: View {
                 accent: .orange,
                 title: "Best day",
                 value: highlightedBusiestDay.map { "\($0.count)" } ?? "0",
-                caption: highlightedBusiestDay.map(bestDayCaption(for:)) ?? "No peak day yet"
+                caption: highlightedBusiestDay.map(bestDayCaption(for:)) ?? "No peak day yet",
+                accessibilityIdentifier: "stats.summary.bestDay"
             )
 
             summaryCard(
@@ -371,7 +373,8 @@ struct StatsView: View {
                 accent: .blue,
                 title: "Total dones",
                 value: totalDoneCount.formatted(),
-                caption: "All recorded completions"
+                caption: "All recorded completions",
+                accessibilityIdentifier: "stats.summary.totalDones"
             )
 
             summaryCard(
@@ -379,7 +382,8 @@ struct StatsView: View {
                 accent: .green,
                 title: "Active routines",
                 value: activeRoutineCount.formatted(),
-                caption: activeRoutineCardCaption
+                caption: activeRoutineCardCaption,
+                accessibilityIdentifier: "stats.summary.activeRoutines"
             )
 
             summaryCard(
@@ -387,7 +391,8 @@ struct StatsView: View {
                 accent: .teal,
                 title: "Archived routines",
                 value: archivedRoutineCount.formatted(),
-                caption: archivedRoutineCardCaption
+                caption: archivedRoutineCardCaption,
+                accessibilityIdentifier: "stats.summary.archivedRoutines"
             )
         }
     }
@@ -582,7 +587,8 @@ struct StatsView: View {
         accent: Color,
         title: String,
         value: String,
-        caption: String
+        caption: String,
+        accessibilityIdentifier: String
     ) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             Image(systemName: icon)
@@ -621,6 +627,10 @@ struct StatsView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityValue("\(value). \(caption)")
+        .accessibilityIdentifier(accessibilityIdentifier)
     }
 
     private func smallHighlightBadge(title: String, value: String) -> some View {
