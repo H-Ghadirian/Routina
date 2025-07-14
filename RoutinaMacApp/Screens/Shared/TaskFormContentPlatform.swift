@@ -322,6 +322,7 @@ struct TaskFormContent: View {
                         HStack(spacing: 0) {
                             Picker("Schedule Type", selection: model.scheduleMode) {
                                 Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                                Text("Soft").tag(RoutineScheduleMode.softInterval)
                                 Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
                                 Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
                             }
@@ -343,108 +344,141 @@ struct TaskFormContent: View {
                 }
 
                 if showsRepeatControls {
-                    macControlBlock(title: "Repeat pattern") {
-                        HStack(spacing: 0) {
-                            Picker("Repeat Pattern", selection: model.recurrenceKind) {
-                                ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                                    Text(kind.pickerTitle).tag(kind)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                            .fixedSize()
-                            Spacer(minLength: 0)
-                        }
-                    }
+                    if model.scheduleMode.wrappedValue == .softInterval {
+                        macControlBlock(title: "Soft reminder") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 10) {
+                                    Text("Highlight again after")
+                                        .foregroundStyle(.secondary)
 
-                    switch model.recurrenceKind.wrappedValue {
-                    case .intervalDays:
-                        macControlBlock(title: "Repeat") {
-                            HStack(spacing: 10) {
-                                Text("Every")
+                                    Stepper(value: model.frequencyValue, in: 1...365) {
+                                        Text("\(model.frequencyValue.wrappedValue)")
+                                            .font(.body.monospacedDigit())
+                                            .frame(minWidth: 28, alignment: .trailing)
+                                    }
+                                    .fixedSize()
+
+                                    Picker("Unit", selection: model.frequencyUnit) {
+                                        ForEach(TaskFormFrequencyUnit.allCases, id: \.self) { unit in
+                                            Text(unit.rawValue).tag(unit)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.segmented)
+                                    .frame(width: 220)
+
+                                    Spacer(minLength: 0)
+                                }
+
+                                Text("This routine stays visible and never becomes overdue. The app will just give it a softer nudge after this much time has passed.")
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
-
-                                Stepper(value: model.frequencyValue, in: 1...365) {
-                                    Text("\(model.frequencyValue.wrappedValue)")
-                                        .font(.body.monospacedDigit())
-                                        .frame(minWidth: 28, alignment: .trailing)
-                                }
-                                .fixedSize()
-
-                                Picker("Unit", selection: model.frequencyUnit) {
-                                    ForEach(TaskFormFrequencyUnit.allCases, id: \.self) { unit in
-                                        Text(unit.rawValue).tag(unit)
+                            }
+                        }
+                    } else {
+                        macControlBlock(title: "Repeat pattern") {
+                            HStack(spacing: 0) {
+                                Picker("Repeat Pattern", selection: model.recurrenceKind) {
+                                    ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
+                                        Text(kind.pickerTitle).tag(kind)
                                     }
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: 220)
-
+                                .fixedSize()
                                 Spacer(minLength: 0)
                             }
                         }
 
-                    case .dailyTime:
-                        macControlBlock(title: "Time") {
-                            DatePicker(
-                                "Time",
-                                selection: model.recurrenceTimeOfDay,
-                                displayedComponents: .hourAndMinute
-                            )
-                            .labelsHidden()
-                        }
+                        switch model.recurrenceKind.wrappedValue {
+                        case .intervalDays:
+                            macControlBlock(title: "Repeat") {
+                                HStack(spacing: 10) {
+                                    Text("Every")
+                                        .foregroundStyle(.secondary)
 
-                    case .weekly:
-                        macControlBlock(title: "Weekday") {
-                            Picker("Weekday", selection: model.recurrenceWeekday) {
-                                ForEach(weekdayOptions, id: \.id) { option in
-                                    Text(option.name).tag(option.id)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                        }
+                                    Stepper(value: model.frequencyValue, in: 1...365) {
+                                        Text("\(model.frequencyValue.wrappedValue)")
+                                            .font(.body.monospacedDigit())
+                                            .frame(minWidth: 28, alignment: .trailing)
+                                    }
+                                    .fixedSize()
 
-                        macControlBlock(title: "Time") {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
-                                if model.recurrenceHasExplicitTime.wrappedValue {
-                                    DatePicker(
-                                        "Time",
-                                        selection: model.recurrenceTimeOfDay,
-                                        displayedComponents: .hourAndMinute
-                                    )
+                                    Picker("Unit", selection: model.frequencyUnit) {
+                                        ForEach(TaskFormFrequencyUnit.allCases, id: \.self) { unit in
+                                            Text(unit.rawValue).tag(unit)
+                                        }
+                                    }
                                     .labelsHidden()
-                                }
-                                Text(weeklyRecurrenceTimeHelpText)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
+                                    .pickerStyle(.segmented)
+                                    .frame(width: 220)
 
-                    case .monthlyDay:
-                        macControlBlock(title: "Month day") {
-                            Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                                Text(ordinalDay(model.recurrenceDayOfMonth.wrappedValue))
-                                    .frame(minWidth: 40, alignment: .leading)
-                            }
-                            .fixedSize()
-                        }
-
-                        macControlBlock(title: "Time") {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
-                                if model.recurrenceHasExplicitTime.wrappedValue {
-                                    DatePicker(
-                                        "Time",
-                                        selection: model.recurrenceTimeOfDay,
-                                        displayedComponents: .hourAndMinute
-                                    )
-                                    .labelsHidden()
+                                    Spacer(minLength: 0)
                                 }
-                                Text(monthlyRecurrenceTimeHelpText)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                            }
+
+                        case .dailyTime:
+                            macControlBlock(title: "Time") {
+                                DatePicker(
+                                    "Time",
+                                    selection: model.recurrenceTimeOfDay,
+                                    displayedComponents: .hourAndMinute
+                                )
+                                .labelsHidden()
+                            }
+
+                        case .weekly:
+                            macControlBlock(title: "Weekday") {
+                                Picker("Weekday", selection: model.recurrenceWeekday) {
+                                    ForEach(weekdayOptions, id: \.id) { option in
+                                        Text(option.name).tag(option.id)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                            }
+
+                            macControlBlock(title: "Time") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
+                                    if model.recurrenceHasExplicitTime.wrappedValue {
+                                        DatePicker(
+                                            "Time",
+                                            selection: model.recurrenceTimeOfDay,
+                                            displayedComponents: .hourAndMinute
+                                        )
+                                        .labelsHidden()
+                                    }
+                                    Text(weeklyRecurrenceTimeHelpText)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                        case .monthlyDay:
+                            macControlBlock(title: "Month day") {
+                                Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
+                                    Text(ordinalDay(model.recurrenceDayOfMonth.wrappedValue))
+                                        .frame(minWidth: 40, alignment: .leading)
+                                }
+                                .fixedSize()
+                            }
+
+                            macControlBlock(title: "Time") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
+                                    if model.recurrenceHasExplicitTime.wrappedValue {
+                                        DatePicker(
+                                            "Time",
+                                            selection: model.recurrenceTimeOfDay,
+                                            displayedComponents: .hourAndMinute
+                                        )
+                                        .labelsHidden()
+                                    }
+                                    Text(monthlyRecurrenceTimeHelpText)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
@@ -1137,7 +1171,7 @@ struct TaskFormContent: View {
 
     private var isStepBasedMode: Bool {
         let mode = model.scheduleMode.wrappedValue
-        return mode == .fixedInterval || mode == .oneOff
+        return mode == .fixedInterval || mode == .softInterval || mode == .oneOff
     }
 
     private var showsRepeatControls: Bool {
@@ -1155,6 +1189,7 @@ struct TaskFormContent: View {
     private var scheduleModeDescription: String {
         switch model.scheduleMode.wrappedValue {
         case .fixedInterval: return "Use one overall repeat interval for the whole routine."
+        case .softInterval: return "Keep this routine visible all the time and gently highlight it again after a while."
         case .fixedIntervalChecklist: return "Use one overall repeat interval and complete every checklist item to finish the routine."
         case .derivedFromChecklist: return "Use checklist item due dates to decide when the routine is due."
         case .oneOff: return "This task does not repeat."
@@ -1165,7 +1200,7 @@ struct TaskFormContent: View {
         switch model.scheduleMode.wrappedValue {
         case .fixedIntervalChecklist: return "The routine is done when every checklist item is completed."
         case .derivedFromChecklist: return "Each item gets its own due date. The routine becomes due when the earliest item is due."
-        case .fixedInterval, .oneOff: return ""
+        case .fixedInterval, .softInterval, .oneOff: return ""
         }
     }
 
@@ -1277,6 +1312,7 @@ struct TaskFormContent: View {
         }
         switch model.scheduleMode.wrappedValue {
         case .fixedInterval: return "A repeating routine with one shared cadence."
+        case .softInterval: return "A soft routine that stays visible and gently resurfaces after a while."
         case .fixedIntervalChecklist: return "A routine you complete by finishing every checklist item."
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
         case .oneOff: return "A one-off task you can finish once."
@@ -1287,6 +1323,7 @@ struct TaskFormContent: View {
         guard model.taskType.wrappedValue == .routine else { return nil }
         switch model.scheduleMode.wrappedValue {
         case .fixedInterval: return "Fixed"
+        case .softInterval: return "Soft"
         case .fixedIntervalChecklist: return "Checklist"
         case .derivedFromChecklist: return "Runout"
         case .oneOff: return nil

@@ -110,6 +110,10 @@ struct AddRoutineFeatureState: Equatable {
             return .interval(days: 1)
         }
 
+        guard schedule.scheduleMode != .softInterval else {
+            return .interval(days: max(fallbackInterval, 1))
+        }
+
         guard schedule.scheduleMode != .derivedFromChecklist else {
             return .interval(days: max(fallbackInterval, 1))
         }

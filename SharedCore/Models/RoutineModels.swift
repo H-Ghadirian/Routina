@@ -173,6 +173,8 @@ final class RoutineTask {
     var colorRawValue: String = RoutineTaskColor.none.rawValue
     var createdAt: Date? = nil
     var todoStateRawValue: String? = nil
+    var activityStateRawValue: String = RoutineActivityState.idle.rawValue
+    var ongoingSince: Date?
     var autoAssumeDailyDone: Bool = false
     var estimatedDurationMinutes: Int?
     var storyPoints: Int?
@@ -198,6 +200,15 @@ final class RoutineTask {
 
     var isPinned: Bool {
         pinnedAt != nil
+    }
+
+    var activityState: RoutineActivityState {
+        get { RoutineActivityState(rawValue: activityStateRawValue) ?? .idle }
+        set { activityStateRawValue = newValue.rawValue }
+    }
+
+    var isOngoing: Bool {
+        activityState == .ongoing
     }
 
     /// Workflow state for one-off todos only. Nil for routines.
@@ -352,6 +363,10 @@ final class RoutineTask {
         scheduleMode == .fixedIntervalChecklist && hasChecklistItems
     }
 
+    var isSoftIntervalRoutine: Bool {
+        scheduleMode == .softInterval
+    }
+
     var usesRollingScheduleAnchor: Bool {
         recurrenceRule.kind == .intervalDays || isChecklistDriven
     }
@@ -464,6 +479,8 @@ final class RoutineTask {
         color: RoutineTaskColor = .none,
         createdAt: Date? = Date(),
         todoStateRawValue: String? = nil,
+        activityStateRawValue: String? = nil,
+        ongoingSince: Date? = nil,
         autoAssumeDailyDone: Bool = false,
         estimatedDurationMinutes: Int? = nil,
         storyPoints: Int? = nil
@@ -503,6 +520,8 @@ final class RoutineTask {
         self.colorRawValue = color.rawValue
         self.createdAt = createdAt
         self.todoStateRawValue = todoStateRawValue
+        self.activityStateRawValue = RoutineActivityState(rawValue: activityStateRawValue ?? "")?.rawValue ?? RoutineActivityState.idle.rawValue
+        self.ongoingSince = ongoingSince
         self.autoAssumeDailyDone = autoAssumeDailyDone
         self.estimatedDurationMinutes = Self.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
@@ -703,9 +722,22 @@ final class RoutineTask {
         guard shouldUpdateLastDone(with: completedAt) else { return }
         lastDone = completedAt
         canceledAt = nil
+        activityState = .idle
+        ongoingSince = nil
         if usesRollingScheduleAnchor {
             scheduleAnchor = completedAt
         }
+    }
+
+    func startOngoing(at startedAt: Date) {
+        guard !isOneOffTask else { return }
+        guard !isArchived(referenceDate: startedAt, calendar: .current) else { return }
+        activityState = .ongoing
+        ongoingSince = startedAt
+    }
+
+    func finishOngoing(at finishedAt: Date) {
+        recordCompletion(at: finishedAt)
     }
 
     func cancelOneOff(at canceledAt: Date) -> Bool {
@@ -864,6 +896,8 @@ final class RoutineTask {
             color: color,
             createdAt: createdAt,
             todoStateRawValue: todoStateRawValue,
+            activityStateRawValue: activityStateRawValue,
+            ongoingSince: ongoingSince,
             autoAssumeDailyDone: autoAssumeDailyDone,
             estimatedDurationMinutes: estimatedDurationMinutes,
             storyPoints: storyPoints

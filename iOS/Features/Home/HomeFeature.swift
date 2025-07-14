@@ -52,6 +52,7 @@ struct HomeFeature {
         var interval: Int
         var recurrenceRule: RoutineRecurrenceRule
         var scheduleMode: RoutineScheduleMode
+        var isSoftIntervalRoutine: Bool
         var lastDone: Date?
         var canceledAt: Date?
         var dueDate: Date?
@@ -71,6 +72,9 @@ struct HomeFeature {
         var isPaused: Bool
         var isSnoozed: Bool
         var isPinned: Bool
+        var isOngoing: Bool
+        var ongoingSince: Date?
+        var hasPassedSoftThreshold: Bool
         var completedStepCount: Int
         var isInProgress: Bool
         var nextStepTitle: String?
@@ -734,6 +738,9 @@ struct HomeFeature {
                     update,
                     calendar: calendar,
                     modelContext: { self.modelContext() },
+                    cancelNotification: { identifier in
+                        await self.notificationClient.cancel(identifier)
+                    },
                     scheduleNotification: { payload in
                         await self.notificationClient.schedule(payload)
                     }
@@ -755,6 +762,9 @@ struct HomeFeature {
                     update,
                     calendar: calendar,
                     modelContext: { self.modelContext() },
+                    cancelNotification: { identifier in
+                        await self.notificationClient.cancel(identifier)
+                    },
                     scheduleNotification: { payload in
                         await self.notificationClient.schedule(payload)
                     }
@@ -863,7 +873,9 @@ struct HomeFeature {
                 state.presentation.isAddRoutineSheetPresented = false
                 state.presentation.addRoutineState = nil
                 NotificationCenter.default.postRoutineDidUpdate()
-                guard !task.isOneOffTask else { return .none }
+                guard NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: now, calendar: calendar) else {
+                    return .none
+                }
                 let payload = makeNotificationPayload(for: task, referenceDate: now)
                 return .run { _ in
                     await self.notificationClient.schedule(payload)

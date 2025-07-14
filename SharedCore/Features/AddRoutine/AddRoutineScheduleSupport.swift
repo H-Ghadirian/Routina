@@ -6,6 +6,10 @@ enum AddRoutineScheduleEditor {
         schedule: inout AddRoutineScheduleState
     ) {
         schedule.scheduleMode = mode
+        if mode == .softInterval {
+            schedule.recurrenceKind = .intervalDays
+            schedule.recurrenceHasExplicitTime = false
+        }
     }
 
     static func setFrequency(

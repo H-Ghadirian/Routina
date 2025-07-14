@@ -28,6 +28,10 @@ extension TaskDetailFeature {
             return .interval(days: 1)
         }
 
+        guard state.editScheduleMode != .softInterval else {
+            return .interval(days: max(fallbackInterval, 1))
+        }
+
         guard state.editScheduleMode != .derivedFromChecklist else {
             return .interval(days: max(fallbackInterval, 1))
         }

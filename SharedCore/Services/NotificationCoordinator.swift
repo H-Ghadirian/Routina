@@ -71,6 +71,17 @@ enum NotificationCoordinator {
     static let doneActionIdentifier = "ROUTINE_DONE"
     static let snoozeActionIdentifier = "ROUTINE_SNOOZE"
 
+    static func shouldScheduleNotification(
+        for task: RoutineTask,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Bool {
+        !task.isArchived(referenceDate: referenceDate, calendar: calendar)
+            && !task.isOneOffTask
+            && !task.isSoftIntervalRoutine
+            && !task.isOngoing
+    }
+
     static func configureCurrentCenter(delegate: UNUserNotificationCenterDelegate) {
         let doneAction = UNNotificationAction(
             identifier: doneActionIdentifier,
@@ -172,7 +183,7 @@ enum NotificationCoordinator {
             ) else {
                 return
             }
-            if advancedTask.task.isOneOffTask {
+            if !shouldScheduleNotification(for: advancedTask.task, referenceDate: now) {
                 cancelNotification(taskID.uuidString)
             } else {
                 await scheduleNotification(notificationPayload(for: advancedTask.task, referenceDate: now))

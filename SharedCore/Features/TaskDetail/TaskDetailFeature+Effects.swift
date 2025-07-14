@@ -53,7 +53,11 @@ extension TaskDetailFeature {
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
                 if advancedTask.result != .ignoredAlreadyCompletedToday {
-                    if advancedTask.task.isOneOffTask {
+                    if !NotificationCoordinator.shouldScheduleNotification(
+                        for: advancedTask.task,
+                        referenceDate: completedAt,
+                        calendar: calendar
+                    ) {
                         await notificationClient.cancel(taskID.uuidString)
                     } else {
                         await notificationClient.schedule(
@@ -112,7 +116,11 @@ extension TaskDetailFeature {
                 }
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
-                if updatedTask.isOneOffTask {
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: updatedTask,
+                    referenceDate: now,
+                    calendar: calendar
+                ) {
                     await notificationClient.cancel(taskID.uuidString)
                 } else {
                     await notificationClient.schedule(
@@ -192,6 +200,10 @@ extension TaskDetailFeature {
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
+                if scheduleMode != .softInterval {
+                    task.activityState = .idle
+                    task.ongoingSince = nil
+                }
                 task.autoAssumeDailyDone = autoAssumeDailyDone
                     && RoutineAssumedCompletion.isEligible(
                         scheduleMode: scheduleMode,
@@ -211,7 +223,11 @@ extension TaskDetailFeature {
                 }
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
-                if task.isArchived() || task.isOneOffTask {
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: now,
+                    calendar: calendar
+                ) {
                     await notificationClient.cancel(task.id.uuidString)
                 } else {
                     let payload = NotificationCoordinator.notificationPayload(
@@ -248,7 +264,11 @@ extension TaskDetailFeature {
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
 
-                if updatedTask.isArchived() || updatedTask.isOneOffTask {
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: updatedTask,
+                    referenceDate: now,
+                    calendar: calendar
+                ) {
                     await notificationClient.cancel(updatedTask.id.uuidString)
                 } else {
                     await notificationClient.schedule(
@@ -263,6 +283,56 @@ extension TaskDetailFeature {
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error confirming assumed routine days: \(error)")
+            }
+        }
+    }
+
+    func handleStartOngoing(taskID: UUID, startedAt: Date) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                task.startOngoing(at: startedAt)
+                try context.save()
+                await notificationClient.cancel(task.id.uuidString)
+                NotificationCenter.default.postRoutineDidUpdate()
+                send(.onAppear)
+            } catch {
+                print("Error starting ongoing routine: \(error)")
+            }
+        }
+    }
+
+    func handleFinishOngoing(taskID: UUID, finishedAt: Date) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard task.isOngoing else { return }
+
+                task.finishOngoing(at: finishedAt)
+
+                let existingLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                if let existingLog = existingLogs.first(where: { log in
+                    guard let timestamp = log.timestamp else { return false }
+                    return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: finishedAt)
+                }) {
+                    if finishedAt > (existingLog.timestamp ?? .distantPast) {
+                        existingLog.timestamp = finishedAt
+                    }
+                } else {
+                    context.insert(RoutineLog(timestamp: finishedAt, taskID: taskID, kind: .completed))
+                }
+
+                try context.save()
+
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.cancel(task.id.uuidString)
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error finishing ongoing routine: \(error)")
             }
         }
     }
@@ -335,15 +405,23 @@ extension TaskDetailFeature {
                 guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
                 task.snoozedUntil = snoozedUntil
                 try context.save()
-                await notificationClient.schedule(
-                    NotificationCoordinator.notificationPayload(
-                        for: task,
-                        triggerDate: NotificationPreferences.reminderDate(on: snoozedUntil, calendar: calendar),
-                        isArchivedOverride: false,
-                        referenceDate: snoozedUntil,
-                        calendar: calendar
+                if NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: snoozedUntil,
+                    calendar: calendar
+                ) {
+                    await notificationClient.schedule(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            triggerDate: NotificationPreferences.reminderDate(on: snoozedUntil, calendar: calendar),
+                            isArchivedOverride: false,
+                            referenceDate: snoozedUntil,
+                            calendar: calendar
+                        )
                     )
-                )
+                } else {
+                    await notificationClient.cancel(task.id.uuidString)
+                }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error archiving routine for today: \(error)")
@@ -363,12 +441,20 @@ extension TaskDetailFeature {
                 task.pausedAt = nil
                 task.snoozedUntil = nil
                 try context.save()
-                let payload = NotificationCoordinator.notificationPayload(
+                if NotificationCoordinator.shouldScheduleNotification(
                     for: task,
                     referenceDate: resumedAt,
                     calendar: calendar
-                )
-                await notificationClient.schedule(payload)
+                ) {
+                    let payload = NotificationCoordinator.notificationPayload(
+                        for: task,
+                        referenceDate: resumedAt,
+                        calendar: calendar
+                    )
+                    await notificationClient.schedule(payload)
+                } else {
+                    await notificationClient.cancel(task.id.uuidString)
+                }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error resuming routine: \(error)")

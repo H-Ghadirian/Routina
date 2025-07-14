@@ -70,6 +70,7 @@ extension HomeFeature {
             interval: max(Int(task.interval), 1),
             recurrenceRule: task.recurrenceRule,
             scheduleMode: task.scheduleMode,
+            isSoftIntervalRoutine: task.isSoftIntervalRoutine,
             lastDone: task.lastDone,
             canceledAt: task.canceledAt,
             dueDate: dueDate,
@@ -89,6 +90,13 @@ extension HomeFeature {
             isPaused: isArchived,
             isSnoozed: isSnoozed,
             isPinned: task.isPinned,
+            isOngoing: task.isOngoing,
+            ongoingSince: task.ongoingSince,
+            hasPassedSoftThreshold: RoutineDateMath.hasPassedSoftIntervalThreshold(
+                for: task,
+                referenceDate: now,
+                calendar: calendar
+            ),
             completedStepCount: task.completedSteps,
             isInProgress: task.isInProgress,
             nextStepTitle: task.nextStepTitle,

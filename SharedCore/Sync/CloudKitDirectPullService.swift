@@ -215,6 +215,8 @@ enum CloudKitDirectPullService {
         var sequenceStartedAt: Date?
         var createdAt: Date?
         var todoStateRawValue: String?
+        var activityStateRawValue: String?
+        var ongoingSince: Date?
         var autoAssumeDailyDone: Bool?
         var estimatedDurationMinutes: Int?
         var storyPoints: Int?
@@ -352,6 +354,14 @@ enum CloudKitDirectPullService {
             in: record,
             keys: ["todoStateRawValue", "TODOSTATERAWVALUE", "ztodostaterawvalue", "ZTODOSTATERAWVALUE", "cd_todostaterawvalue"]
         )
+        let activityStateRawValueValue = stringValue(
+            in: record,
+            keys: ["activityStateRawValue", "ACTIVITYSTATERAWVALUE", "zactivitystaterawvalue", "ZACTIVITYSTATERAWVALUE", "cd_activitystaterawvalue"]
+        )
+        let ongoingSinceValue = dateValue(
+            in: record,
+            keys: ["ongoingSince", "ONGOINGSINCE", "zongoingsince", "ZONGOINGSINCE", "cd_ongoingsince"]
+        )
         let autoAssumeDailyDoneValue = boolValue(
             in: record,
             keys: [
@@ -405,6 +415,8 @@ enum CloudKitDirectPullService {
                 || pinnedAtValue != nil
                 || completedStepCountValue != nil
                 || sequenceStartedAtValue != nil
+                || activityStateRawValueValue != nil
+                || ongoingSinceValue != nil
                 || estimatedDurationMinutesValue != nil
                 || storyPointsValue != nil
                 || autoAssumeDailyDoneValue != nil
@@ -453,6 +465,8 @@ enum CloudKitDirectPullService {
             sequenceStartedAt: sequenceStartedAtValue,
             createdAt: createdAtValue,
             todoStateRawValue: todoStateRawValueValue,
+            activityStateRawValue: activityStateRawValueValue,
+            ongoingSince: ongoingSinceValue,
             autoAssumeDailyDone: autoAssumeDailyDoneValue,
             estimatedDurationMinutes: estimatedDurationMinutesValue,
             storyPoints: storyPointsValue
@@ -577,6 +591,10 @@ enum CloudKitDirectPullService {
                 if let todoStateRawValue = payload.todoStateRawValue {
                     taskWithSameName.todoStateRawValue = todoStateRawValue
                 }
+                if let activityStateRawValue = payload.activityStateRawValue {
+                    taskWithSameName.activityStateRawValue = activityStateRawValue
+                }
+                taskWithSameName.ongoingSince = payload.ongoingSince
                 if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
                     taskWithSameName.autoAssumeDailyDone = autoAssumeDailyDone
                 }
@@ -628,6 +646,10 @@ enum CloudKitDirectPullService {
             if let todoStateRawValue = payload.todoStateRawValue {
                 existing.todoStateRawValue = todoStateRawValue
             }
+            if let activityStateRawValue = payload.activityStateRawValue {
+                existing.activityStateRawValue = activityStateRawValue
+            }
+            existing.ongoingSince = payload.ongoingSince
             if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
                 existing.autoAssumeDailyDone = autoAssumeDailyDone
             }
@@ -678,6 +700,10 @@ enum CloudKitDirectPullService {
                 if let todoStateRawValue = payload.todoStateRawValue {
                     taskWithSameName.todoStateRawValue = todoStateRawValue
                 }
+                if let activityStateRawValue = payload.activityStateRawValue {
+                    taskWithSameName.activityStateRawValue = activityStateRawValue
+                }
+                taskWithSameName.ongoingSince = payload.ongoingSince
                 if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
                     taskWithSameName.autoAssumeDailyDone = autoAssumeDailyDone
                 }
@@ -717,6 +743,8 @@ enum CloudKitDirectPullService {
                     sequenceStartedAt: payload.sequenceStartedAt,
                     createdAt: payload.createdAt,
                     todoStateRawValue: payload.todoStateRawValue,
+                    activityStateRawValue: payload.activityStateRawValue,
+                    ongoingSince: payload.ongoingSince,
                     autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false,
                     estimatedDurationMinutes: payload.estimatedDurationMinutes,
                     storyPoints: payload.storyPoints

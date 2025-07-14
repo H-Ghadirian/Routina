@@ -120,11 +120,11 @@ struct AddRoutineSaveRequest {
         self.selectedPlaceID = basics.selectedPlaceID
         self.tags = organization.routineTags
         self.relationships = organization.relationships
-        self.steps = (schedule.scheduleMode == .fixedInterval || schedule.scheduleMode == .oneOff)
+        self.steps = (schedule.scheduleMode == .fixedInterval || schedule.scheduleMode == .softInterval || schedule.scheduleMode == .oneOff)
             ? RoutineStep.sanitized(checklist.routineSteps)
             : []
         self.scheduleMode = schedule.scheduleMode
-        self.checklistItems = (schedule.scheduleMode == .fixedInterval || schedule.scheduleMode == .oneOff)
+        self.checklistItems = (schedule.scheduleMode == .fixedInterval || schedule.scheduleMode == .softInterval || schedule.scheduleMode == .oneOff)
             ? []
             : RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
         self.attachments = basics.attachments
@@ -146,6 +146,10 @@ struct AddRoutineSaveRequest {
     ) -> RoutineRecurrenceRule {
         guard schedule.scheduleMode != .oneOff else {
             return .interval(days: 1)
+        }
+
+        guard schedule.scheduleMode != .softInterval else {
+            return .interval(days: max(fallbackInterval, 1))
         }
 
         guard schedule.scheduleMode != .derivedFromChecklist else {

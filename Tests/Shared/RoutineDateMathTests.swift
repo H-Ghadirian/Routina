@@ -96,6 +96,47 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func softIntervalRoutine_neverBecomesOverdue() {
+        let task = RoutineTask(
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 180),
+            lastDone: makeDate("2026-01-01T10:00:00Z"),
+            scheduleAnchor: makeDate("2026-01-01T10:00:00Z")
+        )
+
+        let daysUntilDue = RoutineDateMath.daysUntilDue(
+            for: task,
+            referenceDate: makeDate("2026-10-01T10:00:00Z")
+        )
+
+        #expect(daysUntilDue == Int.max)
+        #expect(RoutineDateMath.overdueDays(for: task, referenceDate: makeDate("2026-10-01T10:00:00Z")) == 0)
+    }
+
+    @Test
+    func softIntervalThreshold_detectsWhenEnoughTimeHasPassed() {
+        let task = RoutineTask(
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 180),
+            lastDone: makeDate("2026-01-01T10:00:00Z"),
+            scheduleAnchor: makeDate("2026-01-01T10:00:00Z")
+        )
+
+        #expect(
+            !RoutineDateMath.hasPassedSoftIntervalThreshold(
+                for: task,
+                referenceDate: makeDate("2026-05-01T10:00:00Z")
+            )
+        )
+        #expect(
+            RoutineDateMath.hasPassedSoftIntervalThreshold(
+                for: task,
+                referenceDate: makeDate("2026-07-01T10:00:00Z")
+            )
+        )
+    }
+
+    @Test
     func dueDate_dailyTimeSchedule_usesSameDayWhenTimeIsStillAhead() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

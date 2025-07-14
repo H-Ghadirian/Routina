@@ -2,6 +2,7 @@ import Foundation
 
 enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case fixedInterval
+    case softInterval
     case fixedIntervalChecklist
     case derivedFromChecklist
     case oneOff
@@ -9,6 +10,11 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     var taskType: RoutineTaskType {
         self == .oneOff ? .todo : .routine
     }
+}
+
+enum RoutineActivityState: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case idle
+    case ongoing
 }
 
 struct RoutineChecklistItem: Codable, Equatable, Hashable, Identifiable, Sendable {

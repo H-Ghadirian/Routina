@@ -144,6 +144,9 @@ extension TaskDetailFeature.State {
         if canUndoSelectedDate {
             return .undoSelectedDateCompletion
         }
+        if task.isSoftIntervalRoutine && task.isOngoing {
+            return .finishOngoingTapped
+        }
         if shouldUseBulkConfirmAsPrimaryAction {
             return .confirmAssumedPastDays
         }
@@ -156,6 +159,9 @@ extension TaskDetailFeature.State {
 
     var isCompletionButtonDisabled: Bool {
         guard !canUndoSelectedDate else { return false }
+        if task.isSoftIntervalRoutine && task.isOngoing {
+            return false
+        }
         if task.isCompletedOneOff || task.isCanceledOneOff {
             return true
         }
@@ -175,6 +181,9 @@ extension TaskDetailFeature.State {
 
     /// Due date resolved from the task (one-off deadline or next recurrence).
     var resolvedDueDate: Date? {
+        if task.isSoftIntervalRoutine {
+            return nil
+        }
         if task.isOneOffTask {
             return task.deadline
         }
@@ -219,6 +228,9 @@ extension TaskDetailFeature.State {
     var frequencyText: String {
         if task.isOneOffTask {
             return "One-off todo"
+        }
+        if task.isSoftIntervalRoutine {
+            return "Once in a while"
         }
         if task.isChecklistDriven {
             return "Checklist-driven"
@@ -269,6 +281,12 @@ extension TaskDetailFeature.State {
         }
         if let pausedAt {
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
+        }
+        if task.isSoftIntervalRoutine && task.isOngoing {
+            if let ongoingSince = task.ongoingSince {
+                return "Ongoing since \(ongoingSince.formatted(date: .abbreviated, time: .omitted))"
+            }
+            return "Ongoing"
         }
         if task.isOneOffTask {
             if task.isInProgress {
@@ -326,6 +344,24 @@ extension TaskDetailFeature.State {
             }
             return "\(daysSinceLastRoutine) \(Self.dayWord(daysSinceLastRoutine)) since last update"
         }
+        if task.isSoftIntervalRoutine {
+            if isDoneToday {
+                return "Done today"
+            }
+            guard task.lastDone != nil else { return "Ready whenever" }
+            if daysSinceLastRoutine == 1 {
+                return "1 day since last time"
+            }
+            if daysSinceLastRoutine < 14 {
+                return "\(daysSinceLastRoutine) days since last time"
+            }
+            if daysSinceLastRoutine < 60 {
+                let weeks = max(daysSinceLastRoutine / 7, 1)
+                return weeks == 1 ? "1 week since last time" : "\(weeks) weeks since last time"
+            }
+            let months = max(daysSinceLastRoutine / 30, 1)
+            return months == 1 ? "1 month since last time" : "\(months) months since last time"
+        }
         if task.isInProgress {
             return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
         }
@@ -372,6 +408,9 @@ extension TaskDetailFeature.State {
         }
         if shouldUseBulkConfirmAsPrimaryAction {
             return bulkConfirmAssumedDaysTitle
+        }
+        if task.isSoftIntervalRoutine && task.isOngoing {
+            return "Finish ongoing"
         }
         if isSelectedDateAssumedDone {
             if Calendar.current.isDateInToday(selectedDate) {
@@ -437,6 +476,7 @@ extension TaskDetailFeature.State {
     /// Days until the task is due, or nil if the task is archived for now.
     var daysUntilDueIfActive: Int? {
         guard !task.isArchived() else { return nil }
+        guard !task.isSoftIntervalRoutine else { return nil }
         return RoutineDateMath.daysUntilDue(for: task, referenceDate: Date())
     }
 

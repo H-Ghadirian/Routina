@@ -31,6 +31,8 @@ struct SwiftDataModelTests {
         #expect(task.urgency == .level2)
         #expect(task.completedStepCount == 0)
         #expect(task.sequenceStartedAt == nil)
+        #expect(task.activityState == .idle)
+        #expect(task.ongoingSince == nil)
         #expect(task.autoAssumeDailyDone == false)
         #expect(task.estimatedDurationMinutes == nil)
         #expect(task.storyPoints == nil)
@@ -214,6 +216,27 @@ struct SwiftDataModelTests {
 
         #expect(weeklyTask.recurrenceRule == .weekly(on: 6, at: RoutineTimeOfDay(hour: 18, minute: 45)))
         #expect(monthlyTask.recurrenceRule == .monthly(on: 21, at: RoutineTimeOfDay(hour: 18, minute: 45)))
+    }
+
+    @Test
+    func routineTask_softIntervalSupportsOngoingLifecycle() {
+        let task = RoutineTask(
+            name: "Travel",
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 180),
+            scheduleAnchor: makeDate("2026-03-18T10:00:00Z")
+        )
+
+        task.startOngoing(at: makeDate("2026-04-10T08:00:00Z"))
+
+        #expect(task.isOngoing)
+        #expect(task.ongoingSince == makeDate("2026-04-10T08:00:00Z"))
+
+        task.finishOngoing(at: makeDate("2026-04-18T19:00:00Z"))
+
+        #expect(!task.isOngoing)
+        #expect(task.ongoingSince == nil)
+        #expect(task.lastDone == makeDate("2026-04-18T19:00:00Z"))
     }
 
     @Test

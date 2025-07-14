@@ -658,6 +658,16 @@ struct TaskDetailTCAView: View {
 
             primaryActionButton
 
+            if store.task.isSoftIntervalRoutine && !store.task.isOngoing && !store.task.isArchived() {
+                Button("Start ongoing") {
+                    store.send(.startOngoingTapped)
+                }
+                .buttonStyle(.bordered)
+                .tint(.teal)
+                .routinaPlatformSecondaryActionControlSize()
+                .frame(maxWidth: .infinity)
+            }
+
             if store.shouldShowBulkConfirmAssumedDays {
                 Button(store.bulkConfirmAssumedDaysTitle) {
                     store.send(.confirmAssumedPastDays)
@@ -1673,7 +1683,7 @@ struct TaskDetailTCAView: View {
         }
         let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
 
-        guard scheduleMode == .fixedInterval || scheduleMode == .oneOff || !sanitizedCandidateChecklistItems.isEmpty else {
+        guard scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff || !sanitizedCandidateChecklistItems.isEmpty else {
             return false
         }
 

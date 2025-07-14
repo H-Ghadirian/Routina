@@ -126,6 +126,9 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Int {
+        if task.isSoftIntervalRoutine {
+            return Int.max
+        }
         if task.isOneOffTask {
             guard !task.isCompletedOneOff else { return Int.max }
             guard let deadline = task.deadline else { return 0 }
@@ -163,6 +166,26 @@ enum RoutineDateMath {
 
         guard task.recurrenceRule.isFixedCalendar else { return true }
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar) <= referenceDate
+    }
+
+    static func softIntervalThresholdDate(
+        for task: RoutineTask,
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard task.isSoftIntervalRoutine else { return nil }
+        guard let lastDone = task.lastDone else { return nil }
+        return calendar.date(byAdding: .day, value: max(task.recurrenceRule.interval, 1), to: lastDone)
+    }
+
+    static func hasPassedSoftIntervalThreshold(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard let thresholdDate = softIntervalThresholdDate(for: task, calendar: calendar) else {
+            return false
+        }
+        return calendar.startOfDay(for: referenceDate) >= calendar.startOfDay(for: thresholdDate)
     }
 
     static func resumedScheduleAnchor(

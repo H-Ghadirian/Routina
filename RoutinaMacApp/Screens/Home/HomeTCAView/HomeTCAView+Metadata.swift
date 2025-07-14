@@ -63,6 +63,9 @@ extension HomeTCAView {
         if task.isOneOffTask {
             return "One-off todo"
         }
+        if task.isSoftIntervalRoutine {
+            return "Once in a while"
+        }
         if task.scheduleMode == .derivedFromChecklist {
             return "Checklist-driven"
         }
@@ -87,6 +90,16 @@ extension HomeTCAView {
             if elapsedDays == 0 { return "Completed today" }
             if elapsedDays == 1 { return "Completed yesterday" }
             return "Completed \(elapsedDays) days ago"
+        }
+        if task.isSoftIntervalRoutine {
+            if task.isOngoing {
+                return ongoingDescription(for: task)
+            }
+            if task.isDoneToday {
+                return "Done today"
+            }
+            guard task.lastDone != nil else { return "Ready whenever" }
+            return softElapsedDescription(for: task)
         }
         if task.scheduleMode == .derivedFromChecklist {
             if task.isDoneToday && overdueDays(for: task) == 0 {
@@ -136,6 +149,18 @@ extension HomeTCAView {
         }
         if case .away = task.locationAvailability {
             return ("Away", "location.slash.fill", .blue, Color.blue.opacity(0.14))
+        }
+        if task.isSoftIntervalRoutine {
+            if task.isOngoing {
+                return ("Ongoing", "airplane.circle.fill", .teal, Color.teal.opacity(0.16))
+            }
+            if task.isDoneToday {
+                return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
+            }
+            if task.hasPassedSoftThreshold, task.lastDone != nil {
+                return (softElapsedBadgeTitle(for: task), "clock.arrow.circlepath", .teal, Color.teal.opacity(0.12))
+            }
+            return ("Ready", "sparkles", .secondary, Color.secondary.opacity(0.10))
         }
         if task.isInProgress {
             return ("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))
@@ -207,6 +232,36 @@ extension HomeTCAView {
         }
 
         return ("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
+    }
+
+    private func ongoingDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        guard let ongoingSince = task.ongoingSince else { return "Ongoing" }
+        let elapsedDays = daysSince(ongoingSince)
+        if elapsedDays == 0 { return "Started today" }
+        if elapsedDays == 1 { return "Started yesterday" }
+        return "Started \(elapsedDays) days ago"
+    }
+
+    private func softElapsedDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        guard let lastDone = task.lastDone else { return "Ready whenever" }
+        return "\(softElapsedText(forDays: daysSince(lastDone))) since last time"
+    }
+
+    private func softElapsedBadgeTitle(for task: HomeFeature.RoutineDisplay) -> String {
+        guard let lastDone = task.lastDone else { return "Ready" }
+        return softElapsedText(forDays: daysSince(lastDone))
+    }
+
+    private func softElapsedText(forDays days: Int) -> String {
+        if days < 14 {
+            return days == 1 ? "1 day ago" : "\(days) days ago"
+        }
+        if days < 60 {
+            let weeks = max(days / 7, 1)
+            return weeks == 1 ? "1 week ago" : "\(weeks) weeks ago"
+        }
+        let months = max(days / 30, 1)
+        return months == 1 ? "1 month ago" : "\(months) months ago"
     }
 
     func stepMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {

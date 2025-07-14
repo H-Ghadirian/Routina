@@ -20,13 +20,19 @@ enum HomeTaskLifecycleExecutionSupport {
                 ) else {
                     return
                 }
-                await scheduleNotification(
-                    NotificationCoordinator.notificationPayload(
-                        for: taskState.task,
-                        referenceDate: update.completionDate,
-                        calendar: calendar
+                if NotificationCoordinator.shouldScheduleNotification(
+                    for: taskState.task,
+                    referenceDate: update.completionDate,
+                    calendar: calendar
+                ) {
+                    await scheduleNotification(
+                        NotificationCoordinator.notificationPayload(
+                            for: taskState.task,
+                            referenceDate: update.completionDate,
+                            calendar: calendar
+                        )
                     )
-                )
+                }
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
@@ -53,7 +59,11 @@ enum HomeTaskLifecycleExecutionSupport {
                 ) else {
                     return
                 }
-                if taskState.task.isOneOffTask {
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: taskState.task,
+                    referenceDate: update.completionDate,
+                    calendar: calendar
+                ) {
                     await cancelNotification(update.taskID.uuidString)
                 } else {
                     await scheduleNotification(
@@ -103,6 +113,7 @@ enum HomeTaskLifecycleExecutionSupport {
         _ update: HomeResumeTaskUpdate,
         calendar: Calendar,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void,
         scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
     ) -> Effect<Action> {
         .run { @MainActor _ in
@@ -118,13 +129,21 @@ enum HomeTaskLifecycleExecutionSupport {
                 task.pausedAt = nil
                 task.snoozedUntil = nil
                 try context.save()
-                await scheduleNotification(
-                    NotificationCoordinator.notificationPayload(
-                        for: task,
-                        referenceDate: update.resumeDate,
-                        calendar: calendar
+                if NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: update.resumeDate,
+                    calendar: calendar
+                ) {
+                    await scheduleNotification(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            referenceDate: update.resumeDate,
+                            calendar: calendar
+                        )
                     )
-                )
+                } else {
+                    await cancelNotification(update.taskID.uuidString)
+                }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Failed to resume routine from home list: \(error)")
@@ -136,6 +155,7 @@ enum HomeTaskLifecycleExecutionSupport {
         _ update: HomeSnoozeTaskUpdate,
         calendar: Calendar,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void,
         scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
     ) -> Effect<Action> {
         .run { @MainActor _ in
@@ -146,18 +166,26 @@ enum HomeTaskLifecycleExecutionSupport {
                 }
                 task.snoozedUntil = update.snoozedUntil
                 try context.save()
-                await scheduleNotification(
-                    NotificationCoordinator.notificationPayload(
-                        for: task,
-                        triggerDate: NotificationPreferences.reminderDate(
-                            on: update.snoozedUntil,
+                if NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: update.snoozedUntil,
+                    calendar: calendar
+                ) {
+                    await scheduleNotification(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            triggerDate: NotificationPreferences.reminderDate(
+                                on: update.snoozedUntil,
+                                calendar: calendar
+                            ),
+                            isArchivedOverride: false,
+                            referenceDate: update.snoozedUntil,
                             calendar: calendar
-                        ),
-                        isArchivedOverride: false,
-                        referenceDate: update.snoozedUntil,
-                        calendar: calendar
+                        )
                     )
-                )
+                } else {
+                    await cancelNotification(update.taskID.uuidString)
+                }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Failed to archive routine for today from home list: \(error)")

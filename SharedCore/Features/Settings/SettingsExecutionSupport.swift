@@ -35,7 +35,7 @@ enum SettingsExecutionSupport {
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         for task in tasks {
-            guard !task.isArchived(), !task.isOneOffTask else { continue }
+            guard NotificationCoordinator.shouldScheduleNotification(for: task) else { continue }
             await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
         }
     }

@@ -90,6 +90,10 @@ struct TaskDetailFeature: Reducer {
                 return .interval(days: 1)
             }
 
+            guard editScheduleMode != .softInterval else {
+                return .interval(days: max(fallbackInterval, 1))
+            }
+
             guard editScheduleMode != .derivedFromChecklist else {
                 return .interval(days: max(fallbackInterval, 1))
             }
@@ -132,6 +136,8 @@ struct TaskDetailFeature: Reducer {
         case pauseTapped
         case notTodayTapped
         case resumeTapped
+        case startOngoingTapped
+        case finishOngoingTapped
         case selectedDateChanged(Date)
         case setEditSheet(Bool)
         case editRoutineNameChanged(String)
@@ -442,6 +448,24 @@ struct TaskDetailFeature: Reducer {
             updateDerivedState(&state)
             return handleResumeRoutine(taskID: state.task.id, resumedAt: resumeDate)
 
+        case .startOngoingTapped:
+            guard state.task.isSoftIntervalRoutine else { return .none }
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
+            guard !state.task.isOngoing else { return .none }
+            state.task.startOngoing(at: now)
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleStartOngoing(taskID: state.task.id, startedAt: now)
+
+        case .finishOngoingTapped:
+            guard state.task.isSoftIntervalRoutine else { return .none }
+            guard state.task.isOngoing else { return .none }
+            state.task.finishOngoing(at: now)
+            refreshTaskView(&state)
+            upsertLocalLog(at: now, in: &state)
+            updateDerivedState(&state)
+            return handleFinishOngoing(taskID: state.task.id, finishedAt: now)
+
         case let .selectedDateChanged(date):
             state.selectedDate = calendar.startOfDay(for: date)
             return .none
@@ -566,6 +590,10 @@ struct TaskDetailFeature: Reducer {
             state.editScheduleMode = mode
             if mode != .oneOff {
                 state.editDeadline = nil
+            }
+            if mode == .softInterval {
+                state.editRecurrenceKind = .intervalDays
+                state.editRecurrenceHasExplicitTime = false
             }
             if !canAutoAssumeDailyDone(for: state) {
                 state.editAutoAssumeDailyDone = false

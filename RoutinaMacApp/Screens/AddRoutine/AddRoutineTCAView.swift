@@ -242,7 +242,7 @@ struct AddRoutineTCAView: View {
     }
 
     var isStepBasedMode: Bool {
-        store.schedule.scheduleMode == .fixedInterval || store.schedule.scheduleMode == .oneOff
+        store.schedule.scheduleMode == .fixedInterval || store.schedule.scheduleMode == .softInterval || store.schedule.scheduleMode == .oneOff
     }
 
     var showsRepeatControls: Bool {
@@ -262,6 +262,8 @@ struct AddRoutineTCAView: View {
         switch store.schedule.scheduleMode {
         case .fixedInterval:
             return "Use one overall repeat interval for the whole routine."
+        case .softInterval:
+            return "Keep this routine visible all the time and gently highlight it again after a while."
         case .fixedIntervalChecklist:
             return "Use one overall repeat interval and complete every checklist item to finish the routine."
         case .derivedFromChecklist:
@@ -277,7 +279,7 @@ struct AddRoutineTCAView: View {
             return "The routine is done when every checklist item is completed."
         case .derivedFromChecklist:
             return "Each item gets its own due date. The routine becomes due when the earliest item is due."
-        case .fixedInterval, .oneOff:
+        case .fixedInterval, .softInterval, .oneOff:
             return ""
         }
     }

@@ -43,6 +43,8 @@ enum SettingsRoutineDataPersistence {
             var sequenceStartedAt: Date?
             var createdAt: Date?
             var todoStateRawValue: String?
+            var activityStateRawValue: String?
+            var ongoingSince: Date?
             var autoAssumeDailyDone: Bool?
             var estimatedDurationMinutes: Int?
             var storyPoints: Int?
@@ -89,7 +91,7 @@ enum SettingsRoutineDataPersistence {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = Backup(
-            schemaVersion: 12,
+            schemaVersion: 13,
             exportedAt: exportedAt,
             places: places.map {
                 .init(
@@ -127,6 +129,8 @@ enum SettingsRoutineDataPersistence {
                     sequenceStartedAt: $0.sequenceStartedAt,
                     createdAt: $0.createdAt,
                     todoStateRawValue: $0.todoStateRawValue,
+                    activityStateRawValue: $0.activityStateRawValue,
+                    ongoingSince: $0.ongoingSince,
                     autoAssumeDailyDone: $0.autoAssumeDailyDone,
                     estimatedDurationMinutes: $0.estimatedDurationMinutes,
                     storyPoints: $0.storyPoints
@@ -158,7 +162,7 @@ enum SettingsRoutineDataPersistence {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(Backup.self, from: jsonData)
 
-        guard (1...12).contains(backup.schemaVersion) else {
+        guard (1...13).contains(backup.schemaVersion) else {
             throw Error.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -226,6 +230,8 @@ enum SettingsRoutineDataPersistence {
                     sequenceStartedAt: task.sequenceStartedAt,
                     createdAt: task.createdAt,
                     todoStateRawValue: task.todoStateRawValue,
+                    activityStateRawValue: task.activityStateRawValue,
+                    ongoingSince: task.ongoingSince,
                     autoAssumeDailyDone: task.autoAssumeDailyDone ?? false,
                     estimatedDurationMinutes: task.estimatedDurationMinutes,
                     storyPoints: task.storyPoints
