@@ -157,21 +157,30 @@ private func clearAccessToken() throws {
 // MARK: - API
 
 private struct GitLabUserPayload: Decodable {
+    let id: Int
     let username: String
 }
 
 private struct GitLabEventPayload: Decodable {
+    struct PushData: Decodable {
+        let commit_count: Int?
+    }
     let created_at: String
+    let action_name: String?
+    let push_data: PushData?
 }
 
-private func fetchAuthenticatedUsername(accessToken: String) async throws -> String {
+private func fetchAuthenticatedUser(accessToken: String) async throws -> GitLabUserPayload {
     var components = makeGitLabComponents(path: "/api/v4/user")
     components.queryItems = nil
-    let payload: GitLabUserPayload = try await decodeGitLabResponse(
+    return try await decodeGitLabResponse(
         components: components,
         accessToken: accessToken
     )
-    return payload.username
+}
+
+private func fetchAuthenticatedUsername(accessToken: String) async throws -> String {
+    try await fetchAuthenticatedUser(accessToken: accessToken).username
 }
 
 private func fetchWidgetContributions(
@@ -181,23 +190,36 @@ private func fetchWidgetContributions(
     let calendar = Calendar.current
     let now = Date()
     let endOfToday = calendar.startOfDay(for: now)
-    guard let startDay = calendar.date(byAdding: .day, value: -364, to: endOfToday) else {
+    // Ask GitLab for up to a year. It caps to whatever it retains (typically
+    // ~6–8 months). We'll shrink the grid to the earliest event we actually
+    // receive so the widget isn't padded with empty weeks.
+    guard let fetchFloor = calendar.date(byAdding: .day, value: -364, to: endOfToday) else {
         throw GitLabStatsError.invalidResponse
     }
+
+    // Resolve numeric ID so we can hit /api/v4/users/:id/events — using the
+    // username in the URL breaks when the username contains a dot (GitLab's
+    // router treats it as a file extension).
+    let userID = try await fetchAuthenticatedUser(accessToken: accessToken).id
 
     let isoDateFormatter = ISO8601DateFormatter()
     isoDateFormatter.formatOptions = [.withFullDate]
 
+    // GitLab has no REST endpoint that returns the profile contribution
+    // calendar. /users/:username/calendar.json exists but rejects PAT auth.
+    // So we walk /api/v4/events?scope=all and, for push events, attribute one
+    // contribution per individual commit (GitLab's profile calendar counts
+    // commits, not pushes). Other events (issues, MRs, notes, etc.) count as
+    // one contribution each.
     var counts: [Date: Int] = [:]
     var page = 1
     let maxPages = 40
     let perPage = 100
 
     while page <= maxPages {
-        var components = makeGitLabComponents(path: "/api/v4/events")
+        var components = makeGitLabComponents(path: "/api/v4/users/\(userID)/events")
         components.queryItems = [
-            URLQueryItem(name: "scope", value: "all"),
-            URLQueryItem(name: "after", value: isoDateFormatter.string(from: startDay)),
+            URLQueryItem(name: "after", value: isoDateFormatter.string(from: fetchFloor)),
             URLQueryItem(name: "per_page", value: "\(perPage)"),
             URLQueryItem(name: "page", value: "\(page)")
         ]
@@ -212,8 +234,8 @@ private func fetchWidgetContributions(
         for event in events {
             guard let createdAt = parseGitLabDate(event.created_at) else { continue }
             let day = calendar.startOfDay(for: createdAt)
-            guard day >= startDay, day <= endOfToday else { continue }
-            counts[day, default: 0] += 1
+            guard day >= fetchFloor, day <= endOfToday else { continue }
+            counts[day, default: 0] += gitLabEventWeight(pushCommitCount: event.push_data?.commit_count)
         }
 
         if events.count < perPage || !metadata.hasNextPage {
@@ -222,13 +244,36 @@ private func fetchWidgetContributions(
         page += 1
     }
 
+    return makeGitLabWidgetData(
+        dailyCounts: counts,
+        username: username,
+        now: now,
+        calendar: calendar,
+        fetchFloor: fetchFloor
+    )
+}
+
+/// Builds the widget payload from pre-aggregated per-day counts. The grid is
+/// packed from the earliest day with activity (clamped at `fetchFloor`) to
+/// today, so there are no empty leading weeks before GitLab's retention
+/// cutoff. Total contributions count every value in `dailyCounts`.
+func makeGitLabWidgetData(
+    dailyCounts: [Date: Int],
+    username: String,
+    now: Date,
+    calendar: Calendar,
+    fetchFloor: Date
+) -> GitLabWidgetData {
+    let endOfToday = calendar.startOfDay(for: now)
+    let earliestEvent = dailyCounts.keys.min() ?? fetchFloor
+    let startDay = max(earliestEvent, fetchFloor)
     let weeks = buildWeeks(
-        counts: counts,
+        counts: dailyCounts,
         startDay: startDay,
         endOfToday: endOfToday,
         calendar: calendar
     )
-    let total = counts.values.reduce(0, +)
+    let total = dailyCounts.values.reduce(0, +)
     return GitLabWidgetData(
         username: username,
         weeks: weeks,
@@ -237,7 +282,17 @@ private func fetchWidgetContributions(
     )
 }
 
-private func buildWeeks(
+/// Weight a single event for the contribution grid: push events count their
+/// individual commits (matching GitLab's own profile calendar), everything
+/// else (issues, MRs, comments) counts as 1.
+func gitLabEventWeight(pushCommitCount: Int?) -> Int {
+    if let commitCount = pushCommitCount, commitCount > 0 {
+        return commitCount
+    }
+    return 1
+}
+
+func buildWeeks(
     counts: [Date: Int],
     startDay: Date,
     endOfToday: Date,
@@ -287,7 +342,7 @@ private func buildWeeks(
     return weeks
 }
 
-private func parseGitLabDate(_ string: String) -> Date? {
+func parseGitLabDate(_ string: String) -> Date? {
     let fractional = ISO8601DateFormatter()
     fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     if let date = fractional.date(from: string) { return date }

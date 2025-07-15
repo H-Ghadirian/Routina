@@ -652,7 +652,9 @@ struct TaskDetailFeatureTests {
             $0.isEditSheetPresented = false
         }
 
-        await store.receive(.onAppear)
+        await store.receive(.onAppear) {
+            $0.selectedDate = makeTestCalendar().startOfDay(for: now)
+        }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
