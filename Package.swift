@@ -17,6 +17,10 @@ let package = Package(
             name: "RoutinaMacSupport",
             targets: ["RoutinaMacSupport"]
         ),
+        .executable(
+            name: "RoutinaAIMVPCLI",
+            targets: ["RoutinaAIMVPCLI"]
+        ),
     ],
     dependencies: [
         .package(
@@ -101,6 +105,7 @@ let package = Package(
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
+                "SharedCore/AI",
                 "SharedCore/Models",
                 "SharedCore/Dependencies/AppIconClient.swift",
                 "SharedCore/Dependencies/DeviceAuthenticationClient.swift",
@@ -225,6 +230,11 @@ let package = Package(
                 "Commands",
                 "Utilities/MacMenuCleanup.swift",
             ]
+        ),
+        .executableTarget(
+            name: "RoutinaAIMVPCLI",
+            dependencies: ["RoutinaAppSupport"],
+            path: "Tools/RoutinaAIMVPCLI"
         ),
         .testTarget(
             name: "RoutinaAppSupportTests",

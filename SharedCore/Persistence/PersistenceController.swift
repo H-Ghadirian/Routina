@@ -96,6 +96,20 @@ public struct PersistenceController {
         case skipRetryAndUseFallbacks
     }
 
+    public static func makeLocalOnlyContainer(inMemory: Bool = false) throws -> ModelContainer {
+        let configuration = Self.makeConfiguration(
+            inMemory: inMemory,
+            cloudKitDatabase: .none
+        )
+        return try ModelContainer(
+            for: RoutineTask.self,
+            RoutineLog.self,
+            RoutinePlace.self,
+            RoutineAttachment.self,
+            configurations: configuration
+        )
+    }
+
     static func strategyAfterPrimaryInitializationFailure(
         inMemory: Bool,
         hasExistingPersistentStore: Bool
