@@ -412,6 +412,61 @@ enum RoutineLogHistory {
         return task
     }
 
+    @MainActor
+    static func removeLogEntry(
+        taskID: UUID,
+        timestamp: Date,
+        context: ModelContext
+    ) throws -> RoutineTask? {
+        let taskDescriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(taskDescriptor).first else {
+            return nil
+        }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        let matchingLogs = existingLogs.filter { $0.timestamp == timestamp }
+        let didMatchLastDone = task.lastDone == timestamp
+        let didMatchCanceledAt = task.canceledAt == timestamp
+
+        guard !matchingLogs.isEmpty || didMatchLastDone || didMatchCanceledAt else {
+            return task
+        }
+
+        for log in matchingLogs {
+            context.delete(log)
+        }
+
+        let remainingLatestCompletion = existingLogs
+            .filter { log in
+                !matchingLogs.contains(where: { $0.id == log.id })
+            }
+            .filter { $0.kind == .completed }
+            .compactMap(\.timestamp)
+            .max()
+
+        if didMatchLastDone {
+            task.lastDone = remainingLatestCompletion
+            task.refreshScheduleAnchorAfterRemovingLatestCompletion(
+                remainingLatestCompletion: remainingLatestCompletion
+            )
+        }
+
+        if didMatchCanceledAt {
+            task.removeCanceledState()
+        }
+
+        task.resetStepProgress()
+        task.resetChecklistProgress()
+
+        try context.save()
+        return task
+    }
+
     private static func isSameCompletion(_ lhs: Date?, as rhs: Date) -> Bool {
         guard let lhs else { return false }
         return Calendar.current.isDate(lhs, inSameDayAs: rhs)

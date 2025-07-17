@@ -12,10 +12,21 @@ extension TaskDetailFeature {
             state.daysSinceLastRoutine = 0
         }
 
-        let doneTodayFromLastDone = state.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
+        let todayDisplayDay = calendar.startOfDay(for: now)
+        let doneTodayFromLastDone = state.task.lastDone.flatMap {
+            RoutineDateMath.completionDisplayDay(for: state.task, completionDate: $0, calendar: calendar)
+        }.map { calendar.isDate($0, inSameDayAs: todayDisplayDay) } ?? false
         let doneTodayFromLogs = state.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
-            return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: now)
+            guard $0.kind == .completed else { return false }
+            guard let displayDay = RoutineDateMath.completionDisplayDay(
+                for: state.task,
+                completionDate: timestamp,
+                calendar: calendar
+            ) else {
+                return false
+            }
+            return calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
         }
         state.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
         state.isAssumedDoneToday = !state.isDoneToday && RoutineAssumedCompletion.isAssumedDone(
@@ -54,6 +65,28 @@ extension TaskDetailFeature {
         return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: startOfDay) ?? startOfDay
     }
 
+    func resolvedMarkAsDoneDate(
+        for selectedDate: Date?,
+        task: RoutineTask
+    ) -> Date? {
+        let baseDate = selectedDate ?? now
+
+        if let exactTimedTarget = RoutineDateMath.completionTargetDate(
+            for: task,
+            selectedDay: baseDate,
+            referenceDate: now,
+            calendar: calendar
+        ) {
+            return exactTimedTarget
+        }
+
+        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            return nil
+        }
+
+        return resolvedCompletionDate(for: selectedDate, task: task)
+    }
+
     func resolvedSelectedDay(for selectedDate: Date?) -> Date {
         calendar.startOfDay(for: selectedDate ?? now)
     }
@@ -85,6 +118,32 @@ extension TaskDetailFeature {
             state.task.refreshScheduleAnchorAfterRemovingLatestCompletion(
                 remainingLatestCompletion: remainingLatestCompletion
             )
+        }
+
+        state.task.resetStepProgress()
+        state.task.resetChecklistProgress()
+    }
+
+    func removeLogEntry(at timestamp: Date, from state: inout State) {
+        let removedLatestCompletion = state.task.lastDone == timestamp
+        let removedCanceledAt = state.task.canceledAt == timestamp
+
+        state.logs.removeAll { $0.timestamp == timestamp }
+
+        let remainingLatestCompletion = state.logs
+            .filter { $0.kind == .completed }
+            .compactMap(\.timestamp)
+            .max()
+
+        if removedLatestCompletion {
+            state.task.lastDone = remainingLatestCompletion
+            state.task.refreshScheduleAnchorAfterRemovingLatestCompletion(
+                remainingLatestCompletion: remainingLatestCompletion
+            )
+        }
+
+        if removedCanceledAt {
+            state.task.removeCanceledState()
         }
 
         state.task.resetStepProgress()

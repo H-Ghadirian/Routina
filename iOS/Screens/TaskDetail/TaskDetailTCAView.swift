@@ -1124,6 +1124,14 @@ struct TaskDetailTCAView: View {
                         Text(log.kind == .completed ? "Done" : "Canceled")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(log.kind == .completed ? .green : .orange)
+
+                        if let timestamp = log.timestamp {
+                            Button(log.kind == .completed ? "Undo" : "Remove") {
+                                store.send(.removeLogEntry(timestamp))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
                     }
                     .padding(.vertical, 8)
 
@@ -1473,9 +1481,18 @@ struct TaskDetailTCAView: View {
 
     private func doneDates(from logs: [RoutineLog], task: RoutineTask) -> Set<Date> {
         let calendar = Calendar.current
-        var dates = Set(logs.compactMap { $0.timestamp }.map { calendar.startOfDay(for: $0) })
+        var dates = Set<Date>(logs.compactMap { log in
+            guard let timestamp = log.timestamp, log.kind == .completed else { return nil }
+            return RoutineDateMath.completionDisplayDay(for: task, completionDate: timestamp, calendar: calendar)
+        })
         if let lastDone = task.lastDone {
-            dates.insert(calendar.startOfDay(for: lastDone))
+            if let displayDay = RoutineDateMath.completionDisplayDay(
+                for: task,
+                completionDate: lastDone,
+                calendar: calendar
+            ) {
+                dates.insert(displayDay)
+            }
         }
         return dates
     }

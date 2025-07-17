@@ -133,6 +133,7 @@ struct TaskDetailFeature: Reducer {
         case toggleChecklistItemCompletion(UUID)
         case markChecklistItemCompleted(UUID)
         case undoSelectedDateCompletion
+        case removeLogEntry(Date)
         case pauseTapped
         case notTodayTapped
         case resumeTapped
@@ -248,10 +249,12 @@ struct TaskDetailFeature: Reducer {
             if state.task.isChecklistCompletionRoutine {
                 return .none
             }
-            let completionDate = resolvedCompletionDate(
+            guard let completionDate = resolvedMarkAsDoneDate(
                 for: state.selectedDate,
                 task: state.task
-            )
+            ) else {
+                return .none
+            }
             guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
                 return .none
             }
@@ -408,6 +411,12 @@ struct TaskDetailFeature: Reducer {
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleUndoCompletion(taskID: state.task.id, completedDay: selectedDay)
+
+        case let .removeLogEntry(timestamp):
+            removeLogEntry(at: timestamp, from: &state)
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleRemoveLogEntry(taskID: state.task.id, timestamp: timestamp)
 
         case .pauseTapped:
             guard !state.task.isOneOffTask else { return .none }

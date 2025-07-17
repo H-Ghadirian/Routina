@@ -139,6 +139,42 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleRemoveLogEntry(taskID: UUID, timestamp: Date) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let updatedTask = try RoutineLogHistory.removeLogEntry(
+                    taskID: taskID,
+                    timestamp: timestamp,
+                    context: context
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: updatedTask,
+                    referenceDate: now,
+                    calendar: calendar
+                ) {
+                    await notificationClient.cancel(taskID.uuidString)
+                } else {
+                    await notificationClient.schedule(
+                        NotificationCoordinator.notificationPayload(
+                            for: updatedTask,
+                            referenceDate: now,
+                            calendar: calendar
+                        )
+                    )
+                }
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error removing routine log entry: \(error)")
+            }
+        }
+    }
+
     func handleEditSave(
         taskID: UUID,
         name: String,

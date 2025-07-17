@@ -10,9 +10,34 @@ extension TaskDetailFeature.State {
         return calendar.startOfDay(for: selectedDate ?? Date())
     }
 
+    var selectedScheduledOccurrenceDate: Date? {
+        RoutineDateMath.scheduledOccurrence(
+            for: task,
+            on: resolvedSelectedDate,
+            calendar: .current
+        )
+    }
+
+    var completionTargetDate: Date? {
+        RoutineDateMath.completionTargetDate(
+            for: task,
+            selectedDay: resolvedSelectedDate,
+            referenceDate: Date(),
+            calendar: .current
+        )
+    }
+
     var isSelectedDateDone: Bool {
         let calendar = Calendar.current
         let day = resolvedSelectedDate
+        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            guard let occurrence = selectedScheduledOccurrenceDate else { return false }
+            return logs.contains {
+                guard let timestamp = $0.timestamp else { return false }
+                return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            }
+            || task.lastDone.map { calendar.isDate($0, inSameDayAs: occurrence) } == true
+        }
         return logs.contains {
             guard let timestamp = $0.timestamp else { return false }
             return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: day)
@@ -23,6 +48,14 @@ extension TaskDetailFeature.State {
     var isSelectedDateCanceled: Bool {
         let calendar = Calendar.current
         let day = resolvedSelectedDate
+        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            guard let occurrence = selectedScheduledOccurrenceDate else { return false }
+            return logs.contains {
+                guard let timestamp = $0.timestamp else { return false }
+                return $0.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            }
+            || task.canceledAt.map { calendar.isDate($0, inSameDayAs: occurrence) } == true
+        }
         return logs.contains {
             guard let timestamp = $0.timestamp else { return false }
             return $0.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: day)
@@ -175,6 +208,10 @@ extension TaskDetailFeature.State {
             return task.isArchived()
                 || !Calendar.current.isDateInToday(resolvedSelectedDate)
                 || checklistDueItemCount == 0
+        }
+        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            guard let completionTargetDate else { return true }
+            return task.isArchived() || completionTargetDate > Date() || isStepRoutineOffToday
         }
         return isSelectedDateInFuture || task.isArchived() || isStepRoutineOffToday
     }
@@ -445,6 +482,21 @@ extension TaskDetailFeature.State {
         }
         if task.hasSequentialSteps && !Calendar.current.isDateInToday(selectedDate) {
             return "Step routines can only be progressed today"
+        }
+        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            if let completionTargetDate {
+                if Calendar.current.isDateInToday(completionTargetDate) {
+                    return "Done at \(completionTargetDate.formatted(date: .omitted, time: .shortened))"
+                }
+                return "Done for \(completionTargetDate.formatted(date: .abbreviated, time: .shortened))"
+            }
+
+            if Calendar.current.isDateInToday(selectedDate) {
+                let nextDue = RoutineDateMath.dueDate(for: task, referenceDate: Date())
+                return "Available \(nextDue.formatted(date: .abbreviated, time: .shortened))"
+            }
+
+            return "No occurrence on \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
         }
         if isFuture {
             return "Future dates can't be marked done"

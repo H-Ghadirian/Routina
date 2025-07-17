@@ -1,6 +1,13 @@
 import Foundation
 
 enum RoutineDateMath {
+    static func usesExactTimedOccurrenceTracking(for task: RoutineTask) -> Bool {
+        !task.isOneOffTask
+            && task.recurrenceRule.isFixedCalendar
+            && task.recurrenceRule.usesExplicitTimeOfDay
+            && !task.isChecklistDriven
+    }
+
     static func dueDate(
         for item: RoutineChecklistItem,
         referenceDate: Date,
@@ -168,6 +175,73 @@ enum RoutineDateMath {
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar) <= referenceDate
     }
 
+    static func scheduledOccurrence(
+        for task: RoutineTask,
+        on day: Date,
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard usesExactTimedOccurrenceTracking(for: task) else { return nil }
+        guard let timeOfDay = task.recurrenceRule.timeOfDay else { return nil }
+
+        let startOfDay = calendar.startOfDay(for: day)
+
+        switch task.recurrenceRule.kind {
+        case .dailyTime:
+            return timeOfDay.date(on: startOfDay, calendar: calendar)
+
+        case .weekly:
+            let weekday = task.recurrenceRule.weekday ?? calendar.firstWeekday
+            guard calendar.component(.weekday, from: startOfDay) == weekday else { return nil }
+            return timeOfDay.date(on: startOfDay, calendar: calendar)
+
+        case .monthlyDay:
+            let scheduledDay = clampedDayOfMonth(
+                task.recurrenceRule.dayOfMonth ?? 1,
+                monthContaining: startOfDay,
+                calendar: calendar
+            )
+            guard calendar.component(.day, from: startOfDay) == scheduledDay else { return nil }
+            return timeOfDay.date(on: startOfDay, calendar: calendar)
+
+        case .intervalDays:
+            return nil
+        }
+    }
+
+    static func completionTargetDate(
+        for task: RoutineTask,
+        selectedDay: Date,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard usesExactTimedOccurrenceTracking(for: task) else { return nil }
+
+        let normalizedSelectedDay = calendar.startOfDay(for: selectedDay)
+        if calendar.isDate(normalizedSelectedDay, inSameDayAs: referenceDate) {
+            let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+            return due <= referenceDate ? due : nil
+        }
+
+        return scheduledOccurrence(for: task, on: normalizedSelectedDay, calendar: calendar)
+    }
+
+    static func completionDisplayDay(
+        for task: RoutineTask,
+        completionDate: Date,
+        calendar: Calendar = .current
+    ) -> Date? {
+        let day = calendar.startOfDay(for: completionDate)
+        if usesExactTimedOccurrenceTracking(for: task) {
+            guard let occurrence = scheduledOccurrence(for: task, on: day, calendar: calendar) else {
+                return nil
+            }
+            guard calendar.isDate(completionDate, inSameDayAs: occurrence) else {
+                return nil
+            }
+        }
+        return day
+    }
+
     static func softIntervalThresholdDate(
         for task: RoutineTask,
         calendar: Calendar = .current
@@ -240,6 +314,15 @@ enum RoutineDateMath {
 
         let nextDay = calendar.date(byAdding: .day, value: 1, to: base) ?? base
         return timeOfDay.date(on: nextDay, calendar: calendar)
+    }
+
+    private static func clampedDayOfMonth(
+        _ dayOfMonth: Int,
+        monthContaining date: Date,
+        calendar: Calendar
+    ) -> Int {
+        let dayRange = calendar.range(of: .day, in: .month, for: date) ?? (1..<32)
+        return min(max(dayOfMonth, 1), dayRange.count)
     }
 
     private static func nextWeeklyOccurrence(
