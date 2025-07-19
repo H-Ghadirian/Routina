@@ -613,6 +613,146 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func editSaveTapped_switchesFromFixedToChecklistAndClearsSteps() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Laundry",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🧺",
+            steps: [
+                RoutineStep(title: "Sort clothes"),
+                RoutineStep(title: "Start washer")
+            ],
+            scheduleMode: .fixedInterval
+        )
+        let checklistItems = [
+            RoutineChecklistItem(title: "Whites", intervalDays: 3, createdAt: now),
+            RoutineChecklistItem(title: "Colors", intervalDays: 3, createdAt: now)
+        ]
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Laundry",
+                editRoutineEmoji: "🧺",
+                editScheduleMode: .fixedIntervalChecklist,
+                editRoutineSteps: task.steps,
+                editRoutineChecklistItems: checklistItems,
+                editFrequency: .week,
+                editFrequencyValue: 1
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+        await store.receive(.availablePlacesLoaded([]))
+        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.logsLoaded([]))
+
+        let persistedTaskID = task.id
+        let persistedTask = try #require(
+            context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .fixedIntervalChecklist)
+        #expect(persistedTask.steps.isEmpty)
+        #expect(persistedTask.checklistItems.map(\.title) == ["Whites", "Colors"])
+    }
+
+    @Test
+    func editSaveTapped_switchesToRunoutAndPersistsChecklistIntervals() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Pantry",
+            interval: 5,
+            lastDone: nil,
+            emoji: "🥫",
+            steps: [RoutineStep(title: "Check shelves")],
+            scheduleMode: .fixedInterval
+        )
+        let checklistItems = [
+            RoutineChecklistItem(title: "Beans", intervalDays: 14, createdAt: now),
+            RoutineChecklistItem(title: "Rice", intervalDays: 30, createdAt: now)
+        ]
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Pantry",
+                editRoutineEmoji: "🥫",
+                editScheduleMode: .derivedFromChecklist,
+                editRoutineSteps: task.steps,
+                editRoutineChecklistItems: checklistItems,
+                editFrequency: .day,
+                editFrequencyValue: 5
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+        await store.receive(.availablePlacesLoaded([]))
+        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.logsLoaded([]))
+
+        let persistedTaskID = task.id
+        let persistedTask = try #require(
+            context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .derivedFromChecklist)
+        #expect(persistedTask.steps.isEmpty)
+        #expect(persistedTask.checklistItems.map(\.intervalDays) == [14, 30])
+        #expect(persistedTask.checklistItems.map(\.title) == ["Beans", "Rice"])
+    }
+
+    @Test
     func logsLoaded_updatesDerivedStateFromLastDoneAndLogs() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T10:00:00Z")
