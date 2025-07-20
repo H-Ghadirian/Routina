@@ -21,6 +21,10 @@ let package = Package(
             name: "RoutinaAIMVPCLI",
             targets: ["RoutinaAIMVPCLI"]
         ),
+        .executable(
+            name: "RoutinaAIMCPServer",
+            targets: ["RoutinaAIMCPServer"]
+        ),
     ],
     dependencies: [
         .package(
@@ -69,8 +73,13 @@ let package = Package(
                 "Routina.xcworkspace",
                 "RoutinaiOS.xcodeproj",
                 "RoutinaMacOS.xcodeproj",
+                "RoutinaWidget",
+                "RoutinaWidgetExtension.entitlements",
+                "Tools",
+                "build",
                 "Config",
                 "AppResources",
+                "docs",
                 "iOS",
                 "RoutinaMacApp",
                 "RoutinaWatchApp",
@@ -235,6 +244,12 @@ let package = Package(
             name: "RoutinaAIMVPCLI",
             dependencies: ["RoutinaAppSupport"],
             path: "Tools/RoutinaAIMVPCLI"
+        ),
+        .executableTarget(
+            name: "RoutinaAIMCPServer",
+            dependencies: ["RoutinaAppSupport"],
+            path: "Tools/RoutinaAIMCPServer",
+            exclude: ["smoke-test.jsonl"]
         ),
         .testTarget(
             name: "RoutinaAppSupportTests",
