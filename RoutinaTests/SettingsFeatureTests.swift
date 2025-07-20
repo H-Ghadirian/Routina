@@ -86,33 +86,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
-    func saveCurrentLocationAsPlaceTapped_persistsPlace() async throws {
+    func savePlaceTapped_persistsSelectedPlace() async throws {
         let context = makeInMemoryContext()
-        let snapshot = LocationSnapshot(
-            authorizationStatus: .authorizedWhenInUse,
-            coordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
-            horizontalAccuracy: 20,
-            timestamp: makeDate("2026-03-17T10:00:00Z")
-        )
         let store = TestStore(
             initialState: SettingsFeature.State(
                 placeDraftName: "Home",
+                placeDraftCoordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
                 placeDraftRadiusMeters: 180
             )
         ) {
             SettingsFeature()
         } withDependencies: {
             $0.modelContext = { context }
-            $0.locationClient.snapshot = { _ in snapshot }
         }
         var loadedPlaces: [RoutinePlaceSummary] = []
 
-        await store.send(.saveCurrentLocationAsPlaceTapped) {
+        await store.send(.savePlaceTapped) {
             $0.isPlaceOperationInProgress = true
             $0.placeStatusMessage = ""
-        }
-        await store.receive(.locationSnapshotUpdated(snapshot)) {
-            $0.locationAuthorizationStatus = .authorizedWhenInUse
         }
         await store.receive { action in
             guard case let .placesLoaded(places) = action else { return false }
@@ -127,6 +118,7 @@ struct SettingsFeatureTests {
         await store.receive(.placeOperationFinished(success: true, message: "Saved Home.")) {
             $0.isPlaceOperationInProgress = false
             $0.placeDraftName = ""
+            $0.placeDraftCoordinate = nil
             $0.placeStatusMessage = "Saved Home."
         }
 
@@ -134,6 +126,24 @@ struct SettingsFeatureTests {
         #expect(places.count == 1)
         #expect(places.first?.displayName == "Home")
         #expect(places.first?.radiusMeters == 180)
+    }
+
+    @Test
+    func savePlaceTapped_withoutSelectedLocationShowsValidationMessage() async {
+        let context = makeInMemoryContext()
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                placeDraftName: "Home"
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.savePlaceTapped) {
+            $0.placeStatusMessage = "Choose a location on the map first."
+        }
     }
 
     @Test

@@ -32,10 +32,12 @@ struct SettingsFeature {
         var savedPlaces: [RoutinePlaceSummary] = []
         var placePendingDeletion: RoutinePlaceSummary?
         var placeDraftName: String = ""
+        var placeDraftCoordinate: LocationCoordinate?
         var placeDraftRadiusMeters: Double = 150
         var placeStatusMessage: String = ""
         var isPlaceOperationInProgress: Bool = false
         var locationAuthorizationStatus: LocationAuthorizationStatus = .notDetermined
+        var lastKnownLocationCoordinate: LocationCoordinate?
     }
 
     enum Action: Equatable {
@@ -56,8 +58,9 @@ struct SettingsFeature {
         case placesLoaded([RoutinePlaceSummary])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
+        case placeDraftCoordinateChanged(LocationCoordinate?)
         case placeDraftRadiusChanged(Double)
-        case saveCurrentLocationAsPlaceTapped
+        case savePlaceTapped
         case deletePlaceTapped(UUID)
         case deletePlaceConfirmed
         case placeOperationFinished(success: Bool, message: String)
@@ -283,20 +286,34 @@ struct SettingsFeature {
 
             case let .locationSnapshotUpdated(snapshot):
                 state.locationAuthorizationStatus = snapshot.authorizationStatus
+                if let coordinate = snapshot.coordinate {
+                    state.lastKnownLocationCoordinate = coordinate
+                }
                 return .none
 
             case let .placeDraftNameChanged(name):
                 state.placeDraftName = name
+                state.placeStatusMessage = ""
+                return .none
+
+            case let .placeDraftCoordinateChanged(coordinate):
+                state.placeDraftCoordinate = coordinate
+                state.placeStatusMessage = ""
                 return .none
 
             case let .placeDraftRadiusChanged(radius):
                 state.placeDraftRadiusMeters = min(max(radius, 25), 2_000)
+                state.placeStatusMessage = ""
                 return .none
 
-            case .saveCurrentLocationAsPlaceTapped:
+            case .savePlaceTapped:
                 let cleanedName = RoutinePlace.cleanedName(state.placeDraftName)
                 guard let cleanedName else {
                     state.placeStatusMessage = "Enter a place name first."
+                    return .none
+                }
+                guard let coordinate = state.placeDraftCoordinate else {
+                    state.placeStatusMessage = "Choose a location on the map first."
                     return .none
                 }
                 guard !state.isPlaceOperationInProgress else {
@@ -308,19 +325,6 @@ struct SettingsFeature {
                 let radiusMeters = state.placeDraftRadiusMeters
 
                 return .run { @MainActor send in
-                    let snapshot = await self.locationClient.snapshot(true)
-                    send(.locationSnapshotUpdated(snapshot))
-
-                    guard let coordinate = snapshot.coordinate else {
-                        send(
-                            .placeOperationFinished(
-                                success: false,
-                                message: self.placeUnavailableMessage(for: snapshot.authorizationStatus)
-                            )
-                        )
-                        return
-                    }
-
                     do {
                         let context = self.modelContext()
                         if try self.hasDuplicatePlaceName(cleanedName, in: context) {
@@ -426,6 +430,7 @@ struct SettingsFeature {
                 state.placeStatusMessage = message
                 if success {
                     state.placeDraftName = ""
+                    state.placeDraftCoordinate = nil
                 }
                 return .none
 
@@ -590,19 +595,6 @@ struct SettingsFeature {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         return places.contains { place in
             RoutinePlace.normalizedName(place.name) == normalizedName
-        }
-    }
-
-    private func placeUnavailableMessage(for authorizationStatus: LocationAuthorizationStatus) -> String {
-        switch authorizationStatus {
-        case .authorizedAlways, .authorizedWhenInUse:
-            return "Current location is unavailable right now. Try again in a moment."
-        case .notDetermined:
-            return "Allow location access to save places."
-        case .disabled:
-            return "Location services are disabled on this device."
-        case .restricted, .denied:
-            return "Enable location access in System Settings to save places."
         }
     }
 

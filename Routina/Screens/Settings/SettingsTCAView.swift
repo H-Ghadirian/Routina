@@ -1,9 +1,11 @@
 import Combine
 import ComposableArchitecture
+import MapKit
 import SwiftUI
 
 struct SettingsTCAView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var isPlacePickerPresented = false
 
     var body: some View {
         WithPerceptionTracking {
@@ -33,6 +35,19 @@ struct SettingsTCAView: View {
                 }
             } message: {
                 Text(deletePlaceConfirmationMessage)
+            }
+            .sheet(isPresented: $isPlacePickerPresented) {
+                PlaceLocationPickerSheet(
+                    initialCoordinate: store.placeDraftCoordinate,
+                    initialRadiusMeters: store.placeDraftRadiusMeters,
+                    fallbackCoordinate: store.placeDraftCoordinate ?? store.lastKnownLocationCoordinate
+                ) { coordinate, radiusMeters in
+                    store.send(.placeDraftCoordinateChanged(coordinate))
+                    store.send(.placeDraftRadiusChanged(radiusMeters))
+                    isPlacePickerPresented = false
+                } onCancel: {
+                    isPlacePickerPresented = false
+                }
             }
             .onAppear {
                 store.send(.onAppear)
@@ -70,13 +85,6 @@ struct SettingsTCAView: View {
         Binding(
             get: { store.placeDraftName },
             set: { store.send(.placeDraftNameChanged($0)) }
-        )
-    }
-
-    private var placeDraftRadiusBinding: Binding<Double> {
-        Binding(
-            get: { store.placeDraftRadiusMeters },
-            set: { store.send(.placeDraftRadiusChanged($0)) }
         )
     }
 
@@ -133,6 +141,21 @@ struct SettingsTCAView: View {
         }
 
         return "Delete \(place.name)? This cannot be undone, and \(linkedRoutinesText)."
+    }
+
+    private var placeSelectionButtonTitle: String {
+        store.placeDraftCoordinate == nil ? "Choose Location on Map" : "Edit Location on Map"
+    }
+
+    private var placeDraftSelectionSummary: String {
+        guard let coordinate = store.placeDraftCoordinate else {
+            if store.lastKnownLocationCoordinate != nil {
+                return "No location selected yet. The map will open near your current location."
+            }
+            return "No location selected yet. Open the map and tap where this place should be centered."
+        }
+
+        return "Selected center: \(formattedCoordinate(coordinate)) • \(Int(store.placeDraftRadiusMeters)) m radius"
     }
 
     @ViewBuilder
@@ -206,21 +229,27 @@ struct SettingsTCAView: View {
         Section(header: Text("Places")) {
             TextField("Place name", text: placeDraftNameBinding)
 
-            Stepper(value: placeDraftRadiusBinding, in: 25...2_000, step: 25) {
-                Text("Radius: \(Int(store.placeDraftRadiusMeters)) m")
+            Button {
+                isPlacePickerPresented = true
+            } label: {
+                Label(placeSelectionButtonTitle, systemImage: "map")
             }
 
+            Text(placeDraftSelectionSummary)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+
             Button {
-                store.send(.saveCurrentLocationAsPlaceTapped)
+                store.send(.savePlaceTapped)
             } label: {
                 HStack {
                     if store.isPlaceOperationInProgress {
                         ProgressView()
                     } else {
-                        Image(systemName: "location.fill")
+                        Image(systemName: "mappin.and.ellipse")
                             .foregroundColor(.blue)
                     }
-                    Text("Save Current Location")
+                    Text("Save Place")
                 }
             }
             .disabled(store.isPlaceOperationInProgress)
@@ -392,14 +421,20 @@ struct SettingsTCAView: View {
     private var placeLocationHelpText: String {
         switch store.locationAuthorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
-            return "Save your current location as a reusable place. Place-linked routines stay visible whenever location is unavailable."
+            return "Choose a point on the map and adjust the radius. Routina will show place-based routines when you are inside that circle."
         case .notDetermined:
-            return "You’ll be asked for location access when you save a place."
+            return "Choose a point on the map and adjust the radius. Allow location access later so Routina can tell when you are inside the saved circle."
         case .disabled:
-            return "Location services are disabled on this device."
+            return "Location services are disabled on this device. You can still save places, but Routina will not know when you are inside them."
         case .restricted, .denied:
-            return "Location access is off. Place-linked routines stay visible until you enable it."
+            return "Location access is off. You can still save places, but place-linked routines stay visible until you enable location again."
         }
+    }
+
+    private func formattedCoordinate(_ coordinate: LocationCoordinate) -> String {
+        let latitude = coordinate.latitude.formatted(.number.precision(.fractionLength(4)))
+        let longitude = coordinate.longitude.formatted(.number.precision(.fractionLength(4)))
+        return "\(latitude), \(longitude)"
     }
 
     private func placeSubtitle(for place: RoutinePlaceSummary) -> String {
@@ -458,21 +493,24 @@ struct SettingsTCAView: View {
                         TextField("Place name", text: placeDraftNameBinding)
                             .textFieldStyle(.roundedBorder)
 
-                        Stepper(value: placeDraftRadiusBinding, in: 25...2_000, step: 25) {
-                            Text("Radius: \(Int(store.placeDraftRadiusMeters)) m")
-                        }
-
                         HStack(spacing: 12) {
                             Button {
-                                store.send(.saveCurrentLocationAsPlaceTapped)
+                                isPlacePickerPresented = true
+                            } label: {
+                                Label(placeSelectionButtonTitle, systemImage: "map")
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button {
+                                store.send(.savePlaceTapped)
                             } label: {
                                 if store.isPlaceOperationInProgress {
                                     ProgressView()
                                 } else {
-                                    Label("Save Current Location", systemImage: "location.fill")
+                                    Label("Save Place", systemImage: "mappin.and.ellipse")
                                 }
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.borderedProminent)
                             .disabled(store.isPlaceOperationInProgress)
 
                             if store.locationAuthorizationStatus.needsSettingsChange {
@@ -486,6 +524,16 @@ struct SettingsTCAView: View {
                         Text(placeLocationHelpText)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+
+                        Text(placeDraftSelectionSummary)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        if !store.placeStatusMessage.isEmpty {
+                            Text(store.placeStatusMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
 
                         if store.savedPlaces.isEmpty {
                             Text("No places saved yet.")
@@ -766,4 +814,188 @@ struct SettingsTCAView: View {
         .buttonStyle(.plain)
     }
 #endif
+}
+
+private struct PlaceLocationPickerSheet: View {
+    let fallbackCoordinate: LocationCoordinate?
+    let onUseLocation: (LocationCoordinate, Double) -> Void
+    let onCancel: () -> Void
+
+    @State private var selectedCoordinate: LocationCoordinate?
+    @State private var draftRadiusMeters: Double
+    @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var didInitializeCamera = false
+
+    init(
+        initialCoordinate: LocationCoordinate?,
+        initialRadiusMeters: Double,
+        fallbackCoordinate: LocationCoordinate?,
+        onUseLocation: @escaping (LocationCoordinate, Double) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.fallbackCoordinate = fallbackCoordinate
+        self.onUseLocation = onUseLocation
+        self.onCancel = onCancel
+        _selectedCoordinate = State(initialValue: initialCoordinate)
+        _draftRadiusMeters = State(initialValue: min(max(initialRadiusMeters, 25), 2_000))
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Tap the map to place the center point.")
+                        .font(.headline)
+                    Text("Adjust the radius below. The highlighted circle shows when the place becomes active.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                MapReader { proxy in
+                    Map(position: $cameraPosition) {
+                        if let selectedCoordinate {
+                            Marker("Selected Place", coordinate: selectedCoordinate.clLocationCoordinate2D)
+                            MapCircle(
+                                center: selectedCoordinate.clLocationCoordinate2D,
+                                radius: draftRadiusMeters
+                            )
+                            .foregroundStyle(Color.accentColor.opacity(0.18))
+                        }
+                    }
+                    .mapStyle(.standard)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.secondary.opacity(0.22), lineWidth: 1)
+                    )
+                    .overlay(alignment: .topLeading) {
+                        Text(selectedCoordinate == nil ? "Tap to choose a location" : "Tap anywhere to move the center")
+                            .font(.footnote.weight(.medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .padding(16)
+                    }
+                    .simultaneousGesture(
+                        SpatialTapGesture()
+                            .onEnded { value in
+                                guard let coordinate = proxy.convert(value.location, from: .local) else {
+                                    return
+                                }
+
+                                let location = LocationCoordinate(
+                                    latitude: coordinate.latitude,
+                                    longitude: coordinate.longitude
+                                )
+                                selectedCoordinate = location
+                                focusCamera(on: location)
+                            }
+                    )
+                }
+                .frame(minHeight: 360)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Radius")
+                            .font(.headline)
+                        Spacer()
+                        Text("\(Int(draftRadiusMeters)) m")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Slider(value: $draftRadiusMeters, in: 25...2_000, step: 25)
+
+                    if let selectedCoordinate {
+                        Text("Center: \(selectedCoordinate.formattedForPlaceSelection)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else if let fallbackCoordinate {
+                        Text("Map is centered near \(fallbackCoordinate.formattedForPlaceSelection).")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("No center selected yet.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(16)
+            .navigationTitle("Choose Place")
+#if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+#endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Use This Location") {
+                        guard let selectedCoordinate else {
+                            return
+                        }
+                        onUseLocation(selectedCoordinate, draftRadiusMeters)
+                    }
+                    .disabled(selectedCoordinate == nil)
+                }
+            }
+        }
+        .onAppear {
+            guard !didInitializeCamera else { return }
+            didInitializeCamera = true
+
+            if let selectedCoordinate {
+                focusCamera(on: selectedCoordinate)
+            } else if let fallbackCoordinate {
+                cameraPosition = .region(
+                    MKCoordinateRegion(
+                        center: fallbackCoordinate.clLocationCoordinate2D,
+                        latitudinalMeters: 2_000,
+                        longitudinalMeters: 2_000
+                    )
+                )
+            } else {
+                cameraPosition = .region(
+                    MKCoordinateRegion(
+                        center: CLLocationCoordinate2D(latitude: 20, longitude: 0),
+                        latitudinalMeters: 20_000_000,
+                        longitudinalMeters: 20_000_000
+                    )
+                )
+            }
+        }
+        .onChange(of: draftRadiusMeters) { _, _ in
+            guard let selectedCoordinate else { return }
+            focusCamera(on: selectedCoordinate)
+        }
+#if os(macOS)
+        .frame(minWidth: 680, minHeight: 620)
+#endif
+    }
+
+    private func focusCamera(on coordinate: LocationCoordinate) {
+        cameraPosition = .region(
+            MKCoordinateRegion(
+                center: coordinate.clLocationCoordinate2D,
+                latitudinalMeters: max(draftRadiusMeters * 8, 500),
+                longitudinalMeters: max(draftRadiusMeters * 8, 500)
+            )
+        )
+    }
+}
+
+private extension LocationCoordinate {
+    var clLocationCoordinate2D: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+
+    var formattedForPlaceSelection: String {
+        let latitude = latitude.formatted(.number.precision(.fractionLength(4)))
+        let longitude = longitude.formatted(.number.precision(.fractionLength(4)))
+        return "\(latitude), \(longitude)"
+    }
 }
