@@ -411,6 +411,7 @@ extension HomeTCAView {
                     hideUnavailableRoutines: hideUnavailableRoutinesBinding,
                     showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
                     currentLocation: store.locationSnapshot.coordinate,
+                    taskListMode: store.taskListMode,
                     manualPlaceFilterDescription: manualPlaceFilterDescription,
                     locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
                     onManagePlaces: { openSettingsPlacesInSidebar() }

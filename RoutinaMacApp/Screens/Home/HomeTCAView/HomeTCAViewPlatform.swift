@@ -218,10 +218,15 @@ extension HomeTCAView {
     }
 
     var macPlaceFilterOptions: [MacPlaceFilterOption] {
-        let linkedRoutineCounts = store.routineTasks.reduce(into: [UUID: Int]()) { partialResult, task in
-            guard let placeID = task.placeID else { return }
-            partialResult[placeID, default: 0] += 1
-        }
+        let countableDisplays = (
+            store.routineDisplays
+            + store.awayRoutineDisplays
+            + store.archivedRoutineDisplays
+        )
+        let linkedRoutineCounts = HomeFeature.placeLinkedCounts(
+            from: countableDisplays,
+            taskListMode: store.taskListMode
+        )
 
         return sortedRoutinePlaces.map { place in
             let linkedRoutineCount = linkedRoutineCounts[place.id, default: 0]
@@ -241,8 +246,20 @@ extension HomeTCAView {
             return MacPlaceFilterOption(
                 place: place,
                 linkedRoutineCount: linkedRoutineCount,
+                linkedItemText: placeFilterCountText(linkedRoutineCount),
                 status: status
             )
+        }
+    }
+
+    func placeFilterCountText(_ count: Int) -> String {
+        switch store.taskListMode {
+        case .all:
+            return count == 1 ? "1 task" : "\(count) tasks"
+        case .routines:
+            return count == 1 ? "1 routine" : "\(count) routines"
+        case .todos:
+            return count == 1 ? "1 todo" : "\(count) todos"
         }
     }
 

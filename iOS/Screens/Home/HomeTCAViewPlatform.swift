@@ -208,7 +208,7 @@ extension HomeTCAView {
                 }
 
                 Picker("Place Filter", selection: manualPlaceFilterBinding) {
-                    Text("All routines").tag(Optional<UUID>.none)
+                    Text(placeFilterAllTitle).tag(Optional<UUID>.none)
                     ForEach(sortedRoutinePlaces) { place in
                         Text(place.displayName).tag(Optional(place.id))
                     }
@@ -259,7 +259,7 @@ extension HomeTCAView {
         NavigationStack {
             List {
                 Section("Status") {
-                    Picker("Show routines", selection: Binding(
+                    Picker("Show \(placeFilterPluralNoun)", selection: Binding(
                         get: { store.selectedFilter },
                         set: { store.send(.selectedFilterChanged($0)) }
                     )) {
@@ -353,8 +353,8 @@ extension HomeTCAView {
 
                 Section("Place") {
                     if hasSavedPlaces {
-                        Picker("Show routines", selection: manualPlaceFilterBinding) {
-                            Text("All routines").tag(Optional<UUID>.none)
+                        Picker("Show \(placeFilterPluralNoun)", selection: manualPlaceFilterBinding) {
+                            Text(placeFilterAllTitle).tag(Optional<UUID>.none)
                             ForEach(sortedRoutinePlaces) { place in
                                 Text(place.displayName).tag(Optional(place.id))
                             }
@@ -366,7 +366,7 @@ extension HomeTCAView {
                     }
 
                     if hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized {
-                        Toggle("Hide unavailable routines", isOn: hideUnavailableRoutinesBinding)
+                        Toggle("Hide unavailable \(placeFilterPluralNoun)", isOn: hideUnavailableRoutinesBinding)
                     }
 
                     Text(placeFilterSectionDescription)

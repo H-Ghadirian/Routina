@@ -353,16 +353,38 @@ struct HomeTCAView: View {
         guard let placeID = store.selectedManualPlaceFilterID,
               let place = store.routinePlaces.first(where: { $0.id == placeID })
         else {
-            return "Choose a saved place to show only routines linked to that place."
+            return "Choose a saved place to show only \(placeFilterPluralNoun) linked to that place."
         }
-        return "Showing only routines linked to \(place.displayName)."
+        return "Showing only \(placeFilterPluralNoun) linked to \(place.displayName)."
     }
 
     var placeFilterSectionDescription: String {
         if hasSavedPlaces {
             return manualPlaceFilterDescription
         }
-        return "Save a place in Settings, then link it to a routine to filter by place here."
+        return "Save a place in Settings, then link it to a task to filter by place here."
+    }
+
+    var placeFilterPluralNoun: String {
+        switch store.taskListMode {
+        case .all:
+            return "tasks"
+        case .routines:
+            return "routines"
+        case .todos:
+            return "todos"
+        }
+    }
+
+    var placeFilterAllTitle: String {
+        switch store.taskListMode {
+        case .all:
+            return "All tasks"
+        case .routines:
+            return "All routines"
+        case .todos:
+            return "All todos"
+        }
     }
 
     var selectedImportanceUrgencyFilterLabel: String? {

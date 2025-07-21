@@ -172,4 +172,25 @@ extension HomeFeature {
     func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {
         HomeTaskSupport.makeDoneStats(tasks: tasks, logs: logs)
     }
+
+    static func placeLinkedCounts(
+        from displays: [RoutineDisplay],
+        taskListMode: TaskListMode
+    ) -> [UUID: Int] {
+        displays
+            .filter { display in
+                switch taskListMode {
+                case .all:
+                    return true
+                case .routines:
+                    return !display.isOneOffTask
+                case .todos:
+                    return display.isOneOffTask
+                }
+            }
+            .reduce(into: [UUID: Int]()) { partialResult, display in
+                guard let placeID = display.placeID else { return }
+                partialResult[placeID, default: 0] += 1
+            }
+    }
 }

@@ -2141,6 +2141,22 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func placeLinkedCounts_respectsTaskListMode() {
+        let homeID = UUID()
+        let officeID = UUID()
+        let displays = [
+            makeDisplay(taskID: UUID(), name: "Laundry", emoji: "🧺", placeID: homeID, interval: 7, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Buy soap", emoji: "🧼", placeID: homeID, interval: 1, scheduleMode: .oneOff, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Plan sprint", emoji: "🗓️", placeID: officeID, interval: 1, scheduleMode: .oneOff, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", interval: 1, lastDone: nil, isDoneToday: false)
+        ]
+
+        #expect(HomeFeature.placeLinkedCounts(from: displays, taskListMode: .all) == [homeID: 2, officeID: 1])
+        #expect(HomeFeature.placeLinkedCounts(from: displays, taskListMode: .routines) == [homeID: 1])
+        #expect(HomeFeature.placeLinkedCounts(from: displays, taskListMode: .todos) == [homeID: 1, officeID: 1])
+    }
+
+    @Test
     func addRoutineSheetCancel_closesSheet() async {
         let context = makeInMemoryContext()
         let initialState = HomeFeature.State(

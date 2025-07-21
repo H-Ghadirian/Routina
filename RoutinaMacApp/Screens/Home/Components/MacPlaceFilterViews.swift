@@ -10,6 +10,7 @@ struct MacPlaceFilterOption: Equatable, Identifiable {
 
     let place: RoutinePlace
     let linkedRoutineCount: Int
+    let linkedItemText: String
     let status: Status
 
     var id: UUID { place.id }
@@ -20,8 +21,7 @@ struct MacPlaceFilterOption: Equatable, Identifiable {
     }
 
     var subtitle: String {
-        let routineText = linkedRoutineCount == 1 ? "1 routine" : "\(linkedRoutineCount) routines"
-        return "\(routineText) • \(Int(place.radiusMeters)) m radius"
+        "\(linkedItemText) • \(Int(place.radiusMeters)) m radius"
     }
 }
 
@@ -31,6 +31,7 @@ struct MacPlaceFilterDetailView: View {
     @Binding var hideUnavailableRoutines: Bool
     let showAvailabilityToggle: Bool
     let currentLocation: LocationCoordinate?
+    let taskListMode: HomeFeature.TaskListMode
     let manualPlaceFilterDescription: String
     let locationStatusText: String?
     let onManagePlaces: () -> Void
@@ -42,7 +43,7 @@ struct MacPlaceFilterDetailView: View {
                     Text("Place Filter")
                         .font(.largeTitle.weight(.semibold))
 
-                    Text("Choose a saved place from the list and filter the routine sidebar by that location.")
+                    Text("Choose a saved place from the list and filter the current sidebar by that location.")
                         .font(.body)
                         .foregroundStyle(.secondary)
                 }
@@ -53,6 +54,7 @@ struct MacPlaceFilterDetailView: View {
                     hideUnavailableRoutines: $hideUnavailableRoutines,
                     showAvailabilityToggle: showAvailabilityToggle,
                     currentLocation: currentLocation,
+                    taskListMode: taskListMode,
                     manualPlaceFilterDescription: manualPlaceFilterDescription,
                     locationStatusText: locationStatusText,
                     onManagePlaces: onManagePlaces
@@ -72,6 +74,7 @@ struct MacPlaceFilterPanel: View {
     @Binding var hideUnavailableRoutines: Bool
     let showAvailabilityToggle: Bool
     let currentLocation: LocationCoordinate?
+    let taskListMode: HomeFeature.TaskListMode
     let manualPlaceFilterDescription: String
     let locationStatusText: String?
     let onManagePlaces: () -> Void
@@ -84,6 +87,7 @@ struct MacPlaceFilterPanel: View {
         hideUnavailableRoutines: Binding<Bool>,
         showAvailabilityToggle: Bool,
         currentLocation: LocationCoordinate?,
+        taskListMode: HomeFeature.TaskListMode,
         manualPlaceFilterDescription: String,
         locationStatusText: String?,
         onManagePlaces: @escaping () -> Void
@@ -93,6 +97,7 @@ struct MacPlaceFilterPanel: View {
         _hideUnavailableRoutines = hideUnavailableRoutines
         self.showAvailabilityToggle = showAvailabilityToggle
         self.currentLocation = currentLocation
+        self.taskListMode = taskListMode
         self.manualPlaceFilterDescription = manualPlaceFilterDescription
         self.locationStatusText = locationStatusText
         self.onManagePlaces = onManagePlaces
@@ -171,7 +176,7 @@ struct MacPlaceFilterPanel: View {
     @ViewBuilder
     private var panelFooter: some View {
         if showAvailabilityToggle {
-            Toggle("Hide unavailable routines", isOn: $hideUnavailableRoutines)
+            Toggle("Hide unavailable \(allItemsPluralNoun)", isOn: $hideUnavailableRoutines)
                 .toggleStyle(.switch)
                 .font(.caption)
         }
@@ -225,12 +230,12 @@ struct MacPlaceFilterPanel: View {
                     )
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("All routines")
+                    Text(allItemsTitle)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
 
-                    Text("Show every routine without filtering by place.")
+                    Text(allItemsDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -244,6 +249,39 @@ struct MacPlaceFilterPanel: View {
             .background(rowBackground(isSelected: selectedPlaceID == nil))
         }
         .buttonStyle(.plain)
+    }
+
+    private var allItemsTitle: String {
+        switch taskListMode {
+        case .all:
+            return "All tasks"
+        case .routines:
+            return "All routines"
+        case .todos:
+            return "All todos"
+        }
+    }
+
+    private var allItemsDescription: String {
+        switch taskListMode {
+        case .all:
+            return "Show every task without filtering by place."
+        case .routines:
+            return "Show every routine without filtering by place."
+        case .todos:
+            return "Show every todo without filtering by place."
+        }
+    }
+
+    private var allItemsPluralNoun: String {
+        switch taskListMode {
+        case .all:
+            return "tasks"
+        case .routines:
+            return "routines"
+        case .todos:
+            return "todos"
+        }
     }
 
     private var mapPreview: some View {
