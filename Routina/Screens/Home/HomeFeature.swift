@@ -75,7 +75,7 @@ struct HomeFeature {
                 default:
                     return .none
                 }
-            case let .deleteTask(offsetscho):
+            case let .deleteTask(offsets):
                 // 1. Grab the objects that correspond to the tapped rows
                 let tasksToDelete = offsets.map { state.routineTasks[$0] }
 
