@@ -44,9 +44,12 @@ struct SettingsFeature {
         case setTagRenameSheet(Bool)
         case placesLoaded([RoutinePlaceSummary])
         case tagsLoaded([RoutineTagSummary])
+        case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
         case tagRenameDraftChanged(String)
+        case relatedTagDraftChanged(tagName: String, draft: String)
+        case saveRelatedTagsTapped(String)
         case placeDraftCoordinateChanged(LocationCoordinate?)
         case placeDraftRadiusChanged(Double)
         case savePlaceTapped
@@ -426,6 +429,7 @@ struct SettingsFeature {
                     send(.tagsLoaded(SettingsRefreshExecution.loadTagSummaries(
                         modelContext: self.modelContext
                     )))
+                    send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
                 }
 
             case .contactUsTapped:
@@ -506,6 +510,10 @@ struct SettingsFeature {
                 SettingsTagEditor.loadedTags(tags, state: &state.tags)
                 return .none
 
+            case let .relatedTagRulesLoaded(rules):
+                SettingsTagEditor.loadedRelatedTagRules(rules, state: &state.tags)
+                return .none
+
             case let .locationSnapshotUpdated(snapshot):
                 SettingsPlaceEditor.applyLocationSnapshot(snapshot, state: &state.places)
                 return .none
@@ -516,6 +524,19 @@ struct SettingsFeature {
 
             case let .tagRenameDraftChanged(name):
                 SettingsTagEditor.updateRenameDraft(name, state: &state.tags)
+                return .none
+
+            case let .relatedTagDraftChanged(tagName, draft):
+                SettingsTagEditor.updateRelatedTagDraft(
+                    tagName: tagName,
+                    draft: draft,
+                    state: &state.tags
+                )
+                return .none
+
+            case let .saveRelatedTagsTapped(tagName):
+                let rules = SettingsTagEditor.saveRelatedTags(for: tagName, state: &state.tags)
+                appSettingsClient.setRelatedTagRules(rules)
                 return .none
 
             case let .placeDraftCoordinateChanged(coordinate):
@@ -546,6 +567,13 @@ struct SettingsFeature {
                 guard let request = SettingsTagEditor.prepareRename(state: &state.tags) else {
                     return .none
                 }
+                let updatedRules = RoutineTagRelations.replacing(
+                    request.originalTagName,
+                    with: request.cleanedName,
+                    in: appSettingsClient.relatedTagRules()
+                )
+                appSettingsClient.setRelatedTagRules(updatedRules)
+                SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state.tags)
 
                 return SettingsTagExecution.rename(
                     request,
@@ -577,6 +605,12 @@ struct SettingsFeature {
                 guard let request = SettingsTagEditor.prepareDeleteConfirmation(state: &state.tags) else {
                     return .none
                 }
+                let updatedRules = RoutineTagRelations.removing(
+                    request.tagName,
+                    from: appSettingsClient.relatedTagRules()
+                )
+                appSettingsClient.setRelatedTagRules(updatedRules)
+                SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state.tags)
 
                 return SettingsTagExecution.delete(
                     request,
@@ -659,6 +693,7 @@ struct SettingsFeature {
             send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
             send(.placesLoaded(result.placeSummaries))
             send(.tagsLoaded(result.tagSummaries))
+            send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
             send(.locationSnapshotUpdated(result.locationSnapshot))
 
             await SettingsRefreshExecution.reconcileNotificationsIfNeeded(

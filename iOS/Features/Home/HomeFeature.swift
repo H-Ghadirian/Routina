@@ -492,7 +492,8 @@ struct HomeFeature {
                         tasks: state.routineTasks,
                         places: state.routinePlaces,
                         doneStats: state.doneStats,
-                        tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode()
+                        tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
+                        relatedTagRules: appSettingsClient.relatedTagRules()
                     )
                 } else {
                     state.presentation.addRoutineState = nil
@@ -944,6 +945,7 @@ struct HomeFeature {
                     places: state.routinePlaces,
                     doneStats: state.doneStats,
                     tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
+                    relatedTagRules: appSettingsClient.relatedTagRules(),
                     preselectedRelationships: [
                         RoutineTaskRelationship(targetTaskID: currentTaskID, kind: kind.inverse)
                     ],

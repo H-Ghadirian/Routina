@@ -609,6 +609,7 @@ struct TaskFormContent: View {
             VStack(alignment: .leading, spacing: 10) {
                 tagComposer
                 tagsContent
+                relatedTagSuggestionsContent
                 availableTagSuggestionsContent
                 manageTagsButton
             }
@@ -822,14 +823,33 @@ struct TaskFormContent: View {
 
     @ViewBuilder
     private var tagComposer: some View {
-        HStack(spacing: 10) {
-            TextField("health, focus, morning", text: model.tagDraft)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit { model.onAddTag() }
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                MacTagAutocompleteTextField(
+                    placeholder: "health, focus, morning",
+                    text: model.tagDraft,
+                    suggestion: model.tagAutocompleteSuggestion,
+                    onSubmit: model.onAddTag,
+                    onAcceptSuggestion: model.acceptTagAutocompleteSuggestion
+                )
+                .frame(height: 28)
 
-            Button("Add") { model.onAddTag() }
-                .buttonStyle(.bordered)
-                .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
+                Button("Add") { model.onAddTag() }
+                    .buttonStyle(.bordered)
+                    .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
+            }
+
+            if let suggestion = model.tagAutocompleteSuggestion {
+                Button {
+                    model.acceptTagAutocompleteSuggestion()
+                } label: {
+                    Label("Complete #\(suggestion)", systemImage: "arrow.right.to.line.compact")
+                }
+                .buttonStyle(.plain)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .help("Press Tab to complete")
+            }
         }
     }
 
@@ -859,6 +879,44 @@ struct TaskFormContent: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private var relatedTagSuggestionsContent: some View {
+        let suggestions = model.suggestedRelatedTags
+        if !suggestions.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Suggested related tags")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+
+                TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+                    ForEach(suggestions, id: \.self) { tag in
+                        Button { model.onToggleTagSelection(tag) } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.caption)
+                                Text("#\(tag)")
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                            }
+                            .foregroundStyle(.orange)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.orange.opacity(0.10), in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .stroke(Color.orange.opacity(0.45), lineWidth: 1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                        .accessibilityLabel("Add suggested related tag \(tag)")
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
     }
 
@@ -1453,6 +1511,72 @@ struct TaskFormContent: View {
         defer { url.stopAccessingSecurityScopedResource() }
         guard let data = try? Data(contentsOf: url), data.count <= maxSize else { return }
         model.onAttachmentPicked(data, url.lastPathComponent)
+    }
+}
+
+private struct MacTagAutocompleteTextField: NSViewRepresentable {
+    let placeholder: String
+    let text: Binding<String>
+    let suggestion: String?
+    let onSubmit: () -> Void
+    let onAcceptSuggestion: () -> Void
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        var parent: MacTagAutocompleteTextField
+
+        init(parent: MacTagAutocompleteTextField) {
+            self.parent = parent
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            guard let textField = notification.object as? NSTextField else { return }
+            if parent.text.wrappedValue != textField.stringValue {
+                parent.text.wrappedValue = textField.stringValue
+            }
+        }
+
+        func control(
+            _ control: NSControl,
+            textView: NSTextView,
+            doCommandBy commandSelector: Selector
+        ) -> Bool {
+            switch commandSelector {
+            case #selector(NSResponder.insertTab(_:)):
+                guard parent.suggestion != nil else { return false }
+                parent.onAcceptSuggestion()
+                return true
+            case #selector(NSResponder.insertNewline(_:)):
+                parent.onSubmit()
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeNSView(context: Context) -> NSTextField {
+        let textField = NSTextField(string: text.wrappedValue)
+        textField.placeholderString = placeholder
+        textField.isBordered = true
+        textField.isBezeled = true
+        textField.bezelStyle = .roundedBezel
+        textField.focusRingType = .default
+        textField.delegate = context.coordinator
+        return textField
+    }
+
+    func updateNSView(_ nsView: NSTextField, context: Context) {
+        context.coordinator.parent = self
+
+        if nsView.stringValue != text.wrappedValue {
+            nsView.stringValue = text.wrappedValue
+        }
+
+        nsView.placeholderString = placeholder
     }
 }
 

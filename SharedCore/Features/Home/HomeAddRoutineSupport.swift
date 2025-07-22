@@ -6,10 +6,12 @@ enum HomeAddRoutineSupport {
         places: [RoutinePlace],
         doneStats: HomeDoneStats,
         tagCounterDisplayMode: TagCounterDisplayMode,
+        relatedTagRules: [RoutineRelatedTagRule],
         preselectedRelationships: [RoutineTaskRelationship] = [],
         excludingRelationshipTaskID: UUID? = nil
     ) -> AddRoutineFeature.State {
-        AddRoutineFeature.State(
+        let learnedRules = RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
+        return AddRoutineFeature.State(
             organization: AddRoutineOrganizationState(
                 relationships: preselectedRelationships,
                 availableTags: HomeTaskSupport.availableTags(from: tasks),
@@ -17,6 +19,7 @@ enum HomeAddRoutineSupport {
                     from: tasks,
                     countsByTaskID: doneStats.countsByTaskID
                 ),
+                relatedTagRules: RoutineTagRelations.sanitized(relatedTagRules + learnedRules),
                 tagCounterDisplayMode: tagCounterDisplayMode,
                 availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(
                     tasks,

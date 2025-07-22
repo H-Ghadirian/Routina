@@ -56,6 +56,7 @@ public enum UserDefaultStringValueKey: String {
     case selectedMacAppIcon
     case appSettingRoutineListSectioningMode
     case appSettingTagCounterDisplayMode
+    case appSettingRelatedTagRules
     case appSettingTemporaryViewState
     case macFormSectionOrder
 }
@@ -77,6 +78,8 @@ struct AppSettingsClient: Sendable {
     var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
     var tagCounterDisplayMode: @Sendable () -> TagCounterDisplayMode
     var setTagCounterDisplayMode: @Sendable (TagCounterDisplayMode) -> Void
+    var relatedTagRules: @Sendable () -> [RoutineRelatedTagRule]
+    var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
     var notificationReminderTime: @Sendable () -> Date
     var setNotificationReminderTime: @Sendable (Date) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
@@ -120,6 +123,28 @@ extension AppSettingsClient {
         },
         setTagCounterDisplayMode: { mode in
             SharedDefaults.app[.appSettingTagCounterDisplayMode] = mode.rawValue
+        },
+        relatedTagRules: {
+            guard let rawValue = SharedDefaults.app[.appSettingRelatedTagRules],
+                  let data = rawValue.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode([RoutineRelatedTagRule].self, from: data)
+            else {
+                return []
+            }
+            return RoutineTagRelations.sanitized(decoded)
+        },
+        setRelatedTagRules: { rules in
+            let sanitizedRules = RoutineTagRelations.sanitized(rules)
+            guard !sanitizedRules.isEmpty else {
+                SharedDefaults.app[.appSettingRelatedTagRules] = nil
+                return
+            }
+            guard let data = try? JSONEncoder().encode(sanitizedRules),
+                  let rawValue = String(data: data, encoding: .utf8)
+            else {
+                return
+            }
+            SharedDefaults.app[.appSettingRelatedTagRules] = rawValue
         },
         notificationReminderTime: {
             NotificationPreferences.reminderTimeDate()
@@ -170,6 +195,8 @@ extension AppSettingsClient {
         setRoutineListSectioningMode: { _ in },
         tagCounterDisplayMode: { .defaultValue },
         setTagCounterDisplayMode: { _ in },
+        relatedTagRules: { [] },
+        setRelatedTagRules: { _ in },
         notificationReminderTime: { Date() },
         setNotificationReminderTime: { _ in },
         selectedAppIcon: { .orange },

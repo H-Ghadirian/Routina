@@ -89,6 +89,8 @@ struct SettingsPlacesState: Equatable {
 
 struct SettingsTagsState: Equatable {
     var savedTags: [RoutineTagSummary] = []
+    var relatedTagRules: [RoutineRelatedTagRule] = []
+    var relatedTagDrafts: [String: String] = [:]
     var tagPendingDeletion: RoutineTagSummary?
     var tagPendingRename: RoutineTagSummary?
     var tagRenameDraft: String = ""

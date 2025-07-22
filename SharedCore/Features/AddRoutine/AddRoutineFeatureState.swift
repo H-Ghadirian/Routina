@@ -23,6 +23,7 @@ struct AddRoutineOrganizationState: Equatable {
     var relationships: [RoutineTaskRelationship] = []
     var availableTags: [String] = []
     var availableTagSummaries: [RoutineTagSummary] = []
+    var relatedTagRules: [RoutineRelatedTagRule] = []
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
     var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
     var tagDraft: String = ""

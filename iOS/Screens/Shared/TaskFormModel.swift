@@ -52,6 +52,7 @@ struct TaskFormModel {
     var routineTags: [String]
     var availableTags: [String]
     var availableTagSummaries: [RoutineTagSummary] = []
+    var relatedTagRules: [RoutineRelatedTagRule] = []
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
     var onAddTag: () -> Void
     var onRemoveTag: (String) -> Void
@@ -107,4 +108,30 @@ struct TaskFormModel {
     var pauseResumeTitle: String? = nil
     var pauseResumeDescription: String? = nil
     var pauseResumeTint: Color? = nil
+}
+
+extension TaskFormModel {
+    var suggestedRelatedTags: [String] {
+        RoutineTagRelations.relatedTags(
+            for: routineTags,
+            rules: relatedTagRules,
+            availableTags: availableTags
+        )
+    }
+
+    var tagAutocompleteSuggestion: String? {
+        RoutineTag.autocompleteSuggestion(
+            for: tagDraft.wrappedValue,
+            availableTags: availableTags,
+            selectedTags: routineTags
+        )
+    }
+
+    func acceptTagAutocompleteSuggestion() {
+        guard let suggestion = tagAutocompleteSuggestion else { return }
+        tagDraft.wrappedValue = RoutineTag.acceptingAutocompleteSuggestion(
+            suggestion,
+            in: tagDraft.wrappedValue
+        )
+    }
 }

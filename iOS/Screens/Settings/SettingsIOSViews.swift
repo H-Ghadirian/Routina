@@ -527,34 +527,55 @@ struct SettingsTagsDetailView: View {
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(store.tags.savedTags) { tag in
-                            HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(tag.name)
+                                        Text(tag.settingsSubtitle)
+                                            .font(.footnote)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Menu {
+                                        Button {
+                                            store.send(.renameTagTapped(tag.name))
+                                        } label: {
+                                            Label("Rename", systemImage: "pencil")
+                                        }
+
+                                        Button(role: .destructive) {
+                                            store.send(.deleteTagTapped(tag.name))
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    } label: {
+                                        Image(systemName: "ellipsis.circle")
+                                            .font(.title3)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .disabled(store.tags.isTagOperationInProgress)
+                                }
+
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(tag.name)
-                                    Text(tag.settingsSubtitle)
+                                    TextField("Related tags", text: relatedTagDraftBinding(for: tag.name))
+                                        .textInputAutocapitalization(.never)
+                                        .autocorrectionDisabled()
+                                        .disabled(store.tags.isTagOperationInProgress)
+
+                                    Button {
+                                        store.send(.saveRelatedTagsTapped(tag.name))
+                                    } label: {
+                                        Label("Save related tags", systemImage: "checkmark.circle")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .disabled(store.tags.isTagOperationInProgress)
+
+                                    Text("Separate related tags with commas.")
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                 }
-
-                                Spacer()
-
-                                Menu {
-                                    Button {
-                                        store.send(.renameTagTapped(tag.name))
-                                    } label: {
-                                        Label("Rename", systemImage: "pencil")
-                                    }
-
-                                    Button(role: .destructive) {
-                                        store.send(.deleteTagTapped(tag.name))
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                } label: {
-                                    Image(systemName: "ellipsis.circle")
-                                        .font(.title3)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .disabled(store.tags.isTagOperationInProgress)
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button {
@@ -615,6 +636,16 @@ struct SettingsTagsDetailView: View {
         Binding(
             get: { store.tags.isTagRenameSheetPresented },
             set: { store.send(.setTagRenameSheet($0)) }
+        )
+    }
+
+    private func relatedTagDraftBinding(for tagName: String) -> Binding<String> {
+        Binding(
+            get: {
+                guard let key = RoutineTag.normalized(tagName) else { return "" }
+                return store.tags.relatedTagDrafts[key] ?? ""
+            },
+            set: { store.send(.relatedTagDraftChanged(tagName: tagName, draft: $0)) }
         )
     }
 }

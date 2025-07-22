@@ -380,6 +380,11 @@ extension TaskDetailFeature {
             let tasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
             send(.availablePlacesLoaded(RoutinePlace.summaries(from: places, linkedTo: tasks)))
             send(.availableTagsLoaded(RoutineTag.allTags(from: tasks.map(\.tags))))
+            send(.relatedTagRulesLoaded(
+                RoutineTagRelations.sanitized(
+                    appSettingsClient.relatedTagRules() + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
+                )
+            ))
             send(.availableRelationshipTasksLoaded(RoutineTaskRelationshipCandidate.from(tasks, excluding: taskID)))
         }
     }

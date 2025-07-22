@@ -49,6 +49,7 @@ struct AddRoutineFeature: Reducer {
         case taskTypeChanged(RoutineTaskType)
         case availableTagsChanged([String])
         case availableTagSummariesChanged([RoutineTagSummary])
+        case relatedTagRulesChanged([RoutineRelatedTagRule])
         case availableRelationshipTasksChanged([RoutineTaskRelationshipCandidate])
         case tagDraftChanged(String)
         case addTagTapped
@@ -216,6 +217,13 @@ struct AddRoutineFeature: Reducer {
         case let .availableTagSummariesChanged(summaries):
             AddRoutineOrganizationEditor.setAvailableTagSummaries(
                 summaries,
+                organization: &state.organization
+            )
+            return .none
+
+        case let .relatedTagRulesChanged(rules):
+            AddRoutineOrganizationEditor.setRelatedTagRules(
+                rules,
                 organization: &state.organization
             )
             return .none

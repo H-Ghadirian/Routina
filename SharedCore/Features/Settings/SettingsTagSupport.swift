@@ -36,6 +36,7 @@ enum SettingsTagEditor {
         state: inout SettingsTagsState
     ) {
         state.savedTags = tags
+        syncRelatedTagDrafts(state: &state)
         if let pendingTag = state.tagPendingDeletion,
            let updatedTag = tagSummary(named: pendingTag.name, in: tags) {
             state.tagPendingDeletion = updatedTag
@@ -44,6 +45,47 @@ enum SettingsTagEditor {
            let updatedTag = tagSummary(named: pendingTag.name, in: tags) {
             state.tagPendingRename = updatedTag
         }
+    }
+
+    static func loadedRelatedTagRules(
+        _ rules: [RoutineRelatedTagRule],
+        state: inout SettingsTagsState
+    ) {
+        state.relatedTagRules = RoutineTagRelations.sanitized(rules)
+        syncRelatedTagDrafts(state: &state)
+    }
+
+    static func updateRelatedTagDraft(
+        tagName: String,
+        draft: String,
+        state: inout SettingsTagsState
+    ) {
+        guard let key = RoutineTag.normalized(tagName) else { return }
+        state.relatedTagDrafts[key] = draft
+        state.tagStatusMessage = ""
+    }
+
+    static func saveRelatedTags(
+        for tagName: String,
+        state: inout SettingsTagsState
+    ) -> [RoutineRelatedTagRule] {
+        guard let key = RoutineTag.normalized(tagName),
+              let cleanedTag = RoutineTag.cleaned(tagName) else {
+            return state.relatedTagRules
+        }
+
+        let relatedTags = RoutineTag.parseDraft(state.relatedTagDrafts[key] ?? "")
+        let withoutTag = state.relatedTagRules.filter {
+            RoutineTag.normalized($0.tag) != key
+        }
+        state.relatedTagRules = RoutineTagRelations.sanitized(
+            withoutTag + [RoutineRelatedTagRule(tag: cleanedTag, relatedTags: relatedTags)]
+        )
+        syncRelatedTagDrafts(state: &state)
+        state.tagStatusMessage = relatedTags.isEmpty
+            ? "Related tags cleared for #\(cleanedTag)."
+            : "Related tags saved for #\(cleanedTag)."
+        return state.relatedTagRules
     }
 
     static func updateRenameDraft(
@@ -139,5 +181,18 @@ enum SettingsTagEditor {
     ) -> RoutineTagSummary? {
         guard let normalizedTagName = RoutineTag.normalized(name) else { return nil }
         return tags.first { RoutineTag.normalized($0.name) == normalizedTagName }
+    }
+
+    private static func syncRelatedTagDrafts(state: inout SettingsTagsState) {
+        let rules = RoutineTagRelations.sanitized(state.relatedTagRules)
+        state.relatedTagRules = rules
+
+        var drafts: [String: String] = [:]
+        for tag in state.savedTags {
+            guard let key = RoutineTag.normalized(tag.name) else { continue }
+            let rule = rules.first { RoutineTag.normalized($0.tag) == key }
+            drafts[key] = rule.map { RoutineTag.serialize($0.relatedTags).replacingOccurrences(of: "\n", with: ", ") } ?? ""
+        }
+        state.relatedTagDrafts = drafts
     }
 }

@@ -137,6 +137,7 @@ extension AddRoutineTCAView {
             routineTags: store.organization.routineTags,
             availableTags: store.organization.availableTags,
             availableTagSummaries: store.organization.availableTagSummaries,
+            relatedTagRules: store.organization.relatedTagRules,
             tagCounterDisplayMode: store.organization.tagCounterDisplayMode,
             onAddTag: { store.send(.addTagTapped) },
             onRemoveTag: { store.send(.removeTag($0)) },

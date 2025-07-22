@@ -63,6 +63,7 @@ struct TaskDetailFeature: Reducer {
         var editChecklistItemDraftInterval: Int = 3
         var availablePlaces: [RoutinePlaceSummary] = []
         var availableTags: [String] = []
+        var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var editSelectedPlaceID: UUID?
         var editFrequency: EditFrequency = .day
@@ -174,6 +175,7 @@ struct TaskDetailFeature: Reducer {
         case editRemoveChecklistItem(UUID)
         case availablePlacesLoaded([RoutinePlaceSummary])
         case availableTagsLoaded([String])
+        case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
         case editSelectedPlaceChanged(UUID?)
         case editToggleTagSelection(String)
@@ -208,6 +210,7 @@ struct TaskDetailFeature: Reducer {
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
+    @Dependency(\.appSettingsClient) var appSettingsClient
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
@@ -675,6 +678,10 @@ struct TaskDetailFeature: Reducer {
 
         case let .availableTagsLoaded(tags):
             state.availableTags = RoutineTag.allTags(from: [tags])
+            return .none
+
+        case let .relatedTagRulesLoaded(rules):
+            state.relatedTagRules = RoutineTagRelations.sanitized(rules)
             return .none
 
         case let .availableRelationshipTasksLoaded(tasks):

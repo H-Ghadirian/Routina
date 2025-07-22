@@ -37,6 +37,18 @@ struct RoutineTagTests {
     }
 
     @Test
+    func autocompleteSuggestion_completesCurrentDraftToken() {
+        let suggestion = RoutineTag.autocompleteSuggestion(
+            for: "work, ho",
+            availableTags: ["Health", "Home", "Work"],
+            selectedTags: ["Work"]
+        )
+
+        #expect(suggestion == "Home")
+        #expect(RoutineTag.acceptingAutocompleteSuggestion("Home", in: "work, ho") == "work, Home")
+    }
+
+    @Test
     func allTags_deduplicatesAndSortsAcrossCollections() {
         let tags = RoutineTag.allTags(from: [["Health", "focus"], ["Focus", "Learning"], []])
         #expect(tags == ["focus", "Health", "Learning"])
@@ -61,5 +73,38 @@ struct RoutineTagTests {
             RoutineTagSummary(name: "Health", linkedRoutineCount: 1, doneCount: 0),
             RoutineTagSummary(name: "Learning", linkedRoutineCount: 1, doneCount: 3)
         ])
+    }
+
+    @Test
+    func relatedTags_prioritizesManualRulesAndSkipsSelectedTags() {
+        let rules = [
+            RoutineRelatedTagRule(tag: "Workout", relatedTags: ["Health", "Energy", "workout"]),
+            RoutineRelatedTagRule(tag: "Morning", relatedTags: ["Energy"])
+        ]
+
+        let suggestions = RoutineTagRelations.relatedTags(
+            for: ["workout"],
+            rules: rules,
+            availableTags: ["Energy", "Health", "Morning", "Workout"]
+        )
+
+        #expect(suggestions == ["Energy", "Health"])
+    }
+
+    @Test
+    func learnedRules_infersRelatedTagsFromCoOccurrence() {
+        let rules = RoutineTagRelations.learnedRules(from: [
+            ["Workout", "Health", "Energy"],
+            ["workout", "Health"],
+            ["Reading", "Focus"]
+        ])
+
+        let suggestions = RoutineTagRelations.relatedTags(
+            for: ["Workout"],
+            rules: rules,
+            availableTags: ["Energy", "Focus", "Health", "Reading", "Workout"]
+        )
+
+        #expect(suggestions == ["Energy", "Health"])
     }
 }

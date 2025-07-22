@@ -561,6 +561,16 @@ struct TaskFormContent: View {
                 Button("Add") { model.onAddTag() }
                     .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
             }
+            if let suggestion = model.tagAutocompleteSuggestion {
+                Button {
+                    model.acceptTagAutocompleteSuggestion()
+                } label: {
+                    Label("Complete #\(suggestion)", systemImage: "arrow.right.to.line.compact")
+                }
+                .font(.caption)
+                .keyboardShortcut(.tab, modifiers: [])
+            }
+            relatedTagSuggestionsContent
             availableTagSuggestionsContent
             manageTagsButton
             if model.routineTags.isEmpty {
@@ -836,6 +846,42 @@ struct TaskFormContent: View {
             isPlaceManagerPresented = true
         } label: {
             Label("Manage Places", systemImage: "map")
+        }
+    }
+
+    @ViewBuilder
+    private var relatedTagSuggestionsContent: some View {
+        let suggestions = model.suggestedRelatedTags
+        if !suggestions.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Suggested related tags")
+                    .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
+                    alignment: .leading,
+                    spacing: 8
+                ) {
+                    ForEach(suggestions, id: \.self) { tag in
+                        Button { model.onToggleTagSelection(tag) } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.caption)
+                                Text("#\(tag)").lineLimit(1)
+                            }
+                            .foregroundStyle(.orange)
+                            .padding(.horizontal, 10).padding(.vertical, 6)
+                            .background(Color.orange.opacity(0.10), in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .stroke(Color.orange.opacity(0.45), lineWidth: 1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Add suggested related tag \(tag)")
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
     }
 

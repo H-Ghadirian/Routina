@@ -19,6 +19,13 @@ enum AddRoutineOrganizationEditor {
         organization.availableTags = organization.availableTagSummaries.map(\.name)
     }
 
+    static func setRelatedTagRules(
+        _ rules: [RoutineRelatedTagRule],
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.relatedTagRules = RoutineTagRelations.sanitized(rules)
+    }
+
     static func setAvailableRelationshipTasks(
         _ tasks: [RoutineTaskRelationshipCandidate],
         organization: inout AddRoutineOrganizationState
@@ -99,6 +106,11 @@ enum AddRoutineOrganizationEditor {
                 in: organization.routineTags
             )
         }
+        organization.relatedTagRules = RoutineTagRelations.replacing(
+            oldName,
+            with: newName,
+            in: organization.relatedTagRules
+        )
     }
 
     static func deleteTag(
@@ -110,6 +122,7 @@ enum AddRoutineOrganizationEditor {
             RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
         }
         organization.routineTags = RoutineTag.removing(tag, from: organization.routineTags)
+        organization.relatedTagRules = RoutineTagRelations.removing(tag, from: organization.relatedTagRules)
     }
 
     private static func sortTagSummaries(

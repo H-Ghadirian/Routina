@@ -76,6 +76,7 @@ struct TaskDetailEditRoutineContent: View {
             ),
             routineTags: store.editRoutineTags,
             availableTags: store.availableTags,
+            relatedTagRules: store.relatedTagRules,
             onAddTag: { store.send(.editAddTagTapped) },
             onRemoveTag: { store.send(.editRemoveTag($0)) },
             onToggleTagSelection: { store.send(.editToggleTagSelection($0)) },

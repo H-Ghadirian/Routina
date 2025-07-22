@@ -62,6 +62,8 @@ struct SettingsFeatureDependencyTests {
                 setRoutineListSectioningMode: { _ in },
                 tagCounterDisplayMode: { .defaultValue },
                 setTagCounterDisplayMode: { _ in },
+                relatedTagRules: { [] },
+                setRelatedTagRules: { _ in },
                 notificationReminderTime: { reminderTime },
                 setNotificationReminderTime: { _ in },
                 selectedAppIcon: { .teal },

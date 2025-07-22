@@ -728,6 +728,21 @@ struct SettingsMacTagsDetailView: View {
                                         Text(tag.settingsSubtitle)
                                             .font(.footnote)
                                             .foregroundStyle(.secondary)
+                                        HStack(spacing: 8) {
+                                            TextField("Related tags", text: relatedTagDraftBinding(for: tag.name))
+                                                .textFieldStyle(.roundedBorder)
+                                                .disabled(store.tags.isTagOperationInProgress)
+
+                                            Button {
+                                                store.send(.saveRelatedTagsTapped(tag.name))
+                                            } label: {
+                                                Label("Save related tags", systemImage: "checkmark.circle")
+                                            }
+                                            .labelStyle(.iconOnly)
+                                            .buttonStyle(.borderless)
+                                            .disabled(store.tags.isTagOperationInProgress)
+                                            .help("Save related tags")
+                                        }
                                     }
 
                                     Spacer()
@@ -796,6 +811,16 @@ struct SettingsMacTagsDetailView: View {
         Binding(
             get: { store.tags.isTagRenameSheetPresented },
             set: { store.send(.setTagRenameSheet($0)) }
+        )
+    }
+
+    private func relatedTagDraftBinding(for tagName: String) -> Binding<String> {
+        Binding(
+            get: {
+                guard let key = RoutineTag.normalized(tagName) else { return "" }
+                return store.tags.relatedTagDrafts[key] ?? ""
+            },
+            set: { store.send(.relatedTagDraftChanged(tagName: tagName, draft: $0)) }
         )
     }
 }
