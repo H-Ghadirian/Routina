@@ -11,14 +11,17 @@ enum HomeAddRoutineSupport {
         excludingRelationshipTaskID: UUID? = nil
     ) -> AddRoutineFeature.State {
         let learnedRules = RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
+        let tagSummaries = AddRoutineOrganizationEditor.sortedTagSummaries(
+            RoutineTag.summaries(
+                from: tasks,
+                countsByTaskID: doneStats.countsByTaskID
+            )
+        )
         return AddRoutineFeature.State(
             organization: AddRoutineOrganizationState(
                 relationships: preselectedRelationships,
-                availableTags: HomeTaskSupport.availableTags(from: tasks),
-                availableTagSummaries: RoutineTag.summaries(
-                    from: tasks,
-                    countsByTaskID: doneStats.countsByTaskID
-                ),
+                availableTags: tagSummaries.map(\.name),
+                availableTagSummaries: tagSummaries,
                 relatedTagRules: RoutineTagRelations.sanitized(relatedTagRules + learnedRules),
                 tagCounterDisplayMode: tagCounterDisplayMode,
                 availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(

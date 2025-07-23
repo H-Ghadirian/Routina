@@ -15,7 +15,7 @@ enum AddRoutineOrganizationEditor {
         _ summaries: [RoutineTagSummary],
         organization: inout AddRoutineOrganizationState
     ) {
-        organization.availableTagSummaries = sortTagSummaries(summaries)
+        organization.availableTagSummaries = sortedTagSummaries(summaries)
         organization.availableTags = organization.availableTagSummaries.map(\.name)
     }
 
@@ -97,7 +97,8 @@ enum AddRoutineOrganizationEditor {
             RoutineTag.normalized($0.name) == RoutineTag.normalized(oldName)
         }) {
             organization.availableTagSummaries[index].name = RoutineTag.cleaned(newName) ?? newName
-            organization.availableTagSummaries = sortTagSummaries(organization.availableTagSummaries)
+            organization.availableTagSummaries = sortedTagSummaries(organization.availableTagSummaries)
+            organization.availableTags = organization.availableTagSummaries.map(\.name)
         }
         if RoutineTag.contains(oldName, in: organization.routineTags) {
             organization.routineTags = RoutineTag.replacing(
@@ -125,7 +126,7 @@ enum AddRoutineOrganizationEditor {
         organization.relatedTagRules = RoutineTagRelations.removing(tag, from: organization.relatedTagRules)
     }
 
-    private static func sortTagSummaries(
+    static func sortedTagSummaries(
         _ summaries: [RoutineTagSummary]
     ) -> [RoutineTagSummary] {
         summaries.sorted { lhs, rhs in

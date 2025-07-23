@@ -199,6 +199,35 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func makeAddRoutineState_ordersAvailableTagsByUsageSummaries() {
+        let frequentTask = RoutineTask(name: "Frequent", emoji: "✨", tags: ["Focus"], scheduleMode: .fixedInterval)
+        let linkedTask = RoutineTask(name: "Linked", emoji: "✨", tags: ["Health"], scheduleMode: .fixedInterval)
+        let doneHeavyTask = RoutineTask(name: "Done Heavy", emoji: "✨", tags: ["Finance"], scheduleMode: .fixedInterval)
+        let alphabeticalTieTask = RoutineTask(name: "Alphabetical Tie", emoji: "✨", tags: ["Admin"], scheduleMode: .fixedInterval)
+
+        let state = HomeAddRoutineSupport.makeAddRoutineState(
+            tasks: [linkedTask, frequentTask, doneHeavyTask, alphabeticalTieTask],
+            places: [],
+            doneStats: HomeDoneStats(
+                countsByTaskID: [
+                    frequentTask.id: 7,
+                    doneHeavyTask.id: 3
+                ]
+            ),
+            tagCounterDisplayMode: .combinedTotal,
+            relatedTagRules: []
+        )
+
+        #expect(state.organization.availableTags == ["Focus", "Finance", "Admin", "Health"])
+        #expect(state.organization.availableTagSummaries == [
+            RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, doneCount: 7),
+            RoutineTagSummary(name: "Finance", linkedRoutineCount: 1, doneCount: 3),
+            RoutineTagSummary(name: "Admin", linkedRoutineCount: 1, doneCount: 0),
+            RoutineTagSummary(name: "Health", linkedRoutineCount: 1, doneCount: 0)
+        ])
+    }
+
+    @Test
     func saveTapped_sendsDelegateWithFrequencyInDays() async {
         let store = TestStore(
             initialState: makeState(
