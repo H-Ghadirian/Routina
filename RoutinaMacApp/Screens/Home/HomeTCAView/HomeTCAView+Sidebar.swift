@@ -304,7 +304,7 @@ extension HomeTCAView {
     var macAddFormSections: [String] {
         let scheduleMode = store.addRoutineState?.schedule.scheduleMode ?? .fixedInterval
         let isStepBased = scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff
-        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
+        var sections = ["Identity", "Color", "Behavior", "Estimation", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if isStepBased { sections.append("Steps") }
         sections.append("Image")
         sections.append("Attachment")
@@ -314,7 +314,7 @@ extension HomeTCAView {
     var macEditFormSections: [String] {
         guard let detail = store.taskDetailState else { return [] }
         let scheduleMode = detail.editScheduleMode
-        var sections = ["Identity", "Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
+        var sections = ["Identity", "Color", "Behavior", "Estimation", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff {
             sections.append("Steps")
         }

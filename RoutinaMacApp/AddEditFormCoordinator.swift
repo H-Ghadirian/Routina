@@ -16,7 +16,7 @@ final class AddEditFormCoordinator {
 
     /// The default order of movable sections (Identity excluded).
     static let defaultMovableSections: [String] = [
-        "Behavior", "Places", "Importance & Urgency", "Tags",
+        "Color", "Behavior", "Estimation", "Places", "Importance & Urgency", "Tags",
         "Linked tasks", "Link URL", "Notes", "Steps", "Image", "Attachment"
     ]
 
