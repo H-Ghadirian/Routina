@@ -818,13 +818,14 @@ struct SettingsTCAView: View {
 
 private struct PlaceLocationPickerSheet: View {
     let fallbackCoordinate: LocationCoordinate?
+    let cameraConfiguration: PlaceLocationPickerCameraConfiguration
     let onUseLocation: (LocationCoordinate, Double) -> Void
     let onCancel: () -> Void
 
     @State private var selectedCoordinate: LocationCoordinate?
     @State private var draftRadiusMeters: Double
-    @State private var cameraPosition: MapCameraPosition = .automatic
-    @State private var didInitializeCamera = false
+    @State private var cameraAnimationTrigger = 0
+    @State private var cameraAnimationTarget: PlaceLocationPickerCameraConfiguration.AnimationTarget?
 
     init(
         initialCoordinate: LocationCoordinate?,
@@ -834,6 +835,11 @@ private struct PlaceLocationPickerSheet: View {
         onCancel: @escaping () -> Void
     ) {
         self.fallbackCoordinate = fallbackCoordinate
+        self.cameraConfiguration = .make(
+            initialCoordinate: initialCoordinate,
+            fallbackCoordinate: fallbackCoordinate,
+            radiusMeters: initialRadiusMeters
+        )
         self.onUseLocation = onUseLocation
         self.onCancel = onCancel
         _selectedCoordinate = State(initialValue: initialCoordinate)
@@ -852,7 +858,9 @@ private struct PlaceLocationPickerSheet: View {
                 }
 
                 MapReader { proxy in
-                    Map(position: $cameraPosition) {
+                    Map(initialPosition: cameraConfiguration.initialFocus.mapCameraPosition) {
+                        UserAnnotation()
+
                         if let selectedCoordinate {
                             Marker("Selected Place", coordinate: selectedCoordinate.clLocationCoordinate2D)
                             MapCircle(
@@ -860,6 +868,22 @@ private struct PlaceLocationPickerSheet: View {
                                 radius: draftRadiusMeters
                             )
                             .foregroundStyle(Color.accentColor.opacity(0.18))
+                        }
+                    }
+                    .mapCameraKeyframeAnimator(trigger: cameraAnimationTrigger) { camera in
+                        KeyframeTrack(\MapCamera.centerCoordinate) {
+                            LinearKeyframe(
+                                cameraAnimationTarget?.coordinate.clLocationCoordinate2D ?? camera.centerCoordinate,
+                                duration: 0.75,
+                                timingCurve: .easeInOut
+                            )
+                        }
+                        KeyframeTrack(\MapCamera.distance) {
+                            LinearKeyframe(
+                                cameraAnimationTarget?.distance ?? camera.distance,
+                                duration: 0.75,
+                                timingCurve: .easeInOut
+                            )
                         }
                     }
                     .mapStyle(.standard)
@@ -888,7 +912,7 @@ private struct PlaceLocationPickerSheet: View {
                                     longitude: coordinate.longitude
                                 )
                                 selectedCoordinate = location
-                                focusCamera(on: location)
+                                animateCamera(to: location)
                             }
                     )
                 }
@@ -944,55 +968,25 @@ private struct PlaceLocationPickerSheet: View {
                 }
             }
         }
-        .onAppear {
-            guard !didInitializeCamera else { return }
-            didInitializeCamera = true
-
-            if let selectedCoordinate {
-                focusCamera(on: selectedCoordinate)
-            } else if let fallbackCoordinate {
-                cameraPosition = .region(
-                    MKCoordinateRegion(
-                        center: fallbackCoordinate.clLocationCoordinate2D,
-                        latitudinalMeters: 2_000,
-                        longitudinalMeters: 2_000
-                    )
-                )
-            } else {
-                cameraPosition = .region(
-                    MKCoordinateRegion(
-                        center: CLLocationCoordinate2D(latitude: 20, longitude: 0),
-                        latitudinalMeters: 20_000_000,
-                        longitudinalMeters: 20_000_000
-                    )
-                )
-            }
-        }
         .onChange(of: draftRadiusMeters) { _, _ in
             guard let selectedCoordinate else { return }
-            focusCamera(on: selectedCoordinate)
+            animateCamera(to: selectedCoordinate)
         }
 #if os(macOS)
         .frame(minWidth: 680, minHeight: 620)
 #endif
     }
 
-    private func focusCamera(on coordinate: LocationCoordinate) {
-        cameraPosition = .region(
-            MKCoordinateRegion(
-                center: coordinate.clLocationCoordinate2D,
-                latitudinalMeters: max(draftRadiusMeters * 8, 500),
-                longitudinalMeters: max(draftRadiusMeters * 8, 500)
-            )
+    private func animateCamera(to coordinate: LocationCoordinate) {
+        cameraAnimationTarget = PlaceLocationPickerCameraConfiguration.animationTarget(
+            for: coordinate,
+            radiusMeters: draftRadiusMeters
         )
+        cameraAnimationTrigger += 1
     }
 }
 
 private extension LocationCoordinate {
-    var clLocationCoordinate2D: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
-
     var formattedForPlaceSelection: String {
         let latitude = latitude.formatted(.number.precision(.fractionLength(4)))
         let longitude = longitude.formatted(.number.precision(.fractionLength(4)))
