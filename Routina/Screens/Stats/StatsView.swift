@@ -61,36 +61,6 @@ struct StatsView: View {
         averagePerDay.formatted(.number.precision(.fractionLength(1)))
     }
 
-    private var rangeHeadline: String {
-        if totalCount == 0 {
-            return "No completions yet"
-        }
-
-        let unit = totalCount == 1 ? "completion" : "completions"
-
-        switch selectedRange {
-        case .week:
-            return "\(totalCount) \(unit) this week"
-        case .month:
-            return "\(totalCount) \(unit) this month"
-        case .year:
-            return "\(totalCount) \(unit) this year"
-        }
-    }
-
-    private var rangeSubheadline: String {
-        if totalCount == 0 {
-            return "Start logging routines and this screen will turn into your progress dashboard."
-        }
-
-        if activeDayCount == chartPoints.count {
-            return "You showed up every day in this range."
-        }
-
-        let dayUnit = activeDayCount == 1 ? "day" : "days"
-        return "You showed up on \(activeDayCount) of \(chartPoints.count) \(dayUnit)."
-    }
-
     private var chartSectionSubtitle: String {
         if totalCount == 0 {
             return "Your chart will fill in as you complete routines."
@@ -205,32 +175,10 @@ struct StatsView: View {
         )
     }
 
-    private var headerMetrics: [(icon: String, text: String)] {
-        [
-            (
-                icon: "calendar.badge.clock",
-                text: "\(chartPoints.count) day window"
-            ),
-            (
-                icon: "checkmark.seal.fill",
-                text: "\(totalDoneCount) total dones"
-            ),
-            (
-                icon: "checklist.checked",
-                text: activeRoutineCount == 1 ? "1 active routine" : "\(activeRoutineCount) active routines"
-            ),
-            (
-                icon: "archivebox.fill",
-                text: archivedRoutineCount == 1 ? "1 archived routine" : "\(archivedRoutineCount) archived routines"
-            )
-        ]
-    }
-
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
-                    headerSection
                     rangeSection
                     heroSection
                     summaryCards
@@ -247,35 +195,6 @@ struct StatsView: View {
 #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
 #endif
-        }
-    }
-
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Activity Snapshot", systemImage: "sparkles")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(
-                    Color.accentColor.opacity(colorScheme == .dark ? 0.16 : 0.12),
-                    in: Capsule()
-                )
-
-            Text(rangeHeadline)
-                .font(.system(.title2, design: .rounded, weight: .bold))
-
-            Text(rangeSubheadline)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(Array(headerMetrics.enumerated()), id: \.offset) { item in
-                        compactHeaderPill(icon: item.element.icon, text: item.element.text)
-                    }
-                }
-            }
         }
     }
 
@@ -631,19 +550,6 @@ struct StatsView: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
         )
-    }
-
-    private func compactHeaderPill(icon: String, text: String) -> some View {
-        Label(text, systemImage: icon)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(surfaceGradient, in: Capsule(style: .continuous))
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.35), lineWidth: 1)
-            )
     }
 
     private func heroStatPill(icon: String, title: String, value: String) -> some View {
