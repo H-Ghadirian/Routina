@@ -125,7 +125,9 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
             selectedTodoStateFilter: .blocked,
             selectedPressureFilter: .high,
-            taskListViewMode: .actionable
+            taskListViewMode: .actionable,
+            taskListSortOrder: .createdNewestFirst,
+            createdDateFilter: .today
         )
         var hideUnavailableRoutines = true
 
@@ -147,6 +149,8 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedTodoStateFilter == nil)
         #expect(taskFilters.selectedPressureFilter == nil)
         #expect(taskFilters.taskListViewMode == .all)
+        #expect(taskFilters.taskListSortOrder == .smart)
+        #expect(taskFilters.createdDateFilter == .all)
         #expect(!hideUnavailableRoutines)
         #expect(result.didResetHideUnavailableRoutines)
         #expect(result.shouldPersistTemporaryViewState)
@@ -168,6 +172,8 @@ struct HomeFilterEditorTests {
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
             taskListViewMode: .actionable,
+            taskListSortOrder: .createdOldestFirst,
+            createdDateFilter: .last7Days,
             tabFilterSnapshots: [
                 "Todos": TabFilterStateManager.Snapshot(
                     selectedTag: "Errands",
@@ -180,7 +186,9 @@ struct HomeFilterEditorTests {
                     selectedManualPlaceFilterID: nil,
                     selectedTodoStateFilter: .ready,
                     selectedPressureFilter: RoutineTaskPressure.none,
-                    taskListViewMode: .all
+                    taskListViewMode: .all,
+                    taskListSortOrder: .createdNewestFirst,
+                    createdDateFilter: .today
                 )
             ]
         )
@@ -204,6 +212,8 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedTodoStateFilter == .ready)
         #expect(taskFilters.selectedPressureFilter == RoutineTaskPressure.none)
         #expect(taskFilters.taskListViewMode == .all)
+        #expect(taskFilters.taskListSortOrder == .createdNewestFirst)
+        #expect(taskFilters.createdDateFilter == .today)
         #expect(taskFilters.tabFilterSnapshots["Routines"] == TabFilterStateManager.Snapshot(
             selectedTag: "Focus",
             selectedTags: ["Focus", "Health"],
@@ -216,7 +226,9 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
-            taskListViewMode: .actionable
+            taskListViewMode: .actionable,
+            taskListSortOrder: .createdOldestFirst,
+            createdDateFilter: .last7Days
         ))
     }
 

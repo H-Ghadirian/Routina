@@ -5,6 +5,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var selectedFilter: RoutineListFilter
     @Binding var advancedQuery: String
     @Binding var taskListViewMode: HomeTaskListViewMode
+    @Binding var taskListSortOrder: HomeTaskListSortOrder
+    @Binding var createdDateFilter: HomeTaskCreatedDateFilter
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     let queryOptions: HomeAdvancedQueryOptions
@@ -22,6 +24,14 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             HomeMacSidebarSectionCard {
                 viewModePicker
+            }
+
+            HomeMacSidebarSectionCard {
+                sortPicker
+            }
+
+            HomeMacSidebarSectionCard {
+                createdDatePicker
             }
 
             HomeMacSidebarSectionCard {
@@ -127,6 +137,38 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
         }
     }
 
+    private var sortPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Sort")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(HomeTaskListSortOrder.allCases) { order in
+                    Button {
+                        taskListSortOrder = order
+                    } label: {
+                        Label(order.title, systemImage: order.systemImage)
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(taskListSortOrder == order ? Color.white : Color.primary)
+                            .background(
+                                Capsule()
+                                    .fill(taskListSortOrder == order ? Color.accentColor : Color.secondary.opacity(0.10))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
     private var pressurePicker: some View {
         VStack(alignment: .leading, spacing: 8) {
             LazyVGrid(
@@ -137,6 +179,38 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 pressureButton(title: "All", pressure: nil)
                 ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
                     pressureButton(title: pressure.title, pressure: pressure)
+                }
+            }
+        }
+    }
+
+    private var createdDatePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Created")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(HomeTaskCreatedDateFilter.allCases) { filter in
+                    Button {
+                        createdDateFilter = filter
+                    } label: {
+                        Label(filter.title, systemImage: filter.systemImage)
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(createdDateFilter == filter ? Color.white : Color.primary)
+                            .background(
+                                Capsule()
+                                    .fill(createdDateFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

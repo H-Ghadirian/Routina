@@ -11,6 +11,7 @@ protocol HomeTaskListDisplay {
     var interval: Int { get }
     var recurrenceRule: RoutineRecurrenceRule { get }
     var scheduleMode: RoutineScheduleMode { get }
+    var createdAt: Date? { get }
     var lastDone: Date? { get }
     var dueDate: Date? { get }
     var priority: RoutineTaskPriority { get }
@@ -48,6 +49,8 @@ struct HomeTaskListFilteringConfiguration {
     var selectedTodoStateFilter: TodoState?
     var selectedPressureFilter: RoutineTaskPressure?
     var taskListViewMode: HomeTaskListViewMode
+    var taskListSortOrder: HomeTaskListSortOrder
+    var createdDateFilter: HomeTaskCreatedDateFilter
     var selectedTags: Set<String>
     var includeTagMatchMode: RoutineTagMatchMode
     var excludedTags: Set<String>

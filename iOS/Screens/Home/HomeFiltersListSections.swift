@@ -32,6 +32,36 @@ struct HomeFiltersViewModeSection: View {
     }
 }
 
+struct HomeFiltersSortSection: View {
+    @Binding var taskListSortOrder: HomeTaskListSortOrder
+
+    var body: some View {
+        Section("Sort") {
+            Picker("Task order", selection: $taskListSortOrder) {
+                ForEach(HomeTaskListSortOrder.allCases) { order in
+                    Label(order.title, systemImage: order.systemImage).tag(order)
+                }
+            }
+            .pickerStyle(.inline)
+        }
+    }
+}
+
+struct HomeFiltersCreatedSection: View {
+    @Binding var createdDateFilter: HomeTaskCreatedDateFilter
+
+    var body: some View {
+        Section("Created") {
+            Picker("Created", selection: $createdDateFilter) {
+                ForEach(HomeTaskCreatedDateFilter.allCases) { filter in
+                    Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                }
+            }
+            .pickerStyle(.inline)
+        }
+    }
+}
+
 struct HomeFiltersStatusSection: View {
     let placeFilterPluralNoun: String
     let availableFilters: [RoutineListFilter]

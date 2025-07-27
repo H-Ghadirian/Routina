@@ -3,6 +3,8 @@ import SwiftUI
 
 struct HomeFilterBindings {
     let taskListViewMode: Binding<HomeTaskListViewMode>
+    let taskListSortOrder: Binding<HomeTaskListSortOrder>
+    let createdDateFilter: Binding<HomeTaskCreatedDateFilter>
     let advancedQuery: Binding<String>
     let selectedFilter: Binding<RoutineListFilter>
     let selectedTodoStateFilter: Binding<TodoState?>

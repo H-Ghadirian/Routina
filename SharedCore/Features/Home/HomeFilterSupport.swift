@@ -18,6 +18,8 @@ enum HomeTaskFilterMutation: Equatable {
     case selectedTodoStateFilter(TodoState?)
     case selectedPressureFilter(RoutineTaskPressure?)
     case taskListViewMode(HomeTaskListViewMode)
+    case taskListSortOrder(HomeTaskListSortOrder)
+    case createdDateFilter(HomeTaskCreatedDateFilter)
     case isFilterSheetPresented(Bool)
     case clearOptionalFilters
 }
@@ -76,6 +78,8 @@ enum HomeFilterEditor {
         taskFilters.selectedTodoStateFilter = nil
         taskFilters.selectedPressureFilter = nil
         taskFilters.taskListViewMode = .all
+        taskFilters.taskListSortOrder = .smart
+        taskFilters.createdDateFilter = .all
 
         if hideUnavailableRoutines {
             hideUnavailableRoutines = false
@@ -127,6 +131,12 @@ enum HomeFilterEditor {
 
         case let .taskListViewMode(mode):
             taskFilters.taskListViewMode = mode
+
+        case let .taskListSortOrder(order):
+            taskFilters.taskListSortOrder = order
+
+        case let .createdDateFilter(filter):
+            taskFilters.createdDateFilter = filter
 
         case let .isFilterSheetPresented(isPresented):
             taskFilters.isFilterSheetPresented = isPresented

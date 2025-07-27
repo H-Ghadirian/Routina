@@ -2,6 +2,8 @@ import SwiftUI
 
 struct HomeActiveFilterChipBar: View {
     let taskListViewMode: HomeTaskListViewMode
+    let taskListSortOrder: HomeTaskListSortOrder
+    let createdDateFilter: HomeTaskCreatedDateFilter
     let advancedQuery: String
     let selectedTags: Set<String>
     let excludedTags: Set<String>
@@ -11,6 +13,8 @@ struct HomeActiveFilterChipBar: View {
     let hideUnavailableRoutines: Bool
     let onClearAll: () -> Void
     let onClearTaskListViewMode: () -> Void
+    let onClearTaskListSortOrder: () -> Void
+    let onClearCreatedDateFilter: () -> Void
     let onClearAdvancedQuery: () -> Void
     let onRemoveIncludedTag: (String) -> Void
     let onRemoveExcludedTag: (String) -> Void
@@ -32,6 +36,22 @@ struct HomeActiveFilterChipBar: View {
                         title: "View: \(taskListViewMode.title)",
                         systemImage: taskListViewMode.systemImage,
                         action: onClearTaskListViewMode
+                    )
+                }
+
+                if taskListSortOrder != .smart {
+                    HomeActiveFilterChip(
+                        title: "Created: \(taskListSortOrder.title)",
+                        systemImage: taskListSortOrder.systemImage,
+                        action: onClearTaskListSortOrder
+                    )
+                }
+
+                if createdDateFilter != .all {
+                    HomeActiveFilterChip(
+                        title: createdDateFilter.title,
+                        systemImage: createdDateFilter.systemImage,
+                        action: onClearCreatedDateFilter
                     )
                 }
 

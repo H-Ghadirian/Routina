@@ -13,6 +13,8 @@ struct HomeTaskFiltersState: Equatable {
     var selectedTodoStateFilter: TodoState? = nil
     var selectedPressureFilter: RoutineTaskPressure? = nil
     var taskListViewMode: HomeTaskListViewMode = .all
+    var taskListSortOrder: HomeTaskListSortOrder = .smart
+    var createdDateFilter: HomeTaskCreatedDateFilter = .all
     var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:]
     var isFilterSheetPresented: Bool = false
 
@@ -29,7 +31,9 @@ struct HomeTaskFiltersState: Equatable {
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
-            taskListViewMode: taskListViewMode
+            taskListViewMode: taskListViewMode,
+            taskListSortOrder: taskListSortOrder,
+            createdDateFilter: createdDateFilter
         )
     }
 
@@ -61,6 +65,8 @@ struct HomeTaskFiltersState: Equatable {
         selectedTodoStateFilter = snapshot.selectedTodoStateFilter
         selectedPressureFilter = snapshot.selectedPressureFilter
         taskListViewMode = snapshot.taskListViewMode
+        taskListSortOrder = snapshot.taskListSortOrder
+        createdDateFilter = snapshot.createdDateFilter
     }
 }
 
@@ -141,6 +147,8 @@ enum HomeTemporaryViewStateMapper {
             selectedTodoStateFilter: persistedState.homeSelectedTodoStateFilter,
             selectedPressureFilter: persistedState.homeSelectedPressureFilter,
             taskListViewMode: persistedState.homeTaskListViewMode,
+            taskListSortOrder: persistedState.homeTaskListSortOrder,
+            createdDateFilter: persistedState.homeCreatedDateFilter,
             tabFilterSnapshots: persistedState.homeTabFilterSnapshots,
             isFilterSheetPresented: false
         )
@@ -201,6 +209,8 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedTodoStateFilter: taskFilters.selectedTodoStateFilter,
             homeSelectedPressureFilter: taskFilters.selectedPressureFilter,
             homeTaskListViewMode: taskFilters.taskListViewMode,
+            homeTaskListSortOrder: taskFilters.taskListSortOrder,
+            homeCreatedDateFilter: taskFilters.createdDateFilter,
             homeTabFilterSnapshots: taskFilters.tabFilterSnapshots,
             hideUnavailableRoutines: values.hideUnavailableRoutines,
             homeSelectedTimelineRange: values.timelineFilters.selectedRange,

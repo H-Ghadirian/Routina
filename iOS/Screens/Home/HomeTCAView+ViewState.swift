@@ -5,6 +5,8 @@ extension HomeTCAView {
     var activeFilterChipBar: some View {
         HomeActiveFilterChipBar(
             taskListViewMode: store.taskListViewMode,
+            taskListSortOrder: store.taskListSortOrder,
+            createdDateFilter: store.createdDateFilter,
             advancedQuery: store.advancedQuery,
             selectedTags: store.selectedTags,
             excludedTags: store.excludedTags,
@@ -14,6 +16,8 @@ extension HomeTCAView {
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             onClearAll: { store.send(.clearOptionalFilters) },
             onClearTaskListViewMode: { store.send(.taskListViewModeChanged(.all)) },
+            onClearTaskListSortOrder: { store.send(.taskListSortOrderChanged(.smart)) },
+            onClearCreatedDateFilter: { store.send(.createdDateFilterChanged(.all)) },
             onClearAdvancedQuery: { store.send(.advancedQueryChanged("")) },
             onRemoveIncludedTag: { tag in
                 var selected = store.selectedTags
@@ -44,6 +48,8 @@ extension HomeTCAView {
             selectedFilter: store.selectedFilter,
             advancedQuery: store.advancedQuery,
             taskListViewMode: store.taskListViewMode,
+            taskListSortOrder: store.taskListSortOrder,
+            createdDateFilter: store.createdDateFilter,
             selectedTodoStateFilter: store.selectedTodoStateFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
@@ -85,6 +91,14 @@ extension HomeTCAView {
             taskListViewMode: Binding(
                 get: { store.taskListViewMode },
                 set: { store.send(.taskListViewModeChanged($0)) }
+            ),
+            taskListSortOrder: Binding(
+                get: { store.taskListSortOrder },
+                set: { store.send(.taskListSortOrderChanged($0)) }
+            ),
+            createdDateFilter: Binding(
+                get: { store.createdDateFilter },
+                set: { store.send(.createdDateFilterChanged($0)) }
             ),
             advancedQuery: Binding(
                 get: { store.advancedQuery },

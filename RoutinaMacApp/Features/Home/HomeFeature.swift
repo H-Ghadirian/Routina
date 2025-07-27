@@ -49,6 +49,7 @@ struct HomeFeature {
         var interval: Int
         var recurrenceRule: RoutineRecurrenceRule
         var scheduleMode: RoutineScheduleMode
+        var createdAt: Date?
         var isSoftIntervalRoutine: Bool
         var lastDone: Date?
         var canceledAt: Date?
@@ -176,6 +177,8 @@ struct HomeFeature {
             selectedTodoStateFilter: TodoState? = nil,
             selectedPressureFilter: RoutineTaskPressure? = nil,
             taskListViewMode: HomeTaskListViewMode = .all,
+            taskListSortOrder: HomeTaskListSortOrder = .smart,
+            createdDateFilter: HomeTaskCreatedDateFilter = .all,
             tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:],
             isFilterSheetPresented: Bool = false,
             selectedTimelineRange: TimelineRange = .all,
@@ -237,6 +240,8 @@ struct HomeFeature {
                 selectedTodoStateFilter: selectedTodoStateFilter,
                 selectedPressureFilter: selectedPressureFilter,
                 taskListViewMode: taskListViewMode,
+                taskListSortOrder: taskListSortOrder,
+                createdDateFilter: createdDateFilter,
                 tabFilterSnapshots: tabFilterSnapshots,
                 isFilterSheetPresented: isFilterSheetPresented
             )
@@ -378,6 +383,16 @@ struct HomeFeature {
         var taskListViewMode: HomeTaskListViewMode {
             get { taskFilters.taskListViewMode }
             set { taskFilters.taskListViewMode = newValue }
+        }
+
+        var taskListSortOrder: HomeTaskListSortOrder {
+            get { taskFilters.taskListSortOrder }
+            set { taskFilters.taskListSortOrder = newValue }
+        }
+
+        var createdDateFilter: HomeTaskCreatedDateFilter {
+            get { taskFilters.createdDateFilter }
+            set { taskFilters.createdDateFilter = newValue }
         }
 
         var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] {
@@ -547,6 +562,8 @@ struct HomeFeature {
         case selectedTodoStateFilterChanged(TodoState?)
         case selectedPressureFilterChanged(RoutineTaskPressure?)
         case taskListViewModeChanged(HomeTaskListViewMode)
+        case taskListSortOrderChanged(HomeTaskListSortOrder)
+        case createdDateFilterChanged(HomeTaskCreatedDateFilter)
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
 
@@ -839,6 +856,12 @@ struct HomeFeature {
 
             case let .taskListViewModeChanged(mode):
                 return applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
+
+            case let .taskListSortOrderChanged(order):
+                return applyTaskFilterMutation(.taskListSortOrder(order), state: &state)
+
+            case let .createdDateFilterChanged(filter):
+                return applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
 
             case let .isFilterSheetPresentedChanged(isPresented):
                 return applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)

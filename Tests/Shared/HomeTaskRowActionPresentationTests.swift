@@ -120,6 +120,7 @@ private struct TestTaskRowDisplay: HomeTaskRowDisplay, Equatable {
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval
+    var createdAt: Date?
     var lastDone: Date?
     var dueDate: Date?
     var priority: RoutineTaskPriority = .none

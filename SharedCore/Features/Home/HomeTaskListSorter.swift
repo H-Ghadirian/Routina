@@ -12,6 +12,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     }
 
     func regularTaskSort(_ lhs: Display, _ rhs: Display) -> Bool {
+        if let sortOrderComparison = taskListSortOrderResult(lhs, rhs) {
+            return sortOrderComparison
+        }
+
         if let manualOrderComparison = manualOrderSortResult(
             lhs,
             rhs,
@@ -48,6 +52,30 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
         return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
 
+    func taskListSortOrderResult(_ lhs: Display, _ rhs: Display) -> Bool? {
+        switch configuration.taskListSortOrder {
+        case .smart:
+            return nil
+        case .createdNewestFirst:
+            return createdDateSortResult(lhs, rhs, newestFirst: true)
+        case .createdOldestFirst:
+            return createdDateSortResult(lhs, rhs, newestFirst: false)
+        }
+    }
+
+    func createdDateSortResult(_ lhs: Display, _ rhs: Display, newestFirst: Bool) -> Bool? {
+        switch (lhs.createdAt, rhs.createdAt) {
+        case let (lhsDate?, rhsDate?) where lhsDate != rhsDate:
+            return newestFirst ? lhsDate > rhsDate : lhsDate < rhsDate
+        case (_?, nil):
+            return true
+        case (nil, _?):
+            return false
+        default:
+            return nil
+        }
+    }
+
     func archivedTaskSort(_ lhs: Display, _ rhs: Display) -> Bool {
         if let manualOrderComparison = manualOrderSortResult(
             lhs,
@@ -56,6 +84,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             otherSectionKey: Self.archivedManualOrderSectionKey
         ) {
             return manualOrderComparison
+        }
+
+        if let sortOrderComparison = taskListSortOrderResult(lhs, rhs) {
+            return sortOrderComparison
         }
 
         let lhsDate = lhs.pausedAt ?? lhs.lastDone ?? .distantPast
@@ -74,6 +106,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             otherSectionKey: Self.pinnedManualOrderSectionKey
         ) {
             return manualOrderComparison
+        }
+
+        if let sortOrderComparison = taskListSortOrderResult(lhs, rhs) {
+            return sortOrderComparison
         }
 
         let lhsDate = lhs.pinnedAt ?? .distantPast

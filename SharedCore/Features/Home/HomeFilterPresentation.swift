@@ -33,6 +33,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let selectedFilter: RoutineListFilter
     let advancedQuery: String
     let taskListViewMode: HomeTaskListViewMode
+    let taskListSortOrder: HomeTaskListSortOrder
+    let createdDateFilter: HomeTaskCreatedDateFilter
     let selectedTodoStateFilter: TodoState?
     let selectedTags: Set<String>
     let includeTagMatchMode: RoutineTagMatchMode
@@ -51,6 +53,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedFilter: RoutineListFilter = .all,
         advancedQuery: String = "",
         taskListViewMode: HomeTaskListViewMode = .all,
+        taskListSortOrder: HomeTaskListSortOrder = .smart,
+        createdDateFilter: HomeTaskCreatedDateFilter = .all,
         selectedTodoStateFilter: TodoState? = nil,
         selectedTags: Set<String> = [],
         includeTagMatchMode: RoutineTagMatchMode = .all,
@@ -68,6 +72,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.selectedFilter = selectedFilter
         self.advancedQuery = advancedQuery
         self.taskListViewMode = taskListViewMode
+        self.taskListSortOrder = taskListSortOrder
+        self.createdDateFilter = createdDateFilter
         self.selectedTodoStateFilter = selectedTodoStateFilter
         self.selectedTags = selectedTags
         self.includeTagMatchMode = includeTagMatchMode
@@ -92,6 +98,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if selectedPressureFilter != nil { count += 1 }
         if !advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
         if taskListViewMode != .all { count += 1 }
+        if taskListSortOrder != .smart { count += 1 }
+        if createdDateFilter != .all { count += 1 }
         if hideUnavailableRoutines { count += 1 }
         return count
     }
@@ -109,6 +117,14 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if taskListViewMode != .all {
             labels.append(taskListViewMode.title)
+        }
+
+        if taskListSortOrder != .smart {
+            labels.append("Created \(taskListSortOrder.title)")
+        }
+
+        if createdDateFilter != .all {
+            labels.append(createdDateFilter.title)
         }
 
         if let selectedTodoStateFilter {

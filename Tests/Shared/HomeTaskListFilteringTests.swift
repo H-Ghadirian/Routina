@@ -176,6 +176,50 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func creationDateSortOrdersNewestAndOldestFirst() {
+        let olderDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let newerDate = Date(timeIntervalSince1970: 1_710_000_000)
+        let tasks = [
+            TestTaskDisplay(name: "Older", createdAt: olderDate, daysUntilDue: 4),
+            TestTaskDisplay(name: "Missing", createdAt: nil, daysUntilDue: 4),
+            TestTaskDisplay(name: "Newer", createdAt: newerDate, daysUntilDue: 4)
+        ]
+
+        let newestFirst = makeFiltering(taskListSortOrder: .createdNewestFirst)
+            .filteredTasks(tasks)
+        let oldestFirst = makeFiltering(taskListSortOrder: .createdOldestFirst)
+            .filteredTasks(tasks)
+
+        #expect(newestFirst.map(\.name) == ["Newer", "Older", "Missing"])
+        #expect(oldestFirst.map(\.name) == ["Older", "Newer", "Missing"])
+    }
+
+    @Test
+    func createdDateFilterMatchesTodayAndRecentWindows() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let calendar = makeTestCalendar()
+        let today = referenceDate
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: referenceDate)!
+        let sixDaysAgo = calendar.date(byAdding: .day, value: -6, to: referenceDate)!
+        let eightDaysAgo = calendar.date(byAdding: .day, value: -8, to: referenceDate)!
+        let tasks = [
+            TestTaskDisplay(name: "Today", createdAt: today, daysUntilDue: 4),
+            TestTaskDisplay(name: "Yesterday", createdAt: yesterday, daysUntilDue: 4),
+            TestTaskDisplay(name: "Six Days Ago", createdAt: sixDaysAgo, daysUntilDue: 4),
+            TestTaskDisplay(name: "Eight Days Ago", createdAt: eightDaysAgo, daysUntilDue: 4),
+            TestTaskDisplay(name: "Missing", createdAt: nil, daysUntilDue: 4)
+        ]
+
+        let todayResult = makeFiltering(createdDateFilter: .today)
+            .filteredTasks(tasks)
+        let last7DaysResult = makeFiltering(createdDateFilter: .last7Days)
+            .filteredTasks(tasks)
+
+        #expect(todayResult.map(\.name) == ["Today"])
+        #expect(Set(last7DaysResult.map(\.name)) == ["Today", "Yesterday", "Six Days Ago"])
+    }
+
+    @Test
     func iOSPresentationBuildsVisibleSectionsAndOffsets() {
         let presentation = HomeTaskListPresentation.iOS(
             filtering: makeFiltering(),
@@ -249,6 +293,8 @@ private func makeFiltering(
     selectedTodoStateFilter: TodoState? = nil,
     selectedPressureFilter: RoutineTaskPressure? = nil,
     taskListViewMode: HomeTaskListViewMode = .all,
+    taskListSortOrder: HomeTaskListSortOrder = .smart,
+    createdDateFilter: HomeTaskCreatedDateFilter = .all,
     advancedQuery: String = "",
     selectedTags: Set<String> = [],
     includeTagMatchMode: RoutineTagMatchMode = .all,
@@ -270,6 +316,8 @@ private func makeFiltering(
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
             taskListViewMode: taskListViewMode,
+            taskListSortOrder: taskListSortOrder,
+            createdDateFilter: createdDateFilter,
             selectedTags: selectedTags,
             includeTagMatchMode: includeTagMatchMode,
             excludedTags: excludedTags,
@@ -295,6 +343,7 @@ private struct TestTaskDisplay: HomeTaskListDisplay, Equatable {
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval
+    var createdAt: Date?
     var lastDone: Date?
     var dueDate: Date?
     var priority: RoutineTaskPriority = .none

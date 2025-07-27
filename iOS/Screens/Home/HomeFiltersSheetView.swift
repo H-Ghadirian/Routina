@@ -17,6 +17,8 @@ struct HomeFiltersSheetView: View {
                     )
                 )
                 HomeFiltersViewModeSection(taskListViewMode: bindings.taskListViewMode)
+                HomeFiltersSortSection(taskListSortOrder: bindings.taskListSortOrder)
+                HomeFiltersCreatedSection(createdDateFilter: bindings.createdDateFilter)
                 HomeFiltersStatusSection(
                     placeFilterPluralNoun: configuration.place.placeFilterPluralNoun,
                     availableFilters: configuration.availableFilters,

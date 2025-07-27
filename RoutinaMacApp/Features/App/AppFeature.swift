@@ -708,6 +708,8 @@ struct StatsFeature {
                 selectedTodoStateFilter: nil,
                 selectedPressureFilter: nil,
                 taskListViewMode: .all,
+                taskListSortOrder: .smart,
+                createdDateFilter: .all,
                 selectedTags: [],
                 includeTagMatchMode: .all,
                 excludedTags: [],
@@ -875,6 +877,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let interval: Int
     let recurrenceRule: RoutineRecurrenceRule
     let scheduleMode: RoutineScheduleMode
+    let createdAt: Date?
     let lastDone: Date?
     let dueDate: Date?
     let priority: RoutineTaskPriority
@@ -909,6 +912,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
         self.interval = Int(task.interval)
         self.recurrenceRule = task.recurrenceRule
         self.scheduleMode = task.scheduleMode
+        self.createdAt = task.createdAt
         self.lastDone = task.lastDone
         self.dueDate = dueDate
         self.priority = task.priority

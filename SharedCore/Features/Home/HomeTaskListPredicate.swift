@@ -14,6 +14,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
+            && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
             && matchesExcludedTags(task)
@@ -30,6 +31,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
+            && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
             && matchesExcludedTags(task)
@@ -82,6 +84,35 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             configuration.selectedPressureFilter,
             pressure: task.pressure
         )
+    }
+
+    func matchesCreatedDateFilter(_ task: Display) -> Bool {
+        switch configuration.createdDateFilter {
+        case .all:
+            return true
+        case .today:
+            guard let createdAt = task.createdAt else { return false }
+            return configuration.calendar.isDate(createdAt, inSameDayAs: configuration.referenceDate)
+        case .yesterday:
+            guard let createdAt = task.createdAt,
+                  let yesterday = configuration.calendar.date(byAdding: .day, value: -1, to: configuration.referenceDate)
+            else { return false }
+            return configuration.calendar.isDate(createdAt, inSameDayAs: yesterday)
+        case .last7Days:
+            return matchesCreatedWithinDays(7, task: task)
+        case .last30Days:
+            return matchesCreatedWithinDays(30, task: task)
+        }
+    }
+
+    private func matchesCreatedWithinDays(_ days: Int, task: Display) -> Bool {
+        guard let createdAt = task.createdAt else { return false }
+        let createdDay = configuration.calendar.startOfDay(for: createdAt)
+        let referenceDay = configuration.calendar.startOfDay(for: configuration.referenceDate)
+        guard let lowerBound = configuration.calendar.date(byAdding: .day, value: -(days - 1), to: referenceDay) else {
+            return false
+        }
+        return createdDay >= lowerBound && createdDay <= referenceDay
     }
 
     func matchesTaskListViewMode(_ task: Display) -> Bool {

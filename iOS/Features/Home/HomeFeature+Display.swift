@@ -70,6 +70,7 @@ extension HomeFeature {
             interval: max(Int(task.interval), 1),
             recurrenceRule: task.recurrenceRule,
             scheduleMode: task.scheduleMode,
+            createdAt: task.createdAt,
             isSoftIntervalRoutine: task.isSoftIntervalRoutine,
             lastDone: task.lastDone,
             canceledAt: task.canceledAt,

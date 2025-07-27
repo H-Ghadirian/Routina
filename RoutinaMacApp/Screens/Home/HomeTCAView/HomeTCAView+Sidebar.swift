@@ -342,6 +342,8 @@ extension HomeTCAView {
                 selectedFilter: homeFilterBindings.selectedFilter,
                 advancedQuery: homeFilterBindings.advancedQuery,
                 taskListViewMode: homeFilterBindings.taskListViewMode,
+                taskListSortOrder: homeFilterBindings.taskListSortOrder,
+                createdDateFilter: homeFilterBindings.createdDateFilter,
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
                 queryOptions: HomeAdvancedQueryOptions(
