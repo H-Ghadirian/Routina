@@ -104,6 +104,7 @@ extension HomeTCAView {
         ToolbarItemGroup(placement: .primaryAction) {
             platformRefreshButton
             filterSheetButton
+            calendarTaskImportButton
             Button {
                 openAddTask()
             } label: {

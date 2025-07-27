@@ -37,6 +37,7 @@ extension HomeTCAView {
                 macRoutineCountToolbarItem
                 macTodoCountToolbarItem
             }
+            calendarTaskImportButton
         }
     }
 
