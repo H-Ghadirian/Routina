@@ -18,6 +18,17 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Routina Microsoft Sign In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>routina</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
@@ -32,6 +43,8 @@
 	<string>Routina reads selected calendars only when you review events to add as tasks.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Routina reads selected calendars only when you review events to add as tasks.</string>
+	<key>RoutinaMicrosoftGraphClientID</key>
+	<string></string>
 	<key>RoutinaCloudKitContainerIdentifier</key>
 	<string>iCloud.ir.hamedgh.Routinam.prod</string>
 	<key>RoutinaSandboxDataMode</key>

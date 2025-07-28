@@ -40,18 +40,8 @@ struct CalendarTaskImportSheet: View {
         case .idle, .loading:
             ProgressView("Checking calendars")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .accessDenied:
-            ContentUnavailableView(
-                "Calendar access is off",
-                systemImage: "calendar.badge.exclamationmark",
-                description: Text("Allow calendar access in Settings to review events before adding tasks.")
-            )
-        case .accessRestricted:
-            ContentUnavailableView(
-                "Calendar access is restricted",
-                systemImage: "calendar.badge.exclamationmark",
-                description: Text("This device does not allow Routina to read calendars.")
-            )
+        case .accessDenied, .accessRestricted:
+            loadedContent
         case .loaded:
             loadedContent
         case .failed:
@@ -65,16 +55,34 @@ struct CalendarTaskImportSheet: View {
 
     private var loadedContent: some View {
         VStack(spacing: 0) {
-            calendarPicker
+            sourcePicker
             Divider()
-            suggestionsList
+            switch viewModel.selectedSource {
+            case .appleCalendar:
+                appleCalendarContent
+            case .outlook:
+                outlookContent
+            }
         }
     }
 
-    private var calendarPicker: some View {
+    private var sourcePicker: some View {
         VStack(alignment: .leading, spacing: 12) {
+            Picker("Source", selection: $viewModel.selectedSource) {
+                ForEach(CalendarTaskImportViewModel.ImportSource.allCases) { source in
+                    Text(source.title).tag(source)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: viewModel.selectedSource) { _, source in
+                guard source == .outlook, viewModel.canRefreshOutlook else { return }
+                Task {
+                    await viewModel.refreshOutlookSuggestions(existingTasks: existingTasks, calendar: calendar)
+                }
+            }
+
             HStack {
-                Text("Calendars")
+                Text(viewModel.selectedSource.title)
                     .font(.headline)
                 Spacer()
                 Picker("Range", selection: $viewModel.selectedRange) {
@@ -84,10 +92,48 @@ struct CalendarTaskImportSheet: View {
                 }
                 .pickerStyle(.menu)
                 .onChange(of: viewModel.selectedRange) { _, _ in
-                    viewModel.refreshSuggestions(existingTasks: existingTasks, calendar: calendar)
+                    switch viewModel.selectedSource {
+                    case .appleCalendar:
+                        viewModel.refreshSuggestions(existingTasks: existingTasks, calendar: calendar)
+                    case .outlook:
+                        guard viewModel.canRefreshOutlook else { return }
+                        Task {
+                            await viewModel.refreshOutlookSuggestions(existingTasks: existingTasks, calendar: calendar)
+                        }
+                    }
                 }
             }
+        }
+        .padding()
+    }
 
+    @ViewBuilder
+    private var appleCalendarContent: some View {
+        switch viewModel.phase {
+        case .accessDenied:
+            ContentUnavailableView(
+                "Calendar access is off",
+                systemImage: "calendar.badge.exclamationmark",
+                description: Text("Allow calendar access in Settings to review events before adding tasks.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .accessRestricted:
+            ContentUnavailableView(
+                "Calendar access is restricted",
+                systemImage: "calendar.badge.exclamationmark",
+                description: Text("This device does not allow Routina to read calendars.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        default:
+            VStack(spacing: 0) {
+                calendarPicker
+                suggestionsList($viewModel.suggestions, emptyDescription: "Choose another calendar or date range.")
+            }
+        }
+    }
+
+    private var calendarPicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
             if viewModel.availableCalendars.isEmpty {
                 Text("No calendars are available.")
                     .foregroundStyle(.secondary)
@@ -113,18 +159,101 @@ struct CalendarTaskImportSheet: View {
     }
 
     @ViewBuilder
-    private var suggestionsList: some View {
-        if viewModel.suggestions.isEmpty {
+    private var outlookContent: some View {
+        if viewModel.outlookConfigurationMissing {
+            ContentUnavailableView(
+                "Outlook sign in is not configured",
+                systemImage: "person.crop.circle.badge.exclamationmark",
+                description: Text("Add a Microsoft Graph app client ID to RoutinaMicrosoftGraphClientID, then register routina://auth/microsoft as the redirect URI.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if !viewModel.canRefreshOutlook {
+            VStack(spacing: 16) {
+                ContentUnavailableView(
+                    "Connect Outlook",
+                    systemImage: "calendar.badge.plus",
+                    description: Text("Sign in to Microsoft to fetch calendar events for one-by-one review.")
+                )
+
+                Button {
+                    Task {
+                        await viewModel.signInOutlook(existingTasks: existingTasks, calendar: calendar)
+                    }
+                } label: {
+                    if viewModel.isOutlookLoading {
+                        ProgressView()
+                    } else {
+                        Text("Sign in with Microsoft")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isOutlookLoading)
+
+                if let message = viewModel.outlookErrorMessage {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VStack(spacing: 0) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(viewModel.outlookAccountTitle)
+                            .font(.subheadline.weight(.semibold))
+                        Text("Events are fetched from Outlook and nothing is added automatically.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        Task {
+                            await viewModel.refreshOutlookSuggestions(existingTasks: existingTasks, calendar: calendar)
+                        }
+                    } label: {
+                        if viewModel.isOutlookLoading {
+                            ProgressView()
+                        } else {
+                            Label("Fetch", systemImage: "arrow.clockwise")
+                        }
+                    }
+                    .disabled(viewModel.isOutlookLoading)
+                }
+                .padding()
+
+                if let message = viewModel.outlookErrorMessage {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                }
+
+                suggestionsList($viewModel.outlookSuggestions, emptyDescription: "Fetch Outlook events or choose another date range.")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func suggestionsList(
+        _ suggestions: Binding<[CalendarTaskSuggestion]>,
+        emptyDescription: String
+    ) -> some View {
+        if suggestions.wrappedValue.isEmpty {
             ContentUnavailableView(
                 "No events found",
                 systemImage: "calendar",
-                description: Text("Choose another calendar or date range.")
+                description: Text(emptyDescription)
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List {
                 Section {
-                    ForEach($viewModel.suggestions) { $suggestion in
+                    ForEach(suggestions) { $suggestion in
                         CalendarTaskSuggestionRow(
                             suggestion: $suggestion,
                             onAdd: { addTask(from: suggestion) },
@@ -250,6 +379,20 @@ private struct CalendarTaskSuggestionRow: View {
 
 @MainActor
 final class CalendarTaskImportViewModel: ObservableObject {
+    enum ImportSource: String, CaseIterable, Identifiable {
+        case appleCalendar
+        case outlook
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .appleCalendar: return "Apple Calendar"
+            case .outlook: return "Outlook"
+            }
+        }
+    }
+
     enum Phase: Equatable {
         case idle
         case loading
@@ -289,12 +432,32 @@ final class CalendarTaskImportViewModel: ObservableObject {
     }
 
     @Published var phase: Phase = .idle
+    @Published var selectedSource: ImportSource = .appleCalendar
     @Published var availableCalendars: [CalendarItem] = []
     @Published var selectedCalendarIDs: Set<String> = []
     @Published var selectedRange: ScanRange = .twoWeeks
     @Published var suggestions: [CalendarTaskSuggestion] = []
+    @Published var outlookSuggestions: [CalendarTaskSuggestion] = []
+    @Published var outlookAccount: MicrosoftGraphAccount?
+    @Published var outlookErrorMessage: String?
+    @Published var outlookConfigurationMissing = false
+    @Published var isOutlookLoading = false
 
     private let service = CalendarTaskImportService()
+    private let outlookService = MicrosoftGraphCalendarService()
+    private var outlookAccessToken: String?
+
+    var canRefreshOutlook: Bool {
+        outlookAccessToken != nil
+    }
+
+    var outlookAccountTitle: String {
+        guard let outlookAccount else { return "Outlook connected" }
+        if let email = outlookAccount.email, !email.isEmpty {
+            return "\(outlookAccount.displayName) • \(email)"
+        }
+        return outlookAccount.displayName
+    }
 
     func load(existingTasks: [RoutineTask], calendar: Calendar) async {
         guard phase == .idle else { return }
@@ -335,6 +498,48 @@ final class CalendarTaskImportViewModel: ObservableObject {
         }
     }
 
+    func signInOutlook(existingTasks: [RoutineTask], calendar: Calendar) async {
+        outlookErrorMessage = nil
+        outlookConfigurationMissing = false
+        isOutlookLoading = true
+        defer { isOutlookLoading = false }
+
+        do {
+            let result = try await outlookService.signIn()
+            outlookAccessToken = result.accessToken
+            outlookAccount = result.account
+            await refreshOutlookSuggestions(existingTasks: existingTasks, calendar: calendar)
+        } catch MicrosoftGraphCalendarError.notConfigured {
+            outlookConfigurationMissing = true
+        } catch MicrosoftGraphCalendarError.signInCanceled {
+            outlookErrorMessage = "Microsoft sign in was canceled."
+        } catch {
+            outlookErrorMessage = "Could not sign in to Microsoft."
+        }
+    }
+
+    func refreshOutlookSuggestions(existingTasks: [RoutineTask], calendar: Calendar) async {
+        guard let outlookAccessToken else { return }
+        outlookErrorMessage = nil
+        isOutlookLoading = true
+        defer { isOutlookLoading = false }
+
+        let startDate = Date()
+        let endDate = calendar.date(byAdding: .day, value: selectedRange.dayCount, to: startDate) ?? startDate
+        do {
+            outlookSuggestions = try await outlookService.suggestions(
+                accessToken: outlookAccessToken,
+                from: startDate,
+                through: endDate,
+                existingTasks: existingTasks,
+                calendar: calendar
+            )
+        } catch {
+            outlookSuggestions = []
+            outlookErrorMessage = "Could not fetch Outlook events."
+        }
+    }
+
     func calendarSelectionBinding(for id: String) -> Binding<Bool> {
         Binding(
             get: { self.selectedCalendarIDs.contains(id) },
@@ -349,7 +554,11 @@ final class CalendarTaskImportViewModel: ObservableObject {
     }
 
     func markAdded(suggestionID: String) {
-        guard let index = suggestions.firstIndex(where: { $0.id == suggestionID }) else { return }
-        suggestions[index].reviewState = .added
+        if let index = suggestions.firstIndex(where: { $0.id == suggestionID }) {
+            suggestions[index].reviewState = .added
+        }
+        if let index = outlookSuggestions.firstIndex(where: { $0.id == suggestionID }) {
+            outlookSuggestions[index].reviewState = .added
+        }
     }
 }

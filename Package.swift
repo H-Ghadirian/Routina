@@ -223,6 +223,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphLayout.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
                 "SharedCore/Services/CalendarTaskImportService.swift",
+                "SharedCore/Services/MicrosoftGraphCalendarService.swift",
                 "SharedCore/Services/WidgetStatsService.swift",
                 "SharedCore/Services/SprintBoardClient.swift",
                 "SharedCore/Sync/CloudDataResetService.swift",

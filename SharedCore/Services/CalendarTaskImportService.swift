@@ -77,12 +77,7 @@ final class CalendarTaskImportService {
         let selectedCalendars = calendars().filter { calendarIdentifiers.contains($0.calendarIdentifier) }
         guard !selectedCalendars.isEmpty else { return [] }
 
-        let existingMarkers = Set(
-            existingTasks.compactMap { task -> String? in
-                guard let notes = task.notes else { return nil }
-                return CalendarTaskImportSupport.sourceMarker(in: notes)
-            }
-        )
+        let existingMarkers = CalendarTaskImportSupport.existingSourceMarkers(in: existingTasks)
 
         let predicate = eventStore.predicateForEvents(
             withStart: startDate,
@@ -143,5 +138,14 @@ enum CalendarTaskImportSupport {
         notes
             .components(separatedBy: .newlines)
             .first { $0.hasPrefix("Calendar event: ") }
+    }
+
+    static func existingSourceMarkers(in tasks: [RoutineTask]) -> Set<String> {
+        Set(
+            tasks.compactMap { task -> String? in
+                guard let notes = task.notes else { return nil }
+                return sourceMarker(in: notes)
+            }
+        )
     }
 }
