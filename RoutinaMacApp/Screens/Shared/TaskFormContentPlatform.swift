@@ -508,6 +508,19 @@ struct TaskFormContent: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
+                macControlBlock(
+                    title: "Reminder",
+                    caption: "Send one notification at an exact date and time."
+                ) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Toggle("Set reminder", isOn: model.reminderEnabled)
+                        if model.reminderEnabled.wrappedValue {
+                            DatePicker("Reminder", selection: model.reminderAt)
+                                .labelsHidden()
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .id(FormSection.behavior)

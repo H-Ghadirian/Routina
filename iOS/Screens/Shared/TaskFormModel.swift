@@ -29,6 +29,10 @@ struct TaskFormModel {
     var deadlineEnabled: Binding<Bool>
     var deadline: Binding<Date>
 
+    // MARK: Reminder
+    var reminderEnabled: Binding<Bool>
+    var reminderAt: Binding<Date>
+
     // MARK: Priority matrix
     var importance: Binding<RoutineTaskImportance>
     var urgency: Binding<RoutineTaskUrgency>

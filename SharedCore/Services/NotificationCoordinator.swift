@@ -78,6 +78,10 @@ enum NotificationCoordinator {
     ) -> Bool {
         guard !task.isArchived(referenceDate: referenceDate, calendar: calendar) else { return false }
 
+        if let reminderDate = activeReminderDate(for: task, referenceDate: referenceDate) {
+            return reminderDate > referenceDate
+        }
+
         if task.isOneOffTask {
             guard !task.isCompletedOneOff, !task.isCanceledOneOff else { return false }
             guard let deadline = task.deadline else { return false }
@@ -115,7 +119,11 @@ enum NotificationCoordinator {
         calendar: Calendar = .current
     ) -> NotificationPayload {
         let dueDate = RoutineDateMath.dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        let reminderDate = activeReminderDate(for: task, referenceDate: referenceDate)
         let resolvedTriggerDate = triggerDate ?? {
+            if let reminderDate {
+                return reminderDate
+            }
             if task.isOneOffTask {
                 return task.deadline
             }
@@ -124,7 +132,7 @@ enum NotificationCoordinator {
             }
             return NotificationPreferences.reminderDate(on: dueDate, calendar: calendar)
         }()
-        let usesExactTime = task.isOneOffTask || task.recurrenceRule.usesExplicitTimeOfDay
+        let usesExactTime = reminderDate != nil || task.isOneOffTask || task.recurrenceRule.usesExplicitTimeOfDay
         return NotificationPayload(
             identifier: task.id.uuidString,
             name: task.name,
@@ -134,6 +142,7 @@ enum NotificationCoordinator {
             dueDate: dueDate,
             triggerDate: resolvedTriggerDate,
             isOneOffTask: task.isOneOffTask,
+            isCustomReminder: reminderDate != nil,
             isArchived: isArchivedOverride ?? task.isArchived(referenceDate: referenceDate, calendar: calendar),
             usesExactTime: usesExactTime,
             isChecklistDriven: task.isChecklistDriven,
@@ -284,9 +293,15 @@ enum NotificationCoordinator {
         let trimmedEmoji = payload.emoji?.trimmingCharacters(in: .whitespacesAndNewlines)
         let emojiPrefix = (trimmedEmoji?.isEmpty == false ? trimmedEmoji : nil).map { "\($0) " } ?? ""
 
-        content.title = payload.isOneOffTask ? "\(emojiPrefix)\(titleName) deadline" : "\(emojiPrefix)\(titleName) is due"
+        if payload.isCustomReminder {
+            content.title = "\(emojiPrefix)\(titleName) reminder"
+        } else {
+            content.title = payload.isOneOffTask ? "\(emojiPrefix)\(titleName) deadline" : "\(emojiPrefix)\(titleName) is due"
+        }
         content.subtitle = notificationSubtitle(for: payload)
-        if payload.isOneOffTask {
+        if payload.isCustomReminder {
+            content.body = customReminderNotificationBody(for: payload)
+        } else if payload.isOneOffTask {
             content.body = oneOffNotificationBody(for: payload)
         } else if payload.isChecklistDriven, let nextDueChecklistItemTitle = payload.nextDueChecklistItemTitle {
             content.body = "\(nextDueChecklistItemTitle) is due today. Tap Done to buy due items or Snooze until tomorrow."
@@ -310,6 +325,9 @@ enum NotificationCoordinator {
 
     private static func notificationSubtitle(for payload: NotificationPayload) -> String {
         guard payload.usesExactTime, let dueDate = payload.dueDate else { return "" }
+        if payload.isCustomReminder, let triggerDate = payload.triggerDate {
+            return "Reminder \(triggerDate.formatted(date: .abbreviated, time: .shortened))"
+        }
         if payload.isOneOffTask {
             return "Due \(dueDate.formatted(date: .abbreviated, time: .shortened))"
         }
@@ -321,6 +339,24 @@ enum NotificationCoordinator {
             return "This task is due now. Open Routina to review it."
         }
         return "This task is due \(dueDate.formatted(date: .abbreviated, time: .shortened)). Open Routina to mark it done or update the deadline."
+    }
+
+    private static func customReminderNotificationBody(for payload: NotificationPayload) -> String {
+        if payload.isOneOffTask, let dueDate = payload.dueDate {
+            return "This task is due \(dueDate.formatted(date: .abbreviated, time: .shortened)). Open Routina to review it."
+        }
+        return "Open Routina to review this routine."
+    }
+
+    private static func activeReminderDate(
+        for task: RoutineTask,
+        referenceDate: Date
+    ) -> Date? {
+        guard let reminderAt = task.reminderAt, reminderAt > referenceDate else { return nil }
+        if task.isOneOffTask {
+            guard !task.isCompletedOneOff, !task.isCanceledOneOff else { return nil }
+        }
+        return reminderAt
     }
 
     private static func scheduleNotification(_ payload: NotificationPayload) async {

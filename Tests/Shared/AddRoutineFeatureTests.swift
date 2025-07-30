@@ -51,6 +51,7 @@ struct AddRoutineFeatureTests {
         notes: String? = nil,
         link: String? = nil,
         deadline: Date? = nil,
+        reminderAt: Date? = nil,
         priority: RoutineTaskPriority = .medium,
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
@@ -75,6 +76,7 @@ struct AddRoutineFeatureTests {
             notes: notes,
             link: link,
             deadline: deadline,
+            reminderAt: reminderAt,
             priority: priority,
             importance: importance,
             urgency: urgency,
@@ -168,6 +170,24 @@ struct AddRoutineFeatureTests {
 
         await store.send(.deadlineEnabledChanged(false)) {
             $0.basics.deadline = nil
+        }
+    }
+
+    @Test
+    func reminderEnabledChanged_usesInjectedNowAndCanClearReminder() async {
+        let now = makeDate("2026-04-10T08:30:00Z")
+        let store = TestStore(initialState: makeState()) {
+            makeFeature()
+        } withDependencies: {
+            $0.date.now = now
+        }
+
+        await store.send(.reminderEnabledChanged(true)) {
+            $0.basics.reminderAt = now
+        }
+
+        await store.send(.reminderEnabledChanged(false)) {
+            $0.basics.reminderAt = nil
         }
     }
 

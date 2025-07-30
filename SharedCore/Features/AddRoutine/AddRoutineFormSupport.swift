@@ -9,6 +9,14 @@ enum AddRoutineFormEditor {
         basics.deadline = isEnabled ? (basics.deadline ?? now) : nil
     }
 
+    static func setReminderEnabled(
+        _ isEnabled: Bool,
+        now: Date,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.reminderAt = isEnabled ? (basics.reminderAt ?? now) : nil
+    }
+
     static func setTaskType(
         _ taskType: RoutineTaskType,
         basics: inout AddRoutineBasicsState,

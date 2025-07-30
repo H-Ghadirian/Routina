@@ -46,6 +46,7 @@ struct TaskDetailFeature: Reducer {
         var editRoutineNotes: String = ""
         var editRoutineLink: String = ""
         var editDeadline: Date?
+        var editReminderAt: Date?
         var editPriority: RoutineTaskPriority = .none
         var editImportance: RoutineTaskImportance = .level2
         var editUrgency: RoutineTaskUrgency = .level2
@@ -152,6 +153,8 @@ struct TaskDetailFeature: Reducer {
         case editRoutineLinkChanged(String)
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
+        case editReminderEnabledChanged(Bool)
+        case editReminderDateChanged(Date)
         case editPriorityChanged(RoutineTaskPriority)
         case editImportanceChanged(RoutineTaskImportance)
         case editUrgencyChanged(RoutineTaskUrgency)
@@ -525,6 +528,14 @@ struct TaskDetailFeature: Reducer {
             state.editDeadline = deadline
             return .none
 
+        case let .editReminderEnabledChanged(isEnabled):
+            state.editReminderAt = isEnabled ? (state.editReminderAt ?? now) : nil
+            return .none
+
+        case let .editReminderDateChanged(reminderDate):
+            state.editReminderAt = reminderDate
+            return .none
+
         case let .editPriorityChanged(priority):
             state.editPriority = priority
             return .none
@@ -815,6 +826,7 @@ struct TaskDetailFeature: Reducer {
                 notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
                 link: RoutineTask.sanitizedLink(state.editRoutineLink),
                 deadline: state.editScheduleMode == .oneOff ? state.editDeadline : nil,
+                reminderAt: state.editReminderAt,
                 priority: matrixPriority(
                     importance: state.editImportance,
                     urgency: state.editUrgency

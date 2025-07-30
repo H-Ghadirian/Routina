@@ -77,6 +77,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var notes: String?
         var link: String?
         var deadline: Date?
+        var reminderAt: Date?
         var priorityRawValue: String
         var importanceRawValue: String
         var urgencyRawValue: String
@@ -107,6 +108,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             notes = task.notes
             link = task.link
             deadline = task.deadline
+            reminderAt = task.reminderAt
             priorityRawValue = task.priorityRawValue
             importanceRawValue = task.importanceRawValue
             urgencyRawValue = task.urgencyRawValue

@@ -29,6 +29,7 @@ struct TaskFormContent: View {
             if model.taskType.wrappedValue == .todo {
                 deadlineSection
             }
+            reminderSection
             importanceUrgencySection
             pressureSection
             estimationSection
@@ -472,6 +473,18 @@ struct TaskFormContent: View {
             if model.deadlineEnabled.wrappedValue {
                 DatePicker("Deadline", selection: model.deadline)
             }
+        }
+    }
+
+    private var reminderSection: some View {
+        Section(header: Text("Reminder")) {
+            Toggle("Set reminder", isOn: model.reminderEnabled)
+            if model.reminderEnabled.wrappedValue {
+                DatePicker("Reminder", selection: model.reminderAt)
+            }
+            Text("Send one notification at an exact date and time.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

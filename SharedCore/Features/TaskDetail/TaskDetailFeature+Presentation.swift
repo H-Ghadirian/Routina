@@ -238,6 +238,11 @@ extension TaskDetailFeature.State {
         return dueDate.formatted(date: .abbreviated, time: .omitted)
     }
 
+    var reminderMetadataText: String? {
+        guard let reminderAt = task.reminderAt else { return nil }
+        return reminderAt.formatted(date: .abbreviated, time: .shortened)
+    }
+
     var notificationDisabledWarningText: String? {
         guard hasLoadedNotificationStatus else { return nil }
         guard expectsClockTimeNotification else { return nil }
@@ -256,6 +261,9 @@ extension TaskDetailFeature.State {
     }
 
     var expectsClockTimeNotification: Bool {
+        if task.reminderAt != nil {
+            return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
+        }
         if task.isOneOffTask {
             return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
         }

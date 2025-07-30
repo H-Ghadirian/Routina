@@ -54,6 +54,8 @@ struct TaskDetailEditRoutineContent: View {
             ),
             deadlineEnabled: editDeadlineEnabledBinding,
             deadline: editDeadlineBinding,
+            reminderEnabled: editReminderEnabledBinding,
+            reminderAt: editReminderBinding,
             importance: editImportanceBinding,
             urgency: editUrgencyBinding,
             pressure: Binding(
@@ -180,6 +182,20 @@ struct TaskDetailEditRoutineContent: View {
         Binding(
             get: { store.editDeadline ?? Date() },
             set: { store.send(.editDeadlineDateChanged($0)) }
+        )
+    }
+
+    private var editReminderEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { store.editReminderAt != nil },
+            set: { store.send(.editReminderEnabledChanged($0)) }
+        )
+    }
+
+    private var editReminderBinding: Binding<Date> {
+        Binding(
+            get: { store.editReminderAt ?? Date() },
+            set: { store.send(.editReminderDateChanged($0)) }
         )
     }
 

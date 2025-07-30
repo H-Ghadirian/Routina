@@ -550,6 +550,7 @@ struct TaskDetailTCAView: View {
             estimatedDurationMinutes: store.editEstimatedDurationMinutes,
             storyPoints: store.editStoryPoints,
             deadline: store.editDeadline,
+            reminderAt: store.editReminderAt,
             priority: store.editPriority,
             importance: store.editImportance,
             urgency: store.editUrgency,
@@ -766,6 +767,17 @@ struct TaskDetailTCAView: View {
             ])
         }
 
+        if let reminderMetadataText = store.reminderMetadataText {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Reminder",
+                    value: reminderMetadataText,
+                    systemImage: "bell.fill",
+                    tint: .indigo
+                )
+            ])
+        }
+
         if let createdAtBadgeValue = store.state.createdAtBadgeValue {
             rows.append([
                 TaskDetailHeaderBadgeItem(
@@ -848,6 +860,17 @@ struct TaskDetailTCAView: View {
                     value: linkedPlace.name,
                     systemImage: nil,
                     tint: .blue
+                )
+            ])
+        }
+
+        if let reminderMetadataText = store.reminderMetadataText {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Reminder",
+                    value: reminderMetadataText,
+                    systemImage: "bell.fill",
+                    tint: .indigo
                 )
             ])
         }
@@ -1919,6 +1942,7 @@ struct TaskDetailTCAView: View {
         estimatedDurationMinutes: Int?,
         storyPoints: Int?,
         deadline: Date?,
+        reminderAt: Date?,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
@@ -1960,6 +1984,7 @@ struct TaskDetailTCAView: View {
         let currentTags = RoutineTag.deduplicated(task.tags)
         let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
+        let currentReminderAt = task.reminderAt
         let currentImageData = task.imageData
         let candidateTags = RoutineTag.appending(tagDraft, to: tags)
         let candidateRelationships = RoutineTaskRelationship.sanitized(relationships, ownerID: task.id)
@@ -2002,6 +2027,7 @@ struct TaskDetailTCAView: View {
             || estimatedDurationMinutes != task.estimatedDurationMinutes
             || storyPoints != task.storyPoints
             || deadline != currentDeadline
+            || reminderAt != currentReminderAt
             || priority != currentPriority
             || importance != currentImportance
             || urgency != currentUrgency

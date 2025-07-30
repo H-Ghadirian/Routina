@@ -190,6 +190,7 @@ extension TaskDetailFeature {
         notes: String?,
         link: String?,
         deadline: Date?,
+        reminderAt: Date?,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
@@ -221,6 +222,7 @@ extension TaskDetailFeature {
                 task.emoji = emoji
                 task.notes = notes
                 task.link = link
+                task.reminderAt = reminderAt
                 task.priority = priority
                 task.importance = importance
                 task.urgency = urgency

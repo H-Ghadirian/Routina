@@ -148,6 +148,7 @@ final class RoutineTask {
     var notes: String?
     var link: String?
     var deadline: Date?
+    var reminderAt: Date?
     var priorityRawValue: String = RoutineTaskPriority.none.rawValue
     var importanceRawValue: String = RoutineTaskImportance.level2.rawValue
     var urgencyRawValue: String = RoutineTaskUrgency.level2.rawValue
@@ -466,6 +467,7 @@ final class RoutineTask {
         notes: String? = nil,
         link: String? = nil,
         deadline: Date? = nil,
+        reminderAt: Date? = nil,
         priority: RoutineTaskPriority = .none,
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
@@ -508,6 +510,7 @@ final class RoutineTask {
         self.notes = Self.sanitizedNotes(notes)
         self.link = Self.sanitizedLink(link)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
+        self.reminderAt = reminderAt
         self.priorityRawValue = priority.rawValue
         self.importanceRawValue = importance.rawValue
         self.urgencyRawValue = urgency.rawValue
@@ -887,6 +890,7 @@ final class RoutineTask {
             notes: notes,
             link: link,
             deadline: deadline,
+            reminderAt: reminderAt,
             priority: priority,
             importance: importance,
             urgency: urgency,

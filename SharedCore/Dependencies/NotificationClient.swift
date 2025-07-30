@@ -10,6 +10,7 @@ struct NotificationPayload: Sendable {
     let dueDate: Date?
     let triggerDate: Date?
     let isOneOffTask: Bool
+    let isCustomReminder: Bool
     let isArchived: Bool
     let usesExactTime: Bool
     let isChecklistDriven: Bool

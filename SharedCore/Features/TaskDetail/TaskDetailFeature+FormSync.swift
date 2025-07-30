@@ -8,6 +8,7 @@ extension TaskDetailFeature {
         state.editRoutineNotes = state.task.notes ?? ""
         state.editRoutineLink = state.task.link ?? ""
         state.editDeadline = state.task.deadline
+        state.editReminderAt = state.task.reminderAt
         if state.task.derivedPriorityFromMatrix == state.task.priority || state.task.priority == .none {
             state.editImportance = state.task.importance
             state.editUrgency = state.task.urgency

@@ -67,6 +67,8 @@ extension AddRoutineTCAView {
             link: routineLinkBinding,
             deadlineEnabled: deadlineEnabledBinding,
             deadline: deadlineBinding,
+            reminderEnabled: reminderEnabledBinding,
+            reminderAt: reminderBinding,
             importance: importanceBinding,
             urgency: urgencyBinding,
             pressure: Binding(
@@ -146,6 +148,20 @@ extension AddRoutineTCAView {
         Binding(
             get: { store.schedule.recurrenceHasExplicitTime },
             set: { store.send(.recurrenceHasExplicitTimeChanged($0)) }
+        )
+    }
+
+    private var reminderEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { store.basics.reminderAt != nil },
+            set: { store.send(.reminderEnabledChanged($0)) }
+        )
+    }
+
+    private var reminderBinding: Binding<Date> {
+        Binding(
+            get: { store.basics.reminderAt ?? Date() },
+            set: { store.send(.reminderDateChanged($0)) }
         )
     }
 }

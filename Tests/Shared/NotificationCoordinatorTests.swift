@@ -117,6 +117,27 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func notificationPayload_usesCustomReminderAsExactTriggerForRoutine() {
+        let reminderAt = makeDate("2026-04-25T14:30:00Z")
+        let task = RoutineTask(
+            name: "Stretch",
+            reminderAt: reminderAt,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 3),
+            scheduleAnchor: makeDate("2026-04-20T10:00:00Z")
+        )
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: makeDate("2026-04-25T12:00:00Z")
+        )
+
+        #expect(payload.triggerDate == reminderAt)
+        #expect(payload.isCustomReminder)
+        #expect(payload.usesExactTime)
+    }
+
+    @Test
     func notificationPayload_usesWeeklyExactTimeAsTrigger() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -184,6 +205,7 @@ struct NotificationCoordinatorTests {
             dueDate: makeDate("2026-04-24T12:00:00Z"),
             triggerDate: makeDate("2026-04-24T20:00:00Z"),
             isOneOffTask: false,
+            isCustomReminder: false,
             isArchived: false,
             usesExactTime: false,
             isChecklistDriven: false,

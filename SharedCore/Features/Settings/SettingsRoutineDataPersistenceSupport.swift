@@ -2,8 +2,8 @@ import Foundation
 import SwiftData
 
 enum SettingsRoutineDataPersistence {
-    static let currentSchemaVersion = 14
-    static let legacyJSONSchemaVersion = 13
+    static let currentSchemaVersion = 15
+    static let legacyJSONSchemaVersion = 14
     static let backupPackageExtension = "routinabackup"
     static let manifestFileName = "manifest.json"
     static let attachmentsDirectoryName = "attachments"
@@ -32,6 +32,7 @@ enum SettingsRoutineDataPersistence {
             var notes: String?
             var link: String?
             var deadline: Date?
+            var reminderAt: Date?
             var imageData: Data?
             var imageAttachmentID: UUID?
             var placeID: UUID?
@@ -142,6 +143,7 @@ enum SettingsRoutineDataPersistence {
                     notes: $0.notes,
                     link: $0.link,
                     deadline: $0.deadline,
+                    reminderAt: $0.reminderAt,
                     imageData: $0.imageData,
                     imageAttachmentID: nil,
                     placeID: $0.placeID,
@@ -309,6 +311,7 @@ enum SettingsRoutineDataPersistence {
                     notes: $0.notes,
                     link: $0.link,
                     deadline: $0.deadline,
+                    reminderAt: $0.reminderAt,
                     imageData: nil,
                     imageAttachmentID: taskImageAttachmentIDs[$0.id],
                     placeID: $0.placeID,
@@ -477,6 +480,7 @@ enum SettingsRoutineDataPersistence {
                     notes: task.notes,
                     link: task.link,
                     deadline: task.deadline,
+                    reminderAt: task.reminderAt,
                     pressure: task.pressure ?? .none,
                     pressureUpdatedAt: task.pressureUpdatedAt,
                     imageData: imageData,

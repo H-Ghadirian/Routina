@@ -39,6 +39,8 @@ struct AddRoutineFeature: Reducer {
         case routineLinkChanged(String)
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
+        case reminderEnabledChanged(Bool)
+        case reminderDateChanged(Date)
         case priorityChanged(RoutineTaskPriority)
         case importanceChanged(RoutineTaskImportance)
         case urgencyChanged(RoutineTaskUrgency)
@@ -142,6 +144,18 @@ struct AddRoutineFeature: Reducer {
                 deadline,
                 basics: &state.basics
             )
+            return .none
+
+        case let .reminderEnabledChanged(isEnabled):
+            AddRoutineFormEditor.setReminderEnabled(
+                isEnabled,
+                now: now,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .reminderDateChanged(reminderDate):
+            state.basics.reminderAt = reminderDate
             return .none
 
         case let .priorityChanged(priority):

@@ -197,6 +197,7 @@ enum CloudKitDirectPullService {
         var notes: String?
         var link: String?
         var deadline: Date?
+        var reminderAt: Date?
         var placeID: UUID?
         var tags: [String]?
         var steps: [RoutineStep]?
@@ -282,6 +283,7 @@ enum CloudKitDirectPullService {
         let notesValue = stringValue(in: record, keys: ["notes", "NOTES", "znotes", "ZNOTES", "cd_notes"])
         let linkValue = stringValue(in: record, keys: ["link", "LINK", "zlink", "ZLINK", "cd_link"])
         let deadlineValue = dateValue(in: record, keys: ["deadline", "DEADLINE", "zdeadline", "ZDEADLINE", "cd_deadline"])
+        let reminderAtValue = dateValue(in: record, keys: ["reminderAt", "REMINDERAT", "zreminderat", "ZREMINDERAT", "cd_reminderat"])
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let stepsStorageValue = stringValue(in: record, keys: ["stepsStorage", "stepsstorage", "STEPSSTORAGE", "zstepsstorage", "ZSTEPSSTORAGE", "cd_stepsstorage"])
@@ -459,6 +461,7 @@ enum CloudKitDirectPullService {
             notes: notesValue,
             link: linkValue,
             deadline: deadlineValue,
+            reminderAt: reminderAtValue,
             placeID: placeIDValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
             steps: stepsValue,
@@ -586,6 +589,7 @@ enum CloudKitDirectPullService {
                     taskWithSameName.scheduleMode = scheduleMode
                 }
                 taskWithSameName.deadline = taskWithSameName.scheduleMode == .oneOff ? payload.deadline : nil
+                taskWithSameName.reminderAt = payload.reminderAt
                 if let recurrenceRule = payload.recurrenceRule {
                     taskWithSameName.recurrenceRule = recurrenceRule
                 } else {
@@ -645,6 +649,7 @@ enum CloudKitDirectPullService {
                 existing.scheduleMode = scheduleMode
             }
             existing.deadline = existing.scheduleMode == .oneOff ? payload.deadline : nil
+            existing.reminderAt = payload.reminderAt
             if let recurrenceRule = payload.recurrenceRule {
                 existing.recurrenceRule = recurrenceRule
             } else {
@@ -703,6 +708,7 @@ enum CloudKitDirectPullService {
                     taskWithSameName.scheduleMode = scheduleMode
                 }
                 taskWithSameName.deadline = taskWithSameName.scheduleMode == .oneOff ? payload.deadline : nil
+                taskWithSameName.reminderAt = payload.reminderAt
                 if let recurrenceRule = payload.recurrenceRule {
                     taskWithSameName.recurrenceRule = recurrenceRule
                 } else {
@@ -751,6 +757,7 @@ enum CloudKitDirectPullService {
                     notes: payload.notes,
                     link: payload.link,
                     deadline: payload.deadline,
+                    reminderAt: payload.reminderAt,
                     pressure: payload.pressure ?? .none,
                     pressureUpdatedAt: payload.pressureUpdatedAt,
                     imageData: payload.imageData,
