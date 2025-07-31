@@ -520,7 +520,11 @@ enum CloudKitDirectPullService {
         )
         let normalizedIncomingName = RoutinePlace.normalizedName(payload.name)
 
-        if let existing = try context.fetch(descriptor).first {
+        if let existing = try RoutineDuplicateIDCleanup.canonical(
+            descriptor,
+            in: context,
+            rank: { $0.createdAt }
+        ) {
             existing.name = RoutinePlace.cleanedName(payload.name) ?? existing.displayName
             existing.latitude = payload.latitude
             existing.longitude = payload.longitude
@@ -565,7 +569,11 @@ enum CloudKitDirectPullService {
         )
         let normalizedIncomingName = RoutineTask.normalizedName(payload.name)
 
-        if let existing = try context.fetch(descriptor).first {
+        if let existing = try RoutineDuplicateIDCleanup.canonical(
+            descriptor,
+            in: context,
+            rank: { $0.lastDone ?? $0.createdAt ?? .distantPast }
+        ) {
             if let normalizedIncomingName,
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context),
                taskWithSameName.id != existing.id {
@@ -798,7 +806,11 @@ enum CloudKitDirectPullService {
             }
         )
 
-        if let existing = try context.fetch(descriptor).first {
+        if let existing = try RoutineDuplicateIDCleanup.canonical(
+            descriptor,
+            in: context,
+            rank: { $0.timestamp ?? .distantPast }
+        ) {
             existing.timestamp = payload.timestamp
             existing.taskID = payload.taskID
             existing.kind = payload.kind

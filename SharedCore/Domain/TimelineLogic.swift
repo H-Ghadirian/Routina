@@ -61,7 +61,7 @@ enum TimelineLogic {
         now: Date,
         calendar: Calendar
     ) -> [TimelineEntry] {
-        let lookup = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+        let lookup = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let cutoff: Date? = {
             switch range {
             case .today: return calendar.startOfDay(for: now)

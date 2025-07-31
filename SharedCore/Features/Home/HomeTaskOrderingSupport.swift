@@ -70,7 +70,7 @@ enum HomeTaskOrderingSupport {
             do {
                 let context = modelContext()
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                let tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+                let tasksByID = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
                 for (order, id) in update.orderedTaskIDs.enumerated() {
                     tasksByID[id]?.setManualSectionOrder(order, for: update.sectionKey)
                 }

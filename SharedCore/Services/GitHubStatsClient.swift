@@ -758,7 +758,7 @@ private func makeContributionPoints(
     formatter.dateFormat = "yyyy-MM-dd"
 
     let countsByDay = Dictionary(
-        uniqueKeysWithValues: days.compactMap { day -> (Date, Int)? in
+        days.compactMap { day -> (Date, Int)? in
             guard let date = formatter.date(from: day.date) else { return nil }
             let normalized = calendar.startOfDay(for: date)
             guard normalized >= calendar.startOfDay(for: window.startDate),
@@ -767,7 +767,8 @@ private func makeContributionPoints(
                 return nil
             }
             return (normalized, day.contributionCount)
-        }
+        },
+        uniquingKeysWith: { first, _ in first }
     )
 
     return (0..<range.trailingDayCount).compactMap { offset in

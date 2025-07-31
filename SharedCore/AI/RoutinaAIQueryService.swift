@@ -102,7 +102,7 @@ public enum RoutinaAIQueryService {
     ) throws -> RoutinaAITaskSnapshot {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-        let placesByID = Dictionary(uniqueKeysWithValues: places.map { ($0.id, $0) })
+        let placesByID = Dictionary(places.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
         let allSummaries = tasks.map {
             makeSummary(

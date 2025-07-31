@@ -126,4 +126,33 @@ struct RoutinaAIQueryServiceTests {
         #expect(snapshot.tasks.first?.primaryStatus == .overdue)
         #expect(snapshot.tasks.first?.overdueDays == 3)
     }
+
+    @Test
+    func snapshotToleratesDuplicatePlaceIDs() throws {
+        let context = makeInMemoryContext()
+        let sharedID = UUID()
+        let firstPlace = RoutinePlace(id: sharedID, name: "Office A", latitude: 52.52, longitude: 13.40)
+        let secondPlace = RoutinePlace(id: sharedID, name: "Office B", latitude: 52.52, longitude: 13.40)
+        context.insert(firstPlace)
+        context.insert(secondPlace)
+        _ = makeTask(
+            in: context,
+            name: "Standup",
+            interval: 1,
+            lastDone: makeDate("2026-04-20T08:00:00Z"),
+            emoji: "🗣️",
+            placeID: sharedID,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0))
+        )
+        try context.save()
+
+        let snapshot = try RoutinaAIQueryService.snapshot(
+            in: context,
+            now: makeDate("2026-04-23T09:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+
+        #expect(snapshot.tasks.count == 1)
+        #expect(snapshot.tasks.first?.placeName != nil)
+    }
 }

@@ -493,4 +493,27 @@ struct TimelineLogicTests {
 
         #expect(TimelineLogic.availableTags(from: entries) == ["Focus", "Health", "Morning"])
     }
+
+    @Test
+    func filteredEntries_toleratesDuplicateTaskIDs() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let sharedID = UUID()
+        let firstTask = makeRoutineTask(id: sharedID, name: "First copy", emoji: "🥇")
+        let secondTask = makeRoutineTask(id: sharedID, name: "Second copy", emoji: "🥈")
+        let log = makeLog(taskID: sharedID, timestamp: makeDate("2026-03-20T08:00:00Z"))
+
+        let entries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [firstTask, secondTask],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(entries.count == 1)
+        #expect(entries[0].taskName == "First copy")
+        #expect(entries[0].taskEmoji == "🥇")
+    }
 }

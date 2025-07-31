@@ -115,7 +115,7 @@ extension HomeFeature {
     }
 
     func refreshDisplays(_ state: inout State) {
-        let placesByID = Dictionary(uniqueKeysWithValues: state.routinePlaces.map { ($0.id, $0) })
+        let placesByID = Dictionary(state.routinePlaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var active: [RoutineDisplay] = []
         var away: [RoutineDisplay] = []
         var archived: [RoutineDisplay] = []
