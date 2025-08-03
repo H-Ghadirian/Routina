@@ -66,6 +66,48 @@ enum RoutineLogHistory {
         return (try? context.fetch(descriptor)) ?? []
     }
 
+    @MainActor
+    static func advanceTask(
+        taskID: UUID,
+        completedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> (task: RoutineTask, result: RoutineAdvanceResult)? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        let hasMatchingLog = existingLogs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: completedAt)
+        }
+        if hasMatchingLog {
+            return (task, .ignoredAlreadyCompletedToday)
+        }
+
+        let result = task.advance(completedAt: completedAt, calendar: calendar)
+        switch result {
+        case .ignoredPaused, .ignoredAlreadyCompletedToday:
+            return (task, result)
+
+        case .advancedStep:
+            try context.save()
+            return (task, result)
+
+        case .completedRoutine:
+            context.insert(RoutineLog(timestamp: completedAt, taskID: taskID))
+            try context.save()
+            return (task, result)
+        }
+    }
+
     private static func isSameCompletion(_ lhs: Date?, as rhs: Date) -> Bool {
         guard let lhs else { return false }
         return Calendar.current.isDate(lhs, inSameDayAs: rhs)

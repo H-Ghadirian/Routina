@@ -95,17 +95,32 @@ enum CloudKitDirectPullService {
     @MainActor
     private static func merge(result: PullResult, into context: ModelContext) throws {
         var mergedTaskIDs: [UUID: UUID] = [:]
+        var placePayloads: [PlacePayload] = []
+        var taskPayloads: [TaskPayload] = []
         var logPayloads: [LogPayload] = []
 
         for record in result.changedRecords {
+            if let placePayload = parsePlace(from: record) {
+                placePayloads.append(placePayload)
+                continue
+            }
+
             if let taskPayload = parseTask(from: record) {
-                mergedTaskIDs[taskPayload.id] = try upsertTask(taskPayload, in: context)
+                taskPayloads.append(taskPayload)
                 continue
             }
 
             if let logPayload = parseLog(from: record) {
                 logPayloads.append(logPayload)
             }
+        }
+
+        for placePayload in placePayloads {
+            try upsertPlace(placePayload, in: context)
+        }
+
+        for taskPayload in taskPayloads {
+            mergedTaskIDs[taskPayload.id] = try upsertTask(taskPayload, in: context)
         }
 
         for logPayload in logPayloads {
@@ -122,6 +137,17 @@ enum CloudKitDirectPullService {
         for recordID in result.deletedRecordIDs {
             guard let id = UUID(uuidString: recordID.recordName) else { continue }
             if let targetTaskID = mergedTaskIDs[id], targetTaskID != id {
+                continue
+            }
+
+            let placeDescriptor = FetchDescriptor<RoutinePlace>(
+                predicate: #Predicate { place in
+                    place.id == id
+                }
+            )
+            if let place = try context.fetch(placeDescriptor).first {
+                context.delete(place)
+                try clearPlaceReference(placeID: id, in: context)
                 continue
             }
 
@@ -156,17 +182,61 @@ enum CloudKitDirectPullService {
         var id: UUID
         var name: String?
         var emoji: String?
+        var placeID: UUID?
         var tags: [String]?
+        var steps: [RoutineStep]?
         var interval: Int16
         var lastDone: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var completedStepCount: Int16
+        var sequenceStartedAt: Date?
+    }
+
+    private struct PlacePayload {
+        var id: UUID
+        var name: String?
+        var latitude: Double
+        var longitude: Double
+        var radiusMeters: Double
+        var createdAt: Date?
     }
 
     private struct LogPayload {
         var id: UUID
         var timestamp: Date?
         var taskID: UUID
+    }
+
+    private static func parsePlace(from record: CKRecord) -> PlacePayload? {
+        guard isPlaceRecordType(record.recordType) else { return nil }
+        guard let id = UUID(uuidString: record.recordID.recordName) else { return nil }
+
+        let nameValue = stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
+        guard
+            let latitudeValue = doubleValue(in: record, keys: ["latitude", "LATITUDE", "zlatitude", "ZLATITUDE", "cd_latitude"]),
+            let longitudeValue = doubleValue(in: record, keys: ["longitude", "LONGITUDE", "zlongitude", "ZLONGITUDE", "cd_longitude"])
+        else {
+            return nil
+        }
+
+        let radiusValue = doubleValue(
+            in: record,
+            keys: ["radiusMeters", "RADIUSMETERS", "zradiusmeters", "ZRADIUSMETERS", "cd_radiusmeters"]
+        ) ?? 150
+        let createdAtValue = dateValue(
+            in: record,
+            keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"]
+        )
+
+        return PlacePayload(
+            id: id,
+            name: nameValue,
+            latitude: latitudeValue,
+            longitude: longitudeValue,
+            radiusMeters: radiusValue,
+            createdAt: createdAtValue
+        )
     }
 
     private static func parseTask(from record: CKRecord) -> TaskPayload? {
@@ -177,7 +247,9 @@ enum CloudKitDirectPullService {
         let intervalValue = intValue(in: record, keys: ["interval", "INTERVAL", "zinterval", "ZINTERVAL", "cd_interval"])
         let nameValue = stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
         let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
+        let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
+        let stepsStorageValue = stringValue(in: record, keys: ["stepsStorage", "stepsstorage", "STEPSSTORAGE", "zstepsstorage", "ZSTEPSSTORAGE", "cd_stepsstorage"])
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
         let scheduleAnchorValue = dateValue(
             in: record,
@@ -187,28 +259,52 @@ enum CloudKitDirectPullService {
             in: record,
             keys: ["pausedAt", "PAUSEDAT", "zpausedat", "ZPAUSEDAT", "cd_pausedat"]
         )
+        let completedStepCountValue = intValue(
+            in: record,
+            keys: ["completedStepCount", "COMPLETEDSTEPCOUNT", "zcompletedstepcount", "ZCOMPLETEDSTEPCOUNT", "cd_completedstepcount"]
+        )
+        let sequenceStartedAtValue = dateValue(
+            in: record,
+            keys: ["sequenceStartedAt", "SEQUENCESTARTEDAT", "zsequencestartedat", "ZSEQUENCESTARTEDAT", "cd_sequencestartedat"]
+        )
 
         guard
             intervalValue != nil
                 || nameValue != nil
                 || emojiValue != nil
+                || placeIDValue != nil
                 || tagsStorageValue != nil
+                || stepsStorageValue != nil
                 || lastDoneValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
+                || completedStepCountValue != nil
+                || sequenceStartedAtValue != nil
         else {
             return nil
+        }
+
+        let stepsValue: [RoutineStep]?
+        if let stepsStorageValue {
+            let data = Data(stepsStorageValue.utf8)
+            stepsValue = (try? JSONDecoder().decode([RoutineStep].self, from: data)).map(RoutineStep.sanitized)
+        } else {
+            stepsValue = nil
         }
 
         return TaskPayload(
             id: id,
             name: nameValue,
             emoji: emojiValue,
+            placeID: placeIDValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
+            steps: stepsValue,
             interval: Int16(clamping: intervalValue ?? 1),
             lastDone: lastDoneValue,
             scheduleAnchor: scheduleAnchorValue,
-            pausedAt: pausedAtValue
+            pausedAt: pausedAtValue,
+            completedStepCount: Int16(clamping: completedStepCountValue ?? 0),
+            sequenceStartedAt: sequenceStartedAtValue
         )
     }
 
@@ -224,6 +320,38 @@ enum CloudKitDirectPullService {
 
         let timestamp = dateValue(in: record, keys: ["timestamp", "TIMESTAMP", "ztimestamp", "ZTIMESTAMP", "cd_timestamp"])
         return LogPayload(id: id, timestamp: timestamp, taskID: taskID)
+    }
+
+    @MainActor
+    private static func upsertPlace(_ payload: PlacePayload, in context: ModelContext) throws {
+        let payloadID = payload.id
+        let descriptor = FetchDescriptor<RoutinePlace>(
+            predicate: #Predicate { place in
+                place.id == payloadID
+            }
+        )
+
+        if let existing = try context.fetch(descriptor).first {
+            existing.name = RoutinePlace.cleanedName(payload.name) ?? existing.displayName
+            existing.latitude = payload.latitude
+            existing.longitude = payload.longitude
+            existing.radiusMeters = max(payload.radiusMeters, 25)
+            if let createdAt = payload.createdAt {
+                existing.createdAt = createdAt
+            }
+            return
+        }
+
+        context.insert(
+            RoutinePlace(
+                id: payload.id,
+                name: RoutinePlace.cleanedName(payload.name) ?? "Place",
+                latitude: payload.latitude,
+                longitude: payload.longitude,
+                radiusMeters: payload.radiusMeters,
+                createdAt: payload.createdAt ?? Date()
+            )
+        )
     }
 
     @MainActor
@@ -243,38 +371,56 @@ enum CloudKitDirectPullService {
                 // Keep local uniqueness invariant if cloud data contains a duplicate name.
                 taskWithSameName.name = cleanedRoutineName(payload.name)
                 taskWithSameName.emoji = payload.emoji
+                taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
                     taskWithSameName.tags = tags
+                }
+                if let steps = payload.steps {
+                    taskWithSameName.replaceSteps(steps)
                 }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
+                taskWithSameName.completedStepCount = payload.completedStepCount
+                taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
 
             existing.name = cleanedRoutineName(payload.name)
             existing.emoji = payload.emoji
+            existing.placeID = payload.placeID
             if let tags = payload.tags {
                 existing.tags = tags
+            }
+            if let steps = payload.steps {
+                existing.replaceSteps(steps)
             }
             existing.interval = payload.interval
             existing.lastDone = payload.lastDone
             existing.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? existing.scheduleAnchor
             existing.pausedAt = payload.pausedAt
+            existing.completedStepCount = payload.completedStepCount
+            existing.sequenceStartedAt = payload.sequenceStartedAt
             return existing.id
         } else {
             if let normalizedIncomingName,
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context) {
                 taskWithSameName.emoji = payload.emoji
+                taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
                     taskWithSameName.tags = tags
+                }
+                if let steps = payload.steps {
+                    taskWithSameName.replaceSteps(steps)
                 }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
+                taskWithSameName.completedStepCount = payload.completedStepCount
+                taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -284,11 +430,15 @@ enum CloudKitDirectPullService {
                     id: payload.id,
                     name: cleanedRoutineName(payload.name),
                     emoji: payload.emoji,
+                    placeID: payload.placeID,
                     tags: payload.tags ?? [],
+                    steps: payload.steps ?? [],
                     interval: payload.interval,
                     lastDone: payload.lastDone,
                     scheduleAnchor: payload.scheduleAnchor,
-                    pausedAt: payload.pausedAt
+                    pausedAt: payload.pausedAt,
+                    completedStepCount: payload.completedStepCount,
+                    sequenceStartedAt: payload.sequenceStartedAt
                 )
             )
             return payload.id
@@ -444,6 +594,26 @@ enum CloudKitDirectPullService {
         return nil
     }
 
+    private static func doubleValue(in record: CKRecord, keys: [String]) -> Double? {
+        for key in keys {
+            if let value = record[key] as? NSNumber {
+                return value.doubleValue
+            }
+            if let value = record[key] as? Double {
+                return value
+            }
+        }
+
+        let lowerLookup = Dictionary(uniqueKeysWithValues: record.allKeys().map { ($0.lowercased(), $0) })
+        for key in keys {
+            if let matchedKey = lowerLookup[key.lowercased()],
+               let number = record[matchedKey] as? NSNumber {
+                return number.doubleValue
+            }
+        }
+        return nil
+    }
+
     private static func dateValue(in record: CKRecord, keys: [String]) -> Date? {
         for key in keys {
             if let value = record[key] as? Date {
@@ -494,10 +664,24 @@ enum CloudKitDirectPullService {
             || normalized.contains("routine_task")
     }
 
+    private static func isPlaceRecordType(_ recordType: String) -> Bool {
+        let normalized = recordType.lowercased()
+        return normalized.contains("routineplace")
+            || normalized.contains("routine_place")
+    }
+
     private static func isLogRecordType(_ recordType: String) -> Bool {
         let normalized = recordType.lowercased()
         return normalized.contains("routinelog")
             || normalized.contains("routine_log")
+    }
+
+    @MainActor
+    private static func clearPlaceReference(placeID: UUID, in context: ModelContext) throws {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        for task in tasks where task.placeID == placeID {
+            task.placeID = nil
+        }
     }
 
     @MainActor

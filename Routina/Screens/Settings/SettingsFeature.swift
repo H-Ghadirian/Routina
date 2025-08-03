@@ -23,11 +23,19 @@ struct SettingsFeature {
         var isCloudSyncInProgress: Bool = false
         var isCloudDataResetInProgress: Bool = false
         var isCloudDataResetConfirmationPresented: Bool = false
+        var isDeletePlaceConfirmationPresented: Bool = false
         var cloudStatusMessage: String = ""
         var isDataTransferInProgress: Bool = false
         var dataTransferStatusMessage: String = ""
         var appIconStatusMessage: String = ""
         var selectedAppIcon: AppIconOption = .persistedSelection
+        var savedPlaces: [RoutinePlaceSummary] = []
+        var placePendingDeletion: RoutinePlaceSummary?
+        var placeDraftName: String = ""
+        var placeDraftRadiusMeters: Double = 150
+        var placeStatusMessage: String = ""
+        var isPlaceOperationInProgress: Bool = false
+        var locationAuthorizationStatus: LocationAuthorizationStatus = .notDetermined
     }
 
     enum Action: Equatable {
@@ -44,6 +52,15 @@ struct SettingsFeature {
         case syncNowTapped
         case setCloudDataResetConfirmation(Bool)
         case resetCloudDataConfirmed
+        case setDeletePlaceConfirmation(Bool)
+        case placesLoaded([RoutinePlaceSummary])
+        case locationSnapshotUpdated(LocationSnapshot)
+        case placeDraftNameChanged(String)
+        case placeDraftRadiusChanged(Double)
+        case saveCurrentLocationAsPlaceTapped
+        case deletePlaceTapped(UUID)
+        case deletePlaceConfirmed
+        case placeOperationFinished(success: Bool, message: String)
         case exportRoutineDataTapped
         case importRoutineDataTapped
         case appIconSelected(AppIconOption)
@@ -56,6 +73,7 @@ struct SettingsFeature {
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.appIconClient) var appIconClient
+    @Dependency(\.locationClient) var locationClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -115,6 +133,10 @@ struct SettingsFeature {
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
+                    let placeSummaries = try? self.fetchPlaceSummaries(in: self.modelContext())
+                    send(.placesLoaded(placeSummaries ?? []))
+                    let locationSnapshot = await self.locationClient.snapshot(false)
+                    send(.locationSnapshotUpdated(locationSnapshot))
                 }
 
             case .contactUsTapped:
@@ -146,6 +168,10 @@ struct SettingsFeature {
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
+                    let placeSummaries = try? self.fetchPlaceSummaries(in: self.modelContext())
+                    send(.placesLoaded(placeSummaries ?? []))
+                    let locationSnapshot = await self.locationClient.snapshot(false)
+                    send(.locationSnapshotUpdated(locationSnapshot))
                     if notificationsEnabled {
                         if systemEnabled {
                             try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
@@ -240,6 +266,169 @@ struct SettingsFeature {
                     }
                 }
 
+            case let .setDeletePlaceConfirmation(isPresented):
+                state.isDeletePlaceConfirmationPresented = isPresented
+                if !isPresented {
+                    state.placePendingDeletion = nil
+                }
+                return .none
+
+            case let .placesLoaded(places):
+                state.savedPlaces = places
+                if let pendingPlace = state.placePendingDeletion,
+                   let updatedPlace = places.first(where: { $0.id == pendingPlace.id }) {
+                    state.placePendingDeletion = updatedPlace
+                }
+                return .none
+
+            case let .locationSnapshotUpdated(snapshot):
+                state.locationAuthorizationStatus = snapshot.authorizationStatus
+                return .none
+
+            case let .placeDraftNameChanged(name):
+                state.placeDraftName = name
+                return .none
+
+            case let .placeDraftRadiusChanged(radius):
+                state.placeDraftRadiusMeters = min(max(radius, 25), 2_000)
+                return .none
+
+            case .saveCurrentLocationAsPlaceTapped:
+                let cleanedName = RoutinePlace.cleanedName(state.placeDraftName)
+                guard let cleanedName else {
+                    state.placeStatusMessage = "Enter a place name first."
+                    return .none
+                }
+                guard !state.isPlaceOperationInProgress else {
+                    return .none
+                }
+
+                state.isPlaceOperationInProgress = true
+                state.placeStatusMessage = ""
+                let radiusMeters = state.placeDraftRadiusMeters
+
+                return .run { @MainActor send in
+                    let snapshot = await self.locationClient.snapshot(true)
+                    send(.locationSnapshotUpdated(snapshot))
+
+                    guard let coordinate = snapshot.coordinate else {
+                        send(
+                            .placeOperationFinished(
+                                success: false,
+                                message: self.placeUnavailableMessage(for: snapshot.authorizationStatus)
+                            )
+                        )
+                        return
+                    }
+
+                    do {
+                        let context = self.modelContext()
+                        if try self.hasDuplicatePlaceName(cleanedName, in: context) {
+                            send(
+                                .placeOperationFinished(
+                                    success: false,
+                                    message: "A place with this name already exists."
+                                )
+                            )
+                            return
+                        }
+
+                        context.insert(
+                            RoutinePlace(
+                                name: cleanedName,
+                                latitude: coordinate.latitude,
+                                longitude: coordinate.longitude,
+                                radiusMeters: radiusMeters
+                            )
+                        )
+                        try context.save()
+                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        let summaries = try self.fetchPlaceSummaries(in: context)
+                        send(.placesLoaded(summaries))
+                        send(
+                            .placeOperationFinished(
+                                success: true,
+                                message: "Saved \(cleanedName)."
+                            )
+                        )
+                    } catch {
+                        send(
+                            .placeOperationFinished(
+                                success: false,
+                                message: "Saving place failed: \(error.localizedDescription)"
+                            )
+                        )
+                    }
+                }
+
+            case let .deletePlaceTapped(placeID):
+                guard !state.isPlaceOperationInProgress else {
+                    return .none
+                }
+
+                guard let place = state.savedPlaces.first(where: { $0.id == placeID }) else {
+                    return .none
+                }
+
+                state.placePendingDeletion = place
+                state.isDeletePlaceConfirmationPresented = true
+                return .none
+
+            case .deletePlaceConfirmed:
+                guard !state.isPlaceOperationInProgress else {
+                    return .none
+                }
+                guard let pendingPlace = state.placePendingDeletion else {
+                    return .none
+                }
+
+                state.isDeletePlaceConfirmationPresented = false
+                state.placePendingDeletion = nil
+                state.isPlaceOperationInProgress = true
+                state.placeStatusMessage = ""
+                let placeID = pendingPlace.id
+
+                return .run { @MainActor send in
+                    do {
+                        let context = self.modelContext()
+                        let placeDescriptor = FetchDescriptor<RoutinePlace>(
+                            predicate: #Predicate { place in
+                                place.id == placeID
+                            }
+                        )
+
+                        if let place = try context.fetch(placeDescriptor).first {
+                            context.delete(place)
+                        }
+
+                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                        for task in tasks where task.placeID == placeID {
+                            task.placeID = nil
+                        }
+
+                        try context.save()
+                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        let summaries = try self.fetchPlaceSummaries(in: context)
+                        send(.placesLoaded(summaries))
+                        send(.placeOperationFinished(success: true, message: "Place deleted."))
+                    } catch {
+                        send(
+                            .placeOperationFinished(
+                                success: false,
+                                message: "Deleting place failed: \(error.localizedDescription)"
+                            )
+                        )
+                    }
+                }
+
+            case let .placeOperationFinished(success, message):
+                state.isPlaceOperationInProgress = false
+                state.placeStatusMessage = message
+                if success {
+                    state.placeDraftName = ""
+                }
+                return .none
+
             case .exportRoutineDataTapped:
 #if os(macOS)
                 guard !state.isDataTransferInProgress else {
@@ -322,7 +511,7 @@ struct SettingsFeature {
                         await send(
                             .routineDataTransferFinished(
                                 success: true,
-                                message: "Loaded \(importedSummary.tasks) routines and \(importedSummary.logs) logs."
+                                message: "Loaded \(importedSummary.tasks) routines, \(importedSummary.places) places, and \(importedSummary.logs) logs."
                             )
                         )
                     } catch {
@@ -389,21 +578,74 @@ struct SettingsFeature {
         }
     }
 
+    @MainActor
+    private func fetchPlaceSummaries(in context: ModelContext) throws -> [RoutinePlaceSummary] {
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        return places
+            .map { place in
+                place.summary(linkedRoutineCount: linkedCounts[place.id, default: 0])
+            }
+            .sorted { lhs, rhs in
+                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+    }
+
+    private func hasDuplicatePlaceName(_ name: String, in context: ModelContext) throws -> Bool {
+        guard let normalizedName = RoutinePlace.normalizedName(name) else { return false }
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        return places.contains { place in
+            RoutinePlace.normalizedName(place.name) == normalizedName
+        }
+    }
+
+    private func placeUnavailableMessage(for authorizationStatus: LocationAuthorizationStatus) -> String {
+        switch authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return "Current location is unavailable right now. Try again in a moment."
+        case .notDetermined:
+            return "Allow location access to save places."
+        case .disabled:
+            return "Location services are disabled on this device."
+        case .restricted, .denied:
+            return "Enable location access in System Settings to save places."
+        }
+    }
+
     private struct RoutineDataBackup: Codable {
         var schemaVersion: Int
         var exportedAt: Date
+        var places: [Place]?
         var tasks: [Task]
         var logs: [Log]
+
+        struct Place: Codable {
+            var id: UUID
+            var name: String
+            var latitude: Double
+            var longitude: Double
+            var radiusMeters: Double
+            var createdAt: Date?
+        }
 
         struct Task: Codable {
             var id: UUID
             var name: String?
             var emoji: String?
+            var placeID: UUID?
             var tags: [String]?
+            var steps: [RoutineStep]?
             var interval: Int
             var lastDone: Date?
             var scheduleAnchor: Date?
             var pausedAt: Date?
+            var completedStepCount: Int?
+            var sequenceStartedAt: Date?
         }
 
         struct Log: Codable {
@@ -414,6 +656,7 @@ struct SettingsFeature {
     }
 
     private struct ImportSummary {
+        var places: Int
         var tasks: Int
         var logs: Int
     }
@@ -437,22 +680,37 @@ struct SettingsFeature {
 
     @MainActor
     private func buildRoutineDataBackupJSON(from context: ModelContext) throws -> Data {
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = RoutineDataBackup(
-            schemaVersion: 2,
+            schemaVersion: 4,
             exportedAt: Date(),
+            places: places.map {
+                .init(
+                    id: $0.id,
+                    name: $0.displayName,
+                    latitude: $0.latitude,
+                    longitude: $0.longitude,
+                    radiusMeters: $0.radiusMeters,
+                    createdAt: $0.createdAt
+                )
+            },
             tasks: tasks.map {
                 .init(
                     id: $0.id,
                     name: $0.name,
                     emoji: $0.emoji,
+                    placeID: $0.placeID,
                     tags: $0.tags,
+                    steps: $0.steps,
                     interval: max(Int($0.interval), 1),
                     lastDone: $0.lastDone,
                     scheduleAnchor: $0.scheduleAnchor,
-                    pausedAt: $0.pausedAt
+                    pausedAt: $0.pausedAt,
+                    completedStepCount: $0.completedSteps,
+                    sequenceStartedAt: $0.sequenceStartedAt
                 )
             },
             logs: logs.map {
@@ -479,7 +737,7 @@ struct SettingsFeature {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
 
-        guard (1...2).contains(backup.schemaVersion) else {
+        guard (1...4).contains(backup.schemaVersion) else {
             throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -494,6 +752,28 @@ struct SettingsFeature {
                 context.delete(task)
             }
 
+            let existingPlaces = try context.fetch(FetchDescriptor<RoutinePlace>())
+            for place in existingPlaces {
+                context.delete(place)
+            }
+
+            var importedPlaceIDs = Set<UUID>()
+            var importedPlaceCount = 0
+            for place in backup.places ?? [] {
+                guard importedPlaceIDs.insert(place.id).inserted else { continue }
+
+                let importedPlace = RoutinePlace(
+                    id: place.id,
+                    name: place.name,
+                    latitude: place.latitude,
+                    longitude: place.longitude,
+                    radiusMeters: place.radiusMeters,
+                    createdAt: place.createdAt ?? Date()
+                )
+                context.insert(importedPlace)
+                importedPlaceCount += 1
+            }
+
             var importedTaskIDs = Set<UUID>()
             var importedTaskCount = 0
             for task in backup.tasks {
@@ -504,11 +784,15 @@ struct SettingsFeature {
                     id: task.id,
                     name: task.name,
                     emoji: task.emoji,
+                    placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
                     tags: task.tags ?? [],
+                    steps: task.steps ?? [],
                     interval: Int16(clampedInterval),
                     lastDone: task.lastDone,
                     scheduleAnchor: task.scheduleAnchor,
-                    pausedAt: task.pausedAt
+                    pausedAt: task.pausedAt,
+                    completedStepCount: Int16(clamping: task.completedStepCount ?? 0),
+                    sequenceStartedAt: task.sequenceStartedAt
                 )
                 context.insert(importedTask)
                 importedTaskCount += 1
@@ -530,7 +814,7 @@ struct SettingsFeature {
             }
 
             try context.save()
-            return ImportSummary(tasks: importedTaskCount, logs: importedLogCount)
+            return ImportSummary(places: importedPlaceCount, tasks: importedTaskCount, logs: importedLogCount)
         } catch {
             context.rollback()
             throw error

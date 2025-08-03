@@ -103,6 +103,95 @@ struct RoutineDetailEditRoutineContent: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(header: Text("Steps")) {
+                HStack(spacing: 10) {
+                    TextField(
+                        "Wash clothes",
+                        text: Binding(
+                            get: { store.editStepDraft },
+                            set: { store.send(.editStepDraftChanged($0)) }
+                        )
+                    )
+                    .onSubmit {
+                        store.send(.editAddStepTapped)
+                    }
+
+                    Button("Add") {
+                        store.send(.editAddStepTapped)
+                    }
+                    .disabled(RoutineStep.normalizedTitle(store.editStepDraft) == nil)
+                }
+
+                if store.editRoutineSteps.isEmpty {
+                    Text("No steps yet")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(Array(store.editRoutineSteps.enumerated()), id: \.element.id) { index, step in
+                            HStack(spacing: 10) {
+                                Text("\(index + 1).")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 22, alignment: .leading)
+
+                                Text(step.title)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                HStack(spacing: 6) {
+                                    Button {
+                                        store.send(.editMoveStepUp(step.id))
+                                    } label: {
+                                        Image(systemName: "arrow.up")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .disabled(index == 0)
+
+                                    Button {
+                                        store.send(.editMoveStepDown(step.id))
+                                    } label: {
+                                        Image(systemName: "arrow.down")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .disabled(index == store.editRoutineSteps.count - 1)
+
+                                    Button(role: .destructive) {
+                                        store.send(.editRemoveStep(step.id))
+                                    } label: {
+                                        Image(systemName: "trash")
+                                    }
+                                    .buttonStyle(.borderless)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                Text("Steps run in order. Leave this empty for a one-step routine.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section(header: Text("Place")) {
+                Picker(
+                    "Place",
+                    selection: Binding(
+                        get: { store.editSelectedPlaceID },
+                        set: { store.send(.editSelectedPlaceChanged($0)) }
+                    )
+                ) {
+                    Text("Anywhere").tag(Optional<UUID>.none)
+                    ForEach(store.availablePlaces) { place in
+                        Text(place.name).tag(Optional(place.id))
+                    }
+                }
+
+                Text(editPlaceDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Frequency")) {
                 Picker(
                     "Frequency",
@@ -159,6 +248,14 @@ struct RoutineDetailEditRoutineContent: View {
             }
         }
         return "Every \(frequencyValue) \(frequency.singularLabel)s"
+    }
+
+    private var editPlaceDescription: String {
+        if let selectedPlaceID = store.editSelectedPlaceID,
+           let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
+            return "Show this routine when you are at \(place.name)."
+        }
+        return "Anywhere means the routine is always visible."
     }
 }
 #endif

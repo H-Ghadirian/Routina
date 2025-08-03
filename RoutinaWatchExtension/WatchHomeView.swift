@@ -48,6 +48,13 @@ struct WatchHomeView: View {
                             .font(.headline)
                             .lineLimit(1)
 
+                        if let nextStepTitle = routine.nextStepTitle {
+                            Text("Next: \(nextStepTitle)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+
                         Text(statusText(for: routine))
                             .font(.footnote)
                             .foregroundStyle(statusColor(for: routine))
@@ -59,7 +66,7 @@ struct WatchHomeView: View {
                             Label("Done", systemImage: "checkmark")
                         }
                         .tint(.green)
-                        .disabled(routine.isDoneToday())
+                        .disabled(!routine.canMarkDone())
                     }
                 }
             }
@@ -94,6 +101,9 @@ struct WatchHomeView: View {
     }
 
     private func statusText(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {
+        if routine.isInProgress {
+            return "Step \(routine.completedStepCount + 1) of \(routine.steps.count)"
+        }
         let dueIn = routine.daysUntilDue(from: Date())
         if dueIn < 0 {
             let overdueDays = abs(dueIn)
@@ -105,6 +115,7 @@ struct WatchHomeView: View {
     }
 
     private func statusColor(for routine: WatchRoutineSyncStore.WatchRoutine) -> Color {
+        if routine.isInProgress { return .orange }
         let dueIn = routine.daysUntilDue(from: Date())
         if dueIn < 0 { return .red }
         if dueIn == 0 { return .orange }

@@ -13,7 +13,18 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let name: String
         let emoji: String
         let intervalDays: Int
+        let steps: [String]
         var lastDone: Date?
+        var completedStepCount: Int
+
+        var isInProgress: Bool {
+            !steps.isEmpty && completedStepCount > 0 && completedStepCount < steps.count
+        }
+
+        var nextStepTitle: String? {
+            guard !steps.isEmpty, completedStepCount < steps.count else { return nil }
+            return steps[completedStepCount]
+        }
 
         func daysUntilDue(from now: Date) -> Int {
             guard let lastDone else { return 0 }
@@ -28,6 +39,47 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             guard let lastDone else { return false }
             return Calendar.current.isDate(lastDone, inSameDayAs: referenceDate)
         }
+
+        func canMarkDone(referenceDate: Date = Date()) -> Bool {
+            !(isDoneToday(referenceDate: referenceDate) && !isInProgress)
+        }
+
+        func advancedLocally(at completionDate: Date) -> WatchRoutine {
+            guard !steps.isEmpty else {
+                return WatchRoutine(
+                    id: id,
+                    name: name,
+                    emoji: emoji,
+                    intervalDays: intervalDays,
+                    steps: steps,
+                    lastDone: completionDate,
+                    completedStepCount: 0
+                )
+            }
+
+            let nextCompletedStepCount = min(completedStepCount + 1, steps.count)
+            if nextCompletedStepCount < steps.count {
+                return WatchRoutine(
+                    id: id,
+                    name: name,
+                    emoji: emoji,
+                    intervalDays: intervalDays,
+                    steps: steps,
+                    lastDone: lastDone,
+                    completedStepCount: nextCompletedStepCount
+                )
+            }
+
+            return WatchRoutine(
+                id: id,
+                name: name,
+                emoji: emoji,
+                intervalDays: intervalDays,
+                steps: steps,
+                lastDone: completionDate,
+                completedStepCount: 0
+            )
+        }
     }
 
     @Published private(set) var routines: [WatchRoutine] = []
@@ -35,13 +87,13 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     @Published private(set) var isPhoneReachable = false
 
     private let session: WCSession? = WCSession.isSupported() ? WCSession.default : nil
-    private let cacheKey = "watch.cachedRoutines.v1"
-    private let pendingDoneKey = "watch.pendingDone.v1"
-    private var pendingDoneByRoutineID: [UUID: Date] = [:]
+    private let cacheKey = "watch.cachedRoutines.v2"
+    private let pendingRoutineKey = "watch.pendingRoutines.v2"
+    private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
 
     override init() {
         super.init()
-        loadPendingDone()
+        loadPendingRoutines()
         loadCachedRoutines()
 
         guard let session else { return }
@@ -70,10 +122,8 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
     func markRoutineDone(id: UUID) {
         let completionDate = Date()
-        pendingDoneByRoutineID[id] = completionDate
-
-        applyPendingDoneToLocalRoutine(id: id, completionDate: completionDate)
-        savePendingDone()
+        applyPendingAdvanceToLocalRoutine(id: id, completionDate: completionDate)
+        savePendingRoutines()
         saveCachedRoutines()
 
         guard let session else { return }
@@ -159,34 +209,20 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     }
 
     private func setRoutines(_ mapped: [WatchRoutine]) {
-        let remoteDoneByID = mapped.reduce(into: [UUID: Date]()) { partialResult, routine in
-            if let lastDone = routine.lastDone {
-                partialResult[routine.id] = lastDone
-            }
-        }
-
         let merged = mapped.map { routine in
-            guard let pendingDate = pendingDoneByRoutineID[routine.id] else { return routine }
-            let remoteDate = routine.lastDone ?? .distantPast
-            let finalDate = max(remoteDate, pendingDate)
-            return WatchRoutine(
-                id: routine.id,
-                name: routine.name,
-                emoji: routine.emoji,
-                intervalDays: routine.intervalDays,
-                lastDone: finalDate
-            )
+            guard let pendingRoutine = pendingRoutineByID[routine.id] else { return routine }
+            return remoteHasCaughtUp(routine, pending: pendingRoutine) ? routine : pendingRoutine
         }
 
-        pendingDoneByRoutineID = pendingDoneByRoutineID.filter { routineID, pendingDate in
-            guard let remoteDate = remoteDoneByID[routineID] else { return true }
-            return remoteDate < pendingDate
+        pendingRoutineByID = pendingRoutineByID.filter { routineID, pendingRoutine in
+            guard let remoteRoutine = mapped.first(where: { $0.id == routineID }) else { return true }
+            return !remoteHasCaughtUp(remoteRoutine, pending: pendingRoutine)
         }
 
         routines = merged.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
-        savePendingDone()
+        savePendingRoutines()
         saveCachedRoutines()
     }
 
@@ -210,15 +246,22 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             let safeName = name.isEmpty ? "Unnamed task" : name
             let emoji = ((raw["emoji"] as? String) ?? "").isEmpty ? "✨" : ((raw["emoji"] as? String) ?? "✨")
             let interval = max((raw["interval"] as? Int) ?? 1, 1)
+            let steps = ((raw["steps"] as? [String]) ?? []).compactMap { value in
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmed.isEmpty ? nil : trimmed
+            }
             let lastDoneTimestamp = raw["lastDone"] as? TimeInterval
             let lastDone = lastDoneTimestamp.map(Date.init(timeIntervalSince1970:))
+            let completedStepCount = max((raw["completedStepCount"] as? Int) ?? 0, 0)
 
             return WatchRoutine(
                 id: id,
                 name: safeName,
                 emoji: emoji,
                 intervalDays: interval,
-                lastDone: lastDone
+                steps: steps,
+                lastDone: lastDone,
+                completedStepCount: min(completedStepCount, steps.count)
             )
         }
     }
@@ -238,16 +281,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         guard let data = UserDefaults.standard.data(forKey: cacheKey) else { return }
         guard let decoded = try? JSONDecoder().decode([WatchRoutine].self, from: data) else { return }
         let merged = decoded.map { routine in
-            guard let pendingDate = pendingDoneByRoutineID[routine.id] else { return routine }
-            let currentDate = routine.lastDone ?? .distantPast
-            let finalDate = max(currentDate, pendingDate)
-            return WatchRoutine(
-                id: routine.id,
-                name: routine.name,
-                emoji: routine.emoji,
-                intervalDays: routine.intervalDays,
-                lastDone: finalDate
-            )
+            pendingRoutineByID[routine.id] ?? routine
         }
         routines = merged.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
@@ -259,34 +293,44 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         UserDefaults.standard.set(encoded, forKey: cacheKey)
     }
 
-    private func loadPendingDone() {
-        guard let data = UserDefaults.standard.data(forKey: pendingDoneKey) else { return }
-        guard let decoded = try? JSONDecoder().decode([String: TimeInterval].self, from: data) else { return }
-        pendingDoneByRoutineID = decoded.reduce(into: [:]) { partialResult, entry in
+    private func loadPendingRoutines() {
+        guard let data = UserDefaults.standard.data(forKey: pendingRoutineKey) else { return }
+        guard let decoded = try? JSONDecoder().decode([String: WatchRoutine].self, from: data) else { return }
+        pendingRoutineByID = decoded.reduce(into: [:]) { partialResult, entry in
             guard let id = UUID(uuidString: entry.key) else { return }
-            partialResult[id] = Date(timeIntervalSince1970: entry.value)
+            partialResult[id] = entry.value
         }
     }
 
-    private func savePendingDone() {
-        let encoded = pendingDoneByRoutineID.reduce(into: [String: TimeInterval]()) { partialResult, entry in
-            partialResult[entry.key.uuidString] = entry.value.timeIntervalSince1970
+    private func savePendingRoutines() {
+        let encoded = pendingRoutineByID.reduce(into: [String: WatchRoutine]()) { partialResult, entry in
+            partialResult[entry.key.uuidString] = entry.value
         }
         guard let data = try? JSONEncoder().encode(encoded) else { return }
-        UserDefaults.standard.set(data, forKey: pendingDoneKey)
+        UserDefaults.standard.set(data, forKey: pendingRoutineKey)
     }
 
-    private func applyPendingDoneToLocalRoutine(id: UUID, completionDate: Date) {
+    private func applyPendingAdvanceToLocalRoutine(id: UUID, completionDate: Date) {
         let updated = routines.map { routine in
             guard routine.id == id else { return routine }
-            return WatchRoutine(
-                id: routine.id,
-                name: routine.name,
-                emoji: routine.emoji,
-                intervalDays: routine.intervalDays,
-                lastDone: completionDate
-            )
+            let advancedRoutine = routine.advancedLocally(at: completionDate)
+            pendingRoutineByID[id] = advancedRoutine
+            return advancedRoutine
         }
         routines = updated
+    }
+
+    private func remoteHasCaughtUp(_ remote: WatchRoutine, pending: WatchRoutine) -> Bool {
+        let remoteDone = remote.lastDone ?? .distantPast
+        let pendingDone = pending.lastDone ?? .distantPast
+
+        if remoteDone > pendingDone {
+            return true
+        }
+        if remoteDone < pendingDone {
+            return false
+        }
+
+        return remote.completedStepCount >= pending.completedStepCount
     }
 }

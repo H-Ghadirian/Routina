@@ -67,21 +67,16 @@ enum NotificationCoordinator {
         let context = PersistenceController.shared.container.mainContext
 
         do {
-            guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
-            guard !task.isPaused else { return }
             let now = Date()
-
-            if let lastDone = task.lastDone,
-               Calendar.current.isDate(lastDone, inSameDayAs: now) {
-                await NotificationClient.live.schedule(notificationPayload(for: task, referenceDate: now))
+            guard let advancedTask = try RoutineLogHistory.advanceTask(
+                taskID: taskID,
+                completedAt: now,
+                context: context,
+                calendar: .current
+            ) else {
                 return
             }
-
-            task.lastDone = now
-            task.scheduleAnchor = now
-            context.insert(RoutineLog(timestamp: now, taskID: taskID))
-            try context.save()
-            await NotificationClient.live.schedule(notificationPayload(for: task, referenceDate: now))
+            await NotificationClient.live.schedule(notificationPayload(for: advancedTask.task, referenceDate: now))
             NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
         } catch {
             context.rollback()

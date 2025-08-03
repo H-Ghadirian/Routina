@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Routina uses your location to show place-based routines when you are at the right place.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

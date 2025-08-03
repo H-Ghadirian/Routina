@@ -15,6 +15,10 @@ private enum AppIconClientKey: DependencyKey {
     static let liveValue = AppIconClient.live
 }
 
+private enum LocationClientKey: DependencyKey {
+    static let liveValue = LocationClient.live
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -29,5 +33,10 @@ extension DependencyValues {
     var appIconClient: AppIconClient {
         get { self[AppIconClientKey.self] }
         set { self[AppIconClientKey.self] = newValue }
+    }
+
+    var locationClient: LocationClient {
+        get { self[LocationClientKey.self] }
+        set { self[LocationClientKey.self] = newValue }
     }
 }

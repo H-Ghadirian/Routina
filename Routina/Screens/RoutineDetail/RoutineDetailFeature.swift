@@ -39,6 +39,10 @@ struct RoutineDetailFeature: Reducer {
         var editRoutineEmoji: String = "✨"
         var editRoutineTags: [String] = []
         var editTagDraft: String = ""
+        var editRoutineSteps: [RoutineStep] = []
+        var editStepDraft: String = ""
+        var availablePlaces: [RoutinePlaceSummary] = []
+        var editSelectedPlaceID: UUID?
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
         var isDeleteConfirmationPresented: Bool = false
@@ -56,6 +60,13 @@ struct RoutineDetailFeature: Reducer {
         case editTagDraftChanged(String)
         case editAddTagTapped
         case editRemoveTag(String)
+        case editStepDraftChanged(String)
+        case editAddStepTapped
+        case editRemoveStep(UUID)
+        case editMoveStepUp(UUID)
+        case editMoveStepDown(UUID)
+        case availablePlacesLoaded([RoutinePlaceSummary])
+        case editSelectedPlaceChanged(UUID?)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editSaveTapped
@@ -77,17 +88,12 @@ struct RoutineDetailFeature: Reducer {
         case .markAsDone:
             guard !state.task.isPaused else { return .none }
             let completionDate = resolvedCompletionDate(for: state.selectedDate)
-            if shouldUpdateLastDone(current: state.task.lastDone, candidate: completionDate) {
-                state.task.lastDone = completionDate
-                state.task.scheduleAnchor = completionDate
+            guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
+                return .none
             }
+            _ = state.task.advance(completedAt: completionDate, calendar: calendar)
             updateDerivedState(&state)
-            return handleMarkAsDone(
-                taskID: state.task.id,
-                completedAt: completionDate,
-                fallbackName: state.task.name,
-                fallbackInterval: max(Int(state.task.interval), 1)
-            )
+            return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate)
 
         case .pauseTapped:
             guard !state.task.isPaused else { return .none }
@@ -115,6 +121,7 @@ struct RoutineDetailFeature: Reducer {
             state.isEditSheetPresented = isPresented
             if isPresented {
                 syncEditFormFromTask(&state)
+                return loadAvailablePlaces()
             }
             return .none
 
@@ -139,6 +146,39 @@ struct RoutineDetailFeature: Reducer {
             state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
             return .none
 
+        case let .editStepDraftChanged(value):
+            state.editStepDraft = value
+            return .none
+
+        case .editAddStepTapped:
+            state.editRoutineSteps = appendStep(from: state.editStepDraft, to: state.editRoutineSteps)
+            state.editStepDraft = ""
+            return .none
+
+        case let .editRemoveStep(stepID):
+            state.editRoutineSteps.removeAll { $0.id == stepID }
+            return .none
+
+        case let .editMoveStepUp(stepID):
+            moveStep(stepID, by: -1, state: &state)
+            return .none
+
+        case let .editMoveStepDown(stepID):
+            moveStep(stepID, by: 1, state: &state)
+            return .none
+
+        case let .availablePlacesLoaded(places):
+            state.availablePlaces = places
+            if let selectedPlaceID = state.editSelectedPlaceID,
+               !places.contains(where: { $0.id == selectedPlaceID }) {
+                state.editSelectedPlaceID = nil
+            }
+            return .none
+
+        case let .editSelectedPlaceChanged(placeID):
+            state.editSelectedPlaceID = placeID
+            return .none
+
         case let .editFrequencyChanged(frequency):
             state.editFrequency = frequency
             return .none
@@ -150,6 +190,8 @@ struct RoutineDetailFeature: Reducer {
         case .editSaveTapped:
             state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
             state.editTagDraft = ""
+            state.editRoutineSteps = appendStep(from: state.editStepDraft, to: state.editRoutineSteps)
+            state.editStepDraft = ""
             let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedName.isEmpty else { return .none }
             state.isEditSheetPresented = false
@@ -157,7 +199,9 @@ struct RoutineDetailFeature: Reducer {
                 taskID: state.task.id,
                 name: trimmedName,
                 emoji: state.editRoutineEmoji,
+                placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
+                steps: state.editRoutineSteps,
                 interval: Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
             )
 
@@ -188,7 +232,10 @@ struct RoutineDetailFeature: Reducer {
                 state.selectedDate = calendar.startOfDay(for: now)
             }
             updateDerivedState(&state)
-            return handleOnAppear(taskID: state.task.id)
+            return .merge(
+                handleOnAppear(taskID: state.task.id),
+                loadAvailablePlaces()
+            )
         }
     }
 
@@ -197,6 +244,9 @@ struct RoutineDetailFeature: Reducer {
         state.editRoutineEmoji = state.task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
         state.editRoutineTags = state.task.tags
         state.editTagDraft = ""
+        state.editRoutineSteps = state.task.steps
+        state.editStepDraft = ""
+        state.editSelectedPlaceID = state.task.placeID
 
         let interval = max(Int(state.task.interval), 1)
         if interval % 30 == 0 {
@@ -245,11 +295,6 @@ struct RoutineDetailFeature: Reducer {
         return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: startOfDay) ?? startOfDay
     }
 
-    private func shouldUpdateLastDone(current: Date?, candidate: Date) -> Bool {
-        guard let current else { return true }
-        return candidate > current
-    }
-
     private func handleOnAppear(taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -280,55 +325,29 @@ struct RoutineDetailFeature: Reducer {
         )
     }
 
-    private func handleMarkAsDone(
-        taskID: UUID,
-        completedAt: Date,
-        fallbackName: String?,
-        fallbackInterval: Int
-    ) -> Effect<Action> {
+    private func handleMarkAsDone(taskID: UUID, completedAt: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = modelContext()
-                let task = try context.fetch(taskDescriptor(for: taskID)).first
-                guard task?.isPaused != true else { return }
-                let existingLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
-                if existingLogs.contains(where: { log in
-                    guard let timestamp = log.timestamp else { return false }
-                    return calendar.isDate(timestamp, inSameDayAs: completedAt)
-                }) {
-                    send(.logsLoaded(existingLogs))
+                guard let advancedTask = try RoutineLogHistory.advanceTask(
+                    taskID: taskID,
+                    completedAt: completedAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
                     return
                 }
-
-                if shouldUpdateLastDone(current: task?.lastDone, candidate: completedAt) {
-                    task?.lastDone = completedAt
-                    task?.scheduleAnchor = completedAt
-                }
-
-                let log = RoutineLog(timestamp: completedAt, taskID: taskID)
-                context.insert(log)
-                try context.save()
-
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
-
-                let payload = task.map {
-                    NotificationCoordinator.notificationPayload(
-                        for: $0,
-                        referenceDate: completedAt,
-                        calendar: calendar
+                if advancedTask.result != .ignoredAlreadyCompletedToday {
+                    await notificationClient.schedule(
+                        NotificationCoordinator.notificationPayload(
+                            for: advancedTask.task,
+                            referenceDate: completedAt,
+                            calendar: calendar
+                        )
                     )
                 }
-                    ?? NotificationPayload(
-                        identifier: taskID.uuidString,
-                        name: fallbackName,
-                        emoji: nil,
-                        interval: max(fallbackInterval, 1),
-                        lastDone: completedAt,
-                        triggerDate: nil,
-                        isPaused: false
-                    )
-                await notificationClient.schedule(payload)
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
             } catch {
                 print("Error saving context: \(error)")
@@ -340,7 +359,9 @@ struct RoutineDetailFeature: Reducer {
         taskID: UUID,
         name: String,
         emoji: String,
+        placeID: UUID?,
         tags: [String],
+        steps: [RoutineStep],
         interval: Int16
     ) -> Effect<Action> {
         .run { @MainActor send in
@@ -352,7 +373,9 @@ struct RoutineDetailFeature: Reducer {
                 }
                 task.name = name
                 task.emoji = emoji
+                task.placeID = placeID
                 task.tags = tags
+                task.replaceSteps(steps)
                 task.interval = interval
                 if task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: now)
@@ -373,6 +396,26 @@ struct RoutineDetailFeature: Reducer {
             } catch {
                 print("Error saving routine edits: \(error)")
             }
+        }
+    }
+
+    private func loadAvailablePlaces() -> Effect<Action> {
+        .run { @MainActor send in
+            let context = modelContext()
+            let places = (try? context.fetch(FetchDescriptor<RoutinePlace>())) ?? []
+            let tasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
+            let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
+                guard let placeID = task.placeID else { return }
+                partialResult[placeID, default: 0] += 1
+            }
+            let summaries = places
+                .map { place in
+                    place.summary(linkedRoutineCount: linkedCounts[place.id, default: 0])
+                }
+                .sorted { lhs, rhs in
+                    lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+                }
+            send(.availablePlacesLoaded(summaries))
         }
     }
 
@@ -471,5 +514,18 @@ struct RoutineDetailFeature: Reducer {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
+
+    private func appendStep(from draft: String, to currentSteps: [RoutineStep]) -> [RoutineStep] {
+        guard let title = RoutineStep.normalizedTitle(draft) else { return currentSteps }
+        return currentSteps + [RoutineStep(title: title)]
+    }
+
+    private func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {
+        guard let index = state.editRoutineSteps.firstIndex(where: { $0.id == stepID }) else { return }
+        let targetIndex = index + offset
+        guard state.editRoutineSteps.indices.contains(targetIndex) else { return }
+        let step = state.editRoutineSteps.remove(at: index)
+        state.editRoutineSteps.insert(step, at: targetIndex)
     }
 }

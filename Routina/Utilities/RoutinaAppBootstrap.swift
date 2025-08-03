@@ -12,7 +12,8 @@ enum RoutinaAppBootstrap {
             CloudKitSyncDiagnostics.startIfNeeded()
         }
         SharedDefaults.app.register(defaults: [
-            .appSettingNotificationsEnabled: false
+            .appSettingNotificationsEnabled: false,
+            .appSettingHideUnavailableRoutines: false
         ])
         SharedDefaults.app.register(defaults: [
             NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,

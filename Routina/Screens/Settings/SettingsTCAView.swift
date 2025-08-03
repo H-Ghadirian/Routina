@@ -21,6 +21,19 @@ struct SettingsTCAView: View {
             } message: {
                 Text("This permanently deletes all Routina data from iCloud and from this device.")
             }
+            .alert(
+                "Delete Place?",
+                isPresented: deletePlaceConfirmationBinding
+            ) {
+                Button("Delete", role: .destructive) {
+                    store.send(.deletePlaceConfirmed)
+                }
+                Button("Cancel", role: .cancel) {
+                    store.send(.setDeletePlaceConfirmation(false))
+                }
+            } message: {
+                Text(deletePlaceConfirmationMessage)
+            }
             .onAppear {
                 store.send(.onAppear)
             }
@@ -50,6 +63,20 @@ struct SettingsTCAView: View {
         Binding(
             get: { store.notificationReminderTime },
             set: { store.send(.notificationReminderTimeChanged($0)) }
+        )
+    }
+
+    private var placeDraftNameBinding: Binding<String> {
+        Binding(
+            get: { store.placeDraftName },
+            set: { store.send(.placeDraftNameChanged($0)) }
+        )
+    }
+
+    private var placeDraftRadiusBinding: Binding<Double> {
+        Binding(
+            get: { store.placeDraftRadiusMeters },
+            set: { store.send(.placeDraftRadiusChanged($0)) }
         )
     }
 
@@ -86,6 +113,28 @@ struct SettingsTCAView: View {
         )
     }
 
+    private var deletePlaceConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.isDeletePlaceConfirmationPresented },
+            set: { store.send(.setDeletePlaceConfirmation($0)) }
+        )
+    }
+
+    private var deletePlaceConfirmationMessage: String {
+        guard let place = store.placePendingDeletion else {
+            return "This will remove the place."
+        }
+
+        let linkedRoutinesText: String
+        if place.linkedRoutineCount == 1 {
+            linkedRoutinesText = "1 linked routine will be unlinked"
+        } else {
+            linkedRoutinesText = "\(place.linkedRoutineCount) linked routines will be unlinked"
+        }
+
+        return "Delete \(place.name)? This cannot be undone, and \(linkedRoutinesText)."
+    }
+
     @ViewBuilder
     private var settingsContent: some View {
         #if os(macOS)
@@ -94,6 +143,7 @@ struct SettingsTCAView: View {
         NavigationStack {
             Form {
                 notificationsFormSection
+                placesFormSection
                 appIconFormSection
                 supportFormSection
                 iCloudFormSection
@@ -148,6 +198,74 @@ struct SettingsTCAView: View {
             Text("h.qadirian@gmail.com")
                 .font(.footnote)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var placesFormSection: some View {
+        Section(header: Text("Places")) {
+            TextField("Place name", text: placeDraftNameBinding)
+
+            Stepper(value: placeDraftRadiusBinding, in: 25...2_000, step: 25) {
+                Text("Radius: \(Int(store.placeDraftRadiusMeters)) m")
+            }
+
+            Button {
+                store.send(.saveCurrentLocationAsPlaceTapped)
+            } label: {
+                HStack {
+                    if store.isPlaceOperationInProgress {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "location.fill")
+                            .foregroundColor(.blue)
+                    }
+                    Text("Save Current Location")
+                }
+            }
+            .disabled(store.isPlaceOperationInProgress)
+
+            Text(placeLocationHelpText)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+
+            if store.locationAuthorizationStatus.needsSettingsChange {
+                Button("Open System Settings") {
+                    store.send(.openAppSettingsTapped)
+                }
+            }
+
+            if !store.placeStatusMessage.isEmpty {
+                Text(store.placeStatusMessage)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
+
+            if store.savedPlaces.isEmpty {
+                Text("No places saved yet.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(store.savedPlaces) { place in
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(place.name)
+                            Text(placeSubtitle(for: place))
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        Button(role: .destructive) {
+                            store.send(.deletePlaceTapped(place.id))
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .disabled(store.isPlaceOperationInProgress)
+                    }
+                }
+            }
         }
     }
 
@@ -271,6 +389,26 @@ struct SettingsTCAView: View {
         }
     }
 
+    private var placeLocationHelpText: String {
+        switch store.locationAuthorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return "Save your current location as a reusable place. Place-linked routines stay visible whenever location is unavailable."
+        case .notDetermined:
+            return "You’ll be asked for location access when you save a place."
+        case .disabled:
+            return "Location services are disabled on this device."
+        case .restricted, .denied:
+            return "Location access is off. Place-linked routines stay visible until you enable it."
+        }
+    }
+
+    private func placeSubtitle(for place: RoutinePlaceSummary) -> String {
+        let linkedText = place.linkedRoutineCount == 1
+            ? "1 linked routine"
+            : "\(place.linkedRoutineCount) linked routines"
+        return "\(Int(place.radiusMeters)) m radius • \(linkedText)"
+    }
+
 #if os(macOS)
     private var sectionCardBackground: some ShapeStyle {
         Color(nsColor: .controlBackgroundColor)
@@ -311,6 +449,71 @@ struct SettingsTCAView: View {
                                 store.send(.openAppSettingsTapped)
                             }
                             .buttonStyle(.bordered)
+                        }
+                    }
+                }
+
+                macSectionCard(title: "Places") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        TextField("Place name", text: placeDraftNameBinding)
+                            .textFieldStyle(.roundedBorder)
+
+                        Stepper(value: placeDraftRadiusBinding, in: 25...2_000, step: 25) {
+                            Text("Radius: \(Int(store.placeDraftRadiusMeters)) m")
+                        }
+
+                        HStack(spacing: 12) {
+                            Button {
+                                store.send(.saveCurrentLocationAsPlaceTapped)
+                            } label: {
+                                if store.isPlaceOperationInProgress {
+                                    ProgressView()
+                                } else {
+                                    Label("Save Current Location", systemImage: "location.fill")
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(store.isPlaceOperationInProgress)
+
+                            if store.locationAuthorizationStatus.needsSettingsChange {
+                                Button("Open System Settings") {
+                                    store.send(.openAppSettingsTapped)
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+
+                        Text(placeLocationHelpText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        if store.savedPlaces.isEmpty {
+                            Text("No places saved yet.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ForEach(store.savedPlaces) { place in
+                                    HStack(spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(place.name)
+                                            Text(placeSubtitle(for: place))
+                                                .font(.footnote)
+                                                .foregroundStyle(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        Button(role: .destructive) {
+                                            store.send(.deletePlaceTapped(place.id))
+                                        } label: {
+                                            Image(systemName: "trash")
+                                        }
+                                        .buttonStyle(.borderless)
+                                        .disabled(store.isPlaceOperationInProgress)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

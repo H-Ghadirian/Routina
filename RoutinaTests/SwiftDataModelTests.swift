@@ -12,9 +12,13 @@ struct SwiftDataModelTests {
         #expect(task.interval == 1)
         #expect(!task.id.uuidString.isEmpty)
         #expect(task.lastDone == nil)
+        #expect(task.placeID == nil)
         #expect(task.scheduleAnchor == nil)
         #expect(task.pausedAt == nil)
         #expect(task.tags.isEmpty)
+        #expect(task.steps.isEmpty)
+        #expect(task.completedStepCount == 0)
+        #expect(task.sequenceStartedAt == nil)
     }
 
     @Test
@@ -24,11 +28,45 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routinePlace_normalizesNameAndClampsRadius() {
+        let place = RoutinePlace(name: "  Home  ", latitude: 52.52, longitude: 13.405, radiusMeters: 5)
+        #expect(place.name == "Home")
+        #expect(place.displayName == "Home")
+        #expect(place.radiusMeters == 25)
+    }
+
+    @Test
     func routineLog_defaultsAreInitialized() {
         let taskID = UUID()
         let log = RoutineLog(taskID: taskID)
         #expect(log.taskID == taskID)
         #expect(!log.id.uuidString.isEmpty)
         #expect(log.timestamp == nil)
+    }
+
+    @Test
+    func routineTask_stepsSerializeAndAdvanceSequentially() {
+        let firstStepID = UUID()
+        let secondStepID = UUID()
+        let task = RoutineTask(
+            steps: [
+                RoutineStep(id: firstStepID, title: "Wash clothes"),
+                RoutineStep(id: secondStepID, title: "Hang on the line")
+            ]
+        )
+
+        #expect(task.steps.map(\.title) == ["Wash clothes", "Hang on the line"])
+        #expect(task.nextStepTitle == "Wash clothes")
+
+        let firstAdvance = task.advance(completedAt: makeDate("2026-03-17T10:00:00Z"))
+        #expect(firstAdvance == .advancedStep(completedSteps: 1, totalSteps: 2))
+        #expect(task.isInProgress)
+        #expect(task.nextStepTitle == "Hang on the line")
+
+        let secondAdvance = task.advance(completedAt: makeDate("2026-03-17T11:00:00Z"))
+        #expect(secondAdvance == .completedRoutine)
+        #expect(task.completedStepCount == 0)
+        #expect(task.sequenceStartedAt == nil)
+        #expect(task.lastDone == makeDate("2026-03-17T11:00:00Z"))
     }
 }

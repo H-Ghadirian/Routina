@@ -47,6 +47,7 @@ enum SharedDefaults: SharedDefaultsProtocol {
 
 public enum UserDefaultBoolValueKey: String {
     case appSettingNotificationsEnabled
+    case appSettingHideUnavailableRoutines
     case requestNotificationPermission
 }
 

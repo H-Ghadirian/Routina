@@ -26,6 +26,7 @@ struct HomeTCAView: View {
     @State private var searchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
+    @State private var selectedManualPlaceFilterID: UUID?
 
     var body: some View {
         WithPerceptionTracking {
@@ -59,6 +60,12 @@ struct HomeTCAView: View {
             ) { _ in
                 store.send(.onAppear)
             }
+            .onReceive(
+                NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)
+                    .receive(on: RunLoop.main)
+            ) { _ in
+                store.send(.onAppear)
+            }
             .onChange(of: store.routineTasks) { _, tasks in
                 guard let selectedTaskID else { return }
                 if !tasks.contains(where: { $0.id == selectedTaskID }) {
@@ -66,10 +73,31 @@ struct HomeTCAView: View {
                 }
             }
             .onChange(of: store.routineDisplays) { _, displays in
-                validateSelectedTag(activeDisplays: displays, archivedDisplays: store.archivedRoutineDisplays)
+                validateSelectedTag(
+                    activeDisplays: displays,
+                    awayDisplays: store.awayRoutineDisplays,
+                    archivedDisplays: store.archivedRoutineDisplays
+                )
+            }
+            .onChange(of: store.awayRoutineDisplays) { _, displays in
+                validateSelectedTag(
+                    activeDisplays: store.routineDisplays,
+                    awayDisplays: displays,
+                    archivedDisplays: store.archivedRoutineDisplays
+                )
             }
             .onChange(of: store.archivedRoutineDisplays) { _, displays in
-                validateSelectedTag(activeDisplays: store.routineDisplays, archivedDisplays: displays)
+                validateSelectedTag(
+                    activeDisplays: store.routineDisplays,
+                    awayDisplays: store.awayRoutineDisplays,
+                    archivedDisplays: displays
+                )
+            }
+            .onChange(of: store.routinePlaces) { _, places in
+                guard let selectedManualPlaceFilterID else { return }
+                if !places.contains(where: { $0.id == selectedManualPlaceFilterID }) {
+                    self.selectedManualPlaceFilterID = nil
+                }
             }
     }
 
@@ -96,10 +124,12 @@ struct HomeTCAView: View {
                     platformSearchField(searchText: $searchText)
                     filterPicker
                     tagFilterBar
+                    locationFilterPanel
                     overallDoneCountSummary
 
                     listOfSortedTasksView(
                         routineDisplays: store.routineDisplays,
+                        awayRoutineDisplays: store.awayRoutineDisplays,
                         archivedRoutineDisplays: store.archivedRoutineDisplays,
                         routineTasks: store.routineTasks
                     )
@@ -234,17 +264,24 @@ struct HomeTCAView: View {
 
     private func listOfSortedTasksView(
         routineDisplays: [HomeFeature.RoutineDisplay],
+        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
         routineTasks: [RoutineTask]
     ) -> some View {
+#if os(macOS)
+        let sections = groupedRoutineSections(from: routineDisplays + awayRoutineDisplays)
+#else
         let sections = groupedRoutineSections(from: routineDisplays)
+        let awayTasks = filteredAwayTasks(awayRoutineDisplays)
+#endif
         let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays)
 
         return Group {
+#if os(macOS)
             if sections.isEmpty && archivedTasks.isEmpty {
                 emptyStateView(
                     title: "No matching routines",
-                    message: "Try a different search or switch back to another filter.",
+                    message: "Try a different place or switch back to all routines.",
                     systemImage: "magnifyingglass"
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -267,7 +304,7 @@ struct HomeTCAView: View {
                                     Button {
                                         store.send(.markTaskDone(task.taskID))
                                     } label: {
-                                        Label("Mark Done", systemImage: "checkmark.circle")
+                                        Label(task.steps.isEmpty ? "Mark Done" : "Complete Next Step", systemImage: "checkmark.circle")
                                     }
                                     .disabled(task.isDoneToday || task.isPaused)
 
@@ -335,6 +372,284 @@ struct HomeTCAView: View {
                     routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
                 }
             }
+#else
+            if sections.isEmpty && archivedTasks.isEmpty && (store.hideUnavailableRoutines || awayTasks.isEmpty) {
+                if store.hideUnavailableRoutines && !awayTasks.isEmpty {
+                    emptyStateView(
+                        title: "No routines available here",
+                        message: "\(awayTasks.count) routines are hidden because you are away from their saved place.",
+                        systemImage: "location.slash"
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    emptyStateView(
+                        title: "No matching routines",
+                        message: "Try a different search or switch back to another filter.",
+                        systemImage: "magnifyingglass"
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else {
+                List(selection: $selectedTaskID) {
+                    ForEach(sections) { section in
+                        Section(section.title) {
+                            ForEach(section.tasks) { task in
+                                NavigationLink(value: task.taskID) {
+                                    routineRow(for: task)
+                                }
+                                .contentShape(Rectangle())
+                                .contextMenu {
+                                    Button {
+                                        selectedTaskID = task.taskID
+                                    } label: {
+                                        Label("Open", systemImage: "arrow.right.circle")
+                                    }
+
+                                    Button {
+                                        store.send(.markTaskDone(task.taskID))
+                                    } label: {
+                                        Label(task.steps.isEmpty ? "Mark Done" : "Complete Next Step", systemImage: "checkmark.circle")
+                                    }
+                                    .disabled(task.isDoneToday || task.isPaused)
+
+                                    Button {
+                                        store.send(.pauseTask(task.taskID))
+                                    } label: {
+                                        Label("Pause", systemImage: "pause.circle")
+                                    }
+                                    .disabled(task.isPaused)
+
+                                    Button(role: .destructive) {
+                                        if selectedTaskID == task.taskID {
+                                            selectedTaskID = nil
+                                        }
+                                        store.send(.deleteTasks([task.taskID]))
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                            .onDelete { offsets in
+                                deleteTasks(at: offsets, from: section.tasks)
+                            }
+                        }
+                    }
+
+#if !os(macOS)
+                    if !store.hideUnavailableRoutines && !awayTasks.isEmpty {
+                        Section("Not Here Right Now") {
+                            ForEach(awayTasks) { task in
+                                NavigationLink(value: task.taskID) {
+                                    routineRow(for: task)
+                                }
+                                .contentShape(Rectangle())
+                                .contextMenu {
+                                    Button {
+                                        selectedTaskID = task.taskID
+                                    } label: {
+                                        Label("Open", systemImage: "arrow.right.circle")
+                                    }
+
+                                    Button {
+                                        store.send(.pauseTask(task.taskID))
+                                    } label: {
+                                        Label("Pause", systemImage: "pause.circle")
+                                    }
+                                    .disabled(task.isPaused)
+
+                                    Button(role: .destructive) {
+                                        if selectedTaskID == task.taskID {
+                                            selectedTaskID = nil
+                                        }
+                                        store.send(.deleteTasks([task.taskID]))
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                            .onDelete { offsets in
+                                deleteTasks(at: offsets, from: awayTasks)
+                            }
+                        }
+                    }
+#endif
+
+                    if !archivedTasks.isEmpty {
+                        Section("Archived") {
+                            ForEach(archivedTasks) { task in
+                                NavigationLink(value: task.taskID) {
+                                    routineRow(for: task)
+                                }
+                                .contentShape(Rectangle())
+                                .contextMenu {
+                                    Button {
+                                        selectedTaskID = task.taskID
+                                    } label: {
+                                        Label("Open", systemImage: "arrow.right.circle")
+                                    }
+
+                                    Button {
+                                        store.send(.resumeTask(task.taskID))
+                                    } label: {
+                                        Label("Resume", systemImage: "play.circle")
+                                    }
+
+                                    Button(role: .destructive) {
+                                        if selectedTaskID == task.taskID {
+                                            selectedTaskID = nil
+                                        }
+                                        store.send(.deleteTasks([task.taskID]))
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                            .onDelete { offsets in
+                                deleteTasks(at: offsets, from: archivedTasks)
+                            }
+                        }
+                    }
+                }
+                .listStyle(.sidebar)
+                .navigationDestination(for: UUID.self) { taskID in
+                    routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
+                }
+            }
+#endif
+        }
+    }
+
+    @ViewBuilder
+    private var locationFilterPanel: some View {
+        if hasPlaceAwareContent {
+            Group {
+#if os(macOS)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Filter By Place")
+                        .font(.subheadline.weight(.semibold))
+
+                    Picker(
+                        "Place Filter",
+                        selection: Binding(
+                            get: { selectedManualPlaceFilterID },
+                            set: { selectedManualPlaceFilterID = $0 }
+                        )
+                    ) {
+                        Text("All routines").tag(Optional<UUID>.none)
+                        ForEach(store.routinePlaces.sorted { lhs, rhs in
+                            lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+                        }) { place in
+                            Text(place.displayName).tag(Optional(place.id))
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Text(manualPlaceFilterDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+#else
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        Label("Place Filtering", systemImage: "location.viewfinder")
+                            .font(.subheadline.weight(.semibold))
+
+                        Spacer(minLength: 0)
+
+                        if store.locationSnapshot.authorizationStatus.isAuthorized {
+                            Toggle("Hide unavailable", isOn: hideUnavailableRoutinesBinding)
+                                .labelsHidden()
+                        }
+                    }
+
+                    Picker("Place Filter", selection: manualPlaceFilterBinding) {
+                        Text("All routines").tag(Optional<UUID>.none)
+                        ForEach(sortedRoutinePlaces) { place in
+                            Text(place.displayName).tag(Optional(place.id))
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Text(manualPlaceFilterDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text(locationStatusText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+#endif
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.secondary.opacity(0.08))
+            )
+            .padding(.horizontal)
+        }
+    }
+
+    private var hideUnavailableRoutinesBinding: Binding<Bool> {
+        Binding(
+            get: { store.hideUnavailableRoutines },
+            set: { store.send(.hideUnavailableRoutinesChanged($0)) }
+        )
+    }
+
+    private var manualPlaceFilterBinding: Binding<UUID?> {
+        Binding(
+            get: { selectedManualPlaceFilterID },
+            set: { selectedManualPlaceFilterID = $0 }
+        )
+    }
+
+    private var sortedRoutinePlaces: [RoutinePlace] {
+        store.routinePlaces.sorted { lhs, rhs in
+            lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+        }
+    }
+
+    private var hasPlaceAwareContent: Bool {
+        !store.routinePlaces.isEmpty || store.routineTasks.contains { $0.placeID != nil }
+    }
+
+    private var manualPlaceFilterDescription: String {
+        guard let selectedManualPlaceFilterID,
+              let place = store.routinePlaces.first(where: { $0.id == selectedManualPlaceFilterID })
+        else {
+            return "Choose a saved place to show only routines linked to that place."
+        }
+        return "Showing only routines linked to \(place.displayName)."
+    }
+
+    private var locationStatusText: String {
+        switch store.locationSnapshot.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            if store.awayRoutineDisplays.isEmpty {
+                return "All place-linked routines are currently available."
+            }
+            if store.hideUnavailableRoutines {
+                return "\(store.awayRoutineDisplays.count) routines are hidden because you are away from their saved place."
+            }
+            return "\(store.awayRoutineDisplays.count) routines are away from their saved place and shown below."
+        case .notDetermined:
+            return "Allow location access to automatically separate place-based routines. Until then they stay visible."
+        case .disabled:
+            return "Location services are disabled on this device, so place-based routines stay visible."
+        case .restricted, .denied:
+            return "Location access is off, so place-based routines stay visible."
+        }
+    }
+
+    private func filteredAwayTasks(
+        _ routineDisplays: [HomeFeature.RoutineDisplay]
+    ) -> [HomeFeature.RoutineDisplay] {
+        sortedTasks(routineDisplays).filter { task in
+            matchesSearch(task)
+                && matchesFilter(task)
+                && matchesManualPlaceFilter(task)
+                && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
         }
     }
 
@@ -469,6 +784,12 @@ struct HomeTCAView: View {
         if task.isPaused {
             return .teal
         }
+        if case .away = task.locationAvailability {
+            return .blue
+        }
+        if task.isInProgress {
+            return .orange
+        }
         let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
         switch progress {
         case ..<0.75: return .green
@@ -482,6 +803,9 @@ struct HomeTCAView: View {
     }
 
     private func isYellowUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        if task.isInProgress {
+            return false
+        }
         let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
         return progress >= 0.75 && progress < 0.90
     }
@@ -501,16 +825,21 @@ struct HomeTCAView: View {
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {
         sortedTasks(routineDisplays).filter { task in
-            matchesSearch(task) && matchesFilter(task) && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+            matchesSearch(task)
+                && matchesFilter(task)
+                && matchesManualPlaceFilter(task)
+                && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
         }
     }
 
     private func filteredArchivedTasks(
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {
-        return routineDisplays
+        routineDisplays
             .filter { task in
-                matchesSearch(task) && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+                matchesSearch(task)
+                    && matchesManualPlaceFilter(task)
+                    && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
             }
             .sorted { lhs, rhs in
                 let lhsDate = lhs.pausedAt ?? .distantPast
@@ -527,6 +856,7 @@ struct HomeTCAView: View {
         guard !trimmedSearch.isEmpty else { return true }
         return task.name.localizedCaseInsensitiveContains(trimmedSearch)
             || task.emoji.localizedCaseInsensitiveContains(trimmedSearch)
+            || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
     }
 
@@ -539,6 +869,11 @@ struct HomeTCAView: View {
         case .doneToday:
             return task.isDoneToday
         }
+    }
+
+    private func matchesManualPlaceFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        guard let selectedManualPlaceFilterID else { return true }
+        return task.placeID == selectedManualPlaceFilterID
     }
 
     private func dueInDays(for task: HomeFeature.RoutineDisplay) -> Int {
@@ -559,9 +894,9 @@ struct HomeTCAView: View {
 
     private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String {
         if task.isPaused {
-            return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))"
+            return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
         }
-        return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))"
+        return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
     }
 
     private func pauseDescription(for task: HomeFeature.RoutineDisplay) -> String {
@@ -590,6 +925,10 @@ struct HomeTCAView: View {
     }
 
     private func completionDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.isInProgress {
+            let totalSteps = max(task.steps.count, 1)
+            return "Step \(task.completedStepCount + 1) of \(totalSteps)"
+        }
         guard task.lastDone != nil else { return "Never completed" }
 
         let elapsedDays = daysSinceLastRoutine(task)
@@ -634,6 +973,12 @@ struct HomeTCAView: View {
         if task.isPaused {
             return ("Paused", "pause.circle.fill", .teal, Color.teal.opacity(0.16))
         }
+        if case .away = task.locationAvailability {
+            return ("Away", "location.slash.fill", .blue, Color.blue.opacity(0.14))
+        }
+        if task.isInProgress {
+            return ("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))
+        }
         if task.isDoneToday {
             return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
         }
@@ -653,6 +998,28 @@ struct HomeTCAView: View {
         }
 
         return ("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
+    }
+
+    private func stepMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
+        guard !task.steps.isEmpty else { return "" }
+        if let nextStepTitle = task.nextStepTitle {
+            return " • Next: \(nextStepTitle)"
+        }
+        let totalSteps = task.steps.count
+        return " • \(totalSteps) \(totalSteps == 1 ? "step" : "steps")"
+    }
+
+    private func placeMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
+        switch task.locationAvailability {
+        case .unrestricted:
+            return ""
+        case let .available(placeName):
+            return " • At \(placeName)"
+        case let .away(placeName, _):
+            return " • Away from \(placeName)"
+        case let .unknown(placeName):
+            return " • \(placeName) routine"
+        }
     }
 
     @ViewBuilder
@@ -706,26 +1073,32 @@ struct HomeTCAView: View {
     }
 
     private var allRoutineDisplays: [HomeFeature.RoutineDisplay] {
-        store.routineDisplays + store.archivedRoutineDisplays
+        store.routineDisplays + store.awayRoutineDisplays + store.archivedRoutineDisplays
     }
 
     private var summaryCountText: String {
         let activeCount = store.routineDisplays.count
+        let awayCount = store.awayRoutineDisplays.count
         let archivedCount = store.archivedRoutineDisplays.count
 
-        if archivedCount == 0 {
+        if awayCount == 0 && archivedCount == 0 {
             return activeCount == 1 ? "1 active routine" : "\(activeCount) active routines"
         }
 
-        return "\(activeCount) active • \(archivedCount) archived"
+        if archivedCount == 0 {
+            return "\(activeCount) active • \(awayCount) away"
+        }
+
+        return "\(activeCount) active • \(awayCount) away • \(archivedCount) archived"
     }
 
     private func validateSelectedTag(
         activeDisplays: [HomeFeature.RoutineDisplay],
+        awayDisplays: [HomeFeature.RoutineDisplay],
         archivedDisplays: [HomeFeature.RoutineDisplay]
     ) {
         guard let selectedTag else { return }
-        let availableTags = HomeFeature.availableTags(from: activeDisplays + archivedDisplays)
+        let availableTags = HomeFeature.availableTags(from: activeDisplays + awayDisplays + archivedDisplays)
         if !RoutineTag.contains(selectedTag, in: availableTags) {
             self.selectedTag = nil
         }

@@ -195,7 +195,16 @@ struct RoutineDetailFeatureTests {
     @Test
     func setEditSheetTrue_syncsEditFormFromTask_weekFrequency() async {
         let context = makeInMemoryContext()
-        let task = makeTask(in: context, name: "Stretch", interval: 14, lastDone: nil, emoji: "🤸", tags: ["Mobility", "Evening"])
+        let place = makePlace(in: context, name: "Gym")
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 14,
+            lastDone: nil,
+            emoji: "🤸",
+            placeID: place.id,
+            tags: ["Mobility", "Evening"]
+        )
 
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
@@ -209,8 +218,16 @@ struct RoutineDetailFeatureTests {
             $0.editRoutineName = "Stretch"
             $0.editRoutineEmoji = "🤸"
             $0.editRoutineTags = ["Mobility", "Evening"]
+            $0.editSelectedPlaceID = place.id
             $0.editFrequency = .week
             $0.editFrequencyValue = 2
+        }
+        await store.receive(.availablePlacesLoaded([
+            RoutinePlaceSummary(id: place.id, name: "Gym", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)
+        ])) {
+            $0.availablePlaces = [
+                RoutinePlaceSummary(id: place.id, name: "Gym", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)
+            ]
         }
     }
 
@@ -398,6 +415,67 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func editSaveTapped_persistsSelectedPlaceID() async throws {
+        let context = makeInMemoryContext()
+        let home = makePlace(in: context, name: "Home")
+        let office = makePlace(in: context, name: "Office")
+        let task = makeTask(in: context, name: "Review Tasks", interval: 3, lastDone: nil, emoji: "🗂️", placeID: home.id)
+
+        let now = makeDate("2026-03-16T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Review Tasks",
+                editRoutineEmoji: "🗂️",
+                availablePlaces: [
+                    RoutinePlaceSummary(id: home.id, name: "Home", radiusMeters: home.radiusMeters, linkedRoutineCount: 1),
+                    RoutinePlaceSummary(id: office.id, name: "Office", radiusMeters: office.radiusMeters, linkedRoutineCount: 0)
+                ],
+                editSelectedPlaceID: office.id,
+                editFrequency: .day,
+                editFrequencyValue: 3
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+        await store.receive {
+            guard case let .availablePlacesLoaded(places) = $0 else { return false }
+            #expect(places.count == 2)
+            return true
+        } assert: {
+            #expect($0.availablePlaces.count == 2)
+        }
+        await store.receive(.logsLoaded([]))
+
+        let persistedTask = try #require(
+            context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate { $0.id == task.id }
+                )
+            ).first
+        )
+        #expect(persistedTask.placeID == office.id)
+    }
+
+    @Test
     func logsLoaded_updatesDerivedStateFromLastDoneAndLogs() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T10:00:00Z")
@@ -482,6 +560,7 @@ struct RoutineDetailFeatureTests {
             $0.isDoneToday = false
         }
 
+        await store.receive(.availablePlacesLoaded([]))
         await store.receive(.logsLoaded([]))
     }
 
@@ -535,6 +614,57 @@ struct RoutineDetailFeatureTests {
         let persistedTask = try? #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(persistedLogs.count == 1)
         #expect(persistedTask?.scheduleAnchor == now)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func markAsDone_forStepRoutine_advancesWithoutCreatingCompletionLog() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T10:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Laundry",
+            interval: 2,
+            lastDone: nil,
+            emoji: "🧺",
+            steps: [
+                RoutineStep(title: "Wash clothes"),
+                RoutineStep(title: "Hang on the line"),
+                RoutineStep(title: "Put away")
+            ]
+        )
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.markAsDone) {
+            $0.task.completedStepCount = 1
+            $0.task.sequenceStartedAt = now
+            $0.isDoneToday = false
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+
+        await store.receive(.logsLoaded([]))
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.completedStepCount == 1)
+        #expect(persistedTask.lastDone == nil)
+        #expect(persistedLogs.isEmpty)
         #expect(scheduledIDs.value == [task.id.uuidString])
     }
 

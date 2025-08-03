@@ -14,30 +14,48 @@ struct HomeFeature {
         var id: UUID { taskID }
         var name: String
         var emoji: String
+        var placeID: UUID?
+        var placeName: String?
+        var locationAvailability: RoutineLocationAvailability
         var tags: [String]
+        var steps: [String]
         var interval: Int
         var lastDone: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
         var isDoneToday: Bool
         var isPaused: Bool
+        var completedStepCount: Int
+        var isInProgress: Bool
+        var nextStepTitle: String?
         var doneCount: Int
     }
 
     @ObservableState
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
+        var routinePlaces: [RoutinePlace] = []
         var routineDisplays: [RoutineDisplay] = []
+        var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
         var doneStats: DoneStats = DoneStats()
         var isAddRoutineSheetPresented: Bool = false
+        var locationSnapshot = LocationSnapshot(
+            authorizationStatus: .notDetermined,
+            coordinate: nil,
+            horizontalAccuracy: nil,
+            timestamp: nil
+        )
+        var hideUnavailableRoutines: Bool = false
         var addRoutineState: AddRoutineFeature.State?
     }
 
     enum Action: Equatable {
         case onAppear
-        case tasksLoadedSuccessfully([RoutineTask], DoneStats)
+        case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], DoneStats)
         case tasksLoadFailed
+        case locationSnapshotUpdated(LocationSnapshot)
+        case hideUnavailableRoutinesChanged(Bool)
 
         case setAddRoutineSheet(Bool)
         case deleteTasks([UUID])
@@ -58,41 +76,82 @@ struct HomeFeature {
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
+    @Dependency(\.locationClient) var locationClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                state.hideUnavailableRoutines = SharedDefaults.app[.appSettingHideUnavailableRoutines]
+#if os(macOS)
                 return .run { @MainActor send in
                     do {
                         let context = ModelContext(self.modelContext().container)
                         try self.enforceUniqueRoutineNames(in: context)
                         _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
                         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
                         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-                        send(.tasksLoadedSuccessfully(tasks, self.makeDoneStats(tasks: tasks, logs: logs)))
+                        send(.tasksLoadedSuccessfully(tasks, places, self.makeDoneStats(tasks: tasks, logs: logs)))
                     } catch {
                         send(.tasksLoadFailed)
                     }
                 }
                 .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
+#else
+                return .merge(
+                    .run { @MainActor send in
+                        do {
+                            let context = ModelContext(self.modelContext().container)
+                            try self.enforceUniqueRoutineNames(in: context)
+                            _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
+                            let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                            let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+                            let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+                            send(.tasksLoadedSuccessfully(tasks, places, self.makeDoneStats(tasks: tasks, logs: logs)))
+                        } catch {
+                            send(.tasksLoadFailed)
+                        }
+                    }
+                    .cancellable(id: CancelID.loadTasks, cancelInFlight: true),
+                    .run { @MainActor send in
+                        let snapshot = await self.locationClient.snapshot(false)
+                        send(.locationSnapshotUpdated(snapshot))
+                    }
+                )
+#endif
 
-            case let .tasksLoadedSuccessfully(tasks, doneStats):
+            case let .tasksLoadedSuccessfully(tasks, places, doneStats):
                 state.routineTasks = tasks
+                state.routinePlaces = places
                 state.doneStats = doneStats
                 refreshDisplays(&state)
                 guard state.addRoutineState != nil else { return .none }
-                return .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks))))
+                return .merge(
+                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks)))),
+                    .send(.addRoutineSheet(.availablePlacesChanged(placeSummaries(from: tasks, places: places))))
+                )
 
             case .tasksLoadFailed:
                 print("Failed to load tasks.")
+                return .none
+
+            case let .locationSnapshotUpdated(snapshot):
+                state.locationSnapshot = snapshot
+                refreshDisplays(&state)
+                return .none
+
+            case let .hideUnavailableRoutinesChanged(isHidden):
+                state.hideUnavailableRoutines = isHidden
+                SharedDefaults.app[.appSettingHideUnavailableRoutines] = isHidden
                 return .none
 
             case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
                 if isPresented {
                     state.addRoutineState = AddRoutineFeature.State(
-                        existingRoutineNames: existingRoutineNames(from: state.routineTasks)
+                        existingRoutineNames: existingRoutineNames(from: state.routineTasks),
+                        availablePlaces: placeSummaries(from: state.routineTasks, places: state.routinePlaces)
                     )
                 } else {
                     state.addRoutineState = nil
@@ -133,61 +192,37 @@ struct HomeFeature {
                 guard state.addRoutineState != nil else { return deleteEffect }
                 return .merge(
                     deleteEffect,
-                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks))))
+                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
+                    .send(.addRoutineSheet(.availablePlacesChanged(placeSummaries(from: state.routineTasks, places: state.routinePlaces))))
                 )
 
             case let .markTaskDone(id):
-                guard state.routineTasks.contains(where: { $0.id == id && !$0.isPaused }) else {
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == id && !$0.isPaused }) else {
                     return .none
                 }
                 let completionDate = now
-                let shouldCountNewDone = state.routineTasks.first(where: { $0.id == id }).flatMap(\.lastDone).map {
-                    !calendar.isDate($0, inSameDayAs: completionDate)
-                } ?? true
-
-                if let index = state.routineTasks.firstIndex(where: { $0.id == id }) {
-                    state.routineTasks[index].lastDone = completionDate
-                    state.routineTasks[index].scheduleAnchor = completionDate
-                }
-
-                if let index = state.routineDisplays.firstIndex(where: { $0.taskID == id }) {
-                    state.routineDisplays[index].lastDone = completionDate
-                    state.routineDisplays[index].scheduleAnchor = completionDate
-                    state.routineDisplays[index].isDoneToday = true
-                    if shouldCountNewDone {
-                        state.routineDisplays[index].doneCount += 1
-                    }
-                }
-
-                if shouldCountNewDone {
+                let result = state.routineTasks[index].advance(completedAt: completionDate, calendar: calendar)
+                if case .completedRoutine = result {
                     state.doneStats.totalCount += 1
                     state.doneStats.countsByTaskID[id, default: 0] += 1
                 }
+                refreshDisplays(&state)
 
                 let currentCalendar = calendar
-                return .run { @MainActor [id, completionDate, currentCalendar, shouldCountNewDone] _ in
+                return .run { @MainActor [id, completionDate, currentCalendar] _ in
                     do {
                         let context = self.modelContext()
-                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
-
-                        if !shouldCountNewDone {
-                            await self.notificationClient.schedule(
-                                NotificationCoordinator.notificationPayload(
-                                    for: task,
-                                    referenceDate: completionDate,
-                                    calendar: currentCalendar
-                                )
-                            )
+                        guard let taskState = try RoutineLogHistory.advanceTask(
+                            taskID: id,
+                            completedAt: completionDate,
+                            context: context,
+                            calendar: currentCalendar
+                        ) else {
                             return
                         }
-
-                        task.lastDone = completionDate
-                        task.scheduleAnchor = completionDate
-                        context.insert(RoutineLog(timestamp: completionDate, taskID: id))
-                        try context.save()
                         await self.notificationClient.schedule(
                             NotificationCoordinator.notificationPayload(
-                                for: task,
+                                for: taskState.task,
                                 referenceDate: completionDate,
                                 calendar: currentCalendar
                             )
@@ -265,7 +300,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji, tags))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji, placeID, tags, steps))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -283,7 +318,9 @@ struct HomeFeature {
                         let newRoutine = RoutineTask(
                             name: trimmedName,
                             emoji: emoji,
+                            placeID: placeID,
                             tags: tags,
+                            steps: steps,
                             interval: Int16(freq),
                             lastDone: nil,
                             scheduleAnchor: self.now
@@ -317,26 +354,60 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, emoji, tags in .send(.delegate(.didSave(name, freq, emoji, tags))) },
+                onSave: { name, freq, emoji, placeID, tags, steps in
+                    .send(.delegate(.didSave(name, freq, emoji, placeID, tags, steps)))
+                },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }
     }
 
-    private func makeRoutineDisplay(_ task: RoutineTask, doneStats: DoneStats) -> RoutineDisplay {
+    private func makeRoutineDisplay(
+        _ task: RoutineTask,
+        placesByID: [UUID: RoutinePlace],
+        locationSnapshot: LocationSnapshot,
+        doneStats: DoneStats
+    ) -> RoutineDisplay {
         let doneTodayFromLastDone = task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
+        let linkedPlace = task.placeID.flatMap { placesByID[$0] }
+        let locationAvailability: RoutineLocationAvailability
+
+        if let linkedPlace {
+            if locationSnapshot.canDeterminePresence, let coordinate = locationSnapshot.coordinate {
+                let distance = linkedPlace.distance(to: coordinate)
+                if linkedPlace.contains(coordinate) {
+                    locationAvailability = .available(placeName: linkedPlace.displayName)
+                } else {
+                    locationAvailability = .away(
+                        placeName: linkedPlace.displayName,
+                        distanceMeters: distance
+                    )
+                }
+            } else {
+                locationAvailability = .unknown(placeName: linkedPlace.displayName)
+            }
+        } else {
+            locationAvailability = .unrestricted
+        }
 
         return RoutineDisplay(
             taskID: task.id,
             name: task.name ?? "Unnamed task",
             emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
+            placeID: task.placeID,
+            placeName: linkedPlace?.displayName,
+            locationAvailability: locationAvailability,
             tags: task.tags,
+            steps: task.steps.map(\.title),
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
             isDoneToday: doneTodayFromLastDone,
             isPaused: task.isPaused,
+            completedStepCount: task.completedSteps,
+            isInProgress: task.isInProgress,
+            nextStepTitle: task.nextStepTitle,
             doneCount: doneStats.countsByTaskID[task.id, default: 0]
         )
     }
@@ -369,12 +440,46 @@ struct HomeFeature {
     }
 
     private func refreshDisplays(_ state: inout State) {
-        state.routineDisplays = state.routineTasks
-            .filter { !$0.isPaused }
-            .map { makeRoutineDisplay($0, doneStats: state.doneStats) }
-        state.archivedRoutineDisplays = state.routineTasks
-            .filter(\.isPaused)
-            .map { makeRoutineDisplay($0, doneStats: state.doneStats) }
+        let placesByID = Dictionary(uniqueKeysWithValues: state.routinePlaces.map { ($0.id, $0) })
+        var active: [RoutineDisplay] = []
+        var away: [RoutineDisplay] = []
+        var archived: [RoutineDisplay] = []
+
+        for task in state.routineTasks {
+            let display = makeRoutineDisplay(
+                task,
+                placesByID: placesByID,
+                locationSnapshot: state.locationSnapshot,
+                doneStats: state.doneStats
+            )
+
+            if task.isPaused {
+                archived.append(display)
+            } else if case .away = display.locationAvailability {
+                away.append(display)
+            } else {
+                active.append(display)
+            }
+        }
+
+        state.routineDisplays = active
+        state.awayRoutineDisplays = away
+        state.archivedRoutineDisplays = archived
+    }
+
+    private func placeSummaries(from tasks: [RoutineTask], places: [RoutinePlace]) -> [RoutinePlaceSummary] {
+        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        return places
+            .map { place in
+                place.summary(linkedRoutineCount: linkedCounts[place.id, default: 0])
+            }
+            .sorted { lhs, rhs in
+                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
     }
 
     private func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {

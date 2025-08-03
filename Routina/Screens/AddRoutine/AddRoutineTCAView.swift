@@ -97,6 +97,28 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(header: Text("Steps")) {
+                stepComposer
+                editableStepsContent
+
+                Text("Steps run in order. Leave this empty for a one-step routine.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section(header: Text("Place")) {
+                Picker("Place", selection: selectedPlaceBinding) {
+                    Text("Anywhere").tag(Optional<UUID>.none)
+                    ForEach(store.availablePlaces) { place in
+                        Text(place.name).tag(Optional(place.id))
+                    }
+                }
+
+                Text(placeSelectionDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Frequency")) {
                 Picker("Frequency", selection: frequencyBinding) {
                     ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
@@ -141,6 +163,13 @@ struct AddRoutineTCAView: View {
         )
     }
 
+    private var stepDraftBinding: Binding<String> {
+        Binding(
+            get: { store.stepDraft },
+            set: { store.send(.stepDraftChanged($0)) }
+        )
+    }
+
     private var frequencyBinding: Binding<AddRoutineFeature.Frequency> {
         Binding(
             get: { store.frequency },
@@ -152,6 +181,13 @@ struct AddRoutineTCAView: View {
         Binding(
             get: { store.frequencyValue },
             set: { store.send(.frequencyValueChanged($0)) }
+        )
+    }
+
+    private var selectedPlaceBinding: Binding<UUID?> {
+        Binding(
+            get: { store.selectedPlaceID },
+            set: { store.send(.selectedPlaceChanged($0)) }
         )
     }
 
@@ -167,6 +203,18 @@ struct AddRoutineTCAView: View {
         RoutineTag.parseDraft(store.tagDraft).isEmpty
     }
 
+    private var isAddStepDisabled: Bool {
+        RoutineStep.normalizedTitle(store.stepDraft) == nil
+    }
+
+    private var placeSelectionDescription: String {
+        if let selectedPlaceID = store.selectedPlaceID,
+           let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
+            return "Show this routine when you are at \(place.name)."
+        }
+        return "Anywhere means the routine is always visible."
+    }
+
     private var tagComposer: some View {
         HStack(spacing: 10) {
             TextField("health, focus, morning", text: tagDraftBinding)
@@ -178,6 +226,20 @@ struct AddRoutineTCAView: View {
                 store.send(.addTagTapped)
             }
             .disabled(isAddTagDisabled)
+        }
+    }
+
+    private var stepComposer: some View {
+        HStack(spacing: 10) {
+            TextField("Wash clothes", text: stepDraftBinding)
+                .onSubmit {
+                    store.send(.addStepTapped)
+                }
+
+            Button("Add") {
+                store.send(.addStepTapped)
+            }
+            .disabled(isAddStepDisabled)
         }
     }
 
@@ -205,6 +267,55 @@ struct AddRoutineTCAView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Remove tag \(tag)")
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private var editableStepsContent: some View {
+        if store.routineSteps.isEmpty {
+            Text("No steps yet")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            VStack(spacing: 8) {
+                ForEach(Array(store.routineSteps.enumerated()), id: \.element.id) { index, step in
+                    HStack(spacing: 10) {
+                        Text("\(index + 1).")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 22, alignment: .leading)
+
+                        Text(step.title)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        HStack(spacing: 6) {
+                            Button {
+                                store.send(.moveStepUp(step.id))
+                            } label: {
+                                Image(systemName: "arrow.up")
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(index == 0)
+
+                            Button {
+                                store.send(.moveStepDown(step.id))
+                            } label: {
+                                Image(systemName: "arrow.down")
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(index == store.routineSteps.count - 1)
+
+                            Button(role: .destructive) {
+                                store.send(.removeStep(step.id))
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
                 }
             }
             .padding(.vertical, 4)
@@ -303,6 +414,33 @@ struct AddRoutineTCAView: View {
                                 tagComposer
                                 editableTagsContent
                                 Text("Press return or Add. Separate multiple tags with commas.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        macFormRow("Steps") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                stepComposer
+                                editableStepsContent
+                                Text("Steps run in order. Leave this empty for a one-step routine.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        macFormRow("Place") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Picker("Place", selection: selectedPlaceBinding) {
+                                    Text("Anywhere").tag(Optional<UUID>.none)
+                                    ForEach(store.availablePlaces) { place in
+                                        Text(place.name).tag(Optional(place.id))
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+
+                                Text(placeSelectionDescription)
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }

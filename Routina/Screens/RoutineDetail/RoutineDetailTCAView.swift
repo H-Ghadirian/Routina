@@ -59,6 +59,14 @@ struct RoutineDetailTCAView: View {
                         Text(totalDoneCountText(for: store.logs.count))
                             .font(.subheadline.weight(.medium))
                             .foregroundColor(.secondary)
+                        if let linkedPlace = linkedPlaceSummary {
+                            Label("Linked to \(linkedPlace.name)", systemImage: "location.fill")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.blue.opacity(0.12), in: Capsule())
+                        }
                         if let pausedAt = store.task.pausedAt {
                             Text("Paused on \(pausedAt.formatted(date: .abbreviated, time: .omitted))")
                                 .font(.subheadline)
@@ -67,6 +75,17 @@ struct RoutineDetailTCAView: View {
                             Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
+                        }
+                        if store.task.hasSequentialSteps {
+                            Text(stepProgressText(for: store.task))
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.secondary)
+                            if let nextStepTitle = store.task.nextStepTitle {
+                                Text("Next step: \(nextStepTitle)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -82,14 +101,22 @@ struct RoutineDetailTCAView: View {
                                 for: selectedDate,
                                 isDone: isSelectedDateDone,
                                 isFuture: isSelectedDateInFuture,
-                                isPaused: store.task.isPaused
+                                isPaused: store.task.isPaused,
+                                task: store.task
                             )
                         ) {
                             store.send(.markAsDone)
                         }
                         .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
-                        .disabled(isSelectedDateDone || isSelectedDateInFuture || store.task.isPaused)
+                        .disabled(isSelectedDateDone || isSelectedDateInFuture || store.task.isPaused || isStepRoutineOffToday)
+
+                        if isStepRoutineOffToday {
+                            Text("Step-based routines can only be progressed for today.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
 
                         Button(pauseArchivePresentation.actionTitle) {
                             store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
@@ -202,8 +229,11 @@ struct RoutineDetailTCAView: View {
                                 !canSaveEdit(
                                     name: store.editRoutineName,
                                     emoji: store.editRoutineEmoji,
+                                    selectedPlaceID: store.editSelectedPlaceID,
                                     tags: store.editRoutineTags,
                                     tagDraft: store.editTagDraft,
+                                    steps: store.editRoutineSteps,
+                                    stepDraft: store.editStepDraft,
                                     frequency: store.editFrequency,
                                     frequencyValue: store.editFrequencyValue,
                                     task: store.task
@@ -267,6 +297,15 @@ struct RoutineDetailTCAView: View {
 
     private var isSelectedDateInFuture: Bool {
         Calendar.current.startOfDay(for: selectedDate) > Calendar.current.startOfDay(for: Date())
+    }
+
+    private var isStepRoutineOffToday: Bool {
+        store.task.hasSequentialSteps && !Calendar.current.isDateInToday(selectedDate)
+    }
+
+    private var linkedPlaceSummary: RoutinePlaceSummary? {
+        guard let placeID = store.task.placeID else { return nil }
+        return store.availablePlaces.first(where: { $0.id == placeID })
     }
 
     private var calendarHeader: some View {
@@ -473,6 +512,9 @@ struct RoutineDetailTCAView: View {
         if let pausedAt {
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
         }
+        if task.isInProgress {
+            return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
+        }
         if isDoneToday {
             return "Done today"
         }
@@ -498,6 +540,7 @@ struct RoutineDetailTCAView: View {
         task: RoutineTask
     ) -> Color {
         if pausedAt != nil { return .teal }
+        if task.isInProgress { return .orange }
         if isDoneToday { return .green }
         if overdueDays > 0 { return .red }
         if daysUntilDue(task) == 0 { return .red }
@@ -517,8 +560,11 @@ struct RoutineDetailTCAView: View {
     private func canSaveEdit(
         name: String,
         emoji: String,
+        selectedPlaceID: UUID?,
         tags: [String],
         tagDraft: String,
+        steps: [RoutineStep],
+        stepDraft: String,
         frequency: RoutineDetailFeature.EditFrequency,
         frequencyValue: Int,
         task: RoutineTask
@@ -530,12 +576,18 @@ struct RoutineDetailTCAView: View {
         let currentEmoji = task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
         let currentTags = RoutineTag.deduplicated(task.tags)
         let candidateTags = RoutineTag.appending(tagDraft, to: tags)
+        let currentSteps = RoutineStep.sanitized(task.steps)
+        let candidateSteps = RoutineStep.normalizedTitle(stepDraft).map { title in
+            steps + [RoutineStep(title: title)]
+        } ?? steps
         let currentInterval = max(Int(task.interval), 1)
         let newInterval = frequencyValue * frequency.daysMultiplier
 
         return trimmedName != currentName
             || emoji != currentEmoji
+            || selectedPlaceID != task.placeID
             || candidateTags != currentTags
+            || RoutineStep.sanitized(candidateSteps) != currentSteps
             || newInterval != currentInterval
     }
 
@@ -556,20 +608,35 @@ struct RoutineDetailTCAView: View {
         count == 1 ? "1 total done" : "\(count) total dones"
     }
 
+    private func stepProgressText(for task: RoutineTask) -> String {
+        guard task.hasSequentialSteps else { return "" }
+        if task.isInProgress {
+            return "Step \(task.completedSteps + 1) of \(task.totalSteps)"
+        }
+        return "\(task.totalSteps) sequential \(task.totalSteps == 1 ? "step" : "steps")"
+    }
+
     private func markDoneButtonTitle(
         for selectedDate: Date,
         isDone: Bool,
         isFuture: Bool,
-        isPaused: Bool
+        isPaused: Bool,
+        task: RoutineTask
     ) -> String {
         if isPaused {
             return "Resume the routine to mark dates done"
+        }
+        if task.hasSequentialSteps && !Calendar.current.isDateInToday(selectedDate) {
+            return "Step routines can only be progressed today"
         }
         if isFuture {
             return "Future dates can't be marked done"
         }
         if isDone {
             return "Already done on \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
+        }
+        if let nextStepTitle = task.nextStepTitle {
+            return "Complete: \(nextStepTitle)"
         }
         if Calendar.current.isDateInToday(selectedDate) {
             return "Mark Today as Done"

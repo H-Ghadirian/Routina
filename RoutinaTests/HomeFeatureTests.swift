@@ -74,7 +74,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3]))) {
+        await store.send(.tasksLoadedSuccessfully([task], [], HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3]))) {
             $0.routineTasks = [task]
             $0.doneStats = HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3])
             $0.routineDisplays = [
@@ -114,7 +114,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([task], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [task]
             $0.routineDisplays = [
                 makeDisplay(taskID: task.id, name: "Read", emoji: "📚", interval: 1, lastDone: nil, isDoneToday: false)
@@ -156,7 +156,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([activeTask, archivedTask], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([activeTask, archivedTask], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [activeTask, archivedTask]
             $0.routineDisplays = [
                 makeDisplay(
@@ -180,6 +180,149 @@ struct HomeFeatureTests {
                     pausedAt: pauseDate,
                     isDoneToday: false,
                     isPaused: true
+                )
+            ]
+        }
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_placesAwayRoutineIntoAwaySectionWhenOutsideSavedPlace() async {
+        let context = makeInMemoryContext()
+        let home = makePlace(in: context, name: "Home", latitude: 52.52, longitude: 13.405, radiusMeters: 100)
+        let task = makeTask(
+            in: context,
+            name: "Wash Bedsheets",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🛏️",
+            placeID: home.id
+        )
+
+        let initialState = HomeFeature.State(
+            locationSnapshot: LocationSnapshot(
+                authorizationStatus: .authorizedWhenInUse,
+                coordinate: LocationCoordinate(latitude: 48.1374, longitude: 11.5755),
+                horizontalAccuracy: 25,
+                timestamp: Date()
+            )
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([task], [home], HomeFeature.DoneStats())) {
+            $0.routineTasks = [task]
+            $0.routinePlaces = [home]
+            $0.awayRoutineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Wash Bedsheets",
+                    emoji: "🛏️",
+                    placeName: "Home",
+                    locationAvailability: .away(placeName: "Home", distanceMeters: home.distance(to: LocationCoordinate(latitude: 48.1374, longitude: 11.5755))),
+                    interval: 7,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+        }
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_keepsPlaceRoutineVisibleWhenLocationIsUnavailable() async {
+        let context = makeInMemoryContext()
+        let home = makePlace(in: context, name: "Home")
+        let task = makeTask(
+            in: context,
+            name: "Laundry",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🧺",
+            placeID: home.id
+        )
+
+        let initialState = HomeFeature.State(
+            locationSnapshot: LocationSnapshot(
+                authorizationStatus: .denied,
+                coordinate: nil,
+                horizontalAccuracy: nil,
+                timestamp: nil
+            )
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([task], [home], HomeFeature.DoneStats())) {
+            $0.routineTasks = [task]
+            $0.routinePlaces = [home]
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Laundry",
+                    emoji: "🧺",
+                    placeID: home.id,
+                    placeName: "Home",
+                    locationAvailability: .unknown(placeName: "Home"),
+                    interval: 7,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+        }
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_marksPlaceRoutineAvailableWhenInsideSavedPlace() async {
+        let context = makeInMemoryContext()
+        let home = makePlace(in: context, name: "Home", latitude: 52.52, longitude: 13.405, radiusMeters: 150)
+        let task = makeTask(
+            in: context,
+            name: "Wash Bedsheets",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🛏️",
+            placeID: home.id
+        )
+
+        let initialState = HomeFeature.State(
+            locationSnapshot: LocationSnapshot(
+                authorizationStatus: .authorizedWhenInUse,
+                coordinate: LocationCoordinate(latitude: 52.5203, longitude: 13.4049),
+                horizontalAccuracy: 20,
+                timestamp: Date()
+            )
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([task], [home], HomeFeature.DoneStats())) {
+            $0.routineTasks = [task]
+            $0.routinePlaces = [home]
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Wash Bedsheets",
+                    emoji: "🛏️",
+                    placeID: home.id,
+                    placeName: "Home",
+                    locationAvailability: .available(placeName: "Home"),
+                    interval: 7,
+                    lastDone: nil,
+                    isDoneToday: false
                 )
             ]
         }
@@ -570,6 +713,70 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func markTaskDone_advancesStepRoutineWithoutCreatingCompletionLog() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Laundry",
+            interval: 2,
+            lastDone: nil,
+            emoji: "🧺",
+            steps: [
+                RoutineStep(title: "Wash clothes"),
+                RoutineStep(title: "Hang on the line"),
+                RoutineStep(title: "Put away")
+            ]
+        )
+        try context.save()
+
+        let firstNow = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                routineDisplays: [
+                    makeDisplay(
+                        taskID: task.id,
+                        name: "Laundry",
+                        emoji: "🧺",
+                        steps: ["Wash clothes", "Hang on the line", "Put away"],
+                        interval: 2,
+                        lastDone: nil,
+                        isDoneToday: false,
+                        completedStepCount: 0,
+                        isInProgress: false,
+                        nextStepTitle: "Wash clothes"
+                    )
+                ],
+                doneStats: HomeFeature.DoneStats()
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.calendar = calendar
+            $0.date.now = firstNow
+        }
+
+        await store.send(.markTaskDone(task.id)) {
+            $0.routineTasks[0].completedStepCount = 1
+            $0.routineTasks[0].sequenceStartedAt = firstNow
+            $0.routineDisplays[0].completedStepCount = 1
+            $0.routineDisplays[0].isInProgress = true
+            $0.routineDisplays[0].nextStepTitle = "Hang on the line"
+        }
+
+        let afterFirstLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let afterFirstTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(afterFirstLogs.isEmpty)
+        #expect(afterFirstTask.completedStepCount == 1)
+        #expect(afterFirstTask.lastDone == nil)
+    }
+
+    @Test
     func addRoutine_rejectsDuplicateName_caseInsensitiveAndTrimmed() async throws {
         let context = makeInMemoryContext()
         _ = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
@@ -589,7 +796,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥", ["Evening"]))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥", nil, ["Evening"], []))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -611,12 +818,22 @@ struct HomeFeatureTests {
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.locationClient.snapshot = { _ in
+                try? await Task.sleep(nanoseconds: 20_000_000)
+                return LocationSnapshot(
+                    authorizationStatus: .notDetermined,
+                    coordinate: nil,
+                    horizontalAccuracy: nil,
+                    timestamp: nil
+                )
+            }
         }
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, doneStats) = action else { return false }
             #expect(tasks.count == 1)
+            #expect(places.isEmpty)
             #expect(tasks.first?.id == first.id)
             #expect(doneStats.totalCount == 0)
             return true
@@ -626,6 +843,14 @@ struct HomeFeatureTests {
                 makeDisplay(taskID: first.id, name: "Routine A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false)
             ]
         }
+        await store.receive(.locationSnapshotUpdated(
+            LocationSnapshot(
+                authorizationStatus: .notDetermined,
+                coordinate: nil,
+                horizontalAccuracy: nil,
+                timestamp: nil
+            )
+        ))
 
         let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let remainingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -646,12 +871,22 @@ struct HomeFeatureTests {
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.locationClient.snapshot = { _ in
+                try? await Task.sleep(nanoseconds: 20_000_000)
+                return LocationSnapshot(
+                    authorizationStatus: .notDetermined,
+                    coordinate: nil,
+                    horizontalAccuracy: nil,
+                    timestamp: nil
+                )
+            }
         }
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, doneStats) = action else { return false }
             #expect(tasks.count == 1)
+            #expect(places.isEmpty)
             #expect(tasks.first?.id == task.id)
             #expect(doneStats.totalCount == 1)
             #expect(doneStats.countsByTaskID[task.id] == 1)
@@ -663,6 +898,14 @@ struct HomeFeatureTests {
                 makeDisplay(taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: Calendar.current.isDateInToday(lastDone), doneCount: 1)
             ]
         }
+        await store.receive(.locationSnapshotUpdated(
+            LocationSnapshot(
+                authorizationStatus: .notDetermined,
+                coordinate: nil,
+                horizontalAccuracy: nil,
+                timestamp: nil
+            )
+        ))
 
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         #expect(logs.count == 1)
@@ -772,13 +1015,20 @@ private func makeDisplay(
     taskID: UUID,
     name: String,
     emoji: String,
+    placeID: UUID? = nil,
+    placeName: String? = nil,
+    locationAvailability: RoutineLocationAvailability = .unrestricted,
     tags: [String] = [],
+    steps: [String] = [],
     interval: Int,
     lastDone: Date?,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
     isDoneToday: Bool,
     isPaused: Bool = false,
+    completedStepCount: Int = 0,
+    isInProgress: Bool = false,
+    nextStepTitle: String? = nil,
     doneCount: Int = 0
 ) -> HomeFeature.RoutineDisplay {
     let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
@@ -787,13 +1037,20 @@ private func makeDisplay(
         taskID: taskID,
         name: name,
         emoji: emoji,
+        placeID: placeID,
+        placeName: placeName,
+        locationAvailability: locationAvailability,
         tags: tags,
+        steps: steps,
         interval: interval,
         lastDone: lastDone,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
         isDoneToday: isDoneToday,
         isPaused: resolvedIsPaused,
+        completedStepCount: completedStepCount,
+        isInProgress: isInProgress,
+        nextStepTitle: nextStepTitle,
         doneCount: doneCount
     )
 }

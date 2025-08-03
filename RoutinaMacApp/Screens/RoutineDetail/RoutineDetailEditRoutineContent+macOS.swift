@@ -119,6 +119,30 @@ struct RoutineDetailEditRoutineContent: View {
                 sectionCard(title: "Schedule") {
                     VStack(alignment: .leading, spacing: 16) {
                         VStack(alignment: .leading, spacing: 6) {
+                            Text("Place")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Picker(
+                                "Place",
+                                selection: Binding(
+                                    get: { store.editSelectedPlaceID },
+                                    set: { store.send(.editSelectedPlaceChanged($0)) }
+                                )
+                            ) {
+                                Text("Anywhere").tag(Optional<UUID>.none)
+                                ForEach(store.availablePlaces) { place in
+                                    Text(place.name).tag(Optional(place.id))
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+
+                            Text(editPlaceDescription)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
                             Text("Frequency")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -227,6 +251,14 @@ struct RoutineDetailEditRoutineContent: View {
             }
         }
         return "Every \(frequencyValue) \(frequency.singularLabel)s"
+    }
+
+    private var editPlaceDescription: String {
+        if let selectedPlaceID = store.editSelectedPlaceID,
+           let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
+            return "Show this routine when you are at \(place.name)."
+        }
+        return "Anywhere means the routine is always visible."
     }
 }
 #endif

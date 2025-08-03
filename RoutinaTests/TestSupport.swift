@@ -19,14 +19,18 @@ func makeTask(
     interval: Int16,
     lastDone: Date?,
     emoji: String?,
+    placeID: UUID? = nil,
     tags: [String] = [],
+    steps: [RoutineStep] = [],
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil
 ) -> RoutineTask {
     let task = RoutineTask(
         name: name,
         emoji: emoji,
+        placeID: placeID,
         tags: tags,
+        steps: steps,
         interval: interval,
         lastDone: lastDone,
         scheduleAnchor: scheduleAnchor,
@@ -34,6 +38,24 @@ func makeTask(
     )
     context.insert(task)
     return task
+}
+
+@MainActor
+func makePlace(
+    in context: ModelContext,
+    name: String,
+    latitude: Double = 52.5200,
+    longitude: Double = 13.4050,
+    radiusMeters: Double = 150
+) -> RoutinePlace {
+    let place = RoutinePlace(
+        name: name,
+        latitude: latitude,
+        longitude: longitude,
+        radiusMeters: radiusMeters
+    )
+    context.insert(place)
+    return place
 }
 
 @MainActor

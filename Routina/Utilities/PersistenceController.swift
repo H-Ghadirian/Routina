@@ -17,6 +17,7 @@ public struct PersistenceController {
             container = try ModelContainer(
                 for: RoutineTask.self,
                 RoutineLog.self,
+                RoutinePlace.self,
                 configurations: primaryConfiguration
             )
         } catch {
@@ -35,6 +36,7 @@ public struct PersistenceController {
                     container = try ModelContainer(
                         for: RoutineTask.self,
                         RoutineLog.self,
+                        RoutinePlace.self,
                         configurations: retriedConfiguration
                     )
                     return
@@ -48,6 +50,7 @@ public struct PersistenceController {
                 container = try ModelContainer(
                     for: RoutineTask.self,
                     RoutineLog.self,
+                    RoutinePlace.self,
                     configurations: localFallback
                 )
             } catch {
@@ -58,6 +61,7 @@ public struct PersistenceController {
                     container = try ModelContainer(
                         for: RoutineTask.self,
                         RoutineLog.self,
+                        RoutinePlace.self,
                         configurations: memoryFallback
                     )
                 } catch {

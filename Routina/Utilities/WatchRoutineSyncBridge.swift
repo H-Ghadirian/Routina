@@ -80,7 +80,9 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                             "id": task.id.uuidString,
                             "name": (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
                             "emoji": task.emoji ?? "",
-                            "interval": Int(task.interval)
+                            "interval": Int(task.interval),
+                            "steps": task.steps.map(\.title),
+                            "completedStepCount": task.completedSteps
                         ]
 
                         if let lastDone = task.lastDone {
@@ -186,11 +188,12 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
 
             guard let task = try context.fetch(descriptor).first else { return }
             guard !task.isPaused else { return }
-
-            task.lastDone = completedAt
-            task.scheduleAnchor = completedAt
-            context.insert(RoutineLog(timestamp: completedAt, taskID: taskID))
-            try context.save()
+            _ = try RoutineLogHistory.advanceTask(
+                taskID: taskID,
+                completedAt: completedAt,
+                context: context,
+                calendar: .current
+            )
             NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
             pushLatestSnapshot()
         } catch {
