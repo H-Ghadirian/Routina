@@ -764,15 +764,22 @@ struct StatsFeature {
         let canceledDates = filteredLogs
             .filter { $0.kind == .canceled }
             .compactMap(\.timestamp)
+        let earliestActivityDate = [
+            filteredTasks.compactMap(\.createdAt).min(),
+            filteredLogs.compactMap(\.timestamp).min(),
+            filteredFocusSessions.compactMap(\.startedAt).min()
+        ].compactMap { $0 }.min()
         let chartPoints = RoutineCompletionStats.points(
             for: state.selectedRange,
             timestamps: completionDates,
+            earliestActivityDate: earliestActivityDate,
             referenceDate: now,
             calendar: calendar
         )
         let focusChartPoints = FocusDurationStats.points(
             for: state.selectedRange,
             sessions: filteredFocusSessions,
+            earliestActivityDate: earliestActivityDate,
             referenceDate: now,
             calendar: calendar
         )

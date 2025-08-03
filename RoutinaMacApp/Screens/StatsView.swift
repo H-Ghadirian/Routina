@@ -234,11 +234,11 @@ struct StatsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         heroSection(metrics: metrics)
                         summaryCards(metrics: metrics)
+                        chartSection(metrics: metrics)
+                        focusChartSection(metrics: metrics)
                         if store.isGitFeaturesEnabled {
                             gitHubSection
                         }
-                        chartSection(metrics: metrics)
-                        focusChartSection(metrics: metrics)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
@@ -284,7 +284,7 @@ struct StatsView: View {
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.95))
 
-                    Text(selectedRange.periodDescription)
+                    Text(userActivityPeriodDescription(metrics: metrics))
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
                 }
@@ -994,7 +994,7 @@ struct StatsView: View {
             HStack(spacing: 10) {
                 bottomInsightPill(
                     icon: "calendar",
-                    text: selectedRange.periodDescription
+                    text: userActivityPeriodDescription(metrics: metrics)
                 )
 
                 if let highlightedBusiestDay = metrics.highlightedBusiestDay {
@@ -1114,7 +1114,7 @@ struct StatsView: View {
             .defaultScrollAnchor(.trailing)
 
             HStack(spacing: 10) {
-                bottomInsightPill(icon: "calendar", text: selectedRange.periodDescription)
+                bottomInsightPill(icon: "calendar", text: userActivityPeriodDescription(metrics: metrics))
 
                 if let focusDay = metrics.highlightedFocusDay {
                     bottomInsightPill(
@@ -1338,6 +1338,15 @@ struct StatsView: View {
         case .year:
             return "This year"
         }
+    }
+
+    private func userActivityPeriodDescription(metrics: Metrics) -> String {
+        if selectedRange == .year,
+           metrics.chartPoints.count < selectedRange.trailingDayCount,
+           let firstDate = metrics.chartPoints.first?.date {
+            return "Since \(firstDate.formatted(.dateTime.month(.abbreviated).day().year()))"
+        }
+        return selectedRange.periodDescription
     }
 
     private func rangeButtonSubtitle(for range: DoneChartRange) -> String {

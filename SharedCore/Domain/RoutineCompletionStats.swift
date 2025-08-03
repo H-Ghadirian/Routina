@@ -52,13 +52,24 @@ enum RoutineCompletionStats {
     static func points(
         for range: DoneChartRange,
         timestamps: [Date],
+        earliestActivityDate: Date? = nil,
         referenceDate: Date = .now,
         calendar: Calendar = .current
     ) -> [DoneChartPoint] {
         let endDate = calendar.startOfDay(for: referenceDate)
-        guard let startDate = calendar.date(byAdding: .day, value: -(range.trailingDayCount - 1), to: endDate) else {
+        guard let defaultStart = calendar.date(byAdding: .day, value: -(range.trailingDayCount - 1), to: endDate) else {
             return []
         }
+
+        let startDate: Date
+        if range == .year, let earliestActivityDate {
+            let earliestDay = calendar.startOfDay(for: earliestActivityDate)
+            startDate = min(max(earliestDay, defaultStart), endDate)
+        } else {
+            startDate = defaultStart
+        }
+
+        let dayCount = (calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0) + 1
 
         let countsByDay = timestamps.reduce(into: [Date: Int]()) { partialResult, timestamp in
             let day = calendar.startOfDay(for: timestamp)
@@ -66,7 +77,7 @@ enum RoutineCompletionStats {
             partialResult[day, default: 0] += 1
         }
 
-        return (0..<range.trailingDayCount).compactMap { dayOffset in
+        return (0..<dayCount).compactMap { dayOffset in
             guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) else {
                 return nil
             }
@@ -101,13 +112,24 @@ enum FocusDurationStats {
     static func points(
         for range: DoneChartRange,
         sessions: [FocusSession],
+        earliestActivityDate: Date? = nil,
         referenceDate: Date = .now,
         calendar: Calendar = .current
     ) -> [FocusDurationChartPoint] {
         let endDate = calendar.startOfDay(for: referenceDate)
-        guard let startDate = calendar.date(byAdding: .day, value: -(range.trailingDayCount - 1), to: endDate) else {
+        guard let defaultStart = calendar.date(byAdding: .day, value: -(range.trailingDayCount - 1), to: endDate) else {
             return []
         }
+
+        let startDate: Date
+        if range == .year, let earliestActivityDate {
+            let earliestDay = calendar.startOfDay(for: earliestActivityDate)
+            startDate = min(max(earliestDay, defaultStart), endDate)
+        } else {
+            startDate = defaultStart
+        }
+
+        let dayCount = (calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0) + 1
 
         let secondsByDay = sessions.reduce(into: [Date: TimeInterval]()) { partialResult, session in
             guard session.state == .completed else { return }
@@ -118,7 +140,7 @@ enum FocusDurationStats {
             partialResult[day, default: 0] += session.actualDurationSeconds
         }
 
-        return (0..<range.trailingDayCount).compactMap { dayOffset in
+        return (0..<dayCount).compactMap { dayOffset in
             guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) else {
                 return nil
             }
