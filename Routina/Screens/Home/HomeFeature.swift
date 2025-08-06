@@ -7,16 +7,21 @@ struct HomeFeature {
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
         var isAddRoutineSheetPresented: Bool = false
-        var addRoutineState: AddRoutineFeature.State? = nil
+        var addRoutineState: AddRoutineFeature.State?
     }
     
+    // Actions are now explicit for success and failure, making them Equatable.
     enum Action: Equatable {
-        case markAsDone
-        case loadTasks([RoutineTask])
         case onAppear
+        case tasksLoadedSuccessfully([RoutineTask])
+        case tasksLoadFailed
+        
         case setAddRoutineSheet(Bool)
-        case addRoutineSheet(AddRoutineFeature.Action)
         case deleteTask(IndexSet)
+        
+        case addRoutineSheet(AddRoutineFeature.Action)
+        case routineSavedSuccessfully(RoutineTask)
+        case routineSaveFailed
     }
 
     @Dependency(\.notificationClient) var notificationClient
@@ -25,93 +30,95 @@ struct HomeFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .markAsDone:
-                return .none
+            
+            // MARK: - Core Logic & Effects
+            case .onAppear:
+                return .run { send in
+                    do {
+                        let request = NSFetchRequest<RoutineTask>(entityName: "RoutineTask")
+                        request.sortDescriptors = []
+                        let tasks = try self.viewContext.fetch(request)
+                        await send(.tasksLoadedSuccessfully(tasks))
+                    } catch {
+                        await send(.tasksLoadFailed)
+                    }
+                }
                 
-            case .loadTasks(let tasks):
+            case let .tasksLoadedSuccessfully(tasks):
                 state.routineTasks = tasks
                 return .none
+            
+            case .tasksLoadFailed:
+                print("❌ Failed to load tasks.")
+                // You could set an error state here to show an alert.
+                return .none
                 
-            case .onAppear:
-                return handleOnAppear()
             case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
-                if isPresented {
-                    state.addRoutineState = AddRoutineFeature.State()
-                } else {
-                    state.addRoutineState = nil
-                }
+                state.addRoutineState = isPresented ? AddRoutineFeature.State() : nil
                 return .none
-            case .addRoutineSheet(let childAction):
-                switch childAction {
-                case .delegate(.didCancel):
-                    state.isAddRoutineSheetPresented = false
-                    state.addRoutineState = nil
-                    return .none
-
-                case let .delegate(.didSave(name, freq)):
-                    state.isAddRoutineSheetPresented = false
-                    state.addRoutineState = nil
-
-                    let context = PersistenceController.shared.container.viewContext
-                    let newRoutine = RoutineTask(context: context)
-                    newRoutine.name = name
-                    newRoutine.interval = Int16(freq)
-                    newRoutine.lastDone = Date()
-
-                    do {
-                        try context.save()
-                        let tasks = try context.fetch(NSFetchRequest<RoutineTask>(entityName: "RoutineTask"))
-                        state.routineTasks = tasks
-                        print("✅ Saved routine: \(name), every \(freq) day(s)")
-                        return .run { _ in
-                            await notificationClient.schedule(newRoutine)
-                        }
-                    } catch {
-                        print("❌ Failed to save routine: \(error.localizedDescription)")
-                        return .none
-                    }
-
-                default:
-                    return .none
-                }
+                
             case let .deleteTask(offsets):
-                // 1. Grab the objects that correspond to the tapped rows
                 let tasksToDelete = offsets.map { state.routineTasks[$0] }
-
-                // 2. Delete them in *their* context
-                tasksToDelete.forEach(viewContext.delete)
-
-                // 3. Persist the change (wrap in `try?` or an Effect if you want error handling)
-                try? viewContext.save()
-
-                // 4. Keep state in sync so the list animates away the rows
                 state.routineTasks.remove(atOffsets: offsets)
+                
+                return .run { [tasksToDelete] _ in
+                    for task in tasksToDelete {
+                        self.viewContext.delete(task)
+                    }
+                    try? self.viewContext.save()
+                }
+                
+            // MARK: - Child Feature Logic
+            case .addRoutineSheet(.delegate(.didCancel)):
+                state.isAddRoutineSheetPresented = false
+                state.addRoutineState = nil
+                return .none
+                
+            case let .addRoutineSheet(.delegate(.didSave(name, freq))):
+                state.isAddRoutineSheetPresented = false
+                state.addRoutineState = nil
+                
+                return .run { send in
+                    do {
+                        let newRoutine = RoutineTask(context: self.viewContext)
+                        newRoutine.name = name
+                        newRoutine.interval = Int16(freq)
+                        newRoutine.lastDone = Date()
+                        
+                        try self.viewContext.save()
+                        await send(.routineSavedSuccessfully(newRoutine))
+                    } catch {
+                        await send(.routineSaveFailed)
+                    }
+                }
+                
+            case let .routineSavedSuccessfully(task):
+                state.routineTasks.append(task)
+                return .run { [task] _ in
+                    await self.notificationClient.schedule(task)
+                }
+                
+            case .routineSaveFailed:
+                print("❌ Failed to save routine.")
+                return .none
 
+            case .addRoutineSheet:
                 return .none
             }
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq in
-                    .send(.delegate(.didSave(name, freq)))
-                },
-                onCancel: {
-                    .send(.delegate(.didCancel))
-                }
+                onSave: { name, freq in .send(.delegate(.didSave(name, freq))) },
+                onCancel: { .send(.delegate(.didCancel)) }
             )
         }
     }
+}
 
-    func handleOnAppear() -> Effect<Action> {
-        let request = NSFetchRequest<RoutineTask>(entityName: "RoutineTask")
-        request.sortDescriptors = []
-        do {
-            let tasks = try viewContext.fetch(request)
-            return .send(.loadTasks(tasks))
-        } catch {
-            print("❌ Failed to fetch RoutineTasks: \(error.localizedDescription)")
-            return .none
-        }
+// This extension is still needed to make the Action enum Equatable.
+extension RoutineTask {
+    public static func == (lhs: RoutineTask, rhs: RoutineTask) -> Bool {
+        lhs.objectID == rhs.objectID
     }
 }
