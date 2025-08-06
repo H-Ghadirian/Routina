@@ -95,6 +95,8 @@ struct AppSettingsClient: Sendable {
 }
 
 enum CloudSettingsKeyValueSync {
+    static let didChangeNotification = Notification.Name("CloudSettingsKeyValueSync.didChange")
+
     private static let observerBox = CloudSettingsObserverBox()
     private static let syncedStringKeys: Set<UserDefaultStringValueKey> = [
         .appSettingRelatedTagRules,
@@ -158,21 +160,29 @@ enum CloudSettingsKeyValueSync {
             store.removeObject(forKey: key.rawValue)
         }
         store.synchronize()
+        NotificationCenter.default.post(name: didChangeNotification, object: nil)
     }
 
     private static func synchronizeKnownValues() {
         let store = NSUbiquitousKeyValueStore.default
         store.synchronize()
+        var didUpdateLocalDefaults = false
 
         for key in syncedStringKeys {
             if let remoteValue = store.string(forKey: key.rawValue) {
-                SharedDefaults.app[key] = remoteValue
+                if SharedDefaults.app[key] != remoteValue {
+                    SharedDefaults.app[key] = remoteValue
+                    didUpdateLocalDefaults = true
+                }
             } else if let localValue = SharedDefaults.app[key] {
                 store.set(localValue, forKey: key.rawValue)
             }
         }
 
         store.synchronize()
+        if didUpdateLocalDefaults {
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
+        }
     }
 
     private static func handleExternalChange(_ notification: Notification) {
@@ -182,8 +192,17 @@ enum CloudSettingsKeyValueSync {
         }
 
         let store = NSUbiquitousKeyValueStore.default
+        var didUpdateLocalDefaults = false
         for key in syncedStringKeys where changedRawKeys.contains(key.rawValue) {
-            SharedDefaults.app[key] = store.string(forKey: key.rawValue)
+            let value = store.string(forKey: key.rawValue)
+            if SharedDefaults.app[key] != value {
+                SharedDefaults.app[key] = value
+                didUpdateLocalDefaults = true
+            }
+        }
+
+        if didUpdateLocalDefaults {
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
         }
     }
 }

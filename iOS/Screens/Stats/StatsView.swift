@@ -125,13 +125,20 @@ struct StatsView: View {
     }
 
     private var tagRuleData: HomeTagFilterData {
-        HomeTagFilterData(
+        let tagColors = store.tagColors
+        return HomeTagFilterData(
             selectedTags: store.effectiveSelectedTags,
             excludedTags: store.excludedTags,
-            tagSummaries: availableTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) },
+            tagSummaries: RoutineTagColors.applying(
+                tagColors,
+                to: availableTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) }
+            ),
             allTagTaskCount: 0,
             suggestedRelatedTags: suggestedRelatedFilterTags,
-            availableExcludeTagSummaries: availableExcludeTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) },
+            availableExcludeTagSummaries: RoutineTagColors.applying(
+                tagColors,
+                to: availableExcludeTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) }
+            ),
             showsTagCounts: false
         )
     }

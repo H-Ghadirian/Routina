@@ -43,6 +43,9 @@ struct AppView: View {
                 AppLockGate {
                     tabView
                         .searchable(text: $searchText, prompt: "Search routines and todos")
+                        .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                            store.send(.cloudSettingsChanged)
+                        }
                         .task {
                             store.send(.onAppear)
                         }
@@ -50,6 +53,9 @@ struct AppView: View {
             } else {
                 AppLockGate {
                     tabView
+                        .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                            store.send(.cloudSettingsChanged)
+                        }
                         .task {
                             store.send(.onAppear)
                         }

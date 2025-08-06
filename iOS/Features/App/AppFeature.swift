@@ -30,6 +30,7 @@ struct AppFeature {
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
         case onAppear
+        case cloudSettingsChanged
     }
 
     @Dependency(\.appSettingsClient) var appSettingsClient
@@ -57,6 +58,23 @@ struct AppFeature {
                 guard !state.hasRestoredTemporaryViewState else { return .none }
                 state.hasRestoredTemporaryViewState = true
                 applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
+                return .none
+            case .cloudSettingsChanged:
+                let tagColors = appSettingsClient.tagColors()
+                let relatedTagRules = appSettingsClient.relatedTagRules()
+                state.home.tagColors = tagColors
+                state.home.relatedTagRules = RoutineTagRelations.sanitized(
+                    relatedTagRules + RoutineTagRelations.learnedRules(from: state.home.routineTasks.map(\.tags))
+                )
+                state.timeline.relatedTagRules = RoutineTagRelations.sanitized(
+                    relatedTagRules + RoutineTagRelations.learnedRules(from: state.timeline.tasks.map(\.tags))
+                )
+                state.stats.tagColors = tagColors
+                state.stats.relatedTagRules = RoutineTagRelations.sanitized(
+                    relatedTagRules + RoutineTagRelations.learnedRules(from: state.stats.tasks.map(\.tags))
+                )
+                SettingsTagEditor.loadedTagColors(tagColors, state: &state.settings.tags)
+                SettingsTagEditor.loadedRelatedTagRules(relatedTagRules, state: &state.settings.tags)
                 return .none
             case .settings(.resetTemporaryViewStateTapped):
                 let timelineTasks = state.timeline.tasks
@@ -90,6 +108,11 @@ struct AppFeature {
                  .stats(.excludeTagMatchModeChanged),
                  .stats(.clearFilters):
                 persistTemporaryViewState(state)
+                return .none
+            case .settings(.tagColorChanged):
+                let tagColors = appSettingsClient.tagColors()
+                state.home.tagColors = tagColors
+                state.stats.tagColors = tagColors
                 return .none
             default:
                 return .none
@@ -443,6 +466,7 @@ struct StatsFeature {
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var advancedQuery: String = ""
         var availableTags: [String] = []
+        var tagColors: [String: String] = [:]
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
@@ -513,6 +537,7 @@ struct StatsFeature {
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
                 )
+                state.tagColors = appSettingsClient.tagColors()
                 refreshDerivedState(&state)
                 return .none
 
@@ -521,6 +546,7 @@ struct StatsFeature {
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: state.tasks.map(\.tags))
                 )
+                state.tagColors = appSettingsClient.tagColors()
                 state.isGitFeaturesEnabled = appSettingsClient.gitFeaturesEnabled()
                 guard state.isGitFeaturesEnabled else {
                     state.gitHubConnection = .disconnected
