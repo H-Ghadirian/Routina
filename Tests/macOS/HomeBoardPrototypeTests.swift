@@ -430,4 +430,49 @@ struct HomeBoardPrototypeTests {
         #expect(store.state.boardTodoDisplays.contains(where: { $0.id == backlogTodo.id && $0.assignedSprintID == nil }))
         #expect(store.state.boardTodoDisplays.contains(where: { $0.id == sprintTodo.id && $0.assignedSprintID == plannedSprint.id }))
     }
+
+    @Test
+    func backlogScope_excludesDoneTodos() async throws {
+        let openTodo = RoutineTask(
+            name: "Open backlog item",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let doneTodo = RoutineTask(
+            name: "Done backlog item",
+            scheduleMode: .oneOff,
+            lastDone: makeDate("2026-04-20T09:00:00Z")
+        )
+        let sprint = BoardSprint(
+            id: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!,
+            title: "Done Sprint",
+            createdAt: makeDate("2026-04-18T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .tasksLoadedSuccessfully(
+                [openTodo, doneTodo],
+                [],
+                [],
+                HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [doneTodo.id: 1])
+            )
+        )
+
+        let openDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == openTodo.id })
+        let doneDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == doneTodo.id })
+
+        #expect(HomeFeature.matchesBoardScope(openDisplay, selectedScope: .backlog, activeSprintID: nil))
+        #expect(!HomeFeature.matchesBoardScope(doneDisplay, selectedScope: .backlog, activeSprintID: nil))
+
+        var sprintDoneDisplay = doneDisplay
+        sprintDoneDisplay.assignedSprintID = sprint.id
+        #expect(HomeFeature.matchesBoardScope(sprintDoneDisplay, selectedScope: .sprint(sprint.id), activeSprintID: nil))
+    }
 }

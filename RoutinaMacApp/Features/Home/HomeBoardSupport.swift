@@ -2,6 +2,22 @@ import ComposableArchitecture
 import Foundation
 
 extension HomeFeature {
+    static func matchesBoardScope(
+        _ task: RoutineDisplay,
+        selectedScope: BoardScope,
+        activeSprintID: UUID?
+    ) -> Bool {
+        switch selectedScope {
+        case .backlog:
+            return task.assignedSprintID == nil && task.todoState != .done
+        case .currentSprint:
+            guard let activeSprintID else { return false }
+            return task.assignedSprintID == activeSprintID
+        case let .sprint(sprintID):
+            return task.assignedSprintID == sprintID
+        }
+    }
+
     func handleMoveTodoToState(
         _ id: UUID,
         newState: TodoState,

@@ -32,7 +32,11 @@ extension HomeTCAView {
         store.boardTodoDisplays
             .filter { task in
                 task.isOneOffTask
-                    && matchesBoardScope(task)
+                    && HomeFeature.matchesBoardScope(
+                        task,
+                        selectedScope: store.selectedBoardScope,
+                        activeSprintID: boardActiveSprint?.id
+                    )
                     && matchesSearch(task)
                     && matchesFilter(task)
                     && matchesManualPlaceFilter(task)
@@ -318,6 +322,7 @@ extension HomeTCAView {
     var macTodoBoardDetailView: some View {
         HomeMacTodoBoardView(
             columns: macTodoBoardColumns,
+            layout: store.selectedBoardScope == .backlog ? .backlogList : .board,
             selectedTaskID: store.selectedTaskID,
             isCompactLayout: isMacTodoBoardCompactCards,
             availableSprints: boardSprints,
@@ -419,18 +424,6 @@ extension HomeTCAView {
             }
 
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-        }
-    }
-
-    private func matchesBoardScope(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        switch store.selectedBoardScope {
-        case .backlog:
-            return task.assignedSprintID == nil
-        case .currentSprint:
-            guard let activeSprintID = boardActiveSprint?.id else { return false }
-            return task.assignedSprintID == activeSprintID
-        case let .sprint(sprintID):
-            return task.assignedSprintID == sprintID
         }
     }
 

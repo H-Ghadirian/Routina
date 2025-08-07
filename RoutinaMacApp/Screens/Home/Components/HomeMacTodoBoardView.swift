@@ -10,7 +10,13 @@ struct HomeMacTodoBoardView: View {
         var id: String { title }
     }
 
+    enum Layout {
+        case board
+        case backlogList
+    }
+
     let columns: [Column]
+    let layout: Layout
     let selectedTaskID: UUID?
     let isCompactLayout: Bool
     let availableSprints: [BoardSprint]
@@ -32,10 +38,28 @@ struct HomeMacTodoBoardView: View {
         columns.allSatisfy { $0.tasks.isEmpty }
     }
 
+    private var backlogTasks: [HomeFeature.RoutineDisplay] {
+        columns.flatMap(\.tasks).sorted { lhs, rhs in
+            if lhs.isPinned != rhs.isPinned {
+                return lhs.isPinned && !rhs.isPinned
+            }
+
+            let lhsDue = lhs.dueDate ?? .distantFuture
+            let rhsDue = rhs.dueDate ?? .distantFuture
+            if lhsDue != rhsDue {
+                return lhsDue < rhsDue
+            }
+
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+
     var body: some View {
         Group {
             if isBoardEmpty {
                 boardEmptyState
+            } else if layout == .backlogList {
+                backlogList
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 16) {
@@ -51,6 +75,119 @@ struct HomeMacTodoBoardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isCompactLayout)
+    }
+
+    private var backlogList: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                Section {
+                    ForEach(backlogTasks) { task in
+                        backlogRow(task)
+                        Divider()
+                            .padding(.leading, isCompactLayout ? 12 : 16)
+                    }
+                } header: {
+                    backlogHeader
+                }
+            }
+            .padding(.horizontal, isCompactLayout ? 12 : 20)
+            .padding(.vertical, isCompactLayout ? 12 : 18)
+        }
+    }
+
+    private var backlogHeader: some View {
+        Grid(horizontalSpacing: 12, verticalSpacing: 0) {
+            GridRow {
+                Text("Task")
+                    .gridCellColumns(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("Status")
+                Text("Due")
+                Text("Sprint")
+                Text("")
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, isCompactLayout ? 12 : 16)
+            .padding(.vertical, 9)
+        }
+        .background(.regularMaterial)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.primary.opacity(0.08))
+                .frame(height: 1)
+        }
+    }
+
+    private func backlogRow(_ task: HomeFeature.RoutineDisplay) -> some View {
+        Grid(horizontalSpacing: 12, verticalSpacing: 0) {
+            GridRow {
+                HStack(spacing: 10) {
+                    Text(task.emoji)
+                        .font(isCompactLayout ? .subheadline : .headline)
+                        .frame(width: 24)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(task.name)
+                            .font((isCompactLayout ? Font.caption : Font.subheadline).weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        if let notes = task.notes, !notes.isEmpty {
+                            Text(notes)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                .gridCellColumns(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                statusBadge(
+                    title: task.todoState == .paused ? "Paused" : (task.todoState ?? .ready).displayTitle,
+                    tint: tint(for: task.todoState ?? .ready)
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(task.dueDate.map(dueLabel(for:)) ?? "No due date")
+                    .font(.caption)
+                    .foregroundStyle(task.dueDate == nil ? .tertiary : .secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(task.assignedSprintTitle ?? "Backlog")
+                    .font(.caption)
+                    .foregroundStyle(task.assignedSprintTitle == nil ? .tertiary : .secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Menu {
+                    moveMenuItems(for: task)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
+            .padding(.horizontal, isCompactLayout ? 12 : 16)
+            .padding(.vertical, isCompactLayout ? 9 : 11)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(selectedTaskID == task.id ? Color.accentColor.opacity(0.12) : Color.clear)
+            )
+            .contentShape(Rectangle())
+            .onTapGesture(count: 2) {
+                onOpenTask(task.id)
+            }
+            .onTapGesture {
+                onSelectTask(task.id)
+            }
+            .contextMenu {
+                moveMenuItems(for: task)
+            }
+        }
     }
 
     @ViewBuilder
@@ -326,6 +463,19 @@ struct HomeMacTodoBoardView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+
+    private func tint(for state: TodoState) -> Color {
+        switch state {
+        case .ready, .paused:
+            return .orange
+        case .inProgress:
+            return .blue
+        case .blocked:
+            return .red
+        case .done:
+            return .green
+        }
     }
 
     @ViewBuilder
