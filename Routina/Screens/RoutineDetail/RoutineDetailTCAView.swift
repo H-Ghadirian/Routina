@@ -7,6 +7,7 @@ struct RoutineDetailTCAView: View {
     @State private var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State private var isShowingAllLogs = false
     @State private var isEditEmojiPickerPresented = false
+    @State private var syncedMacOverviewHeight: CGFloat = 0
     private let emojiOptions = EmojiCatalog.uniqueQuick
     private let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -17,161 +18,12 @@ struct RoutineDetailTCAView: View {
                 context: .detail
             )
             ScrollView {
-                VStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        calendarHeader
-                        calendarGrid(
-                            doneDates: doneDates(from: store.logs),
-                            dueDate: dueDate(for: store.task),
-                            pausedAt: store.task.pausedAt,
-                            isOrangeUrgencyToday: isOrangeUrgency(store.task),
-                            selectedDate: selectedDate,
-                            onSelectDate: { store.send(.selectedDateChanged($0)) }
-                        )
-                        calendarLegend
-                    }
-                    .padding(12)
-                    .background(Color.gray.opacity(0.08))
-                    .cornerRadius(12)
-
-                    VStack(spacing: 6) {
-                        Text(
-                            summaryTitle(
-                                pausedAt: store.task.pausedAt,
-                                isDoneToday: store.isDoneToday,
-                                overdueDays: store.overdueDays,
-                                daysSinceLastRoutine: store.daysSinceLastRoutine,
-                                task: store.task
-                            )
-                        )
-                            .font(.title3.weight(.semibold))
-                            .foregroundColor(
-                                summaryTitleColor(
-                                    pausedAt: store.task.pausedAt,
-                                    isDoneToday: store.isDoneToday,
-                                    overdueDays: store.overdueDays,
-                                    task: store.task
-                                )
-                            )
-                        Text("Frequency: \(frequencyText(for: store.task))")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(totalDoneCountText(for: store.logs.count))
-                            .font(.subheadline.weight(.medium))
-                            .foregroundColor(.secondary)
-                        if let linkedPlace = linkedPlaceSummary {
-                            Label("Linked to \(linkedPlace.name)", systemImage: "location.fill")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Color.blue.opacity(0.12), in: Capsule())
-                        }
-                        if let pausedAt = store.task.pausedAt {
-                            Text("Paused on \(pausedAt.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        } else if let dueDate = dueDate(for: store.task) {
-                            Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        if store.task.hasSequentialSteps {
-                            Text(stepProgressText(for: store.task))
-                                .font(.subheadline.weight(.medium))
-                                .foregroundColor(.secondary)
-                            if let nextStepTitle = store.task.nextStepTitle {
-                                Text("Next step: \(nextStepTitle)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 4)
-
-                    VStack(spacing: 10) {
-                        Text("Selected date: \(selectedDate.formatted(date: .abbreviated, time: .omitted))")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-
-                        Button(
-                            markDoneButtonTitle(
-                                for: selectedDate,
-                                isDone: isSelectedDateDone,
-                                isFuture: isSelectedDateInFuture,
-                                isPaused: store.task.isPaused,
-                                task: store.task
-                            )
-                        ) {
-                            store.send(.markAsDone)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .frame(maxWidth: .infinity)
-                        .disabled(isSelectedDateDone || isSelectedDateInFuture || store.task.isPaused || isStepRoutineOffToday)
-
-                        if isStepRoutineOffToday {
-                            Text("Step-based routines can only be progressed for today.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-
-                        Button(pauseArchivePresentation.actionTitle) {
-                            store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(store.task.isPaused ? .teal : .orange)
-                        .frame(maxWidth: .infinity)
-
-                        if let pauseDescription = pauseArchivePresentation.description {
-                            Text(pauseDescription)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Routine Logs")
-                            .font(.headline)
-
-                        if store.logs.isEmpty {
-                            Text("No logs yet")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        } else {
-                            let logs = displayedLogs(from: store.logs)
-                            ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
-                                Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
-                                    .font(.subheadline)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 8)
-
-                                if index < logs.count - 1 {
-                                    Divider()
-                                }
-                            }
-
-                            if store.logs.count > 3 {
-                                Button(isShowingAllLogs ? "Show less" : "See all (\(store.logs.count))") {
-                                    isShowingAllLogs.toggle()
-                                }
-                                .font(.footnote.weight(.semibold))
-                                .padding(.top, 4)
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .background(routineLogsBackground)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                    )
+                VStack(alignment: .leading, spacing: 16) {
+                    detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
+                    routineLogsSection
                 }
-                .padding()
+                .padding(RoutineDetailPlatformStyle.detailContentPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .routinaInlineTitleDisplayMode()
             .toolbar {
@@ -279,6 +131,377 @@ struct RoutineDetailTCAView: View {
                 displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
             }
         }
+    }
+
+    @ViewBuilder
+    private func detailOverviewSection(
+        pauseArchivePresentation: RoutinePauseArchivePresentation
+    ) -> some View {
+#if os(macOS)
+        HStack(alignment: .top, spacing: 20) {
+            calendarSection
+                .background(heightReader(id: "calendar"))
+                .frame(
+                    maxWidth: .infinity,
+                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
+                    alignment: .topLeading
+                )
+                .background(RoutineDetailPlatformStyle.calendarCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                )
+                .layoutPriority(1)
+
+            macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
+                .background(heightReader(id: "status"))
+                .frame(width: 320)
+                .frame(
+                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
+                    alignment: .topLeading
+                )
+                .background(RoutineDetailPlatformStyle.summaryCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                )
+        }
+        .onPreferenceChange(RoutineDetailOverviewHeightsPreferenceKey.self) { heights in
+            let maxHeight = heights.values.max() ?? 0
+            guard abs(maxHeight - syncedMacOverviewHeight) > 0.5 else { return }
+            syncedMacOverviewHeight = maxHeight
+        }
+#else
+        VStack(spacing: 16) {
+            calendarSection
+            compactStatusSection(pauseArchivePresentation: pauseArchivePresentation)
+        }
+#endif
+    }
+
+    private var calendarSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            calendarHeader
+            calendarGrid(
+                doneDates: doneDates(from: store.logs),
+                dueDate: dueDate(for: store.task),
+                pausedAt: store.task.pausedAt,
+                isOrangeUrgencyToday: isOrangeUrgency(store.task),
+                selectedDate: selectedDate,
+                onSelectDate: { store.send(.selectedDateChanged($0)) }
+            )
+            calendarLegend
+        }
+        .padding(12)
+#if !os(macOS)
+        .background(RoutineDetailPlatformStyle.calendarCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+#endif
+    }
+
+    private func heightReader(id: String) -> some View {
+        GeometryReader { proxy in
+            Color.clear
+                .preference(
+                    key: RoutineDetailOverviewHeightsPreferenceKey.self,
+                    value: [id: proxy.size.height]
+                )
+        }
+    }
+
+    private func compactStatusSection(
+        pauseArchivePresentation: RoutinePauseArchivePresentation
+    ) -> some View {
+        VStack(spacing: 16) {
+            VStack(spacing: 6) {
+                Text(summaryStatusTitle)
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(summaryStatusColor)
+                Text("Frequency: \(frequencyText(for: store.task))")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Text(totalDoneCountText(for: store.logs.count))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.secondary)
+                if let linkedPlace = linkedPlaceSummary {
+                    Label("Linked to \(linkedPlace.name)", systemImage: "location.fill")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.12), in: Capsule())
+                }
+                if let pausedAt = store.task.pausedAt {
+                    Text("Paused on \(pausedAt.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else if let dueDate = dueDate(for: store.task) {
+                    Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                if store.task.hasSequentialSteps {
+                    Text(stepProgressText(for: store.task))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.secondary)
+                    if let nextStepTitle = store.task.nextStepTitle {
+                        Text("Next step: \(nextStepTitle)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
+
+            VStack(spacing: 10) {
+                Text("Selected date: \(selectedDate.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                Button(markDoneButtonLabel) {
+                    store.send(.markAsDone)
+                }
+                .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
+                .disabled(isMarkDoneDisabled)
+
+                if isStepRoutineOffToday {
+                    Text("Step-based routines can only be progressed for today.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                Button(pauseArchivePresentation.actionTitle) {
+                    store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                }
+                .buttonStyle(.bordered)
+                .tint(store.task.isPaused ? .teal : .orange)
+                .frame(maxWidth: .infinity)
+
+                if let pauseDescription = pauseArchivePresentation.description {
+                    Text(pauseDescription)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+        }
+    }
+
+    private func macStatusSection(
+        pauseArchivePresentation: RoutinePauseArchivePresentation
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(summaryStatusTitle)
+                    .font(.title2.weight(.semibold))
+                    .foregroundColor(summaryStatusColor)
+
+                if store.task.isPaused {
+                    Text("This routine is archived until you resume it.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else if Calendar.current.isDateInToday(selectedDate) {
+                    Text("Today is selected. Use the calendar to review another day when needed.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Reviewing \(selectedDate.formatted(date: .abbreviated, time: .omitted)).")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 14) {
+                macMetadataRow(label: "Frequency", value: frequencyText(for: store.task))
+                macMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
+
+                if let linkedPlace = linkedPlaceSummary {
+                    macMetadataRow(label: "Location", value: linkedPlace.name, systemImage: "location")
+                }
+
+                if let pausedAt = store.task.pausedAt {
+                    macMetadataRow(
+                        label: "Paused",
+                        value: pausedAt.formatted(date: .abbreviated, time: .omitted)
+                    )
+                } else if let dueDateMetadataText {
+                    macMetadataRow(label: "Due", value: dueDateMetadataText)
+                }
+
+                if shouldShowSelectedDateMetadata {
+                    macMetadataRow(label: "Selected", value: selectedDateMetadataText)
+                }
+
+                if store.task.hasSequentialSteps {
+                    macMetadataRow(label: "Progress", value: stepProgressText(for: store.task))
+                    if let nextStepTitle = store.task.nextStepTitle {
+                        macMetadataRow(label: "Next Step", value: nextStepTitle)
+                    }
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Button(markDoneButtonLabel) {
+                    store.send(.markAsDone)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .disabled(isMarkDoneDisabled)
+
+                Button(pauseArchivePresentation.actionTitle) {
+                    store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if isStepRoutineOffToday {
+                    Text("Step-based routines can only be progressed for today.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let pauseDescription = pauseArchivePresentation.description {
+                    Text(pauseDescription)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(18)
+    }
+
+    private func macMetadataRow(
+        label: String,
+        value: String,
+        systemImage: String? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(value)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var routineLogsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Routine Logs")
+                .font(.headline)
+
+            if store.logs.isEmpty {
+                Text("No logs yet")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else {
+                let logs = displayedLogs(from: store.logs)
+                ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
+                    Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 8)
+
+                    if index < logs.count - 1 {
+                        Divider()
+                    }
+                }
+
+                if store.logs.count > 3 {
+                    Button(isShowingAllLogs ? "Show less" : "See all (\(store.logs.count))") {
+                        isShowingAllLogs.toggle()
+                    }
+                    .font(.footnote.weight(.semibold))
+                    .padding(.top, 4)
+                }
+            }
+        }
+        .padding(12)
+        .background(routineLogsBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
+    private var summaryStatusTitle: String {
+        summaryTitle(
+            pausedAt: store.task.pausedAt,
+            isDoneToday: store.isDoneToday,
+            overdueDays: store.overdueDays,
+            daysSinceLastRoutine: store.daysSinceLastRoutine,
+            task: store.task
+        )
+    }
+
+    private var summaryStatusColor: Color {
+        summaryTitleColor(
+            pausedAt: store.task.pausedAt,
+            isDoneToday: store.isDoneToday,
+            overdueDays: store.overdueDays,
+            task: store.task
+        )
+    }
+
+    private var markDoneButtonLabel: String {
+        markDoneButtonTitle(
+            for: selectedDate,
+            isDone: isSelectedDateDone,
+            isFuture: isSelectedDateInFuture,
+            isPaused: store.task.isPaused,
+            task: store.task
+        )
+    }
+
+    private var isMarkDoneDisabled: Bool {
+        isSelectedDateDone || isSelectedDateInFuture || store.task.isPaused || isStepRoutineOffToday
+    }
+
+    private var dueDateMetadataText: String? {
+        guard let dueDate = dueDate(for: store.task), !Calendar.current.isDateInToday(dueDate) else {
+            return nil
+        }
+        return dueDate.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private var shouldShowSelectedDateMetadata: Bool {
+        !Calendar.current.isDateInToday(selectedDate)
+    }
+
+    private var selectedDateMetadataText: String {
+        if Calendar.current.isDateInToday(selectedDate) {
+            return "Today"
+        }
+        return selectedDate.formatted(date: .abbreviated, time: .omitted)
     }
 
     private var selectedDate: Date {
@@ -543,7 +766,7 @@ struct RoutineDetailTCAView: View {
         if task.isInProgress { return .orange }
         if isDoneToday { return .green }
         if overdueDays > 0 { return .red }
-        if daysUntilDue(task) == 0 { return .red }
+        if daysUntilDue(task) == 0 { return RoutineDetailPlatformStyle.dueTodayTitleColor }
         if isOrangeUrgency(task) { return .orange }
         return .primary
     }
@@ -605,7 +828,7 @@ struct RoutineDetailTCAView: View {
     }
 
     private func totalDoneCountText(for count: Int) -> String {
-        count == 1 ? "1 total done" : "\(count) total dones"
+        count == 1 ? "1 completion" : "\(count) completions"
     }
 
     private func stepProgressText(for task: RoutineTask) -> String {
@@ -688,5 +911,13 @@ private extension Calendar {
             result.append(nil)
         }
         return result
+    }
+}
+
+private struct RoutineDetailOverviewHeightsPreferenceKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: [String: CGFloat] = [:]
+
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
