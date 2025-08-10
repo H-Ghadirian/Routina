@@ -116,6 +116,8 @@ final class CalendarTaskImportService {
 }
 
 enum CalendarTaskImportSupport {
+    static let defaultTaskEmoji = "📅"
+
     static func defaultTaskTitle(for eventTitle: String) -> String {
         let trimmed = eventTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "Calendar follow-up" }
@@ -132,6 +134,26 @@ enum CalendarTaskImportSupport {
             "Imported from \(suggestion.calendarTitle).",
             suggestion.sourceMarker,
         ].joined(separator: "\n")
+    }
+
+    static func displayEmoji(for emoji: String?) -> String? {
+        guard let emoji, !emoji.isEmpty else { return nil }
+        if emoji == "calendar.badge.plus" {
+            return defaultTaskEmoji
+        }
+        return emoji
+    }
+
+    static func displayNotes(from notes: String?) -> String? {
+        guard let notes else { return nil }
+
+        let visibleNotes = notes
+            .components(separatedBy: .newlines)
+            .filter { !$0.hasPrefix("Calendar event: ") }
+            .joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return visibleNotes.isEmpty ? nil : visibleNotes
     }
 
     static func sourceMarker(in notes: String) -> String? {

@@ -931,8 +931,8 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
 
         self.taskID = task.id
         self.name = task.name ?? "Untitled"
-        self.emoji = task.emoji ?? "•"
-        self.notes = task.notes
+        self.emoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "•"
+        self.notes = CalendarTaskImportSupport.displayNotes(from: task.notes)
         self.placeID = task.placeID
         self.placeName = nil
         self.tags = task.tags

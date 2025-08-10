@@ -1198,7 +1198,7 @@ struct TaskDetailTCAView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
 
-            if let notes = store.task.notes, !notes.isEmpty {
+            if let notes = CalendarTaskImportSupport.displayNotes(from: store.task.notes) {
                 Text(notes)
                     .font(.subheadline)
                     .foregroundStyle(.primary)
@@ -2032,8 +2032,8 @@ struct TaskDetailTCAView: View {
         guard !trimmedName.isEmpty else { return false }
 
         let currentName = (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let currentEmoji = task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
-        let currentNotes = task.notes ?? ""
+        let currentEmoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
+        let currentNotes = CalendarTaskImportSupport.displayNotes(from: task.notes) ?? ""
         let currentLink = task.link ?? ""
         let currentPriority = task.priority
         let currentImportance = task.importance

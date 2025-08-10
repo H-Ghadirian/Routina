@@ -59,8 +59,8 @@ extension HomeFeature {
         return RoutineDisplay(
             taskID: task.id,
             name: task.name ?? "Unnamed task",
-            emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
-            notes: task.notes,
+            emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨",
+            notes: CalendarTaskImportSupport.displayNotes(from: task.notes),
             hasImage: task.hasImage,
             placeID: task.placeID,
             placeName: linkedPlace?.displayName,

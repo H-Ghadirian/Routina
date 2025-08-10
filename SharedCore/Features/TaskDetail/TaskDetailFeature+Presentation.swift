@@ -296,7 +296,7 @@ extension TaskDetailFeature.State {
     }
 
     var routineEmoji: String {
-        task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+        CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
     }
 
     var frequencyText: String {
