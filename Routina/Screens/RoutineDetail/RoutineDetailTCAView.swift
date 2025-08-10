@@ -182,8 +182,10 @@ struct RoutineDetailTCAView: View {
     }
 
     private var calendarSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
             calendarHeader
+                .padding(.bottom, 8)
+
             calendarGrid(
                 doneDates: doneDates(from: store.logs),
                 dueDate: dueDate(for: store.task),
@@ -192,6 +194,13 @@ struct RoutineDetailTCAView: View {
                 selectedDate: selectedDate,
                 onSelectDate: { store.send(.selectedDateChanged($0)) }
             )
+            .padding(.bottom, 12)
+
+            Spacer(minLength: 0)
+
+            Divider()
+                .padding(.bottom, 12)
+
             calendarLegend
         }
         .padding(12)
@@ -571,6 +580,7 @@ struct RoutineDetailTCAView: View {
             }
         }
         .padding(.top, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func legendItem(color: Color, label: String) -> some View {
