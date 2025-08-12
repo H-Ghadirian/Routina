@@ -3,9 +3,7 @@ import CoreData
 import SwiftUI
 
 struct HomeTCAView: View {
-//    @Environment(\.managedObjectContext) private var viewContext
     let store: StoreOf<HomeFeature>
-    @State private var needsRefresh = false  // Added State to trigger UI refresh
     @State private var showingAddRoutine = false
 
     var body: some View {
@@ -49,7 +47,6 @@ struct HomeTCAView: View {
                     viewStore.send(.onAppear)
                 }
             }
-            .id(needsRefresh)  // Force UI refresh when returning from detail view
         }
     }
 
