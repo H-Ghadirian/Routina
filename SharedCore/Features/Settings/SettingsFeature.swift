@@ -47,6 +47,7 @@ struct SettingsFeature {
         case setTagRenameSheet(Bool)
         case placesLoaded([RoutinePlaceSummary])
         case tagsLoaded([RoutineTagSummary])
+        case fastFilterTagsLoaded([String])
         case tagColorsLoaded([String: String])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case learnedRelatedTagRulesLoaded([RoutineRelatedTagRule])
@@ -54,6 +55,7 @@ struct SettingsFeature {
         case placeDraftNameChanged(String)
         case tagRenameDraftChanged(String)
         case tagSearchQueryChanged(String)
+        case fastFilterTagToggled(String)
         case relatedTagDraftChanged(tagName: String, draft: String)
         case tagColorChanged(tagName: String, colorHex: String?)
         case saveRelatedTagsTapped(String)
@@ -457,6 +459,7 @@ struct SettingsFeature {
                     send(.tagsLoaded(SettingsRefreshExecution.loadTagSummaries(
                         modelContext: self.modelContext
                     )))
+                    send(.fastFilterTagsLoaded(appSettingsClient.fastFilterTags()))
                     send(.tagColorsLoaded(appSettingsClient.tagColors()))
                     send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
                     send(.learnedRelatedTagRulesLoaded(
@@ -545,6 +548,26 @@ struct SettingsFeature {
 
             case let .tagsLoaded(tags):
                 SettingsTagEditor.loadedTags(tags, state: &state.tags)
+                let fastFilterTags = FastFilterTags.sanitized(
+                    state.tags.fastFilterTags.filter { tag in
+                        tags.contains { RoutineTag.contains($0.name, in: [tag]) }
+                    }
+                )
+                if fastFilterTags != state.tags.fastFilterTags {
+                    state.tags.fastFilterTags = fastFilterTags
+                    appSettingsClient.setFastFilterTags(fastFilterTags)
+                }
+                return .none
+
+            case let .fastFilterTagsLoaded(tags):
+                let savedTags = state.tags.savedTags
+                let fastFilterTags = FastFilterTags.sanitized(tags).filter { tag in
+                    savedTags.isEmpty || savedTags.contains { RoutineTag.contains($0.name, in: [tag]) }
+                }
+                state.tags.fastFilterTags = fastFilterTags
+                if fastFilterTags != FastFilterTags.sanitized(tags) {
+                    appSettingsClient.setFastFilterTags(fastFilterTags)
+                }
                 return .none
 
             case let .tagColorsLoaded(colors):
@@ -573,6 +596,12 @@ struct SettingsFeature {
 
             case let .tagSearchQueryChanged(query):
                 state.tags.tagSearchQuery = query
+                return .none
+
+            case let .fastFilterTagToggled(tag):
+                let updatedTags = FastFilterTags.toggling(tag, in: state.tags.fastFilterTags)
+                state.tags.fastFilterTags = updatedTags
+                appSettingsClient.setFastFilterTags(updatedTags)
                 return .none
 
             case let .relatedTagDraftChanged(tagName, draft):
@@ -791,6 +820,7 @@ struct SettingsFeature {
             send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
             send(.placesLoaded(result.placeSummaries))
             send(.tagsLoaded(result.tagSummaries))
+            send(.fastFilterTagsLoaded(appSettingsClient.fastFilterTags()))
             send(.tagColorsLoaded(appSettingsClient.tagColors()))
             send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
             send(.learnedRelatedTagRulesLoaded(

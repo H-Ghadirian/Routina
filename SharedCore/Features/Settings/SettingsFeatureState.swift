@@ -122,6 +122,7 @@ struct SettingsPlacesState: Equatable {
 
 struct SettingsTagsState: Equatable {
     var savedTags: [RoutineTagSummary] = []
+    var fastFilterTags: [String] = []
     var tagColors: [String: String] = [:]
     var relatedTagRules: [RoutineRelatedTagRule] = []
     var learnedRelatedTagRules: [RoutineRelatedTagRule] = []

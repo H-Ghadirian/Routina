@@ -760,6 +760,25 @@ struct SettingsTagsDetailView: View {
 
                                     Spacer()
 
+                                    Button {
+                                        store.send(.fastFilterTagToggled(tag.name))
+                                    } label: {
+                                        Image(
+                                            systemName: store.tags.fastFilterTags.contains(where: { RoutineTag.contains($0, in: [tag.name]) })
+                                                ? "bolt.fill"
+                                                : "bolt"
+                                        )
+                                        .font(.title3)
+                                        .foregroundStyle(
+                                            store.tags.fastFilterTags.contains(where: { RoutineTag.contains($0, in: [tag.name]) })
+                                                ? Color.accentColor
+                                                : Color.secondary
+                                        )
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .disabled(store.tags.isTagOperationInProgress)
+                                    .accessibilityLabel("Toggle fast filter")
+
                                     Menu {
                                         Button {
                                             store.send(.renameTagTapped(tag.name))

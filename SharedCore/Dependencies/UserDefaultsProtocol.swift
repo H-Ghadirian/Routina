@@ -61,6 +61,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingTagCounterDisplayMode
     case appSettingRelatedTagRules
     case appSettingTagColors
+    case appSettingFastFilterTags
     case appSettingTemporaryViewState
     case macFormSectionOrder
 }
@@ -92,6 +93,8 @@ struct AppSettingsClient: Sendable {
     var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
     var tagColors: @Sendable () -> [String: String]
     var setTagColors: @Sendable ([String: String]) -> Void
+    var fastFilterTags: @Sendable () -> [String]
+    var setFastFilterTags: @Sendable ([String]) -> Void
     var notificationReminderTime: @Sendable () -> Date
     var setNotificationReminderTime: @Sendable (Date) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
@@ -107,7 +110,8 @@ enum CloudSettingsKeyValueSync {
     private static let syncedStringKeys: Set<UserDefaultStringValueKey> = [
         .selectedMacAppIcon,
         .appSettingRelatedTagRules,
-        .appSettingTagColors
+        .appSettingTagColors,
+        .appSettingFastFilterTags
     ]
 
     static func startIfNeeded() {
@@ -330,6 +334,15 @@ extension AppSettingsClient {
             }
             CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingTagColors)
         },
+        fastFilterTags: {
+            FastFilterTags.decoded(from: CloudSettingsKeyValueSync.string(for: .appSettingFastFilterTags))
+        },
+        setFastFilterTags: { tags in
+            CloudSettingsKeyValueSync.setString(
+                FastFilterTags.encoded(tags),
+                for: .appSettingFastFilterTags
+            )
+        },
         notificationReminderTime: {
             NotificationPreferences.reminderTimeDate()
         },
@@ -389,6 +402,8 @@ extension AppSettingsClient {
         setRelatedTagRules: { _ in },
         tagColors: { [:] },
         setTagColors: { _ in },
+        fastFilterTags: { [] },
+        setFastFilterTags: { _ in },
         notificationReminderTime: { Date() },
         setNotificationReminderTime: { _ in },
         selectedAppIcon: { .orange },

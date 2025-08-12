@@ -25,6 +25,7 @@ struct AppFeature {
     @CasePathable
     enum Action: Equatable {
         case tabSelected(Tab)
+        case homeFastFilterSelected(String)
         case home(HomeFeature.Action)
         case timeline(TimelineFeature.Action)
         case stats(StatsFeature.Action)
@@ -54,6 +55,10 @@ struct AppFeature {
                 state.selectedTab = tab
                 persistTemporaryViewState(state)
                 return .none
+            case let .homeFastFilterSelected(tag):
+                state.selectedTab = .home
+                persistTemporaryViewState(state)
+                return .send(.home(.applyFastTagFilter(tag)))
             case .onAppear:
                 guard !state.hasRestoredTemporaryViewState else { return .none }
                 state.hasRestoredTemporaryViewState = true

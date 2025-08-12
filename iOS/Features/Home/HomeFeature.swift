@@ -455,6 +455,7 @@ struct HomeFeature {
         case createdDateFilterChanged(HomeTaskCreatedDateFilter)
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
+        case applyFastTagFilter(String)
 
         // Timeline filter actions
         case selectedTimelineRangeChanged(TimelineRange)
@@ -729,6 +730,26 @@ struct HomeFeature {
 
             case .clearOptionalFilters:
                 return applyTaskFilterMutation(.clearOptionalFilters, state: &state)
+
+            case let .applyFastTagFilter(tag):
+                guard let cleanedTag = RoutineTag.cleaned(tag) else { return .none }
+                state.taskFilters.setSelectedTags([cleanedTag])
+                state.taskFilters.includeTagMatchMode = .all
+                state.taskFilters.excludedTags = []
+                state.taskFilters.excludeTagMatchMode = .any
+                state.taskFilters.advancedQuery = ""
+                state.taskFilters.selectedManualPlaceFilterID = nil
+                state.taskFilters.selectedImportanceUrgencyFilter = nil
+                state.taskFilters.selectedTodoStateFilter = nil
+                state.taskFilters.selectedPressureFilter = nil
+                if state.hideUnavailableRoutines {
+                    state.hideUnavailableRoutines = false
+                    appSettingsClient.setHideUnavailableRoutines(false)
+                }
+                state.taskFilters.isFilterSheetPresented = false
+                state.presentation.isMacFilterDetailPresented = false
+                persistTemporaryViewState(state)
+                return .none
 
             // MARK: - Timeline filter actions
 

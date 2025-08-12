@@ -182,13 +182,15 @@ extension SettingsDiagnosticsState {
 
 extension SettingsTagsState {
     var overviewSubtitle: String {
+        let fastFilterSuffix = fastFilterTags.isEmpty ? "" : " • \(fastFilterTags.count) fast"
+
         switch savedTags.count {
         case 0:
-            return "Review and manage tags across routines"
+            return "Review and manage tags across routines\(fastFilterSuffix)"
         case 1:
-            return "1 saved tag"
+            return "1 saved tag\(fastFilterSuffix)"
         default:
-            return "\(savedTags.count) saved tags"
+            return "\(savedTags.count) saved tags\(fastFilterSuffix)"
         }
     }
 

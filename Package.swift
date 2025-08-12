@@ -134,6 +134,7 @@ let package = Package(
                 "SharedCore/Domain/RoutineListSectioningMode.swift",
                 "SharedCore/Domain/RoutineLogHistory.swift",
                 "SharedCore/Domain/RoutineTag.swift",
+                "SharedCore/Domain/FastFilterTags.swift",
                 "SharedCore/Domain/GitHubStatsModels.swift",
                 "SharedCore/Domain/GitHubWidgetData.swift",
                 "SharedCore/Domain/GitLabWidgetData.swift",

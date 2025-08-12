@@ -72,6 +72,8 @@ struct SettingsFeatureDependencyTests {
                 setRelatedTagRules: { _ in },
                 tagColors: { [:] },
                 setTagColors: { _ in },
+                fastFilterTags: { [] },
+                setFastFilterTags: { _ in },
                 notificationReminderTime: { reminderTime },
                 setNotificationReminderTime: { _ in },
                 selectedAppIcon: { .teal },
@@ -144,6 +146,7 @@ struct SettingsFeatureDependencyTests {
             $0.tags.savedTags = loadedTags
             $0.tags.relatedTagDrafts = ["focus": ""]
         }
+        await store.receive(.fastFilterTagsLoaded([]))
         await store.receive(.tagColorsLoaded([:]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.learnedRelatedTagRulesLoaded([]))
