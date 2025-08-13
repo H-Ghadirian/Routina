@@ -272,6 +272,62 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
+    func assignTodosToSprint_updatesBoardDisplayAssignments() async throws {
+        let firstTodo = RoutineTask(
+            name: "Plan next release",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let secondTodo = RoutineTask(
+            name: "Write test notes",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let sprint = BoardSprint(
+            id: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!,
+            title: "Sprint 7",
+            createdAt: makeDate("2026-04-01T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .tasksLoadedSuccessfully([firstTodo, secondTodo], [], [], HomeFeature.DoneStats())
+        )
+
+        await store.send(.sprintBoardLoaded(SprintBoardData(sprints: [sprint], assignments: []))) {
+            $0.sprintBoardData = SprintBoardData(sprints: [sprint], assignments: [])
+        }
+
+        await store.send(.assignTodosToSprint(taskIDs: [firstTodo.id, secondTodo.id], sprintID: sprint.id)) {
+            $0.sprintBoardData.assignments = [
+                SprintAssignment(todoID: firstTodo.id, sprintID: sprint.id),
+                SprintAssignment(todoID: secondTodo.id, sprintID: sprint.id)
+            ]
+            $0.routineDisplays[0].assignedSprintID = sprint.id
+            $0.routineDisplays[0].assignedSprintTitle = "Sprint 7"
+            $0.routineDisplays[1].assignedSprintID = sprint.id
+            $0.routineDisplays[1].assignedSprintTitle = "Sprint 7"
+            $0.boardTodoDisplays[0].assignedSprintID = sprint.id
+            $0.boardTodoDisplays[0].assignedSprintTitle = "Sprint 7"
+            $0.boardTodoDisplays[1].assignedSprintID = sprint.id
+            $0.boardTodoDisplays[1].assignedSprintTitle = "Sprint 7"
+        }
+
+        let assignedIDs = Set(
+            store.state.boardTodoDisplays
+                .filter { $0.assignedSprintID == sprint.id }
+                .map(\.id)
+        )
+        #expect(assignedIDs == Set([firstTodo.id, secondTodo.id]))
+    }
+
+    @Test
     func startSprintTapped_makesOnlySelectedSprintActive() async {
         let now = makeDate("2026-04-19T10:00:00Z")
         let previouslyActive = BoardSprint(

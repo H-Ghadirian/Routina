@@ -25,11 +25,13 @@ struct HomeMacTodoBoardView: View {
     let onOpenTask: (UUID) -> Void
     let onMoveTask: (UUID, TodoState) -> Void
     let onAssignTaskToSprint: (UUID, UUID?) -> Void
+    let onAssignTasksToSprint: ([UUID], UUID?) -> Void
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
     let onMoveUp: (UUID, TodoState, [UUID]) -> Void
     let onMoveDown: (UUID, TodoState, [UUID]) -> Void
 
     @State private var draggedTaskID: UUID?
+    @State private var selectedBacklogTaskIDs: Set<UUID> = []
     @State private var highlightedColumnState: TodoState?
     @State private var hoverTargetTaskID: UUID?
     @State private var trailingDropColumnState: TodoState?
@@ -93,11 +95,16 @@ struct HomeMacTodoBoardView: View {
             .padding(.horizontal, isCompactLayout ? 12 : 20)
             .padding(.vertical, isCompactLayout ? 12 : 18)
         }
+        .onChange(of: backlogTasks.map(\.id)) { _, visibleTaskIDs in
+            selectedBacklogTaskIDs.formIntersection(Set(visibleTaskIDs))
+        }
     }
 
     private var backlogHeader: some View {
         Grid(horizontalSpacing: 12, verticalSpacing: 0) {
             GridRow {
+                backlogSelectionControl
+                    .frame(width: 28, alignment: .leading)
                 Text("Task")
                     .gridCellColumns(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -120,8 +127,20 @@ struct HomeMacTodoBoardView: View {
     }
 
     private func backlogRow(_ task: HomeFeature.RoutineDisplay) -> some View {
-        Grid(horizontalSpacing: 12, verticalSpacing: 0) {
+        let isSelectedForBulkAction = selectedBacklogTaskIDs.contains(task.id)
+
+        return Grid(horizontalSpacing: 12, verticalSpacing: 0) {
             GridRow {
+                Button {
+                    toggleBacklogSelection(for: task.id)
+                } label: {
+                    Image(systemName: isSelectedForBulkAction ? "checkmark.square.fill" : "square")
+                        .foregroundStyle(isSelectedForBulkAction ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isSelectedForBulkAction ? "Deselect \(task.name)" : "Select \(task.name)")
+                .frame(width: 28, alignment: .leading)
+
                 HStack(spacing: 10) {
                     Text(task.emoji)
                         .font(isCompactLayout ? .subheadline : .headline)
@@ -175,7 +194,7 @@ struct HomeMacTodoBoardView: View {
             .padding(.vertical, isCompactLayout ? 9 : 11)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(selectedTaskID == task.id ? Color.accentColor.opacity(0.12) : Color.clear)
+                    .fill(backlogRowBackground(isSelectedForBulkAction: isSelectedForBulkAction, taskID: task.id))
             )
             .contentShape(Rectangle())
             .onTapGesture(count: 2) {
@@ -187,6 +206,55 @@ struct HomeMacTodoBoardView: View {
             .contextMenu {
                 moveMenuItems(for: task)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var backlogSelectionControl: some View {
+        if selectedBacklogTaskIDs.isEmpty {
+            Button {
+                selectedBacklogTaskIDs = Set(backlogTasks.map(\.id))
+            } label: {
+                Image(systemName: "square")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Select all backlog rows")
+        } else {
+            Menu {
+                Button("Clear Selection") {
+                    selectedBacklogTaskIDs.removeAll()
+                }
+
+                Divider()
+
+                Button("Remove from Sprint") {
+                    assignSelectedBacklogTasks(to: nil)
+                }
+
+                if let activeSprint {
+                    Button("Assign to \(activeSprint.title)") {
+                        assignSelectedBacklogTasks(to: activeSprint.id)
+                    }
+                }
+
+                if !availableSprints.isEmpty {
+                    Menu("Assign to Sprint") {
+                        ForEach(availableSprints) { sprint in
+                            Button(sprint.title) {
+                                assignSelectedBacklogTasks(to: sprint.id)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Label("\(selectedBacklogTaskIDs.count)", systemImage: "checkmark.square.fill")
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(Color.accentColor)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel("\(selectedBacklogTaskIDs.count) backlog rows selected")
         }
     }
 
@@ -476,6 +544,31 @@ struct HomeMacTodoBoardView: View {
         case .done:
             return .green
         }
+    }
+
+    private func toggleBacklogSelection(for taskID: UUID) {
+        if selectedBacklogTaskIDs.contains(taskID) {
+            selectedBacklogTaskIDs.remove(taskID)
+        } else {
+            selectedBacklogTaskIDs.insert(taskID)
+        }
+    }
+
+    private func assignSelectedBacklogTasks(to sprintID: UUID?) {
+        let selectedIDs = Array(selectedBacklogTaskIDs)
+        guard !selectedIDs.isEmpty else { return }
+        onAssignTasksToSprint(selectedIDs, sprintID)
+        selectedBacklogTaskIDs.removeAll()
+    }
+
+    private func backlogRowBackground(isSelectedForBulkAction: Bool, taskID: UUID) -> Color {
+        if isSelectedForBulkAction {
+            return Color.accentColor.opacity(0.18)
+        }
+        if selectedTaskID == taskID {
+            return Color.accentColor.opacity(0.12)
+        }
+        return Color.clear
     }
 
     @ViewBuilder

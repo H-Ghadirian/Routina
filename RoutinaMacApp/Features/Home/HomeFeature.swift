@@ -534,6 +534,7 @@ struct HomeFeature {
         case startSprintTapped(UUID)
         case finishSprintTapped(UUID)
         case assignTodoToSprint(taskID: UUID, sprintID: UUID?)
+        case assignTodosToSprint(taskIDs: [UUID], sprintID: UUID?)
         case renameSprintTapped(UUID)
         case renamingSprintTitleChanged(String)
         case renameSprintConfirmed
@@ -1092,6 +1093,13 @@ struct HomeFeature {
             case let .assignTodoToSprint(taskID, sprintID):
                 return handleAssignTodoToSprint(
                     taskID: taskID,
+                    sprintID: sprintID,
+                    state: &state
+                )
+
+            case let .assignTodosToSprint(taskIDs, sprintID):
+                return handleAssignTodosToSprint(
+                    taskIDs: taskIDs,
                     sprintID: sprintID,
                     state: &state
                 )

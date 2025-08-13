@@ -215,13 +215,34 @@ extension HomeFeature {
         sprintID: UUID?,
         state: inout State
     ) -> Effect<Action> {
-        state.sprintBoardData.assignments.removeAll(where: { $0.todoID == taskID })
-        if let sprintID {
-            state.sprintBoardData.assignments.append(
-                SprintAssignment(todoID: taskID, sprintID: sprintID)
-            )
-        }
+        applySprintAssignment(taskIDs: [taskID], sprintID: sprintID, state: &state)
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleAssignTodosToSprint(
+        taskIDs: [UUID],
+        sprintID: UUID?,
+        state: inout State
+    ) -> Effect<Action> {
+        let uniqueIDs = uniqueTaskIDs(taskIDs)
+        guard !uniqueIDs.isEmpty else { return .none }
+        applySprintAssignment(taskIDs: uniqueIDs, sprintID: sprintID, state: &state)
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    private func applySprintAssignment(
+        taskIDs: [UUID],
+        sprintID: UUID?,
+        state: inout State
+    ) {
+        let taskIDSet = Set(taskIDs)
+        state.sprintBoardData.assignments.removeAll(where: { taskIDSet.contains($0.todoID) })
+        if let sprintID {
+            state.sprintBoardData.assignments.append(
+                contentsOf: taskIDs.map { SprintAssignment(todoID: $0, sprintID: sprintID) }
+            )
+        }
     }
 }

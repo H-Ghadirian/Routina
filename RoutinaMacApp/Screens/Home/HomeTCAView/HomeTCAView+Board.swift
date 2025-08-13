@@ -340,6 +340,9 @@ extension HomeTCAView {
             onAssignTaskToSprint: { taskID, sprintID in
                 store.send(.assignTodoToSprint(taskID: taskID, sprintID: sprintID))
             },
+            onAssignTasksToSprint: { taskIDs, sprintID in
+                store.send(.assignTodosToSprint(taskIDs: taskIDs, sprintID: sprintID))
+            },
             onDropTask: { taskID, state, orderedTaskIDs in
                 store.send(
                     .moveTodoOnBoard(
