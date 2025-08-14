@@ -11,6 +11,7 @@ struct TaskDetailTCAView: View {
     @Query private var focusSessionTasks: [RoutineTask]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
+    @State private var isRoutineLogsExpanded = true
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
@@ -205,6 +206,7 @@ struct TaskDetailTCAView: View {
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
+                routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -325,6 +327,7 @@ struct TaskDetailTCAView: View {
                 doneDates: doneDates(from: store.logs, task: store.task),
                 assumedDates: assumedDates(from: store.logs, task: store.task),
                 dueDate: store.resolvedDueDate,
+                createdAt: store.task.createdAt,
                 pausedAt: store.task.pausedAt,
                 isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
                 selectedDate: store.resolvedSelectedDate,
@@ -648,17 +651,6 @@ struct TaskDetailTCAView: View {
             ])
         }
 
-        if let createdAtBadgeValue = store.state.createdAtBadgeValue {
-            rows.append([
-                TaskDetailHeaderBadgeItem(
-                    title: "Created",
-                    value: createdAtBadgeValue,
-                    systemImage: nil,
-                    tint: .secondary
-                )
-            ])
-        }
-
         if !estimationHeaderBadges.isEmpty {
             rows.append(estimationHeaderBadges)
         }
@@ -734,17 +726,6 @@ struct TaskDetailTCAView: View {
                     value: reminderMetadataText,
                     systemImage: "bell.fill",
                     tint: .indigo
-                )
-            ])
-        }
-
-        if let createdAtBadgeValue = store.state.createdAtBadgeValue {
-            rows.append([
-                TaskDetailHeaderBadgeItem(
-                    title: "Created",
-                    value: createdAtBadgeValue,
-                    systemImage: nil,
-                    tint: .secondary
                 )
             ])
         }
@@ -1421,40 +1402,74 @@ struct TaskDetailTCAView: View {
 
     private var routineLogsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Routine Logs")
-                .font(.headline)
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isRoutineLogsExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Routine Logs")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
 
-            if store.logs.isEmpty {
-                Text("No logs yet")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            } else {
-                let logs = displayedLogs(from: store.logs)
-                ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
-                    RoutineLogSwipeRow(
-                        timestampText: logTimestampText(log.timestamp),
-                        statusText: log.kind == .completed ? "Done" : "Canceled",
-                        statusColor: log.kind == .completed ? .green : .orange,
-                        actionTitle: routineLogActionTitle(for: log),
-                        actionColor: log.kind == .completed ? .green : .orange,
-                        isActionEnabled: log.timestamp != nil
-                    ) {
-                        if let timestamp = log.timestamp {
-                            store.send(.requestRemoveLogEntry(timestamp))
+                    Text(store.logs.count.formatted())
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.secondary.opacity(0.12), in: Capsule())
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isRoutineLogsExpanded ? 180 : 0))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if let createdAtBadgeValue = store.state.createdAtBadgeValue {
+                Label("Created \(createdAtBadgeValue)", systemImage: "calendar.badge.plus")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if isRoutineLogsExpanded {
+                if store.logs.isEmpty {
+                    Text("No logs yet")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else {
+                    let logs = displayedLogs(from: store.logs)
+                    ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
+                        RoutineLogSwipeRow(
+                            timestampText: logTimestampText(log.timestamp),
+                            statusText: log.kind == .completed ? "Done" : "Canceled",
+                            statusColor: log.kind == .completed ? .green : .orange,
+                            actionTitle: routineLogActionTitle(for: log),
+                            actionColor: log.kind == .completed ? .green : .orange,
+                            isActionEnabled: log.timestamp != nil
+                        ) {
+                            if let timestamp = log.timestamp {
+                                store.send(.requestRemoveLogEntry(timestamp))
+                            }
+                        }
+
+                        if index < logs.count - 1 {
+                            Divider()
                         }
                     }
 
-                    if index < logs.count - 1 {
-                        Divider()
+                    if store.logs.count > 3 {
+                        Button(isShowingAllLogs ? "Show less" : "See all (\(store.logs.count))") {
+                            isShowingAllLogs.toggle()
+                        }
+                        .font(.footnote.weight(.semibold))
+                        .padding(.top, 4)
                     }
-                }
-
-                if store.logs.count > 3 {
-                    Button(isShowingAllLogs ? "Show less" : "See all (\(store.logs.count))") {
-                        isShowingAllLogs.toggle()
-                    }
-                    .font(.footnote.weight(.semibold))
-                    .padding(.top, 4)
                 }
             }
         }
@@ -1665,6 +1680,9 @@ struct TaskDetailTCAView: View {
 
     private var calendarLegend: some View {
         HStack(spacing: 12) {
+            if store.task.createdAt != nil {
+                legendItem(color: .purple, label: "Created")
+            }
             legendItem(color: .green, label: "Done")
             if store.task.autoAssumeDailyDone {
                 legendItem(color: .mint, label: "Assumed")
@@ -1705,6 +1723,7 @@ struct TaskDetailTCAView: View {
         doneDates: Set<Date>,
         assumedDates: Set<Date>,
         dueDate: Date?,
+        createdAt: Date?,
         pausedAt: Date?,
         isOrangeUrgencyToday: Bool,
         selectedDate: Date,
@@ -1733,6 +1752,7 @@ struct TaskDetailTCAView: View {
                             doneDates: doneDates,
                             assumedDates: assumedDates,
                             dueDate: dueDate,
+                            createdAt: createdAt,
                             pausedAt: pausedAt,
                             isOrangeUrgencyToday: isOrangeUrgencyToday,
                             isSelected: calendar.isDate(day, inSameDayAs: selectedDate),
@@ -1752,6 +1772,7 @@ struct TaskDetailTCAView: View {
         doneDates: Set<Date>,
         assumedDates: Set<Date>,
         dueDate: Date?,
+        createdAt: Date?,
         pausedAt: Date?,
         isOrangeUrgencyToday: Bool,
         isSelected: Bool,
@@ -1759,6 +1780,7 @@ struct TaskDetailTCAView: View {
     ) -> some View {
         let calendar = Calendar.current
         let isDueDate = dueDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
+        let isCreatedDate = createdAt.map { calendar.isDate($0, inSameDayAs: day) } ?? false
         let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isAssumedDate = !isDoneDate && assumedDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isToday = calendar.isDateInToday(day)
@@ -1770,12 +1792,13 @@ struct TaskDetailTCAView: View {
             if isAssumedDate { return .mint }
             if isPausedDate { return .teal }
             if isDueToTodayRangeDate || isDueDate { return .red }
+            if isCreatedDate { return .purple }
             if isToday && isOrangeUrgencyToday { return .orange }
             if isToday { return .blue }
             return .clear
         }()
 
-        let foregroundColor: Color = (isDueDate || isDoneDate || isAssumedDate || isDueToTodayRangeDate || isPausedDate || isToday) ? .white : .primary
+        let foregroundColor: Color = (isDueDate || isDoneDate || isAssumedDate || isDueToTodayRangeDate || isPausedDate || isCreatedDate || isToday) ? .white : .primary
 
         return Button {
             onSelectDate(day)
@@ -1792,7 +1815,7 @@ struct TaskDetailTCAView: View {
                             TaskDetailPresentation.selectionStrokeColor(
                                 isSelected: isSelected,
                                 isToday: isToday,
-                                isHighlightedDay: isDoneDate || isAssumedDate || isDueToTodayRangeDate || isDueDate || isPausedDate
+                                isHighlightedDay: isDoneDate || isAssumedDate || isDueToTodayRangeDate || isDueDate || isPausedDate || isCreatedDate
                             ),
                             lineWidth: isSelected ? 3 : 2
                         )

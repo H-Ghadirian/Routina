@@ -4,6 +4,7 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
     let header: TaskDetailCalendarHeaderView
     let showsAssumedLegend: Bool
     let showsPausedLegend: Bool
+    let showsCreatedLegend: Bool
     let calendarContent: CalendarContent
 
     init(
@@ -12,6 +13,7 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
         onNextMonth: @escaping () -> Void,
         showsAssumedLegend: Bool,
         showsPausedLegend: Bool,
+        showsCreatedLegend: Bool,
         @ViewBuilder calendarContent: () -> CalendarContent
     ) {
         self.header = TaskDetailCalendarHeaderView(
@@ -21,6 +23,7 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
         )
         self.showsAssumedLegend = showsAssumedLegend
         self.showsPausedLegend = showsPausedLegend
+        self.showsCreatedLegend = showsCreatedLegend
         self.calendarContent = calendarContent()
     }
 
@@ -39,7 +42,8 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
 
             TaskDetailCalendarLegendView(
                 showsAssumedLegend: showsAssumedLegend,
-                showsPausedLegend: showsPausedLegend
+                showsPausedLegend: showsPausedLegend,
+                showsCreatedLegend: showsCreatedLegend
             )
         }
         .padding(12)
@@ -75,9 +79,13 @@ struct TaskDetailCalendarHeaderView: View {
 struct TaskDetailCalendarLegendView: View {
     let showsAssumedLegend: Bool
     let showsPausedLegend: Bool
+    let showsCreatedLegend: Bool
 
     var body: some View {
         HStack(spacing: 12) {
+            if showsCreatedLegend {
+                TaskDetailCalendarLegendItemView(color: .purple, label: "Created")
+            }
             TaskDetailCalendarLegendItemView(color: .green, label: "Done")
             if showsAssumedLegend {
                 TaskDetailCalendarLegendItemView(color: .mint, label: "Assumed")

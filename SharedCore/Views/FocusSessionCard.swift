@@ -3,6 +3,7 @@ import SwiftUI
 
 struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
+    @State private var isExpanded = true
     @State private var editingSession: FocusSession?
     @State private var editStartedAt = Date()
     @State private var editDurationMinutes = 25
@@ -21,37 +22,55 @@ struct FocusSessionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "timer")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.teal)
-                    .frame(width: 30, height: 30)
-                    .background(.teal.opacity(0.12), in: Circle())
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "timer")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.teal)
+                        .frame(width: 30, height: 30)
+                        .background(.teal.opacity(0.12), in: Circle())
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Focus")
-                        .font(.headline)
-                    Text(focusSubtitle)
-                        .font(.subheadline)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Focus")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Text(focusSubtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        .padding(.top, 6)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                if let activeSessionForTask {
+                    activeSessionContent(activeSessionForTask)
+                } else if let activeSessionForAnotherTask {
+                    otherTaskActiveContent(activeSessionForAnotherTask)
+                } else {
+                    startFocusControls
                 }
 
-                Spacer(minLength: 8)
-            }
-
-            if let activeSessionForTask {
-                activeSessionContent(activeSessionForTask)
-            } else if let activeSessionForAnotherTask {
-                otherTaskActiveContent(activeSessionForAnotherTask)
-            } else {
-                startFocusControls
-            }
-
-            if !completedSessionsForTask.isEmpty {
-                Divider()
-                focusHistorySummary
-                focusSessionHistory
+                if !completedSessionsForTask.isEmpty {
+                    Divider()
+                    focusHistorySummary
+                    focusSessionHistory
+                }
             }
         }
         .padding(16)
