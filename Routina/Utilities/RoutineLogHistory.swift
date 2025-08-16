@@ -108,6 +108,65 @@ enum RoutineLogHistory {
         }
     }
 
+    @MainActor
+    static func removeCompletion(
+        taskID: UUID,
+        on completedDay: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> RoutineTask? {
+        let taskDescriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(taskDescriptor).first else {
+            return nil
+        }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        let matchingLogs = existingLogs.filter { log in
+            guard let timestamp = log.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: completedDay)
+        }
+        let didMatchLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: completedDay) } ?? false
+
+        guard !matchingLogs.isEmpty || didMatchLastDone else {
+            return task
+        }
+
+        for log in matchingLogs {
+            context.delete(log)
+        }
+
+        let remainingLatestCompletion = existingLogs
+            .filter { log in
+                !matchingLogs.contains(where: { $0.id == log.id })
+            }
+            .compactMap(\.timestamp)
+            .max()
+
+        if didMatchLastDone {
+            task.lastDone = remainingLatestCompletion
+        }
+
+        if task.isPaused {
+            if let remainingLatestCompletion {
+                task.scheduleAnchor = remainingLatestCompletion
+            } else if didMatchLastDone {
+                task.scheduleAnchor = task.pausedAt
+            }
+        } else if didMatchLastDone {
+            task.scheduleAnchor = remainingLatestCompletion
+        }
+
+        task.resetStepProgress()
+
+        try context.save()
+        return task
+    }
+
     private static func isSameCompletion(_ lhs: Date?, as rhs: Date) -> Bool {
         guard let lhs else { return false }
         return Calendar.current.isDate(lhs, inSameDayAs: rhs)

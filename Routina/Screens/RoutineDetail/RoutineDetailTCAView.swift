@@ -275,12 +275,14 @@ struct RoutineDetailTCAView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                Button(markDoneButtonLabel) {
-                    store.send(.markAsDone)
+                Button {
+                    store.send(completionButtonAction)
+                } label: {
+                    completionButtonLabel
                 }
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity)
-                .disabled(isMarkDoneDisabled)
+                .disabled(isCompletionButtonDisabled)
 
                 if isStepRoutineOffToday {
                     Text("Step-based routines can only be progressed for today.")
@@ -364,13 +366,15 @@ struct RoutineDetailTCAView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 10) {
-                Button(markDoneButtonLabel) {
-                    store.send(.markAsDone)
+                Button {
+                    store.send(completionButtonAction)
+                } label: {
+                    completionButtonLabel
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .disabled(isMarkDoneDisabled)
+                .disabled(isCompletionButtonDisabled)
 
                 Button(pauseArchivePresentation.actionTitle) {
                     store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
@@ -481,8 +485,21 @@ struct RoutineDetailTCAView: View {
         )
     }
 
-    private var markDoneButtonLabel: String {
-        markDoneButtonTitle(
+    @ViewBuilder
+    private var completionButtonLabel: some View {
+        if let systemImage = completionButtonSystemImage {
+            Label(completionButtonTitle, systemImage: systemImage)
+        } else {
+            Text(completionButtonTitle)
+        }
+    }
+
+    private var completionButtonAction: RoutineDetailFeature.Action {
+        isSelectedDateDone ? .undoSelectedDateCompletion : .markAsDone
+    }
+
+    private var completionButtonTitle: String {
+        completionButtonText(
             for: selectedDate,
             isDone: isSelectedDateDone,
             isFuture: isSelectedDateInFuture,
@@ -491,8 +508,13 @@ struct RoutineDetailTCAView: View {
         )
     }
 
-    private var isMarkDoneDisabled: Bool {
-        isSelectedDateDone || isSelectedDateInFuture || store.task.isPaused || isStepRoutineOffToday
+    private var completionButtonSystemImage: String? {
+        isSelectedDateDone ? "arrow.uturn.backward" : nil
+    }
+
+    private var isCompletionButtonDisabled: Bool {
+        guard !isSelectedDateDone else { return false }
+        return isSelectedDateInFuture || store.task.isPaused || isStepRoutineOffToday
     }
 
     private var dueDateMetadataText: String? {
@@ -849,13 +871,16 @@ struct RoutineDetailTCAView: View {
         return "\(task.totalSteps) sequential \(task.totalSteps == 1 ? "step" : "steps")"
     }
 
-    private func markDoneButtonTitle(
+    private func completionButtonText(
         for selectedDate: Date,
         isDone: Bool,
         isFuture: Bool,
         isPaused: Bool,
         task: RoutineTask
     ) -> String {
+        if isDone {
+            return "Undo"
+        }
         if isPaused {
             return "Resume the routine to mark dates done"
         }
@@ -864,9 +889,6 @@ struct RoutineDetailTCAView: View {
         }
         if isFuture {
             return "Future dates can't be marked done"
-        }
-        if isDone {
-            return "Already done on \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
         }
         if let nextStepTitle = task.nextStepTitle {
             return "Complete: \(nextStepTitle)"

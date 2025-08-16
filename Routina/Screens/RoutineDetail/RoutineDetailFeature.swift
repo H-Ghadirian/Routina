@@ -51,6 +51,7 @@ struct RoutineDetailFeature: Reducer {
 
     enum Action: Equatable {
         case markAsDone
+        case undoSelectedDateCompletion
         case pauseTapped
         case resumeTapped
         case selectedDateChanged(Date)
@@ -94,6 +95,12 @@ struct RoutineDetailFeature: Reducer {
             _ = state.task.advance(completedAt: completionDate, calendar: calendar)
             updateDerivedState(&state)
             return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate)
+
+        case .undoSelectedDateCompletion:
+            let selectedDay = resolvedSelectedDay(for: state.selectedDate)
+            removeCompletion(on: selectedDay, from: &state)
+            updateDerivedState(&state)
+            return handleUndoCompletion(taskID: state.task.id, completedDay: selectedDay)
 
         case .pauseTapped:
             guard !state.task.isPaused else { return .none }
@@ -295,6 +302,39 @@ struct RoutineDetailFeature: Reducer {
         return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: startOfDay) ?? startOfDay
     }
 
+    private func resolvedSelectedDay(for selectedDate: Date?) -> Date {
+        calendar.startOfDay(for: selectedDate ?? now)
+    }
+
+    private func removeCompletion(on completedDay: Date, from state: inout State) {
+        let removedLatestCompletion = state.task.lastDone.map {
+            calendar.isDate($0, inSameDayAs: completedDay)
+        } ?? false
+
+        state.logs.removeAll { log in
+            guard let timestamp = log.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: completedDay)
+        }
+
+        let remainingLatestCompletion = state.logs.compactMap(\.timestamp).max()
+
+        if removedLatestCompletion {
+            state.task.lastDone = remainingLatestCompletion
+        }
+
+        if state.task.isPaused {
+            if let remainingLatestCompletion {
+                state.task.scheduleAnchor = remainingLatestCompletion
+            } else if removedLatestCompletion {
+                state.task.scheduleAnchor = state.task.pausedAt
+            }
+        } else if removedLatestCompletion {
+            state.task.scheduleAnchor = remainingLatestCompletion
+        }
+
+        state.task.resetStepProgress()
+    }
+
     private func handleOnAppear(taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -351,6 +391,34 @@ struct RoutineDetailFeature: Reducer {
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
             } catch {
                 print("Error saving context: \(error)")
+            }
+        }
+    }
+
+    private func handleUndoCompletion(taskID: UUID, completedDay: Date) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                guard let updatedTask = try RoutineLogHistory.removeCompletion(
+                    taskID: taskID,
+                    on: completedDay,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: updatedTask,
+                        referenceDate: now,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            } catch {
+                print("Error undoing routine completion: \(error)")
             }
         }
     }

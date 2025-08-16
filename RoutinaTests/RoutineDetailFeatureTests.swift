@@ -791,4 +791,120 @@ struct RoutineDetailFeatureTests {
         #expect(persistedLogs.count == 1)
         #expect(scheduledIDs.value.isEmpty)
     }
+
+    @Test
+    func undoSelectedDateCompletion_forToday_removesCompletionAndReschedules() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T10:00:00Z")
+        let task = makeTask(in: context, name: "Hydrate", interval: 2, lastDone: now, emoji: "💧")
+        let todayLog = makeLog(in: context, task: task, timestamp: now)
+        try context.save()
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let initialState = RoutineDetailFeature.State(
+            task: task,
+            logs: [todayLog],
+            selectedDate: calendar.startOfDay(for: now),
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: true
+        )
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.undoSelectedDateCompletion) {
+            $0.task.lastDone = nil
+            $0.task.scheduleAnchor = nil
+            $0.logs = []
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        await store.receive(.logsLoaded([])) {
+            $0.logs = []
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.lastDone == nil)
+        #expect(persistedTask.scheduleAnchor == nil)
+        #expect(persistedLogs.isEmpty)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func undoSelectedDateCompletion_forPastDate_removesOnlySelectedCompletion() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T10:00:00Z")
+        let olderCompletion = makeDate("2026-02-24T12:00:00Z")
+        let task = makeTask(in: context, name: "Hydrate", interval: 2, lastDone: now, emoji: "💧")
+        let todayLog = makeLog(in: context, task: task, timestamp: now)
+        let olderLog = makeLog(in: context, task: task, timestamp: olderCompletion)
+        try context.save()
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let selectedDayStart = calendar.startOfDay(for: olderCompletion)
+        let initialState = RoutineDetailFeature.State(
+            task: task,
+            logs: [todayLog, olderLog],
+            selectedDate: selectedDayStart,
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: true
+        )
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.undoSelectedDateCompletion) {
+            $0.task.lastDone = now
+            $0.task.scheduleAnchor = now
+            $0.logs = [todayLog]
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = true
+        }
+
+        await store.receive(.logsLoaded([todayLog])) {
+            $0.logs = [todayLog]
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = true
+        }
+
+        let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedTask.scheduleAnchor == now)
+        #expect(persistedLogs.count == 1)
+        #expect(persistedLogs.first?.timestamp == now)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
 }
