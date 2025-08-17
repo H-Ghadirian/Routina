@@ -27,6 +27,7 @@ struct HomeTCAView: View {
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
     @State private var selectedManualPlaceFilterID: UUID?
+    @State private var isRefreshScheduled = false
 
     var body: some View {
         WithPerceptionTracking {
@@ -40,31 +41,31 @@ struct HomeTCAView: View {
                 addRoutineSheetContent
             }
             .onAppear {
-                store.send(.onAppear)
+                requestRefresh()
             }
             .onReceive(
                 NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))
                     .receive(on: RunLoop.main)
             ) { _ in
-                store.send(.onAppear)
+                requestRefresh()
             }
             .onReceive(
                 NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
                     .receive(on: RunLoop.main)
             ) { _ in
-                store.send(.onAppear)
+                requestRefresh()
             }
             .onReceive(
                 NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)
                     .receive(on: RunLoop.main)
             ) { _ in
-                store.send(.onAppear)
+                requestRefresh()
             }
             .onReceive(
                 NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)
                     .receive(on: RunLoop.main)
             ) { _ in
-                store.send(.onAppear)
+                requestRefresh()
             }
             .onChange(of: store.routineTasks) { _, tasks in
                 guard let selectedTaskID else { return }
@@ -1065,11 +1066,11 @@ struct HomeTCAView: View {
             )
         }
 
-        _ = store.send(.onAppear)
+        requestRefresh()
 
         // CloudKit imports are asynchronous; do a second pass shortly after manual refresh.
         try? await Task.sleep(for: .seconds(2))
-        _ = store.send(.onAppear)
+        requestRefresh()
     }
 
     private var allRoutineDisplays: [HomeFeature.RoutineDisplay] {
@@ -1101,6 +1102,18 @@ struct HomeTCAView: View {
         let availableTags = HomeFeature.availableTags(from: activeDisplays + awayDisplays + archivedDisplays)
         if !RoutineTag.contains(selectedTag, in: availableTags) {
             self.selectedTag = nil
+        }
+    }
+
+    @MainActor
+    private func requestRefresh() {
+        guard !isRefreshScheduled else { return }
+        isRefreshScheduled = true
+
+        Task { @MainActor in
+            defer { isRefreshScheduled = false }
+            await Task.yield()
+            store.send(.onAppear)
         }
     }
 }

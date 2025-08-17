@@ -227,181 +227,131 @@ struct RoutineDetailTCAView: View {
     private func compactStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 6) {
-                Text(summaryStatusTitle)
-                    .font(.title3.weight(.semibold))
-                    .foregroundColor(summaryStatusColor)
-                Text("Frequency: \(frequencyText(for: store.task))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Text(totalDoneCountText(for: store.logs.count))
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(.secondary)
-                if let linkedPlace = linkedPlaceSummary {
-                    Label("Linked to \(linkedPlace.name)", systemImage: "location.fill")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.12), in: Capsule())
-                }
-                if let pausedAt = store.task.pausedAt {
-                    Text("Paused on \(pausedAt.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                } else if let dueDate = dueDate(for: store.task) {
-                    Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                if store.task.hasSequentialSteps {
-                    Text(stepProgressText(for: store.task))
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(.secondary)
-                    if let nextStepTitle = store.task.nextStepTitle {
-                        Text("Next step: \(nextStepTitle)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 4)
+        VStack(alignment: .leading, spacing: 16) {
+            statusSummaryHeader(titleFont: .title3.weight(.semibold))
 
-            VStack(spacing: 10) {
-                Text("Selected date: \(selectedDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            Divider()
 
-                Button {
-                    store.send(completionButtonAction)
-                } label: {
-                    completionButtonLabel
-                }
-                .buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity)
-                .disabled(isCompletionButtonDisabled)
+            statusMetadataSection()
 
-                if isStepRoutineOffToday {
-                    Text("Step-based routines can only be progressed for today.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+            Divider()
 
-                Button(pauseArchivePresentation.actionTitle) {
-                    store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
-                }
-                .buttonStyle(.bordered)
-                .tint(store.task.isPaused ? .teal : .orange)
-                .frame(maxWidth: .infinity)
-
-                if let pauseDescription = pauseArchivePresentation.description {
-                    Text(pauseDescription)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
+            statusActionSection(pauseArchivePresentation: pauseArchivePresentation)
         }
+        .padding(16)
+        .background(RoutineDetailPlatformStyle.summaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
     }
 
     private func macStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(summaryStatusTitle)
-                    .font(.title2.weight(.semibold))
-                    .foregroundColor(summaryStatusColor)
-
-                if store.task.isPaused {
-                    Text("This routine is archived until you resume it.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else if Calendar.current.isDateInToday(selectedDate) {
-                    Text("Today is selected. Use the calendar to review another day when needed.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Reviewing \(selectedDate.formatted(date: .abbreviated, time: .omitted)).")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            statusSummaryHeader(titleFont: .title2.weight(.semibold))
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 14) {
-                macMetadataRow(label: "Frequency", value: frequencyText(for: store.task))
-                macMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
-
-                if let linkedPlace = linkedPlaceSummary {
-                    macMetadataRow(label: "Location", value: linkedPlace.name, systemImage: "location")
-                }
-
-                if let pausedAt = store.task.pausedAt {
-                    macMetadataRow(
-                        label: "Paused",
-                        value: pausedAt.formatted(date: .abbreviated, time: .omitted)
-                    )
-                } else if let dueDateMetadataText {
-                    macMetadataRow(label: "Due", value: dueDateMetadataText)
-                }
-
-                if shouldShowSelectedDateMetadata {
-                    macMetadataRow(label: "Selected", value: selectedDateMetadataText)
-                }
-
-                if store.task.hasSequentialSteps {
-                    macMetadataRow(label: "Progress", value: stepProgressText(for: store.task))
-                    if let nextStepTitle = store.task.nextStepTitle {
-                        macMetadataRow(label: "Next Step", value: nextStepTitle)
-                    }
-                }
-            }
+            statusMetadataSection()
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 10) {
-                Button {
-                    store.send(completionButtonAction)
-                } label: {
-                    completionButtonLabel
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .disabled(isCompletionButtonDisabled)
-
-                Button(pauseArchivePresentation.actionTitle) {
-                    store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                if isStepRoutineOffToday {
-                    Text("Step-based routines can only be progressed for today.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if let pauseDescription = pauseArchivePresentation.description {
-                    Text(pauseDescription)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+            statusActionSection(pauseArchivePresentation: pauseArchivePresentation, useLargePrimaryControl: true)
         }
         .padding(18)
     }
 
-    private func macMetadataRow(
+    private func statusSummaryHeader(titleFont: Font) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(summaryStatusTitle)
+                .font(titleFont)
+                .foregroundColor(summaryStatusColor)
+
+            Text(statusContextMessage)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func statusMetadataSection() -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            statusMetadataRow(label: "Frequency", value: frequencyText(for: store.task))
+            statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
+
+            if let linkedPlace = linkedPlaceSummary {
+                statusMetadataRow(label: "Location", value: linkedPlace.name, systemImage: "location")
+            }
+
+            if let pausedAt = store.task.pausedAt {
+                statusMetadataRow(
+                    label: "Paused",
+                    value: pausedAt.formatted(date: .abbreviated, time: .omitted)
+                )
+            } else if let dueDateMetadataText {
+                statusMetadataRow(label: "Due", value: dueDateMetadataText)
+            }
+
+            if shouldShowSelectedDateMetadata {
+                statusMetadataRow(label: "Selected", value: selectedDateMetadataText)
+            }
+
+            if store.task.hasSequentialSteps {
+                statusMetadataRow(label: "Progress", value: stepProgressText(for: store.task))
+                if let nextStepTitle = store.task.nextStepTitle {
+                    statusMetadataRow(label: "Next Step", value: nextStepTitle)
+                }
+            }
+        }
+    }
+
+    private func statusActionSection(
+        pauseArchivePresentation: RoutinePauseArchivePresentation,
+        useLargePrimaryControl: Bool = false
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                store.send(completionButtonAction)
+            } label: {
+                completionButtonLabel
+            }
+            .buttonStyle(.borderedProminent)
+#if os(macOS)
+            .controlSize(useLargePrimaryControl ? .large : .regular)
+#endif
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .disabled(isCompletionButtonDisabled)
+
+            Button(pauseArchivePresentation.actionTitle) {
+                store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+            }
+            .buttonStyle(.bordered)
+            .tint(store.task.isPaused ? .teal : .orange)
+#if os(macOS)
+            .controlSize(.regular)
+#endif
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if isStepRoutineOffToday {
+                Text("Step-based routines can only be progressed for today.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let pauseDescription = pauseArchivePresentation.description {
+                Text(pauseDescription)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func statusMetadataRow(
         label: String,
         value: String,
         systemImage: String? = nil
@@ -424,6 +374,16 @@ struct RoutineDetailTCAView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private var statusContextMessage: String {
+        if store.task.isPaused {
+            return "This routine is archived until you resume it."
+        }
+        if Calendar.current.isDateInToday(selectedDate) {
+            return "Today is selected. Use the calendar to review another day when needed."
+        }
+        return "Reviewing \(selectedDate.formatted(date: .abbreviated, time: .omitted))."
     }
 
     private var routineLogsSection: some View {
