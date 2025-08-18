@@ -50,7 +50,7 @@ struct TaskDetailRoutineLogsSectionView<RowContent: View>: View {
                             .foregroundColor(.secondary)
                     } else {
                         let displayedLogs = TaskDetailLogPresentation.displayedLogs(logs, showingAll: isShowingAllLogs)
-                        ForEach(Array(displayedLogs.enumerated()), id: \.offset) { index, log in
+                        ForEach(Array(displayedLogs.enumerated()), id: \.element.id) { index, log in
                             rowContent(index, log, displayedLogs)
 
                             if index < displayedLogs.count - 1 {

@@ -25,12 +25,31 @@ struct TaskDetailTCAView: View {
     @State private var isRelationshipGraphPresented = false
     @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
+    @State private var referenceDate = Date()
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) private var showPersianDates = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
+
+    init(
+        store: StoreOf<TaskDetailFeature>,
+        showsPrincipalToolbarTitle: Bool = true
+    ) {
+        self.store = store
+        self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
+
+        let taskID = store.task.id
+        _focusSessions = Query(
+            filter: #Predicate<FocusSession> { session in
+                session.taskID == taskID
+                    || (session.completedAt == nil && session.abandonedAt == nil)
+            },
+            sort: \.startedAt,
+            order: .reverse
+        )
+    }
 
     var body: some View {
         WithPerceptionTracking {
@@ -88,10 +107,12 @@ struct TaskDetailTCAView: View {
             .taskDetailDeleteConfirmationAlert(store: store)
             .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
             .onAppear {
+                referenceDate = Date()
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
                 collapseDefaultSections()
             }
             .onChange(of: store.task.id) { _, _ in
+                referenceDate = Date()
                 collapseDefaultSections()
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
             }
@@ -142,7 +163,7 @@ struct TaskDetailTCAView: View {
 
     private var todoDetailContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
                 todoStateTimingSection
@@ -165,7 +186,7 @@ struct TaskDetailTCAView: View {
     private var todoStateTimingSection: some View {
         if let summary = TodoStateTiming.summary(
             for: store.task,
-            referenceDate: Date(),
+            referenceDate: referenceDate,
             calendar: Calendar.current
         ) {
             TodoStateTimingSectionView(
@@ -274,7 +295,7 @@ struct TaskDetailTCAView: View {
     private var headerCalendarDisclosure: some View {
         VStack(alignment: .leading, spacing: 10) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(.easeInOut(duration: 0.16)) {
                     isCalendarExpanded.toggle()
                 }
             } label: {
@@ -384,7 +405,7 @@ struct TaskDetailTCAView: View {
         let _ = store.taskRefreshID
 
         return ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
                 if store.task.focusModeEnabled {

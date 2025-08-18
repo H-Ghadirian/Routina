@@ -14,7 +14,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(.easeInOut(duration: 0.16)) {
                     isExpanded.toggle()
                 }
             } label: {

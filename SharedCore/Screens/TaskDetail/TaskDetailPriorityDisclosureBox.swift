@@ -18,7 +18,7 @@ struct TaskDetailPriorityDisclosureBox: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(.easeInOut(duration: 0.16)) {
                     isExpanded.toggle()
                 }
             } label: {

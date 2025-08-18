@@ -6,7 +6,7 @@ struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
+    @Query private var focusSessions: [FocusSession]
     @Query private var focusSessionTasks: [RoutineTask]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
@@ -20,12 +20,27 @@ struct TaskDetailTCAView: View {
     @State private var isCloudSharingPresented = false
     @State private var isRelationshipGraphPresented = false
     @State private var isMatrixExpanded = false
+    @State private var referenceDate = Date()
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) private var showPersianDates = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
+
+    init(store: StoreOf<TaskDetailFeature>) {
+        self.store = store
+
+        let taskID = store.task.id
+        _focusSessions = Query(
+            filter: #Predicate<FocusSession> { session in
+                session.taskID == taskID
+                    || (session.completedAt == nil && session.abandonedAt == nil)
+            },
+            sort: \.startedAt,
+            order: .reverse
+        )
+    }
 
     var body: some View {
         WithPerceptionTracking {
@@ -102,7 +117,11 @@ struct TaskDetailTCAView: View {
             .taskDetailDeleteConfirmationAlert(store: store)
             .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .adaptiveRemoval)
             .onAppear {
+                referenceDate = Date()
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+            }
+            .onChange(of: store.task.id) { _, _ in
+                referenceDate = Date()
             }
             .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
                 guard shouldDismiss else { return }
@@ -155,7 +174,7 @@ struct TaskDetailTCAView: View {
 
     private var todoDetailContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
                 if shouldShowTodoCalendar {
@@ -189,7 +208,7 @@ struct TaskDetailTCAView: View {
         )
 
         return ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
                 TaskDetailRoutinePrimaryActionSection(
@@ -311,7 +330,7 @@ struct TaskDetailTCAView: View {
     private var todoStateTimingSection: some View {
         if let summary = TodoStateTiming.summary(
             for: store.task,
-            referenceDate: Date(),
+            referenceDate: referenceDate,
             calendar: Calendar.current
         ) {
             TodoStateTimingSectionView(

@@ -37,9 +37,11 @@ struct FocusSessionCard: View {
     ]
 
     var body: some View {
+        let snapshot = FocusSessionCardSnapshot(taskID: task.id, sessions: sessions)
+
         VStack(alignment: .leading, spacing: 14) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(.easeInOut(duration: 0.16)) {
                     isExpanded.toggle()
                 }
             } label: {
@@ -54,7 +56,7 @@ struct FocusSessionCard: View {
                         Text("Focus")
                             .font(.headline)
                             .foregroundStyle(.primary)
-                        Text(focusSubtitle)
+                        Text(focusSubtitle(snapshot: snapshot))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -74,18 +76,18 @@ struct FocusSessionCard: View {
             .buttonStyle(.plain)
 
             if isExpanded {
-                if let activeSessionForTask {
+                if let activeSessionForTask = snapshot.activeSessionForTask {
                     activeSessionContent(activeSessionForTask)
-                } else if let activeSessionForAnotherTask {
+                } else if let activeSessionForAnotherTask = snapshot.activeSessionForAnotherTask {
                     otherTaskActiveContent(activeSessionForAnotherTask)
                 } else {
                     startFocusControls
                 }
 
-                if !completedSessionsForTask.isEmpty {
+                if !snapshot.completedSessionsForTask.isEmpty {
                     Divider()
-                    focusHistorySummary
-                    focusSessionHistory
+                    focusHistorySummary(snapshot: snapshot)
+                    focusSessionHistory(snapshot: snapshot)
                 }
             }
         }
@@ -93,7 +95,7 @@ struct FocusSessionCard: View {
         .background {
             if !isEmbedded {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.thinMaterial)
+                    .fill(cardBackground)
             }
         }
         .overlay {
@@ -163,6 +165,14 @@ struct FocusSessionCard: View {
         }
     }
 
+    private var cardBackground: Color {
+        #if os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+        #else
+        Color(uiColor: .secondarySystemBackground)
+        #endif
+    }
+
     #if os(macOS)
     private func macEditSheet(for session: FocusSession) -> some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -217,35 +227,17 @@ struct FocusSessionCard: View {
     }
     #endif
 
-    private var activeSessionForTask: FocusSession? {
-        sessions.first { $0.taskID == task.id && $0.state == .active }
-    }
-
-    private var activeSessionForAnotherTask: FocusSession? {
-        sessions.first { $0.taskID != task.id && $0.state == .active }
-    }
-
-    private var completedSessionsForTask: [FocusSession] {
-        sessions
-            .filter { $0.taskID == task.id && $0.state == .completed }
-            .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
-    }
-
-    private var totalCompletedSeconds: TimeInterval {
-        completedSessionsForTask.reduce(0) { $0 + $1.actualDurationSeconds }
-    }
-
-    private var focusSubtitle: String {
-        if activeSessionForTask != nil {
+    private func focusSubtitle(snapshot: FocusSessionCardSnapshot) -> String {
+        if snapshot.activeSessionForTask != nil {
             return "Session in progress"
         }
-        if activeSessionForAnotherTask != nil {
+        if snapshot.activeSessionForAnotherTask != nil {
             return "Another task is already in focus"
         }
-        if completedSessionsForTask.isEmpty {
+        if snapshot.completedSessionsForTask.isEmpty {
             return "Start a timer without marking this task done."
         }
-        return "\(FocusSessionFormatting.compactDurationText(seconds: totalCompletedSeconds)) logged for this task"
+        return "\(FocusSessionFormatting.compactDurationText(seconds: snapshot.totalCompletedSeconds)) logged for this task"
     }
 
     private var startFocusControls: some View {
@@ -358,17 +350,17 @@ struct FocusSessionCard: View {
         }
     }
 
-    private var focusHistorySummary: some View {
+    private func focusHistorySummary(snapshot: FocusSessionCardSnapshot) -> some View {
         HStack(spacing: 12) {
             metricTile(
                 title: "Total",
-                value: FocusSessionFormatting.compactDurationText(seconds: totalCompletedSeconds)
+                value: FocusSessionFormatting.compactDurationText(seconds: snapshot.totalCompletedSeconds)
             )
             metricTile(
                 title: "Sessions",
-                value: completedSessionsForTask.count.formatted()
+                value: snapshot.completedSessionsForTask.count.formatted()
             )
-            if let latest = completedSessionsForTask.first?.completedAt {
+            if let latest = snapshot.completedSessionsForTask.first?.completedAt {
                 metricTile(
                     title: "Latest",
                     value: latest.formatted(date: .abbreviated, time: .shortened)
@@ -377,13 +369,13 @@ struct FocusSessionCard: View {
         }
     }
 
-    private var focusSessionHistory: some View {
+    private func focusSessionHistory(snapshot: FocusSessionCardSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Recent focus")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            ForEach(completedSessionsForTask.prefix(3)) { session in
+            ForEach(snapshot.completedSessionsForTask.prefix(3)) { session in
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(session.completedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
@@ -495,6 +487,44 @@ struct FocusSessionCard: View {
             try modelContext.save()
         } catch {
             NSLog("Focus session save failed: \(error.localizedDescription)")
+        }
+    }
+}
+
+private struct FocusSessionCardSnapshot {
+    let activeSessionForTask: FocusSession?
+    let activeSessionForAnotherTask: FocusSession?
+    let completedSessionsForTask: [FocusSession]
+    let totalCompletedSeconds: TimeInterval
+
+    init(taskID: UUID, sessions: [FocusSession]) {
+        var activeSessionForTask: FocusSession?
+        var activeSessionForAnotherTask: FocusSession?
+        var completedSessionsForTask: [FocusSession] = []
+
+        for session in sessions {
+            if session.taskID == taskID {
+                if session.completedAt != nil {
+                    completedSessionsForTask.append(session)
+                } else if session.abandonedAt == nil && activeSessionForTask == nil {
+                    activeSessionForTask = session
+                }
+            } else if session.completedAt == nil
+                        && session.abandonedAt == nil
+                        && activeSessionForAnotherTask == nil {
+                activeSessionForAnotherTask = session
+            }
+        }
+
+        completedSessionsForTask.sort {
+            ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast)
+        }
+
+        self.activeSessionForTask = activeSessionForTask
+        self.activeSessionForAnotherTask = activeSessionForAnotherTask
+        self.completedSessionsForTask = completedSessionsForTask
+        self.totalCompletedSeconds = completedSessionsForTask.reduce(0) {
+            $0 + $1.actualDurationSeconds
         }
     }
 }

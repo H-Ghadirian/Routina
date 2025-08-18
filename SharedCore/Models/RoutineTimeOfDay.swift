@@ -53,7 +53,7 @@ struct RoutineTimeOfDay: Codable, Equatable, Hashable, Sendable {
 enum PersianDateDisplay {
     static func supplementaryText(for date: Date, enabled: Bool) -> String? {
         guard enabled else { return nil }
-        return rightToLeft(formatter().string(from: date))
+        return rightToLeft(date.formatted(persianDateStyle))
     }
 
     static func appendingSupplementaryDate(
@@ -67,16 +67,17 @@ enum PersianDateDisplay {
         return "\(text) (\(supplementaryText))"
     }
 
-    private static func formatter() -> DateFormatter {
+    private static let persianDateStyle: Date.FormatStyle = {
         var calendar = Calendar(identifier: .persian)
         calendar.locale = Locale(identifier: "fa_IR")
-
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "fa_IR")
-        formatter.setLocalizedDateFormatFromTemplate("d MMMM y")
-        return formatter
-    }
+        var style = Date.FormatStyle()
+            .day()
+            .month(.wide)
+            .year()
+        style.calendar = calendar
+        style.locale = Locale(identifier: "fa_IR")
+        return style
+    }()
 
     private static func rightToLeft(_ text: String) -> String {
         "\u{2067}\(text)\u{2069}"
