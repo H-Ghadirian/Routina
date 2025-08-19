@@ -485,6 +485,7 @@ struct FocusSessionCard: View {
     private func saveContext() {
         do {
             try modelContext.save()
+            NotificationCenter.default.postRoutineDidUpdate()
         } catch {
             NSLog("Focus session save failed: \(error.localizedDescription)")
         }

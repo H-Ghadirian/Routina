@@ -36,6 +36,8 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>CKSharingSupported</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -6,6 +6,10 @@ struct WatchHomeView: View {
 
     var body: some View {
         List {
+            if let activeFocusSession = syncStore.activeFocusSession {
+                focusSessionRow(activeFocusSession)
+            }
+
             if !syncStore.isCompanionAppInstalled {
                 watchStateMessage(
                     systemImage: "iphone.slash",
@@ -82,6 +86,39 @@ struct WatchHomeView: View {
         }
     }
 
+    private func focusSessionRow(_ session: WatchRoutineSyncStore.WatchFocusSession) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 6) {
+                    Image(systemName: "timer")
+                        .foregroundStyle(.teal)
+                    Text("Focus")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                }
+
+                Text(focusTimerText(for: session, now: context.date))
+                    .font(.system(.title2, design: .rounded).weight(.bold))
+                    .monospacedDigit()
+                    .lineLimit(1)
+
+                Text("\(session.taskEmoji) \(session.taskName)")
+                    .font(.footnote.weight(.semibold))
+                    .lineLimit(1)
+
+                if session.isCountUp {
+                    ProgressView()
+                        .tint(.teal)
+                } else {
+                    ProgressView(value: focusProgress(for: session, now: context.date))
+                        .tint(.teal)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
     @ViewBuilder
     private func watchStateMessage(systemImage: String, title: String, message: String) -> some View {
         VStack(spacing: 8) {
@@ -98,6 +135,32 @@ struct WatchHomeView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .listRowBackground(Color.clear)
+    }
+
+    private func focusTimerText(for session: WatchRoutineSyncStore.WatchFocusSession, now: Date) -> String {
+        if session.isCountUp {
+            return focusDurationText(seconds: session.elapsedSeconds(at: now))
+        }
+
+        return focusDurationText(seconds: session.remainingSeconds(at: now))
+    }
+
+    private func focusProgress(for session: WatchRoutineSyncStore.WatchFocusSession, now: Date) -> Double {
+        guard session.plannedDurationSeconds > 0 else { return 1 }
+        return min(1, max(0, session.elapsedSeconds(at: now) / session.plannedDurationSeconds))
+    }
+
+    private func focusDurationText(seconds: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(seconds.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     private func statusText(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {

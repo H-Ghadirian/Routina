@@ -71,6 +71,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
 
             do {
                 let tasks = try context.fetch(descriptor)
+                let sessions = try context.fetch(FetchDescriptor<FocusSession>())
+                let focus = FocusTimerWidgetDataComputer.compute(tasks: tasks, sessions: sessions)
                 let payload: [String: Any] = [
                     "routines": tasks.compactMap { task -> [String: Any]? in
                         guard !task.isArchived(), !task.isCompletedOneOff, !task.isCanceledOneOff else { return nil }
@@ -97,7 +99,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                         }
 
                         return routinePayload
-                    }
+                    },
+                    "focus": Self.focusPayload(from: focus)
                 ]
 
                 try session.updateApplicationContext(payload)
@@ -235,5 +238,21 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         }
 
         return .ignore
+    }
+
+    nonisolated private static func focusPayload(from focus: FocusTimerWidgetData) -> [String: Any] {
+        guard focus.isActive, let sessionID = focus.sessionID, let taskID = focus.taskID, let startedAt = focus.startedAt else {
+            return ["isActive": false]
+        }
+
+        return [
+            "isActive": true,
+            "sessionID": sessionID.uuidString,
+            "taskID": taskID.uuidString,
+            "taskName": focus.taskName,
+            "taskEmoji": focus.taskEmoji,
+            "startedAt": startedAt.timeIntervalSince1970,
+            "plannedDurationSeconds": focus.plannedDurationSeconds
+        ]
     }
 }

@@ -161,12 +161,46 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
     }
 
+    struct WatchFocusSession: Identifiable, Equatable, Sendable, Codable {
+        let id: UUID
+        let taskID: UUID
+        let taskName: String
+        let taskEmoji: String
+        let startedAt: Date
+        let plannedDurationSeconds: TimeInterval
+
+        var isCountUp: Bool {
+            plannedDurationSeconds <= 0
+        }
+
+        var endDate: Date? {
+            guard plannedDurationSeconds > 0 else { return nil }
+            return startedAt.addingTimeInterval(plannedDurationSeconds)
+        }
+
+        func elapsedSeconds(at date: Date = .now) -> TimeInterval {
+            max(0, date.timeIntervalSince(startedAt))
+        }
+
+        func remainingSeconds(at date: Date = .now) -> TimeInterval {
+            guard let endDate else { return 0 }
+            return max(0, endDate.timeIntervalSince(date))
+        }
+    }
+
+    private struct FocusPayloadUpdate: Sendable {
+        let wasPresent: Bool
+        let focus: WatchFocusSession?
+    }
+
     @Published private(set) var routines: [WatchRoutine] = []
+    @Published private(set) var activeFocusSession: WatchFocusSession?
     @Published private(set) var isCompanionAppInstalled = false
     @Published private(set) var isPhoneReachable = false
 
     private let session: WCSession? = WCSession.isSupported() ? WCSession.default : nil
     private let cacheKey = "watch.cachedRoutines.v3"
+    private let focusCacheKey = "watch.cachedFocusSession.v1"
     private let pendingRoutineKey = "watch.pendingRoutines.v3"
     private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
 
@@ -174,6 +208,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         super.init()
         loadPendingRoutines()
         loadCachedRoutines()
+        loadCachedFocusSession()
 
         guard let session else { return }
         session.delegate = self
@@ -187,9 +222,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         if session.activationState == .activated {
             let context = session.receivedApplicationContext
-            if Self.containsRoutinesPayload(context) {
-                applyPayload(context)
-            }
+            applyPayload(context)
         }
 
         if session.isReachable {
@@ -233,11 +266,15 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let context = session.receivedApplicationContext
         let parsed = Self.parsePayload(context)
         let hasRoutinesPayload = Self.containsRoutinesPayload(context)
+        let focusUpdate = Self.parseFocusPayload(context)
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
             self?.updateConnectivityState(connectivityState)
             if hasRoutinesPayload {
                 self?.setRoutines(parsed)
+            }
+            if focusUpdate.wasPresent {
+                self?.setActiveFocusSession(focusUpdate.focus)
             }
         }
     }
@@ -245,32 +282,48 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         let parsed = Self.parsePayload(applicationContext)
         let hasRoutinesPayload = Self.containsRoutinesPayload(applicationContext)
+        let focusUpdate = Self.parseFocusPayload(applicationContext)
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
             self?.updateConnectivityState(connectivityState)
             if hasRoutinesPayload {
                 self?.setRoutines(parsed)
             }
+            if focusUpdate.wasPresent {
+                self?.setActiveFocusSession(focusUpdate.focus)
+            }
         }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         let parsed = Self.parsePayload(message)
-        guard !parsed.isEmpty else { return }
+        let focusUpdate = Self.parseFocusPayload(message)
+        guard !parsed.isEmpty || focusUpdate.wasPresent else { return }
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
             self?.updateConnectivityState(connectivityState)
-            self?.setRoutines(parsed)
+            if !parsed.isEmpty {
+                self?.setRoutines(parsed)
+            }
+            if focusUpdate.wasPresent {
+                self?.setActiveFocusSession(focusUpdate.focus)
+            }
         }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         let parsed = Self.parsePayload(userInfo)
-        guard !parsed.isEmpty else { return }
+        let focusUpdate = Self.parseFocusPayload(userInfo)
+        guard !parsed.isEmpty || focusUpdate.wasPresent else { return }
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
             self?.updateConnectivityState(connectivityState)
-            self?.setRoutines(parsed)
+            if !parsed.isEmpty {
+                self?.setRoutines(parsed)
+            }
+            if focusUpdate.wasPresent {
+                self?.setActiveFocusSession(focusUpdate.focus)
+            }
         }
     }
 
@@ -284,7 +337,14 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     }
 
     private func applyPayload(_ payload: [String: Any]) {
-        setRoutines(Self.parsePayload(payload))
+        if Self.containsRoutinesPayload(payload) {
+            setRoutines(Self.parsePayload(payload))
+        }
+
+        let focusUpdate = Self.parseFocusPayload(payload)
+        if focusUpdate.wasPresent {
+            setActiveFocusSession(focusUpdate.focus)
+        }
     }
 
     private func setRoutines(_ mapped: [WatchRoutine]) {
@@ -307,6 +367,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
         savePendingRoutines()
         saveCachedRoutines()
+    }
+
+    private func setActiveFocusSession(_ focus: WatchFocusSession?) {
+        activeFocusSession = focus
+        saveCachedFocusSession()
     }
 
     private func updateConnectivityState(_ state: ConnectivityState) {
@@ -371,6 +436,44 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
     }
 
+    nonisolated private static func parseFocusPayload(_ payload: [String: Any]) -> FocusPayloadUpdate {
+        guard let rawFocus = payload["focus"] as? [String: Any] else {
+            return FocusPayloadUpdate(wasPresent: false, focus: nil)
+        }
+
+        guard (rawFocus["isActive"] as? Bool) == true else {
+            return FocusPayloadUpdate(wasPresent: true, focus: nil)
+        }
+
+        guard
+            let sessionIDString = rawFocus["sessionID"] as? String,
+            let sessionID = UUID(uuidString: sessionIDString),
+            let taskIDString = rawFocus["taskID"] as? String,
+            let taskID = UUID(uuidString: taskIDString),
+            let startedAtTimestamp = rawFocus["startedAt"] as? TimeInterval
+        else {
+            return FocusPayloadUpdate(wasPresent: true, focus: nil)
+        }
+
+        let taskName = ((rawFocus["taskName"] as? String) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let taskEmoji = ((rawFocus["taskEmoji"] as? String) ?? "").isEmpty
+            ? "🎯"
+            : ((rawFocus["taskEmoji"] as? String) ?? "🎯")
+
+        return FocusPayloadUpdate(
+            wasPresent: true,
+            focus: WatchFocusSession(
+                id: sessionID,
+                taskID: taskID,
+                taskName: taskName.isEmpty ? "Focus session" : taskName,
+                taskEmoji: taskEmoji,
+                startedAt: Date(timeIntervalSince1970: startedAtTimestamp),
+                plannedDurationSeconds: (rawFocus["plannedDurationSeconds"] as? TimeInterval) ?? 0
+            )
+        )
+    }
+
     nonisolated private static func makeConnectivityState(from session: WCSession) -> ConnectivityState {
         ConnectivityState(
             isCompanionAppInstalled: session.isCompanionAppInstalled,
@@ -393,6 +496,21 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             .sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
+    }
+
+    private func loadCachedFocusSession() {
+        guard let data = UserDefaults.standard.data(forKey: focusCacheKey) else { return }
+        activeFocusSession = try? JSONDecoder().decode(WatchFocusSession.self, from: data)
+    }
+
+    private func saveCachedFocusSession() {
+        guard let activeFocusSession else {
+            UserDefaults.standard.removeObject(forKey: focusCacheKey)
+            return
+        }
+
+        guard let data = try? JSONEncoder().encode(activeFocusSession) else { return }
+        UserDefaults.standard.set(data, forKey: focusCacheKey)
     }
 
     private func saveCachedRoutines() {
@@ -441,4 +559,3 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         return remote.completedStepCount >= pending.completedStepCount
     }
 }
-

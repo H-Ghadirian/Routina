@@ -17,6 +17,10 @@ extension NotificationCenter {
 #if canImport(WidgetKit)
         Task { @MainActor in
             WidgetStatsService.refresh(using: PersistenceController.shared.container)
+            FocusTimerWidgetService.refresh(using: PersistenceController.shared.container)
+#if os(iOS) && canImport(ActivityKit)
+            await FocusTimerLiveActivityService.sync(using: PersistenceController.shared.container)
+#endif
             WidgetCenter.shared.reloadAllTimelines()
         }
 #endif
