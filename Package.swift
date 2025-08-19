@@ -360,6 +360,7 @@ let package = Package(
                 "SharedCore/Sync/CloudKitDirectPullTaskRecordParser.swift",
                 "SharedCore/Sync/CloudKitDirectPullUpserter.swift",
                 "SharedCore/Sync/CloudKitPushSubscriptionService.swift",
+                "SharedCore/Sync/CloudSyncedSurfaceRefreshCoordinator.swift",
                 "SharedCore/Sync/CloudKitSyncDiagnostics.swift",
                 "SharedCore/Sync/CloudSyncClient.swift",
                 "SharedCore/Sync/RoutineDuplicateIDCleanup.swift",

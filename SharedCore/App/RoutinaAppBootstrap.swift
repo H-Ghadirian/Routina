@@ -16,6 +16,9 @@ enum RoutinaAppBootstrap {
         )
         if !AppEnvironment.isAutomatedTestMode {
             CloudKitSyncDiagnostics.startIfNeeded()
+            Task { @MainActor in
+                CloudSyncedSurfaceRefreshCoordinator.startIfNeeded()
+            }
             CloudSettingsKeyValueSync.startIfNeeded()
         }
         SharedDefaults.app.register(defaults: [
