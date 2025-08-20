@@ -8,6 +8,7 @@ struct AppFeature {
     struct State: Equatable {
         var selectedTab: Tab = .home
         var hasRestoredTemporaryViewState = false
+        var pendingDeepLinkedTaskID: UUID?
         var home = HomeFeature.State()
         var goals = GoalsFeature.State()
         var timeline = TimelineFeature.State()
@@ -26,6 +27,7 @@ struct AppFeature {
         case settings(SettingsFeature.Action)
         case onAppear
         case cloudSettingsChanged
+        case openDeepLink(RoutinaDeepLink)
     }
 
     @Dependency(\.appSettingsClient) var appSettingsClient
@@ -56,6 +58,17 @@ struct AppFeature {
                 state.selectedTab = .home
                 persistTemporaryViewState(state)
                 return .send(.home(.applyFastTagFilter(tag)))
+            case let .openDeepLink(deepLink):
+                return handleDeepLink(deepLink, state: &state)
+            case let .home(.tasksLoadedSuccessfully(tasks, _, _, _, _)):
+                guard let taskID = state.pendingDeepLinkedTaskID,
+                      tasks.contains(where: { $0.id == taskID }) else {
+                    return .none
+                }
+                state.pendingDeepLinkedTaskID = nil
+                state.selectedTab = .home
+                persistTemporaryViewState(state)
+                return .send(.home(.setSelectedTask(taskID)))
             case .onAppear:
                 guard !state.hasRestoredTemporaryViewState else { return .none }
                 state.hasRestoredTemporaryViewState = true
@@ -138,6 +151,22 @@ struct AppFeature {
                 preserving: appSettingsClient.temporaryViewState()
             )
         )
+    }
+
+    private func handleDeepLink(_ deepLink: RoutinaDeepLink, state: inout State) -> Effect<Action> {
+        switch deepLink {
+        case let .task(taskID):
+            state.selectedTab = .home
+            persistTemporaryViewState(state)
+
+            guard state.home.routineTasks.contains(where: { $0.id == taskID }) else {
+                state.pendingDeepLinkedTaskID = taskID
+                return .send(.home(.onAppear))
+            }
+
+            state.pendingDeepLinkedTaskID = nil
+            return .send(.home(.setSelectedTask(taskID)))
+        }
     }
 }
 

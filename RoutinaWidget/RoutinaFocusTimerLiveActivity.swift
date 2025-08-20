@@ -9,6 +9,7 @@ struct RoutinaFocusTimerLiveActivity: Widget {
             FocusTimerLiveActivityLockScreenView(context: context)
                 .activityBackgroundTint(Color(.systemBackground))
                 .activitySystemActionForegroundColor(.teal)
+                .widgetURL(deepLinkURL(context))
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
@@ -31,7 +32,16 @@ struct RoutinaFocusTimerLiveActivity: Widget {
             } minimal: {
                 Image(systemName: "timer")
             }
+            .widgetURL(deepLinkURL(context))
         }
+    }
+
+    private func deepLinkURL(_ taskID: UUID) -> URL {
+        URL(string: "routina://task/\(taskID.uuidString)")!
+    }
+
+    private func deepLinkURL(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> URL? {
+        context.attributes.taskID.map(deepLinkURL)
     }
 
     private func focusTitle(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> some View {

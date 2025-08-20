@@ -58,6 +58,7 @@ struct AppView: View {
                         .task {
                             store.send(.onAppear)
                         }
+                        .onOpenURL(perform: handleOpenURL)
                 } else {
                     tabView
                         .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
@@ -67,6 +68,7 @@ struct AppView: View {
                         .task {
                             store.send(.onAppear)
                         }
+                        .onOpenURL(perform: handleOpenURL)
                 }
             }
             .preferredColorScheme(appColorScheme.preferredColorScheme)
@@ -75,6 +77,11 @@ struct AppView: View {
 
     private var appColorScheme: AppColorScheme {
         AppColorScheme(rawValue: appColorSchemeRawValue) ?? .system
+    }
+
+    private func handleOpenURL(_ url: URL) {
+        guard let deepLink = RoutinaDeepLink(url: url) else { return }
+        store.send(.openDeepLink(deepLink))
     }
 }
 

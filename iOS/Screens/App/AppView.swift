@@ -62,6 +62,7 @@ struct AppView: View {
                             .task {
                                 store.send(.onAppear)
                             }
+                            .onOpenURL(perform: handleOpenURL)
                     }
                 } else {
                     AppLockGate {
@@ -73,6 +74,7 @@ struct AppView: View {
                             .task {
                                 store.send(.onAppear)
                             }
+                            .onOpenURL(perform: handleOpenURL)
                     }
                 }
             }
@@ -99,6 +101,11 @@ struct AppView: View {
 
     private var fastFilterTags: [String] {
         FastFilterTags.decoded(from: fastFilterTagsRawValue)
+    }
+
+    private func handleOpenURL(_ url: URL) {
+        guard let deepLink = RoutinaDeepLink(url: url) else { return }
+        store.send(.openDeepLink(deepLink))
     }
 }
 
