@@ -524,7 +524,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "pluginkit -a \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetExtension.appex\"\n";
+			shellScript = "killall RoutinaWidgetExtension 2>/dev/null || true\npluginkit -r \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetExtension.appex\" 2>/dev/null || true\npluginkit -a \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetExtension.appex\"\n";
 		};
 		AA000005PLUGINKIT00000001 /* Register Widget Extension */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -542,7 +542,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "pluginkit -a \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetDevExtension.appex\"\n";
+			shellScript = "killall RoutinaWidgetDevExtension 2>/dev/null || true\npluginkit -r \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetDevExtension.appex\" 2>/dev/null || true\npluginkit -a \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetDevExtension.appex\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
