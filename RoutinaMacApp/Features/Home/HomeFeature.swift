@@ -440,6 +440,16 @@ struct HomeFeature {
             get { board.deletingSprintID }
             set { board.deletingSprintID = newValue }
         }
+
+        var sprintFocusAllocationSessionID: UUID? {
+            get { board.sprintFocusAllocationSessionID }
+            set { board.sprintFocusAllocationSessionID = newValue }
+        }
+
+        var sprintFocusAllocationDrafts: [SprintFocusAllocationDraft] {
+            get { board.sprintFocusAllocationDrafts }
+            set { board.sprintFocusAllocationDrafts = newValue }
+        }
     }
 
     enum Action: Equatable {
@@ -484,6 +494,12 @@ struct HomeFeature {
         case deleteSprintTapped(UUID)
         case deleteSprintConfirmed(UUID)
         case deleteSprintCanceled
+        case startSprintFocusTapped(UUID)
+        case stopSprintFocusTapped(UUID)
+        case reviewSprintFocusAllocationTapped(UUID)
+        case sprintFocusAllocationMinutesChanged(taskID: UUID, minutes: Int)
+        case sprintFocusAllocationSaveTapped
+        case sprintFocusAllocationCancelTapped
         case notTodayTask(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
@@ -1073,6 +1089,28 @@ struct HomeFeature {
 
             case .deleteSprintCanceled:
                 return macBoardCommandRouter().deleteSprintCanceled(state: &state)
+
+            case let .startSprintFocusTapped(sprintID):
+                return handleStartSprintFocus(sprintID, state: &state)
+
+            case let .stopSprintFocusTapped(sessionID):
+                return handleStopSprintFocus(sessionID, state: &state)
+
+            case let .reviewSprintFocusAllocationTapped(sessionID):
+                beginSprintFocusAllocationReview(sessionID: sessionID, state: &state)
+                return .none
+
+            case let .sprintFocusAllocationMinutesChanged(taskID, minutes):
+                updateSprintFocusAllocationDraft(taskID: taskID, minutes: minutes, state: &state)
+                return .none
+
+            case .sprintFocusAllocationSaveTapped:
+                return handleSaveSprintFocusAllocations(state: &state)
+
+            case .sprintFocusAllocationCancelTapped:
+                state.sprintFocusAllocationSessionID = nil
+                state.sprintFocusAllocationDrafts = []
+                return .none
 
             case let .pauseTask(id):
                 return taskLifecycleCommandRouter().pauseTask(id, state: &state)

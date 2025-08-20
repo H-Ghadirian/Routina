@@ -148,7 +148,20 @@ extension HomeTCAView {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
             } else {
-                HomeMacBoardScopeInspectorView(presentation: presentation)
+                HomeMacBoardScopeInspectorView(
+                    presentation: presentation,
+                    sprintFocusSessions: store.sprintBoardData.focusSessions,
+                    allocationSessionID: store.sprintFocusAllocationSessionID,
+                    allocationDrafts: store.sprintFocusAllocationDrafts,
+                    onStartSprintFocus: { store.send(.startSprintFocusTapped($0)) },
+                    onStopSprintFocus: { store.send(.stopSprintFocusTapped($0)) },
+                    onReviewSprintFocusAllocation: { store.send(.reviewSprintFocusAllocationTapped($0)) },
+                    onAllocationMinutesChanged: { taskID, minutes in
+                        store.send(.sprintFocusAllocationMinutesChanged(taskID: taskID, minutes: minutes))
+                    },
+                    onSaveSprintFocusAllocation: { store.send(.sprintFocusAllocationSaveTapped) },
+                    onCancelSprintFocusAllocation: { store.send(.sprintFocusAllocationCancelTapped) }
+                )
             }
         }
         .background(.regularMaterial)

@@ -19,6 +19,7 @@ struct HomeBoardPresentation: Equatable {
     let activeSprintIDs: Set<UUID>
     let finishableSprintsInCurrentScope: [BoardSprint]
     let scopeTitle: String
+    let boardTodoDisplays: [HomeFeature.RoutineDisplay]
     let filteredTodoDisplays: [HomeFeature.RoutineDisplay]
     let openTodoCount: Int
     let doneTodoCount: Int
@@ -82,6 +83,7 @@ struct HomeBoardPresentation: Equatable {
             activeSprints: activeSprints,
             sprints: sprints
         )
+        self.boardTodoDisplays = boardTodoDisplays
         self.filteredTodoDisplays = filteredTodoDisplays
         self.openTodoCount = filteredTodoDisplays.count { $0.todoState != .done }
         self.doneTodoCount = filteredTodoDisplays.count { $0.todoState == .done }

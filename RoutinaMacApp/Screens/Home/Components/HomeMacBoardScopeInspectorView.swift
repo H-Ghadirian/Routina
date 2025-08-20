@@ -2,11 +2,21 @@ import SwiftUI
 
 struct HomeMacBoardScopeInspectorView: View {
     let presentation: HomeBoardPresentation
+    let sprintFocusSessions: [SprintFocusSession]
+    let allocationSessionID: UUID?
+    let allocationDrafts: [SprintFocusAllocationDraft]
+    let onStartSprintFocus: (UUID) -> Void
+    let onStopSprintFocus: (UUID) -> Void
+    let onReviewSprintFocusAllocation: (UUID) -> Void
+    let onAllocationMinutesChanged: (UUID, Int) -> Void
+    let onSaveSprintFocusAllocation: () -> Void
+    let onCancelSprintFocusAllocation: () -> Void
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 14) {
                 summaryCard
+                sprintFocusCard
                 countsCard
                 dateCard
             }
@@ -14,6 +24,10 @@ struct HomeMacBoardScopeInspectorView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: allocationSheetBinding) {
+            sprintFocusAllocationSheet
+                .frame(width: 480, height: 520)
+        }
     }
 
     private var summaryCard: some View {
@@ -41,6 +55,90 @@ struct HomeMacBoardScopeInspectorView: View {
 
                 if !presentation.isBacklogScope {
                     statRow("Done", presentation.doneTodoCount, tint: .green)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var sprintFocusCard: some View {
+        if let sprint = focusableSprint {
+            inspectorCard(title: "Focus Timer") {
+                let sessions = sprintFocusSessions
+                    .filter { $0.sprintID == sprint.id }
+                    .sorted { $0.startedAt > $1.startedAt }
+                let activeSession = sessions.first(where: \.isActive)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    if let activeSession {
+                        SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .lastTextBaseline) {
+                                    Text(FocusSessionFormatting.durationText(seconds: elapsedSeconds(for: activeSession, now: context.date)))
+                                        .font(.system(.title, design: .rounded).weight(.bold))
+                                        .monospacedDigit()
+                                    Text("elapsed")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                    Spacer(minLength: 0)
+                                }
+
+                                Button {
+                                    onStopSprintFocus(activeSession.id)
+                                } label: {
+                                    Label("Stop and allocate", systemImage: "stop.circle.fill")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.teal)
+                            }
+                        }
+                    } else {
+                        Button {
+                            onStartSprintFocus(sprint.id)
+                        } label: {
+                            Label("Start sprint focus", systemImage: "timer")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.teal)
+                        .disabled(sprint.status == .finished || sprintFocusSessions.contains(where: \.isActive))
+                    }
+
+                    if let latestCompleted = sessions.first(where: { !$0.isActive }) {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(latestCompleted.startedAt.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.caption.weight(.semibold))
+                                    Text("\(FocusSessionFormatting.compactDurationText(seconds: latestCompleted.durationSeconds)) recorded")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer(minLength: 0)
+
+                                Button {
+                                    onReviewSprintFocusAllocation(latestCompleted.id)
+                                } label: {
+                                    Label(
+                                        latestCompleted.allocations.isEmpty ? "Allocate" : "Review",
+                                        systemImage: "slider.horizontal.3"
+                                    )
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+
+                            if latestCompleted.allocatedMinutes > 0 {
+                                Text("\(RoutineTimeSpentFormatting.compactMinutesText(latestCompleted.allocatedMinutes)) allocated to sprint tasks")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -149,5 +247,132 @@ struct HomeMacBoardScopeInspectorView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
+    }
+
+    private var focusableSprint: BoardSprint? {
+        switch presentation.selectedScope {
+        case let .sprint(sprintID):
+            return presentation.sprints.first(where: { $0.id == sprintID })
+        case .currentSprint:
+            return presentation.activeSprints.count == 1 ? presentation.activeSprints[0] : nil
+        case .backlog, .namedBacklog:
+            return nil
+        }
+    }
+
+    private var allocationSheetBinding: Binding<Bool> {
+        Binding(
+            get: { allocationSessionID != nil },
+            set: { if !$0 { onCancelSprintFocusAllocation() } }
+        )
+    }
+
+    @ViewBuilder
+    private var sprintFocusAllocationSheet: some View {
+        if let sessionID = allocationSessionID,
+           let session = sprintFocusSessions.first(where: { $0.id == sessionID }) {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Allocate Sprint Focus")
+                        .font(.title3.weight(.semibold))
+                    Text("\(FocusSessionFormatting.compactDurationText(seconds: session.durationSeconds)) recorded. Assign minutes to tasks in this sprint.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                if allocationDrafts.isEmpty {
+                    Text("This sprint has no tasks yet.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                } else {
+                    List {
+                        ForEach(allocationDrafts) { draft in
+                            sprintFocusAllocationRow(draft)
+                        }
+                    }
+                    .listStyle(.inset)
+
+                    HStack {
+                        Text("Allocated")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        Spacer(minLength: 0)
+
+                        Text(allocationMinutesText(totalAllocatedDraftMinutes))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+                    }
+                }
+
+                HStack {
+                    Spacer()
+
+                    Button("Cancel") {
+                        onCancelSprintFocusAllocation()
+                    }
+                    .keyboardShortcut(.cancelAction)
+
+                    Button("Save") {
+                        onSaveSprintFocusAllocation()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(allocationDrafts.isEmpty)
+                }
+            }
+            .padding(24)
+        }
+    }
+
+    private func sprintFocusAllocationRow(_ draft: SprintFocusAllocationDraft) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(taskTitle(for: draft.taskID))
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Text(taskSubtitle(for: draft.taskID))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            Stepper(value: allocationMinutesBinding(for: draft.taskID), in: 0...720, step: 5) {
+                Text("\(draft.minutes)m")
+                    .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .frame(width: 52, alignment: .trailing)
+            }
+            .frame(width: 150)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var totalAllocatedDraftMinutes: Int {
+        allocationDrafts.reduce(0) { $0 + max(0, $1.minutes) }
+    }
+
+    private func allocationMinutesText(_ minutes: Int) -> String {
+        minutes == 0 ? "0m" : RoutineTimeSpentFormatting.compactMinutesText(minutes)
+    }
+
+    private func allocationMinutesBinding(for taskID: UUID) -> Binding<Int> {
+        Binding(
+            get: { allocationDrafts.first(where: { $0.taskID == taskID })?.minutes ?? 0 },
+            set: { onAllocationMinutesChanged(taskID, $0) }
+        )
+    }
+
+    private func taskTitle(for taskID: UUID) -> String {
+        presentation.boardTodoDisplays.first(where: { $0.id == taskID })?.name ?? "Task"
+    }
+
+    private func taskSubtitle(for taskID: UUID) -> String {
+        presentation.boardTodoDisplays.first(where: { $0.id == taskID })?.todoState?.displayTitle ?? "Sprint task"
+    }
+
+    private func elapsedSeconds(for session: SprintFocusSession, now: Date) -> TimeInterval {
+        max(0, now.timeIntervalSince(session.startedAt))
     }
 }

@@ -1,5 +1,12 @@
 import Foundation
 
+struct SprintFocusAllocationDraft: Equatable, Identifiable {
+    var taskID: UUID
+    var minutes: Int
+
+    var id: UUID { taskID }
+}
+
 struct HomeBoardState: Equatable {
     var todoDisplays: [HomeFeature.RoutineDisplay] = []
     var sprintBoardData: SprintBoardData = SprintBoardData()
@@ -9,6 +16,8 @@ struct HomeBoardState: Equatable {
     var renamingSprintID: UUID? = nil
     var renamingSprintTitle: String = ""
     var deletingSprintID: UUID? = nil
+    var sprintFocusAllocationSessionID: UUID? = nil
+    var sprintFocusAllocationDrafts: [SprintFocusAllocationDraft] = []
 }
 
 struct HomeMacNavigationState: Equatable {

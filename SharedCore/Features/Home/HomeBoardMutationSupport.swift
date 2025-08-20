@@ -106,6 +106,7 @@ enum HomeBoardMutationSupport {
         selectedScope: inout HomeBoardScope
     ) {
         data.assignments.removeAll(where: { $0.sprintID == id })
+        data.focusSessions.removeAll(where: { $0.sprintID == id })
         data.sprints.removeAll(where: { $0.id == id })
         selectedScope = validatedScope(selectedScope, in: data)
     }
@@ -202,6 +203,61 @@ enum HomeBoardMutationSupport {
                 contentsOf: uniqueIDs.map { BacklogAssignment(todoID: $0, backlogID: backlogID) }
             )
         }
+        return true
+    }
+
+    @discardableResult
+    static func startSprintFocusSession(
+        sprintID: UUID,
+        now: Date,
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard data.sprints.contains(where: { $0.id == sprintID }),
+              data.activeFocusSession == nil else {
+            return false
+        }
+
+        data.focusSessions.insert(
+            SprintFocusSession(sprintID: sprintID, startedAt: now),
+            at: 0
+        )
+        return true
+    }
+
+    @discardableResult
+    static func stopSprintFocusSession(
+        sessionID: UUID,
+        now: Date,
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard let index = data.focusSessions.firstIndex(where: { $0.id == sessionID }),
+              data.focusSessions[index].isActive else {
+            return false
+        }
+
+        data.focusSessions[index].stoppedAt = now
+        return true
+    }
+
+    @discardableResult
+    static func updateSprintFocusAllocations(
+        sessionID: UUID,
+        allocations: [SprintFocusAllocation],
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard let index = data.focusSessions.firstIndex(where: { $0.id == sessionID }),
+              !data.focusSessions[index].isActive else {
+            return false
+        }
+
+        data.focusSessions[index].allocations = allocations
+            .filter { $0.minutes > 0 }
+            .sorted { lhs, rhs in
+                if lhs.minutes != rhs.minutes {
+                    return lhs.minutes > rhs.minutes
+                }
+                return lhs.taskID.uuidString < rhs.taskID.uuidString
+            }
         return true
     }
 }

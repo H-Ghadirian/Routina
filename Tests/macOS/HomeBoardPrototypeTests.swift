@@ -764,4 +764,81 @@ struct HomeBoardPrototypeTests {
         sprintDoneDisplay.assignedSprintID = sprint.id
         #expect(HomeFeature.matchesBoardScope(sprintDoneDisplay, selectedScope: .sprint(sprint.id), activeSprintIDs: []))
     }
+
+    @Test
+    func sprintFocusTimer_startStopAndAllocationUpdatesTaskDurations() async throws {
+        let context = makeInMemoryContext()
+        let first = makeTask(
+            in: context,
+            name: "Implement timer",
+            interval: 1,
+            lastDone: nil,
+            emoji: "⏱️",
+            scheduleMode: .oneOff
+        )
+        first.actualDurationMinutes = 10
+        let second = makeTask(
+            in: context,
+            name: "Review board",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🧭",
+            scheduleMode: .oneOff
+        )
+        try context.save()
+
+        let sprint = BoardSprint(
+            id: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!,
+            title: "Sprint Focus",
+            status: .active,
+            createdAt: makeDate("2026-03-19T09:00:00Z"),
+            startedAt: makeDate("2026-03-19T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { @MainActor in context }
+            $0.sprintBoardClient = .noop
+            setTestDateDependencies(&$0, now: makeDate("2026-03-20T10:00:00Z"))
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .tasksLoadedSuccessfully([first, second], [], [], [], HomeFeature.DoneStats())
+        )
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(
+                    sprints: [sprint],
+                    assignments: [
+                        SprintAssignment(todoID: first.id, sprintID: sprint.id),
+                        SprintAssignment(todoID: second.id, sprintID: sprint.id)
+                    ]
+                )
+            )
+        )
+
+        await store.send(.startSprintFocusTapped(sprint.id))
+
+        let activeSession = try #require(store.state.sprintBoardData.activeFocusSession)
+        #expect(activeSession.sprintID == sprint.id)
+
+        await store.send(.stopSprintFocusTapped(activeSession.id))
+
+        #expect(store.state.sprintBoardData.activeFocusSession == nil)
+        #expect(store.state.sprintFocusAllocationSessionID == activeSession.id)
+        #expect(Set(store.state.sprintFocusAllocationDrafts.map(\.taskID)) == Set([first.id, second.id]))
+
+        await store.send(.sprintFocusAllocationMinutesChanged(taskID: first.id, minutes: 40))
+        await store.send(.sprintFocusAllocationMinutesChanged(taskID: second.id, minutes: 20))
+        await store.send(.sprintFocusAllocationSaveTapped)
+
+        let savedSession = try #require(store.state.sprintBoardData.focusSessions.first(where: { $0.id == activeSession.id }))
+        #expect(savedSession.allocations.map(\.minutes).reduce(0, +) == 60)
+        #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 50)
+        #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == 20)
+        #expect(store.state.sprintFocusAllocationSessionID == nil)
+        #expect(store.state.sprintFocusAllocationDrafts.isEmpty)
+    }
 }
