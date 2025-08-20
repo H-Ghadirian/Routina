@@ -5,6 +5,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
     let focusSessions: [FocusSession]
     let allTasks: [RoutineTask]
     let resetToken: Int
+    let blockingFocusTitle: String?
     @Binding var isExpanded: Bool
     @Binding var entryHours: Int
     @Binding var entryMinutes: Int
@@ -78,6 +79,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
                     sessions: focusSessions,
                     allTasks: allTasks,
                     isEmbedded: true,
+                    blockingFocusTitle: blockingFocusTitle,
                     onCompletedDuration: onCompletedFocusDuration
                 )
             }

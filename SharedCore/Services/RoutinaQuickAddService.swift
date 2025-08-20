@@ -195,6 +195,13 @@ enum RoutinaQuickAddService {
             let activeTaskName = tasks.first { $0.id == activeSession.taskID }?.displayNameForQuickAdd
             throw RoutinaQuickAddError.activeFocusSession(activeTaskName)
         }
+        if let sprintBoardData = try? SprintBoardClient.loadLiveSnapshot(),
+           let activeSprintFocusSession = sprintBoardData.activeFocusSession {
+            let activeSprintTitle = sprintBoardData.sprints
+                .first(where: { $0.id == activeSprintFocusSession.sprintID })?
+                .title
+            throw RoutinaQuickAddError.activeFocusSession(activeSprintTitle)
+        }
 
         guard let task = focusTaskMatch(
             named: taskName,

@@ -5,7 +5,9 @@ import SwiftData
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
     var showsPrincipalToolbarTitle = true
+    let externalBlockingFocusTitle: String?
     @Dependency(\.appSettingsClient) private var appSettingsClient
+    @Dependency(\.sprintBoardClient) private var sprintBoardClient
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
     @Query private var focusSessionTasks: [RoutineTask]
@@ -26,6 +28,7 @@ struct TaskDetailTCAView: View {
     @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
     @State private var referenceDate = Date()
+    @State private var sprintBlockingFocusTitle: String?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -35,10 +38,12 @@ struct TaskDetailTCAView: View {
 
     init(
         store: StoreOf<TaskDetailFeature>,
-        showsPrincipalToolbarTitle: Bool = true
+        showsPrincipalToolbarTitle: Bool = true,
+        blockingFocusTitle: String? = nil
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
+        self.externalBlockingFocusTitle = blockingFocusTitle
 
         let taskID = store.task.id
         _focusSessions = Query(
@@ -103,6 +108,14 @@ struct TaskDetailTCAView: View {
                         timeEditing.dismissLog()
                     }
                 )
+            }
+            .task {
+                await refreshSprintFocusBlock()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                Task {
+                    await refreshSprintFocusBlock()
+                }
             }
             .taskDetailDeleteConfirmationAlert(store: store)
             .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
@@ -385,6 +398,7 @@ struct TaskDetailTCAView: View {
             focusSessions: focusSessions,
             allTasks: focusSessionTasks,
             resetToken: taskTimeEntryResetToken,
+            blockingFocusTitle: blockingFocusTitle,
             isExpanded: $isTimeSectionExpanded,
             entryHours: $taskTimeEntryHours,
             entryMinutes: $taskTimeEntryMinutes,
@@ -431,8 +445,28 @@ struct TaskDetailTCAView: View {
             task: store.task,
             sessions: focusSessions,
             allTasks: focusSessionTasks,
+            blockingFocusTitle: blockingFocusTitle,
             onCompletedDuration: addCompletedFocusToTimeSpent
         )
+    }
+
+    private var blockingFocusTitle: String? {
+        externalBlockingFocusTitle ?? sprintBlockingFocusTitle
+    }
+
+    @MainActor
+    private func refreshSprintFocusBlock() async {
+        do {
+            let data = try await sprintBoardClient.load()
+            guard let session = data.activeFocusSession else {
+                sprintBlockingFocusTitle = nil
+                return
+            }
+
+            sprintBlockingFocusTitle = data.sprints.first(where: { $0.id == session.sprintID })?.title ?? "a sprint"
+        } catch {
+            sprintBlockingFocusTitle = nil
+        }
     }
 
     private var canSaveCurrentEdit: Bool {

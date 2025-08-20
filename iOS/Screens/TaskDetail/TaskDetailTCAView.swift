@@ -4,7 +4,9 @@ import SwiftData
 
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
+    let externalBlockingFocusTitle: String?
     @Dependency(\.appSettingsClient) private var appSettingsClient
+    @Dependency(\.sprintBoardClient) private var sprintBoardClient
     @Environment(\.dismiss) private var dismiss
     @Query private var focusSessions: [FocusSession]
     @Query private var focusSessionTasks: [RoutineTask]
@@ -21,6 +23,7 @@ struct TaskDetailTCAView: View {
     @State private var isRelationshipGraphPresented = false
     @State private var isMatrixExpanded = false
     @State private var referenceDate = Date()
+    @State private var sprintBlockingFocusTitle: String?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -28,8 +31,12 @@ struct TaskDetailTCAView: View {
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
-    init(store: StoreOf<TaskDetailFeature>) {
+    init(
+        store: StoreOf<TaskDetailFeature>,
+        blockingFocusTitle: String? = nil
+    ) {
         self.store = store
+        self.externalBlockingFocusTitle = blockingFocusTitle
 
         let taskID = store.task.id
         _focusSessions = Query(
@@ -77,6 +84,14 @@ struct TaskDetailTCAView: View {
                         store.send(.openLinkedTask(taskID))
                     }
                 )
+            }
+            .task {
+                await refreshSprintFocusBlock()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                Task {
+                    await refreshSprintFocusBlock()
+                }
             }
             .sheet(item: $timeEditing.editingLog) { log in
                 TaskDetailTimeSpentSheet(
@@ -238,8 +253,28 @@ struct TaskDetailTCAView: View {
         TaskDetailFocusSessionSectionView(
             task: store.task,
             sessions: focusSessions,
-            allTasks: focusSessionTasks
+            allTasks: focusSessionTasks,
+            blockingFocusTitle: blockingFocusTitle
         )
+    }
+
+    private var blockingFocusTitle: String? {
+        externalBlockingFocusTitle ?? sprintBlockingFocusTitle
+    }
+
+    @MainActor
+    private func refreshSprintFocusBlock() async {
+        do {
+            let data = try await sprintBoardClient.load()
+            guard let session = data.activeFocusSession else {
+                sprintBlockingFocusTitle = nil
+                return
+            }
+
+            sprintBlockingFocusTitle = data.sprints.first(where: { $0.id == session.sprintID })?.title ?? "a sprint"
+        } catch {
+            sprintBlockingFocusTitle = nil
+        }
     }
 
     private var canSaveCurrentEdit: Bool {

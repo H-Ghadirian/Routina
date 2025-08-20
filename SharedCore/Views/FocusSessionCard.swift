@@ -12,6 +12,7 @@ struct FocusSessionCard: View {
     let sessions: [FocusSession]
     let allTasks: [RoutineTask]
     let isEmbedded: Bool
+    let blockingFocusTitle: String?
     let onCompletedDuration: ((TimeInterval) -> Void)?
 
     init(
@@ -19,12 +20,14 @@ struct FocusSessionCard: View {
         sessions: [FocusSession],
         allTasks: [RoutineTask],
         isEmbedded: Bool = false,
+        blockingFocusTitle: String? = nil,
         onCompletedDuration: ((TimeInterval) -> Void)? = nil
     ) {
         self.task = task
         self.sessions = sessions
         self.allTasks = allTasks
         self.isEmbedded = isEmbedded
+        self.blockingFocusTitle = blockingFocusTitle
         self.onCompletedDuration = onCompletedDuration
     }
 
@@ -80,6 +83,8 @@ struct FocusSessionCard: View {
                     activeSessionContent(activeSessionForTask)
                 } else if let activeSessionForAnotherTask = snapshot.activeSessionForAnotherTask {
                     otherTaskActiveContent(activeSessionForAnotherTask)
+                } else if let blockingFocusTitle {
+                    blockingFocusContent(blockingFocusTitle)
                 } else {
                     startFocusControls
                 }
@@ -234,6 +239,9 @@ struct FocusSessionCard: View {
         if snapshot.activeSessionForAnotherTask != nil {
             return "Another task is already in focus"
         }
+        if blockingFocusTitle != nil {
+            return "Another focus timer is already running"
+        }
         if snapshot.completedSessionsForTask.isEmpty {
             return "Start a timer without marking this task done."
         }
@@ -344,6 +352,19 @@ struct FocusSessionCard: View {
                 .foregroundStyle(.secondary)
 
             Text("Finish or abandon that session before starting a new one.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func blockingFocusContent(_ title: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Focusing on \(title)", systemImage: "timer")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text("Stop that focus timer before starting a task focus session.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

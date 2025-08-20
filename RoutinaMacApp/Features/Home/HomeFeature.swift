@@ -1275,6 +1275,9 @@ struct HomeFeature {
         .run { _ in
             do {
                 try await sprintBoardClient.save(sprintBoardData)
+                await MainActor.run {
+                    NotificationCenter.default.postRoutineDidUpdate()
+                }
             } catch {
                 print("Failed to save sprint board data: \(error)")
             }

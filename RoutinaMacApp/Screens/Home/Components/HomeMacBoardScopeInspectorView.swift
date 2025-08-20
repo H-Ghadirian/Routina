@@ -3,6 +3,8 @@ import SwiftUI
 struct HomeMacBoardScopeInspectorView: View {
     let presentation: HomeBoardPresentation
     let sprintFocusSessions: [SprintFocusSession]
+    let taskFocusSessions: [FocusSession]
+    let taskFocusSessionTasks: [RoutineTask]
     let allocationSessionID: UUID?
     let allocationDrafts: [SprintFocusAllocationDraft]
     let onStartSprintFocus: (UUID) -> Void
@@ -68,6 +70,7 @@ struct HomeMacBoardScopeInspectorView: View {
                     .filter { $0.sprintID == sprint.id }
                     .sorted { $0.startedAt > $1.startedAt }
                 let activeSession = sessions.first(where: \.isActive)
+                let activeTaskSession = activeTaskFocusSession
 
                 VStack(alignment: .leading, spacing: 12) {
                     if let activeSession {
@@ -93,6 +96,8 @@ struct HomeMacBoardScopeInspectorView: View {
                                 .tint(.teal)
                             }
                         }
+                    } else if let activeTaskSession {
+                        activeTaskFocusContent(activeTaskSession)
                     } else {
                         Button {
                             onStartSprintFocus(sprint.id)
@@ -247,6 +252,27 @@ struct HomeMacBoardScopeInspectorView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
+    }
+
+    private var activeTaskFocusSession: FocusSession? {
+        taskFocusSessions.first { $0.state == .active }
+    }
+
+    private func activeTaskFocusContent(_ session: FocusSession) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Focusing on \(taskFocusTitle(for: session))", systemImage: "timer")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text("Stop that task focus timer before starting sprint focus.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func taskFocusTitle(for session: FocusSession) -> String {
+        taskFocusSessionTasks.first(where: { $0.id == session.taskID })?.name ?? "a task"
     }
 
     private var focusableSprint: BoardSprint? {

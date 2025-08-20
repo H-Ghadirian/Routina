@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import SwiftData
 import SwiftUI
 
 enum MacHomeDetailMode: String, CaseIterable, Identifiable {
@@ -42,6 +43,7 @@ struct HomeTCAView: View {
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
+    @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
 
     init(
         store: StoreOf<HomeFeature>,

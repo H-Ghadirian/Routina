@@ -8,12 +8,7 @@ struct SprintBoardClient: Sendable {
 extension SprintBoardClient {
     static let live = SprintBoardClient(
         load: {
-            let url = try sprintBoardStoreURL()
-            guard FileManager.default.fileExists(atPath: url.path) else {
-                return SprintBoardData()
-            }
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(SprintBoardData.self, from: data)
+            try loadLiveSnapshot()
         },
         save: { sprintBoardData in
             let url = try sprintBoardStoreURL()
@@ -30,6 +25,15 @@ extension SprintBoardClient {
         load: { SprintBoardData() },
         save: { _ in }
     )
+
+    static func loadLiveSnapshot() throws -> SprintBoardData {
+        let url = try sprintBoardStoreURL()
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            return SprintBoardData()
+        }
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(SprintBoardData.self, from: data)
+    }
 }
 
 private func sprintBoardStoreURL() throws -> URL {

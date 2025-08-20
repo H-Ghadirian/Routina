@@ -143,14 +143,19 @@ extension HomeTCAView {
                    state: \.taskDetailState,
                    action: \.taskDetail
                ) {
-                TaskDetailTCAView(store: detailStore)
-                    .id(selectedTaskID)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
+                TaskDetailTCAView(
+                    store: detailStore,
+                    blockingFocusTitle: activeSprintBlockingFocusTitle
+                )
+                .id(selectedTaskID)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
             } else {
                 HomeMacBoardScopeInspectorView(
                     presentation: presentation,
                     sprintFocusSessions: store.sprintBoardData.focusSessions,
+                    taskFocusSessions: focusSessions,
+                    taskFocusSessionTasks: store.routineTasks,
                     allocationSessionID: store.sprintFocusAllocationSessionID,
                     allocationDrafts: store.sprintFocusAllocationDrafts,
                     onStartSprintFocus: { store.send(.startSprintFocusTapped($0)) },
@@ -166,6 +171,11 @@ extension HomeTCAView {
         }
         .background(.regularMaterial)
         .clipped()
+    }
+
+    private var activeSprintBlockingFocusTitle: String? {
+        guard let session = store.sprintBoardData.activeFocusSession else { return nil }
+        return store.sprintBoardData.sprints.first(where: { $0.id == session.sprintID })?.title ?? "a sprint"
     }
 
     private func boardTint(for state: TodoState) -> Color {
