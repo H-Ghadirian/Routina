@@ -18,6 +18,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
     @Binding var mainDetailMode: MacHomeDetailMode
     let selectedTaskID: UUID?
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
+    let onOpenDayPlanTaskDetails: (UUID) -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let boardView: () -> BoardView
@@ -60,7 +61,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
                 DayPlanDetailView(
                     planner: dayPlanPlanner,
                     selectedTaskID: selectedTaskID,
-                    onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate
+                    onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
+                    onOpenTaskDetails: onOpenDayPlanTaskDetails
                 )
             }
         }

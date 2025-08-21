@@ -11,6 +11,7 @@ struct DayPlanBlockLayer: View {
     var blocksForDate: (Date) -> [DayPlanBlock]
     var taskTint: (DayPlanBlock) -> Color
     var onSelectBlock: (DayPlanBlock, Date) -> Void
+    var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
     var onDeleteBlock: (DayPlanBlock) -> Void
     var onResizeStarted: (DayPlanBlock, Date) -> Void
     var onResizeChanged: (DayPlanBlock, Date, DayPlanResizeEdge, CGFloat) -> Void
@@ -31,6 +32,9 @@ struct DayPlanBlockLayer: View {
                         calendar: calendar,
                         onSelect: {
                             onSelectBlock(block, date)
+                        },
+                        onOpenDetails: {
+                            onOpenBlockDetails(block, date)
                         },
                         onDelete: {
                             onDeleteBlock(block)

@@ -158,6 +158,20 @@ extension HomeTCAView {
         dayPlanPlanner.clearFocusedUnplannedCompletedTasks()
     }
 
+    func openDayPlanTaskDetails(_ taskID: UUID) {
+        if shouldShowTaskInRegularSidebar(taskID) {
+            clearDayPlanUnplannedCompletedFilter()
+        }
+        macHomeDetailMode = .details
+        macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID)
+        store.send(.macSidebarSelectionChanged(.task(taskID)))
+    }
+
+    private func shouldShowTaskInRegularSidebar(_ taskID: UUID) -> Bool {
+        guard let task = store.routineTasks.first(where: { $0.id == taskID }) else { return true }
+        return !task.isCompletedOneOff && !task.isCanceledOneOff
+    }
+
     func dayPlanUnplannedCompletedDisplays(for date: Date) -> [HomeFeature.RoutineDisplay] {
         let displays = uniqueDayPlanCandidateDisplays
         let plannedBlocks = dayPlanPlanner.blocks(on: date, calendar: calendar, context: modelContext)

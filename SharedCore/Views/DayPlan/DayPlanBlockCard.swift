@@ -9,6 +9,7 @@ struct DayPlanBlockCard: View {
     var selectedDate: Date
     var calendar: Calendar
     var onSelect: () -> Void
+    var onOpenDetails: () -> Void
     var onDelete: () -> Void
     var onResizeStarted: () -> Void
     var onResizeChanged: (DayPlanResizeEdge, CGFloat) -> Void
@@ -16,21 +17,26 @@ struct DayPlanBlockCard: View {
     var onDragProvider: () -> NSItemProvider
 
     var body: some View {
-        Button(action: onSelect) {
-            cardContent
-                .padding(contentInsets)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(tint.opacity(isSelected ? 0.22 : 0.14))
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(tint.opacity(isSelected ? 0.75 : 0.35), lineWidth: isSelected ? 2 : 1)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
-        .buttonStyle(.plain)
+        cardContent
+            .padding(contentInsets)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(tint.opacity(isSelected ? 0.22 : 0.14))
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(tint.opacity(isSelected ? 0.75 : 0.35), lineWidth: isSelected ? 2 : 1)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .onTapGesture(count: 2) {
+                onOpenDetails()
+            }
+            .onTapGesture {
+                onSelect()
+            }
+            .accessibilityAddTraits(.isButton)
         .onDrag(onDragProvider)
         .overlay(alignment: .top) {
             DayPlanResizeHandle(

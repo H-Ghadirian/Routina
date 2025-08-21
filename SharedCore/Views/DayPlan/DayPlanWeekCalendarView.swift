@@ -19,6 +19,7 @@ struct DayPlanWeekCalendarView: View {
     var onSelectUnplannedCompletedDate: (Date) -> Void
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
+    var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
     var onDeleteBlock: (DayPlanBlock) -> Void
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
     var onResizeBlock: (DayPlanBlock.ID, Date, Int, Int) -> Void
@@ -80,6 +81,7 @@ struct DayPlanWeekCalendarView: View {
                                 blocksForDate: blocksForDate,
                                 taskTint: taskTint,
                                 onSelectBlock: onSelectBlock,
+                                onOpenBlockDetails: onOpenBlockDetails,
                                 onDeleteBlock: onDeleteBlock,
                                 onResizeStarted: { block, date in
                                     beginResize(block, date)

@@ -170,28 +170,64 @@ extension HomeTCAView {
         _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
         allowsPlannerDrag: Bool
     ) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 8, pinnedViews: []) {
-                ForEach(presentation.sections) { section in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(section.title)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 10)
+        let visibleTaskIDs = presentation.sections.flatMap { section in
+            section.tasks.map(\.taskID)
+        }
 
-                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                            macTaskSourceRow(
-                                for: task,
-                                rowNumber: section.rowNumber(forTaskAt: index),
-                                includeMarkDone: section.includeMarkDone,
-                                moveContext: section.moveContext,
-                                allowsPlannerDrag: allowsPlannerDrag
-                            )
+        return ScrollViewReader { scrollProxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 8, pinnedViews: []) {
+                    ForEach(presentation.sections) { section in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(section.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 10)
+
+                            ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                                macTaskSourceRow(
+                                    for: task,
+                                    rowNumber: section.rowNumber(forTaskAt: index),
+                                    includeMarkDone: section.includeMarkDone,
+                                    moveContext: section.moveContext,
+                                    allowsPlannerDrag: allowsPlannerDrag
+                                )
+                            }
                         }
                     }
                 }
+                .padding(10)
             }
-            .padding(10)
+            .onAppear {
+                scrollMacTaskSourceListToSelectedTask(
+                    with: scrollProxy,
+                    visibleTaskIDs: visibleTaskIDs,
+                    anchor: .center
+                )
+            }
+            .onChange(of: store.selectedTaskID) { _, _ in
+                scrollMacTaskSourceListToSelectedTask(
+                    with: scrollProxy,
+                    visibleTaskIDs: visibleTaskIDs,
+                    anchor: .center
+                )
+            }
+            .onChange(of: visibleTaskIDs) { _, _ in
+                scrollMacTaskSourceListToSelectedTask(
+                    with: scrollProxy,
+                    visibleTaskIDs: visibleTaskIDs,
+                    anchor: .center
+                )
+            }
+            .onChange(of: macSidebarTaskScrollRequest) { _, request in
+                guard let request else { return }
+                scrollMacTaskSourceList(
+                    to: request.taskID,
+                    with: scrollProxy,
+                    visibleTaskIDs: visibleTaskIDs,
+                    anchor: .center
+                )
+            }
         }
     }
 
@@ -271,6 +307,7 @@ extension HomeTCAView {
                         lineWidth: macTaskSourceRowStrokeWidth(for: task)
                     )
             )
+            .id(task.taskID)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onTapGesture {
                 store.send(.macSidebarSelectionChanged(.task(task.taskID)))
@@ -316,6 +353,35 @@ extension HomeTCAView {
 
     private func macTaskSourceRowStrokeWidth(for task: HomeFeature.RoutineDisplay) -> CGFloat {
         task.color.swiftUIColor == nil ? 1 : 1.5
+    }
+
+    private func scrollMacTaskSourceListToSelectedTask(
+        with proxy: ScrollViewProxy,
+        visibleTaskIDs: [UUID],
+        anchor: UnitPoint
+    ) {
+        guard let selectedTaskID = store.selectedTaskID else { return }
+        scrollMacTaskSourceList(
+            to: selectedTaskID,
+            with: proxy,
+            visibleTaskIDs: visibleTaskIDs,
+            anchor: anchor
+        )
+    }
+
+    private func scrollMacTaskSourceList(
+        to taskID: UUID,
+        with proxy: ScrollViewProxy,
+        visibleTaskIDs: [UUID],
+        anchor: UnitPoint
+    ) {
+        guard visibleTaskIDs.contains(taskID) else { return }
+
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                proxy.scrollTo(taskID, anchor: anchor)
+            }
+        }
     }
 
     func platformDeleteTasks(

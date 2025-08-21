@@ -9,6 +9,15 @@ enum MacHomeDetailMode: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
+struct MacSidebarTaskScrollRequest: Equatable {
+    let taskID: UUID
+    private let token = UUID()
+
+    init(taskID: UUID) {
+        self.taskID = taskID
+    }
+}
+
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
@@ -41,6 +50,7 @@ struct HomeTCAView: View {
     @State var macHomeDetailMode: MacHomeDetailMode = .details
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
+    @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var isFinishedSprintsExpanded = false
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool

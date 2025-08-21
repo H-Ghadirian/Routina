@@ -250,6 +250,7 @@ struct DayPlanDetailView: View {
     @ObservedObject var planner: DayPlanPlannerState
     var selectedTaskID: UUID? = nil
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
+    var onOpenTaskDetails: ((UUID) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
 
     var body: some View {
@@ -257,7 +258,8 @@ struct DayPlanDetailView: View {
             DayPlanHeaderView(planner: planner)
             DayPlanTimelinePanelView(
                 planner: planner,
-                onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
+                onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
+                onOpenTaskDetails: onOpenTaskDetails
             )
         }
         .padding(20)
@@ -347,6 +349,7 @@ private struct DayPlanTimelinePanelView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
+    var onOpenTaskDetails: ((UUID) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
     @AppStorage(
@@ -395,6 +398,10 @@ private struct DayPlanTimelinePanelView: View {
                 },
                 onSelectBlock: { block, date in
                     planner.edit(block, on: date, calendar: calendar, context: modelContext)
+                },
+                onOpenBlockDetails: { block, date in
+                    planner.edit(block, on: date, calendar: calendar, context: modelContext)
+                    onOpenTaskDetails?(block.taskID)
                 },
                 onDeleteBlock: { block in
                     planner.deleteBlock(block.id, calendar: calendar, context: modelContext)
