@@ -21,6 +21,10 @@ struct StatsView: View {
     @Query private var tasks: [RoutineTask]
     @Query private var focusSessions: [FocusSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
+    @State private var isEditingDashboard = false
+    @State private var isAddDashboardItemSheetPresented = false
+    @AppStorage(UserDefaultStringValueKey.appSettingIOSStatsDashboardHiddenItemIDs.rawValue, store: SharedDefaults.app)
+    private var hiddenDashboardItemIDsRaw = ""
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -201,11 +205,35 @@ struct StatsView: View {
         StatsDashboardPalette.highlightBarFill
     }
 
+    private var hiddenDashboardItemIDs: Set<String> {
+        Set(
+            hiddenDashboardItemIDsRaw
+                .split(separator: ",")
+                .map(String.init)
+        )
+    }
+
+    private var availableDashboardItems: [StatsDashboardItem] {
+        StatsDashboardItem.allCases.filter { item in
+            item.isAvailable(
+                selectedRange: selectedRange,
+                isGitFeaturesEnabled: store.isGitFeaturesEnabled
+            )
+        }
+    }
+
+    private var hiddenAvailableDashboardItems: [StatsDashboardItem] {
+        availableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
+    }
+
     var body: some View {
         WithPerceptionTracking {
             statsRoot
                 .sheet(isPresented: filterSheetBinding) {
                     statsFiltersSheet
+                }
+                .sheet(isPresented: $isAddDashboardItemSheetPresented) {
+                    addDashboardItemSheet
                 }
                 .statsDataRefresh(
                     tasks: tasks,
@@ -252,24 +280,59 @@ struct StatsView: View {
                 if hasActiveSheetFilters {
                     AnyView(activeFilterChipBar)
                 }
-                AnyView(heroSection(metrics: currentMetrics))
+
+                if isEditingDashboard {
+                    AnyView(dashboardEditControls)
+                }
+
+                if isDashboardItemVisible(.hero) {
+                    AnyView(
+                        editableDashboardSection(.hero) {
+                            heroSection(metrics: currentMetrics)
+                        }
+                    )
+                }
+
                 AnyView(summaryCards(metrics: currentMetrics))
-                if selectedRange != .today {
-                    AnyView(chartSection(metrics: currentMetrics))
+
+                if selectedRange != .today, isDashboardItemVisible(.completionChart) {
+                    AnyView(
+                        editableDashboardSection(.completionChart) {
+                            chartSection(metrics: currentMetrics)
+                        }
+                    )
                 }
-                AnyView(tagUsageSection(metrics: currentMetrics))
-                if selectedRange != .today {
-                    AnyView(focusChartSection(metrics: currentMetrics))
+
+                if isDashboardItemVisible(.tagUsage) {
+                    AnyView(
+                        editableDashboardSection(.tagUsage) {
+                            tagUsageSection(metrics: currentMetrics)
+                        }
+                    )
                 }
-                if store.isGitFeaturesEnabled {
-                    AnyView(gitHubSection)
+
+                if selectedRange != .today, isDashboardItemVisible(.focusChart) {
+                    AnyView(
+                        editableDashboardSection(.focusChart) {
+                            focusChartSection(metrics: currentMetrics)
+                        }
+                    )
+                }
+
+                if store.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
+                    AnyView(
+                        editableDashboardSection(.gitHub) {
+                            gitHubSection
+                        }
+                    )
                 }
             }
         }
         .navigationTitle("Stats")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                dashboardEditButton
                 filterSheetButton
             }
         }
@@ -294,7 +357,8 @@ struct StatsView: View {
             onRefreshGitHubStats: { store.send(.gitHubStatsRefreshRequested) }
         )
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                dashboardEditButton
                 filterSheetButton
             }
         }
@@ -328,6 +392,85 @@ struct StatsView: View {
             hasActiveFilters: hasActiveFilters,
             onShowFilters: { store.send(.setFilterSheet(true)) }
         )
+    }
+
+    private var dashboardEditButton: some View {
+        Button(isEditingDashboard ? "Done" : "Edit") {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                isEditingDashboard.toggle()
+            }
+        }
+        .accessibilityLabel(isEditingDashboard ? "Finish editing stats dashboard" : "Edit stats dashboard")
+    }
+
+    private var dashboardEditControls: some View {
+        HStack(spacing: 12) {
+            Button {
+                isAddDashboardItemSheetPresented = true
+            } label: {
+                Label("Add", systemImage: "plus.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(hiddenAvailableDashboardItems.isEmpty)
+            .accessibilityLabel("Add stats item")
+
+            Button {
+                showAllDashboardItems()
+            } label: {
+                Label("Reset", systemImage: "arrow.counterclockwise")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.bordered)
+            .disabled(hiddenDashboardItemIDs.isEmpty)
+            .accessibilityLabel("Reset stats dashboard")
+        }
+    }
+
+    private var addDashboardItemSheet: some View {
+        NavigationStack {
+            List {
+                if hiddenAvailableDashboardItems.isEmpty {
+                    ContentUnavailableView(
+                        "All items are visible",
+                        systemImage: "checkmark.circle",
+                        description: Text("Remove a stats item to add it back here.")
+                    )
+                } else {
+                    Section("Hidden items") {
+                        ForEach(hiddenAvailableDashboardItems) { item in
+                            Button {
+                                addDashboardItem(item)
+                            } label: {
+                                Label {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(item.title)
+                                            .foregroundStyle(.primary)
+
+                                        Text(item.subtitle)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                } icon: {
+                                    Image(systemName: item.systemImage)
+                                }
+                            }
+                            .accessibilityLabel("Add \(item.title)")
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Add to Stats")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        isAddDashboardItemSheetPresented = false
+                    }
+                }
+            }
+        }
     }
 
     private var statsFiltersSheet: some View {
@@ -391,18 +534,46 @@ struct StatsView: View {
     }
 
     private func summaryCards(metrics: Metrics) -> some View {
-        StatsSummaryGrid(
-            items: StatsSummaryCardItemBuilder.items(
+        let items = visibleSummaryCardItems(
+            StatsSummaryCardItemBuilder.items(
                 metrics: metrics,
                 selectedRange: selectedRange,
                 chartPresentation: chartPresentation,
                 taskTypeFilter: .routines,
                 filteredTaskCount: filteredTaskCount
-            ),
-            minimumCardWidth: horizontalSizeClass == .compact ? 160 : 220,
-            colorScheme: colorScheme,
-            surfaceGradient: surfaceGradient
+            )
         )
+
+        return LazyVGrid(
+            columns: [
+                GridItem(
+                    .adaptive(
+                        minimum: horizontalSizeClass == .compact ? 160 : 220,
+                        maximum: 280
+                    ),
+                    spacing: 14
+                )
+            ],
+            spacing: 14
+        ) {
+            ForEach(items) { item in
+                editableDashboardSection(dashboardItem(for: item)) {
+                    StatsSummaryCard(
+                        icon: item.icon,
+                        accent: item.accent,
+                        title: item.title,
+                        value: item.value,
+                        caption: item.caption,
+                        accessibilityIdentifier: item.accessibilityIdentifier,
+                        colorScheme: colorScheme,
+                        surfaceGradient: surfaceGradient,
+                        accessibilityChildren: item.showsAccessory ? .contain : .combine
+                    ) {
+                        EmptyView()
+                    }
+                }
+            }
+        }
     }
 
     private var gitHubSection: some View {
@@ -500,4 +671,210 @@ struct StatsView: View {
         horizontalSizeClass == .compact ? 120 : 52
     }
 
+    private func isDashboardItemVisible(_ item: StatsDashboardItem) -> Bool {
+        !hiddenDashboardItemIDs.contains(item.rawValue)
+    }
+
+    private func visibleSummaryCardItems(_ items: [StatsSummaryCardItem]) -> [StatsSummaryCardItem] {
+        items.filter { item in
+            isDashboardItemVisible(dashboardItem(for: item))
+        }
+    }
+
+    private func dashboardItem(for item: StatsSummaryCardItem) -> StatsDashboardItem {
+        StatsDashboardItem(summaryAccessibilityIdentifier: item.accessibilityIdentifier)
+    }
+
+    private func removeDashboardItem(_ item: StatsDashboardItem) {
+        var hiddenIDs = hiddenDashboardItemIDs
+        hiddenIDs.insert(item.rawValue)
+        setHiddenDashboardItemIDs(hiddenIDs)
+    }
+
+    private func addDashboardItem(_ item: StatsDashboardItem) {
+        var hiddenIDs = hiddenDashboardItemIDs
+        hiddenIDs.remove(item.rawValue)
+        setHiddenDashboardItemIDs(hiddenIDs)
+
+        if hiddenAvailableDashboardItems.isEmpty {
+            isAddDashboardItemSheetPresented = false
+        }
+    }
+
+    private func showAllDashboardItems() {
+        setHiddenDashboardItemIDs([])
+    }
+
+    private func setHiddenDashboardItemIDs(_ itemIDs: Set<String>) {
+        let rawValue = itemIDs.sorted().joined(separator: ",")
+        CloudSettingsKeyValueSync.setString(
+            rawValue.isEmpty ? nil : rawValue,
+            for: .appSettingIOSStatsDashboardHiddenItemIDs
+        )
+    }
+
+    private func editableDashboardSection<Content: View>(
+        _ item: StatsDashboardItem,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        ZStack(alignment: .topLeading) {
+            content()
+                .opacity(isEditingDashboard ? 0.96 : 1)
+
+            if isEditingDashboard {
+                Button {
+                    removeDashboardItem(item)
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 34, height: 34)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.18), radius: 5, y: 3)
+                }
+                .buttonStyle(.plain)
+                .offset(x: -7, y: -10)
+                .transition(.scale.combined(with: .opacity))
+                .accessibilityLabel("Remove \(item.title)")
+            }
+        }
+    }
+}
+
+private enum StatsDashboardItem: String, CaseIterable, Identifiable {
+    case hero
+    case dailyAverage
+    case focusTime
+    case focusAverage
+    case bestDay
+    case totalDones
+    case totalCancels
+    case activeItems
+    case archivedItems
+    case completionChart
+    case tagUsage
+    case focusChart
+    case gitHub
+
+    var id: String { rawValue }
+
+    init(summaryAccessibilityIdentifier: String) {
+        switch summaryAccessibilityIdentifier {
+        case "stats.summary.dailyAverage":
+            self = .dailyAverage
+        case "stats.summary.focusTime":
+            self = .focusTime
+        case "stats.summary.focusAverage":
+            self = .focusAverage
+        case "stats.summary.bestDay":
+            self = .bestDay
+        case "stats.summary.totalDones":
+            self = .totalDones
+        case "stats.summary.totalCancels":
+            self = .totalCancels
+        case "stats.summary.activeRoutines":
+            self = .activeItems
+        case "stats.summary.archivedRoutines":
+            self = .archivedItems
+        default:
+            self = .hero
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .hero:
+            return "Activity overview"
+        case .dailyAverage:
+            return "Daily average"
+        case .focusTime:
+            return "Focus time"
+        case .focusAverage:
+            return "Focus average"
+        case .bestDay:
+            return "Best day"
+        case .totalDones:
+            return "Total dones"
+        case .totalCancels:
+            return "Total cancels"
+        case .activeItems:
+            return "Active items"
+        case .archivedItems:
+            return "Archived items"
+        case .completionChart:
+            return "Completions chart"
+        case .tagUsage:
+            return "Tag usage"
+        case .focusChart:
+            return "Focus chart"
+        case .gitHub:
+            return "GitHub stats"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .hero:
+            return "The large stats summary at the top of the screen."
+        case .dailyAverage, .focusTime, .focusAverage, .bestDay, .totalDones, .totalCancels, .activeItems, .archivedItems:
+            return "A compact stats card in the summary grid."
+        case .completionChart:
+            return "A bar chart of completed routines over time."
+        case .tagUsage:
+            return "A bubble chart of tag activity."
+        case .focusChart:
+            return "A bar chart of focus time over time."
+        case .gitHub:
+            return "Contribution and repository activity."
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .hero:
+            return "chart.line.uptrend.xyaxis"
+        case .dailyAverage:
+            return "gauge.with.dots.needle.50percent"
+        case .focusTime:
+            return "timer"
+        case .focusAverage:
+            return "stopwatch.fill"
+        case .bestDay:
+            return "bolt.fill"
+        case .totalDones:
+            return "checkmark.seal.fill"
+        case .totalCancels:
+            return "xmark.seal.fill"
+        case .activeItems:
+            return "checklist.checked"
+        case .archivedItems:
+            return "archivebox.fill"
+        case .completionChart:
+            return "chart.bar.xaxis"
+        case .tagUsage:
+            return "tag.fill"
+        case .focusChart:
+            return "chart.xyaxis.line"
+        case .gitHub:
+            return "chevron.left.forwardslash.chevron.right"
+        }
+    }
+
+    func isAvailable(
+        selectedRange: DoneChartRange,
+        isGitFeaturesEnabled: Bool
+    ) -> Bool {
+        switch self {
+        case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart:
+            return selectedRange != .today
+        case .gitHub:
+            return isGitFeaturesEnabled
+        default:
+            return true
+        }
+    }
 }
