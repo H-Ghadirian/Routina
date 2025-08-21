@@ -6,6 +6,10 @@ import SwiftData
 struct HomeFeature {
     typealias TaskListMode = HomeTaskListMode
 
+    private enum TaskDetailCancelID: Hashable, Sendable {
+        case task(UUID)
+    }
+
     typealias SelectedTaskReloadGuard = HomeSelectedTaskReloadGuard
 
     typealias DoneStats = HomeDoneStats
@@ -638,8 +642,12 @@ struct HomeFeature {
     }
 
     var body: some ReducerOf<Self> {
-        Reduce { state, action in
-            switch action {
+        CombineReducers {
+            Reduce { state, action in
+                reduceTaskDetail(into: &state, action: action)
+            }
+            Reduce { state, action in
+                switch action {
             case .onAppear:
                 return lifecycleActionHandler().onAppear(state: &state)
 
@@ -852,6 +860,10 @@ struct HomeFeature {
 
             case .addRoutineSheet:
                 return .none
+                }
+            }
+            Reduce { state, _ in
+                cancelStaleTaskDetailEffects(state: &state)
             }
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
@@ -862,9 +874,32 @@ struct HomeFeature {
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }
-        .ifLet(\.taskDetailState, action: \.taskDetail) {
-            TaskDetailFeature()
+    }
+
+    private func reduceTaskDetail(
+        into state: inout State,
+        action: Action
+    ) -> Effect<Action> {
+        guard case let .taskDetail(taskDetailAction) = action,
+              let taskDetailID = state.taskDetailState?.task.id else {
+            return .none
         }
+
+        state.selection.taskDetailEffectTaskID = taskDetailID
+        return TaskDetailFeature()
+            .reduce(into: &state.taskDetailState!, action: taskDetailAction)
+            .map(Action.taskDetail)
+            .cancellable(id: TaskDetailCancelID.task(taskDetailID))
+    }
+
+    private func cancelStaleTaskDetailEffects(state: inout State) -> Effect<Action> {
+        let currentTaskID = state.taskDetailState?.task.id
+        guard state.selection.taskDetailEffectTaskID != currentTaskID else { return .none }
+
+        let previousTaskID = state.selection.taskDetailEffectTaskID
+        state.selection.taskDetailEffectTaskID = currentTaskID
+        guard let previousTaskID else { return .none }
+        return .cancel(id: TaskDetailCancelID.task(previousTaskID))
     }
 
     private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {

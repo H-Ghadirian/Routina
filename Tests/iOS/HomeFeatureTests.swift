@@ -9,6 +9,17 @@ import Testing
 @MainActor
 struct HomeFeatureTests {
     @Test
+    func staleTaskDetailLoadActionAfterDismissIsIgnored() async {
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+        }
+
+        await store.send(.taskDetail(.availableTagsLoaded(["Late"])))
+    }
+
+    @Test
     func clearOptionalFilters_resetsOptionalFiltersAndPersistsState() async {
         let context = makeInMemoryContext()
         let placeID = UUID()
