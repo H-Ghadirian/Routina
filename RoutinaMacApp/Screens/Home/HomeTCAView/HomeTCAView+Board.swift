@@ -154,11 +154,13 @@ extension HomeTCAView {
             } else {
                 HomeMacBoardScopeInspectorView(
                     presentation: presentation,
+                    finishableSprints: store.isMacFilterDetailPresented ? [] : boardFinishableSprintsInCurrentScope,
                     sprintFocusSessions: store.sprintBoardData.focusSessions,
                     taskFocusSessions: focusSessions,
                     taskFocusSessionTasks: store.routineTasks,
                     allocationSessionID: store.sprintFocusAllocationSessionID,
                     allocationDrafts: store.sprintFocusAllocationDrafts,
+                    onFinishSprint: { store.send(.finishSprintTapped($0)) },
                     onStartSprintFocus: { store.send(.startSprintFocusTapped($0)) },
                     onStopSprintFocus: { store.send(.stopSprintFocusTapped($0)) },
                     onReviewSprintFocusAllocation: { store.send(.reviewSprintFocusAllocationTapped($0)) },

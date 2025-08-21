@@ -2,11 +2,13 @@ import SwiftUI
 
 struct HomeMacBoardScopeInspectorView: View {
     let presentation: HomeBoardPresentation
+    let finishableSprints: [BoardSprint]
     let sprintFocusSessions: [SprintFocusSession]
     let taskFocusSessions: [FocusSession]
     let taskFocusSessionTasks: [RoutineTask]
     let allocationSessionID: UUID?
     let allocationDrafts: [SprintFocusAllocationDraft]
+    let onFinishSprint: (UUID) -> Void
     let onStartSprintFocus: (UUID) -> Void
     let onStopSprintFocus: (UUID) -> Void
     let onReviewSprintFocusAllocation: (UUID) -> Void
@@ -20,6 +22,7 @@ struct HomeMacBoardScopeInspectorView: View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 14) {
                 summaryCard
+                finishSprintCard
                 sprintFocusCard
                 countsCard
                 dateCard
@@ -31,6 +34,40 @@ struct HomeMacBoardScopeInspectorView: View {
         .sheet(isPresented: allocationSheetBinding) {
             sprintFocusAllocationSheet
                 .frame(width: 480, height: 520)
+        }
+    }
+
+    @ViewBuilder
+    private var finishSprintCard: some View {
+        if finishableSprints.count == 1, let sprint = finishableSprints.first {
+            inspectorCard(title: "Sprint Action") {
+                Button {
+                    onFinishSprint(sprint.id)
+                } label: {
+                    Label("Finish Sprint", systemImage: "flag.checkered")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+                .help("Finish \(sprint.title)")
+            }
+        } else if finishableSprints.count > 1 {
+            inspectorCard(title: "Sprint Action") {
+                Menu {
+                    ForEach(finishableSprints) { sprint in
+                        Button(sprint.title) {
+                            onFinishSprint(sprint.id)
+                        }
+                    }
+                } label: {
+                    Label("Finish Sprint", systemImage: "flag.checkered")
+                        .frame(maxWidth: .infinity)
+                }
+                .menuStyle(.button)
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+                .help("Finish an active sprint")
+            }
         }
     }
 

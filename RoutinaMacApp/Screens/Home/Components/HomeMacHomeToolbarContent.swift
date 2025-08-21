@@ -19,8 +19,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let boardBlockedCount: Int
     let boardDoneCount: Int
     let isBoardBacklogScope: Bool
-    let finishableSprints: [BoardSprint]
-    let onFinishSprint: (UUID) -> Void
 
     var body: some ToolbarContent {
         switch mode {
@@ -36,7 +34,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            finishSprintControl
             MacToolbarStatusBadge(
                 title: "\(boardOpenCount) open",
                 systemImage: "square.grid.3x3.topleft.filled",
@@ -106,29 +103,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
                 tintColor: .secondaryLabelColor
             )
             .help("Total todos")
-        }
-    }
-
-    @ViewBuilder
-    private var finishSprintControl: some View {
-        if finishableSprints.count == 1, let sprint = finishableSprints.first {
-            Button {
-                onFinishSprint(sprint.id)
-            } label: {
-                Label("Finish Sprint", systemImage: "flag.checkered")
-            }
-            .help("Finish \(sprint.title)")
-        } else if finishableSprints.count > 1 {
-            Menu {
-                ForEach(finishableSprints) { sprint in
-                    Button(sprint.title) {
-                        onFinishSprint(sprint.id)
-                    }
-                }
-            } label: {
-                Label("Finish Sprint", systemImage: "flag.checkered")
-            }
-            .help("Finish an active sprint")
         }
     }
 }
