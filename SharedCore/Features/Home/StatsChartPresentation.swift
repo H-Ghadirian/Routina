@@ -144,6 +144,25 @@ struct StatsChartPresentation {
         }
     }
 
+    func focusBarXAxisDates(from points: [FocusDurationChartPoint]) -> [Date] {
+        points
+            .filter { $0.seconds > 0 }
+            .map(\.date)
+    }
+
+    func focusBarXAxisLabel(for date: Date) -> String {
+        switch selectedRange {
+        case .today:
+            return "Today"
+        case .week:
+            return date.formatted(.dateTime.weekday(.abbreviated))
+        case .month:
+            return date.formatted(.dateTime.day())
+        case .year:
+            return date.formatted(.dateTime.month(.abbreviated).day())
+        }
+    }
+
     func bestDayCaption(for point: DoneChartPoint) -> String {
         point.date.formatted(.dateTime.month(.abbreviated).day())
     }

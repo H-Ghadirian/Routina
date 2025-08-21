@@ -16,6 +16,9 @@ struct StatsFocusChartSection: View {
     let insights: [StatsChartInsight]
 
     var body: some View {
+        let focusBarXAxisDates = chartPresentation.focusBarXAxisDates(from: focusChartPoints)
+        let focusBarXAxisDateSet = Set(focusBarXAxisDates)
+
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
                 title: "Focus time per day",
@@ -79,8 +82,20 @@ struct StatsFocusChartSection: View {
                             .foregroundStyle(Color.secondary.opacity(0.12))
                         AxisTick()
                         AxisValueLabel {
-                            if let date = value.as(Date.self) {
+                            if let date = value.as(Date.self),
+                               !focusBarXAxisDateSet.contains(date) {
                                 Text(chartPresentation.xAxisLabel(for: date))
+                            }
+                        }
+                    }
+                    AxisMarks(values: focusBarXAxisDates) { value in
+                        AxisTick()
+                            .foregroundStyle(Color.secondary.opacity(0.35))
+                        AxisValueLabel {
+                            if let date = value.as(Date.self) {
+                                Text(chartPresentation.focusBarXAxisLabel(for: date))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.primary.opacity(0.75))
                             }
                         }
                     }
