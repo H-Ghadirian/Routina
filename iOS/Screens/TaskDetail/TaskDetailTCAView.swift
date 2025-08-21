@@ -192,9 +192,7 @@ struct TaskDetailTCAView: View {
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                if shouldShowTodoCalendar {
-                    calendarSection
-                }
+                calendarSection
                 TaskDetailTodoPrimaryActionSection(store: store)
                 todoStateTimingSection
                 if store.task.focusModeEnabled {
@@ -314,12 +312,6 @@ struct TaskDetailTCAView: View {
             onSelectDate: { store.send(.selectedDateChanged($0)) }
         )
         .routinaPlatformCalendarCardStyle()
-    }
-
-    private var shouldShowTodoCalendar: Bool {
-        guard store.task.isOneOffTask else { return true }
-        guard !store.task.isCompletedOneOff && !store.task.isCanceledOneOff else { return false }
-        return store.task.deadline != nil || store.task.reminderAt != nil
     }
 
     func heightReader(id: String) -> some View {

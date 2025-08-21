@@ -508,12 +508,6 @@ struct TaskDetailTCAView: View {
         .routinaPlatformCalendarCardStyle()
     }
 
-    private var shouldShowTodoCalendar: Bool {
-        guard store.task.isOneOffTask else { return true }
-        guard !store.task.isCompletedOneOff && !store.task.isCanceledOneOff else { return false }
-        return store.task.deadline != nil || store.task.reminderAt != nil
-    }
-
     func heightReader(id: String) -> some View {
         GeometryReader { proxy in
             Color.clear
@@ -557,10 +551,7 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 8) {
                 todoHeaderControls
 
-                if shouldShowTodoCalendar {
-                    headerCalendarDisclosure
-                }
-
+                headerCalendarDisclosure
                 headerTagsAndPointsRow
                 headerLinkBox
             }

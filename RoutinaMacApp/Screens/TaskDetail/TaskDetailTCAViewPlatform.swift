@@ -57,28 +57,25 @@ extension TaskDetailTCAView {
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         HStack(alignment: .top, spacing: 20) {
-            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                calendarSection
-                    .background(heightReader(id: "calendar"))
-                    .frame(
-                        maxWidth: .infinity,
-                        minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
-                        alignment: .topLeading
-                    )
-                    .background(TaskDetailPlatformStyle.calendarCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-                    )
-                    .layoutPriority(1)
-            }
+            calendarSection
+                .background(heightReader(id: "calendar"))
+                .frame(
+                    maxWidth: .infinity,
+                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
+                    alignment: .topLeading
+                )
+                .background(TaskDetailPlatformStyle.calendarCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                )
+                .layoutPriority(1)
 
             macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
                 .background(heightReader(id: "status"))
-                .frame(width: (store.task.isCompletedOneOff || store.task.isCanceledOneOff) ? nil : 320)
+                .frame(width: 320)
                 .frame(
-                    maxWidth: (store.task.isCompletedOneOff || store.task.isCanceledOneOff) ? .infinity : nil,
                     minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                     alignment: .topLeading
                 )
