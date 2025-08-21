@@ -238,6 +238,39 @@ struct StatsChartInsightRow: View {
     }
 }
 
+struct StatsHorizontalChartContainer<Content: View>: View {
+    let chartPresentation: StatsChartPresentation
+    let minHeight: CGFloat
+    private let content: () -> Content
+
+    init(
+        chartPresentation: StatsChartPresentation,
+        minHeight: CGFloat,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.chartPresentation = chartPresentation
+        self.minHeight = minHeight
+        self.content = content
+    }
+
+    var body: some View {
+        Group {
+            if chartPresentation.usesHorizontalChartScroll {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    content()
+                        .frame(minWidth: chartPresentation.chartMinWidth, minHeight: minHeight)
+                        .padding(.top, 4)
+                }
+                .defaultScrollAnchor(.trailing)
+            } else {
+                content()
+                    .frame(maxWidth: .infinity, minHeight: minHeight)
+                    .padding(.top, 4)
+            }
+        }
+    }
+}
+
 enum StatsChartFill {
     static func focusBar(colorScheme: ColorScheme) -> LinearGradient {
         LinearGradient(

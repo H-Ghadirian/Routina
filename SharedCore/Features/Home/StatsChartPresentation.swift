@@ -64,6 +64,17 @@ struct StatsChartPresentation {
         }
     }
 
+    var usesHorizontalChartScroll: Bool {
+        switch selectedRange {
+        case .today, .week:
+            return false
+        case .month:
+            return isCompact
+        case .year:
+            return true
+        }
+    }
+
     func averagePerDayText(for averagePerDay: Double) -> String {
         averagePerDay.formatted(.number.precision(.fractionLength(1)))
     }
@@ -111,17 +122,9 @@ struct StatsChartPresentation {
         min(isCompact ? 3 : 4, max(count, 1))
     }
 
-    func tagUsageColumn(for index: Int, columns: Int) -> Double {
-        Double(index % columns)
-    }
-
-    func tagUsageRow(for index: Int, columns: Int, rows: Int) -> Double {
-        Double(rows - 1 - (index / columns))
-    }
-
-    func tagUsageSymbolSize(for point: TagUsageChartPoint, maxValue: Int) -> CGFloat {
+    func tagUsageBubbleDiameter(for point: TagUsageChartPoint, maxValue: Int) -> CGFloat {
         let normalized = sqrt(Double(point.bubbleValue) / Double(max(maxValue, 1)))
-        return 1_900 + CGFloat(normalized) * 5_900
+        return 72 + CGFloat(normalized) * 50
     }
 
     func tagUsageLabelWidth(for point: TagUsageChartPoint, maxValue: Int) -> CGFloat {

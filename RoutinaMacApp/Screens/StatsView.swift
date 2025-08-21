@@ -7,6 +7,42 @@ struct StatsViewWrapper: View {
 
     var body: some View {
         StatsView(store: store)
+            .background {
+                StatsDataObserver(store: store)
+                    .frame(width: 0, height: 0)
+                    .accessibilityHidden(true)
+                    .allowsHitTesting(false)
+            }
+    }
+}
+
+private struct StatsDataObserver: View {
+    let store: StoreOf<StatsFeature>
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        Color.clear
+            .task {
+                store.send(.onAppear)
+                refreshData()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+                refreshData()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                refreshData()
+            }
+    }
+
+    private func refreshData() {
+        do {
+            let tasks = try modelContext.fetch(FetchDescriptor<RoutineTask>())
+            let logs = try modelContext.fetch(FetchDescriptor<RoutineLog>())
+            let focusSessions = try modelContext.fetch(FetchDescriptor<FocusSession>())
+            store.send(.setData(tasks: tasks, logs: logs, focusSessions: focusSessions))
+        } catch {
+            NSLog("StatsDataObserver: failed to refresh stats data - \(error)")
+        }
     }
 }
 
@@ -15,9 +51,6 @@ struct StatsView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Query private var logs: [RoutineLog]
-    @Query private var tasks: [RoutineTask]
-    @Query private var focusSessions: [FocusSession]
     @State private var isActiveItemsInfoPresented = false
     @State private var isEditingDashboard = false
     @State private var isAddDashboardItemSheetPresented = false
@@ -26,17 +59,45 @@ struct StatsView: View {
 
     private typealias Metrics = StatsFeature.Metrics
 
-    private var chartPresentation: StatsChartPresentation {
-        StatsChartPresentation(
+    private struct DashboardSnapshot {
+        let selectedRange: DoneChartRange
+        let selectedTaskTypeFilter: StatsTaskTypeFilter
+        let selectedCreatedChartTaskTypeFilter: StatsTaskTypeFilter
+        let metrics: Metrics
+        let filteredTaskCount: Int
+        let isGitFeaturesEnabled: Bool
+        let gitHubConnection: GitHubConnectionStatus
+        let gitHubStats: GitHubStatsSnapshot?
+        let isGitHubStatsLoading: Bool
+        let gitHubStatsErrorMessage: String?
+        let chartPresentation: StatsChartPresentation
+        let createdTasksPresentation: StatsCreatedTasksPresentation
+    }
+
+    private var dashboardSnapshot: DashboardSnapshot {
+        let selectedRange = store.selectedRange
+        let selectedCreatedChartTaskTypeFilter = store.createdChartTaskTypeFilter
+        let chartPresentation = StatsChartPresentation(
             selectedRange: selectedRange,
             isCompact: horizontalSizeClass == .compact
         )
-    }
 
-    private var createdTasksPresentation: StatsCreatedTasksPresentation {
-        StatsCreatedTasksPresentation(
-            taskTypeFilter: selectedCreatedChartTaskTypeFilter,
-            selectedRange: selectedRange
+        return DashboardSnapshot(
+            selectedRange: selectedRange,
+            selectedTaskTypeFilter: store.taskTypeFilter,
+            selectedCreatedChartTaskTypeFilter: selectedCreatedChartTaskTypeFilter,
+            metrics: store.metrics,
+            filteredTaskCount: store.filteredTaskCount,
+            isGitFeaturesEnabled: store.isGitFeaturesEnabled,
+            gitHubConnection: store.gitHubConnection,
+            gitHubStats: store.gitHubStats,
+            isGitHubStatsLoading: store.isGitHubStatsLoading,
+            gitHubStatsErrorMessage: store.gitHubStatsErrorMessage,
+            chartPresentation: chartPresentation,
+            createdTasksPresentation: StatsCreatedTasksPresentation(
+                taskTypeFilter: selectedCreatedChartTaskTypeFilter,
+                selectedRange: selectedRange
+            )
         )
     }
 
@@ -46,18 +107,6 @@ struct StatsView: View {
 
     private var selectedTaskTypeFilter: StatsTaskTypeFilter {
         store.taskTypeFilter
-    }
-
-    private var selectedCreatedChartTaskTypeFilter: StatsTaskTypeFilter {
-        store.createdChartTaskTypeFilter
-    }
-
-    private var metrics: Metrics {
-        store.metrics
-    }
-
-    private var filteredTaskCount: Int {
-        store.filteredTaskCount
     }
 
     private var activeItemsBreakdown: StatsActiveItemsBreakdown {
@@ -76,23 +125,7 @@ struct StatsView: View {
             excludedTags: store.excludedTags,
             excludeTagMatchMode: store.excludeTagMatchMode
         )
-        .filteredTasks(from: tasks)
-    }
-
-    private var gitHubConnection: GitHubConnectionStatus {
-        store.gitHubConnection
-    }
-
-    private var gitHubStats: GitHubStatsSnapshot? {
-        store.gitHubStats
-    }
-
-    private var isGitHubStatsLoading: Bool {
-        store.isGitHubStatsLoading
-    }
-
-    private var gitHubStatsErrorMessage: String? {
-        store.gitHubStatsErrorMessage
+        .filteredTasks(from: store.tasks)
     }
 
     private var surfaceGradient: LinearGradient {
@@ -150,81 +183,78 @@ struct StatsView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            NavigationStack {
-                StatsDashboardScrollContainer(
-                    pageBackground: pageBackground,
-                    bottomPadding: contentBottomPadding,
-                    maxContentWidth: statsContentMaxWidth
-                ) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        if isEditingDashboard {
-                            dashboardEditControls
-                        }
-
-                        if isDashboardItemVisible(.hero) {
-                            editableDashboardSection(.hero) {
-                                heroSection(metrics: metrics)
-                            }
-                        }
-
-                        summaryCards(metrics: metrics)
-
-                        if isDashboardItemVisible(.createdTasksChart) {
-                            editableDashboardSection(.createdTasksChart) {
-                                createdTasksChartSection(metrics: metrics)
-                            }
-                        }
-
-                        if selectedRange != .today, isDashboardItemVisible(.completionChart) {
-                            editableDashboardSection(.completionChart) {
-                                chartSection(metrics: metrics)
-                            }
-                        }
-
-                        if isDashboardItemVisible(.tagUsage) {
-                            editableDashboardSection(.tagUsage) {
-                                tagUsageSection(metrics: metrics)
-                            }
-                        }
-
-                        if selectedRange != .today, isDashboardItemVisible(.focusChart) {
-                            editableDashboardSection(.focusChart) {
-                                focusChartSection(metrics: metrics)
-                            }
-                        }
-
-                        if store.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
-                            editableDashboardSection(.gitHub) {
-                                gitHubSection
-                            }
-                        }
-                    }
-                }
-                .navigationTitle("Stats")
-                .toolbar {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        dashboardEditButton
-                    }
-                }
-            }
-            .sheet(isPresented: $isAddDashboardItemSheetPresented) {
-                addDashboardItemSheet
-            }
-            .statsDataRefresh(
-                tasks: tasks,
-                logs: logs,
-                focusSessions: focusSessions,
-                onAppear: { store.send(.onAppear) },
-                onDataChanged: { tasks, logs, focusSessions in
-                    store.send(.setData(tasks: tasks, logs: logs, focusSessions: focusSessions))
-                }
-            )
+            dashboardBody(snapshot: dashboardSnapshot)
         }
     }
 
-    private func heroSection(metrics: Metrics) -> some View {
-        StatsHeroSectionView(
-            selectedRange: selectedRange,
+    private func dashboardBody(snapshot: DashboardSnapshot) -> some View {
+        NavigationStack {
+            StatsDashboardScrollContainer(
+                pageBackground: pageBackground,
+                bottomPadding: contentBottomPadding,
+                maxContentWidth: statsContentMaxWidth
+            ) {
+                VStack(alignment: .leading, spacing: 24) {
+                    if isEditingDashboard {
+                        dashboardEditControls
+                    }
+
+                    if isDashboardItemVisible(.hero) {
+                        editableDashboardSection(.hero) {
+                            heroSection(snapshot: snapshot)
+                        }
+                    }
+
+                    summaryCards(snapshot: snapshot)
+
+                    if isDashboardItemVisible(.createdTasksChart) {
+                        editableDashboardSection(.createdTasksChart) {
+                            createdTasksChartSection(snapshot: snapshot)
+                        }
+                    }
+
+                    if snapshot.selectedRange != .today, isDashboardItemVisible(.completionChart) {
+                        editableDashboardSection(.completionChart) {
+                            chartSection(snapshot: snapshot)
+                        }
+                    }
+
+                    if isDashboardItemVisible(.tagUsage) {
+                        editableDashboardSection(.tagUsage) {
+                            tagUsageSection(snapshot: snapshot)
+                        }
+                    }
+
+                    if snapshot.selectedRange != .today, isDashboardItemVisible(.focusChart) {
+                        editableDashboardSection(.focusChart) {
+                            focusChartSection(snapshot: snapshot)
+                        }
+                    }
+
+                    if snapshot.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
+                        editableDashboardSection(.gitHub) {
+                            gitHubSection(snapshot: snapshot)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Stats")
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    dashboardEditButton
+                }
+            }
+        }
+        .sheet(isPresented: $isAddDashboardItemSheetPresented) {
+            addDashboardItemSheet
+        }
+    }
+
+    private func heroSection(snapshot: DashboardSnapshot) -> some View {
+        let metrics = snapshot.metrics
+
+        return StatsHeroSectionView(
+            selectedRange: snapshot.selectedRange,
             totalCount: metrics.totalCount,
             activeDayCount: metrics.activeDayCount,
             averagePerDay: metrics.averagePerDay,
@@ -232,23 +262,23 @@ struct StatsView: View {
             sparklinePoints: metrics.sparklinePoints,
             sparklineMaxCount: metrics.sparklineMaxCount,
             periodDescription: StatsChartInsightBuilder.userActivityPeriodDescription(
-                selectedRange: selectedRange,
+                selectedRange: snapshot.selectedRange,
                 chartPoints: metrics.chartPoints
             ),
-            chartPresentation: chartPresentation,
+            chartPresentation: snapshot.chartPresentation,
             colorScheme: colorScheme,
             heroGradient: heroGradient
         )
     }
 
-    private func summaryCards(metrics: Metrics) -> some View {
+    private func summaryCards(snapshot: DashboardSnapshot) -> some View {
         let items = visibleSummaryCardItems(
             StatsSummaryCardItemBuilder.items(
-                metrics: metrics,
-                selectedRange: selectedRange,
-                chartPresentation: chartPresentation,
-                taskTypeFilter: selectedTaskTypeFilter,
-                filteredTaskCount: filteredTaskCount,
+                metrics: snapshot.metrics,
+                selectedRange: snapshot.selectedRange,
+                chartPresentation: snapshot.chartPresentation,
+                taskTypeFilter: snapshot.selectedTaskTypeFilter,
+                filteredTaskCount: snapshot.filteredTaskCount,
                 showsActiveAccessory: true
             )
         )
@@ -370,13 +400,13 @@ struct StatsView: View {
         }
     }
 
-    private var gitHubSection: some View {
+    private func gitHubSection(snapshot: DashboardSnapshot) -> some View {
         StatsMacGitHubSection(
-            connection: gitHubConnection,
-            stats: gitHubStats,
-            errorMessage: gitHubStatsErrorMessage,
-            isLoading: isGitHubStatsLoading,
-            selectedRange: selectedRange,
+            connection: snapshot.gitHubConnection,
+            stats: snapshot.gitHubStats,
+            errorMessage: snapshot.gitHubStatsErrorMessage,
+            isLoading: snapshot.isGitHubStatsLoading,
+            selectedRange: snapshot.selectedRange,
             horizontalSizeClass: horizontalSizeClass,
             colorScheme: colorScheme,
             calendar: calendar,
@@ -384,13 +414,13 @@ struct StatsView: View {
         )
     }
 
-    private func createdTasksChartSection(metrics: Metrics) -> some View {
+    private func createdTasksChartSection(snapshot: DashboardSnapshot) -> some View {
         StatsCreatedTasksChartSection(
-            metrics: metrics,
-            selectedRange: selectedRange,
-            selectedTaskTypeFilter: selectedCreatedChartTaskTypeFilter,
-            chartPresentation: chartPresentation,
-            createdTasksPresentation: createdTasksPresentation,
+            metrics: snapshot.metrics,
+            selectedRange: snapshot.selectedRange,
+            selectedTaskTypeFilter: snapshot.selectedCreatedChartTaskTypeFilter,
+            chartPresentation: snapshot.chartPresentation,
+            createdTasksPresentation: snapshot.createdTasksPresentation,
             createdBarFill: createdBarFill,
             highlightBarFill: highlightBarFill,
             surfaceGradient: surfaceGradient,
@@ -399,9 +429,11 @@ struct StatsView: View {
         )
     }
 
-    private func chartSection(metrics: Metrics) -> some View {
-        StatsCompletionChartSection(
-            subtitle: chartPresentation.chartSectionSubtitle(
+    private func chartSection(snapshot: DashboardSnapshot) -> some View {
+        let metrics = snapshot.metrics
+
+        return StatsCompletionChartSection(
+            subtitle: snapshot.chartPresentation.chartSectionSubtitle(
                     totalCount: metrics.totalCount,
                     averagePerDay: metrics.averagePerDay,
                     dayCount: metrics.chartPoints.count
@@ -412,52 +444,56 @@ struct StatsView: View {
             averagePerDay: metrics.averagePerDay,
             chartUpperBound: metrics.chartUpperBound,
             xAxisDates: metrics.xAxisDates,
-            highlightSymbolSize: selectedRange == .year ? 46 : 64,
-            chartPresentation: chartPresentation,
+            highlightSymbolSize: snapshot.selectedRange == .year ? 46 : 64,
+            chartPresentation: snapshot.chartPresentation,
             baseBarFill: baseBarFill,
             highlightBarFill: highlightBarFill,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme,
             insights: StatsChartInsightBuilder.completionInsights(
                 metrics: metrics,
-                selectedRange: selectedRange,
-                chartPresentation: chartPresentation
+                selectedRange: snapshot.selectedRange,
+                chartPresentation: snapshot.chartPresentation
             )
         )
     }
 
-    private func focusChartSection(metrics: Metrics) -> some View {
-        StatsFocusChartSection(
-            subtitle: chartPresentation.focusChartSectionSubtitle(
+    private func focusChartSection(snapshot: DashboardSnapshot) -> some View {
+        let metrics = snapshot.metrics
+
+        return StatsFocusChartSection(
+            subtitle: snapshot.chartPresentation.focusChartSectionSubtitle(
                     totalFocusSeconds: metrics.totalFocusSeconds,
                     activeDayCount: metrics.focusActiveDayCount
             ),
-            peakValue: metrics.highlightedFocusDay.map { chartPresentation.focusDurationText($0.seconds) } ?? "0m",
+            peakValue: metrics.highlightedFocusDay.map { snapshot.chartPresentation.focusDurationText($0.seconds) } ?? "0m",
             focusChartPoints: metrics.focusChartPoints,
             highlightedFocusDay: metrics.highlightedFocusDay,
             averageFocusSecondsPerDay: metrics.averageFocusSecondsPerDay,
             focusChartUpperBound: metrics.focusChartUpperBound,
             xAxisDates: metrics.xAxisDates,
-            chartPresentation: chartPresentation,
+            chartPresentation: snapshot.chartPresentation,
             highlightBarFill: highlightBarFill,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme,
             insights: StatsChartInsightBuilder.focusInsights(
                 metrics: metrics,
-                selectedRange: selectedRange,
-                chartPresentation: chartPresentation
+                selectedRange: snapshot.selectedRange,
+                chartPresentation: snapshot.chartPresentation
             )
         )
     }
 
-    private func tagUsageSection(metrics: Metrics) -> some View {
-        StatsTagUsageSection(
+    private func tagUsageSection(snapshot: DashboardSnapshot) -> some View {
+        let metrics = snapshot.metrics
+
+        return StatsTagUsageSection(
             points: metrics.tagUsagePoints,
-            subtitle: chartPresentation.tagUsageSectionSubtitle(
+            subtitle: snapshot.chartPresentation.tagUsageSectionSubtitle(
                     points: metrics.tagUsagePoints,
-                    periodDescription: selectedRange.periodDescription
+                    periodDescription: snapshot.selectedRange.periodDescription
             ),
-            chartPresentation: chartPresentation,
+            chartPresentation: snapshot.chartPresentation,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
         )
@@ -548,11 +584,12 @@ struct StatsView: View {
         _ item: StatsMacDashboardItem,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        ZStack(alignment: .topLeading) {
-            content()
-                .opacity(isEditingDashboard ? 0.96 : 1)
-
+        Group {
             if isEditingDashboard {
+                ZStack(alignment: .topLeading) {
+                    content()
+                        .opacity(0.96)
+
                 Button {
                     removeDashboardItem(item)
                 } label: {
@@ -571,6 +608,9 @@ struct StatsView: View {
                 .offset(x: -7, y: -10)
                 .transition(.scale.combined(with: .opacity))
                 .accessibilityLabel("Remove \(item.title)")
+                }
+            } else {
+                content()
             }
         }
     }

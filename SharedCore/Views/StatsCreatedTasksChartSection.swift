@@ -42,7 +42,7 @@ struct StatsCreatedTasksChartSection: View {
                 }
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
+            StatsHorizontalChartContainer(chartPresentation: chartPresentation, minHeight: 240) {
                 Chart {
                     ForEach(metrics.createdChartPoints) { point in
                         let isHighlighted = point.date == metrics.highlightedCreatedDay?.date
@@ -110,10 +110,7 @@ struct StatsCreatedTasksChartSection: View {
                 .chartPlotStyle { plotArea in
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
-                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 240)
-                .padding(.top, 4)
             }
-            .defaultScrollAnchor(.trailing)
 
             StatsChartInsightRow(
                 insights: StatsChartInsightBuilder.createdTasksInsights(

@@ -2,32 +2,76 @@ import ComposableArchitecture
 import SwiftUI
 
 extension HomeTCAView {
-    var macSidebarPresentation: HomeMacSidebarPresentation {
-        HomeMacSidebarPresentation(
-            mode: store.macSidebarMode,
-            taskListMode: store.taskListMode,
-            isFilterDetailPresented: store.isMacFilterDetailPresented,
-            boardScopeTitle: boardPresentation.scopeTitle,
-            selectedTimelineRange: store.selectedTimelineRange,
-            selectedTimelineFilterType: store.selectedTimelineFilterType,
-            selectedTimelineTags: store.selectedTimelineTags,
-            selectedTimelineImportanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
-            selectedTimelineExcludedTags: store.selectedTimelineExcludedTags,
-            selectedFilter: store.selectedFilter,
-            hasActiveOptionalFilters: hasActiveOptionalFilters
-        )
-    }
-
-    var isMacTimelineMode: Bool { macSidebarPresentation.isTimelineMode }
-    var isMacStatsMode: Bool { macSidebarPresentation.isStatsMode }
-    var isMacSettingsMode: Bool { macSidebarPresentation.isSettingsMode }
-    var isMacRoutinesMode: Bool { macSidebarPresentation.isRoutinesMode }
-    var isMacBoardMode: Bool { macSidebarPresentation.isBoardMode }
-    var isMacGoalsMode: Bool { macSidebarPresentation.isGoalsMode }
-    var isMacAddTaskMode: Bool { macSidebarPresentation.isAddTaskMode }
+    var isMacTimelineMode: Bool { store.macSidebarMode == .timeline }
+    var isMacStatsMode: Bool { store.macSidebarMode == .stats }
+    var isMacSettingsMode: Bool { store.macSidebarMode == .settings }
+    var isMacRoutinesMode: Bool { store.macSidebarMode == .routines }
+    var isMacBoardMode: Bool { store.macSidebarMode == .board }
+    var isMacGoalsMode: Bool { store.macSidebarMode == .goals }
+    var isMacAddTaskMode: Bool { store.macSidebarMode == .addTask }
 
     var macSidebarNavigationTitle: String {
-        macSidebarPresentation.navigationTitle
+        if store.isMacFilterDetailPresented {
+            return macFilterDetailNavigationTitle
+        }
+
+        switch store.macSidebarMode {
+        case .routines:
+            return macTaskListSidebarTitle
+        case .board:
+            return boardPresentation.scopeTitle
+        case .goals:
+            return "Goals"
+        case .timeline:
+            return "Dones"
+        case .stats:
+            return "Stats"
+        case .settings:
+            return "Settings"
+        case .addTask:
+            return "Add Task"
+        }
+    }
+
+    private var macTaskListSidebarTitle: String {
+        switch store.taskListMode {
+        case .all:
+            return "All"
+        case .routines:
+            return "Routines"
+        case .todos:
+            return "Todos"
+        }
+    }
+
+    private var macTaskListFilterTitle: String {
+        switch store.taskListMode {
+        case .all:
+            return "Filter All"
+        case .routines:
+            return "Filter Routines"
+        case .todos:
+            return "Filter Todos"
+        }
+    }
+
+    private var macFilterDetailNavigationTitle: String {
+        switch store.macSidebarMode {
+        case .routines:
+            return macTaskListFilterTitle
+        case .board:
+            return "Filter Board"
+        case .goals:
+            return "Goals"
+        case .timeline:
+            return "Filter Dones"
+        case .stats:
+            return "Stats"
+        case .settings:
+            return "Settings"
+        case .addTask:
+            return "Add Task"
+        }
     }
 
     var currentSelectedSettingsSection: SettingsMacSection {
@@ -35,7 +79,18 @@ extension HomeTCAView {
     }
 
     var macHasCustomFiltersApplied: Bool {
-        macSidebarPresentation.hasCustomFiltersApplied
+        switch store.macSidebarMode {
+        case .timeline:
+            return store.selectedTimelineRange != .all
+                || store.selectedTimelineFilterType != .all
+                || !store.selectedTimelineTags.isEmpty
+                || store.selectedTimelineImportanceUrgencyFilter != nil
+                || !store.selectedTimelineExcludedTags.isEmpty
+        case .routines, .board:
+            return store.selectedFilter != .all || hasActiveOptionalFilters
+        case .goals, .stats, .settings, .addTask:
+            return false
+        }
     }
 
     var macExcludeTagsForCurrentMode: Binding<Set<String>> {
@@ -50,7 +105,14 @@ extension HomeTCAView {
     }
 
     var macSidebarSearchFiltersSummary: String? {
-        isMacTimelineMode ? macActiveTimelineFiltersSummary : macActiveTaskFiltersSummary
+        switch store.macSidebarMode {
+        case .timeline:
+            macActiveTimelineFiltersSummary
+        case .routines, .board:
+            macActiveTaskFiltersSummary
+        case .goals, .stats, .settings, .addTask:
+            nil
+        }
     }
 
     var macVisibleTaskResultCount: Int {

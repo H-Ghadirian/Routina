@@ -33,6 +33,9 @@ struct StatsFeatureDerivedState: Equatable {
     var availableTags: [String] = []
     var selectedTags: Set<String> = []
     var excludedTags: Set<String> = []
+    var tagSummaries: [RoutineTagSummary] = []
+    var availableExcludeTags: [String] = []
+    var taskCountForSelectedTypeFilter: Int = 0
     var filteredTaskCount: Int = 0
     var metrics = StatsFeatureMetrics()
 }
@@ -78,6 +81,11 @@ enum StatsFeatureDerivedStateBuilder {
                 calendar: calendar
             )
         )
+        let tasksMatchingTaskTypeAndMatrixFilters = taskTypeAndMatrixFilteredTasks(
+            tasks: tasks,
+            taskTypeFilter: taskTypeFilter,
+            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
+        )
         let tasksMatchingQuery = queryMatchedTasks(
             tasks: tasks,
             taskTypeFilter: taskTypeFilter,
@@ -94,6 +102,21 @@ enum StatsFeatureDerivedStateBuilder {
             !sanitizedSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
         }
         let sanitizedExcludedTags = excludedTags.filter { RoutineTag.contains($0, in: availableExcludeTags) }
+        let sidebarAvailableExcludeTags = RoutineTag.allTags(
+            from: tasksMatchingTaskTypeAndMatrixFilters.filter { task in
+                HomeDisplayFilterSupport.matchesSelectedTags(
+                    sanitizedSelectedTags,
+                    mode: includeTagMatchMode,
+                    in: task.tags
+                )
+            }.map(\.tags)
+        ).filter { tag in
+            !sanitizedSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+        }
+        let tagSummaries = RoutineTagColors.applying(
+            tagColors,
+            to: RoutineTag.summaries(from: tasksMatchingTaskTypeAndMatrixFilters)
+        )
         let filteredTasks = tagFilteredTasks(
             tasksMatchingQuery,
             selectedTags: sanitizedSelectedTags,
@@ -182,6 +205,11 @@ enum StatsFeatureDerivedStateBuilder {
         let totalFocusSeconds = FocusDurationStats.totalSeconds(in: focusChartPoints)
         let averageFocusSecondsPerDay = FocusDurationStats.averageSeconds(in: focusChartPoints)
         let busiestFocusDay = FocusDurationStats.busiestDay(in: focusChartPoints)
+        let archiveCounts = taskArchiveCounts(
+            filteredTasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let sparklinePoints = sampledSparklinePoints(
             from: chartPoints,
             for: selectedRange
@@ -194,6 +222,9 @@ enum StatsFeatureDerivedStateBuilder {
             availableTags: availableTags,
             selectedTags: sanitizedSelectedTags,
             excludedTags: sanitizedExcludedTags,
+            tagSummaries: tagSummaries,
+            availableExcludeTags: sidebarAvailableExcludeTags,
+            taskCountForSelectedTypeFilter: tasksMatchingTaskTypeAndMatrixFilters.count,
             filteredTaskCount: filteredTasks.count,
             metrics: StatsFeatureMetrics(
                 chartPoints: chartPoints,
@@ -205,8 +236,8 @@ enum StatsFeatureDerivedStateBuilder {
                 createdTotalCount: createdTotalCount,
                 totalFocusSeconds: totalFocusSeconds,
                 averageFocusSecondsPerDay: averageFocusSecondsPerDay,
-                activeRoutineCount: filteredTasks.filter { !$0.isArchived(referenceDate: referenceDate, calendar: calendar) }.count,
-                archivedRoutineCount: filteredTasks.filter { $0.isArchived(referenceDate: referenceDate, calendar: calendar) }.count,
+                activeRoutineCount: archiveCounts.active,
+                archivedRoutineCount: archiveCounts.archived,
                 totalCount: totalCount,
                 averagePerDay: averagePerDay,
                 createdAveragePerDay: createdAveragePerDay,
@@ -226,6 +257,29 @@ enum StatsFeatureDerivedStateBuilder {
         )
     }
 
+    private static func taskTypeAndMatrixFilteredTasks(
+        tasks: [RoutineTask],
+        taskTypeFilter: StatsTaskTypeFilter,
+        selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    ) -> [RoutineTask] {
+        tasks.filter { task in
+            switch taskTypeFilter {
+            case .all:
+                return true
+            case .routines:
+                return !task.isOneOffTask
+            case .todos:
+                return task.isOneOffTask
+            }
+        }.filter { task in
+            HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+                selectedImportanceUrgencyFilter,
+                importance: task.importance,
+                urgency: task.urgency
+            )
+        }
+    }
+
     private static func queryMatchedTasks(
         tasks: [RoutineTask],
         taskTypeFilter: StatsTaskTypeFilter,
@@ -235,23 +289,16 @@ enum StatsFeatureDerivedStateBuilder {
         referenceDate: Date,
         calendar: Calendar
     ) -> [RoutineTask] {
-        let tasksMatchingTypeFilter = tasks.filter { task in
-            switch taskTypeFilter {
-            case .all:
-                return true
-            case .routines:
-                return !task.isOneOffTask
-            case .todos:
-                return task.isOneOffTask
-            }
+        let tasksMatchingMatrixFilter = taskTypeAndMatrixFilteredTasks(
+            tasks: tasks,
+            taskTypeFilter: taskTypeFilter,
+            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
+        )
+
+        guard !query.isEmpty else {
+            return tasksMatchingMatrixFilter
         }
-        let tasksMatchingMatrixFilter = tasksMatchingTypeFilter.filter { task in
-            HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
-                selectedImportanceUrgencyFilter,
-                importance: task.importance,
-                urgency: task.urgency
-            )
-        }
+
         let queryDisplays = tasksMatchingMatrixFilter.map {
             StatsTaskQueryDisplay(task: $0, referenceDate: referenceDate, calendar: calendar)
         }
@@ -281,6 +328,20 @@ enum StatsFeatureDerivedStateBuilder {
                 mode: excludeTagMatchMode,
                 in: task.tags
             )
+        }
+    }
+
+    private static func taskArchiveCounts(
+        _ tasks: [RoutineTask],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> (active: Int, archived: Int) {
+        tasks.reduce(into: (active: 0, archived: 0)) { counts, task in
+            if task.isArchived(referenceDate: referenceDate, calendar: calendar) {
+                counts.archived += 1
+            } else {
+                counts.active += 1
+            }
         }
     }
 

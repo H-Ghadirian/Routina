@@ -37,9 +37,10 @@ struct HomeMacStatsIncludedTagSection: View {
         }
     }
 
-    @ViewBuilder
     private var selectedTagsView: some View {
-        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+        let colorsByTag = macStatsTagColorsByNormalizedName(from: tagSummaries)
+
+        return WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
             if selectedTags.isEmpty {
                 HomeMacTagChipView(
                     title: "All Tags",
@@ -51,7 +52,7 @@ struct HomeMacStatsIncludedTagSection: View {
                 }
             } else {
                 ForEach(selectedTags.sorted(), id: \.self) { tag in
-                    let color = tagColor(for: tag)
+                    let color = macStatsTagColor(for: tag, in: colorsByTag)
                     HomeMacTagChipView(
                         title: "#\(tag)",
                         count: tagCount(tag),
@@ -71,9 +72,12 @@ struct HomeMacStatsIncludedTagSection: View {
     }
 
     private var availableTagsView: some View {
-        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+        let selectedNormalizedTags = macStatsNormalizedTagSet(selectedTags)
+
+        return WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
             ForEach(tagSummaries.filter { summary in
-                !selectedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
+                guard let normalizedName = RoutineTag.normalized(summary.name) else { return false }
+                return !selectedNormalizedTags.contains(normalizedName)
             }) { summary in
                 HomeMacTagChipView(
                     title: "#\(summary.name)",
@@ -92,9 +96,6 @@ struct HomeMacStatsIncludedTagSection: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func tagColor(for tag: String) -> Color? {
-        tagSummaries.first { RoutineTag.contains($0.name, in: [tag]) }?.displayColor
-    }
 }
 
 struct HomeMacStatsSuggestedRelatedTagSection: View {
@@ -106,31 +107,33 @@ struct HomeMacStatsSuggestedRelatedTagSection: View {
     @ViewBuilder
     var body: some View {
         if !suggestedRelatedTags.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                HomeMacStatsSectionTitle("Suggested Related Tags")
-
-                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                    ForEach(suggestedRelatedTags, id: \.self) { tag in
-                        let color = tagColor(for: tag)
-                        HomeMacTagChipView(
-                            title: "#\(tag)",
-                            count: tagCount(tag),
-                            systemImage: "tag.fill",
-                            isSelected: false,
-                            selectedColor: color ?? .accentColor,
-                            unselectedColor: color
-                        ) {
-                            onSelectSuggestedTag(tag)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            content
         }
     }
 
-    private func tagColor(for tag: String) -> Color? {
-        tagSummaries.first { RoutineTag.contains($0.name, in: [tag]) }?.displayColor
+    private var content: some View {
+        let colorsByTag = macStatsTagColorsByNormalizedName(from: tagSummaries)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HomeMacStatsSectionTitle("Suggested Related Tags")
+
+            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(suggestedRelatedTags, id: \.self) { tag in
+                    let color = macStatsTagColor(for: tag, in: colorsByTag)
+                    HomeMacTagChipView(
+                        title: "#\(tag)",
+                        count: tagCount(tag),
+                        systemImage: "tag.fill",
+                        isSelected: false,
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
+                    ) {
+                        onSelectSuggestedTag(tag)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
 
@@ -196,11 +199,15 @@ struct HomeMacStatsExcludedTagSection: View {
     }
 
     private var availableExcludedTagsView: some View {
-        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+        let colorsByTag = macStatsTagColorsByNormalizedName(from: tagSummaries)
+        let excludedNormalizedTags = macStatsNormalizedTagSet(selectedExcludedTags)
+
+        return WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
             ForEach(availableExcludeTags.filter { tag in
-                !selectedExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                guard let normalizedTag = RoutineTag.normalized(tag) else { return false }
+                return !excludedNormalizedTags.contains(normalizedTag)
             }, id: \.self) { tag in
-                let color = tagColor(for: tag)
+                let color = macStatsTagColor(for: tag, in: colorsByTag)
                 HomeMacTagChipView(
                     title: "#\(tag)",
                     count: tagCount(tag),
@@ -216,7 +223,33 @@ struct HomeMacStatsExcludedTagSection: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func tagColor(for tag: String) -> Color? {
-        tagSummaries.first { RoutineTag.contains($0.name, in: [tag]) }?.displayColor
-    }
+}
+
+private func macStatsTagColorsByNormalizedName(
+    from tagSummaries: [RoutineTagSummary]
+) -> [String: Color] {
+    Dictionary(
+        uniqueKeysWithValues: tagSummaries.compactMap { summary in
+            guard
+                let normalizedName = RoutineTag.normalized(summary.name),
+                let color = summary.displayColor
+            else {
+                return nil
+            }
+            return (normalizedName, color)
+        }
+    )
+}
+
+private func macStatsTagColor(
+    for tag: String,
+    in colorsByNormalizedName: [String: Color]
+) -> Color? {
+    RoutineTag.normalized(tag).flatMap { colorsByNormalizedName[$0] }
+}
+
+private func macStatsNormalizedTagSet<Tags: Sequence>(
+    _ tags: Tags
+) -> Set<String> where Tags.Element == String {
+    Set(tags.compactMap(RoutineTag.normalized))
 }

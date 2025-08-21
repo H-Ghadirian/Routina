@@ -32,7 +32,7 @@ struct StatsFocusChartSection: View {
                 )
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
+            StatsHorizontalChartContainer(chartPresentation: chartPresentation, minHeight: 240) {
                 Chart {
                     ForEach(focusChartPoints) { point in
                         let isHighlighted = point.date == highlightedFocusDay?.date
@@ -103,10 +103,7 @@ struct StatsFocusChartSection: View {
                 .chartPlotStyle { plotArea in
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
-                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 240)
-                .padding(.top, 4)
             }
-            .defaultScrollAnchor(.trailing)
 
             StatsChartInsightRow(
                 insights: insights,

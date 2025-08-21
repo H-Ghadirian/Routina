@@ -181,8 +181,11 @@ struct StatsFeature {
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var advancedQuery: String = ""
         var availableTags: [String] = []
+        var tagSummaries: [RoutineTagSummary] = []
+        var availableExcludeTags: [String] = []
         var tagColors: [String: String] = [:]
         var relatedTagRules: [RoutineRelatedTagRule] = []
+        var taskCountForSelectedTypeFilter: Int = 0
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
         var gitHubConnection = GitHubConnectionStatus.disconnected
@@ -446,6 +449,9 @@ struct StatsFeature {
         state.availableTags = derivedState.availableTags
         state.setSelectedTags(derivedState.selectedTags)
         state.excludedTags = derivedState.excludedTags
+        state.tagSummaries = derivedState.tagSummaries
+        state.availableExcludeTags = derivedState.availableExcludeTags
+        state.taskCountForSelectedTypeFilter = derivedState.taskCountForSelectedTypeFilter
         state.filteredTaskCount = derivedState.filteredTaskCount
         state.metrics = derivedState.metrics
     }

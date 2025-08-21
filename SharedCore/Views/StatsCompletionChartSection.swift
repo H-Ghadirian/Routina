@@ -31,7 +31,7 @@ struct StatsCompletionChartSection: View {
                 )
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
+            StatsHorizontalChartContainer(chartPresentation: chartPresentation, minHeight: 260) {
                 Chart {
                     ForEach(chartPoints) { point in
                         let isHighlighted = point.date == highlightedPoint?.date
@@ -102,10 +102,7 @@ struct StatsCompletionChartSection: View {
                 .chartPlotStyle { plotArea in
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
-                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 260)
-                .padding(.top, 4)
             }
-            .defaultScrollAnchor(.trailing)
 
             StatsChartInsightRow(
                 insights: insights,

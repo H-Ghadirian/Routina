@@ -25,19 +25,34 @@ extension HomeTCAView {
 
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
+        let mode = homeToolbarMode
+        let boardToolbarPresentation = mode == .board ? self.boardPresentation : nil
+
         HomeMacHomeToolbarContent(
-            mode: homeToolbarMode,
+            mode: mode,
             goalsStore: goalsStore,
             doneCount: store.doneStats.totalCount,
             canceledCount: store.doneStats.canceledTotalCount,
-            routineCount: store.routineTasks.filter { !$0.isOneOffTask }.count,
-            todoCount: store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count,
-            boardOpenCount: boardPresentation.openTodoCount,
-            boardInProgressCount: boardPresentation.inProgressTodoCount,
-            boardBlockedCount: boardPresentation.blockedTodoCount,
-            boardDoneCount: boardPresentation.doneTodoCount,
-            isBoardBacklogScope: boardPresentation.isBacklogScope
+            routineCount: homeToolbarRoutineCount,
+            todoCount: homeToolbarTodoCount,
+            boardOpenCount: boardToolbarPresentation?.openTodoCount ?? 0,
+            boardInProgressCount: boardToolbarPresentation?.inProgressTodoCount ?? 0,
+            boardBlockedCount: boardToolbarPresentation?.blockedTodoCount ?? 0,
+            boardDoneCount: boardToolbarPresentation?.doneTodoCount ?? 0,
+            isBoardBacklogScope: boardToolbarPresentation?.isBacklogScope ?? false
         )
+    }
+
+    private var homeToolbarRoutineCount: Int {
+        store.routineDisplays.reduce(0) { $0 + ($1.isOneOffTask ? 0 : 1) }
+            + store.awayRoutineDisplays.reduce(0) { $0 + ($1.isOneOffTask ? 0 : 1) }
+            + store.archivedRoutineDisplays.reduce(0) { $0 + ($1.isOneOffTask ? 0 : 1) }
+    }
+
+    private var homeToolbarTodoCount: Int {
+        store.boardTodoDisplays.reduce(0) { count, display in
+            count + (!display.isCompletedOneOff && !display.isCanceledOneOff ? 1 : 0)
+        }
     }
 
     private var homeToolbarMode: HomeMacHomeToolbarContent.Mode {

@@ -7,6 +7,10 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
         clauses = Self.parse(query)
     }
 
+    var isEmpty: Bool {
+        clauses.isEmpty
+    }
+
     func matches(_ task: Display, metrics: HomeTaskListMetrics<Display>) -> Bool {
         guard !clauses.isEmpty else { return true }
         return clauses.contains { tokens in

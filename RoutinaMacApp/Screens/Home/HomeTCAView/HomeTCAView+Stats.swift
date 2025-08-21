@@ -2,7 +2,21 @@ import SwiftUI
 
 extension HomeTCAView {
     var macStatsSidebarView: some View {
-        HomeMacStatsSidebarView(
+        let filterPresentation = statsFilterPresentation
+        let statsTasks = statsStore?.tasks ?? store.routineTasks
+        let allTags = statsAllTags
+        let tagSummaries = statsStore?.tagSummaries ?? filterPresentation.tagSummaries(from: statsTasks)
+        let taskCountForSelectedTypeFilter = statsStore?.taskCountForSelectedTypeFilter
+            ?? filterPresentation.taskCountForSelectedTypeFilter(in: statsTasks)
+        let availableExcludeTags = statsStore?.availableExcludeTags
+            ?? filterPresentation.availableExcludeTags(from: statsTasks)
+        let tagCountsByNormalizedName = Dictionary(
+            uniqueKeysWithValues: tagSummaries.compactMap { summary in
+                RoutineTag.normalized(summary.name).map { ($0, summary.linkedRoutineCount) }
+            }
+        )
+
+        return HomeMacStatsSidebarView(
             selectedTaskTypeFilter: statsStore?.taskTypeFilter ?? .all,
             onSelectTaskTypeFilter: { filter in
                 statsStore?.send(.taskTypeFilterChanged(filter))
@@ -16,7 +30,7 @@ extension HomeTCAView {
                 set: { statsStore?.send(.advancedQueryChanged($0)) }
             ),
             queryOptions: HomeAdvancedQueryOptions(
-                tags: statsAllTags,
+                tags: allTags,
                 places: []
             ),
             selectedImportanceUrgencyFilter: Binding(
@@ -24,10 +38,12 @@ extension HomeTCAView {
                 set: { statsStore?.send(.selectedImportanceUrgencyFilterChanged($0)) }
             ),
             importanceUrgencySummary: statsImportanceUrgencySummary,
-            allTags: statsAllTags,
-            tagSummaries: statsTagSummaries,
-            suggestedRelatedTags: suggestedRelatedStatsTags,
-            taskCountForSelectedTypeFilter: statsTaskCountForSelectedTypeFilter,
+            allTags: allTags,
+            tagSummaries: tagSummaries,
+            suggestedRelatedTags: filterPresentation.suggestedRelatedTags(
+                suggestionAnchor: relatedStatsTagSuggestionAnchor
+            ),
+            taskCountForSelectedTypeFilter: taskCountForSelectedTypeFilter,
             selectedTags: selectedStatsTags,
             includeTagMatchMode: statsStore?.includeTagMatchMode ?? .all,
             onSelectTags: { tags in
@@ -38,7 +54,7 @@ extension HomeTCAView {
                 statsStore?.send(.includeTagMatchModeChanged(mode))
             },
             onSelectSuggestedTag: { tag in
-                guard let mutation = statsFilterPresentation.addedIncludedTag(tag) else { return }
+                guard let mutation = filterPresentation.addedIncludedTag(tag) else { return }
                 statsStore?.send(.selectedTagsChanged(mutation.selectedTags))
             },
             selectedExcludedTags: selectedStatsExcludedTags,
@@ -46,14 +62,15 @@ extension HomeTCAView {
             onExcludeTagMatchModeChange: { mode in
                 statsStore?.send(.excludeTagMatchModeChanged(mode))
             },
-            availableExcludeTags: statsAvailableExcludeTags,
+            availableExcludeTags: availableExcludeTags,
             excludedTagSummary: statsExcludedTagSummary,
-            tagSelectionSummary: statsTagSelectionSummary,
+            tagSelectionSummary: filterPresentation.tagSelectionSummary(tagCount: tagSummaries.count),
             tagCount: { tag in
-                statsTagCount(for: tag)
+                guard let normalizedTag = RoutineTag.normalized(tag) else { return 0 }
+                return tagCountsByNormalizedName[normalizedTag] ?? 0
             },
             onToggleExcludedTag: { tag in
-                let mutation = statsFilterPresentation.toggledExcludedTag(tag)
+                let mutation = filterPresentation.toggledExcludedTag(tag)
                 statsStore?.send(.selectedTagsChanged(mutation.selectedTags))
                 statsStore?.send(.excludedTagsChanged(mutation.excludedTags))
             }
@@ -91,20 +108,6 @@ extension HomeTCAView {
         return result.sorted()
     }
 
-    private var suggestedRelatedStatsTags: [String] {
-        statsFilterPresentation.suggestedRelatedTags(
-            suggestionAnchor: relatedStatsTagSuggestionAnchor
-        )
-    }
-
-    private var statsTagSummaries: [RoutineTagSummary] {
-        statsFilterPresentation.tagSummaries(from: statsStore?.tasks ?? store.routineTasks)
-    }
-
-    private var statsTaskCountForSelectedTypeFilter: Int {
-        statsFilterPresentation.taskCountForSelectedTypeFilter(in: statsStore?.tasks ?? store.routineTasks)
-    }
-
     private var selectedStatsTag: String? {
         statsStore?.selectedTag
     }
@@ -117,14 +120,6 @@ extension HomeTCAView {
         statsStore?.excludedTags ?? []
     }
 
-    private var statsTagSelectionSummary: String {
-        statsFilterPresentation.tagSelectionSummary(tagCount: statsTagSummaries.count)
-    }
-
-    private var statsAvailableExcludeTags: [String] {
-        statsFilterPresentation.availableExcludeTags(from: statsStore?.tasks ?? store.routineTasks)
-    }
-
     private var statsExcludedTagSummary: String {
         statsFilterPresentation.excludedTagSummary
     }
@@ -134,9 +129,5 @@ extension HomeTCAView {
             return "Choose a cell to show stats only for tasks that meet or exceed that importance and urgency."
         }
         return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
-    }
-
-    private func statsTagCount(for tag: String) -> Int {
-        statsTagSummaries.first(where: { RoutineTag.contains(tag, in: [$0.name]) })?.linkedRoutineCount ?? 0
     }
 }
