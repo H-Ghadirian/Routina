@@ -12,7 +12,7 @@ extension HomeTCAView {
         to view: Content,
         searchText: Binding<String>
     ) -> some View {
-        view.searchable(text: searchText, prompt: "Search routines")
+        view
     }
 
     @ViewBuilder

@@ -27,6 +27,8 @@ struct HomeTCAView: View {
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
     @State private var selectedManualPlaceFilterID: UUID?
+    @State private var isFilterSheetPresented = false
+    @State private var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
 
     var body: some View {
@@ -39,6 +41,9 @@ struct HomeTCAView: View {
         applyPlatformRefresh(to: navigationContent)
             .sheet(isPresented: addRoutineSheetBinding) {
                 addRoutineSheetContent
+            }
+            .sheet(isPresented: $isFilterSheetPresented) {
+                homeFiltersSheet
             }
             .onAppear {
                 requestRefresh()
@@ -110,7 +115,9 @@ struct HomeTCAView: View {
         }
     }
 
+    @ViewBuilder
     private var sidebarContent: some View {
+#if os(macOS)
         applyPlatformSidebarSearch(
             to: VStack(spacing: 12) {
                 if store.routineTasks.isEmpty {
@@ -137,19 +144,49 @@ struct HomeTCAView: View {
                 }
             }
             .navigationTitle("Routina")
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    platformRefreshButton
-                    Button {
-                        store.send(.setAddRoutineSheet(true))
-                    } label: {
-                        Label("Add Routine", systemImage: "plus")
-                    }
-                }
-            }
+            .toolbar { homeToolbarContent }
             .routinaHomeSidebarColumnWidth(),
             searchText: $searchText
         )
+#else
+        applyPlatformSidebarSearch(
+            to: Group {
+                if store.routineTasks.isEmpty {
+                    emptyStateView(
+                        title: "No routines yet",
+                        message: "Start with one recurring task, and the home list will organize what needs attention for you.",
+                        systemImage: "checklist"
+                    ) {
+                        store.send(.setAddRoutineSheet(true))
+                    }
+                } else {
+                    listOfSortedTasksView(
+                        routineDisplays: store.routineDisplays,
+                        awayRoutineDisplays: store.awayRoutineDisplays,
+                        archivedRoutineDisplays: store.archivedRoutineDisplays,
+                        routineTasks: store.routineTasks
+                    )
+                }
+            }
+            .navigationTitle("Routina")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { homeToolbarContent }
+            .routinaHomeSidebarColumnWidth(),
+            searchText: $searchText
+        )
+#endif
+    }
+
+    @ToolbarContentBuilder
+    private var homeToolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            platformRefreshButton
+            Button {
+                store.send(.setAddRoutineSheet(true))
+            } label: {
+                Label("Add Routine", systemImage: "plus")
+            }
+        }
     }
 
     @ViewBuilder
@@ -211,16 +248,14 @@ struct HomeTCAView: View {
 
     @ViewBuilder
     private var tagFilterBar: some View {
-        let tags = HomeFeature.availableTags(from: allRoutineDisplays)
-
-        if !tags.isEmpty {
+        if !availableTags.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
                         selectedTag = nil
                     }
 
-                    ForEach(tags, id: \.self) { tag in
+                    ForEach(availableTags, id: \.self) { tag in
                         tagFilterButton(
                             title: "#\(tag)",
                             isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
@@ -274,8 +309,31 @@ struct HomeTCAView: View {
 #else
         let sections = groupedRoutineSections(from: routineDisplays)
         let awayTasks = filteredAwayTasks(awayRoutineDisplays)
-#endif
         let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays)
+        let inlineEmptyState: (title: String, message: String, systemImage: String)? = {
+            guard sections.isEmpty && archivedTasks.isEmpty && (store.hideUnavailableRoutines || awayTasks.isEmpty)
+            else {
+                return nil
+            }
+
+            if store.hideUnavailableRoutines && !awayTasks.isEmpty {
+                return (
+                    title: "No routines available here",
+                    message: "\(awayTasks.count) routines are hidden because you are away from their saved place.",
+                    systemImage: "location.slash"
+                )
+            }
+
+            return (
+                title: "No matching routines",
+                message: "Try a different search or switch back to another filter.",
+                systemImage: "magnifyingglass"
+            )
+        }()
+#endif
+#if os(macOS)
+        let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays)
+#endif
 
         return Group {
 #if os(macOS)
@@ -374,150 +432,278 @@ struct HomeTCAView: View {
                 }
             }
 #else
-            if sections.isEmpty && archivedTasks.isEmpty && (store.hideUnavailableRoutines || awayTasks.isEmpty) {
-                if store.hideUnavailableRoutines && !awayTasks.isEmpty {
-                    emptyStateView(
-                        title: "No routines available here",
-                        message: "\(awayTasks.count) routines are hidden because you are away from their saved place.",
-                        systemImage: "location.slash"
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    emptyStateView(
-                        title: "No matching routines",
-                        message: "Try a different search or switch back to another filter.",
-                        systemImage: "magnifyingglass"
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 0) {
+                if !isCompactHeaderHidden {
+                    compactHomeHeader
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
-            } else {
-                List(selection: $selectedTaskID) {
-                    ForEach(sections) { section in
-                        Section(section.title) {
-                            ForEach(section.tasks) { task in
-                                NavigationLink(value: task.taskID) {
-                                    routineRow(for: task)
-                                }
-                                .contentShape(Rectangle())
-                                .contextMenu {
-                                    Button {
-                                        selectedTaskID = task.taskID
-                                    } label: {
-                                        Label("Open", systemImage: "arrow.right.circle")
-                                    }
 
-                                    Button {
-                                        store.send(.markTaskDone(task.taskID))
-                                    } label: {
-                                        Label(task.steps.isEmpty ? "Mark Done" : "Complete Next Step", systemImage: "checkmark.circle")
+                if let inlineEmptyState {
+                    inlineEmptyStateRow(
+                        title: inlineEmptyState.title,
+                        message: inlineEmptyState.message,
+                        systemImage: inlineEmptyState.systemImage
+                    )
+                } else {
+                    List(selection: $selectedTaskID) {
+                        ForEach(sections) { section in
+                            Section(section.title) {
+                                ForEach(section.tasks) { task in
+                                    NavigationLink(value: task.taskID) {
+                                        routineRow(for: task)
                                     }
-                                    .disabled(task.isDoneToday || task.isPaused)
-
-                                    Button {
-                                        store.send(.pauseTask(task.taskID))
-                                    } label: {
-                                        Label("Pause", systemImage: "pause.circle")
-                                    }
-                                    .disabled(task.isPaused)
-
-                                    Button(role: .destructive) {
-                                        if selectedTaskID == task.taskID {
-                                            selectedTaskID = nil
+                                    .contentShape(Rectangle())
+                                    .contextMenu {
+                                        Button {
+                                            selectedTaskID = task.taskID
+                                        } label: {
+                                            Label("Open", systemImage: "arrow.right.circle")
                                         }
-                                        store.send(.deleteTasks([task.taskID]))
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
+
+                                        Button {
+                                            store.send(.markTaskDone(task.taskID))
+                                        } label: {
+                                            Label(task.steps.isEmpty ? "Mark Done" : "Complete Next Step", systemImage: "checkmark.circle")
+                                        }
+                                        .disabled(task.isDoneToday || task.isPaused)
+
+                                        Button {
+                                            store.send(.pauseTask(task.taskID))
+                                        } label: {
+                                            Label("Pause", systemImage: "pause.circle")
+                                        }
+                                        .disabled(task.isPaused)
+
+                                        Button(role: .destructive) {
+                                            if selectedTaskID == task.taskID {
+                                                selectedTaskID = nil
+                                            }
+                                            store.send(.deleteTasks([task.taskID]))
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
                                 }
-                            }
-                            .onDelete { offsets in
-                                deleteTasks(at: offsets, from: section.tasks)
+                                .onDelete { offsets in
+                                    deleteTasks(at: offsets, from: section.tasks)
+                                }
                             }
                         }
-                    }
 
 #if !os(macOS)
-                    if !store.hideUnavailableRoutines && !awayTasks.isEmpty {
-                        Section("Not Here Right Now") {
-                            ForEach(awayTasks) { task in
-                                NavigationLink(value: task.taskID) {
-                                    routineRow(for: task)
-                                }
-                                .contentShape(Rectangle())
-                                .contextMenu {
-                                    Button {
-                                        selectedTaskID = task.taskID
-                                    } label: {
-                                        Label("Open", systemImage: "arrow.right.circle")
+                        if !store.hideUnavailableRoutines && !awayTasks.isEmpty {
+                            Section("Not Here Right Now") {
+                                ForEach(awayTasks) { task in
+                                    NavigationLink(value: task.taskID) {
+                                        routineRow(for: task)
                                     }
-
-                                    Button {
-                                        store.send(.pauseTask(task.taskID))
-                                    } label: {
-                                        Label("Pause", systemImage: "pause.circle")
-                                    }
-                                    .disabled(task.isPaused)
-
-                                    Button(role: .destructive) {
-                                        if selectedTaskID == task.taskID {
-                                            selectedTaskID = nil
+                                    .contentShape(Rectangle())
+                                    .contextMenu {
+                                        Button {
+                                            selectedTaskID = task.taskID
+                                        } label: {
+                                            Label("Open", systemImage: "arrow.right.circle")
                                         }
-                                        store.send(.deleteTasks([task.taskID]))
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
+
+                                        Button {
+                                            store.send(.pauseTask(task.taskID))
+                                        } label: {
+                                            Label("Pause", systemImage: "pause.circle")
+                                        }
+                                        .disabled(task.isPaused)
+
+                                        Button(role: .destructive) {
+                                            if selectedTaskID == task.taskID {
+                                                selectedTaskID = nil
+                                            }
+                                            store.send(.deleteTasks([task.taskID]))
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
                                 }
-                            }
-                            .onDelete { offsets in
-                                deleteTasks(at: offsets, from: awayTasks)
+                                .onDelete { offsets in
+                                    deleteTasks(at: offsets, from: awayTasks)
+                                }
                             }
                         }
-                    }
 #endif
 
-                    if !archivedTasks.isEmpty {
-                        Section("Archived") {
-                            ForEach(archivedTasks) { task in
-                                NavigationLink(value: task.taskID) {
-                                    routineRow(for: task)
-                                }
-                                .contentShape(Rectangle())
-                                .contextMenu {
-                                    Button {
-                                        selectedTaskID = task.taskID
-                                    } label: {
-                                        Label("Open", systemImage: "arrow.right.circle")
+                        if !archivedTasks.isEmpty {
+                            Section("Archived") {
+                                ForEach(archivedTasks) { task in
+                                    NavigationLink(value: task.taskID) {
+                                        routineRow(for: task)
                                     }
-
-                                    Button {
-                                        store.send(.resumeTask(task.taskID))
-                                    } label: {
-                                        Label("Resume", systemImage: "play.circle")
-                                    }
-
-                                    Button(role: .destructive) {
-                                        if selectedTaskID == task.taskID {
-                                            selectedTaskID = nil
+                                    .contentShape(Rectangle())
+                                    .contextMenu {
+                                        Button {
+                                            selectedTaskID = task.taskID
+                                        } label: {
+                                            Label("Open", systemImage: "arrow.right.circle")
                                         }
-                                        store.send(.deleteTasks([task.taskID]))
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
+
+                                        Button {
+                                            store.send(.resumeTask(task.taskID))
+                                        } label: {
+                                            Label("Resume", systemImage: "play.circle")
+                                        }
+
+                                        Button(role: .destructive) {
+                                            if selectedTaskID == task.taskID {
+                                                selectedTaskID = nil
+                                            }
+                                            store.send(.deleteTasks([task.taskID]))
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
                                 }
-                            }
-                            .onDelete { offsets in
-                                deleteTasks(at: offsets, from: archivedTasks)
+                                .onDelete { offsets in
+                                    deleteTasks(at: offsets, from: archivedTasks)
+                                }
                             }
                         }
                     }
-                }
-                .listStyle(.sidebar)
-                .navigationDestination(for: UUID.self) { taskID in
-                    routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
+                    .listStyle(.sidebar)
+                    .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                        max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
+                    } action: { oldOffset, newOffset in
+                        handleCompactHeaderScroll(oldOffset: oldOffset, newOffset: newOffset)
+                    }
+                    .navigationDestination(for: UUID.self) { taskID in
+                        routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
+                    }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .animation(.snappy(duration: 0.25), value: isCompactHeaderHidden)
 #endif
         }
+    }
+
+    @ViewBuilder
+    private var compactHomeHeader: some View {
+#if os(macOS)
+        EmptyView()
+#else
+        VStack(alignment: .leading, spacing: 10) {
+            compactSearchField
+            compactFilterPicker
+
+            Text(compactSummaryText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            if hasActiveOptionalFilters {
+                activeFilterChipBar
+            }
+        }
+#endif
+    }
+
+    private var compactFilterPicker: some View {
+        Picker("Routine Filter", selection: $selectedFilter) {
+            ForEach(RoutineListFilter.allCases) { filter in
+                Text(filter.rawValue).tag(filter)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var compactSearchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField("Search routines", text: $searchText)
+                .textFieldStyle(.plain)
+
+            if showsFilterSheetButton {
+                Button {
+                    isFilterSheetPresented = true
+                } label: {
+                    Image(systemName: hasActiveOptionalFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(hasActiveOptionalFilters ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Filters")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.secondary.opacity(0.12))
+        )
+    }
+
+    @ViewBuilder
+    private var activeFilterChipBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                if let selectedTag {
+                    compactFilterChip(title: "#\(selectedTag)") {
+                        self.selectedTag = nil
+                    }
+                }
+
+                if let selectedPlaceName {
+                    compactFilterChip(title: selectedPlaceName, systemImage: "mappin.and.ellipse") {
+                        selectedManualPlaceFilterID = nil
+                    }
+                }
+
+                if store.hideUnavailableRoutines {
+                    compactFilterChip(title: "Away hidden", systemImage: "location.slash") {
+                        store.send(.hideUnavailableRoutinesChanged(false))
+                    }
+                }
+
+                if activeOptionalFilterCount > 1 {
+                    Button("Clear All") {
+                        clearOptionalFilters()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.accentColor)
+                }
+            }
+        }
+    }
+
+    private func compactFilterChip(
+        title: String,
+        systemImage: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption2)
+                }
+
+                Text(title)
+                    .font(.caption.weight(.medium))
+
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption2)
+            }
+            .foregroundStyle(Color.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color.secondary.opacity(0.12))
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -611,8 +797,123 @@ struct HomeTCAView: View {
         }
     }
 
+    private var selectedPlaceName: String? {
+        guard let selectedManualPlaceFilterID else { return nil }
+        return store.routinePlaces.first(where: { $0.id == selectedManualPlaceFilterID })?.displayName
+    }
+
+    private var showsFilterSheetButton: Bool {
+        !availableTags.isEmpty || hasPlaceAwareContent
+    }
+
+    private var activeOptionalFilterCount: Int {
+        var count = 0
+
+        if selectedTag != nil {
+            count += 1
+        }
+        if selectedManualPlaceFilterID != nil {
+            count += 1
+        }
+        if store.hideUnavailableRoutines {
+            count += 1
+        }
+
+        return count
+    }
+
+    private var hasActiveOptionalFilters: Bool {
+        activeOptionalFilterCount > 0
+    }
+
     private var hasPlaceAwareContent: Bool {
         !store.routinePlaces.isEmpty || store.routineTasks.contains { $0.placeID != nil }
+    }
+
+    @ViewBuilder
+    private var homeFiltersSheet: some View {
+#if os(macOS)
+        EmptyView()
+#else
+        NavigationStack {
+            List {
+                if !availableTags.isEmpty {
+                    Section("Tags") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
+                                    selectedTag = nil
+                                }
+
+                                ForEach(availableTags, id: \.self) { tag in
+                                    tagFilterButton(
+                                        title: "#\(tag)",
+                                        isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                    ) {
+                                        selectedTag = tag
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+
+                if hasPlaceAwareContent {
+                    Section("Place") {
+                        Picker("Show routines", selection: manualPlaceFilterBinding) {
+                            Text("All routines").tag(Optional<UUID>.none)
+                            ForEach(sortedRoutinePlaces) { place in
+                                Text(place.displayName).tag(Optional(place.id))
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        if store.locationSnapshot.authorizationStatus.isAuthorized {
+                            Toggle("Hide unavailable routines", isOn: hideUnavailableRoutinesBinding)
+                        }
+
+                        Text(manualPlaceFilterDescription)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Text(locationStatusText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if hasActiveOptionalFilters {
+                    Section {
+                        Button("Clear Filters") {
+                            clearOptionalFilters()
+                        }
+                        .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("Filters")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        isFilterSheetPresented = false
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+#endif
+    }
+
+    private func clearOptionalFilters() {
+        selectedTag = nil
+        selectedManualPlaceFilterID = nil
+
+        if store.hideUnavailableRoutines {
+            store.send(.hideUnavailableRoutinesChanged(false))
+        }
     }
 
     private var manualPlaceFilterDescription: String {
@@ -1053,6 +1354,30 @@ struct HomeTCAView: View {
         .padding(24)
     }
 
+    private func inlineEmptyStateRow(
+        title: String,
+        message: String,
+        systemImage: String
+    ) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 30, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            Text(title)
+                .font(.title3.weight(.semibold))
+
+            Text(message)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 40)
+    }
+
     @MainActor
     func performManualRefresh() async {
         if modelContext.hasChanges {
@@ -1075,6 +1400,46 @@ struct HomeTCAView: View {
 
     private var allRoutineDisplays: [HomeFeature.RoutineDisplay] {
         store.routineDisplays + store.awayRoutineDisplays + store.archivedRoutineDisplays
+    }
+
+    private var availableTags: [String] {
+        HomeFeature.availableTags(from: allRoutineDisplays)
+    }
+
+    private var compactSummaryText: String {
+        var components = [doneCountDescription(for: store.doneStats.totalCount)]
+
+        let activeCount = store.routineDisplays.count
+        components.append(activeCount == 1 ? "1 active" : "\(activeCount) active")
+
+        let awayCount = store.awayRoutineDisplays.count
+        if awayCount > 0 {
+            components.append("\(awayCount) away")
+        }
+
+        let archivedCount = store.archivedRoutineDisplays.count
+        if archivedCount > 0 {
+            components.append("\(archivedCount) archived")
+        }
+
+        return components.joined(separator: " • ")
+    }
+
+    private func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {
+        let delta = newOffset - oldOffset
+
+        if newOffset <= 12 {
+            if isCompactHeaderHidden {
+                isCompactHeaderHidden = false
+            }
+            return
+        }
+
+        if delta > 10, !isCompactHeaderHidden {
+            isCompactHeaderHidden = true
+        } else if delta < -10, isCompactHeaderHidden {
+            isCompactHeaderHidden = false
+        }
     }
 
     private var summaryCountText: String {
