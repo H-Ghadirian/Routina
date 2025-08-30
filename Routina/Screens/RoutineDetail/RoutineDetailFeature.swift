@@ -43,8 +43,12 @@ struct RoutineDetailFeature: Reducer {
         var editRoutineEmoji: String = "✨"
         var editRoutineTags: [String] = []
         var editTagDraft: String = ""
+        var editScheduleMode: RoutineScheduleMode = .fixedInterval
         var editRoutineSteps: [RoutineStep] = []
         var editStepDraft: String = ""
+        var editRoutineChecklistItems: [RoutineChecklistItem] = []
+        var editChecklistItemDraftTitle: String = ""
+        var editChecklistItemDraftInterval: Int = 3
         var availablePlaces: [RoutinePlaceSummary] = []
         var editSelectedPlaceID: UUID?
         var editFrequency: EditFrequency = .day
@@ -55,6 +59,7 @@ struct RoutineDetailFeature: Reducer {
 
     enum Action: Equatable {
         case markAsDone
+        case markChecklistItemPurchased(UUID)
         case undoSelectedDateCompletion
         case pauseTapped
         case resumeTapped
@@ -65,11 +70,16 @@ struct RoutineDetailFeature: Reducer {
         case editTagDraftChanged(String)
         case editAddTagTapped
         case editRemoveTag(String)
+        case editScheduleModeChanged(RoutineScheduleMode)
         case editStepDraftChanged(String)
         case editAddStepTapped
         case editRemoveStep(UUID)
         case editMoveStepUp(UUID)
         case editMoveStepDown(UUID)
+        case editChecklistItemDraftTitleChanged(String)
+        case editChecklistItemDraftIntervalChanged(Int)
+        case editAddChecklistItemTapped
+        case editRemoveChecklistItem(UUID)
         case availablePlacesLoaded([RoutinePlaceSummary])
         case editSelectedPlaceChanged(UUID?)
         case editFrequencyChanged(EditFrequency)
@@ -92,6 +102,29 @@ struct RoutineDetailFeature: Reducer {
         switch action {
         case .markAsDone:
             guard !state.task.isPaused else { return .none }
+            if state.task.isChecklistDriven {
+                guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
+                    return .none
+                }
+                let completionDate = now
+                let dueItemIDs = Set(
+                    state.task
+                        .dueChecklistItems(referenceDate: completionDate, calendar: calendar)
+                        .map(\.id)
+                )
+                let updatedItemCount = state.task.markChecklistItemsPurchased(
+                    dueItemIDs,
+                    purchasedAt: completionDate
+                )
+                guard updatedItemCount > 0 else { return .none }
+                upsertLocalLog(at: completionDate, in: &state)
+                updateDerivedState(&state)
+                return handleChecklistItemsPurchased(
+                    taskID: state.task.id,
+                    itemIDs: dueItemIDs,
+                    purchasedAt: completionDate
+                )
+            }
             let completionDate = resolvedCompletionDate(for: state.selectedDate)
             guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
                 return .none
@@ -100,7 +133,23 @@ struct RoutineDetailFeature: Reducer {
             updateDerivedState(&state)
             return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate)
 
+        case let .markChecklistItemPurchased(itemID):
+            guard !state.task.isPaused else { return .none }
+            let completionDate = now
+            let updatedItemCount = state.task.markChecklistItemsPurchased([itemID], purchasedAt: completionDate)
+            guard updatedItemCount > 0 else { return .none }
+            upsertLocalLog(at: completionDate, in: &state)
+            updateDerivedState(&state)
+            return handleChecklistItemsPurchased(
+                taskID: state.task.id,
+                itemIDs: [itemID],
+                purchasedAt: completionDate
+            )
+
         case .undoSelectedDateCompletion:
+            if state.task.isChecklistDriven {
+                return .none
+            }
             let selectedDay = resolvedSelectedDay(for: state.selectedDate)
             removeCompletion(on: selectedDay, from: &state)
             updateDerivedState(&state)
@@ -119,6 +168,9 @@ struct RoutineDetailFeature: Reducer {
         case .resumeTapped:
             guard state.task.isPaused else { return .none }
             let resumeDate = now
+            if let pausedAt = state.task.pausedAt, state.task.isChecklistDriven {
+                state.task.shiftChecklistItems(by: max(resumeDate.timeIntervalSince(pausedAt), 0))
+            }
             state.task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: state.task, resumedAt: resumeDate)
             state.task.pausedAt = nil
             updateDerivedState(&state)
@@ -157,6 +209,10 @@ struct RoutineDetailFeature: Reducer {
             state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
             return .none
 
+        case let .editScheduleModeChanged(mode):
+            state.editScheduleMode = mode
+            return .none
+
         case let .editStepDraftChanged(value):
             state.editStepDraft = value
             return .none
@@ -176,6 +232,29 @@ struct RoutineDetailFeature: Reducer {
 
         case let .editMoveStepDown(stepID):
             moveStep(stepID, by: 1, state: &state)
+            return .none
+
+        case let .editChecklistItemDraftTitleChanged(value):
+            state.editChecklistItemDraftTitle = value
+            return .none
+
+        case let .editChecklistItemDraftIntervalChanged(value):
+            state.editChecklistItemDraftInterval = RoutineChecklistItem.clampedIntervalDays(value)
+            return .none
+
+        case .editAddChecklistItemTapped:
+            state.editRoutineChecklistItems = appendChecklistItem(
+                from: state.editChecklistItemDraftTitle,
+                intervalDays: state.editChecklistItemDraftInterval,
+                createdAt: now,
+                to: state.editRoutineChecklistItems
+            )
+            state.editChecklistItemDraftTitle = ""
+            state.editChecklistItemDraftInterval = 3
+            return .none
+
+        case let .editRemoveChecklistItem(itemID):
+            state.editRoutineChecklistItems.removeAll { $0.id == itemID }
             return .none
 
         case let .availablePlacesLoaded(places):
@@ -203,8 +282,19 @@ struct RoutineDetailFeature: Reducer {
             state.editTagDraft = ""
             state.editRoutineSteps = appendStep(from: state.editStepDraft, to: state.editRoutineSteps)
             state.editStepDraft = ""
+            state.editRoutineChecklistItems = appendChecklistItem(
+                from: state.editChecklistItemDraftTitle,
+                intervalDays: state.editChecklistItemDraftInterval,
+                createdAt: now,
+                to: state.editRoutineChecklistItems
+            )
+            state.editChecklistItemDraftTitle = ""
+            state.editChecklistItemDraftInterval = 3
             let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedName.isEmpty else { return .none }
+            guard state.editScheduleMode != .derivedFromChecklist || !state.editRoutineChecklistItems.isEmpty else {
+                return .none
+            }
             state.isEditSheetPresented = false
             return handleEditSave(
                 taskID: state.task.id,
@@ -212,7 +302,9 @@ struct RoutineDetailFeature: Reducer {
                 emoji: state.editRoutineEmoji,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
-                steps: state.editRoutineSteps,
+                steps: state.editScheduleMode == .fixedInterval ? state.editRoutineSteps : [],
+                checklistItems: state.editScheduleMode == .derivedFromChecklist ? state.editRoutineChecklistItems : [],
+                scheduleMode: state.editScheduleMode,
                 interval: Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
             )
 
@@ -256,8 +348,12 @@ struct RoutineDetailFeature: Reducer {
         state.editRoutineEmoji = state.task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
         state.editRoutineTags = state.task.tags
         state.editTagDraft = ""
+        state.editScheduleMode = state.task.scheduleMode
         state.editRoutineSteps = state.task.steps
         state.editStepDraft = ""
+        state.editRoutineChecklistItems = state.task.checklistItems
+        state.editChecklistItemDraftTitle = ""
+        state.editChecklistItemDraftInterval = 3
         state.editSelectedPlaceID = state.task.placeID
 
         let interval = max(Int(state.task.interval), 1)
@@ -338,6 +434,23 @@ struct RoutineDetailFeature: Reducer {
         }
 
         state.task.resetStepProgress()
+    }
+
+    private func upsertLocalLog(at timestamp: Date, in state: inout State) {
+        if let existingIndex = state.logs.firstIndex(where: { log in
+            guard let logTimestamp = log.timestamp else { return false }
+            return calendar.isDate(logTimestamp, inSameDayAs: timestamp)
+        }) {
+            if timestamp > (state.logs[existingIndex].timestamp ?? .distantPast) {
+                state.logs[existingIndex].timestamp = timestamp
+            }
+            state.logs.sort {
+                ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast)
+            }
+            return
+        }
+
+        state.logs.insert(RoutineLog(timestamp: timestamp, taskID: state.task.id), at: 0)
     }
 
     private func handleOnAppear(taskID: UUID) -> Effect<Action> {
@@ -435,6 +548,8 @@ struct RoutineDetailFeature: Reducer {
         placeID: UUID?,
         tags: [String],
         steps: [RoutineStep],
+        checklistItems: [RoutineChecklistItem],
+        scheduleMode: RoutineScheduleMode,
         interval: Int16
     ) -> Effect<Action> {
         .run { @MainActor send in
@@ -449,6 +564,8 @@ struct RoutineDetailFeature: Reducer {
                 task.placeID = placeID
                 task.tags = tags
                 task.replaceSteps(steps)
+                task.scheduleMode = scheduleMode
+                task.replaceChecklistItems(checklistItems)
                 task.interval = interval
                 if task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: now)
@@ -529,6 +646,9 @@ struct RoutineDetailFeature: Reducer {
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                if let pausedAt = task.pausedAt, task.isChecklistDriven {
+                    task.shiftChecklistItems(by: max(resumedAt.timeIntervalSince(pausedAt), 0))
+                }
                 task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumedAt)
                 task.pausedAt = nil
                 try context.save()
@@ -541,6 +661,39 @@ struct RoutineDetailFeature: Reducer {
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error resuming routine: \(error)")
+            }
+        }
+    }
+
+    private func handleChecklistItemsPurchased(
+        taskID: UUID,
+        itemIDs: Set<UUID>,
+        purchasedAt: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let updatedTask = try RoutineLogHistory.markChecklistItemsPurchased(
+                    taskID: taskID,
+                    itemIDs: itemIDs,
+                    purchasedAt: purchasedAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: updatedTask.task,
+                        referenceDate: purchasedAt,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating checklist items: \(error)")
             }
         }
     }
@@ -568,6 +721,22 @@ struct RoutineDetailFeature: Reducer {
     private func appendStep(from draft: String, to currentSteps: [RoutineStep]) -> [RoutineStep] {
         guard let title = RoutineStep.normalizedTitle(draft) else { return currentSteps }
         return currentSteps + [RoutineStep(title: title)]
+    }
+
+    private func appendChecklistItem(
+        from draftTitle: String,
+        intervalDays: Int,
+        createdAt: Date,
+        to currentItems: [RoutineChecklistItem]
+    ) -> [RoutineChecklistItem] {
+        guard let title = RoutineChecklistItem.normalizedTitle(draftTitle) else { return currentItems }
+        return currentItems + [
+            RoutineChecklistItem(
+                title: title,
+                intervalDays: intervalDays,
+                createdAt: createdAt
+            )
+        ]
     }
 
     private func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {

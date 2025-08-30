@@ -9,6 +9,8 @@ struct NotificationPayload: Sendable {
     let lastDone: Date?
     let triggerDate: Date?
     let isPaused: Bool
+    let isChecklistDriven: Bool
+    let nextDueChecklistItemTitle: String?
 }
 
 struct NotificationClient: Sendable {
@@ -94,7 +96,13 @@ extension NotificationClient {
         let emojiPrefix = (trimmedEmoji?.isEmpty == false ? trimmedEmoji : nil).map { "\($0) " } ?? ""
 
         content.title = "\(emojiPrefix)\(titleName) is due"
-        content.body = "Due today. Tap Done to reset the timer or Snooze until tomorrow."
+        if payload.isChecklistDriven, let nextDueChecklistItemTitle = payload.nextDueChecklistItemTitle {
+            content.body = "\(nextDueChecklistItemTitle) is due today. Tap Done to buy due items or Snooze until tomorrow."
+        } else if payload.isChecklistDriven {
+            content.body = "Checklist items are due today. Tap Done to buy due items or Snooze until tomorrow."
+        } else {
+            content.body = "Due today. Tap Done to reset the timer or Snooze until tomorrow."
+        }
         content.sound = .default
         content.categoryIdentifier = NotificationCoordinator.categoryIdentifier
         return content

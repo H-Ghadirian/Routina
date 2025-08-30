@@ -24,6 +24,56 @@ struct RoutineStep: Codable, Equatable, Hashable, Identifiable, Sendable {
     }
 }
 
+enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case fixedInterval
+    case derivedFromChecklist
+}
+
+struct RoutineChecklistItem: Codable, Equatable, Hashable, Identifiable, Sendable {
+    var id: UUID = UUID()
+    var title: String
+    var intervalDays: Int
+    var lastPurchasedAt: Date?
+    var createdAt: Date = Date()
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        intervalDays: Int,
+        lastPurchasedAt: Date? = nil,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.title = title
+        self.intervalDays = Self.clampedIntervalDays(intervalDays)
+        self.lastPurchasedAt = lastPurchasedAt
+        self.createdAt = createdAt
+    }
+
+    static func sanitized(_ items: [RoutineChecklistItem]) -> [RoutineChecklistItem] {
+        items.compactMap { item in
+            guard let title = normalizedTitle(item.title) else { return nil }
+            return RoutineChecklistItem(
+                id: item.id,
+                title: title,
+                intervalDays: item.intervalDays,
+                lastPurchasedAt: item.lastPurchasedAt,
+                createdAt: item.createdAt
+            )
+        }
+    }
+
+    static func normalizedTitle(_ value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed
+    }
+
+    static func clampedIntervalDays(_ value: Int) -> Int {
+        min(max(value, 1), 3650)
+    }
+}
+
 enum RoutineAdvanceResult: Equatable {
     case ignoredPaused
     case ignoredAlreadyCompletedToday
@@ -54,6 +104,29 @@ private enum RoutineStepStorage {
     }
 }
 
+private enum RoutineChecklistItemStorage {
+    static func serialize(_ items: [RoutineChecklistItem]) -> String {
+        let sanitized = RoutineChecklistItem.sanitized(items)
+        guard !sanitized.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(sanitized),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> [RoutineChecklistItem] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([RoutineChecklistItem].self, from: data) else {
+            return []
+        }
+        return RoutineChecklistItem.sanitized(decoded)
+    }
+}
+
 @Model
 final class RoutineTask {
     var id: UUID = UUID()
@@ -62,6 +135,8 @@ final class RoutineTask {
     var placeID: UUID?
     var tagsStorage: String = ""
     var stepsStorage: String = ""
+    var checklistItemsStorage: String = ""
+    var scheduleModeRawValue: String = RoutineScheduleMode.fixedInterval.rawValue
     var interval: Int16 = 1
     var lastDone: Date?
     var scheduleAnchor: Date?
@@ -90,8 +165,26 @@ final class RoutineTask {
         }
     }
 
+    var checklistItems: [RoutineChecklistItem] {
+        get { RoutineChecklistItemStorage.deserialize(checklistItemsStorage) }
+        set { checklistItemsStorage = RoutineChecklistItemStorage.serialize(newValue) }
+    }
+
+    var scheduleMode: RoutineScheduleMode {
+        get { RoutineScheduleMode(rawValue: scheduleModeRawValue) ?? .fixedInterval }
+        set { scheduleModeRawValue = newValue.rawValue }
+    }
+
     var hasSequentialSteps: Bool {
         !steps.isEmpty
+    }
+
+    var hasChecklistItems: Bool {
+        !checklistItems.isEmpty
+    }
+
+    var isChecklistDriven: Bool {
+        scheduleMode == .derivedFromChecklist && hasChecklistItems
     }
 
     var completedSteps: Int {
@@ -116,6 +209,34 @@ final class RoutineTask {
         return steps[completedSteps].title
     }
 
+    func nextDueChecklistItem(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> RoutineChecklistItem? {
+        guard isChecklistDriven else { return nil }
+        return checklistItems.min {
+            RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar)
+                < RoutineDateMath.dueDate(for: $1, referenceDate: referenceDate, calendar: calendar)
+        }
+    }
+
+    func dueChecklistItems(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> [RoutineChecklistItem] {
+        guard isChecklistDriven else { return [] }
+        let dueBoundary = calendar.startOfDay(for: referenceDate)
+        return checklistItems
+            .filter { item in
+                let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)
+                return calendar.startOfDay(for: dueDate) <= dueBoundary
+            }
+            .sorted {
+                RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar)
+                    < RoutineDateMath.dueDate(for: $1, referenceDate: referenceDate, calendar: calendar)
+            }
+    }
+
     init(
         id: UUID = UUID(),
         name: String? = nil,
@@ -123,6 +244,8 @@ final class RoutineTask {
         placeID: UUID? = nil,
         tags: [String] = [],
         steps: [RoutineStep] = [],
+        checklistItems: [RoutineChecklistItem] = [],
+        scheduleMode: RoutineScheduleMode? = nil,
         interval: Int16 = 1,
         lastDone: Date? = nil,
         scheduleAnchor: Date? = nil,
@@ -136,6 +259,8 @@ final class RoutineTask {
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
         self.stepsStorage = RoutineStepStorage.serialize(steps)
+        self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(checklistItems)
+        self.scheduleModeRawValue = (scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)).rawValue
         self.interval = interval
         self.lastDone = lastDone
         self.scheduleAnchor = scheduleAnchor ?? lastDone
@@ -162,9 +287,55 @@ final class RoutineTask {
         }
     }
 
+    func replaceChecklistItems(_ updatedItems: [RoutineChecklistItem]) {
+        checklistItemsStorage = RoutineChecklistItemStorage.serialize(updatedItems)
+    }
+
+    func shiftChecklistItems(by duration: TimeInterval) {
+        guard duration > 0, hasChecklistItems else { return }
+        checklistItems = checklistItems.map { item in
+            RoutineChecklistItem(
+                id: item.id,
+                title: item.title,
+                intervalDays: item.intervalDays,
+                lastPurchasedAt: item.lastPurchasedAt?.addingTimeInterval(duration),
+                createdAt: item.createdAt.addingTimeInterval(duration)
+            )
+        }
+    }
+
     func resetStepProgress() {
         completedStepCount = 0
         sequenceStartedAt = nil
+    }
+
+    @discardableResult
+    func markChecklistItemsPurchased(
+        _ itemIDs: Set<UUID>,
+        purchasedAt: Date
+    ) -> Int {
+        guard !isPaused, isChecklistDriven, !itemIDs.isEmpty else { return 0 }
+
+        var updatedCount = 0
+        let updatedItems = checklistItems.map { item in
+            guard itemIDs.contains(item.id) else { return item }
+            updatedCount += 1
+            return RoutineChecklistItem(
+                id: item.id,
+                title: item.title,
+                intervalDays: item.intervalDays,
+                lastPurchasedAt: purchasedAt,
+                createdAt: item.createdAt
+            )
+        }
+
+        guard updatedCount > 0 else { return 0 }
+        checklistItems = updatedItems
+        if shouldUpdateLastDone(with: purchasedAt) {
+            lastDone = purchasedAt
+            scheduleAnchor = purchasedAt
+        }
+        return updatedCount
     }
 
     @discardableResult

@@ -20,7 +20,7 @@ struct AddRoutineFeatureTests {
     @Test
     func emojiSanitization_keepsOnlyFirstCharacter() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineEmojiChanged("  🔥🎯  ")) {
@@ -32,7 +32,7 @@ struct AddRoutineFeatureTests {
     func emojiSanitization_usesFallbackWhenEmptyInput() async {
         let initialState = AddRoutineFeature.State(routineName: "", routineEmoji: "✅", frequency: .day, frequencyValue: 1)
         let store = TestStore(initialState: initialState) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineEmojiChanged("   \n  "))
@@ -51,15 +51,15 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps)))
+                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 21, "📚", nil, [], [])))
+        await store.receive(.delegate(.didSave("Read", 21, "📚", nil, [], [], .fixedInterval, [])))
     }
 
     @Test
@@ -80,15 +80,15 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, selectedPlaceID, tags, steps in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, selectedPlaceID, tags, steps)))
+                onSave: { name, frequencyInDays, emoji, selectedPlaceID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji, selectedPlaceID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Laundry", 1, "✨", placeID, [], [])))
+        await store.receive(.delegate(.didSave("Laundry", 1, "✨", placeID, [], [], .fixedInterval, [])))
     }
 
     @Test
@@ -104,7 +104,7 @@ struct AddRoutineFeatureTests {
                 selectedPlaceID: removedPlaceID
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(
@@ -124,7 +124,7 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(existingRoutineNames: ["Read"])
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineNameChanged("  read  ")) {
@@ -142,7 +142,7 @@ struct AddRoutineFeatureTests {
                 nameValidationMessage: "A routine with this name already exists."
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.existingRoutineNamesChanged(["Walk"])) {
@@ -164,7 +164,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, _ in
+                onSave: { _, _, _, _, _, _, _, _ in
                     Issue.record("Save effect should not run for duplicate routine names")
                     return .none
                 },
@@ -187,21 +187,21 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps)))
+                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 5, "📚", nil, [], [])))
+        await store.receive(.delegate(.didSave("Read", 5, "📚", nil, [], [], .fixedInterval, [])))
     }
 
     @Test
     func addTagTapped_parsesMultipleTagsAndDeduplicates() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.tagDraftChanged(" Health, focus ,health ")) {
@@ -228,8 +228,8 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps)))
+                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
@@ -239,14 +239,14 @@ struct AddRoutineFeatureTests {
             $0.routineTags = ["Mindset", "night", "focus"]
             $0.tagDraft = ""
         }
-        await store.receive(.delegate(.didSave("Read", 1, "📚", nil, ["Mindset", "night", "focus"], [])))
+        await store.receive(.delegate(.didSave("Read", 1, "📚", nil, ["Mindset", "night", "focus"], [], .fixedInterval, [])))
     }
 
     @Test
     func cancelTapped_sendsCancelDelegate() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, _ in .none },
+                onSave: { _, _, _, _, _, _, _, _ in .none },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }
@@ -270,11 +270,12 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps in
+                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, _, checklistItems in
                     capturedNames.withValue { $0 = [name, "\(frequencyInDays)", emoji] + tags }
                     #expect(placeID == nil)
                     capturedSteps.withValue { $0 = steps }
                     capturedStepTitles.withValue { $0 = steps.map(\.title) }
+                    #expect(checklistItems.isEmpty)
                     return .none
                 },
                 onCancel: { .none }
@@ -287,5 +288,46 @@ struct AddRoutineFeatureTests {
         }
         #expect(capturedNames.value == ["Laundry", "1", "✨"])
         #expect(capturedStepTitles.value == ["Wash clothes", "Hang on the line"])
+    }
+
+    @Test
+    func saveTapped_inChecklistMode_sendsChecklistItemsAndMode() async {
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let capturedChecklistTitles = LockIsolated<[String]>([])
+        let capturedScheduleModes = LockIsolated<[RoutineScheduleMode]>([])
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Do groceries",
+                scheduleMode: .derivedFromChecklist,
+                routineChecklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 3, createdAt: now)],
+                checklistItemDraftTitle: "Milk",
+                checklistItemDraftInterval: 5,
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, _, _, _, _, steps, scheduleMode, checklistItems in
+                    #expect(steps.isEmpty)
+                    capturedScheduleModes.withValue { $0 = [scheduleMode] }
+                    capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            $0.date.now = now
+        }
+
+        await store.send(.saveTapped) {
+            $0.routineChecklistItems = [
+                RoutineChecklistItem(title: "Bread", intervalDays: 3, createdAt: now),
+                RoutineChecklistItem(title: "Milk", intervalDays: 5, createdAt: now)
+            ]
+            $0.checklistItemDraftTitle = ""
+            $0.checklistItemDraftInterval = 3
+        }
+
+        #expect(capturedScheduleModes.value == [.derivedFromChecklist])
+        #expect(capturedChecklistTitles.value == ["Bread", "Milk"])
     }
 }

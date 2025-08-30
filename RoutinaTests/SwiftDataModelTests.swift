@@ -17,6 +17,8 @@ struct SwiftDataModelTests {
         #expect(task.pausedAt == nil)
         #expect(task.tags.isEmpty)
         #expect(task.steps.isEmpty)
+        #expect(task.checklistItems.isEmpty)
+        #expect(task.scheduleMode == .fixedInterval)
         #expect(task.completedStepCount == 0)
         #expect(task.sequenceStartedAt == nil)
     }
@@ -68,5 +70,27 @@ struct SwiftDataModelTests {
         #expect(task.completedStepCount == 0)
         #expect(task.sequenceStartedAt == nil)
         #expect(task.lastDone == makeDate("2026-03-17T11:00:00Z"))
+    }
+
+    @Test
+    func routineTask_checklistItemsSerializeAndUpdateIndividually() {
+        let breadID = UUID()
+        let milkID = UUID()
+        let createdAt = makeDate("2026-03-17T10:00:00Z")
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5, createdAt: createdAt)
+            ]
+        )
+
+        #expect(task.scheduleMode == .derivedFromChecklist)
+        #expect(task.checklistItems.map(\.title) == ["Bread", "Milk"])
+
+        let updatedCount = task.markChecklistItemsPurchased([breadID], purchasedAt: makeDate("2026-03-18T12:00:00Z"))
+        #expect(updatedCount == 1)
+        #expect(task.checklistItems.first(where: { $0.id == breadID })?.lastPurchasedAt == makeDate("2026-03-18T12:00:00Z"))
+        #expect(task.checklistItems.first(where: { $0.id == milkID })?.lastPurchasedAt == nil)
+        #expect(task.lastDone == makeDate("2026-03-18T12:00:00Z"))
     }
 }

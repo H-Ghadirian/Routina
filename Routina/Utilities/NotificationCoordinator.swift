@@ -51,7 +51,9 @@ enum NotificationCoordinator {
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
             triggerDate: triggerDate ?? NotificationPreferences.reminderDate(on: dueDate, calendar: calendar),
-            isPaused: task.isPaused
+            isPaused: task.isPaused,
+            isChecklistDriven: task.isChecklistDriven,
+            nextDueChecklistItemTitle: task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)?.title
         )
     }
 
@@ -78,6 +80,23 @@ enum NotificationCoordinator {
 
         do {
             let now = Date()
+            let descriptor = taskDescriptor(for: taskID)
+            guard let task = try context.fetch(descriptor).first else { return }
+
+            if task.isChecklistDriven {
+                guard let updatedTask = try RoutineLogHistory.markDueChecklistItemsPurchased(
+                    taskID: taskID,
+                    purchasedAt: now,
+                    context: context,
+                    calendar: .current
+                ) else {
+                    return
+                }
+                await NotificationClient.live.schedule(notificationPayload(for: updatedTask.task, referenceDate: now))
+                NotificationCenter.default.postRoutineDidUpdate()
+                return
+            }
+
             guard let advancedTask = try RoutineLogHistory.advanceTask(
                 taskID: taskID,
                 completedAt: now,

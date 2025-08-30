@@ -1,6 +1,19 @@
 import Foundation
 
 enum RoutineDateMath {
+    static func dueDate(
+        for item: RoutineChecklistItem,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        let anchor = item.lastPurchasedAt ?? item.createdAt
+        return calendar.date(
+            byAdding: .day,
+            value: RoutineChecklistItem.clampedIntervalDays(item.intervalDays),
+            to: anchor
+        ) ?? anchor
+    }
+
     static func elapsedDaysSinceLastDone(
         from lastDone: Date?,
         referenceDate: Date,
@@ -24,6 +37,11 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date {
+        if task.isChecklistDriven,
+           let earliestChecklistDueDate = task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)
+                .map({ dueDate(for: $0, referenceDate: referenceDate, calendar: calendar) }) {
+            return earliestChecklistDueDate
+        }
         let anchor = effectiveScheduleAnchor(for: task, referenceDate: referenceDate)
         return calendar.date(byAdding: .day, value: max(Int(task.interval), 1), to: anchor) ?? anchor
     }

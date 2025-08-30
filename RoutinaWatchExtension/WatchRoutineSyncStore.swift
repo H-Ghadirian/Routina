@@ -13,7 +13,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let name: String
         let emoji: String
         let intervalDays: Int
+        let isChecklistDriven: Bool
         let steps: [String]
+        var dueDate: Date?
+        var dueChecklistItemCount: Int
+        var nextDueChecklistItemTitle: String?
         var lastDone: Date?
         var completedStepCount: Int
 
@@ -27,9 +31,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         func daysUntilDue(from now: Date) -> Int {
-            guard let lastDone else { return 0 }
             let calendar = Calendar.current
-            let dueDate = calendar.date(byAdding: .day, value: max(intervalDays, 1), to: lastDone) ?? now
+            let dueDate = dueDate ?? {
+                guard let lastDone else { return now }
+                return calendar.date(byAdding: .day, value: max(intervalDays, 1), to: lastDone) ?? now
+            }()
             let startNow = calendar.startOfDay(for: now)
             let startDue = calendar.startOfDay(for: dueDate)
             return calendar.dateComponents([.day], from: startNow, to: startDue).day ?? 0
@@ -41,17 +47,40 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         func canMarkDone(referenceDate: Date = Date()) -> Bool {
-            !(isDoneToday(referenceDate: referenceDate) && !isInProgress)
+            if isChecklistDriven {
+                return dueChecklistItemCount > 0
+            }
+            return !(isDoneToday(referenceDate: referenceDate) && !isInProgress)
         }
 
         func advancedLocally(at completionDate: Date) -> WatchRoutine {
+            if isChecklistDriven {
+                return WatchRoutine(
+                    id: id,
+                    name: name,
+                    emoji: emoji,
+                    intervalDays: intervalDays,
+                    isChecklistDriven: true,
+                    steps: steps,
+                    dueDate: dueDate,
+                    dueChecklistItemCount: 0,
+                    nextDueChecklistItemTitle: nextDueChecklistItemTitle,
+                    lastDone: completionDate,
+                    completedStepCount: completedStepCount
+                )
+            }
+
             guard !steps.isEmpty else {
                 return WatchRoutine(
                     id: id,
                     name: name,
                     emoji: emoji,
                     intervalDays: intervalDays,
+                    isChecklistDriven: false,
                     steps: steps,
+                    dueDate: dueDate,
+                    dueChecklistItemCount: dueChecklistItemCount,
+                    nextDueChecklistItemTitle: nextDueChecklistItemTitle,
                     lastDone: completionDate,
                     completedStepCount: 0
                 )
@@ -64,7 +93,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                     name: name,
                     emoji: emoji,
                     intervalDays: intervalDays,
+                    isChecklistDriven: false,
                     steps: steps,
+                    dueDate: dueDate,
+                    dueChecklistItemCount: dueChecklistItemCount,
+                    nextDueChecklistItemTitle: nextDueChecklistItemTitle,
                     lastDone: lastDone,
                     completedStepCount: nextCompletedStepCount
                 )
@@ -75,7 +108,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 name: name,
                 emoji: emoji,
                 intervalDays: intervalDays,
+                isChecklistDriven: false,
                 steps: steps,
+                dueDate: dueDate,
+                dueChecklistItemCount: dueChecklistItemCount,
+                nextDueChecklistItemTitle: nextDueChecklistItemTitle,
                 lastDone: completionDate,
                 completedStepCount: 0
             )
@@ -246,10 +283,16 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             let safeName = name.isEmpty ? "Unnamed task" : name
             let emoji = ((raw["emoji"] as? String) ?? "").isEmpty ? "✨" : ((raw["emoji"] as? String) ?? "✨")
             let interval = max((raw["interval"] as? Int) ?? 1, 1)
+            let isChecklistDriven = (raw["isChecklistDriven"] as? Bool) ?? false
             let steps = ((raw["steps"] as? [String]) ?? []).compactMap { value in
                 let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
                 return trimmed.isEmpty ? nil : trimmed
             }
+            let dueDateTimestamp = raw["dueDate"] as? TimeInterval
+            let dueDate = dueDateTimestamp.map(Date.init(timeIntervalSince1970:))
+            let dueChecklistItemCount = max((raw["dueChecklistItemCount"] as? Int) ?? 0, 0)
+            let nextDueChecklistItemTitle = (raw["nextDueChecklistItemTitle"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             let lastDoneTimestamp = raw["lastDone"] as? TimeInterval
             let lastDone = lastDoneTimestamp.map(Date.init(timeIntervalSince1970:))
             let completedStepCount = max((raw["completedStepCount"] as? Int) ?? 0, 0)
@@ -259,7 +302,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 name: safeName,
                 emoji: emoji,
                 intervalDays: interval,
+                isChecklistDriven: isChecklistDriven,
                 steps: steps,
+                dueDate: dueDate,
+                dueChecklistItemCount: dueChecklistItemCount,
+                nextDueChecklistItemTitle: nextDueChecklistItemTitle?.isEmpty == true ? nil : nextDueChecklistItemTitle,
                 lastDone: lastDone,
                 completedStepCount: min(completedStepCount, steps.count)
             )

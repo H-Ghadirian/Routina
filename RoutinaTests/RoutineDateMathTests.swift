@@ -47,6 +47,33 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func dueDate_usesEarliestChecklistItemForChecklistDrivenRoutine() {
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(
+                    title: "Bread",
+                    intervalDays: 3,
+                    lastPurchasedAt: makeDate("2026-03-18T10:00:00Z"),
+                    createdAt: makeDate("2026-03-15T10:00:00Z")
+                ),
+                RoutineChecklistItem(
+                    title: "Milk",
+                    intervalDays: 5,
+                    lastPurchasedAt: makeDate("2026-03-17T10:00:00Z"),
+                    createdAt: makeDate("2026-03-15T10:00:00Z")
+                )
+            ]
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-03-20T10:00:00Z")
+        )
+
+        #expect(dueDate == makeDate("2026-03-21T10:00:00Z"))
+    }
+
+    @Test
     func resumedScheduleAnchor_shiftsByPauseDuration() {
         let task = RoutineTask(
             interval: 7,

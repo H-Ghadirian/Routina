@@ -20,6 +20,9 @@ struct RoutineDetailTCAView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
+                    if store.task.isChecklistDriven {
+                        checklistItemsSection
+                    }
                     routineLogsSection
                 }
                 .padding(RoutineDetailPlatformStyle.detailContentPadding)
@@ -84,8 +87,12 @@ struct RoutineDetailTCAView: View {
                                     selectedPlaceID: store.editSelectedPlaceID,
                                     tags: store.editRoutineTags,
                                     tagDraft: store.editTagDraft,
+                                    scheduleMode: store.editScheduleMode,
                                     steps: store.editRoutineSteps,
                                     stepDraft: store.editStepDraft,
+                                    checklistItems: store.editRoutineChecklistItems,
+                                    checklistItemDraftTitle: store.editChecklistItemDraftTitle,
+                                    checklistItemDraftInterval: store.editChecklistItemDraftInterval,
                                     frequency: store.editFrequency,
                                     frequencyValue: store.editFrequencyValue,
                                     task: store.task
@@ -298,7 +305,15 @@ struct RoutineDetailTCAView: View {
                 statusMetadataRow(label: "Selected", value: selectedDateMetadataText)
             }
 
-            if store.task.hasSequentialSteps {
+            if store.task.isChecklistDriven {
+                statusMetadataRow(
+                    label: "Checklist",
+                    value: "\(store.task.checklistItems.count) \(store.task.checklistItems.count == 1 ? "item" : "items")"
+                )
+                if let nextDueChecklistItemTitle = store.task.nextDueChecklistItem(referenceDate: Date())?.title {
+                    statusMetadataRow(label: "Next Due", value: nextDueChecklistItemTitle)
+                }
+            } else if store.task.hasSequentialSteps {
                 statusMetadataRow(label: "Progress", value: stepProgressText(for: store.task))
                 if let nextStepTitle = store.task.nextStepTitle {
                     statusMetadataRow(label: "Next Step", value: nextStepTitle)
@@ -425,6 +440,51 @@ struct RoutineDetailTCAView: View {
         )
     }
 
+    private var checklistItemsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Checklist Items")
+                .font(.headline)
+
+            if store.task.checklistItems.isEmpty {
+                Text("No checklist items yet")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(sortedChecklistItems, id: \.id) { item in
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.title)
+                                .font(.subheadline.weight(.semibold))
+                            Text(checklistStatusText(for: item))
+                                .font(.caption)
+                                .foregroundStyle(checklistStatusColor(for: item))
+                        }
+
+                        Spacer(minLength: 0)
+
+                        Button("Bought") {
+                            store.send(.markChecklistItemPurchased(item.id))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(store.task.isPaused || !Calendar.current.isDateInToday(selectedDate))
+                    }
+
+                    if item.id != sortedChecklistItems.last?.id {
+                        Divider()
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(routineLogsBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
     private var summaryStatusTitle: String {
         summaryTitle(
             pausedAt: store.task.pausedAt,
@@ -453,8 +513,12 @@ struct RoutineDetailTCAView: View {
         }
     }
 
+    private var canUndoSelectedDate: Bool {
+        !store.task.isChecklistDriven && isSelectedDateDone
+    }
+
     private var completionButtonAction: RoutineDetailFeature.Action {
-        isSelectedDateDone ? .undoSelectedDateCompletion : .markAsDone
+        canUndoSelectedDate ? .undoSelectedDateCompletion : .markAsDone
     }
 
     private var completionButtonTitle: String {
@@ -468,11 +532,16 @@ struct RoutineDetailTCAView: View {
     }
 
     private var completionButtonSystemImage: String? {
-        isSelectedDateDone ? "arrow.uturn.backward" : nil
+        canUndoSelectedDate ? "arrow.uturn.backward" : nil
     }
 
     private var isCompletionButtonDisabled: Bool {
-        guard !isSelectedDateDone else { return false }
+        guard !canUndoSelectedDate else { return false }
+        if store.task.isChecklistDriven {
+            return store.task.isPaused
+                || !Calendar.current.isDateInToday(selectedDate)
+                || checklistDueItemCount == 0
+        }
         return isSelectedDateInFuture || store.task.isPaused || isStepRoutineOffToday
     }
 
@@ -506,6 +575,10 @@ struct RoutineDetailTCAView: View {
             return calendar.isDate(timestamp, inSameDayAs: selectedDate)
         }
         || store.task.lastDone.map { calendar.isDate($0, inSameDayAs: selectedDate) } == true
+    }
+
+    private var checklistDueItemCount: Int {
+        store.task.dueChecklistItems(referenceDate: Date()).count
     }
 
     private var isSelectedDateInFuture: Bool {
@@ -704,7 +777,7 @@ struct RoutineDetailTCAView: View {
     }
 
     private func isOrangeUrgency(_ task: RoutineTask) -> Bool {
-        guard !task.isPaused else { return false }
+        guard !task.isPaused, !task.isChecklistDriven else { return false }
         let anchor = task.scheduleAnchor ?? task.lastDone
         let daysSinceAnchor = RoutineDateMath.elapsedDaysSinceLastDone(from: anchor, referenceDate: Date())
         let progress = Double(daysSinceAnchor) / Double(task.interval)
@@ -725,6 +798,23 @@ struct RoutineDetailTCAView: View {
     ) -> String {
         if let pausedAt {
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
+        }
+        if task.isChecklistDriven {
+            if overdueDays > 0 {
+                return "Overdue by \(overdueDays) \(dayWord(overdueDays))"
+            }
+            if let daysUntilDue = daysUntilDue(task) {
+                if daysUntilDue == 0 {
+                    return "Due today"
+                }
+                if daysUntilDue > 0 {
+                    return "Due in \(daysUntilDue) \(dayWord(daysUntilDue))"
+                }
+            }
+            if isDoneToday {
+                return "Updated today"
+            }
+            return "\(daysSinceLastRoutine) \(dayWord(daysSinceLastRoutine)) since last update"
         }
         if task.isInProgress {
             return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
@@ -754,6 +844,12 @@ struct RoutineDetailTCAView: View {
         task: RoutineTask
     ) -> Color {
         if pausedAt != nil { return .teal }
+        if task.isChecklistDriven {
+            if overdueDays > 0 { return .red }
+            if daysUntilDue(task) == 0 { return RoutineDetailPlatformStyle.dueTodayTitleColor }
+            if isDoneToday { return .green }
+            return .primary
+        }
         if task.isInProgress { return .orange }
         if isDoneToday { return .green }
         if overdueDays > 0 { return .red }
@@ -771,14 +867,60 @@ struct RoutineDetailTCAView: View {
         task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
     }
 
+    private var sortedChecklistItems: [RoutineChecklistItem] {
+        store.task.checklistItems.sorted {
+            RoutineDateMath.dueDate(for: $0, referenceDate: Date())
+                < RoutineDateMath.dueDate(for: $1, referenceDate: Date())
+        }
+    }
+
+    private func checklistStatusText(for item: RoutineChecklistItem) -> String {
+        let calendar = Calendar.current
+        let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: Date(), calendar: calendar)
+        let daysUntilDue = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: Date()),
+            to: calendar.startOfDay(for: dueDate)
+        ).day ?? 0
+
+        if daysUntilDue < 0 {
+            return "Overdue by \(abs(daysUntilDue)) \(dayWord(abs(daysUntilDue)))"
+        }
+        if daysUntilDue == 0 {
+            return "Due today"
+        }
+        if daysUntilDue == 1 {
+            return "Due tomorrow"
+        }
+        return "Due in \(daysUntilDue) days"
+    }
+
+    private func checklistStatusColor(for item: RoutineChecklistItem) -> Color {
+        let calendar = Calendar.current
+        let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: Date(), calendar: calendar)
+        let daysUntilDue = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: Date()),
+            to: calendar.startOfDay(for: dueDate)
+        ).day ?? 0
+
+        if daysUntilDue < 0 { return .red }
+        if daysUntilDue == 0 { return .orange }
+        return .secondary
+    }
+
     private func canSaveEdit(
         name: String,
         emoji: String,
         selectedPlaceID: UUID?,
         tags: [String],
         tagDraft: String,
+        scheduleMode: RoutineScheduleMode,
         steps: [RoutineStep],
         stepDraft: String,
+        checklistItems: [RoutineChecklistItem],
+        checklistItemDraftTitle: String,
+        checklistItemDraftInterval: Int,
         frequency: RoutineDetailFeature.EditFrequency,
         frequencyValue: Int,
         task: RoutineTask
@@ -794,18 +936,32 @@ struct RoutineDetailTCAView: View {
         let candidateSteps = RoutineStep.normalizedTitle(stepDraft).map { title in
             steps + [RoutineStep(title: title)]
         } ?? steps
+        let currentChecklistItems = RoutineChecklistItem.sanitized(task.checklistItems)
+        let candidateChecklistItems = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle).map { title in
+            checklistItems + [RoutineChecklistItem(title: title, intervalDays: checklistItemDraftInterval)]
+        } ?? checklistItems
         let currentInterval = max(Int(task.interval), 1)
         let newInterval = frequencyValue * frequency.daysMultiplier
+        let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
+
+        guard scheduleMode != .derivedFromChecklist || !sanitizedCandidateChecklistItems.isEmpty else {
+            return false
+        }
 
         return trimmedName != currentName
             || emoji != currentEmoji
             || selectedPlaceID != task.placeID
             || candidateTags != currentTags
+            || scheduleMode != task.scheduleMode
             || RoutineStep.sanitized(candidateSteps) != currentSteps
+            || sanitizedCandidateChecklistItems != currentChecklistItems
             || newInterval != currentInterval
     }
 
     private func frequencyText(for task: RoutineTask) -> String {
+        if task.isChecklistDriven {
+            return "Checklist-driven"
+        }
         let interval = max(Int(task.interval), 1)
         if interval % 30 == 0 {
             let value = interval / 30
@@ -837,11 +993,24 @@ struct RoutineDetailTCAView: View {
         isPaused: Bool,
         task: RoutineTask
     ) -> String {
-        if isDone {
+        if !task.isChecklistDriven && isDone {
             return "Undo"
         }
         if isPaused {
             return "Resume the routine to mark dates done"
+        }
+        if task.isChecklistDriven && !Calendar.current.isDateInToday(selectedDate) {
+            return "Checklist routines can only be updated today"
+        }
+        if task.isChecklistDriven {
+            let dueItems = task.dueChecklistItems(referenceDate: Date())
+            if dueItems.isEmpty {
+                return "No due items right now"
+            }
+            if dueItems.count == 1, let title = dueItems.first?.title {
+                return "Buy: \(title)"
+            }
+            return "Buy \(dueItems.count) due items"
         }
         if task.hasSequentialSteps && !Calendar.current.isDateInToday(selectedDate) {
             return "Step routines can only be progressed today"

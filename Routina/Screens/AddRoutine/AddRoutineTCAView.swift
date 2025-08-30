@@ -97,13 +97,36 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section(header: Text("Steps")) {
-                stepComposer
-                editableStepsContent
+            Section(header: Text("Schedule Type")) {
+                Picker("Schedule Type", selection: scheduleModeBinding) {
+                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                    Text("Checklist").tag(RoutineScheduleMode.derivedFromChecklist)
+                }
+                .pickerStyle(.segmented)
 
-                Text("Steps run in order. Leave this empty for a one-step routine.")
+                Text(scheduleModeDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            if store.scheduleMode == .fixedInterval {
+                Section(header: Text("Steps")) {
+                    stepComposer
+                    editableStepsContent
+
+                    Text("Steps run in order. Leave this empty for a one-step routine.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Section(header: Text("Checklist Items")) {
+                    checklistItemComposer
+                    editableChecklistItemsContent
+
+                    Text("Each item gets its own due date. The routine becomes due when the earliest item is due.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section(header: Text("Place")) {
@@ -119,23 +142,25 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section(header: Text("Frequency")) {
-                Picker("Frequency", selection: frequencyBinding) {
-                    ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
-                        Text(frequency.rawValue).tag(frequency)
+            if store.scheduleMode == .fixedInterval {
+                Section(header: Text("Frequency")) {
+                    Picker("Frequency", selection: frequencyBinding) {
+                        ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
+                            Text(frequency.rawValue).tag(frequency)
+                        }
                     }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
-            }
 
-            Section(header: Text("Repeat")) {
-                Stepper(value: frequencyValueBinding, in: 1...365) {
-                    Text(
-                        stepperLabel(
-                            frequency: store.frequency,
-                            frequencyValue: store.frequencyValue
+                Section(header: Text("Repeat")) {
+                    Stepper(value: frequencyValueBinding, in: 1...365) {
+                        Text(
+                            stepperLabel(
+                                frequency: store.frequency,
+                                frequencyValue: store.frequencyValue
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -167,6 +192,27 @@ struct AddRoutineTCAView: View {
         Binding(
             get: { store.stepDraft },
             set: { store.send(.stepDraftChanged($0)) }
+        )
+    }
+
+    private var checklistItemDraftTitleBinding: Binding<String> {
+        Binding(
+            get: { store.checklistItemDraftTitle },
+            set: { store.send(.checklistItemDraftTitleChanged($0)) }
+        )
+    }
+
+    private var checklistItemDraftIntervalBinding: Binding<Int> {
+        Binding(
+            get: { store.checklistItemDraftInterval },
+            set: { store.send(.checklistItemDraftIntervalChanged($0)) }
+        )
+    }
+
+    private var scheduleModeBinding: Binding<RoutineScheduleMode> {
+        Binding(
+            get: { store.scheduleMode },
+            set: { store.send(.scheduleModeChanged($0)) }
         )
     }
 
@@ -207,6 +253,19 @@ struct AddRoutineTCAView: View {
         RoutineStep.normalizedTitle(store.stepDraft) == nil
     }
 
+    private var isAddChecklistItemDisabled: Bool {
+        RoutineChecklistItem.normalizedTitle(store.checklistItemDraftTitle) == nil
+    }
+
+    private var scheduleModeDescription: String {
+        switch store.scheduleMode {
+        case .fixedInterval:
+            return "Use one overall repeat interval for the whole routine."
+        case .derivedFromChecklist:
+            return "Use checklist item due dates to decide when the routine is due."
+        }
+    }
+
     private var placeSelectionDescription: String {
         if let selectedPlaceID = store.selectedPlaceID,
            let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
@@ -240,6 +299,24 @@ struct AddRoutineTCAView: View {
                 store.send(.addStepTapped)
             }
             .disabled(isAddStepDisabled)
+        }
+    }
+
+    private var checklistItemComposer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Bread", text: checklistItemDraftTitleBinding)
+                .onSubmit {
+                    store.send(.addChecklistItemTapped)
+                }
+
+            Stepper(value: checklistItemDraftIntervalBinding, in: 1...365) {
+                Text(checklistIntervalLabel(for: store.checklistItemDraftInterval))
+            }
+
+            Button("Add Item") {
+                store.send(.addChecklistItemTapped)
+            }
+            .disabled(isAddChecklistItemDisabled)
         }
     }
 
@@ -322,6 +399,37 @@ struct AddRoutineTCAView: View {
         }
     }
 
+    @ViewBuilder
+    private var editableChecklistItemsContent: some View {
+        if store.routineChecklistItems.isEmpty {
+            Text("No checklist items yet")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            VStack(spacing: 8) {
+                ForEach(store.routineChecklistItems) { item in
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.title)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(checklistIntervalLabel(for: item.intervalDays))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Button(role: .destructive) {
+                            store.send(.removeChecklistItem(item.id))
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
     private func stepperLabel(
         frequency: AddRoutineFeature.Frequency,
         frequencyValue: Int
@@ -339,6 +447,13 @@ struct AddRoutineTCAView: View {
 
         let unit = frequency.singularLabel
         return "Every \(frequencyValue) \(unit)s"
+    }
+
+    private func checklistIntervalLabel(for intervalDays: Int) -> String {
+        if intervalDays == 1 {
+            return "Runs out in 1 day"
+        }
+        return "Runs out in \(intervalDays) days"
     }
 
 #if os(macOS)
@@ -419,11 +534,17 @@ struct AddRoutineTCAView: View {
                             }
                         }
 
-                        macFormRow("Steps") {
+                        macFormRow("Type") {
                             VStack(alignment: .leading, spacing: 10) {
-                                stepComposer
-                                editableStepsContent
-                                Text("Steps run in order. Leave this empty for a one-step routine.")
+                                Picker("Schedule Type", selection: scheduleModeBinding) {
+                                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                                    Text("Checklist").tag(RoutineScheduleMode.derivedFromChecklist)
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(width: 240)
+
+                                Text(scheduleModeDescription)
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
@@ -445,37 +566,61 @@ struct AddRoutineTCAView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+
+                        if store.scheduleMode == .fixedInterval {
+                            macFormRow("Steps") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    stepComposer
+                                    editableStepsContent
+                                    Text("Steps run in order. Leave this empty for a one-step routine.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        } else {
+                            macFormRow("Checklist") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    checklistItemComposer
+                                    editableChecklistItemsContent
+                                    Text("The routine becomes due when the earliest item is due.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
                     }
                 }
 
-                macSectionCard(title: "Schedule") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        macFormRow("Repeat") {
-                            HStack(spacing: 10) {
-                                Text("Every")
-                                    .foregroundStyle(.secondary)
-                                Stepper(value: frequencyValueBinding, in: 1...365) {
-                                    Text("\(store.frequencyValue)")
-                                        .font(.body.monospacedDigit())
-                                        .frame(minWidth: 28, alignment: .trailing)
-                                }
-                                .fixedSize()
-                                Picker("Unit", selection: frequencyBinding) {
-                                    ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
-                                        Text(frequency.rawValue).tag(frequency)
+                if store.scheduleMode == .fixedInterval {
+                    macSectionCard(title: "Schedule") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            macFormRow("Repeat") {
+                                HStack(spacing: 10) {
+                                    Text("Every")
+                                        .foregroundStyle(.secondary)
+                                    Stepper(value: frequencyValueBinding, in: 1...365) {
+                                        Text("\(store.frequencyValue)")
+                                            .font(.body.monospacedDigit())
+                                            .frame(minWidth: 28, alignment: .trailing)
                                     }
+                                    .fixedSize()
+                                    Picker("Unit", selection: frequencyBinding) {
+                                        ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
+                                            Text(frequency.rawValue).tag(frequency)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.segmented)
+                                    .frame(width: 220)
+                                    Spacer(minLength: 0)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(width: 220)
-                                Spacer(minLength: 0)
                             }
-                        }
 
-                        macFormRow("") {
-                            Text(stepperLabel(frequency: store.frequency, frequencyValue: store.frequencyValue))
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                            macFormRow("") {
+                                Text(stepperLabel(frequency: store.frequency, frequencyValue: store.frequencyValue))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }

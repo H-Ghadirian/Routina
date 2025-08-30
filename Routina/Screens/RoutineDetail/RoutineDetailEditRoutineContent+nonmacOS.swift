@@ -103,60 +103,142 @@ struct RoutineDetailEditRoutineContent: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section(header: Text("Steps")) {
-                HStack(spacing: 10) {
-                    TextField(
-                        "Wash clothes",
-                        text: Binding(
-                            get: { store.editStepDraft },
-                            set: { store.send(.editStepDraftChanged($0)) }
-                        )
+            Section(header: Text("Schedule Type")) {
+                Picker(
+                    "Schedule Type",
+                    selection: Binding(
+                        get: { store.editScheduleMode },
+                        set: { store.send(.editScheduleModeChanged($0)) }
                     )
-                    .onSubmit {
-                        store.send(.editAddStepTapped)
-                    }
-
-                    Button("Add") {
-                        store.send(.editAddStepTapped)
-                    }
-                    .disabled(RoutineStep.normalizedTitle(store.editStepDraft) == nil)
+                ) {
+                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                    Text("Checklist").tag(RoutineScheduleMode.derivedFromChecklist)
                 }
+                .pickerStyle(.segmented)
 
-                if store.editRoutineSteps.isEmpty {
-                    Text("No steps yet")
+                Text(scheduleModeDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if store.editScheduleMode == .fixedInterval {
+                Section(header: Text("Steps")) {
+                    HStack(spacing: 10) {
+                        TextField(
+                            "Wash clothes",
+                            text: Binding(
+                                get: { store.editStepDraft },
+                                set: { store.send(.editStepDraftChanged($0)) }
+                            )
+                        )
+                        .onSubmit {
+                            store.send(.editAddStepTapped)
+                        }
+
+                        Button("Add") {
+                            store.send(.editAddStepTapped)
+                        }
+                        .disabled(RoutineStep.normalizedTitle(store.editStepDraft) == nil)
+                    }
+
+                    if store.editRoutineSteps.isEmpty {
+                        Text("No steps yet")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(Array(store.editRoutineSteps.enumerated()), id: \.element.id) { index, step in
+                                HStack(spacing: 10) {
+                                    Text("\(index + 1).")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 22, alignment: .leading)
+
+                                    Text(step.title)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    HStack(spacing: 6) {
+                                        Button {
+                                            store.send(.editMoveStepUp(step.id))
+                                        } label: {
+                                            Image(systemName: "arrow.up")
+                                        }
+                                        .buttonStyle(.borderless)
+                                        .disabled(index == 0)
+
+                                        Button {
+                                            store.send(.editMoveStepDown(step.id))
+                                        } label: {
+                                            Image(systemName: "arrow.down")
+                                        }
+                                        .buttonStyle(.borderless)
+                                        .disabled(index == store.editRoutineSteps.count - 1)
+
+                                        Button(role: .destructive) {
+                                            store.send(.editRemoveStep(step.id))
+                                        } label: {
+                                            Image(systemName: "trash")
+                                        }
+                                        .buttonStyle(.borderless)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+
+                    Text("Steps run in order. Leave this empty for a one-step routine.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                } else {
-                    VStack(spacing: 8) {
-                        ForEach(Array(store.editRoutineSteps.enumerated()), id: \.element.id) { index, step in
-                            HStack(spacing: 10) {
-                                Text("\(index + 1).")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 22, alignment: .leading)
+                }
+            } else {
+                Section(header: Text("Checklist Items")) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        TextField(
+                            "Bread",
+                            text: Binding(
+                                get: { store.editChecklistItemDraftTitle },
+                                set: { store.send(.editChecklistItemDraftTitleChanged($0)) }
+                            )
+                        )
+                        .onSubmit {
+                            store.send(.editAddChecklistItemTapped)
+                        }
 
-                                Text(step.title)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                        Stepper(
+                            value: Binding(
+                                get: { store.editChecklistItemDraftInterval },
+                                set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
+                            ),
+                            in: 1...365
+                        ) {
+                            Text(checklistIntervalLabel(for: store.editChecklistItemDraftInterval))
+                        }
 
-                                HStack(spacing: 6) {
-                                    Button {
-                                        store.send(.editMoveStepUp(step.id))
-                                    } label: {
-                                        Image(systemName: "arrow.up")
+                        Button("Add Item") {
+                            store.send(.editAddChecklistItemTapped)
+                        }
+                        .disabled(RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil)
+                    }
+
+                    if store.editRoutineChecklistItems.isEmpty {
+                        Text("No checklist items yet")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(store.editRoutineChecklistItems) { item in
+                                HStack(spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.title)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        Text(checklistIntervalLabel(for: item.intervalDays))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
                                     }
-                                    .buttonStyle(.borderless)
-                                    .disabled(index == 0)
-
-                                    Button {
-                                        store.send(.editMoveStepDown(step.id))
-                                    } label: {
-                                        Image(systemName: "arrow.down")
-                                    }
-                                    .buttonStyle(.borderless)
-                                    .disabled(index == store.editRoutineSteps.count - 1)
 
                                     Button(role: .destructive) {
-                                        store.send(.editRemoveStep(step.id))
+                                        store.send(.editRemoveChecklistItem(item.id))
                                     } label: {
                                         Image(systemName: "trash")
                                     }
@@ -164,13 +246,13 @@ struct RoutineDetailEditRoutineContent: View {
                                 }
                             }
                         }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
-                }
 
-                Text("Steps run in order. Leave this empty for a one-step routine.")
+                Text("The routine becomes due when the earliest checklist item is due.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                }
             }
 
             Section(header: Text("Place")) {
@@ -192,35 +274,37 @@ struct RoutineDetailEditRoutineContent: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section(header: Text("Frequency")) {
-                Picker(
-                    "Frequency",
-                    selection: Binding(
-                        get: { store.editFrequency },
-                        set: { store.send(.editFrequencyChanged($0)) }
-                    )
-                ) {
-                    ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
-                        Text(frequency.rawValue).tag(frequency)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            Section(header: Text("Repeat")) {
-                Stepper(
-                    value: Binding(
-                        get: { store.editFrequencyValue },
-                        set: { store.send(.editFrequencyValueChanged($0)) }
-                    ),
-                    in: 1...365
-                ) {
-                    Text(
-                        editStepperLabel(
-                            frequency: store.editFrequency,
-                            frequencyValue: store.editFrequencyValue
+            if store.editScheduleMode == .fixedInterval {
+                Section(header: Text("Frequency")) {
+                    Picker(
+                        "Frequency",
+                        selection: Binding(
+                            get: { store.editFrequency },
+                            set: { store.send(.editFrequencyChanged($0)) }
                         )
-                    )
+                    ) {
+                        ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
+                            Text(frequency.rawValue).tag(frequency)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section(header: Text("Repeat")) {
+                    Stepper(
+                        value: Binding(
+                            get: { store.editFrequencyValue },
+                            set: { store.send(.editFrequencyValueChanged($0)) }
+                        ),
+                        in: 1...365
+                    ) {
+                        Text(
+                            editStepperLabel(
+                                frequency: store.editFrequency,
+                                frequencyValue: store.editFrequencyValue
+                            )
+                        )
+                    }
                 }
             }
 
@@ -256,6 +340,22 @@ struct RoutineDetailEditRoutineContent: View {
             return "Show this routine when you are at \(place.name)."
         }
         return "Anywhere means the routine is always visible."
+    }
+
+    private var scheduleModeDescription: String {
+        switch store.editScheduleMode {
+        case .fixedInterval:
+            return "Use one overall repeat interval for the whole routine."
+        case .derivedFromChecklist:
+            return "Use checklist item due dates to decide when the routine is due."
+        }
+    }
+
+    private func checklistIntervalLabel(for intervalDays: Int) -> String {
+        if intervalDays == 1 {
+            return "Runs out in 1 day"
+        }
+        return "Runs out in \(intervalDays) days"
     }
 }
 #endif

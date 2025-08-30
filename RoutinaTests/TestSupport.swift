@@ -22,6 +22,8 @@ func makeTask(
     placeID: UUID? = nil,
     tags: [String] = [],
     steps: [RoutineStep] = [],
+    checklistItems: [RoutineChecklistItem] = [],
+    scheduleMode: RoutineScheduleMode? = nil,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil
 ) -> RoutineTask {
@@ -31,6 +33,8 @@ func makeTask(
         placeID: placeID,
         tags: tags,
         steps: steps,
+        checklistItems: checklistItems,
+        scheduleMode: scheduleMode,
         interval: interval,
         lastDone: lastDone,
         scheduleAnchor: scheduleAnchor,

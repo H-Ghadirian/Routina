@@ -363,9 +363,9 @@ struct HomeTCAView: View {
                                     Button {
                                         store.send(.markTaskDone(task.taskID))
                                     } label: {
-                                        Label(task.steps.isEmpty ? "Mark Done" : "Complete Next Step", systemImage: "checkmark.circle")
+                                        Label(markDoneLabel(for: task), systemImage: "checkmark.circle")
                                     }
-                                    .disabled(task.isDoneToday || task.isPaused)
+                                    .disabled(isMarkDoneDisabled(task))
 
                                     Button {
                                         store.send(.pauseTask(task.taskID))
@@ -460,9 +460,9 @@ struct HomeTCAView: View {
                                         Button {
                                             store.send(.markTaskDone(task.taskID))
                                         } label: {
-                                            Label(task.steps.isEmpty ? "Mark Done" : "Complete Next Step", systemImage: "checkmark.circle")
+                                            Label(markDoneLabel(for: task), systemImage: "checkmark.circle")
                                         }
-                                        .disabled(task.isDoneToday || task.isPaused)
+                                        .disabled(isMarkDoneDisabled(task))
 
                                         Button {
                                             store.send(.pauseTask(task.taskID))
@@ -1091,7 +1091,7 @@ struct HomeTCAView: View {
     }
 
     private func isYellowUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        if task.isInProgress {
+        if task.isInProgress || task.scheduleMode == .derivedFromChecklist {
             return false
         }
         let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
@@ -1165,15 +1165,7 @@ struct HomeTCAView: View {
     }
 
     private func dueInDays(for task: HomeFeature.RoutineDisplay) -> Int {
-        let calendar = Calendar.current
-        let referenceDate = Date()
-        let anchor = task.scheduleAnchor ?? task.lastDone ?? referenceDate
-        let dueDate = calendar.date(byAdding: .day, value: task.interval, to: anchor) ?? anchor
-        return calendar.dateComponents(
-            [.day],
-            from: calendar.startOfDay(for: referenceDate),
-            to: calendar.startOfDay(for: dueDate)
-        ).day ?? 0
+        task.daysUntilDue
     }
 
     private func overdueDays(for task: HomeFeature.RoutineDisplay) -> Int {
@@ -1182,9 +1174,9 @@ struct HomeTCAView: View {
 
     private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String {
         if task.isPaused {
-            return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+            return "\(cadenceDescription(for: task)) • \(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
         }
-        return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+        return "\(cadenceDescription(for: task)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
     }
 
     private func pauseDescription(for task: HomeFeature.RoutineDisplay) -> String {
@@ -1199,7 +1191,11 @@ struct HomeTCAView: View {
         count == 1 ? "1 done" : "\(count) dones"
     }
 
-    private func cadenceDescription(for interval: Int) -> String {
+    private func cadenceDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.scheduleMode == .derivedFromChecklist {
+            return "Checklist-driven"
+        }
+        let interval = task.interval
         if interval == 1 { return "Daily" }
         if interval % 30 == 0 {
             let months = interval / 30
@@ -1213,6 +1209,17 @@ struct HomeTCAView: View {
     }
 
     private func completionDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.scheduleMode == .derivedFromChecklist {
+            if task.isDoneToday && overdueDays(for: task) == 0 {
+                return "Updated today"
+            }
+            guard task.lastDone != nil else { return "Never updated" }
+
+            let elapsedDays = daysSinceLastRoutine(task)
+            if elapsedDays == 0 { return "Updated today" }
+            if elapsedDays == 1 { return "Updated yesterday" }
+            return "Updated \(elapsedDays) days ago"
+        }
         if task.isInProgress {
             let totalSteps = max(task.steps.count, 1)
             return "Step \(task.completedStepCount + 1) of \(totalSteps)"
@@ -1267,11 +1274,28 @@ struct HomeTCAView: View {
         if task.isInProgress {
             return ("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))
         }
+        let dueIn = dueInDays(for: task)
+
+        if task.scheduleMode == .derivedFromChecklist {
+            if dueIn < 0 {
+                return ("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
+            }
+            if dueIn == 0 {
+                return ("Today", "clock.fill", .orange, Color.orange.opacity(0.16))
+            }
+            if task.isDoneToday {
+                return ("Updated", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
+            }
+            if dueIn == 1 {
+                return ("Tomorrow", "calendar", .orange, Color.orange.opacity(0.14))
+            }
+            return ("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
+        }
+
         if task.isDoneToday {
             return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
         }
 
-        let dueIn = dueInDays(for: task)
         if dueIn < 0 {
             return ("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
         }
@@ -1289,12 +1313,42 @@ struct HomeTCAView: View {
     }
 
     private func stepMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.scheduleMode == .derivedFromChecklist {
+            if let nextDueChecklistItemTitle = task.nextDueChecklistItemTitle {
+                if task.dueChecklistItemCount > 1 {
+                    return " • Due: \(nextDueChecklistItemTitle) +\(task.dueChecklistItemCount - 1)"
+                }
+                return " • Due: \(nextDueChecklistItemTitle)"
+            }
+            let totalItems = task.checklistItemCount
+            return totalItems == 0 ? "" : " • \(totalItems) \(totalItems == 1 ? "item" : "items")"
+        }
         guard !task.steps.isEmpty else { return "" }
         if let nextStepTitle = task.nextStepTitle {
             return " • Next: \(nextStepTitle)"
         }
         let totalSteps = task.steps.count
         return " • \(totalSteps) \(totalSteps == 1 ? "step" : "steps")"
+    }
+
+    private func markDoneLabel(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.scheduleMode == .derivedFromChecklist {
+            if task.dueChecklistItemCount == 0 {
+                return "No Due Items"
+            }
+            if task.dueChecklistItemCount == 1 {
+                return "Buy Due Item"
+            }
+            return "Buy Due Items"
+        }
+        return task.steps.isEmpty ? "Mark Done" : "Complete Next Step"
+    }
+
+    private func isMarkDoneDisabled(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        if task.scheduleMode == .derivedFromChecklist {
+            return task.isPaused || task.dueChecklistItemCount == 0
+        }
+        return task.isDoneToday || task.isPaused
     }
 
     private func placeMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {

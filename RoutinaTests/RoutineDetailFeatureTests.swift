@@ -633,6 +633,68 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func markAsDone_forChecklistRoutine_updatesDueItemsAndPersistsSingleLog() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let createdAt = makeDate("2026-03-15T10:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Do groceries",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🛒",
+            checklistItems: [
+                RoutineChecklistItem(title: "Bread", intervalDays: 3, createdAt: createdAt),
+                RoutineChecklistItem(title: "Milk", intervalDays: 7, createdAt: createdAt)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.markAsDone) {
+            $0.logs = [RoutineLog(timestamp: now, taskID: task.id)]
+            $0.isDoneToday = true
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            return false
+        } assert: {
+            #expect($0.logs.count == 1)
+            $0.isDoneToday = true
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let bread = try #require(persistedTask.checklistItems.first(where: { $0.title == "Bread" }))
+        let milk = try #require(persistedTask.checklistItems.first(where: { $0.title == "Milk" }))
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(bread.lastPurchasedAt == now)
+        #expect(milk.lastPurchasedAt == nil)
+        #expect(persistedLogs.count == 1)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func markAsDone_forStepRoutine_advancesWithoutCreatingCompletionLog() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T10:00:00Z")

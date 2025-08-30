@@ -969,7 +969,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥", nil, ["Evening"], []))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥", nil, ["Evening"], [], .fixedInterval, []))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -1200,18 +1200,24 @@ private func makeDisplay(
     tags: [String] = [],
     steps: [String] = [],
     interval: Int,
+    scheduleMode: RoutineScheduleMode = .fixedInterval,
     lastDone: Date?,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
+    daysUntilDue: Int? = nil,
     isDoneToday: Bool,
     isPaused: Bool = false,
     completedStepCount: Int = 0,
     isInProgress: Bool = false,
     nextStepTitle: String? = nil,
+    checklistItemCount: Int = 0,
+    dueChecklistItemCount: Int = 0,
+    nextDueChecklistItemTitle: String? = nil,
     doneCount: Int = 0
 ) -> HomeFeature.RoutineDisplay {
     let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
     let resolvedIsPaused = isPaused || pausedAt != nil
+    let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : interval)
     return HomeFeature.RoutineDisplay(
         taskID: taskID,
         name: name,
@@ -1222,14 +1228,19 @@ private func makeDisplay(
         tags: tags,
         steps: steps,
         interval: interval,
+        scheduleMode: scheduleMode,
         lastDone: lastDone,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
+        daysUntilDue: resolvedDaysUntilDue,
         isDoneToday: isDoneToday,
         isPaused: resolvedIsPaused,
         completedStepCount: completedStepCount,
         isInProgress: isInProgress,
         nextStepTitle: nextStepTitle,
+        checklistItemCount: checklistItemCount,
+        dueChecklistItemCount: dueChecklistItemCount,
+        nextDueChecklistItemTitle: nextDueChecklistItemTitle,
         doneCount: doneCount
     )
 }

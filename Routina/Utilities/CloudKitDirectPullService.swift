@@ -185,6 +185,8 @@ enum CloudKitDirectPullService {
         var placeID: UUID?
         var tags: [String]?
         var steps: [RoutineStep]?
+        var checklistItems: [RoutineChecklistItem]?
+        var scheduleMode: RoutineScheduleMode?
         var interval: Int16
         var lastDone: Date?
         var scheduleAnchor: Date?
@@ -250,6 +252,28 @@ enum CloudKitDirectPullService {
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let stepsStorageValue = stringValue(in: record, keys: ["stepsStorage", "stepsstorage", "STEPSSTORAGE", "zstepsstorage", "ZSTEPSSTORAGE", "cd_stepsstorage"])
+        let checklistItemsStorageValue = stringValue(
+            in: record,
+            keys: [
+                "checklistItemsStorage",
+                "checklistitemsstorage",
+                "CHECKLISTITEMSSTORAGE",
+                "zchecklistitemsstorage",
+                "ZCHECKLISTITEMSSTORAGE",
+                "cd_checklistitemsstorage"
+            ]
+        )
+        let scheduleModeValue = stringValue(
+            in: record,
+            keys: [
+                "scheduleModeRawValue",
+                "schedulemoderawvalue",
+                "SCHEDULEMODERAWVALUE",
+                "zschedulemoderawvalue",
+                "ZSCHEDULEMODERAWVALUE",
+                "cd_schedulemoderawvalue"
+            ]
+        )
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
         let scheduleAnchorValue = dateValue(
             in: record,
@@ -275,6 +299,8 @@ enum CloudKitDirectPullService {
                 || placeIDValue != nil
                 || tagsStorageValue != nil
                 || stepsStorageValue != nil
+                || checklistItemsStorageValue != nil
+                || scheduleModeValue != nil
                 || lastDoneValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
@@ -292,6 +318,14 @@ enum CloudKitDirectPullService {
             stepsValue = nil
         }
 
+        let checklistItemsValue: [RoutineChecklistItem]?
+        if let checklistItemsStorageValue {
+            let data = Data(checklistItemsStorageValue.utf8)
+            checklistItemsValue = (try? JSONDecoder().decode([RoutineChecklistItem].self, from: data)).map(RoutineChecklistItem.sanitized)
+        } else {
+            checklistItemsValue = nil
+        }
+
         return TaskPayload(
             id: id,
             name: nameValue,
@@ -299,6 +333,8 @@ enum CloudKitDirectPullService {
             placeID: placeIDValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
             steps: stepsValue,
+            checklistItems: checklistItemsValue,
+            scheduleMode: scheduleModeValue.flatMap(RoutineScheduleMode.init(rawValue:)),
             interval: Int16(clamping: intervalValue ?? 1),
             lastDone: lastDoneValue,
             scheduleAnchor: scheduleAnchorValue,
@@ -378,6 +414,12 @@ enum CloudKitDirectPullService {
                 if let steps = payload.steps {
                     taskWithSameName.replaceSteps(steps)
                 }
+                if let checklistItems = payload.checklistItems {
+                    taskWithSameName.replaceChecklistItems(checklistItems)
+                }
+                if let scheduleMode = payload.scheduleMode {
+                    taskWithSameName.scheduleMode = scheduleMode
+                }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
@@ -397,6 +439,12 @@ enum CloudKitDirectPullService {
             if let steps = payload.steps {
                 existing.replaceSteps(steps)
             }
+            if let checklistItems = payload.checklistItems {
+                existing.replaceChecklistItems(checklistItems)
+            }
+            if let scheduleMode = payload.scheduleMode {
+                existing.scheduleMode = scheduleMode
+            }
             existing.interval = payload.interval
             existing.lastDone = payload.lastDone
             existing.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? existing.scheduleAnchor
@@ -414,6 +462,12 @@ enum CloudKitDirectPullService {
                 }
                 if let steps = payload.steps {
                     taskWithSameName.replaceSteps(steps)
+                }
+                if let checklistItems = payload.checklistItems {
+                    taskWithSameName.replaceChecklistItems(checklistItems)
+                }
+                if let scheduleMode = payload.scheduleMode {
+                    taskWithSameName.scheduleMode = scheduleMode
                 }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
@@ -433,6 +487,8 @@ enum CloudKitDirectPullService {
                     placeID: payload.placeID,
                     tags: payload.tags ?? [],
                     steps: payload.steps ?? [],
+                    checklistItems: payload.checklistItems ?? [],
+                    scheduleMode: payload.scheduleMode,
                     interval: payload.interval,
                     lastDone: payload.lastDone,
                     scheduleAnchor: payload.scheduleAnchor,

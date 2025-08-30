@@ -81,8 +81,13 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                             "name": (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
                             "emoji": task.emoji ?? "",
                             "interval": Int(task.interval),
+                            "scheduleMode": task.scheduleMode.rawValue,
+                            "isChecklistDriven": task.isChecklistDriven,
                             "steps": task.steps.map(\.title),
-                            "completedStepCount": task.completedSteps
+                            "completedStepCount": task.completedSteps,
+                            "dueDate": RoutineDateMath.dueDate(for: task, referenceDate: Date()).timeIntervalSince1970,
+                            "dueChecklistItemCount": task.dueChecklistItems(referenceDate: Date()).count,
+                            "nextDueChecklistItemTitle": task.nextDueChecklistItem(referenceDate: Date())?.title as Any
                         ]
 
                         if let lastDone = task.lastDone {
@@ -188,12 +193,21 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
 
             guard let task = try context.fetch(descriptor).first else { return }
             guard !task.isPaused else { return }
-            _ = try RoutineLogHistory.advanceTask(
-                taskID: taskID,
-                completedAt: completedAt,
-                context: context,
-                calendar: .current
-            )
+            if task.isChecklistDriven {
+                _ = try RoutineLogHistory.markDueChecklistItemsPurchased(
+                    taskID: taskID,
+                    purchasedAt: completedAt,
+                    context: context,
+                    calendar: .current
+                )
+            } else {
+                _ = try RoutineLogHistory.advanceTask(
+                    taskID: taskID,
+                    completedAt: completedAt,
+                    context: context,
+                    calendar: .current
+                )
+            }
             NotificationCenter.default.postRoutineDidUpdate()
             pushLatestSnapshot()
         } catch {

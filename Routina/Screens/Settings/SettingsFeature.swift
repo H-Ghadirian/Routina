@@ -629,6 +629,8 @@ struct SettingsFeature {
             var placeID: UUID?
             var tags: [String]?
             var steps: [RoutineStep]?
+            var checklistItems: [RoutineChecklistItem]?
+            var scheduleMode: RoutineScheduleMode?
             var interval: Int
             var lastDone: Date?
             var scheduleAnchor: Date?
@@ -674,7 +676,7 @@ struct SettingsFeature {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = RoutineDataBackup(
-            schemaVersion: 4,
+            schemaVersion: 5,
             exportedAt: Date(),
             places: places.map {
                 .init(
@@ -694,6 +696,8 @@ struct SettingsFeature {
                     placeID: $0.placeID,
                     tags: $0.tags,
                     steps: $0.steps,
+                    checklistItems: $0.checklistItems,
+                    scheduleMode: $0.scheduleMode,
                     interval: max(Int($0.interval), 1),
                     lastDone: $0.lastDone,
                     scheduleAnchor: $0.scheduleAnchor,
@@ -726,7 +730,7 @@ struct SettingsFeature {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
 
-        guard (1...4).contains(backup.schemaVersion) else {
+        guard (1...5).contains(backup.schemaVersion) else {
             throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -776,6 +780,8 @@ struct SettingsFeature {
                     placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
                     tags: task.tags ?? [],
                     steps: task.steps ?? [],
+                    checklistItems: task.checklistItems ?? [],
+                    scheduleMode: task.scheduleMode,
                     interval: Int16(clampedInterval),
                     lastDone: task.lastDone,
                     scheduleAnchor: task.scheduleAnchor,

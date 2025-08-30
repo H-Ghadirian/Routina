@@ -36,8 +36,12 @@ struct AddRoutineFeature: Reducer {
         var routineEmoji: String = "✨"
         var routineTags: [String] = []
         var tagDraft: String = ""
+        var scheduleMode: RoutineScheduleMode = .fixedInterval
         var routineSteps: [RoutineStep] = []
         var stepDraft: String = ""
+        var routineChecklistItems: [RoutineChecklistItem] = []
+        var checklistItemDraftTitle: String = ""
+        var checklistItemDraftInterval: Int = 3
         var frequency: Frequency = .day
         var frequencyValue: Int = 1
         var existingRoutineNames: [String] = []
@@ -49,8 +53,19 @@ struct AddRoutineFeature: Reducer {
             RoutineTask.trimmedName(routineName) ?? ""
         }
 
+        var candidateChecklistItems: [RoutineChecklistItem] {
+            if let pendingItem = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle).map({
+                RoutineChecklistItem(title: $0, intervalDays: checklistItemDraftInterval)
+            }) {
+                return routineChecklistItems + [pendingItem]
+            }
+            return routineChecklistItems
+        }
+
         var isSaveDisabled: Bool {
-            trimmedRoutineName.isEmpty || nameValidationMessage != nil
+            trimmedRoutineName.isEmpty
+                || nameValidationMessage != nil
+                || (scheduleMode == .derivedFromChecklist && candidateChecklistItems.isEmpty)
         }
     }
 
@@ -60,11 +75,16 @@ struct AddRoutineFeature: Reducer {
         case tagDraftChanged(String)
         case addTagTapped
         case removeTag(String)
+        case scheduleModeChanged(RoutineScheduleMode)
         case stepDraftChanged(String)
         case addStepTapped
         case removeStep(UUID)
         case moveStepUp(UUID)
         case moveStepDown(UUID)
+        case checklistItemDraftTitleChanged(String)
+        case checklistItemDraftIntervalChanged(Int)
+        case addChecklistItemTapped
+        case removeChecklistItem(UUID)
         case frequencyChanged(Frequency)
         case frequencyValueChanged(Int)
         case existingRoutineNamesChanged([String])
@@ -76,11 +96,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, String, UUID?, [String], [RoutineStep])
+            case didSave(String, Int, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
         }
     }
 
-    var onSave: (String, Int, String, UUID?, [String], [RoutineStep]) -> Effect<Action>
+    @Dependency(\.date.now) var now
+
+    var onSave: (String, Int, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -107,6 +129,10 @@ struct AddRoutineFeature: Reducer {
             state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
             return .none
 
+        case let .scheduleModeChanged(mode):
+            state.scheduleMode = mode
+            return .none
+
         case let .stepDraftChanged(value):
             state.stepDraft = value
             return .none
@@ -126,6 +152,29 @@ struct AddRoutineFeature: Reducer {
 
         case let .moveStepDown(stepID):
             moveStep(stepID, by: 1, state: &state)
+            return .none
+
+        case let .checklistItemDraftTitleChanged(value):
+            state.checklistItemDraftTitle = value
+            return .none
+
+        case let .checklistItemDraftIntervalChanged(value):
+            state.checklistItemDraftInterval = RoutineChecklistItem.clampedIntervalDays(value)
+            return .none
+
+        case .addChecklistItemTapped:
+            state.routineChecklistItems = appendChecklistItem(
+                from: state.checklistItemDraftTitle,
+                intervalDays: state.checklistItemDraftInterval,
+                createdAt: now,
+                to: state.routineChecklistItems
+            )
+            state.checklistItemDraftTitle = ""
+            state.checklistItemDraftInterval = 3
+            return .none
+
+        case let .removeChecklistItem(itemID):
+            state.routineChecklistItems.removeAll { $0.id == itemID }
             return .none
 
         case let .frequencyChanged(freq):
@@ -158,6 +207,14 @@ struct AddRoutineFeature: Reducer {
             state.tagDraft = ""
             state.routineSteps = appendStep(from: state.stepDraft, to: state.routineSteps)
             state.stepDraft = ""
+            state.routineChecklistItems = appendChecklistItem(
+                from: state.checklistItemDraftTitle,
+                intervalDays: state.checklistItemDraftInterval,
+                createdAt: now,
+                to: state.routineChecklistItems
+            )
+            state.checklistItemDraftTitle = ""
+            state.checklistItemDraftInterval = 3
             updateNameValidation(&state)
             guard !state.isSaveDisabled else { return .none }
             let frequencyInDays = state.frequencyValue * state.frequency.daysMultiplier
@@ -167,7 +224,9 @@ struct AddRoutineFeature: Reducer {
                 state.routineEmoji,
                 state.selectedPlaceID,
                 state.routineTags,
-                RoutineStep.sanitized(state.routineSteps)
+                state.scheduleMode == .fixedInterval ? RoutineStep.sanitized(state.routineSteps) : [],
+                state.scheduleMode,
+                state.scheduleMode == .derivedFromChecklist ? RoutineChecklistItem.sanitized(state.routineChecklistItems) : []
             )
 
         case .cancelTapped:
@@ -195,6 +254,22 @@ struct AddRoutineFeature: Reducer {
     private func appendStep(from draft: String, to currentSteps: [RoutineStep]) -> [RoutineStep] {
         guard let title = RoutineStep.normalizedTitle(draft) else { return currentSteps }
         return currentSteps + [RoutineStep(title: title)]
+    }
+
+    private func appendChecklistItem(
+        from draftTitle: String,
+        intervalDays: Int,
+        createdAt: Date,
+        to currentItems: [RoutineChecklistItem]
+    ) -> [RoutineChecklistItem] {
+        guard let title = RoutineChecklistItem.normalizedTitle(draftTitle) else { return currentItems }
+        return currentItems + [
+            RoutineChecklistItem(
+                title: title,
+                intervalDays: intervalDays,
+                createdAt: createdAt
+            )
+        ]
     }
 
     private func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {

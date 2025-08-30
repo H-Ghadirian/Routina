@@ -20,14 +20,19 @@ struct HomeFeature {
         var tags: [String]
         var steps: [String]
         var interval: Int
+        var scheduleMode: RoutineScheduleMode
         var lastDone: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var daysUntilDue: Int
         var isDoneToday: Bool
         var isPaused: Bool
         var completedStepCount: Int
         var isInProgress: Bool
         var nextStepTitle: String?
+        var checklistItemCount: Int
+        var dueChecklistItemCount: Int
+        var nextDueChecklistItemTitle: String?
         var doneCount: Int
     }
 
@@ -189,6 +194,54 @@ struct HomeFeature {
                     return .none
                 }
                 let completionDate = now
+                let currentCalendar = calendar
+
+                if state.routineTasks[index].isChecklistDriven {
+                    let hadCompletionToday = state.routineTasks[index].lastDone.map {
+                        currentCalendar.isDate($0, inSameDayAs: completionDate)
+                    } ?? false
+                    let dueItemIDs = Set(
+                        state.routineTasks[index]
+                            .dueChecklistItems(referenceDate: completionDate, calendar: currentCalendar)
+                            .map(\.id)
+                    )
+                    let updatedItemCount = state.routineTasks[index].markChecklistItemsPurchased(
+                        dueItemIDs,
+                        purchasedAt: completionDate
+                    )
+                    guard updatedItemCount > 0 else { return .none }
+                    if !hadCompletionToday {
+                        state.doneStats.totalCount += 1
+                        state.doneStats.countsByTaskID[id, default: 0] += 1
+                    }
+                    refreshDisplays(&state)
+                    syncSelectedRoutineDetailState(&state)
+
+                    return .run { @MainActor [id, completionDate, currentCalendar] _ in
+                        do {
+                            let context = ModelContext(self.modelContext().container)
+                            guard let taskState = try RoutineLogHistory.markDueChecklistItemsPurchased(
+                                taskID: id,
+                                purchasedAt: completionDate,
+                                context: context,
+                                calendar: currentCalendar
+                            ) else {
+                                return
+                            }
+                            await self.notificationClient.schedule(
+                                NotificationCoordinator.notificationPayload(
+                                    for: taskState.task,
+                                    referenceDate: completionDate,
+                                    calendar: currentCalendar
+                                )
+                            )
+                            NotificationCenter.default.postRoutineDidUpdate()
+                        } catch {
+                            print("Failed to update checklist routine from home list: \(error)")
+                        }
+                    }
+                }
+
                 let result = state.routineTasks[index].advance(completedAt: completionDate, calendar: calendar)
                 if case .completedRoutine = result {
                     state.doneStats.totalCount += 1
@@ -197,7 +250,6 @@ struct HomeFeature {
                 refreshDisplays(&state)
                 syncSelectedRoutineDetailState(&state)
 
-                let currentCalendar = calendar
                 return .run { @MainActor [id, completionDate, currentCalendar] _ in
                     do {
                         let context = ModelContext(self.modelContext().container)
@@ -291,7 +343,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji, placeID, tags, steps))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji, placeID, tags, steps, scheduleMode, checklistItems))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -311,6 +363,8 @@ struct HomeFeature {
                             placeID: placeID,
                             tags: tags,
                             steps: steps,
+                            checklistItems: checklistItems,
+                            scheduleMode: scheduleMode,
                             interval: Int16(freq),
                             lastDone: nil,
                             scheduleAnchor: self.now
@@ -353,8 +407,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, emoji, placeID, tags, steps in
-                    .send(.delegate(.didSave(name, freq, emoji, placeID, tags, steps)))
+                onSave: { name, freq, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, freq, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
@@ -392,6 +446,12 @@ struct HomeFeature {
             locationAvailability = .unrestricted
         }
 
+        let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
+        let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
+        let daysUntilDue = task.isPaused
+            ? 0
+            : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
+
         return RoutineDisplay(
             taskID: task.id,
             name: task.name ?? "Unnamed task",
@@ -402,14 +462,19 @@ struct HomeFeature {
             tags: task.tags,
             steps: task.steps.map(\.title),
             interval: max(Int(task.interval), 1),
+            scheduleMode: task.scheduleMode,
             lastDone: task.lastDone,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
+            daysUntilDue: daysUntilDue,
             isDoneToday: doneTodayFromLastDone,
             isPaused: task.isPaused,
             completedStepCount: task.completedSteps,
             isInProgress: task.isInProgress,
             nextStepTitle: task.nextStepTitle,
+            checklistItemCount: task.checklistItems.count,
+            dueChecklistItemCount: dueChecklistItems.count,
+            nextDueChecklistItemTitle: nextDueChecklistItem?.title,
             doneCount: doneStats.countsByTaskID[task.id, default: 0]
         )
     }

@@ -109,6 +109,75 @@ enum RoutineLogHistory {
     }
 
     @MainActor
+    static func markDueChecklistItemsPurchased(
+        taskID: UUID,
+        purchasedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> (task: RoutineTask, updatedItemCount: Int)? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let dueItemIDs = Set(task.dueChecklistItems(referenceDate: purchasedAt, calendar: calendar).map(\.id))
+        guard !dueItemIDs.isEmpty else { return nil }
+
+        return try markChecklistItemsPurchased(
+            taskID: taskID,
+            itemIDs: dueItemIDs,
+            purchasedAt: purchasedAt,
+            context: context,
+            calendar: calendar
+        )
+    }
+
+    @MainActor
+    static func markChecklistItemsPurchased(
+        taskID: UUID,
+        itemIDs: Set<UUID>,
+        purchasedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> (task: RoutineTask, updatedItemCount: Int)? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let updatedItemCount = task.markChecklistItemsPurchased(itemIDs, purchasedAt: purchasedAt)
+        guard updatedItemCount > 0 else {
+            return nil
+        }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        if let existingLog = existingLogs.first(where: { log in
+            guard let timestamp = log.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: purchasedAt)
+        }) {
+            let currentTimestamp = existingLog.timestamp ?? .distantPast
+            if purchasedAt > currentTimestamp {
+                existingLog.timestamp = purchasedAt
+            }
+        } else {
+            context.insert(RoutineLog(timestamp: purchasedAt, taskID: taskID))
+        }
+
+        try context.save()
+        return (task, updatedItemCount)
+    }
+
+    @MainActor
     static func removeCompletion(
         taskID: UUID,
         on completedDay: Date,

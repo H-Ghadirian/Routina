@@ -63,7 +63,7 @@ struct WatchHomeView: View {
                         Button {
                             syncStore.markRoutineDone(id: routine.id)
                         } label: {
-                            Label("Done", systemImage: "checkmark")
+                            Label(routine.isChecklistDriven ? "Buy Due" : "Done", systemImage: "checkmark")
                         }
                         .tint(.green)
                         .disabled(!routine.canMarkDone())
@@ -101,6 +101,20 @@ struct WatchHomeView: View {
     }
 
     private func statusText(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {
+        if routine.isChecklistDriven {
+            let dueIn = routine.daysUntilDue(from: Date())
+            if dueIn < 0 {
+                let overdueDays = abs(dueIn)
+                let dayWord = overdueDays == 1 ? "day" : "days"
+                return "Overdue by \(overdueDays) \(dayWord)"
+            }
+            if dueIn == 0, let nextDueChecklistItemTitle = routine.nextDueChecklistItemTitle {
+                return "\(nextDueChecklistItemTitle) due today"
+            }
+            if dueIn == 0 { return "Due today" }
+            if routine.isDoneToday() { return "Updated today" }
+            return "Due in \(dueIn) days"
+        }
         if routine.isInProgress {
             return "Step \(routine.completedStepCount + 1) of \(routine.steps.count)"
         }
@@ -115,6 +129,13 @@ struct WatchHomeView: View {
     }
 
     private func statusColor(for routine: WatchRoutineSyncStore.WatchRoutine) -> Color {
+        if routine.isChecklistDriven {
+            let dueIn = routine.daysUntilDue(from: Date())
+            if dueIn < 0 { return .red }
+            if dueIn == 0 { return .orange }
+            if routine.isDoneToday() { return .green }
+            return .secondary
+        }
         if routine.isInProgress { return .orange }
         let dueIn = routine.daysUntilDue(from: Date())
         if dueIn < 0 { return .red }
