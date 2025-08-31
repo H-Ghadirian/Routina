@@ -210,6 +210,21 @@ final class RoutineTask {
         guard let lastDone else { return true }
         return candidate > lastDone
     }
+
+    static func trimmedName(_ name: String?) -> String? {
+        name?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func normalizedName(_ name: String?) -> String? {
+        guard let trimmed = trimmedName(name), !trimmed.isEmpty else { return nil }
+        return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
+
+    static func sanitizedEmoji(_ input: String, fallback: String) -> String {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let first = trimmed.first else { return fallback }
+        return String(first)
+    }
 }
 
 @Model

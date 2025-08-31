@@ -46,7 +46,7 @@ struct AddRoutineFeature: Reducer {
         var nameValidationMessage: String?
 
         var trimmedRoutineName: String {
-            routineName.trimmingCharacters(in: .whitespacesAndNewlines)
+            RoutineTask.trimmedName(routineName) ?? ""
         }
 
         var isSaveDisabled: Bool {
@@ -91,7 +91,7 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .routineEmojiChanged(emoji):
-            state.routineEmoji = sanitizedEmoji(from: emoji, fallback: state.routineEmoji)
+            state.routineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.routineEmoji)
             return .none
 
         case let .tagDraftChanged(value):
@@ -177,32 +177,19 @@ struct AddRoutineFeature: Reducer {
         }
     }
 
-    private func sanitizedEmoji(from input: String, fallback: String) -> String {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let first = trimmed.first else { return fallback }
-        return String(first)
-    }
-
     private func updateNameValidation(_ state: inout State) {
-        guard let normalizedName = normalizedRoutineName(state.routineName) else {
+        guard let normalizedName = RoutineTask.normalizedName(state.routineName) else {
             state.nameValidationMessage = nil
             return
         }
 
         let hasDuplicate = state.existingRoutineNames.contains { existingName in
-            normalizedRoutineName(existingName) == normalizedName
+            RoutineTask.normalizedName(existingName) == normalizedName
         }
 
         state.nameValidationMessage = hasDuplicate
             ? "A routine with this name already exists."
             : nil
-    }
-
-    private func normalizedRoutineName(_ name: String?) -> String? {
-        guard let name else { return nil }
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 
     private func appendStep(from draft: String, to currentSteps: [RoutineStep]) -> [RoutineStep] {

@@ -2,6 +2,16 @@ import Foundation
 import SwiftData
 import UserNotifications
 
+extension Notification.Name {
+    static let routineDidUpdate = Notification.Name("routineDidUpdate")
+}
+
+extension NotificationCenter {
+    func postRoutineDidUpdate() {
+        post(name: .routineDidUpdate, object: nil)
+    }
+}
+
 enum NotificationCoordinator {
     static let categoryIdentifier = "ROUTINE_REMINDER"
     static let doneActionIdentifier = "ROUTINE_DONE"
@@ -58,7 +68,7 @@ enum NotificationCoordinator {
         case snoozeActionIdentifier:
             await snoozeTask(taskID: taskID)
         default:
-            NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            NotificationCenter.default.postRoutineDidUpdate()
         }
     }
 
@@ -77,7 +87,7 @@ enum NotificationCoordinator {
                 return
             }
             await NotificationClient.live.schedule(notificationPayload(for: advancedTask.task, referenceDate: now))
-            NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            NotificationCenter.default.postRoutineDidUpdate()
         } catch {
             context.rollback()
             NSLog("Notification action failed to mark routine done: \(error.localizedDescription)")

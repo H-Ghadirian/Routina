@@ -174,7 +174,7 @@ enum CloudKitDirectPullService {
 
         if context.hasChanges {
             try context.save()
-            NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            NotificationCenter.default.postRoutineDidUpdate()
         }
     }
 
@@ -362,14 +362,14 @@ enum CloudKitDirectPullService {
                 task.id == payloadID
             }
         )
-        let normalizedIncomingName = normalizedRoutineName(payload.name)
+        let normalizedIncomingName = RoutineTask.normalizedName(payload.name)
 
         if let existing = try context.fetch(descriptor).first {
             if let normalizedIncomingName,
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context),
                taskWithSameName.id != existing.id {
                 // Keep local uniqueness invariant if cloud data contains a duplicate name.
-                taskWithSameName.name = cleanedRoutineName(payload.name)
+                taskWithSameName.name = RoutineTask.trimmedName(payload.name)
                 taskWithSameName.emoji = payload.emoji
                 taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
@@ -388,7 +388,7 @@ enum CloudKitDirectPullService {
                 return taskWithSameName.id
             }
 
-            existing.name = cleanedRoutineName(payload.name)
+            existing.name = RoutineTask.trimmedName(payload.name)
             existing.emoji = payload.emoji
             existing.placeID = payload.placeID
             if let tags = payload.tags {
@@ -428,7 +428,7 @@ enum CloudKitDirectPullService {
             context.insert(
                 RoutineTask(
                     id: payload.id,
-                    name: cleanedRoutineName(payload.name),
+                    name: RoutineTask.trimmedName(payload.name),
                     emoji: payload.emoji,
                     placeID: payload.placeID,
                     tags: payload.tags ?? [],
@@ -691,16 +691,7 @@ enum CloudKitDirectPullService {
     ) throws -> RoutineTask? {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         return tasks.first { task in
-            normalizedRoutineName(task.name) == normalizedName
+            RoutineTask.normalizedName(task.name) == normalizedName
         }
-    }
-
-    private static func cleanedRoutineName(_ name: String?) -> String? {
-        name?.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func normalizedRoutineName(_ name: String?) -> String? {
-        guard let cleaned = cleanedRoutineName(name), !cleaned.isEmpty else { return nil }
-        return cleaned.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 }

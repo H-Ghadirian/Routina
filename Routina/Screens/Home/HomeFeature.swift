@@ -83,37 +83,12 @@ struct HomeFeature {
             switch action {
             case .onAppear:
                 state.hideUnavailableRoutines = SharedDefaults.app[.appSettingHideUnavailableRoutines]
+                let loadTasksEffect = loadTasksEffect()
 #if os(macOS)
-                return .run { @MainActor send in
-                    do {
-                        let context = ModelContext(self.modelContext().container)
-                        try self.enforceUniqueRoutineNames(in: context)
-                        _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
-                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-                        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-                        send(.tasksLoadedSuccessfully(tasks, places, self.makeDoneStats(tasks: tasks, logs: logs)))
-                    } catch {
-                        send(.tasksLoadFailed)
-                    }
-                }
-                .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
+                return loadTasksEffect
 #else
                 return .concatenate(
-                    .run { @MainActor send in
-                        do {
-                            let context = ModelContext(self.modelContext().container)
-                            try self.enforceUniqueRoutineNames(in: context)
-                            _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
-                            let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                            let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-                            let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-                            send(.tasksLoadedSuccessfully(tasks, places, self.makeDoneStats(tasks: tasks, logs: logs)))
-                        } catch {
-                            send(.tasksLoadFailed)
-                        }
-                    }
-                    .cancellable(id: CancelID.loadTasks, cancelInFlight: true),
+                    loadTasksEffect,
                     .run { @MainActor send in
                         let snapshot = await self.locationClient.snapshot(false)
                         send(.locationSnapshotUpdated(snapshot))
@@ -129,7 +104,7 @@ struct HomeFeature {
                 guard state.addRoutineState != nil else { return .none }
                 return .concatenate(
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks)))),
-                    .send(.addRoutineSheet(.availablePlacesChanged(placeSummaries(from: tasks, places: places))))
+                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: places, linkedTo: tasks))))
                 )
 
             case .tasksLoadFailed:
@@ -151,7 +126,7 @@ struct HomeFeature {
                 if isPresented {
                     state.addRoutineState = AddRoutineFeature.State(
                         existingRoutineNames: existingRoutineNames(from: state.routineTasks),
-                        availablePlaces: placeSummaries(from: state.routineTasks, places: state.routinePlaces)
+                        availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
                     )
                 } else {
                     state.addRoutineState = nil
@@ -187,13 +162,13 @@ struct HomeFeature {
                         await self.notificationClient.cancel(id.uuidString)
                     }
                     try? context.save()
-                    NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                    NotificationCenter.default.postRoutineDidUpdate()
                 }
                 guard state.addRoutineState != nil else { return deleteEffect }
                 return .merge(
                     deleteEffect,
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
-                    .send(.addRoutineSheet(.availablePlacesChanged(placeSummaries(from: state.routineTasks, places: state.routinePlaces))))
+                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks))))
                 )
 
             case let .markTaskDone(id):
@@ -227,7 +202,7 @@ struct HomeFeature {
                                 calendar: currentCalendar
                             )
                         )
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                     } catch {
                         print("Failed to mark routine as done from home list: \(error)")
                     }
@@ -257,7 +232,7 @@ struct HomeFeature {
                         task.pausedAt = pauseDate
                         try context.save()
                         await self.notificationClient.cancel(id.uuidString)
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                     } catch {
                         print("Failed to pause routine from home list: \(error)")
                     }
@@ -289,7 +264,7 @@ struct HomeFeature {
                                 calendar: currentCalendar
                             )
                         )
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                     } catch {
                         print("Failed to resume routine from home list: \(error)")
                     }
@@ -304,8 +279,7 @@ struct HomeFeature {
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
-                        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmedName.isEmpty else {
+                        guard let trimmedName = RoutineTask.trimmedName(name), !trimmedName.isEmpty else {
                             send(.routineSaveFailed)
                             return
                         }
@@ -338,7 +312,7 @@ struct HomeFeature {
                 refreshDisplays(&state)
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
-                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                NotificationCenter.default.postRoutineDidUpdate()
                 let payload = makeNotificationPayload(for: task, referenceDate: now)
                 return .run { _ in
                     await self.notificationClient.schedule(payload)
@@ -435,6 +409,23 @@ struct HomeFeature {
         NotificationCoordinator.notificationPayload(for: task, referenceDate: referenceDate, calendar: calendar)
     }
 
+    private func loadTasksEffect() -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(self.modelContext().container)
+                try self.enforceUniqueRoutineNames(in: context)
+                _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+                let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+                send(.tasksLoadedSuccessfully(tasks, places, self.makeDoneStats(tasks: tasks, logs: logs)))
+            } catch {
+                send(.tasksLoadFailed)
+            }
+        }
+        .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
+    }
+
     private func existingRoutineNames(from tasks: [RoutineTask]) -> [String] {
         tasks.compactMap(\.name)
     }
@@ -467,21 +458,6 @@ struct HomeFeature {
         state.archivedRoutineDisplays = archived
     }
 
-    private func placeSummaries(from tasks: [RoutineTask], places: [RoutinePlace]) -> [RoutinePlaceSummary] {
-        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
-            guard let placeID = task.placeID else { return }
-            partialResult[placeID, default: 0] += 1
-        }
-
-        return places
-            .map { place in
-                place.summary(linkedRoutineCount: linkedCounts[place.id, default: 0])
-            }
-            .sorted { lhs, rhs in
-                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-            }
-    }
-
     private func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {
         let taskIDs = Set(tasks.map(\.id))
         let countsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
@@ -499,13 +475,13 @@ struct HomeFeature {
         in context: ModelContext,
         excludingID: UUID? = nil
     ) throws -> Bool {
-        guard let normalized = normalizedRoutineName(name) else { return false }
+        guard let normalized = RoutineTask.normalizedName(name) else { return false }
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         return tasks.contains { task in
             if let excludingID, task.id == excludingID {
                 return false
             }
-            return normalizedRoutineName(task.name) == normalized
+            return RoutineTask.normalizedName(task.name) == normalized
         }
     }
 
@@ -515,7 +491,7 @@ struct HomeFeature {
         var removedAny = false
 
         for task in tasks {
-            guard let normalized = normalizedRoutineName(task.name) else { continue }
+            guard let normalized = RoutineTask.normalizedName(task.name) else { continue }
             tasksByNormalizedName[normalized, default: []].append(task)
         }
 
@@ -535,7 +511,7 @@ struct HomeFeature {
 
         if removedAny {
             try context.save()
-            NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            NotificationCenter.default.postRoutineDidUpdate()
         }
     }
 
@@ -551,12 +527,6 @@ struct HomeFeature {
         return (whitespacePenalty, foldedName, task.id.uuidString.lowercased())
     }
 
-    private func normalizedRoutineName(_ name: String?) -> String? {
-        guard let name else { return nil }
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-    }
 }
 
 extension HomeFeature {

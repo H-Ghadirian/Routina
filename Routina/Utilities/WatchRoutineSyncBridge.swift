@@ -38,7 +38,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleRoutineDidUpdate),
-            name: Notification.Name("routineDidUpdate"),
+            name: .routineDidUpdate,
             object: nil
         )
 
@@ -194,7 +194,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                 context: context,
                 calendar: .current
             )
-            NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            NotificationCenter.default.postRoutineDidUpdate()
             pushLatestSnapshot()
         } catch {
             NSLog("Watch markDone sync failed: \(error.localizedDescription)")

@@ -204,7 +204,7 @@ struct SettingsFeature {
                                 modelContext: context
                             )
                         }
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                         await send(
                             .cloudSyncFinished(
                                 success: true,
@@ -249,7 +249,7 @@ struct SettingsFeature {
                             cloudKitContainerIdentifier: cloudContainerIdentifier,
                             modelContext: modelContext()
                         )
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                         await send(
                             .cloudDataResetFinished(
                                 success: true,
@@ -342,7 +342,7 @@ struct SettingsFeature {
                             )
                         )
                         try context.save()
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                         let summaries = try self.fetchPlaceSummaries(in: context)
                         send(.placesLoaded(summaries))
                         send(
@@ -407,7 +407,7 @@ struct SettingsFeature {
                         }
 
                         try context.save()
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                         let summaries = try self.fetchPlaceSummaries(in: context)
                         send(.placesLoaded(summaries))
                         send(.placeOperationFinished(success: true, message: "Place deleted."))
@@ -507,7 +507,7 @@ struct SettingsFeature {
                         let importedSummary = try replaceAllRoutineData(with: jsonData, in: context)
                         try await rescheduleNotificationsAfterImport(in: context)
 
-                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        NotificationCenter.default.postRoutineDidUpdate()
                         await send(
                             .routineDataTransferFinished(
                                 success: true,
@@ -582,18 +582,7 @@ struct SettingsFeature {
     private func fetchPlaceSummaries(in context: ModelContext) throws -> [RoutinePlaceSummary] {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
-            guard let placeID = task.placeID else { return }
-            partialResult[placeID, default: 0] += 1
-        }
-
-        return places
-            .map { place in
-                place.summary(linkedRoutineCount: linkedCounts[place.id, default: 0])
-            }
-            .sorted { lhs, rhs in
-                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-            }
+        return RoutinePlace.summaries(from: places, linkedTo: tasks)
     }
 
     private func hasDuplicatePlaceName(_ name: String, in context: ModelContext) throws -> Bool {

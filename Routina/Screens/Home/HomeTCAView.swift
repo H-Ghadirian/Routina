@@ -49,7 +49,7 @@ struct HomeTCAView: View {
                 requestRefresh()
             }
             .onReceive(
-                NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))
+                NotificationCenter.default.publisher(for: .routineDidUpdate)
                     .receive(on: RunLoop.main)
             ) { _ in
                 requestRefresh()

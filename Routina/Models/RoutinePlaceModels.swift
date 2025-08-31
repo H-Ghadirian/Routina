@@ -86,6 +86,21 @@ final class RoutinePlace {
         guard let cleaned = cleanedName(name) else { return nil }
         return cleaned.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
+
+    static func summaries(from places: [RoutinePlace], linkedTo tasks: [RoutineTask]) -> [RoutinePlaceSummary] {
+        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        return places
+            .map { place in
+                place.summary(linkedRoutineCount: linkedCounts[place.id, default: 0])
+            }
+            .sorted { lhs, rhs in
+                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+    }
 }
 
 extension RoutinePlace: Equatable {

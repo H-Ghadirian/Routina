@@ -34,7 +34,7 @@ final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
         CloudKitSyncDiagnostics.recordRemoteNotificationReceived()
-        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+        NotificationCenter.default.postRoutineDidUpdate()
         completionHandler(.noData)
     }
 
@@ -84,7 +84,7 @@ final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
         didReceiveRemoteNotification userInfo: [String: Any]
     ) {
         CloudKitSyncDiagnostics.recordRemoteNotificationReceived()
-        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+        NotificationCenter.default.postRoutineDidUpdate()
     }
 
 }
