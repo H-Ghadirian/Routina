@@ -1,9 +1,10 @@
 import ComposableArchitecture
 import CoreData
-import UserNotifications
 import Foundation
 
-struct RoutineDetailFeature: Reducer {
+@Reducer
+struct RoutineDetailFeature {
+
     struct State: Equatable {
         var task: RoutineTask
         var logs: [RoutineLog] = []
@@ -12,67 +13,66 @@ struct RoutineDetailFeature: Reducer {
     }
 
     enum Action: Equatable {
+        case onAppear
         case markAsDone
         case logsLoaded([RoutineLog])
-        case onAppear
+        case delegate(DelegateAction)
+
+        enum DelegateAction: Equatable {
+            case routineUpdated
+        }
     }
 
     @Dependency(\.notificationClient) var notificationClient
-    @Dependency(\.uuid) var uuid
-    @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
-    func reduce(into state: inout State, action: Action) -> Effect<Action> {
-        switch action {
-        case .markAsDone:
-            state.task.lastDone = Date()
-            state.daysSinceLastRoutine = 0
-            state.overdueDays = 0
-            return handleMarkAsDone(task: state.task)
+    @Dependency(\.managedObjectContext) var viewContext
 
-        case let .logsLoaded(logs):
-            state.logs = logs
-            return .none
-        case .onAppear:
-            return handleOnAppear(state.task)
-        }
-    }
+    var body: some ReducerOf<Self> {
+        Reduce { state, action in
+            switch action {
+            case .onAppear:
+                let task = state.task
+                return .run { send in
+                    let logs = try fetchLogs(for: task)
+                    await send(.logsLoaded(logs))
+                }
+                
+            case .markAsDone:
+                state.task.lastDone = now
+                state.daysSinceLastRoutine = 0
+                state.overdueDays = 0
+                
+                let task = state.task
+                return .run { send in
+                    let log = RoutineLog(context: self.viewContext)
+                    log.timestamp = task.lastDone
+                    log.task = task
+                    
+                    try self.viewContext.save()
+                    let updatedLogs = try fetchLogs(for: task)
+                    await send(.logsLoaded(updatedLogs))
+                    
+                    await self.notificationClient.schedule(task)
+                    await send(.delegate(.routineUpdated))
+                    
+                } catch: { error, _ in
+                    print("Error marking as done: \(error)")
+                }
 
-    private func handleOnAppear(_ task: RoutineTask) -> Effect<Action> {
-        let context = task.managedObjectContext!
-        return .run { send in
-            do {
-                let logs = try context.fetch(sortedDonesFetchRequest(for: task))
-                await send(.logsLoaded(logs))
-            } catch {
-                print("Error loading logs: \(error)")
+            case let .logsLoaded(logs):
+                state.logs = logs
+                return .none
+                
+            case .delegate:
+                return .none
             }
         }
     }
-
-    private func sortedDonesFetchRequest(
-        for task: RoutineTask
-    ) -> NSFetchRequest<RoutineLog> {
+    
+    private func fetchLogs(for task: RoutineTask) throws -> [RoutineLog] {
         let fetchRequest: NSFetchRequest<RoutineLog> = RoutineLog.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "task == %@", task)
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
-        return fetchRequest
-    }
-
-    private func handleMarkAsDone(task: RoutineTask) -> Effect<Action> {
-        let context = task.managedObjectContext!
-        let log = RoutineLog(context: context)
-        log.timestamp = task.lastDone
-        log.task = task
-
-        return .run { send in
-            do {
-                try context.save()
-                let updatedLogs = try context.fetch(sortedDonesFetchRequest(for: task))
-                await send(.logsLoaded(updatedLogs))
-                await notificationClient.schedule(task)
-            } catch {
-                print("Error saving context: \(error)")
-            }
-        }
+        return try viewContext.fetch(fetchRequest)
     }
 }

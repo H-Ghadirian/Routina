@@ -4,24 +4,45 @@ import Foundation
 
 @Reducer
 struct HomeFeature {
+    // In HomeFeature.swift
+
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
-        var isAddRoutineSheetPresented: Bool = false
-        var addRoutineState: AddRoutineFeature.State?
+        @Presents var addRoutine: AddRoutineFeature.State?
+        @Presents var routineDetail: RoutineDetailFeature.State?
+
+        // ✅ ADD THIS COMPUTED PROPERTY AND HELPER FUNCTION
+        var sortedTasks: [RoutineTask] {
+            routineTasks.sorted { task1, task2 in
+                urgencyLevel(for: task1) > urgencyLevel(for: task2)
+            }
+        }
+        
+        private func urgencyLevel(for task: RoutineTask) -> Int {
+            let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
+            let dueIn = Int(task.interval) - daysSinceLastRoutine
+
+            if dueIn <= 0 { return 3 } // Overdue
+            if dueIn == 1 { return 2 } // Due today
+            if dueIn == 2 { return 1 } // Due tomorrow
+            return 0 // Least urgent
+        }
     }
     
-    // Actions are now explicit for success and failure, making them Equatable.
     enum Action: Equatable {
         case onAppear
         case tasksLoadedSuccessfully([RoutineTask])
         case tasksLoadFailed
         
-        case setAddRoutineSheet(Bool)
         case deleteTask(IndexSet)
         
-        case addRoutineSheet(AddRoutineFeature.Action)
+        case addButtonTapped
+        case addRoutine(PresentationAction<AddRoutineFeature.Action>)
+
         case routineSavedSuccessfully(RoutineTask)
         case routineSaveFailed
+
+        case routineDetail(PresentationAction<RoutineDetailFeature.Action>)
     }
 
     @Dependency(\.notificationClient) var notificationClient
@@ -53,11 +74,10 @@ struct HomeFeature {
                 // You could set an error state here to show an alert.
                 return .none
                 
-            case let .setAddRoutineSheet(isPresented):
-                state.isAddRoutineSheetPresented = isPresented
-                state.addRoutineState = isPresented ? AddRoutineFeature.State() : nil
+            case .addButtonTapped:
+                state.addRoutine = AddRoutineFeature.State()
                 return .none
-                
+
             case let .deleteTask(offsets):
                 let tasksToDelete = offsets.map { state.routineTasks[$0] }
                 state.routineTasks.remove(atOffsets: offsets)
@@ -70,14 +90,15 @@ struct HomeFeature {
                 }
                 
             // MARK: - Child Feature Logic
-            case .addRoutineSheet(.delegate(.didCancel)):
-                state.isAddRoutineSheetPresented = false
-                state.addRoutineState = nil
+            case .addRoutine(.presented(.delegate(.didCancel))):
+                state.addRoutine = nil
                 return .none
-                
-            case let .addRoutineSheet(.delegate(.didSave(name, freq))):
-                state.isAddRoutineSheetPresented = false
-                state.addRoutineState = nil
+
+//            case .addRoutine(.delegate(.didCancel)):
+//                state.addRoutine = nil
+//                return .none
+            case let .addRoutine(.presented(.delegate(.didSave(name, freq)))):
+                state.addRoutine = nil
                 
                 return .run { send in
                     do {
@@ -92,6 +113,22 @@ struct HomeFeature {
                         await send(.routineSaveFailed)
                     }
                 }
+
+//            case let .addRoutine(.delegate(.didSave(name, freq))):
+//                state.addRoutine = nil
+//                return .run { send in
+//                    do {
+//                        let newRoutine = RoutineTask(context: self.viewContext)
+//                        newRoutine.name = name
+//                        newRoutine.interval = Int16(freq)
+//                        newRoutine.lastDone = Date()
+//                        
+//                        try self.viewContext.save()
+//                        await send(.routineSavedSuccessfully(newRoutine))
+//                    } catch {
+//                        await send(.routineSaveFailed)
+//                    }
+//                }
                 
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
@@ -103,22 +140,21 @@ struct HomeFeature {
                 print("❌ Failed to save routine.")
                 return .none
 
-            case .addRoutineSheet:
+            case .routineDetail(.presented(.delegate(.routineUpdated))):
+                return .run { send in
+                    await send(.onAppear)
+                }
+            case .routineDetail:
+                return .none
+            case .addRoutine:
                 return .none
             }
         }
-        .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
-            AddRoutineFeature(
-                onSave: { name, freq in .send(.delegate(.didSave(name, freq))) },
-                onCancel: { .send(.delegate(.didCancel)) }
-            )
+        .ifLet(\.$addRoutine, action: \.addRoutine) {
+            AddRoutineFeature()
         }
-    }
-}
-
-// This extension is still needed to make the Action enum Equatable.
-extension RoutineTask {
-    public static func == (lhs: RoutineTask, rhs: RoutineTask) -> Bool {
-        lhs.objectID == rhs.objectID
+        .ifLet(\.$routineDetail, action: \.routineDetail) {
+            RoutineDetailFeature()
+        }
     }
 }

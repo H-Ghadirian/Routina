@@ -1,10 +1,11 @@
+// In HomeTCAView.swift
+
 import ComposableArchitecture
 import CoreData
 import SwiftUI
 
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
-    @State private var showingAddRoutine = false
 
     var body: some View {
         WithViewStore(store, observe: { $0 }) { viewStore in
@@ -16,6 +17,7 @@ struct HomeTCAView: View {
                             .foregroundColor(.gray)
                             .padding()
                     } else {
+                        // ✅ FIX: Pass the ViewStore directly
                         listOfSortedTasksView(viewStore)
                     }
                 }
@@ -23,25 +25,21 @@ struct HomeTCAView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
-                            viewStore.send(.setAddRoutineSheet(true))
+                            // ✅ FIX: Send the correct action
+                            viewStore.send(.addButtonTapped)
                         } label: {
                             Label("Add Routine", systemImage: "plus")
                         }
                     }
                 }
+                // ✅ FIX: Use the modern .sheet(store:) modifier
                 .sheet(
-                    isPresented: viewStore.binding(
-                        get: \.isAddRoutineSheetPresented,
-                        send: HomeFeature.Action.setAddRoutineSheet
+                    store: self.store.scope(
+                        state: \.$addRoutine,
+                        action: \.addRoutine
                     )
-                ) {
-                    IfLetStore(
-                        self.store.scope(
-                            state: \.addRoutineState,
-                            action: \.addRoutineSheet
-                        ),
-                        then: AddRoutineTCAView.init(store:)
-                    )
+                ) { store in
+                    AddRoutineTCAView(store: store)
                 }
                 .task {
                     viewStore.send(.onAppear)
@@ -50,28 +48,18 @@ struct HomeTCAView: View {
         }
     }
 
-    private func sortedTasks(_ viewStore: ViewStoreOf<HomeFeature>) -> [RoutineTask] {
-        viewStore.routineTasks.sorted { task1, task2 in
-            urgencyLevel(for: task1) > urgencyLevel(for: task2)
-        }
-    }
-
-    private func urgencyLevel(for task: RoutineTask) -> Int {
-        let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
-        let dueIn = Int(task.interval) - daysSinceLastRoutine
-
-        if dueIn <= 0 { return 3 } // Overdue, highest priority
-        if dueIn == 1 { return 2 } // Due today
-        if dueIn == 2 { return 1 } // Due tomorrow
-        return 0 // Least urgent
-    }
+    // ✅ FIX: This function is no longer needed, logic was moved to the State
+    // private func sortedTasks(_ viewStore: ViewStoreOf<HomeFeature>) -> [RoutineTask] { ... }
+    
+    // ✅ FIX: This function is no longer needed, logic was moved to the State
+    // private func urgencyLevel(for task: RoutineTask) -> Int { ... }
 
     private func listOfSortedTasksView(_ viewStore: ViewStoreOf<HomeFeature>) -> some View {
         List {
-            ForEach(sortedTasks(viewStore)) { task in
+            // ✅ FIX: Use the computed property from the State
+            ForEach(viewStore.state.sortedTasks) { task in
                 NavigationLink(
-                    destination:
-                        routineDetailTCAView(task: task)
+                    state: RoutineDetailFeature.State(task: task)
                 ) {
                     HStack {
                         Text(task.name ?? "Unnamed task")
@@ -82,22 +70,15 @@ struct HomeTCAView: View {
             }
             .onDelete { viewStore.send(.deleteTask($0)) }
         }
+        // ✅ This was already correct, but ensure it's attached to the List
+        .navigationDestination(
+            store: self.store.scope(state: \.$routineDetail, action: \.routineDetail)
+        ) { childStore in
+            RoutineDetailTCAView(store: childStore)
+        }
     }
     
-    private func routineDetailTCAView(task: RoutineTask) -> some View {
-        RoutineDetailTCAView(
-            store: Store(
-                initialState: RoutineDetailFeature.State(
-                    task: task,
-                    logs: [], //task.logs,
-                    daysSinceLastRoutine: Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0,
-                    overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0)
-                ),
-                reducer: { RoutineDetailFeature() }
-            )
-        )
-    }
-
+    // This function is fine as it's purely for presentation
     private func urgencySquare(for task: RoutineTask) -> some View {
         let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
         let progress = Double(daysSinceLastRoutine) / Double(task.interval)

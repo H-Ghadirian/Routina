@@ -1,7 +1,8 @@
 import Foundation
 import ComposableArchitecture
 
-struct AddRoutineFeature: Reducer {
+@Reducer
+struct AddRoutineFeature {
     struct State: Equatable {
         var routineName: String = ""
         var frequency: Int = 1
@@ -10,8 +11,8 @@ struct AddRoutineFeature: Reducer {
     enum Action: Equatable {
         case routineNameChanged(String)
         case frequencyChanged(Int)
-        case saveTapped
-        case cancelTapped
+        case saveButtonTapped
+        case cancelButtonTapped
         case delegate(Delegate)
 
         enum Delegate: Equatable {
@@ -19,27 +20,27 @@ struct AddRoutineFeature: Reducer {
             case didSave(String, Int)
         }
     }
+    
+    var body: some ReducerOf<Self> {
+        Reduce { state, action in
+            switch action {
+            case let .routineNameChanged(name):
+                state.routineName = name
+                return .none
 
-    var onSave: (String, Int) -> Effect<Action>
-    var onCancel: () -> Effect<Action>
+            case let .frequencyChanged(freq):
+                state.frequency = freq
+                return .none
 
-    func reduce(into state: inout State, action: Action) -> Effect<Action> {
-        switch action {
-        case let .routineNameChanged(name):
-            state.routineName = name
-            return .none
+            case .saveButtonTapped:
+                return .send(.delegate(.didSave(state.routineName, state.frequency)))
 
-        case let .frequencyChanged(freq):
-            state.frequency = freq
-            return .none
-
-        case .saveTapped:
-            return onSave(state.routineName, state.frequency)
-
-        case .cancelTapped:
-            return onCancel()
-        case .delegate(_):
-            return .none
+            case .cancelButtonTapped:
+                return .send(.delegate(.didCancel))
+                
+            case .delegate:
+                return .none
+            }
         }
     }
 }
