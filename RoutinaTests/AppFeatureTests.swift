@@ -14,4 +14,15 @@ struct AppFeatureTests {
             $0.selectedTab = .stats
         }
     }
+
+    @Test
+    func tabSelected_switchesToSearchTab() async {
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        }
+
+        await store.send(.tabSelected(.search)) {
+            $0.selectedTab = .search
+        }
+    }
 }

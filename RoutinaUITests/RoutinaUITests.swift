@@ -45,6 +45,41 @@ struct RoutinaUITests {
     }
 
     @MainActor
+    @Test
+    func statsShowsActiveAndArchivedRoutineCounts() {
+        let app = makeApp()
+        app.launch()
+        #expect(app.wait(for: .runningForeground, timeout: 10))
+
+        let activeRoutineName = "Active-\(UUID().uuidString.prefix(6))"
+        let archivedRoutineName = "Archived-\(UUID().uuidString.prefix(6))"
+
+        addRoutine(named: String(activeRoutineName), in: app)
+        addRoutine(named: String(archivedRoutineName), in: app)
+
+        let archivedRow = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", String(archivedRoutineName))
+        ).firstMatch
+        #expect(archivedRow.waitForExistence(timeout: 10))
+        archivedRow.tap()
+
+        let pauseButton = app.buttons["Pause Routine"]
+        #expect(pauseButton.waitForExistence(timeout: 10))
+        pauseButton.tap()
+
+        let homeBackButton = app.navigationBars.buttons["Routina"].firstMatch
+        #expect(homeBackButton.waitForExistence(timeout: 10))
+        homeBackButton.tap()
+
+        let statsTab = app.tabBars.buttons["Stats"].firstMatch
+        #expect(statsTab.waitForExistence(timeout: 10))
+        statsTab.tap()
+
+        #expect(app.staticTexts["1 active routine"].waitForExistence(timeout: 10))
+        #expect(app.staticTexts["1 archived routine"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
     private func makeApp() -> XCUIApplication {
         let app = XCUIApplication()
         let runID = UUID().uuidString.lowercased()
@@ -58,5 +93,24 @@ struct RoutinaUITests {
     @MainActor
     private func homeAddRoutineButton(in app: XCUIApplication) -> XCUIElement {
         app.navigationBars.buttons["Add Routine"].firstMatch
+    }
+
+    @MainActor
+    private func addRoutine(named routineName: String, in app: XCUIApplication) {
+        let addRoutineButton = homeAddRoutineButton(in: app)
+        #expect(addRoutineButton.waitForExistence(timeout: 10))
+        addRoutineButton.tap()
+
+        let nameField = app.textFields["Routine name"]
+        #expect(nameField.waitForExistence(timeout: 10))
+        nameField.tap()
+        nameField.typeText(routineName)
+
+        let saveButton = app.navigationBars.buttons["Save"]
+        #expect(saveButton.waitForExistence(timeout: 10))
+        saveButton.tap()
+
+        let row = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", routineName)).firstMatch
+        #expect(row.waitForExistence(timeout: 10))
     }
 }

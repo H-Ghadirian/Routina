@@ -56,6 +56,8 @@ struct AddRoutineFeatureTests {
                 },
                 onCancel: { .none }
             )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
         }
 
         await store.send(.saveTapped)
@@ -85,6 +87,8 @@ struct AddRoutineFeatureTests {
                 },
                 onCancel: { .none }
             )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
         }
 
         await store.send(.saveTapped)
@@ -170,6 +174,8 @@ struct AddRoutineFeatureTests {
                 },
                 onCancel: { .none }
             )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
         }
 
         await store.send(.saveTapped)
@@ -192,6 +198,8 @@ struct AddRoutineFeatureTests {
                 },
                 onCancel: { .none }
             )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
         }
 
         await store.send(.saveTapped)
@@ -233,6 +241,8 @@ struct AddRoutineFeatureTests {
                 },
                 onCancel: { .none }
             )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
         }
 
         await store.send(.saveTapped) {
@@ -280,6 +290,8 @@ struct AddRoutineFeatureTests {
                 },
                 onCancel: { .none }
             )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
         }
 
         await store.send(.saveTapped) {
@@ -315,19 +327,21 @@ struct AddRoutineFeatureTests {
                 onCancel: { .none }
             )
         } withDependencies: {
+            setTestDateDependencies(&$0, now: now)
             $0.date.now = now
         }
 
-        await store.send(.saveTapped) {
-            $0.routineChecklistItems = [
-                RoutineChecklistItem(title: "Bread", intervalDays: 3, createdAt: now),
-                RoutineChecklistItem(title: "Milk", intervalDays: 5, createdAt: now)
-            ]
-            $0.checklistItemDraftTitle = ""
-            $0.checklistItemDraftInterval = 3
+        await store.withExhaustivity(.off) {
+            await store.send(.saveTapped) {
+                $0.checklistItemDraftTitle = ""
+                $0.checklistItemDraftInterval = 3
+            }
         }
 
         #expect(capturedScheduleModes.value == [.derivedFromChecklist])
         #expect(capturedChecklistTitles.value == ["Bread", "Milk"])
+        #expect(store.state.routineChecklistItems.map(\.title) == ["Bread", "Milk"])
+        #expect(store.state.routineChecklistItems.map(\.intervalDays) == [3, 5])
+        #expect(store.state.routineChecklistItems.allSatisfy { $0.createdAt == now })
     }
 }

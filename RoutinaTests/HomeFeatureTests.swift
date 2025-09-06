@@ -77,6 +77,7 @@ struct HomeFeatureTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
             $0.modelContext = { context }
             $0.calendar = calendar
             $0.date.now = now
@@ -164,6 +165,7 @@ struct HomeFeatureTests {
                     emoji: "📚",
                     interval: 2,
                     lastDone: lastDone,
+                    daysUntilDue: 0,
                     isDoneToday: false,
                     doneCount: 1
                 )
@@ -195,6 +197,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -281,6 +284,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -324,6 +328,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -338,6 +343,7 @@ struct HomeFeatureTests {
                     interval: 2,
                     lastDone: nil,
                     scheduleAnchor: anchorDate,
+                    daysUntilDue: -8,
                     isDoneToday: false
                 )
             ]
@@ -382,6 +388,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -430,6 +437,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -478,6 +486,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -525,6 +534,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -621,6 +631,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -657,6 +668,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -708,6 +720,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0, now: now)
             $0.modelContext = { context }
             $0.date.now = now
             $0.notificationClient.schedule = { _ in }
@@ -780,6 +793,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0, now: resumeDate, calendar: calendar)
             $0.modelContext = { context }
             $0.calendar = calendar
             $0.date.now = resumeDate
@@ -799,6 +813,7 @@ struct HomeFeatureTests {
                     interval: 4,
                     lastDone: nil,
                     scheduleAnchor: expectedAnchor,
+                    daysUntilDue: -1,
                     isDoneToday: false
                 )
             ]
@@ -989,6 +1004,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.locationClient.snapshot = { _ in

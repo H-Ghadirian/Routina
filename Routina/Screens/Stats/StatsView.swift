@@ -7,11 +7,24 @@ struct StatsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var logs: [RoutineLog]
+    @Query private var tasks: [RoutineTask]
 
     @State private var selectedRange: DoneChartRange = .week
 
     private var completionDates: [Date] {
         logs.compactMap(\.timestamp)
+    }
+
+    private var totalDoneCount: Int {
+        completionDates.count
+    }
+
+    private var activeRoutineCount: Int {
+        tasks.filter { !$0.isPaused }.count
+    }
+
+    private var archivedRoutineCount: Int {
+        tasks.filter(\.isPaused).count
     }
 
     private var chartPoints: [DoneChartPoint] {
@@ -200,7 +213,15 @@ struct StatsView: View {
             ),
             (
                 icon: "checkmark.seal.fill",
-                text: "\(completionDates.count) logs saved"
+                text: "\(totalDoneCount) total dones"
+            ),
+            (
+                icon: "checklist.checked",
+                text: activeRoutineCount == 1 ? "1 active routine" : "\(activeRoutineCount) active routines"
+            ),
+            (
+                icon: "archivebox.fill",
+                text: archivedRoutineCount == 1 ? "1 archived routine" : "\(archivedRoutineCount) archived routines"
             )
         ]
     }
@@ -427,13 +448,63 @@ struct StatsView: View {
             )
 
             summaryCard(
-                icon: "archivebox.fill",
+                icon: "checkmark.seal.fill",
                 accent: .blue,
-                title: "Lifetime logs",
-                value: completionDates.count.formatted(),
+                title: "Total dones",
+                value: totalDoneCount.formatted(),
                 caption: "All recorded completions"
             )
+
+            summaryCard(
+                icon: "checklist.checked",
+                accent: .green,
+                title: "Active routines",
+                value: activeRoutineCount.formatted(),
+                caption: activeRoutineCardCaption
+            )
+
+            summaryCard(
+                icon: "archivebox.fill",
+                accent: .teal,
+                title: "Archived routines",
+                value: archivedRoutineCount.formatted(),
+                caption: archivedRoutineCardCaption
+            )
         }
+    }
+
+    private var activeRoutineCardCaption: String {
+        if tasks.isEmpty {
+            return "No routines created yet"
+        }
+
+        if activeRoutineCount == 0 {
+            return archivedRoutineCount == 1
+                ? "Your only routine is paused"
+                : "All routines are currently paused"
+        }
+
+        if archivedRoutineCount == 0 {
+            return "Everything is currently in rotation"
+        }
+
+        return archivedRoutineCount == 1
+            ? "1 paused routine excluded"
+            : "\(archivedRoutineCount) paused routines excluded"
+    }
+
+    private var archivedRoutineCardCaption: String {
+        if tasks.isEmpty {
+            return "No routines created yet"
+        }
+
+        if archivedRoutineCount == 0 {
+            return "No archived routines right now"
+        }
+
+        return archivedRoutineCount == 1
+            ? "1 routine is paused and hidden from Home"
+            : "\(archivedRoutineCount) routines are paused and hidden from Home"
     }
 
     private var chartSection: some View {

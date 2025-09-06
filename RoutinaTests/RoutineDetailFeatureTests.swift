@@ -242,6 +242,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -273,6 +274,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -306,6 +308,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -396,6 +399,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
@@ -658,6 +662,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
             $0.modelContext = { context }
             $0.calendar = calendar
             $0.date.now = now
@@ -666,17 +671,28 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone) {
-            $0.logs = [RoutineLog(timestamp: now, taskID: task.id)]
-            $0.isDoneToday = true
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
+        await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.isDoneToday = true
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+            }
         }
+
+        #expect(store.state.isDoneToday)
+        #expect(store.state.daysSinceLastRoutine == 0)
+        #expect(store.state.overdueDays == 0)
+        #expect(store.state.logs.count == 1)
 
         await store.receive {
             if case .logsLoaded = $0 { return true }
             return false
         } assert: {
+            let verificationContext = ModelContext(context.container)
+            let descriptor = FetchDescriptor<RoutineLog>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+            $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
             #expect($0.logs.count == 1)
             $0.isDoneToday = true
             $0.daysSinceLastRoutine = 0

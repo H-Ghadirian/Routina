@@ -446,7 +446,7 @@ struct HomeTCAView: View {
             }
 #else
             VStack(spacing: 0) {
-                if !isCompactHeaderHidden {
+                if !isCompactHeaderHidden && hasActiveOptionalFilters {
                     compactHomeHeader
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
@@ -595,33 +595,9 @@ struct HomeTCAView: View {
         EmptyView()
 #else
         VStack(alignment: .leading, spacing: 10) {
-            compactSummaryRow
-            compactFilterPicker
-
-            if hasActiveOptionalFilters {
-                activeFilterChipBar
-            }
+            activeFilterChipBar
         }
 #endif
-    }
-
-    private var compactFilterPicker: some View {
-        Picker("Routine Filter", selection: $selectedFilter) {
-            ForEach(RoutineListFilter.allCases) { filter in
-                Text(filter.rawValue).tag(filter)
-            }
-        }
-        .pickerStyle(.segmented)
-    }
-
-    private var compactSummaryRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(compactSummaryText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
     }
 
     private var filterSheetButton: some View {
@@ -798,10 +774,6 @@ struct HomeTCAView: View {
         return store.routinePlaces.first(where: { $0.id == selectedManualPlaceFilterID })?.displayName
     }
 
-    private var showsFilterSheetButton: Bool {
-        !availableTags.isEmpty || hasPlaceAwareContent
-    }
-
     private var activeOptionalFilterCount: Int {
         var count = 0
 
@@ -822,8 +794,16 @@ struct HomeTCAView: View {
         activeOptionalFilterCount > 0
     }
 
+    private var hasSavedPlaces: Bool {
+        !sortedRoutinePlaces.isEmpty
+    }
+
+    private var hasPlaceLinkedRoutines: Bool {
+        store.routineTasks.contains { $0.placeID != nil }
+    }
+
     private var hasPlaceAwareContent: Bool {
-        !store.routinePlaces.isEmpty || store.routineTasks.contains { $0.placeID != nil }
+        hasSavedPlaces || hasPlaceLinkedRoutines
     }
 
     @ViewBuilder
@@ -864,8 +844,8 @@ struct HomeTCAView: View {
                     }
                 }
 
-                if hasPlaceAwareContent {
-                    Section("Place") {
+                Section("Place") {
+                    if hasSavedPlaces {
                         Picker("Show routines", selection: manualPlaceFilterBinding) {
                             Text("All routines").tag(Optional<UUID>.none)
                             ForEach(sortedRoutinePlaces) { place in
@@ -873,15 +853,20 @@ struct HomeTCAView: View {
                             }
                         }
                         .pickerStyle(.menu)
-
-                        if store.locationSnapshot.authorizationStatus.isAuthorized {
-                            Toggle("Hide unavailable routines", isOn: hideUnavailableRoutinesBinding)
-                        }
-
-                        Text(manualPlaceFilterDescription)
-                            .font(.caption)
+                    } else {
+                        Text("No saved places yet")
                             .foregroundStyle(.secondary)
+                    }
 
+                    if hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized {
+                        Toggle("Hide unavailable routines", isOn: hideUnavailableRoutinesBinding)
+                    }
+
+                    Text(placeFilterSectionDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if hasPlaceLinkedRoutines {
                         Text(locationStatusText)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -928,6 +913,13 @@ struct HomeTCAView: View {
             return "Choose a saved place to show only routines linked to that place."
         }
         return "Showing only routines linked to \(place.displayName)."
+    }
+
+    private var placeFilterSectionDescription: String {
+        if hasSavedPlaces {
+            return manualPlaceFilterDescription
+        }
+        return "Save a place in Settings, then link it to a routine to filter by place here."
     }
 
     private var locationStatusText: String {
@@ -1464,25 +1456,6 @@ struct HomeTCAView: View {
 
     private var availableTags: [String] {
         HomeFeature.availableTags(from: allRoutineDisplays)
-    }
-
-    private var compactSummaryText: String {
-        var components = [doneCountDescription(for: store.doneStats.totalCount)]
-
-        let activeCount = store.routineDisplays.count
-        components.append(activeCount == 1 ? "1 active" : "\(activeCount) active")
-
-        let awayCount = store.awayRoutineDisplays.count
-        if awayCount > 0 {
-            components.append("\(awayCount) away")
-        }
-
-        let archivedCount = store.archivedRoutineDisplays.count
-        if archivedCount > 0 {
-            components.append("\(archivedCount) archived")
-        }
-
-        return components.joined(separator: " • ")
     }
 
     private func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {

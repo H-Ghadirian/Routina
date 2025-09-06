@@ -1,4 +1,5 @@
 import Foundation
+import ComposableArchitecture
 import SwiftData
 @testable @preconcurrency import Routina
 
@@ -94,4 +95,19 @@ func makeDate(_ value: String) -> Date {
         fatalError("Invalid ISO date string: \(value)")
     }
     return date
+}
+
+func makeTestCalendar() -> Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+    return calendar
+}
+
+func setTestDateDependencies(
+    _ dependencies: inout DependencyValues,
+    now: Date = makeDate("2026-03-20T10:00:00Z"),
+    calendar: Calendar = makeTestCalendar()
+) {
+    dependencies.date.now = now
+    dependencies.calendar = calendar
 }
