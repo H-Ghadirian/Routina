@@ -48,6 +48,23 @@ struct RoutinaMacApp: App {
             height: RoutinaMacWindowSizing.defaultHeight
         )
         .windowResizability(.contentMinSize)
+        .commands {
+            RoutineCommands()
+        }
+
+        Window("Stats", id: RoutinaMacWindowID.stats) {
+            StatsView()
+                .frame(
+                    minWidth: RoutinaMacStatsSizing.minWidth,
+                    minHeight: RoutinaMacStatsSizing.minHeight
+                )
+                .modelContainer(persistence.container)
+        }
+        .defaultSize(
+            width: RoutinaMacStatsSizing.defaultWidth,
+            height: RoutinaMacStatsSizing.defaultHeight
+        )
+        .windowResizability(.contentMinSize)
 
         Settings {
             SettingsTCAView(
@@ -72,4 +89,11 @@ private enum RoutinaMacWindowSizing {
 private enum RoutinaMacSettingsSizing {
     static let minWidth: CGFloat = 640
     static let minHeight: CGFloat = 560
+}
+
+private enum RoutinaMacStatsSizing {
+    static let defaultWidth: CGFloat = 900
+    static let defaultHeight: CGFloat = 620
+    static let minWidth: CGFloat = 760
+    static let minHeight: CGFloat = 520
 }

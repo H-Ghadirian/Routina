@@ -20,6 +20,12 @@ struct AppView: View {
                 }
                 .tag(Tab.home)
 
+                StatsView()
+                    .tabItem {
+                        Label(Tab.stats.rawValue, systemImage: "chart.bar.xaxis")
+                    }
+                    .tag(Tab.stats)
+
                 SettingsTCAView(
                     store: store.scope(state: \.settings, action: \.settings)
                 )
