@@ -12,6 +12,8 @@ struct SwiftDataModelTests {
         #expect(task.interval == 1)
         #expect(!task.id.uuidString.isEmpty)
         #expect(task.lastDone == nil)
+        #expect(task.scheduleAnchor == nil)
+        #expect(task.pausedAt == nil)
         #expect(task.tags.isEmpty)
     }
 

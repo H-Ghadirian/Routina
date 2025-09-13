@@ -9,6 +9,12 @@ final class RoutineTask {
     var tagsStorage: String = ""
     var interval: Int16 = 1
     var lastDone: Date?
+    var scheduleAnchor: Date?
+    var pausedAt: Date?
+
+    var isPaused: Bool {
+        pausedAt != nil
+    }
 
     var tags: [String] {
         get { RoutineTag.deserialize(tagsStorage) }
@@ -21,7 +27,9 @@ final class RoutineTask {
         emoji: String? = nil,
         tags: [String] = [],
         interval: Int16 = 1,
-        lastDone: Date? = nil
+        lastDone: Date? = nil,
+        scheduleAnchor: Date? = nil,
+        pausedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -29,6 +37,8 @@ final class RoutineTask {
         self.tagsStorage = RoutineTag.serialize(tags)
         self.interval = interval
         self.lastDone = lastDone
+        self.scheduleAnchor = scheduleAnchor ?? lastDone
+        self.pausedAt = pausedAt
     }
 }
 

@@ -18,6 +18,11 @@ struct RoutineDetailEditRoutineContent: View {
     }
 
     var body: some View {
+        let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
+            isPaused: store.task.isPaused,
+            context: .editSheet
+        )
+
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 sectionCard(title: "Basic") {
@@ -156,6 +161,18 @@ struct RoutineDetailEditRoutineContent: View {
 
                 sectionCard(title: "Danger Zone") {
                     VStack(alignment: .leading, spacing: 10) {
+                        Button(pauseArchivePresentation.actionTitle) {
+                            store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(store.task.isPaused ? .teal : .orange)
+
+                        Text(pauseArchivePresentation.description ?? "")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+
+                        Divider()
+
                         Button(role: .destructive) {
                             store.send(.setDeleteConfirmation(true))
                         } label: {

@@ -17,7 +17,10 @@ struct HomeFeature {
         var tags: [String]
         var interval: Int
         var lastDone: Date?
+        var scheduleAnchor: Date?
+        var pausedAt: Date?
         var isDoneToday: Bool
+        var isPaused: Bool
         var doneCount: Int
     }
 
@@ -25,6 +28,7 @@ struct HomeFeature {
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
         var routineDisplays: [RoutineDisplay] = []
+        var archivedRoutineDisplays: [RoutineDisplay] = []
         var doneStats: DoneStats = DoneStats()
         var isAddRoutineSheetPresented: Bool = false
         var addRoutineState: AddRoutineFeature.State?
@@ -38,6 +42,8 @@ struct HomeFeature {
         case setAddRoutineSheet(Bool)
         case deleteTasks([UUID])
         case markTaskDone(UUID)
+        case pauseTask(UUID)
+        case resumeTask(UUID)
 
         case addRoutineSheet(AddRoutineFeature.Action)
         case routineSavedSuccessfully(RoutineTask)
@@ -74,7 +80,7 @@ struct HomeFeature {
             case let .tasksLoadedSuccessfully(tasks, doneStats):
                 state.routineTasks = tasks
                 state.doneStats = doneStats
-                state.routineDisplays = tasks.map { makeRoutineDisplay($0, doneStats: doneStats) }
+                refreshDisplays(&state)
                 guard state.addRoutineState != nil else { return .none }
                 return .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks))))
 
@@ -96,13 +102,13 @@ struct HomeFeature {
             case let .deleteTasks(ids):
                 let idSet = Set(ids)
                 state.routineTasks.removeAll { idSet.contains($0.id) }
-                state.routineDisplays.removeAll { idSet.contains($0.taskID) }
                 var removedDoneCount = 0
                 for id in ids {
                     removedDoneCount += state.doneStats.countsByTaskID[id, default: 0]
                     state.doneStats.countsByTaskID.removeValue(forKey: id)
                 }
                 state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
+                refreshDisplays(&state)
 
                 let deleteEffect: Effect<Action> = .run { @MainActor [ids] _ in
                     let context = self.modelContext()
@@ -131,6 +137,9 @@ struct HomeFeature {
                 )
 
             case let .markTaskDone(id):
+                guard state.routineTasks.contains(where: { $0.id == id && !$0.isPaused }) else {
+                    return .none
+                }
                 let completionDate = now
                 let shouldCountNewDone = state.routineTasks.first(where: { $0.id == id }).flatMap(\.lastDone).map {
                     !calendar.isDate($0, inSameDayAs: completionDate)
@@ -138,10 +147,12 @@ struct HomeFeature {
 
                 if let index = state.routineTasks.firstIndex(where: { $0.id == id }) {
                     state.routineTasks[index].lastDone = completionDate
+                    state.routineTasks[index].scheduleAnchor = completionDate
                 }
 
                 if let index = state.routineDisplays.firstIndex(where: { $0.taskID == id }) {
                     state.routineDisplays[index].lastDone = completionDate
+                    state.routineDisplays[index].scheduleAnchor = completionDate
                     state.routineDisplays[index].isDoneToday = true
                     if shouldCountNewDone {
                         state.routineDisplays[index].doneCount += 1
@@ -154,24 +165,98 @@ struct HomeFeature {
                 }
 
                 let currentCalendar = calendar
-                return .run { @MainActor [id, completionDate, currentCalendar] _ in
+                return .run { @MainActor [id, completionDate, currentCalendar, shouldCountNewDone] _ in
                     do {
                         let context = self.modelContext()
                         guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
 
-                        if let lastDone = task.lastDone,
-                           currentCalendar.isDate(lastDone, inSameDayAs: completionDate) {
-                            await self.notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
+                        if !shouldCountNewDone {
+                            await self.notificationClient.schedule(
+                                NotificationCoordinator.notificationPayload(
+                                    for: task,
+                                    referenceDate: completionDate,
+                                    calendar: currentCalendar
+                                )
+                            )
                             return
                         }
 
                         task.lastDone = completionDate
+                        task.scheduleAnchor = completionDate
                         context.insert(RoutineLog(timestamp: completionDate, taskID: id))
                         try context.save()
-                        await self.notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
+                        await self.notificationClient.schedule(
+                            NotificationCoordinator.notificationPayload(
+                                for: task,
+                                referenceDate: completionDate,
+                                calendar: currentCalendar
+                            )
+                        )
                         NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                     } catch {
                         print("Failed to mark routine as done from home list: \(error)")
+                    }
+                }
+
+            case let .pauseTask(id):
+                let pauseDate = now
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard !state.routineTasks[index].isPaused else { return .none }
+
+                if state.routineTasks[index].scheduleAnchor == nil {
+                    state.routineTasks[index].scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(
+                        for: state.routineTasks[index],
+                        referenceDate: pauseDate
+                    )
+                }
+                state.routineTasks[index].pausedAt = pauseDate
+                refreshDisplays(&state)
+
+                return .run { @MainActor [id, pauseDate] _ in
+                    do {
+                        let context = self.modelContext()
+                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                        if task.scheduleAnchor == nil {
+                            task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pauseDate)
+                        }
+                        task.pausedAt = pauseDate
+                        try context.save()
+                        await self.notificationClient.cancel(id.uuidString)
+                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                    } catch {
+                        print("Failed to pause routine from home list: \(error)")
+                    }
+                }
+
+            case let .resumeTask(id):
+                let resumeDate = now
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard state.routineTasks[index].isPaused else { return .none }
+
+                state.routineTasks[index].scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
+                    for: state.routineTasks[index],
+                    resumedAt: resumeDate
+                )
+                state.routineTasks[index].pausedAt = nil
+                refreshDisplays(&state)
+
+                return .run { @MainActor [id, resumeDate, currentCalendar = self.calendar] _ in
+                    do {
+                        let context = self.modelContext()
+                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                        task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumeDate)
+                        task.pausedAt = nil
+                        try context.save()
+                        await self.notificationClient.schedule(
+                            NotificationCoordinator.notificationPayload(
+                                for: task,
+                                referenceDate: resumeDate,
+                                calendar: currentCalendar
+                            )
+                        )
+                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                    } catch {
+                        print("Failed to resume routine from home list: \(error)")
                     }
                 }
 
@@ -200,7 +285,8 @@ struct HomeFeature {
                             emoji: emoji,
                             tags: tags,
                             interval: Int16(freq),
-                            lastDone: nil
+                            lastDone: nil,
+                            scheduleAnchor: self.now
                         )
                         context.insert(newRoutine)
                         try context.save()
@@ -212,11 +298,11 @@ struct HomeFeature {
 
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
-                state.routineDisplays.append(makeRoutineDisplay(task, doneStats: state.doneStats))
+                refreshDisplays(&state)
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
-                let payload = makeNotificationPayload(for: task)
+                let payload = makeNotificationPayload(for: task, referenceDate: now)
                 return .run { _ in
                     await self.notificationClient.schedule(payload)
                 }
@@ -247,7 +333,10 @@ struct HomeFeature {
             tags: task.tags,
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
+            scheduleAnchor: task.scheduleAnchor,
+            pausedAt: task.pausedAt,
             isDoneToday: doneTodayFromLastDone,
+            isPaused: task.isPaused,
             doneCount: doneStats.countsByTaskID[task.id, default: 0]
         )
     }
@@ -268,12 +357,24 @@ struct HomeFeature {
         )
     }
 
-    private func makeNotificationPayload(for task: RoutineTask) -> NotificationPayload {
-        NotificationCoordinator.notificationPayload(for: task)
+    private func makeNotificationPayload(
+        for task: RoutineTask,
+        referenceDate: Date
+    ) -> NotificationPayload {
+        NotificationCoordinator.notificationPayload(for: task, referenceDate: referenceDate, calendar: calendar)
     }
 
     private func existingRoutineNames(from tasks: [RoutineTask]) -> [String] {
         tasks.compactMap(\.name)
+    }
+
+    private func refreshDisplays(_ state: inout State) {
+        state.routineDisplays = state.routineTasks
+            .filter { !$0.isPaused }
+            .map { makeRoutineDisplay($0, doneStats: state.doneStats) }
+        state.archivedRoutineDisplays = state.routineTasks
+            .filter(\.isPaused)
+            .map { makeRoutineDisplay($0, doneStats: state.doneStats) }
     }
 
     private func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {

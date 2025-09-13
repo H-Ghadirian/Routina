@@ -12,6 +12,10 @@ struct RoutineDetailTCAView: View {
 
     var body: some View {
         WithPerceptionTracking {
+            let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
+                isPaused: store.task.isPaused,
+                context: .detail
+            )
             ScrollView {
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -19,6 +23,7 @@ struct RoutineDetailTCAView: View {
                         calendarGrid(
                             doneDates: doneDates(from: store.logs),
                             dueDate: dueDate(for: store.task),
+                            pausedAt: store.task.pausedAt,
                             isOrangeUrgencyToday: isOrangeUrgency(store.task),
                             selectedDate: selectedDate,
                             onSelectDate: { store.send(.selectedDateChanged($0)) }
@@ -32,6 +37,7 @@ struct RoutineDetailTCAView: View {
                     VStack(spacing: 6) {
                         Text(
                             summaryTitle(
+                                pausedAt: store.task.pausedAt,
                                 isDoneToday: store.isDoneToday,
                                 overdueDays: store.overdueDays,
                                 daysSinceLastRoutine: store.daysSinceLastRoutine,
@@ -41,6 +47,7 @@ struct RoutineDetailTCAView: View {
                             .font(.title3.weight(.semibold))
                             .foregroundColor(
                                 summaryTitleColor(
+                                    pausedAt: store.task.pausedAt,
                                     isDoneToday: store.isDoneToday,
                                     overdueDays: store.overdueDays,
                                     task: store.task
@@ -52,7 +59,11 @@ struct RoutineDetailTCAView: View {
                         Text(totalDoneCountText(for: store.logs.count))
                             .font(.subheadline.weight(.medium))
                             .foregroundColor(.secondary)
-                        if let dueDate = dueDate(for: store.task) {
+                        if let pausedAt = store.task.pausedAt {
+                            Text("Paused on \(pausedAt.formatted(date: .abbreviated, time: .omitted))")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        } else if let dueDate = dueDate(for: store.task) {
                             Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -66,12 +77,33 @@ struct RoutineDetailTCAView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
 
-                        Button(markDoneButtonTitle(for: selectedDate, isDone: isSelectedDateDone, isFuture: isSelectedDateInFuture)) {
+                        Button(
+                            markDoneButtonTitle(
+                                for: selectedDate,
+                                isDone: isSelectedDateDone,
+                                isFuture: isSelectedDateInFuture,
+                                isPaused: store.task.isPaused
+                            )
+                        ) {
                             store.send(.markAsDone)
                         }
                         .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
-                        .disabled(isSelectedDateDone || isSelectedDateInFuture)
+                        .disabled(isSelectedDateDone || isSelectedDateInFuture || store.task.isPaused)
+
+                        Button(pauseArchivePresentation.actionTitle) {
+                            store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(store.task.isPaused ? .teal : .orange)
+                        .frame(maxWidth: .infinity)
+
+                        if let pauseDescription = pauseArchivePresentation.description {
+                            Text(pauseDescription)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -264,6 +296,9 @@ struct RoutineDetailTCAView: View {
         HStack(spacing: 12) {
             legendItem(color: .green, label: "Done")
             legendItem(color: .red, label: "Overdue")
+            if store.task.pausedAt != nil {
+                legendItem(color: .teal, label: "Paused")
+            }
             HStack(spacing: 4) {
                 Circle()
                     .stroke(Color.blue, lineWidth: 2)
@@ -294,6 +329,7 @@ struct RoutineDetailTCAView: View {
     private func calendarGrid(
         doneDates: Set<Date>,
         dueDate: Date?,
+        pausedAt: Date?,
         isOrangeUrgencyToday: Bool,
         selectedDate: Date,
         onSelectDate: @escaping (Date) -> Void
@@ -320,6 +356,7 @@ struct RoutineDetailTCAView: View {
                             day: day,
                             doneDates: doneDates,
                             dueDate: dueDate,
+                            pausedAt: pausedAt,
                             isOrangeUrgencyToday: isOrangeUrgencyToday,
                             isSelected: calendar.isDate(day, inSameDayAs: selectedDate),
                             onSelectDate: onSelectDate
@@ -337,6 +374,7 @@ struct RoutineDetailTCAView: View {
         day: Date,
         doneDates: Set<Date>,
         dueDate: Date?,
+        pausedAt: Date?,
         isOrangeUrgencyToday: Bool,
         isSelected: Bool,
         onSelectDate: @escaping (Date) -> Void
@@ -346,16 +384,18 @@ struct RoutineDetailTCAView: View {
         let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isToday = calendar.isDateInToday(day)
         let isDueToTodayRangeDate = isInDueToTodayRange(day: day, dueDate: dueDate)
+        let isPausedDate = isInPausedRange(day: day, pausedAt: pausedAt)
 
         let backgroundColor: Color = {
             if isDoneDate { return .green }
+            if isPausedDate { return .teal }
             if isDueToTodayRangeDate || isDueDate { return .red }
             if isToday && isOrangeUrgencyToday { return .orange }
             if isToday { return .blue }
             return .clear
         }()
 
-        let foregroundColor: Color = (isDueDate || isDoneDate || isDueToTodayRangeDate || isToday) ? .white : .primary
+        let foregroundColor: Color = (isDueDate || isDoneDate || isDueToTodayRangeDate || isPausedDate || isToday) ? .white : .primary
 
         return Button {
             onSelectDate(day)
@@ -368,7 +408,14 @@ struct RoutineDetailTCAView: View {
                 .background(Circle().fill(backgroundColor))
                 .overlay(
                     Circle()
-                        .stroke(selectionStrokeColor(isSelected: isSelected, isToday: isToday, isHighlightedDay: isDoneDate || isDueToTodayRangeDate || isDueDate), lineWidth: isSelected ? 3 : 2)
+                        .stroke(
+                            selectionStrokeColor(
+                                isSelected: isSelected,
+                                isToday: isToday,
+                                isHighlightedDay: isDoneDate || isDueToTodayRangeDate || isDueDate || isPausedDate
+                            ),
+                            lineWidth: isSelected ? 3 : 2
+                        )
                 )
         }
         .buttonStyle(.plain)
@@ -380,7 +427,7 @@ struct RoutineDetailTCAView: View {
     }
 
     private func dueDate(for task: RoutineTask) -> Date? {
-        Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date())
+        RoutineDateMath.dueDate(for: task, referenceDate: Date())
     }
 
     private func isInDueToTodayRange(day: Date, dueDate: Date?) -> Bool {
@@ -394,30 +441,38 @@ struct RoutineDetailTCAView: View {
         return dayStart >= dueStart && dayStart <= todayStart
     }
 
+    private func isInPausedRange(day: Date, pausedAt: Date?) -> Bool {
+        guard let pausedAt else { return false }
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: day)
+        let pausedStart = calendar.startOfDay(for: pausedAt)
+        let todayStart = calendar.startOfDay(for: Date())
+        return dayStart >= pausedStart && dayStart <= todayStart
+    }
+
     private func isOrangeUrgency(_ task: RoutineTask) -> Bool {
-        let daysSinceLastRoutine = Calendar.current.dateComponents(
-            [.day],
-            from: task.lastDone ?? Date(),
-            to: Date()
-        ).day ?? 0
-        let progress = Double(daysSinceLastRoutine) / Double(task.interval)
+        guard !task.isPaused else { return false }
+        let anchor = task.scheduleAnchor ?? task.lastDone
+        let daysSinceAnchor = RoutineDateMath.elapsedDaysSinceLastDone(from: anchor, referenceDate: Date())
+        let progress = Double(daysSinceAnchor) / Double(task.interval)
         return progress >= 0.75 && progress < 0.90
     }
 
     private func daysUntilDue(_ task: RoutineTask) -> Int? {
-        guard let dueDate = dueDate(for: task) else { return nil }
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: Date())
-        let dueStart = calendar.startOfDay(for: dueDate)
-        return calendar.dateComponents([.day], from: todayStart, to: dueStart).day
+        guard !task.isPaused else { return nil }
+        return RoutineDateMath.daysUntilDue(for: task, referenceDate: Date())
     }
 
     private func summaryTitle(
+        pausedAt: Date?,
         isDoneToday: Bool,
         overdueDays: Int,
         daysSinceLastRoutine: Int,
         task: RoutineTask
     ) -> String {
+        if let pausedAt {
+            return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
+        }
         if isDoneToday {
             return "Done today"
         }
@@ -437,10 +492,12 @@ struct RoutineDetailTCAView: View {
     }
 
     private func summaryTitleColor(
+        pausedAt: Date?,
         isDoneToday: Bool,
         overdueDays: Int,
         task: RoutineTask
     ) -> Color {
+        if pausedAt != nil { return .teal }
         if isDoneToday { return .green }
         if overdueDays > 0 { return .red }
         if daysUntilDue(task) == 0 { return .red }
@@ -499,7 +556,15 @@ struct RoutineDetailTCAView: View {
         count == 1 ? "1 total done" : "\(count) total dones"
     }
 
-    private func markDoneButtonTitle(for selectedDate: Date, isDone: Bool, isFuture: Bool) -> String {
+    private func markDoneButtonTitle(
+        for selectedDate: Date,
+        isDone: Bool,
+        isFuture: Bool,
+        isPaused: Bool
+    ) -> String {
+        if isPaused {
+            return "Resume the routine to mark dates done"
+        }
         if isFuture {
             return "Future dates can't be marked done"
         }

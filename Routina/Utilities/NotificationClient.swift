@@ -8,6 +8,7 @@ struct NotificationPayload: Sendable {
     let interval: Int
     let lastDone: Date?
     let triggerDate: Date?
+    let isPaused: Bool
 }
 
 struct NotificationClient: Sendable {
@@ -21,6 +22,12 @@ extension NotificationClient {
     static let live = NotificationClient(
         schedule: { payload in
             guard NotificationPreferences.notificationsEnabled else { return }
+            guard !payload.isPaused else {
+                let center = UNUserNotificationCenter.current()
+                center.removePendingNotificationRequests(withIdentifiers: [payload.identifier])
+                center.removeDeliveredNotifications(withIdentifiers: [payload.identifier])
+                return
+            }
             let request = UNNotificationRequest(
                 identifier: payload.identifier,
                 content: createNotificationContent(for: payload),

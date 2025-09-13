@@ -29,15 +29,19 @@ enum NotificationCoordinator {
 
     static func notificationPayload(
         for task: RoutineTask,
-        triggerDate: Date? = nil
+        triggerDate: Date? = nil,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
     ) -> NotificationPayload {
-        NotificationPayload(
+        let dueDate = RoutineDateMath.dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        return NotificationPayload(
             identifier: task.id.uuidString,
             name: task.name,
             emoji: task.emoji,
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
-            triggerDate: triggerDate
+            triggerDate: triggerDate ?? NotificationPreferences.reminderDate(on: dueDate, calendar: calendar),
+            isPaused: task.isPaused
         )
     }
 
@@ -64,18 +68,20 @@ enum NotificationCoordinator {
 
         do {
             guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+            guard !task.isPaused else { return }
             let now = Date()
 
             if let lastDone = task.lastDone,
                Calendar.current.isDate(lastDone, inSameDayAs: now) {
-                await NotificationClient.live.schedule(notificationPayload(for: task))
+                await NotificationClient.live.schedule(notificationPayload(for: task, referenceDate: now))
                 return
             }
 
             task.lastDone = now
+            task.scheduleAnchor = now
             context.insert(RoutineLog(timestamp: now, taskID: taskID))
             try context.save()
-            await NotificationClient.live.schedule(notificationPayload(for: task))
+            await NotificationClient.live.schedule(notificationPayload(for: task, referenceDate: now))
             NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
         } catch {
             context.rollback()
@@ -89,10 +95,12 @@ enum NotificationCoordinator {
 
         do {
             guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+            guard !task.isPaused else { return }
             let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
             let payload = notificationPayload(
                 for: task,
-                triggerDate: NotificationPreferences.reminderDate(on: tomorrow)
+                triggerDate: NotificationPreferences.reminderDate(on: tomorrow),
+                referenceDate: Date()
             )
             await NotificationClient.live.schedule(payload)
         } catch {

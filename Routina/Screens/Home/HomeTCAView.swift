@@ -66,10 +66,10 @@ struct HomeTCAView: View {
                 }
             }
             .onChange(of: store.routineDisplays) { _, displays in
-                guard let selectedTag else { return }
-                if !RoutineTag.contains(selectedTag, in: HomeFeature.availableTags(from: displays)) {
-                    self.selectedTag = nil
-                }
+                validateSelectedTag(activeDisplays: displays, archivedDisplays: store.archivedRoutineDisplays)
+            }
+            .onChange(of: store.archivedRoutineDisplays) { _, displays in
+                validateSelectedTag(activeDisplays: store.routineDisplays, archivedDisplays: displays)
             }
     }
 
@@ -100,6 +100,7 @@ struct HomeTCAView: View {
 
                     listOfSortedTasksView(
                         routineDisplays: store.routineDisplays,
+                        archivedRoutineDisplays: store.archivedRoutineDisplays,
                         routineTasks: store.routineTasks
                     )
                 }
@@ -165,7 +166,7 @@ struct HomeTCAView: View {
 
             Spacer(minLength: 0)
 
-            Text("\(store.routineTasks.count) routines")
+            Text(summaryCountText)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
@@ -174,7 +175,7 @@ struct HomeTCAView: View {
 
     @ViewBuilder
     private var tagFilterBar: some View {
-        let tags = HomeFeature.availableTags(from: store.routineDisplays)
+        let tags = HomeFeature.availableTags(from: allRoutineDisplays)
 
         if !tags.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -200,8 +201,8 @@ struct HomeTCAView: View {
 
     private func sortedTasks(_ routineDisplays: [HomeFeature.RoutineDisplay]) -> [HomeFeature.RoutineDisplay] {
         routineDisplays.sorted { task1, task2 in
-            let overdueDays1 = daysSinceLastRoutine(task1) - task1.interval
-            let overdueDays2 = daysSinceLastRoutine(task2) - task2.interval
+            let overdueDays1 = overdueDays(for: task1)
+            let overdueDays2 = overdueDays(for: task2)
 
             if overdueDays1 != overdueDays2 {
                 return overdueDays1 > overdueDays2
@@ -228,12 +229,14 @@ struct HomeTCAView: View {
 
     private func listOfSortedTasksView(
         routineDisplays: [HomeFeature.RoutineDisplay],
+        archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
         routineTasks: [RoutineTask]
     ) -> some View {
         let sections = groupedRoutineSections(from: routineDisplays)
+        let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays)
 
         return Group {
-            if sections.isEmpty {
+            if sections.isEmpty && archivedTasks.isEmpty {
                 emptyStateView(
                     title: "No matching routines",
                     message: "Try a different search or switch back to another filter.",
@@ -261,7 +264,14 @@ struct HomeTCAView: View {
                                     } label: {
                                         Label("Mark Done", systemImage: "checkmark.circle")
                                     }
-                                    .disabled(task.isDoneToday)
+                                    .disabled(task.isDoneToday || task.isPaused)
+
+                                    Button {
+                                        store.send(.pauseTask(task.taskID))
+                                    } label: {
+                                        Label("Pause", systemImage: "pause.circle")
+                                    }
+                                    .disabled(task.isPaused)
 
                                     Button(role: .destructive) {
                                         if selectedTaskID == task.taskID {
@@ -275,6 +285,42 @@ struct HomeTCAView: View {
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: section.tasks)
+                            }
+                        }
+                    }
+
+                    if !archivedTasks.isEmpty {
+                        Section("Archived") {
+                            ForEach(archivedTasks) { task in
+                                NavigationLink(value: task.taskID) {
+                                    routineRow(for: task)
+                                }
+                                .contentShape(Rectangle())
+                                .contextMenu {
+                                    Button {
+                                        selectedTaskID = task.taskID
+                                    } label: {
+                                        Label("Open", systemImage: "arrow.right.circle")
+                                    }
+
+                                    Button {
+                                        store.send(.resumeTask(task.taskID))
+                                    } label: {
+                                        Label("Resume", systemImage: "play.circle")
+                                    }
+
+                                    Button(role: .destructive) {
+                                        if selectedTaskID == task.taskID {
+                                            selectedTaskID = nil
+                                        }
+                                        store.send(.deleteTasks([task.taskID]))
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                            .onDelete { offsets in
+                                deleteTasks(at: offsets, from: archivedTasks)
                             }
                         }
                     }
@@ -354,7 +400,7 @@ struct HomeTCAView: View {
                             task: task,
                             logs: initialLogs(for: task),
                             daysSinceLastRoutine: RoutineDateMath.elapsedDaysSinceLastDone(from: task.lastDone, referenceDate: Date()),
-                            overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0),
+                            overdueDays: task.isPaused ? 0 : RoutineDateMath.overdueDays(for: task, referenceDate: Date()),
                             isDoneToday: task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
                         ),
                         reducer: { RoutineDetailFeature() },
@@ -415,7 +461,10 @@ struct HomeTCAView: View {
     }
 
     private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {
-        let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
+        if task.isPaused {
+            return .teal
+        }
+        let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
         switch progress {
         case ..<0.75: return .green
         case ..<0.90: return .orange
@@ -428,12 +477,19 @@ struct HomeTCAView: View {
     }
 
     private func isYellowUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
+        let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
         return progress >= 0.75 && progress < 0.90
     }
 
     private func daysSinceLastRoutine(_ task: HomeFeature.RoutineDisplay) -> Int {
         RoutineDateMath.elapsedDaysSinceLastDone(from: task.lastDone, referenceDate: Date())
+    }
+
+    private func daysSinceScheduleAnchor(_ task: HomeFeature.RoutineDisplay) -> Int {
+        RoutineDateMath.elapsedDaysSinceLastDone(
+            from: task.scheduleAnchor ?? task.lastDone,
+            referenceDate: Date()
+        )
     }
 
     private func filteredTasks(
@@ -442,6 +498,23 @@ struct HomeTCAView: View {
         sortedTasks(routineDisplays).filter { task in
             matchesSearch(task) && matchesFilter(task) && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
         }
+    }
+
+    private func filteredArchivedTasks(
+        _ routineDisplays: [HomeFeature.RoutineDisplay]
+    ) -> [HomeFeature.RoutineDisplay] {
+        return routineDisplays
+            .filter { task in
+                matchesSearch(task) && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+            }
+            .sorted { lhs, rhs in
+                let lhsDate = lhs.pausedAt ?? .distantPast
+                let rhsDate = rhs.pausedAt ?? .distantPast
+                if lhsDate != rhsDate {
+                    return lhsDate > rhsDate
+                }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
     }
 
     private func matchesSearch(_ task: HomeFeature.RoutineDisplay) -> Bool {
@@ -464,7 +537,15 @@ struct HomeTCAView: View {
     }
 
     private func dueInDays(for task: HomeFeature.RoutineDisplay) -> Int {
-        task.interval - daysSinceLastRoutine(task)
+        let calendar = Calendar.current
+        let referenceDate = Date()
+        let anchor = task.scheduleAnchor ?? task.lastDone ?? referenceDate
+        let dueDate = calendar.date(byAdding: .day, value: task.interval, to: anchor) ?? anchor
+        return calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: referenceDate),
+            to: calendar.startOfDay(for: dueDate)
+        ).day ?? 0
     }
 
     private func overdueDays(for task: HomeFeature.RoutineDisplay) -> Int {
@@ -472,7 +553,18 @@ struct HomeTCAView: View {
     }
 
     private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String {
-        "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))"
+        if task.isPaused {
+            return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))"
+        }
+        return "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))"
+    }
+
+    private func pauseDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        guard let pausedAt = task.pausedAt else { return "Paused" }
+        let elapsedDays = RoutineDateMath.elapsedDaysSinceLastDone(from: pausedAt, referenceDate: Date())
+        if elapsedDays == 0 { return "Paused today" }
+        if elapsedDays == 1 { return "Paused yesterday" }
+        return "Paused \(elapsedDays) days ago"
     }
 
     private func doneCountDescription(for count: Int) -> String {
@@ -534,6 +626,9 @@ struct HomeTCAView: View {
     private func badgeStyle(
         for task: HomeFeature.RoutineDisplay
     ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color) {
+        if task.isPaused {
+            return ("Paused", "pause.circle.fill", .teal, Color.teal.opacity(0.16))
+        }
         if task.isDoneToday {
             return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
         }
@@ -603,5 +698,31 @@ struct HomeTCAView: View {
         // CloudKit imports are asynchronous; do a second pass shortly after manual refresh.
         try? await Task.sleep(for: .seconds(2))
         _ = store.send(.onAppear)
+    }
+
+    private var allRoutineDisplays: [HomeFeature.RoutineDisplay] {
+        store.routineDisplays + store.archivedRoutineDisplays
+    }
+
+    private var summaryCountText: String {
+        let activeCount = store.routineDisplays.count
+        let archivedCount = store.archivedRoutineDisplays.count
+
+        if archivedCount == 0 {
+            return activeCount == 1 ? "1 active routine" : "\(activeCount) active routines"
+        }
+
+        return "\(activeCount) active • \(archivedCount) archived"
+    }
+
+    private func validateSelectedTag(
+        activeDisplays: [HomeFeature.RoutineDisplay],
+        archivedDisplays: [HomeFeature.RoutineDisplay]
+    ) {
+        guard let selectedTag else { return }
+        let availableTags = HomeFeature.availableTags(from: activeDisplays + archivedDisplays)
+        if !RoutineTag.contains(selectedTag, in: availableTags) {
+            self.selectedTag = nil
+        }
     }
 }

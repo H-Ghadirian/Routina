@@ -11,4 +11,48 @@ enum RoutineDateMath {
         let referenceStart = calendar.startOfDay(for: referenceDate)
         return calendar.dateComponents([.day], from: lastDoneStart, to: referenceStart).day ?? 0
     }
+
+    static func effectiveScheduleAnchor(
+        for task: RoutineTask,
+        referenceDate: Date
+    ) -> Date {
+        task.scheduleAnchor ?? task.lastDone ?? referenceDate
+    }
+
+    static func dueDate(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        let anchor = effectiveScheduleAnchor(for: task, referenceDate: referenceDate)
+        return calendar.date(byAdding: .day, value: max(Int(task.interval), 1), to: anchor) ?? anchor
+    }
+
+    static func daysUntilDue(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Int {
+        let todayStart = calendar.startOfDay(for: referenceDate)
+        let dueStart = calendar.startOfDay(for: dueDate(for: task, referenceDate: referenceDate, calendar: calendar))
+        return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
+    }
+
+    static func overdueDays(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Int {
+        max(-daysUntilDue(for: task, referenceDate: referenceDate, calendar: calendar), 0)
+    }
+
+    static func resumedScheduleAnchor(
+        for task: RoutineTask,
+        resumedAt: Date
+    ) -> Date {
+        let baseAnchor = task.scheduleAnchor ?? task.lastDone ?? task.pausedAt ?? resumedAt
+        guard let pausedAt = task.pausedAt else { return baseAnchor }
+        let pauseDuration = max(resumedAt.timeIntervalSince(pausedAt), 0)
+        return baseAnchor.addingTimeInterval(pauseDuration)
+    }
 }

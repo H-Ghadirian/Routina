@@ -144,6 +144,8 @@ enum CloudKitDirectPullService {
             }
         }
 
+        try deduplicateLogs(in: context)
+
         if context.hasChanges {
             try context.save()
             NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
@@ -157,6 +159,8 @@ enum CloudKitDirectPullService {
         var tags: [String]?
         var interval: Int16
         var lastDone: Date?
+        var scheduleAnchor: Date?
+        var pausedAt: Date?
     }
 
     private struct LogPayload {
@@ -175,8 +179,24 @@ enum CloudKitDirectPullService {
         let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
+        let scheduleAnchorValue = dateValue(
+            in: record,
+            keys: ["scheduleAnchor", "SCHEDULEANCHOR", "zscheduleanchor", "ZSCHEDULEANCHOR", "cd_scheduleanchor"]
+        )
+        let pausedAtValue = dateValue(
+            in: record,
+            keys: ["pausedAt", "PAUSEDAT", "zpausedat", "ZPAUSEDAT", "cd_pausedat"]
+        )
 
-        guard intervalValue != nil || nameValue != nil || emojiValue != nil || tagsStorageValue != nil || lastDoneValue != nil else {
+        guard
+            intervalValue != nil
+                || nameValue != nil
+                || emojiValue != nil
+                || tagsStorageValue != nil
+                || lastDoneValue != nil
+                || scheduleAnchorValue != nil
+                || pausedAtValue != nil
+        else {
             return nil
         }
 
@@ -186,7 +206,9 @@ enum CloudKitDirectPullService {
             emoji: emojiValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
             interval: Int16(clamping: intervalValue ?? 1),
-            lastDone: lastDoneValue
+            lastDone: lastDoneValue,
+            scheduleAnchor: scheduleAnchorValue,
+            pausedAt: pausedAtValue
         )
     }
 
@@ -226,6 +248,8 @@ enum CloudKitDirectPullService {
                 }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
+                taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
+                taskWithSameName.pausedAt = payload.pausedAt
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -237,6 +261,8 @@ enum CloudKitDirectPullService {
             }
             existing.interval = payload.interval
             existing.lastDone = payload.lastDone
+            existing.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? existing.scheduleAnchor
+            existing.pausedAt = payload.pausedAt
             return existing.id
         } else {
             if let normalizedIncomingName,
@@ -247,6 +273,8 @@ enum CloudKitDirectPullService {
                 }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
+                taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
+                taskWithSameName.pausedAt = payload.pausedAt
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -258,7 +286,9 @@ enum CloudKitDirectPullService {
                     emoji: payload.emoji,
                     tags: payload.tags ?? [],
                     interval: payload.interval,
-                    lastDone: payload.lastDone
+                    lastDone: payload.lastDone,
+                    scheduleAnchor: payload.scheduleAnchor,
+                    pausedAt: payload.pausedAt
                 )
             )
             return payload.id

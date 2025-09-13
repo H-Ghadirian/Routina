@@ -113,6 +113,86 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func pauseTapped_persistsArchivedStateAndCancelsNotification() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        let anchorDate = makeDate("2026-03-10T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 5,
+            lastDone: nil,
+            emoji: "📚",
+            scheduleAnchor: anchorDate
+        )
+        try context.save()
+
+        let canceledIDs = LockIsolated<[String]>([])
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { identifier in
+                canceledIDs.withValue { $0.append(identifier) }
+            }
+        }
+
+        await store.send(.pauseTapped)
+
+        #expect(store.state.task.pausedAt == now)
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pausedAt == now)
+        #expect(canceledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func resumeTapped_restoresRoutineAndSchedulesNotification() async throws {
+        let context = makeInMemoryContext()
+        let pauseDate = makeDate("2026-03-10T10:00:00Z")
+        let resumeDate = makeDate("2026-03-14T10:00:00Z")
+        let anchorDate = makeDate("2026-03-05T10:00:00Z")
+        let expectedAnchor = anchorDate.addingTimeInterval(resumeDate.timeIntervalSince(pauseDate))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 5,
+            lastDone: nil,
+            emoji: "🤸",
+            scheduleAnchor: anchorDate,
+            pausedAt: pauseDate
+        )
+        try context.save()
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = resumeDate
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.resumeTapped)
+
+        #expect(store.state.task.scheduleAnchor == expectedAnchor)
+        #expect(store.state.task.pausedAt == nil)
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pausedAt == nil)
+        #expect(savedTask.scheduleAnchor == expectedAnchor)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func setEditSheetTrue_syncsEditFormFromTask_weekFrequency() async {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Stretch", interval: 14, lastDone: nil, emoji: "🤸", tags: ["Mobility", "Evening"])
@@ -222,6 +302,9 @@ struct RoutineDetailFeatureTests {
     @Test
     func editSaveTapped_persistsTagsIncludingPendingDraft() async throws {
         let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
         let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚", tags: ["Focus"])
 
         let store = TestStore(
@@ -243,6 +326,8 @@ struct RoutineDetailFeatureTests {
             RoutineDetailFeature()
         } withDependencies: {
             $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
         }
@@ -253,13 +338,10 @@ struct RoutineDetailFeatureTests {
             $0.isEditSheetPresented = false
         }
 
-        await store.receive(.onAppear)
-        await store.receive(.logsLoaded([])) {
-            $0.logs = []
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
-            $0.isDoneToday = false
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
         }
+        await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
         let descriptor = FetchDescriptor<RoutineTask>(
@@ -400,12 +482,7 @@ struct RoutineDetailFeatureTests {
             $0.isDoneToday = false
         }
 
-        await store.receive(.logsLoaded([])) {
-            $0.logs = []
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
-            $0.isDoneToday = false
-        }
+        await store.receive(.logsLoaded([]))
     }
 
     @Test
@@ -432,6 +509,7 @@ struct RoutineDetailFeatureTests {
 
         await store.send(.markAsDone) {
             $0.task.lastDone = now
+            $0.task.scheduleAnchor = now
             $0.isDoneToday = true
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
@@ -454,7 +532,9 @@ struct RoutineDetailFeatureTests {
         }
 
         let persistedLogs = (try? context.fetch(FetchDescriptor<RoutineLog>())) ?? []
+        let persistedTask = try? #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(persistedLogs.count == 1)
+        #expect(persistedTask?.scheduleAnchor == now)
         #expect(scheduledIDs.value == [task.id.uuidString])
     }
 
@@ -523,6 +603,7 @@ struct RoutineDetailFeatureTests {
         )
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
         #expect(persistedTask.lastDone == now)
+        #expect(persistedTask.scheduleAnchor == now)
         #expect(persistedLogs.count == 2)
         #expect(scheduledIDs.value == [task.id.uuidString])
     }
@@ -564,12 +645,7 @@ struct RoutineDetailFeatureTests {
 
         await store.send(.markAsDone)
 
-        await store.receive(.logsLoaded([existingLog])) {
-            $0.logs = [existingLog]
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
-            $0.isDoneToday = true
-        }
+        await store.receive(.logsLoaded([existingLog]))
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -581,6 +657,7 @@ struct RoutineDetailFeatureTests {
         )
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
         #expect(persistedTask.lastDone == now)
+        #expect(persistedTask.scheduleAnchor == now)
         #expect(persistedLogs.count == 1)
         #expect(scheduledIDs.value.isEmpty)
     }

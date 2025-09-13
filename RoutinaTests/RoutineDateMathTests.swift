@@ -29,4 +29,36 @@ struct RoutineDateMathTests {
 
         #expect(elapsedDays == 0)
     }
+
+    @Test
+    func dueDate_prefersScheduleAnchorWhenPresent() {
+        let task = RoutineTask(
+            interval: 7,
+            lastDone: makeDate("2026-03-01T10:00:00Z"),
+            scheduleAnchor: makeDate("2026-03-04T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-03-10T10:00:00Z")
+        )
+
+        #expect(dueDate == makeDate("2026-03-11T10:00:00Z"))
+    }
+
+    @Test
+    func resumedScheduleAnchor_shiftsByPauseDuration() {
+        let task = RoutineTask(
+            interval: 7,
+            scheduleAnchor: makeDate("2026-03-01T10:00:00Z"),
+            pausedAt: makeDate("2026-03-05T10:00:00Z")
+        )
+
+        let resumedAnchor = RoutineDateMath.resumedScheduleAnchor(
+            for: task,
+            resumedAt: makeDate("2026-03-08T10:00:00Z")
+        )
+
+        #expect(resumedAnchor == makeDate("2026-03-04T10:00:00Z"))
+    }
 }

@@ -74,7 +74,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             do {
                 let tasks = try context.fetch(descriptor)
                 let payload: [String: Any] = [
-                    "routines": tasks.map { task in
+                    "routines": tasks.compactMap { task -> [String: Any]? in
+                        guard !task.isPaused else { return nil }
                         var routinePayload: [String: Any] = [
                             "id": task.id.uuidString,
                             "name": (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
@@ -184,8 +185,10 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             )
 
             guard let task = try context.fetch(descriptor).first else { return }
+            guard !task.isPaused else { return }
 
             task.lastDone = completedAt
+            task.scheduleAnchor = completedAt
             context.insert(RoutineLog(timestamp: completedAt, taskID: taskID))
             try context.save()
             NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)

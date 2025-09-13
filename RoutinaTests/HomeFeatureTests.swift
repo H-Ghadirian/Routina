@@ -127,6 +127,65 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func tasksLoadedSuccessfully_separatesArchivedRoutines() async {
+        let context = makeInMemoryContext()
+        let pauseDate = makeDate("2026-03-12T10:00:00Z")
+        let anchorDate = makeDate("2026-03-10T10:00:00Z")
+        let activeTask = makeTask(
+            in: context,
+            name: "Read",
+            interval: 2,
+            lastDone: nil,
+            emoji: "📚",
+            scheduleAnchor: anchorDate
+        )
+        let archivedTask = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 3,
+            lastDone: nil,
+            emoji: "🤸",
+            scheduleAnchor: anchorDate,
+            pausedAt: pauseDate
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([activeTask, archivedTask], HomeFeature.DoneStats())) {
+            $0.routineTasks = [activeTask, archivedTask]
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: activeTask.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 2,
+                    lastDone: nil,
+                    scheduleAnchor: anchorDate,
+                    isDoneToday: false
+                )
+            ]
+            $0.archivedRoutineDisplays = [
+                makeDisplay(
+                    taskID: archivedTask.id,
+                    name: "Stretch",
+                    emoji: "🤸",
+                    interval: 3,
+                    lastDone: nil,
+                    scheduleAnchor: anchorDate,
+                    pausedAt: pauseDate,
+                    isDoneToday: false,
+                    isPaused: true
+                )
+            ]
+        }
+    }
+
+    @Test
     func availableTags_deduplicatesAndSortsAcrossRoutines() {
         let displays = [
             makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", tags: ["Focus", "Learning"], interval: 1, lastDone: nil, isDoneToday: false),
@@ -163,6 +222,9 @@ struct HomeFeatureTests {
     @Test
     func routineSavedSuccessfully_appendsTaskAndSchedulesNotification() async {
         let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
         let task = makeTask(in: context, name: "Walk", interval: 2, lastDone: nil, emoji: "🚶", tags: ["Outdoors", "Health"])
         let scheduledIDs = LockIsolated<[String]>([])
 
@@ -170,6 +232,8 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
             $0.notificationClient.schedule = { payload in
                 scheduledIDs.withValue { $0.append(payload.identifier) }
             }
@@ -190,6 +254,9 @@ struct HomeFeatureTests {
     @Test
     func routineSavedSuccessfully_closesAddRoutineSheet() async {
         let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
         let task = makeTask(in: context, name: "Walk", interval: 2, lastDone: nil, emoji: "🚶")
 
         let initialState = HomeFeature.State(
@@ -203,6 +270,8 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -290,6 +359,143 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func pauseTask_movesRoutineToArchivedAndCancelsNotification() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        let anchorDate = makeDate("2026-03-12T10:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 3,
+            lastDone: nil,
+            emoji: "📚",
+            scheduleAnchor: anchorDate
+        )
+        try context.save()
+
+        let canceledIDs = LockIsolated<[String]>([])
+        let initialState = HomeFeature.State(
+            routineTasks: [task],
+            routineDisplays: [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    scheduleAnchor: anchorDate,
+                    isDoneToday: false
+                )
+            ]
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { identifier in
+                canceledIDs.withValue { $0.append(identifier) }
+            }
+        }
+
+        await store.send(.pauseTask(task.id)) {
+            $0.routineTasks[0].pausedAt = now
+            $0.routineDisplays = []
+            $0.archivedRoutineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    scheduleAnchor: anchorDate,
+                    pausedAt: now,
+                    isDoneToday: false,
+                    isPaused: true
+                )
+            ]
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pausedAt == now)
+        #expect(canceledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func resumeTask_movesRoutineBackToActiveAndSchedulesNotification() async throws {
+        let context = makeInMemoryContext()
+        let pauseDate = makeDate("2026-03-10T10:00:00Z")
+        let resumeDate = makeDate("2026-03-14T10:00:00Z")
+        let anchorDate = makeDate("2026-03-05T10:00:00Z")
+        let expectedAnchor = anchorDate.addingTimeInterval(resumeDate.timeIntervalSince(pauseDate))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 4,
+            lastDone: nil,
+            emoji: "🤸",
+            scheduleAnchor: anchorDate,
+            pausedAt: pauseDate
+        )
+        try context.save()
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let initialState = HomeFeature.State(
+            routineTasks: [task],
+            archivedRoutineDisplays: [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Stretch",
+                    emoji: "🤸",
+                    interval: 4,
+                    lastDone: nil,
+                    scheduleAnchor: anchorDate,
+                    pausedAt: pauseDate,
+                    isDoneToday: false,
+                    isPaused: true
+                )
+            ]
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = resumeDate
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.resumeTask(task.id)) {
+            $0.routineTasks[0].scheduleAnchor = expectedAnchor
+            $0.routineTasks[0].pausedAt = nil
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Stretch",
+                    emoji: "🤸",
+                    interval: 4,
+                    lastDone: nil,
+                    scheduleAnchor: expectedAnchor,
+                    isDoneToday: false
+                )
+            ]
+            $0.archivedRoutineDisplays = []
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pausedAt == nil)
+        #expect(savedTask.scheduleAnchor == expectedAnchor)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func markTaskDone_updatesStateAndPersistsLog() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚")
@@ -324,7 +530,9 @@ struct HomeFeatureTests {
 
         await store.send(.markTaskDone(task.id)) {
             $0.routineTasks[0].lastDone = now
+            $0.routineTasks[0].scheduleAnchor = now
             $0.routineDisplays[0].lastDone = now
+            $0.routineDisplays[0].scheduleAnchor = now
             $0.routineDisplays[0].isDoneToday = true
             $0.routineDisplays[0].doneCount = 1
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
@@ -334,6 +542,7 @@ struct HomeFeatureTests {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         #expect(savedTask.lastDone == now)
+        #expect(savedTask.scheduleAnchor == now)
         #expect(logs.count == 1)
         #expect(logs.first?.taskID == task.id)
         #expect(scheduledIDs.value == [task.id.uuidString])
@@ -566,17 +775,25 @@ private func makeDisplay(
     tags: [String] = [],
     interval: Int,
     lastDone: Date?,
+    scheduleAnchor: Date? = nil,
+    pausedAt: Date? = nil,
     isDoneToday: Bool,
+    isPaused: Bool = false,
     doneCount: Int = 0
 ) -> HomeFeature.RoutineDisplay {
-    HomeFeature.RoutineDisplay(
+    let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
+    let resolvedIsPaused = isPaused || pausedAt != nil
+    return HomeFeature.RoutineDisplay(
         taskID: taskID,
         name: name,
         emoji: emoji,
         tags: tags,
         interval: interval,
         lastDone: lastDone,
+        scheduleAnchor: resolvedScheduleAnchor,
+        pausedAt: pausedAt,
         isDoneToday: isDoneToday,
+        isPaused: resolvedIsPaused,
         doneCount: doneCount
     )
 }

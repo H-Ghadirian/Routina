@@ -402,6 +402,8 @@ struct SettingsFeature {
             var tags: [String]?
             var interval: Int
             var lastDone: Date?
+            var scheduleAnchor: Date?
+            var pausedAt: Date?
         }
 
         struct Log: Codable {
@@ -439,7 +441,7 @@ struct SettingsFeature {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = RoutineDataBackup(
-            schemaVersion: 1,
+            schemaVersion: 2,
             exportedAt: Date(),
             tasks: tasks.map {
                 .init(
@@ -448,7 +450,9 @@ struct SettingsFeature {
                     emoji: $0.emoji,
                     tags: $0.tags,
                     interval: max(Int($0.interval), 1),
-                    lastDone: $0.lastDone
+                    lastDone: $0.lastDone,
+                    scheduleAnchor: $0.scheduleAnchor,
+                    pausedAt: $0.pausedAt
                 )
             },
             logs: logs.map {
@@ -475,7 +479,7 @@ struct SettingsFeature {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
 
-        guard backup.schemaVersion == 1 else {
+        guard (1...2).contains(backup.schemaVersion) else {
             throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -502,7 +506,9 @@ struct SettingsFeature {
                     emoji: task.emoji,
                     tags: task.tags ?? [],
                     interval: Int16(clampedInterval),
-                    lastDone: task.lastDone
+                    lastDone: task.lastDone,
+                    scheduleAnchor: task.scheduleAnchor,
+                    pausedAt: task.pausedAt
                 )
                 context.insert(importedTask)
                 importedTaskCount += 1
@@ -560,6 +566,7 @@ struct SettingsFeature {
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         for task in tasks {
+            guard !task.isPaused else { continue }
             await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
         }
     }

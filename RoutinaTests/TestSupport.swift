@@ -19,9 +19,19 @@ func makeTask(
     interval: Int16,
     lastDone: Date?,
     emoji: String?,
-    tags: [String] = []
+    tags: [String] = [],
+    scheduleAnchor: Date? = nil,
+    pausedAt: Date? = nil
 ) -> RoutineTask {
-    let task = RoutineTask(name: name, emoji: emoji, tags: tags, interval: interval, lastDone: lastDone)
+    let task = RoutineTask(
+        name: name,
+        emoji: emoji,
+        tags: tags,
+        interval: interval,
+        lastDone: lastDone,
+        scheduleAnchor: scheduleAnchor,
+        pausedAt: pausedAt
+    )
     context.insert(task)
     return task
 }

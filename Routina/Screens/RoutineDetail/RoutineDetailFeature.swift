@@ -47,6 +47,8 @@ struct RoutineDetailFeature: Reducer {
 
     enum Action: Equatable {
         case markAsDone
+        case pauseTapped
+        case resumeTapped
         case selectedDateChanged(Date)
         case setEditSheet(Bool)
         case editRoutineNameChanged(String)
@@ -73,9 +75,11 @@ struct RoutineDetailFeature: Reducer {
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
+            guard !state.task.isPaused else { return .none }
             let completionDate = resolvedCompletionDate(for: state.selectedDate)
             if shouldUpdateLastDone(current: state.task.lastDone, candidate: completionDate) {
                 state.task.lastDone = completionDate
+                state.task.scheduleAnchor = completionDate
             }
             updateDerivedState(&state)
             return handleMarkAsDone(
@@ -84,6 +88,24 @@ struct RoutineDetailFeature: Reducer {
                 fallbackName: state.task.name,
                 fallbackInterval: max(Int(state.task.interval), 1)
             )
+
+        case .pauseTapped:
+            guard !state.task.isPaused else { return .none }
+            let pauseDate = now
+            if state.task.scheduleAnchor == nil {
+                state.task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: state.task, referenceDate: pauseDate)
+            }
+            state.task.pausedAt = pauseDate
+            updateDerivedState(&state)
+            return handlePauseRoutine(taskID: state.task.id, pausedAt: pauseDate)
+
+        case .resumeTapped:
+            guard state.task.isPaused else { return .none }
+            let resumeDate = now
+            state.task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: state.task, resumedAt: resumeDate)
+            state.task.pausedAt = nil
+            updateDerivedState(&state)
+            return handleResumeRoutine(taskID: state.task.id, resumedAt: resumeDate)
 
         case let .selectedDateChanged(date):
             state.selectedDate = calendar.startOfDay(for: date)
@@ -190,7 +212,6 @@ struct RoutineDetailFeature: Reducer {
     }
 
     private func updateDerivedState(_ state: inout State) {
-        let referenceDate = state.task.lastDone ?? now
         let nowStart = calendar.startOfDay(for: now)
 
         if let lastDone = state.task.lastDone {
@@ -207,9 +228,11 @@ struct RoutineDetailFeature: Reducer {
         }
         state.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
 
-        let dueDate = calendar.date(byAdding: .day, value: Int(state.task.interval), to: referenceDate) ?? now
-        let dueStart = calendar.startOfDay(for: dueDate)
-        state.overdueDays = max(calendar.dateComponents([.day], from: dueStart, to: nowStart).day ?? 0, 0)
+        if state.task.isPaused {
+            state.overdueDays = 0
+        } else {
+            state.overdueDays = RoutineDateMath.overdueDays(for: state.task, referenceDate: now, calendar: calendar)
+        }
     }
 
     private func resolvedCompletionDate(for selectedDate: Date?) -> Date {
@@ -267,6 +290,7 @@ struct RoutineDetailFeature: Reducer {
             do {
                 let context = modelContext()
                 let task = try context.fetch(taskDescriptor(for: taskID)).first
+                guard task?.isPaused != true else { return }
                 let existingLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 if existingLogs.contains(where: { log in
                     guard let timestamp = log.timestamp else { return false }
@@ -278,6 +302,7 @@ struct RoutineDetailFeature: Reducer {
 
                 if shouldUpdateLastDone(current: task?.lastDone, candidate: completedAt) {
                     task?.lastDone = completedAt
+                    task?.scheduleAnchor = completedAt
                 }
 
                 let log = RoutineLog(timestamp: completedAt, taskID: taskID)
@@ -287,14 +312,21 @@ struct RoutineDetailFeature: Reducer {
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
 
-                let payload = task.map { NotificationCoordinator.notificationPayload(for: $0) }
+                let payload = task.map {
+                    NotificationCoordinator.notificationPayload(
+                        for: $0,
+                        referenceDate: completedAt,
+                        calendar: calendar
+                    )
+                }
                     ?? NotificationPayload(
                         identifier: taskID.uuidString,
                         name: fallbackName,
                         emoji: nil,
                         interval: max(fallbackInterval, 1),
                         lastDone: completedAt,
-                        triggerDate: nil
+                        triggerDate: nil,
+                        isPaused: false
                     )
                 await notificationClient.schedule(payload)
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
@@ -322,10 +354,21 @@ struct RoutineDetailFeature: Reducer {
                 task.emoji = emoji
                 task.tags = tags
                 task.interval = interval
+                if task.scheduleAnchor == nil {
+                    task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: now)
+                }
                 try context.save()
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
-                let payload = NotificationCoordinator.notificationPayload(for: task)
-                await notificationClient.schedule(payload)
+                if task.isPaused {
+                    await notificationClient.cancel(task.id.uuidString)
+                } else {
+                    let payload = NotificationCoordinator.notificationPayload(
+                        for: task,
+                        referenceDate: now,
+                        calendar: calendar
+                    )
+                    await notificationClient.schedule(payload)
+                }
                 send(.onAppear)
             } catch {
                 print("Error saving routine edits: \(error)")
@@ -354,6 +397,45 @@ struct RoutineDetailFeature: Reducer {
                 send(.routineDeleted)
             } catch {
                 print("Error deleting routine: \(error)")
+            }
+        }
+    }
+
+    private func handlePauseRoutine(taskID: UUID, pausedAt: Date) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                if task.scheduleAnchor == nil {
+                    task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pausedAt)
+                }
+                task.pausedAt = pausedAt
+                try context.save()
+                await notificationClient.cancel(taskID.uuidString)
+                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            } catch {
+                print("Error pausing routine: \(error)")
+            }
+        }
+    }
+
+    private func handleResumeRoutine(taskID: UUID, resumedAt: Date) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumedAt)
+                task.pausedAt = nil
+                try context.save()
+                let payload = NotificationCoordinator.notificationPayload(
+                    for: task,
+                    referenceDate: resumedAt,
+                    calendar: calendar
+                )
+                await notificationClient.schedule(payload)
+                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            } catch {
+                print("Error resuming routine: \(error)")
             }
         }
     }
