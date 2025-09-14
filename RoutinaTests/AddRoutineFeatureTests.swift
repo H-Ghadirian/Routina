@@ -77,6 +77,24 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func existingRoutineNamesChanged_clearsValidationWhenDuplicateDisappears() async {
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Read",
+                existingRoutineNames: ["Read"],
+                nameValidationMessage: "A routine with this name already exists."
+            )
+        ) {
+            AddRoutineFeature(onSave: { _, _, _ in .none }, onCancel: { .none })
+        }
+
+        await store.send(.existingRoutineNamesChanged(["Walk"])) {
+            $0.existingRoutineNames = ["Walk"]
+            $0.nameValidationMessage = nil
+        }
+    }
+
+    @Test
     func saveTapped_doesNothingWhenDuplicateNameExists() async {
         let store = TestStore(
             initialState: AddRoutineFeature.State(
@@ -98,6 +116,29 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
+    }
+
+    @Test
+    func saveTapped_trimsNameBeforeDelegating() async {
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "  Read  ",
+                routineEmoji: "📚",
+                frequency: .day,
+                frequencyValue: 5,
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { name, frequencyInDays, emoji in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji)))
+                },
+                onCancel: { .none }
+            )
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(.delegate(.didSave("Read", 5, "📚")))
     }
 
     @Test

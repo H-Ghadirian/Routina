@@ -28,6 +28,31 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func setAddRoutineSheet_seedsExistingNamesFromLoadedTasks() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let initialState = HomeFeature.State(
+            routineTasks: [task],
+            routineDisplays: [],
+            isAddRoutineSheetPresented: false,
+            addRoutineState: nil
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.setAddRoutineSheet(true)) {
+            $0.isAddRoutineSheetPresented = true
+            $0.addRoutineState = AddRoutineFeature.State(existingRoutineNames: ["Read"])
+        }
+    }
+
+    @Test
     func tasksLoadedSuccessfully_mapsDisplayWithFallbacksAndDoneToday() async throws {
         let context = makeInMemoryContext()
         let today = Date()
@@ -69,6 +94,44 @@ struct HomeFeatureTests {
         #expect(display.emoji == "✨")
         #expect(display.interval == 1)
         #expect(display.isDoneToday)
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_updatesOpenAddRoutineValidation() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let initialState = HomeFeature.State(
+            routineTasks: [],
+            routineDisplays: [],
+            isAddRoutineSheetPresented: true,
+            addRoutineState: AddRoutineFeature.State(routineName: "read")
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([task])) {
+            $0.routineTasks = [task]
+            $0.routineDisplays = [
+                HomeFeature.RoutineDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 1,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+        }
+        await store.receive(.addRoutineSheet(.existingRoutineNamesChanged(["Read"]))) {
+            $0.addRoutineState?.existingRoutineNames = ["Read"]
+            $0.addRoutineState?.nameValidationMessage = "A routine with this name already exists."
+        }
     }
 
     @Test
@@ -126,6 +189,42 @@ struct HomeFeatureTests {
         #expect(store.state.routineTasks.count == 1)
         #expect(store.state.routineDisplays.count == 1)
         #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func routineSavedSuccessfully_closesAddRoutineSheet() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Walk", interval: 2, lastDone: nil, emoji: "🚶")
+
+        let initialState = HomeFeature.State(
+            routineTasks: [],
+            routineDisplays: [],
+            isAddRoutineSheetPresented: true,
+            addRoutineState: AddRoutineFeature.State(routineName: "Walk")
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.routineSavedSuccessfully(task)) {
+            $0.routineTasks = [task]
+            $0.routineDisplays = [
+                HomeFeature.RoutineDisplay(
+                    taskID: task.id,
+                    name: "Walk",
+                    emoji: "🚶",
+                    interval: 2,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+            $0.isAddRoutineSheetPresented = false
+            $0.addRoutineState = nil
+        }
     }
 
     @Test
