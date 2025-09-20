@@ -16,6 +16,17 @@ extension PlatformSupport {
     static func open(_ url: URL) {
         UIApplication.shared.open(url)
     }
+
+    @MainActor
+    static func selectRoutineDataExportURL(suggestedFileName: String) -> URL? {
+        _ = suggestedFileName
+        return nil
+    }
+
+    @MainActor
+    static func selectRoutineDataImportURL() -> URL? {
+        nil
+    }
 }
 
 extension View {

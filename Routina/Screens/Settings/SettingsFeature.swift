@@ -23,6 +23,8 @@ struct SettingsFeature {
         var isCloudDataResetInProgress: Bool = false
         var isCloudDataResetConfirmationPresented: Bool = false
         var cloudStatusMessage: String = ""
+        var isDataTransferInProgress: Bool = false
+        var dataTransferStatusMessage: String = ""
     }
 
     enum Action: Equatable {
@@ -37,11 +39,15 @@ struct SettingsFeature {
         case syncNowTapped
         case setCloudDataResetConfirmation(Bool)
         case resetCloudDataConfirmed
+        case exportRoutineDataTapped
+        case importRoutineDataTapped
+        case routineDataTransferFinished(success: Bool, message: String)
         case cloudSyncFinished(success: Bool, message: String)
         case cloudDataResetFinished(success: Bool, message: String)
     }
 
     @Dependency(\.modelContext) var modelContext
+    @Dependency(\.notificationClient) var notificationClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -187,6 +193,109 @@ struct SettingsFeature {
                     }
                 }
 
+            case .exportRoutineDataTapped:
+#if os(macOS)
+                guard !state.isDataTransferInProgress else {
+                    return .none
+                }
+
+                state.isDataTransferInProgress = true
+                state.dataTransferStatusMessage = "Saving routine data..."
+                return .run { @MainActor send in
+                    do {
+                        guard let destinationURL = PlatformSupport.selectRoutineDataExportURL(
+                            suggestedFileName: defaultRoutineDataBackupFileName()
+                        ) else {
+                            await send(
+                                .routineDataTransferFinished(
+                                    success: false,
+                                    message: "Save canceled."
+                                )
+                            )
+                            return
+                        }
+
+                        let context = modelContext()
+                        if context.hasChanges {
+                            try context.save()
+                        }
+
+                        let backupData = try buildRoutineDataBackupJSON(from: context)
+                        try withSecurityScopedAccess(to: destinationURL) {
+                            try backupData.write(to: destinationURL, options: .atomic)
+                        }
+
+                        await send(
+                            .routineDataTransferFinished(
+                                success: true,
+                                message: "Saved to \(destinationURL.lastPathComponent)."
+                            )
+                        )
+                    } catch {
+                        await send(
+                            .routineDataTransferFinished(
+                                success: false,
+                                message: "Save failed: \(error.localizedDescription)"
+                            )
+                        )
+                    }
+                }
+#else
+                return .none
+#endif
+
+            case .importRoutineDataTapped:
+#if os(macOS)
+                guard !state.isDataTransferInProgress else {
+                    return .none
+                }
+
+                state.isDataTransferInProgress = true
+                state.dataTransferStatusMessage = "Loading routine data..."
+                return .run { @MainActor send in
+                    do {
+                        guard let sourceURL = PlatformSupport.selectRoutineDataImportURL() else {
+                            await send(
+                                .routineDataTransferFinished(
+                                    success: false,
+                                    message: "Load canceled."
+                                )
+                            )
+                            return
+                        }
+
+                        let jsonData = try withSecurityScopedAccess(to: sourceURL) {
+                            try Data(contentsOf: sourceURL)
+                        }
+                        let context = modelContext()
+                        let importedSummary = try replaceAllRoutineData(with: jsonData, in: context)
+                        try await rescheduleNotificationsAfterImport(in: context)
+
+                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        await send(
+                            .routineDataTransferFinished(
+                                success: true,
+                                message: "Loaded \(importedSummary.tasks) routines and \(importedSummary.logs) logs."
+                            )
+                        )
+                    } catch {
+                        await send(
+                            .routineDataTransferFinished(
+                                success: false,
+                                message: "Load failed: \(error.localizedDescription)"
+                            )
+                        )
+                    }
+                }
+#else
+                return .none
+#endif
+
+            case let .routineDataTransferFinished(_, message):
+                state.isDataTransferInProgress = false
+                state.dataTransferStatusMessage = message
+                return .none
+
             case let .cloudSyncFinished(_, message):
                 state.isCloudSyncInProgress = false
                 state.cloudStatusMessage = message
@@ -215,5 +324,175 @@ struct SettingsFeature {
         default:
             return "Data reset failed: \(cloudError.localizedDescription)"
         }
+    }
+
+    private struct RoutineDataBackup: Codable {
+        var schemaVersion: Int
+        var exportedAt: Date
+        var tasks: [Task]
+        var logs: [Log]
+
+        struct Task: Codable {
+            var id: UUID
+            var name: String?
+            var emoji: String?
+            var interval: Int
+            var lastDone: Date?
+        }
+
+        struct Log: Codable {
+            var id: UUID
+            var timestamp: Date?
+            var taskID: UUID
+        }
+    }
+
+    private struct ImportSummary {
+        var tasks: Int
+        var logs: Int
+    }
+
+    private enum RoutineDataTransferError: LocalizedError {
+        case unsupportedSchema(Int)
+
+        var errorDescription: String? {
+            switch self {
+            case let .unsupportedSchema(version):
+                return "Unsupported backup format version: \(version)."
+            }
+        }
+    }
+
+    private func defaultRoutineDataBackupFileName() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        return "routina-backup-\(formatter.string(from: Date())).json"
+    }
+
+    @MainActor
+    private func buildRoutineDataBackupJSON(from context: ModelContext) throws -> Data {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        let backup = RoutineDataBackup(
+            schemaVersion: 1,
+            exportedAt: Date(),
+            tasks: tasks.map {
+                .init(
+                    id: $0.id,
+                    name: $0.name,
+                    emoji: $0.emoji,
+                    interval: max(Int($0.interval), 1),
+                    lastDone: $0.lastDone
+                )
+            },
+            logs: logs.map {
+                .init(
+                    id: $0.id,
+                    timestamp: $0.timestamp,
+                    taskID: $0.taskID
+                )
+            }
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(backup)
+    }
+
+    @MainActor
+    private func replaceAllRoutineData(
+        with jsonData: Data,
+        in context: ModelContext
+    ) throws -> ImportSummary {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
+
+        guard backup.schemaVersion == 1 else {
+            throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
+        }
+
+        do {
+            let existingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+            for log in existingLogs {
+                context.delete(log)
+            }
+
+            let existingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+            for task in existingTasks {
+                context.delete(task)
+            }
+
+            var importedTaskIDs = Set<UUID>()
+            var importedTaskCount = 0
+            for task in backup.tasks {
+                guard importedTaskIDs.insert(task.id).inserted else { continue }
+
+                let clampedInterval = min(max(task.interval, 1), Int(Int16.max))
+                let importedTask = RoutineTask(
+                    id: task.id,
+                    name: task.name,
+                    emoji: task.emoji,
+                    interval: Int16(clampedInterval),
+                    lastDone: task.lastDone
+                )
+                context.insert(importedTask)
+                importedTaskCount += 1
+            }
+
+            var importedLogIDs = Set<UUID>()
+            var importedLogCount = 0
+            for log in backup.logs {
+                guard importedTaskIDs.contains(log.taskID) else { continue }
+                guard importedLogIDs.insert(log.id).inserted else { continue }
+
+                let importedLog = RoutineLog(
+                    id: log.id,
+                    timestamp: log.timestamp,
+                    taskID: log.taskID
+                )
+                context.insert(importedLog)
+                importedLogCount += 1
+            }
+
+            try context.save()
+            return ImportSummary(tasks: importedTaskCount, logs: importedLogCount)
+        } catch {
+            context.rollback()
+            throw error
+        }
+    }
+
+    @MainActor
+    private func rescheduleNotificationsAfterImport(in context: ModelContext) async throws {
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        for task in tasks {
+            let payload = NotificationPayload(
+                identifier: task.id.uuidString,
+                name: task.name,
+                interval: max(Int(task.interval), 1),
+                lastDone: task.lastDone
+            )
+            await notificationClient.schedule(payload)
+        }
+    }
+
+    private func withSecurityScopedAccess<T>(
+        to url: URL,
+        _ operation: () throws -> T
+    ) throws -> T {
+        let didStartAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        return try operation()
     }
 }

@@ -57,6 +57,16 @@ struct SettingsTCAView: View {
         return "Ready to sync."
     }
 
+    private var dataTransferStatusText: String {
+        if store.isDataTransferInProgress {
+            return "Processing JSON file..."
+        }
+        if !store.dataTransferStatusMessage.isEmpty {
+            return store.dataTransferStatusMessage
+        }
+        return "Export or import all routine data as JSON."
+    }
+
     private var cloudDataResetConfirmationBinding: Binding<Bool> {
         Binding(
             get: { store.isCloudDataResetConfirmationPresented },
@@ -284,6 +294,37 @@ struct SettingsTCAView: View {
                         }
 
                         Text(syncStatusText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                macSectionCard(title: "Data Backup") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 10) {
+                            Button {
+                                store.send(.exportRoutineDataTapped)
+                            } label: {
+                                Label("Save JSON", systemImage: "square.and.arrow.down")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(store.isDataTransferInProgress)
+
+                            Button {
+                                store.send(.importRoutineDataTapped)
+                            } label: {
+                                Label("Load JSON", systemImage: "square.and.arrow.up")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(store.isDataTransferInProgress)
+
+                            if store.isDataTransferInProgress {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                        }
+
+                        Text(dataTransferStatusText)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
