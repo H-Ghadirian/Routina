@@ -75,6 +75,9 @@ struct SettingsTCAView: View {
                 supportFormSection
                 iCloudFormSection
                 aboutFormSection
+                if store.isDebugSectionVisible {
+                    debugFormSection
+                }
             }
             .navigationTitle("Settings")
         }
@@ -155,16 +158,6 @@ struct SettingsTCAView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
-
-            Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
-                .font(.footnote)
-                .foregroundColor(.secondary)
-            Text(store.cloudDiagnosticsSummary)
-                .font(.footnote)
-                .foregroundColor(.secondary)
-            Text(store.pushDiagnosticsStatus)
-                .font(.footnote)
-                .foregroundColor(.secondary)
         }
     }
 
@@ -177,7 +170,16 @@ struct SettingsTCAView: View {
                 Text(store.appVersion)
                     .foregroundColor(.gray)
             }
+            .contentShape(Rectangle())
+            .onLongPressGesture(minimumDuration: 5) {
+                store.send(.aboutSectionLongPressed)
+            }
+        }
+    }
 
+    @ViewBuilder
+    private var debugFormSection: some View {
+        Section(header: Text("Debug")) {
             HStack {
                 Text("Data Mode")
                 Spacer()
@@ -192,6 +194,16 @@ struct SettingsTCAView: View {
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.trailing)
             }
+
+            Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            Text(store.cloudDiagnosticsSummary)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            Text(store.pushDiagnosticsStatus)
+                .font(.footnote)
+                .foregroundColor(.secondary)
         }
     }
 
@@ -274,24 +286,33 @@ struct SettingsTCAView: View {
                         Text(syncStatusText)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-
-                        Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text(store.cloudDiagnosticsSummary)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text(store.pushDiagnosticsStatus)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
                     }
                 }
 
                 macSectionCard(title: "About") {
                     VStack(alignment: .leading, spacing: 8) {
                         macInfoRow(title: "App Version", value: store.appVersion)
-                        macInfoRow(title: "Data Mode", value: store.dataModeDescription)
-                        macInfoRow(title: "iCloud Container", value: store.iCloudContainerDescription)
+                    }
+                }
+                .onLongPressGesture(minimumDuration: 5) {
+                    store.send(.aboutSectionLongPressed)
+                }
+
+                if store.isDebugSectionVisible {
+                    macSectionCard(title: "Debug") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            macInfoRow(title: "Data Mode", value: store.dataModeDescription)
+                            macInfoRow(title: "iCloud Container", value: store.iCloudContainerDescription)
+                            Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                            Text(store.cloudDiagnosticsSummary)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                            Text(store.pushDiagnosticsStatus)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }

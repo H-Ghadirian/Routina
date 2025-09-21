@@ -15,6 +15,7 @@ struct SettingsFeature {
         var cloudDiagnosticsSummary: String = CloudKitSyncDiagnostics.snapshot().summary
         var cloudDiagnosticsTimestamp: String = CloudKitSyncDiagnostics.snapshot().timestampText
         var pushDiagnosticsStatus: String = CloudKitSyncDiagnostics.snapshot().pushStatus
+        var isDebugSectionVisible: Bool = false
         var cloudSyncAvailable: Bool = AppEnvironment.isCloudSyncEnabled
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
         var systemSettingsNotificationsEnabled: Bool = true
@@ -30,6 +31,7 @@ struct SettingsFeature {
         case onAppear
         case onAppBecameActive
         case contactUsTapped
+        case aboutSectionLongPressed
         case systemNotificationPermissionChecked(Bool)
         case cloudDiagnosticsUpdated
         case syncNowTapped
@@ -59,6 +61,7 @@ struct SettingsFeature {
 
             case .onAppear:
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+                state.isDebugSectionVisible = false
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
                 state.cloudDiagnosticsSummary = diagnostics.summary
                 state.cloudDiagnosticsTimestamp = diagnostics.timestampText
@@ -75,6 +78,10 @@ struct SettingsFeature {
                         PlatformSupport.open(emailURL)
                     }
                 }
+                return .none
+
+            case .aboutSectionLongPressed:
+                state.isDebugSectionVisible = true
                 return .none
 
             case let .systemNotificationPermissionChecked(value):
