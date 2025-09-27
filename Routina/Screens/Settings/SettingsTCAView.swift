@@ -28,6 +28,9 @@ struct SettingsTCAView: View {
             ) { _ in
                 store.send(.onAppBecameActive)
             }
+            .onReceive(NotificationCenter.default.publisher(for: CloudKitSyncDiagnostics.didUpdateNotification)) { _ in
+                store.send(.cloudDiagnosticsUpdated)
+            }
         }
     }
 
@@ -152,6 +155,16 @@ struct SettingsTCAView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
+
+            Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            Text(store.cloudDiagnosticsSummary)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            Text(store.pushDiagnosticsStatus)
+                .font(.footnote)
+                .foregroundColor(.secondary)
         }
     }
 
@@ -259,6 +272,16 @@ struct SettingsTCAView: View {
                         }
 
                         Text(syncStatusText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        Text("Last CloudKit Event: \(store.cloudDiagnosticsTimestamp)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Text(store.cloudDiagnosticsSummary)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Text(store.pushDiagnosticsStatus)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }

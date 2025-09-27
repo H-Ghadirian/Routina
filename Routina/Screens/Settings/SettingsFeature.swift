@@ -12,6 +12,9 @@ struct SettingsFeature {
         var appVersion: String = ""
         var dataModeDescription: String = AppEnvironment.dataModeLabel
         var iCloudContainerDescription: String = AppEnvironment.cloudKitContainerIdentifier ?? "Disabled"
+        var cloudDiagnosticsSummary: String = CloudKitSyncDiagnostics.snapshot().summary
+        var cloudDiagnosticsTimestamp: String = CloudKitSyncDiagnostics.snapshot().timestampText
+        var pushDiagnosticsStatus: String = CloudKitSyncDiagnostics.snapshot().pushStatus
         var cloudSyncAvailable: Bool = AppEnvironment.isCloudSyncEnabled
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
         var systemSettingsNotificationsEnabled: Bool = true
@@ -28,6 +31,7 @@ struct SettingsFeature {
         case onAppBecameActive
         case contactUsTapped
         case systemNotificationPermissionChecked(Bool)
+        case cloudDiagnosticsUpdated
         case syncNowTapped
         case setCloudDataResetConfirmation(Bool)
         case resetCloudDataConfirmed
@@ -55,6 +59,10 @@ struct SettingsFeature {
 
             case .onAppear:
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+                let diagnostics = CloudKitSyncDiagnostics.snapshot()
+                state.cloudDiagnosticsSummary = diagnostics.summary
+                state.cloudDiagnosticsTimestamp = diagnostics.timestampText
+                state.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .run { @MainActor send in
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = settings.authorizationStatus == .authorized
@@ -71,6 +79,13 @@ struct SettingsFeature {
 
             case let .systemNotificationPermissionChecked(value):
                 state.systemSettingsNotificationsEnabled = value
+                return .none
+
+            case .cloudDiagnosticsUpdated:
+                let diagnostics = CloudKitSyncDiagnostics.snapshot()
+                state.cloudDiagnosticsSummary = diagnostics.summary
+                state.cloudDiagnosticsTimestamp = diagnostics.timestampText
+                state.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .none
 
             case .onAppBecameActive:
@@ -93,12 +108,21 @@ struct SettingsFeature {
                 state.cloudStatusMessage = "Syncing with iCloud..."
                 return .run { @MainActor send in
                     do {
-                        try modelContext().save()
+                        let context = modelContext()
+                        if context.hasChanges {
+                            try context.save()
+                        }
+                        if let containerIdentifier = AppEnvironment.cloudKitContainerIdentifier {
+                            try await CloudKitDirectPullService.pullLatestIntoLocalStore(
+                                containerIdentifier: containerIdentifier,
+                                modelContext: context
+                            )
+                        }
                         NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                         await send(
                             .cloudSyncFinished(
                                 success: true,
-                                message: "Sync requested. iCloud updates may take a moment."
+                                message: "Sync completed."
                             )
                         )
                     } catch {

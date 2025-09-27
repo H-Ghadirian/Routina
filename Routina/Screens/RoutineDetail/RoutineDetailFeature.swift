@@ -104,14 +104,13 @@ struct RoutineDetailFeature: Reducer {
         case .editSaveTapped:
             let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedName.isEmpty else { return .none }
-
-            state.task.name = trimmedName
-            state.task.emoji = state.editRoutineEmoji
-            state.task.interval = Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
             state.isEditSheetPresented = false
-            updateDerivedState(&state)
-
-            return handleEditSave(taskID: state.task.id)
+            return handleEditSave(
+                taskID: state.task.id,
+                name: trimmedName,
+                emoji: state.editRoutineEmoji,
+                interval: Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
+            )
 
         case let .setDeleteConfirmation(isPresented):
             state.isDeleteConfirmationPresented = isPresented
@@ -243,11 +242,22 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
-    private func handleEditSave(taskID: UUID) -> Effect<Action> {
+    private func handleEditSave(
+        taskID: UUID,
+        name: String,
+        emoji: String,
+        interval: Int16
+    ) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                if try hasDuplicateRoutineName(name, in: context, excludingID: taskID) {
+                    return
+                }
+                task.name = name
+                task.emoji = emoji
+                task.interval = interval
                 try context.save()
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 let payload = NotificationPayload(
@@ -301,5 +311,24 @@ struct RoutineDetailFeature: Reducer {
                 log.taskID == taskID
             }
         )
+    }
+
+    private func hasDuplicateRoutineName(
+        _ name: String,
+        in context: ModelContext,
+        excludingID: UUID
+    ) throws -> Bool {
+        guard let normalized = normalizedRoutineName(name) else { return false }
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        return tasks.contains { task in
+            task.id != excludingID && normalizedRoutineName(task.name) == normalized
+        }
+    }
+
+    private func normalizedRoutineName(_ name: String?) -> String? {
+        guard let name else { return nil }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 }

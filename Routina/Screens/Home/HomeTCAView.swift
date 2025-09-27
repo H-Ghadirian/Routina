@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import CoreData
 import SwiftData
 import SwiftUI
 
@@ -14,15 +15,7 @@ struct HomeTCAView: View {
     }
 
     private var homeContent: some View {
-        navigationContent
-#if os(iOS)
-            .refreshable {
-                await MainActor.run {
-                    try? modelContext.save()
-                    store.send(.onAppear)
-                }
-            }
-#endif
+        applyPlatformRefresh(to: navigationContent)
             .sheet(isPresented: addRoutineSheetBinding) {
                 addRoutineSheetContent
             }
@@ -30,6 +23,12 @@ struct HomeTCAView: View {
                 store.send(.onAppear)
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))) { _ in
+                store.send(.onAppear)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)) { _ in
+                store.send(.onAppear)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)) { _ in
                 store.send(.onAppear)
             }
             .onChange(of: store.routineTasks) { _, tasks in
@@ -49,8 +48,7 @@ struct HomeTCAView: View {
     }
 
     private var sidebarContent: some View {
-        applySidebarColumnWidth(
-            to: Group {
+        Group {
             if store.routineTasks.isEmpty {
                 Text("No routine defined yet")
                     .font(.headline)
@@ -66,16 +64,7 @@ struct HomeTCAView: View {
         .navigationTitle("Routina")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-#if os(macOS)
-                Button {
-                    Task { @MainActor in
-                        try? modelContext.save()
-                        store.send(.onAppear)
-                    }
-                } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                }
-#endif
+                platformRefreshButton
                 Button {
                     store.send(.setAddRoutineSheet(true))
                 } label: {
@@ -83,7 +72,7 @@ struct HomeTCAView: View {
                 }
             }
         }
-        )
+        .routinaHomeSidebarColumnWidth()
     }
 
     @ViewBuilder
@@ -100,15 +89,6 @@ struct HomeTCAView: View {
             get: { store.isAddRoutineSheetPresented },
             set: { store.send(.setAddRoutineSheet($0)) }
         )
-    }
-
-    @ViewBuilder
-    private func applySidebarColumnWidth<Content: View>(to view: Content) -> some View {
-#if os(macOS)
-        view.navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 520)
-#else
-        view
-#endif
     }
 
     @ViewBuilder
@@ -267,5 +247,25 @@ struct HomeTCAView: View {
         let overdueDays = max(-dueIn, 1)
         let dayWord = overdueDays == 1 ? "day" : "days"
         return "Overdue by \(overdueDays) \(dayWord)"
+    }
+
+    @MainActor
+    func performManualRefresh() async {
+        if modelContext.hasChanges {
+            try? modelContext.save()
+        }
+
+        if let containerIdentifier = AppEnvironment.cloudKitContainerIdentifier {
+            try? await CloudKitDirectPullService.pullLatestIntoLocalStore(
+                containerIdentifier: containerIdentifier,
+                modelContext: modelContext
+            )
+        }
+
+        _ = store.send(.onAppear)
+
+        // CloudKit imports are asynchronous; do a second pass shortly after manual refresh.
+        try? await Task.sleep(for: .seconds(2))
+        _ = store.send(.onAppear)
     }
 }

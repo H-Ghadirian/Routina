@@ -48,7 +48,8 @@ struct HomeFeature {
             case .onAppear:
                 return .run { @MainActor send in
                     do {
-                        let context = self.modelContext()
+                        let context = ModelContext(self.modelContext().container)
+                        try self.enforceUniqueRoutineNames(in: context)
                         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                         send(.tasksLoadedSuccessfully(tasks))
                     } catch {
@@ -108,8 +109,19 @@ struct HomeFeature {
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
+                        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmedName.isEmpty else {
+                            send(.routineSaveFailed)
+                            return
+                        }
+
+                        if try self.hasDuplicateRoutineName(trimmedName, in: context) {
+                            send(.routineSaveFailed)
+                            return
+                        }
+
                         let newRoutine = RoutineTask(
-                            name: name,
+                            name: trimmedName,
                             emoji: emoji,
                             interval: Int16(freq),
                             lastDone: nil
@@ -175,6 +187,70 @@ struct HomeFeature {
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone
         )
+    }
+
+    private func hasDuplicateRoutineName(
+        _ name: String,
+        in context: ModelContext,
+        excludingID: UUID? = nil
+    ) throws -> Bool {
+        guard let normalized = normalizedRoutineName(name) else { return false }
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        return tasks.contains { task in
+            if let excludingID, task.id == excludingID {
+                return false
+            }
+            return normalizedRoutineName(task.name) == normalized
+        }
+    }
+
+    private func enforceUniqueRoutineNames(in context: ModelContext) throws {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        var tasksByNormalizedName: [String: [RoutineTask]] = [:]
+        var removedAny = false
+
+        for task in tasks {
+            guard let normalized = normalizedRoutineName(task.name) else { continue }
+            tasksByNormalizedName[normalized, default: []].append(task)
+        }
+
+        for sameNamedTasks in tasksByNormalizedName.values {
+            guard sameNamedTasks.count > 1 else { continue }
+
+            let keeper = preferredTaskToKeep(from: sameNamedTasks)
+            for task in sameNamedTasks where task.id != keeper.id {
+                let logs = try context.fetch(logsDescriptor(for: task.id))
+                for log in logs {
+                    context.delete(log)
+                }
+                context.delete(task)
+                removedAny = true
+            }
+        }
+
+        if removedAny {
+            try context.save()
+            NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+        }
+    }
+
+    private func preferredTaskToKeep(from tasks: [RoutineTask]) -> RoutineTask {
+        tasks.min { taskSelectionKey($0) < taskSelectionKey($1) } ?? tasks[0]
+    }
+
+    private func taskSelectionKey(_ task: RoutineTask) -> (Int, String, String) {
+        let rawName = task.name ?? ""
+        let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let whitespacePenalty = rawName == trimmedName ? 0 : 1
+        let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        return (whitespacePenalty, foldedName, task.id.uuidString.lowercased())
+    }
+
+    private func normalizedRoutineName(_ name: String?) -> String? {
+        guard let name else { return nil }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 }
 

@@ -16,4 +16,21 @@ extension View {
         )
     }
 }
+
+extension HomeTCAView {
+    func applyPlatformRefresh<Content: View>(to view: Content) -> some View {
+        view
+    }
+
+    @ViewBuilder
+    var platformRefreshButton: some View {
+        Button {
+            Task { @MainActor in
+                await performManualRefresh()
+            }
+        } label: {
+            Label("Refresh", systemImage: "arrow.clockwise")
+        }
+    }
+}
 #endif

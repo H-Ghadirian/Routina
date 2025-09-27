@@ -257,4 +257,76 @@ struct HomeFeatureTests {
         #expect(logs.first?.id == newerLog.id)
         #expect(logs.last?.id == olderLog.id)
     }
+
+    @Test
+    func addRoutine_rejectsDuplicateName_caseInsensitiveAndTrimmed() async throws {
+        let context = makeInMemoryContext()
+        _ = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+        try context.save()
+
+        let initialState = HomeFeature.State(
+            routineTasks: [],
+            routineDisplays: [],
+            isAddRoutineSheetPresented: true,
+            addRoutineState: AddRoutineFeature.State()
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥")))) {
+            $0.isAddRoutineSheetPresented = false
+        }
+        await store.receive(.routineSaveFailed)
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        #expect(tasks.count == 1)
+        #expect(tasks.first?.name == "Read")
+    }
+
+    @Test
+    func onAppear_enforcesUniqueNamesByRemovingDuplicates() async throws {
+        let context = makeInMemoryContext()
+        let first = makeTask(in: context, name: "Routine A", interval: 1, lastDone: nil, emoji: "🅰️")
+        let duplicate = makeTask(in: context, name: "  routine a  ", interval: 3, lastDone: nil, emoji: "♻️")
+        _ = makeLog(in: context, task: duplicate, timestamp: Date())
+        try context.save()
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.onAppear)
+        await store.receive { action in
+            guard case let .tasksLoadedSuccessfully(tasks) = action else { return false }
+            #expect(tasks.count == 1)
+            #expect(tasks.first?.id == first.id)
+            return true
+        } assert: {
+            $0.routineTasks = [first]
+            $0.routineDisplays = [
+                HomeFeature.RoutineDisplay(
+                    taskID: first.id,
+                    name: "Routine A",
+                    emoji: "🅰️",
+                    interval: 1,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+        }
+
+        let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let remainingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(remainingTasks.count == 1)
+        #expect(remainingTasks.first?.id == first.id)
+        #expect(remainingLogs.isEmpty)
+    }
 }

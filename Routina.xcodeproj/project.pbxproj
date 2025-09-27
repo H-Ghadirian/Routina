@@ -116,7 +116,6 @@
 				"Screens/AddRoutine/AddRoutineTCAView+macOS.swift",
 				"Screens/App/RoutinaTCAApp+macOS.swift",
 				"Screens/Home/HomeTCAView+macOS.swift",
-				"Screens/Home/HomeTCAView+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+macOS.swift",
 				"Screens/RoutineDetail/RoutineDetailPlatformStyle+macOS.swift",
 			);
@@ -140,7 +139,6 @@
 				"Screens/AddRoutine/AddRoutineTCAView+macOS.swift",
 				"Screens/App/RoutinaTCAApp+macOS.swift",
 				"Screens/Home/HomeTCAView+macOS.swift",
-				"Screens/Home/HomeTCAView+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+macOS.swift",
 				"Screens/RoutineDetail/RoutineDetailPlatformStyle+macOS.swift",
 			);
@@ -1172,6 +1170,7 @@
 				);
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
+				PRODUCT_MODULE_NAME = Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1213,6 +1212,7 @@
 				);
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
+				PRODUCT_MODULE_NAME = Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1247,6 +1247,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
+				PRODUCT_MODULE_NAME = Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
 				SDKROOT = macosx;
@@ -1279,6 +1280,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
+				PRODUCT_MODULE_NAME = Routina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
 				SDKROOT = macosx;

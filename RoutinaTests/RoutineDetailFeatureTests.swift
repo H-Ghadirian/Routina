@@ -199,6 +199,49 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func editSaveTapped_rejectsDuplicateName_caseInsensitiveAndTrimmed() async throws {
+        let context = makeInMemoryContext()
+        _ = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+        let editableTask = makeTask(in: context, name: "Workout", interval: 3, lastDone: nil, emoji: "💪")
+        try context.save()
+
+        let initialState = RoutineDetailFeature.State(
+            task: editableTask,
+            logs: [],
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: false,
+            isEditSheetPresented: true,
+            editRoutineName: "  read ",
+            editRoutineEmoji: "🏋️",
+            editFrequency: .week,
+            editFrequencyValue: 1
+        )
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let names = tasks.compactMap(\.name)
+        #expect(tasks.count == 2)
+        #expect(names.contains("Read"))
+        #expect(names.contains("Workout"))
+
+        let unchanged = try #require(tasks.first(where: { $0.id == editableTask.id }))
+        #expect(unchanged.interval == 3)
+        #expect(unchanged.emoji == "💪")
+    }
+
+    @Test
     func logsLoaded_updatesDerivedStateFromLastDoneAndLogs() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T10:00:00Z")
