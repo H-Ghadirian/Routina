@@ -15,6 +15,14 @@ struct HomeTCAView: View {
 
     private var homeContent: some View {
         navigationContent
+#if os(iOS)
+            .refreshable {
+                await MainActor.run {
+                    try? modelContext.save()
+                    store.send(.onAppear)
+                }
+            }
+#endif
             .sheet(isPresented: addRoutineSheetBinding) {
                 addRoutineSheetContent
             }
