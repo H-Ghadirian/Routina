@@ -144,6 +144,10 @@ struct SettingsTCAView: View {
                     Text("Contact Us")
                 }
             }
+
+            Text("h.qadirian@gmail.com")
+                .font(.footnote)
+                .foregroundColor(.secondary)
         }
     }
 
@@ -331,12 +335,18 @@ struct SettingsTCAView: View {
                 }
 
                 macSectionCard(title: "Support") {
-                    Button {
-                        store.send(.contactUsTapped)
-                    } label: {
-                        Label("Contact Us", systemImage: "envelope")
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button {
+                            store.send(.contactUsTapped)
+                        } label: {
+                            Label("Contact Us", systemImage: "envelope")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Text("h.qadirian@gmail.com")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.bordered)
                 }
 
                 macSectionCard(title: "iCloud") {

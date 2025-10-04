@@ -15,6 +15,9 @@ extension PlatformSupport {
 
     @MainActor
     static func open(_ url: URL) {
+        if openWithAppleMailIfNeeded(for: url) {
+            return
+        }
         NSWorkspace.shared.open(url)
     }
 
@@ -70,6 +73,20 @@ extension PlatformSupport {
                 continuation.resume(returning: response == .OK ? panel.url : nil)
             }
         }
+    }
+
+    @MainActor
+    private static func openWithAppleMailIfNeeded(for url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "mailto",
+              let mailAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.mail")
+        else {
+            return false
+        }
+
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.open([url], withApplicationAt: mailAppURL, configuration: configuration)
+        return true
     }
 }
 
