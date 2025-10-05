@@ -640,8 +640,13 @@ struct RoutineDetailFeatureTests {
 }
 
 @MainActor
+private var retainedInMemoryControllers: [PersistenceController] = []
+
+@MainActor
 private func makeInMemoryContext() -> ModelContext {
-    PersistenceController(inMemory: true).container.mainContext
+    let controller = PersistenceController(inMemory: true)
+    retainedInMemoryControllers.append(controller)
+    return controller.container.mainContext
 }
 
 @MainActor
