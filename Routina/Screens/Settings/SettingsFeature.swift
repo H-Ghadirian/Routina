@@ -250,7 +250,7 @@ struct SettingsFeature {
                 state.dataTransferStatusMessage = "Saving routine data..."
                 return .run { @MainActor send in
                     do {
-                        guard let destinationURL = PlatformSupport.selectRoutineDataExportURL(
+                        guard let destinationURL = await PlatformSupport.selectRoutineDataExportURL(
                             suggestedFileName: defaultRoutineDataBackupFileName()
                         ) else {
                             await send(
@@ -301,7 +301,7 @@ struct SettingsFeature {
                 state.dataTransferStatusMessage = "Loading routine data..."
                 return .run { @MainActor send in
                     do {
-                        guard let sourceURL = PlatformSupport.selectRoutineDataImportURL() else {
+                        guard let sourceURL = await PlatformSupport.selectRoutineDataImportURL() else {
                             await send(
                                 .routineDataTransferFinished(
                                     success: false,

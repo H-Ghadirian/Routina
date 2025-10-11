@@ -18,13 +18,13 @@ extension PlatformSupport {
     }
 
     @MainActor
-    static func selectRoutineDataExportURL(suggestedFileName: String) -> URL? {
+    static func selectRoutineDataExportURL(suggestedFileName: String) async -> URL? {
         _ = suggestedFileName
         return nil
     }
 
     @MainActor
-    static func selectRoutineDataImportURL() -> URL? {
+    static func selectRoutineDataImportURL() async -> URL? {
         nil
     }
 

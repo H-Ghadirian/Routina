@@ -19,7 +19,7 @@ extension PlatformSupport {
     }
 
     @MainActor
-    static func selectRoutineDataExportURL(suggestedFileName: String) -> URL? {
+    static func selectRoutineDataExportURL(suggestedFileName: String) async -> URL? {
         let panel = NSSavePanel()
         panel.title = "Save Routine Data"
         panel.prompt = "Save"
@@ -28,11 +28,11 @@ extension PlatformSupport {
         panel.allowedContentTypes = [.json]
         panel.isExtensionHidden = false
 
-        return panel.runModal() == .OK ? panel.url : nil
+        return await presentDataTransferPanel(panel)
     }
 
     @MainActor
-    static func selectRoutineDataImportURL() -> URL? {
+    static func selectRoutineDataImportURL() async -> URL? {
         let panel = NSOpenPanel()
         panel.title = "Load Routine Data"
         panel.prompt = "Load"
@@ -41,7 +41,7 @@ extension PlatformSupport {
         panel.canChooseFiles = true
         panel.allowedContentTypes = [.json]
 
-        return panel.runModal() == .OK ? panel.url : nil
+        return await presentDataTransferPanel(panel)
     }
 
     @MainActor
@@ -57,6 +57,19 @@ extension PlatformSupport {
     static func requestAppIconChange(to option: AppIconOption) async -> String? {
         applyAppIcon(option)
         return nil
+    }
+
+    @MainActor
+    private static func presentDataTransferPanel(_ panel: NSSavePanel) async -> URL? {
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else {
+            return panel.runModal() == .OK ? panel.url : nil
+        }
+
+        return await withCheckedContinuation { continuation in
+            panel.beginSheetModal(for: window) { response in
+                continuation.resume(returning: response == .OK ? panel.url : nil)
+            }
+        }
     }
 }
 
