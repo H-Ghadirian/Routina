@@ -7,6 +7,19 @@ struct SettingsTCAView: View {
     var body: some View {
         WithPerceptionTracking {
             settingsContent
+            .alert(
+                "Delete iCloud Data?",
+                isPresented: cloudDataResetConfirmationBinding
+            ) {
+                Button("Delete Data", role: .destructive) {
+                    store.send(.resetCloudDataConfirmed)
+                }
+                Button("Cancel", role: .cancel) {
+                    store.send(.setCloudDataResetConfirmation(false))
+                }
+            } message: {
+                Text("This permanently deletes all Routina data from iCloud and from this device.")
+            }
             .onAppear {
                 store.send(.onAppear)
             }
@@ -26,16 +39,26 @@ struct SettingsTCAView: View {
     }
 
     private var syncStatusText: String {
+        if store.isCloudDataResetInProgress {
+            return "Deleting iCloud data..."
+        }
         if store.isCloudSyncInProgress {
             return "Syncing..."
         }
-        if !store.cloudSyncStatusMessage.isEmpty {
-            return store.cloudSyncStatusMessage
+        if !store.cloudStatusMessage.isEmpty {
+            return store.cloudStatusMessage
         }
         if !store.cloudSyncAvailable {
             return "iCloud sync is disabled in this build."
         }
         return "Ready to sync."
+    }
+
+    private var cloudDataResetConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.isCloudDataResetConfirmationPresented },
+            set: { store.send(.setCloudDataResetConfirmation($0)) }
+        )
     }
 
     @ViewBuilder
@@ -97,16 +120,35 @@ struct SettingsTCAView: View {
                     Text("Sync Now")
                 }
             }
-            .disabled(store.isCloudSyncInProgress || !store.cloudSyncAvailable)
+            .disabled(
+                store.isCloudSyncInProgress ||
+                store.isCloudDataResetInProgress ||
+                !store.cloudSyncAvailable
+            )
 
-            if store.isCloudSyncInProgress {
+            Button(role: .destructive) {
+                store.send(.setCloudDataResetConfirmation(true))
+            } label: {
+                HStack {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                    Text("Delete iCloud Data")
+                }
+            }
+            .disabled(
+                store.isCloudSyncInProgress ||
+                store.isCloudDataResetInProgress ||
+                !store.cloudSyncAvailable
+            )
+
+            if store.isCloudSyncInProgress || store.isCloudDataResetInProgress {
                 HStack(spacing: 10) {
                     ProgressView()
-                    Text("Syncing...")
+                    Text(syncStatusText)
                         .foregroundColor(.secondary)
                 }
-            } else if !store.cloudSyncStatusMessage.isEmpty {
-                Text(store.cloudSyncStatusMessage)
+            } else if !store.cloudStatusMessage.isEmpty {
+                Text(store.cloudStatusMessage)
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
@@ -128,6 +170,14 @@ struct SettingsTCAView: View {
                 Spacer()
                 Text(store.dataModeDescription)
                     .foregroundColor(.gray)
+            }
+
+            HStack {
+                Text("iCloud Container")
+                Spacer()
+                Text(store.iCloudContainerDescription)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.trailing)
             }
         }
     }
@@ -184,9 +234,25 @@ struct SettingsTCAView: View {
                                 Label("Sync Now", systemImage: "arrow.triangle.2.circlepath.icloud")
                             }
                             .buttonStyle(.bordered)
-                            .disabled(store.isCloudSyncInProgress || !store.cloudSyncAvailable)
+                            .disabled(
+                                store.isCloudSyncInProgress ||
+                                store.isCloudDataResetInProgress ||
+                                !store.cloudSyncAvailable
+                            )
 
-                            if store.isCloudSyncInProgress {
+                            Button(role: .destructive) {
+                                store.send(.setCloudDataResetConfirmation(true))
+                            } label: {
+                                Label("Delete iCloud Data", systemImage: "trash")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(
+                                store.isCloudSyncInProgress ||
+                                store.isCloudDataResetInProgress ||
+                                !store.cloudSyncAvailable
+                            )
+
+                            if store.isCloudSyncInProgress || store.isCloudDataResetInProgress {
                                 ProgressView()
                                     .controlSize(.small)
                             }
@@ -202,6 +268,7 @@ struct SettingsTCAView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         macInfoRow(title: "App Version", value: store.appVersion)
                         macInfoRow(title: "Data Mode", value: store.dataModeDescription)
+                        macInfoRow(title: "iCloud Container", value: store.iCloudContainerDescription)
                     }
                 }
             }

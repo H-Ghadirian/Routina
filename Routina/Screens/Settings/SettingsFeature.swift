@@ -1,3 +1,4 @@
+import CloudKit
 import ComposableArchitecture
 import SwiftData
 import SwiftUI
@@ -10,11 +11,14 @@ struct SettingsFeature {
     struct State: Equatable {
         var appVersion: String = ""
         var dataModeDescription: String = AppEnvironment.dataModeLabel
+        var iCloudContainerDescription: String = AppEnvironment.cloudKitContainerIdentifier ?? "Disabled"
         var cloudSyncAvailable: Bool = AppEnvironment.isCloudSyncEnabled
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
         var systemSettingsNotificationsEnabled: Bool = true
         var isCloudSyncInProgress: Bool = false
-        var cloudSyncStatusMessage: String = ""
+        var isCloudDataResetInProgress: Bool = false
+        var isCloudDataResetConfirmationPresented: Bool = false
+        var cloudStatusMessage: String = ""
     }
 
     enum Action: Equatable {
@@ -25,7 +29,10 @@ struct SettingsFeature {
         case contactUsTapped
         case systemNotificationPermissionChecked(Bool)
         case syncNowTapped
+        case setCloudDataResetConfirmation(Bool)
+        case resetCloudDataConfirmed
         case cloudSyncFinished(success: Bool, message: String)
+        case cloudDataResetFinished(success: Bool, message: String)
     }
 
     @Dependency(\.modelContext) var modelContext
@@ -74,13 +81,16 @@ struct SettingsFeature {
                 }
 
             case .syncNowTapped:
+                guard !state.isCloudDataResetInProgress else {
+                    return .none
+                }
                 guard state.cloudSyncAvailable else {
-                    state.cloudSyncStatusMessage = "iCloud sync is disabled in this build."
+                    state.cloudStatusMessage = "iCloud sync is disabled in this build."
                     return .none
                 }
 
                 state.isCloudSyncInProgress = true
-                state.cloudSyncStatusMessage = "Syncing with iCloud..."
+                state.cloudStatusMessage = "Syncing with iCloud..."
                 return .run { @MainActor send in
                     do {
                         try modelContext().save()
@@ -101,11 +111,78 @@ struct SettingsFeature {
                     }
                 }
 
+            case let .setCloudDataResetConfirmation(isPresented):
+                state.isCloudDataResetConfirmationPresented = isPresented
+                return .none
+
+            case .resetCloudDataConfirmed:
+                state.isCloudDataResetConfirmationPresented = false
+
+                guard !state.isCloudSyncInProgress,
+                      !state.isCloudDataResetInProgress
+                else {
+                    return .none
+                }
+
+                guard state.cloudSyncAvailable,
+                      let cloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier
+                else {
+                    state.cloudStatusMessage = "iCloud sync is disabled in this build."
+                    return .none
+                }
+
+                state.isCloudDataResetInProgress = true
+                state.cloudStatusMessage = "Deleting iCloud data..."
+                return .run { @MainActor send in
+                    do {
+                        try await CloudDataResetService.resetAllUserData(
+                            cloudKitContainerIdentifier: cloudContainerIdentifier,
+                            modelContext: modelContext()
+                        )
+                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                        await send(
+                            .cloudDataResetFinished(
+                                success: true,
+                                message: "All Routina data was deleted from iCloud and this device."
+                            )
+                        )
+                    } catch {
+                        await send(
+                            .cloudDataResetFinished(
+                                success: false,
+                                message: cloudDataResetErrorMessage(for: error)
+                            )
+                        )
+                    }
+                }
+
             case let .cloudSyncFinished(_, message):
                 state.isCloudSyncInProgress = false
-                state.cloudSyncStatusMessage = message
+                state.cloudStatusMessage = message
+                return .none
+
+            case let .cloudDataResetFinished(_, message):
+                state.isCloudDataResetInProgress = false
+                state.cloudStatusMessage = message
                 return .none
             }
+        }
+    }
+
+    private func cloudDataResetErrorMessage(for error: Error) -> String {
+        guard let cloudError = error as? CKError else {
+            return "Data reset failed: \(error.localizedDescription)"
+        }
+
+        switch cloudError.code {
+        case .notAuthenticated:
+            return "Please sign in to iCloud and try again."
+        case .networkUnavailable, .networkFailure:
+            return "Network issue while deleting iCloud data. Please try again."
+        case .serviceUnavailable, .requestRateLimited:
+            return "iCloud is temporarily unavailable. Please try again shortly."
+        default:
+            return "Data reset failed: \(cloudError.localizedDescription)"
         }
     }
 }
