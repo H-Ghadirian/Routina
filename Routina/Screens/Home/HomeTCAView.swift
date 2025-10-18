@@ -25,6 +25,7 @@ struct HomeTCAView: View {
     @State private var selectedTaskID: UUID?
     @State private var searchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
+    @State private var selectedTag: String?
 
     var body: some View {
         WithPerceptionTracking {
@@ -64,6 +65,12 @@ struct HomeTCAView: View {
                     self.selectedTaskID = nil
                 }
             }
+            .onChange(of: store.routineDisplays) { _, displays in
+                guard let selectedTag else { return }
+                if !RoutineTag.contains(selectedTag, in: HomeFeature.availableTags(from: displays)) {
+                    self.selectedTag = nil
+                }
+            }
     }
 
     private var navigationContent: some View {
@@ -88,6 +95,7 @@ struct HomeTCAView: View {
                 } else {
                     platformSearchField(searchText: $searchText)
                     filterPicker
+                    tagFilterBar
                     overallDoneCountSummary
 
                     listOfSortedTasksView(
@@ -162,6 +170,32 @@ struct HomeTCAView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal)
+    }
+
+    @ViewBuilder
+    private var tagFilterBar: some View {
+        let tags = HomeFeature.availableTags(from: store.routineDisplays)
+
+        if !tags.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
+                        selectedTag = nil
+                    }
+
+                    ForEach(tags, id: \.self) { tag in
+                        tagFilterButton(
+                            title: "#\(tag)",
+                            isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                        ) {
+                            selectedTag = tag
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .padding(.top, -2)
+        }
     }
 
     private func sortedTasks(_ routineDisplays: [HomeFeature.RoutineDisplay]) -> [HomeFeature.RoutineDisplay] {
@@ -293,6 +327,13 @@ struct HomeTCAView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 #endif
+
+                if !task.tags.isEmpty {
+                    Text(task.tags.map { "#\($0)" }.joined(separator: "  "))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 0)
@@ -399,7 +440,7 @@ struct HomeTCAView: View {
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {
         sortedTasks(routineDisplays).filter { task in
-            matchesSearch(task) && matchesFilter(task)
+            matchesSearch(task) && matchesFilter(task) && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
         }
     }
 
@@ -408,6 +449,7 @@ struct HomeTCAView: View {
         guard !trimmedSearch.isEmpty else { return true }
         return task.name.localizedCaseInsensitiveContains(trimmedSearch)
             || task.emoji.localizedCaseInsensitiveContains(trimmedSearch)
+            || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
     }
 
     private func matchesFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
@@ -468,6 +510,25 @@ struct HomeTCAView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(style.backgroundColor, in: Capsule())
+    }
+
+    private func tagFilterButton(
+        title: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule()
+                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private func badgeStyle(

@@ -31,7 +31,7 @@ struct HomeFeatureTests {
     @Test
     func setAddRoutineSheet_seedsExistingNamesFromLoadedTasks() async {
         let context = makeInMemoryContext()
-        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚", tags: ["Learning"])
 
         let initialState = HomeFeature.State(
             routineTasks: [task],
@@ -63,7 +63,8 @@ struct HomeFeatureTests {
             name: nil,
             interval: 0,
             lastDone: today,
-            emoji: ""
+            emoji: "",
+            tags: ["Focus"]
         )
 
         let store = TestStore(initialState: HomeFeature.State()) {
@@ -77,7 +78,7 @@ struct HomeFeatureTests {
             $0.routineTasks = [task]
             $0.doneStats = HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3])
             $0.routineDisplays = [
-                makeDisplay(taskID: task.id, name: "Unnamed task", emoji: "✨", interval: 1, lastDone: today, isDoneToday: true, doneCount: 3)
+                makeDisplay(taskID: task.id, name: "Unnamed task", emoji: "✨", tags: ["Focus"], interval: 1, lastDone: today, isDoneToday: true, doneCount: 3)
             ]
         }
 
@@ -91,6 +92,7 @@ struct HomeFeatureTests {
         #expect(display.interval == 1)
         #expect(display.isDoneToday)
         #expect(display.doneCount == 3)
+        #expect(display.tags == ["Focus"])
     }
 
     @Test
@@ -125,6 +127,17 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func availableTags_deduplicatesAndSortsAcrossRoutines() {
+        let displays = [
+            makeDisplay(taskID: UUID(), name: "Read", emoji: "📚", tags: ["Focus", "Learning"], interval: 1, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Run", emoji: "🏃", tags: ["health", "focus"], interval: 2, lastDone: nil, isDoneToday: false),
+            makeDisplay(taskID: UUID(), name: "Sleep", emoji: "😴", tags: [], interval: 1, lastDone: nil, isDoneToday: false)
+        ]
+
+        #expect(HomeFeature.availableTags(from: displays) == ["Focus", "health", "Learning"])
+    }
+
+    @Test
     func addRoutineSheetCancel_closesSheet() async {
         let context = makeInMemoryContext()
         let initialState = HomeFeature.State(
@@ -150,7 +163,7 @@ struct HomeFeatureTests {
     @Test
     func routineSavedSuccessfully_appendsTaskAndSchedulesNotification() async {
         let context = makeInMemoryContext()
-        let task = makeTask(in: context, name: "Walk", interval: 2, lastDone: nil, emoji: "🚶")
+        let task = makeTask(in: context, name: "Walk", interval: 2, lastDone: nil, emoji: "🚶", tags: ["Outdoors", "Health"])
         let scheduledIDs = LockIsolated<[String]>([])
 
         let store = TestStore(initialState: HomeFeature.State()) {
@@ -165,7 +178,7 @@ struct HomeFeatureTests {
         await store.send(.routineSavedSuccessfully(task)) {
             $0.routineTasks = [task]
             $0.routineDisplays = [
-                makeDisplay(taskID: task.id, name: "Walk", emoji: "🚶", interval: 2, lastDone: nil, isDoneToday: false)
+                makeDisplay(taskID: task.id, name: "Walk", emoji: "🚶", tags: ["Outdoors", "Health"], interval: 2, lastDone: nil, isDoneToday: false)
             ]
         }
 
@@ -367,7 +380,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥"))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥", ["Evening"]))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -527,11 +540,12 @@ struct HomeFeatureTests {
         #expect(logs.count == 1)
         #expect(logs.first?.taskID == localTask.id)
 
+        let localTaskID = localTask.id
         let refreshedTask = try #require(
             try context.fetch(
                 FetchDescriptor<RoutineTask>(
                     predicate: #Predicate { task in
-                        task.id == localTask.id
+                        task.id == localTaskID
                     }
                 )
             ).first
@@ -549,6 +563,7 @@ private func makeDisplay(
     taskID: UUID,
     name: String,
     emoji: String,
+    tags: [String] = [],
     interval: Int,
     lastDone: Date?,
     isDoneToday: Bool,
@@ -558,6 +573,7 @@ private func makeDisplay(
         taskID: taskID,
         name: name,
         emoji: emoji,
+        tags: tags,
         interval: interval,
         lastDone: lastDone,
         isDoneToday: isDoneToday,

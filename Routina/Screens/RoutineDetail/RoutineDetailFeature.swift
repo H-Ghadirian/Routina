@@ -37,6 +37,8 @@ struct RoutineDetailFeature: Reducer {
         var isEditSheetPresented: Bool = false
         var editRoutineName: String = ""
         var editRoutineEmoji: String = "✨"
+        var editRoutineTags: [String] = []
+        var editTagDraft: String = ""
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
         var isDeleteConfirmationPresented: Bool = false
@@ -49,6 +51,9 @@ struct RoutineDetailFeature: Reducer {
         case setEditSheet(Bool)
         case editRoutineNameChanged(String)
         case editRoutineEmojiChanged(String)
+        case editTagDraftChanged(String)
+        case editAddTagTapped
+        case editRemoveTag(String)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editSaveTapped
@@ -99,6 +104,19 @@ struct RoutineDetailFeature: Reducer {
             state.editRoutineEmoji = sanitizedEmoji(from: emoji, fallback: state.editRoutineEmoji)
             return .none
 
+        case let .editTagDraftChanged(value):
+            state.editTagDraft = value
+            return .none
+
+        case .editAddTagTapped:
+            state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
+            state.editTagDraft = ""
+            return .none
+
+        case let .editRemoveTag(tag):
+            state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+            return .none
+
         case let .editFrequencyChanged(frequency):
             state.editFrequency = frequency
             return .none
@@ -108,6 +126,8 @@ struct RoutineDetailFeature: Reducer {
             return .none
 
         case .editSaveTapped:
+            state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
+            state.editTagDraft = ""
             let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedName.isEmpty else { return .none }
             state.isEditSheetPresented = false
@@ -115,6 +135,7 @@ struct RoutineDetailFeature: Reducer {
                 taskID: state.task.id,
                 name: trimmedName,
                 emoji: state.editRoutineEmoji,
+                tags: state.editRoutineTags,
                 interval: Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
             )
 
@@ -152,6 +173,8 @@ struct RoutineDetailFeature: Reducer {
     private func syncEditFormFromTask(_ state: inout State) {
         state.editRoutineName = state.task.name ?? ""
         state.editRoutineEmoji = state.task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+        state.editRoutineTags = state.task.tags
+        state.editTagDraft = ""
 
         let interval = max(Int(state.task.interval), 1)
         if interval % 30 == 0 {
@@ -285,6 +308,7 @@ struct RoutineDetailFeature: Reducer {
         taskID: UUID,
         name: String,
         emoji: String,
+        tags: [String],
         interval: Int16
     ) -> Effect<Action> {
         .run { @MainActor send in
@@ -296,6 +320,7 @@ struct RoutineDetailFeature: Reducer {
                 }
                 task.name = name
                 task.emoji = emoji
+                task.tags = tags
                 task.interval = interval
                 try context.save()
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)

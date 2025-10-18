@@ -399,6 +399,7 @@ struct SettingsFeature {
             var id: UUID
             var name: String?
             var emoji: String?
+            var tags: [String]?
             var interval: Int
             var lastDone: Date?
         }
@@ -445,6 +446,7 @@ struct SettingsFeature {
                     id: $0.id,
                     name: $0.name,
                     emoji: $0.emoji,
+                    tags: $0.tags,
                     interval: max(Int($0.interval), 1),
                     lastDone: $0.lastDone
                 )
@@ -498,6 +500,7 @@ struct SettingsFeature {
                     id: task.id,
                     name: task.name,
                     emoji: task.emoji,
+                    tags: task.tags ?? [],
                     interval: Int16(clampedInterval),
                     lastDone: task.lastDone
                 )

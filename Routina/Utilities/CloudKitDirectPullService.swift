@@ -154,6 +154,7 @@ enum CloudKitDirectPullService {
         var id: UUID
         var name: String?
         var emoji: String?
+        var tags: [String]?
         var interval: Int16
         var lastDone: Date?
     }
@@ -172,9 +173,10 @@ enum CloudKitDirectPullService {
         let intervalValue = intValue(in: record, keys: ["interval", "INTERVAL", "zinterval", "ZINTERVAL", "cd_interval"])
         let nameValue = stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
         let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
+        let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
 
-        guard intervalValue != nil || nameValue != nil || emojiValue != nil || lastDoneValue != nil else {
+        guard intervalValue != nil || nameValue != nil || emojiValue != nil || tagsStorageValue != nil || lastDoneValue != nil else {
             return nil
         }
 
@@ -182,6 +184,7 @@ enum CloudKitDirectPullService {
             id: id,
             name: nameValue,
             emoji: emojiValue,
+            tags: tagsStorageValue.map(RoutineTag.deserialize),
             interval: Int16(clamping: intervalValue ?? 1),
             lastDone: lastDoneValue
         )
@@ -218,6 +221,9 @@ enum CloudKitDirectPullService {
                 // Keep local uniqueness invariant if cloud data contains a duplicate name.
                 taskWithSameName.name = cleanedRoutineName(payload.name)
                 taskWithSameName.emoji = payload.emoji
+                if let tags = payload.tags {
+                    taskWithSameName.tags = tags
+                }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
@@ -226,6 +232,9 @@ enum CloudKitDirectPullService {
 
             existing.name = cleanedRoutineName(payload.name)
             existing.emoji = payload.emoji
+            if let tags = payload.tags {
+                existing.tags = tags
+            }
             existing.interval = payload.interval
             existing.lastDone = payload.lastDone
             return existing.id
@@ -233,6 +242,9 @@ enum CloudKitDirectPullService {
             if let normalizedIncomingName,
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context) {
                 taskWithSameName.emoji = payload.emoji
+                if let tags = payload.tags {
+                    taskWithSameName.tags = tags
+                }
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
@@ -244,6 +256,7 @@ enum CloudKitDirectPullService {
                     id: payload.id,
                     name: cleanedRoutineName(payload.name),
                     emoji: payload.emoji,
+                    tags: payload.tags ?? [],
                     interval: payload.interval,
                     lastDone: payload.lastDone
                 )

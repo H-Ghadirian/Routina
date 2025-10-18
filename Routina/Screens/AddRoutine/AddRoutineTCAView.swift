@@ -88,6 +88,15 @@ struct AddRoutineTCAView: View {
                 }
             }
 
+            Section(header: Text("Tags")) {
+                tagComposer
+                editableTagsContent
+
+                Text("Press return or Add. Separate multiple tags with commas.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Frequency")) {
                 Picker("Frequency", selection: frequencyBinding) {
                     ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
@@ -125,6 +134,13 @@ struct AddRoutineTCAView: View {
         )
     }
 
+    private var tagDraftBinding: Binding<String> {
+        Binding(
+            get: { store.tagDraft },
+            set: { store.send(.tagDraftChanged($0)) }
+        )
+    }
+
     private var frequencyBinding: Binding<AddRoutineFeature.Frequency> {
         Binding(
             get: { store.frequency },
@@ -145,6 +161,54 @@ struct AddRoutineTCAView: View {
 
     private var nameValidationMessage: String? {
         store.nameValidationMessage
+    }
+
+    private var isAddTagDisabled: Bool {
+        RoutineTag.parseDraft(store.tagDraft).isEmpty
+    }
+
+    private var tagComposer: some View {
+        HStack(spacing: 10) {
+            TextField("health, focus, morning", text: tagDraftBinding)
+                .onSubmit {
+                    store.send(.addTagTapped)
+                }
+
+            Button("Add") {
+                store.send(.addTagTapped)
+            }
+            .disabled(isAddTagDisabled)
+        }
+    }
+
+    @ViewBuilder
+    private var editableTagsContent: some View {
+        if store.routineTags.isEmpty {
+            Text("No tags yet")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
+                ForEach(store.routineTags, id: \.self) { tag in
+                    Button {
+                        store.send(.removeTag(tag))
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("#\(tag)")
+                                .lineLimit(1)
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Remove tag \(tag)")
+                }
+            }
+            .padding(.vertical, 4)
+        }
     }
 
     private func stepperLabel(
@@ -231,6 +295,16 @@ struct AddRoutineTCAView: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
+                            }
+                        }
+
+                        macFormRow("Tags") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                tagComposer
+                                editableTagsContent
+                                Text("Press return or Add. Separate multiple tags with commas.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }

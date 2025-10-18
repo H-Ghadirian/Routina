@@ -20,7 +20,7 @@ struct AddRoutineFeatureTests {
     @Test
     func emojiSanitization_keepsOnlyFirstCharacter() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
-            AddRoutineFeature(onSave: { _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineEmojiChanged("  🔥🎯  ")) {
@@ -32,7 +32,7 @@ struct AddRoutineFeatureTests {
     func emojiSanitization_usesFallbackWhenEmptyInput() async {
         let initialState = AddRoutineFeature.State(routineName: "", routineEmoji: "✅", frequency: .day, frequencyValue: 1)
         let store = TestStore(initialState: initialState) {
-            AddRoutineFeature(onSave: { _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineEmojiChanged("   \n  "))
@@ -51,15 +51,15 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji)))
+                onSave: { name, frequencyInDays, emoji, tags in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji, tags)))
                 },
                 onCancel: { .none }
             )
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 21, "📚")))
+        await store.receive(.delegate(.didSave("Read", 21, "📚", [])))
     }
 
     @Test
@@ -67,7 +67,7 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(existingRoutineNames: ["Read"])
         ) {
-            AddRoutineFeature(onSave: { _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineNameChanged("  read  ")) {
@@ -85,7 +85,7 @@ struct AddRoutineFeatureTests {
                 nameValidationMessage: "A routine with this name already exists."
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.existingRoutineNamesChanged(["Walk"])) {
@@ -107,7 +107,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _ in
+                onSave: { _, _, _, _ in
                     Issue.record("Save effect should not run for duplicate routine names")
                     return .none
                 },
@@ -130,22 +130,66 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji)))
+                onSave: { name, frequencyInDays, emoji, tags in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji, tags)))
                 },
                 onCancel: { .none }
             )
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 5, "📚")))
+        await store.receive(.delegate(.didSave("Read", 5, "📚", [])))
+    }
+
+    @Test
+    func addTagTapped_parsesMultipleTagsAndDeduplicates() async {
+        let store = TestStore(initialState: AddRoutineFeature.State()) {
+            AddRoutineFeature(onSave: { _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        await store.send(.tagDraftChanged(" Health, focus ,health ")) {
+            $0.tagDraft = " Health, focus ,health "
+        }
+
+        await store.send(.addTagTapped) {
+            $0.routineTags = ["Health", "focus"]
+            $0.tagDraft = ""
+        }
+    }
+
+    @Test
+    func saveTapped_commitsPendingTagsBeforeDelegating() async {
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Read",
+                routineEmoji: "📚",
+                routineTags: ["Mindset"],
+                tagDraft: "night, focus",
+                frequency: .day,
+                frequencyValue: 1,
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { name, frequencyInDays, emoji, tags in
+                    .send(.delegate(.didSave(name, frequencyInDays, emoji, tags)))
+                },
+                onCancel: { .none }
+            )
+        }
+
+        await store.send(.saveTapped) {
+            $0.routineTags = ["Mindset", "night", "focus"]
+            $0.tagDraft = ""
+        }
+        await store.receive(.delegate(.didSave("Read", 1, "📚", ["Mindset", "night", "focus"])))
     }
 
     @Test
     func cancelTapped_sendsCancelDelegate() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
             AddRoutineFeature(
-                onSave: { _, _, _ in .none },
+                onSave: { _, _, _, _ in .none },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }

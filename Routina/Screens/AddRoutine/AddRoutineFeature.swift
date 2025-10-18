@@ -34,6 +34,8 @@ struct AddRoutineFeature: Reducer {
     struct State: Equatable {
         var routineName: String = ""
         var routineEmoji: String = "✨"
+        var routineTags: [String] = []
+        var tagDraft: String = ""
         var frequency: Frequency = .day
         var frequencyValue: Int = 1
         var existingRoutineNames: [String] = []
@@ -51,6 +53,9 @@ struct AddRoutineFeature: Reducer {
     enum Action: Equatable {
         case routineNameChanged(String)
         case routineEmojiChanged(String)
+        case tagDraftChanged(String)
+        case addTagTapped
+        case removeTag(String)
         case frequencyChanged(Frequency)
         case frequencyValueChanged(Int)
         case existingRoutineNamesChanged([String])
@@ -60,11 +65,11 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, String)
+            case didSave(String, Int, String, [String])
         }
     }
 
-    var onSave: (String, Int, String) -> Effect<Action>
+    var onSave: (String, Int, String, [String]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -76,6 +81,19 @@ struct AddRoutineFeature: Reducer {
 
         case let .routineEmojiChanged(emoji):
             state.routineEmoji = sanitizedEmoji(from: emoji, fallback: state.routineEmoji)
+            return .none
+
+        case let .tagDraftChanged(value):
+            state.tagDraft = value
+            return .none
+
+        case .addTagTapped:
+            state.routineTags = RoutineTag.appending(state.tagDraft, to: state.routineTags)
+            state.tagDraft = ""
+            return .none
+
+        case let .removeTag(tag):
+            state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
             return .none
 
         case let .frequencyChanged(freq):
@@ -92,10 +110,12 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case .saveTapped:
+            state.routineTags = RoutineTag.appending(state.tagDraft, to: state.routineTags)
+            state.tagDraft = ""
             updateNameValidation(&state)
             guard !state.isSaveDisabled else { return .none }
             let frequencyInDays = state.frequencyValue * state.frequency.daysMultiplier
-            return onSave(state.trimmedRoutineName, frequencyInDays, state.routineEmoji)
+            return onSave(state.trimmedRoutineName, frequencyInDays, state.routineEmoji, state.routineTags)
 
         case .cancelTapped:
             return onCancel()

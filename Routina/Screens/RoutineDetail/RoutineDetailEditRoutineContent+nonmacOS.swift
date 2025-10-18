@@ -53,6 +53,56 @@ struct RoutineDetailEditRoutineContent: View {
                 }
             }
 
+            Section(header: Text("Tags")) {
+                HStack(spacing: 10) {
+                    TextField(
+                        "health, focus, morning",
+                        text: Binding(
+                            get: { store.editTagDraft },
+                            set: { store.send(.editTagDraftChanged($0)) }
+                        )
+                    )
+                    .onSubmit {
+                        store.send(.editAddTagTapped)
+                    }
+
+                    Button("Add") {
+                        store.send(.editAddTagTapped)
+                    }
+                    .disabled(RoutineTag.parseDraft(store.editTagDraft).isEmpty)
+                }
+
+                if store.editRoutineTags.isEmpty {
+                    Text("No tags yet")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
+                        ForEach(store.editRoutineTags, id: \.self) { tag in
+                            Button {
+                                store.send(.editRemoveTag(tag))
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text("#\(tag)")
+                                        .lineLimit(1)
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.caption)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.accentColor.opacity(0.14), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                Text("Press return or Add. Separate multiple tags with commas.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Frequency")) {
                 Picker(
                     "Frequency",

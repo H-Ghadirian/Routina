@@ -58,6 +58,59 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
+                sectionCard(title: "Tags") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 10) {
+                            TextField(
+                                "health, focus, morning",
+                                text: Binding(
+                                    get: { store.editTagDraft },
+                                    set: { store.send(.editTagDraftChanged($0)) }
+                                )
+                            )
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit {
+                                store.send(.editAddTagTapped)
+                            }
+
+                            Button("Add") {
+                                store.send(.editAddTagTapped)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(RoutineTag.parseDraft(store.editTagDraft).isEmpty)
+                        }
+
+                        if store.editRoutineTags.isEmpty {
+                            Text("No tags yet")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
+                                ForEach(store.editRoutineTags, id: \.self) { tag in
+                                    Button {
+                                        store.send(.editRemoveTag(tag))
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Text("#\(tag)")
+                                                .lineLimit(1)
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.caption)
+                                        }
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+
+                        Text("Press return or Add. Separate multiple tags with commas.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 sectionCard(title: "Schedule") {
                     VStack(alignment: .leading, spacing: 16) {
                         VStack(alignment: .leading, spacing: 6) {

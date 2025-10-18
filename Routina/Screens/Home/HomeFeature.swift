@@ -14,6 +14,7 @@ struct HomeFeature {
         var id: UUID { taskID }
         var name: String
         var emoji: String
+        var tags: [String]
         var interval: Int
         var lastDone: Date?
         var isDoneToday: Bool
@@ -179,7 +180,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji, tags))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -197,6 +198,7 @@ struct HomeFeature {
                         let newRoutine = RoutineTask(
                             name: trimmedName,
                             emoji: emoji,
+                            tags: tags,
                             interval: Int16(freq),
                             lastDone: nil
                         )
@@ -229,7 +231,7 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, emoji in .send(.delegate(.didSave(name, freq, emoji))) },
+                onSave: { name, freq, emoji, tags in .send(.delegate(.didSave(name, freq, emoji, tags))) },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }
@@ -242,6 +244,7 @@ struct HomeFeature {
             taskID: task.id,
             name: task.name ?? "Unnamed task",
             emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
+            tags: task.tags,
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
             isDoneToday: doneTodayFromLastDone,
@@ -354,5 +357,14 @@ extension HomeFeature {
     @MainActor
     static func detailLogs(taskID: UUID, context: ModelContext) -> [RoutineLog] {
         RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+    }
+
+    static func availableTags(from routineDisplays: [RoutineDisplay]) -> [String] {
+        RoutineTag.allTags(from: routineDisplays.map(\.tags))
+    }
+
+    static func matchesSelectedTag(_ selectedTag: String?, in tags: [String]) -> Bool {
+        guard let selectedTag else { return true }
+        return RoutineTag.contains(selectedTag, in: tags)
     }
 }

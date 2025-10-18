@@ -115,7 +115,7 @@ struct RoutineDetailFeatureTests {
     @Test
     func setEditSheetTrue_syncsEditFormFromTask_weekFrequency() async {
         let context = makeInMemoryContext()
-        let task = makeTask(in: context, name: "Stretch", interval: 14, lastDone: nil, emoji: "🤸")
+        let task = makeTask(in: context, name: "Stretch", interval: 14, lastDone: nil, emoji: "🤸", tags: ["Mobility", "Evening"])
 
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
@@ -128,8 +128,29 @@ struct RoutineDetailFeatureTests {
             $0.isEditSheetPresented = true
             $0.editRoutineName = "Stretch"
             $0.editRoutineEmoji = "🤸"
+            $0.editRoutineTags = ["Mobility", "Evening"]
             $0.editFrequency = .week
             $0.editFrequencyValue = 2
+        }
+    }
+
+    @Test
+    func editAddTagTapped_parsesMultipleTagsAndDeduplicates() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let initialState = RoutineDetailFeature.State(task: task, editRoutineTags: ["Focus"], editTagDraft: "night, focus")
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.editAddTagTapped) {
+            $0.editRoutineTags = ["Focus", "night"]
+            $0.editTagDraft = ""
         }
     }
 
@@ -196,6 +217,59 @@ struct RoutineDetailFeatureTests {
         #expect(store.state.task.name == "Original")
         #expect(store.state.task.interval == 10)
         #expect(store.state.isEditSheetPresented)
+    }
+
+    @Test
+    func editSaveTapped_persistsTagsIncludingPendingDraft() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚", tags: ["Focus"])
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                logs: [],
+                daysSinceLastRoutine: 0,
+                overdueDays: 0,
+                isDoneToday: false,
+                isEditSheetPresented: true,
+                editRoutineName: "  Deep Read  ",
+                editRoutineEmoji: "🧠",
+                editRoutineTags: ["Focus"],
+                editTagDraft: "Night, focus",
+                editFrequency: .week,
+                editFrequencyValue: 2
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.editRoutineTags = ["Focus", "Night"]
+            $0.editTagDraft = ""
+            $0.isEditSheetPresented = false
+        }
+
+        await store.receive(.onAppear)
+        await store.receive(.logsLoaded([])) {
+            $0.logs = []
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        let persistedTaskID = task.id
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate<RoutineTask> { $0.id == persistedTaskID }
+        )
+        let persistedTask = try #require(context.fetch(descriptor).first)
+        #expect(persistedTask.name == "Deep Read")
+        #expect(persistedTask.emoji == "🧠")
+        #expect(persistedTask.interval == 14)
+        #expect(persistedTask.tags == ["Focus", "Night"])
     }
 
     @Test
@@ -439,10 +513,11 @@ struct RoutineDetailFeatureTests {
             $0.isDoneToday = true
         }
 
+        let persistedTaskID = task.id
         let persistedTask = try #require(
             try context.fetch(
                 FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { $0.id == task.id }
+                    predicate: #Predicate { $0.id == persistedTaskID }
                 )
             ).first
         )
@@ -496,10 +571,11 @@ struct RoutineDetailFeatureTests {
             $0.isDoneToday = true
         }
 
+        let persistedTaskID = task.id
         let persistedTask = try #require(
             try context.fetch(
                 FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { $0.id == task.id }
+                    predicate: #Predicate { $0.id == persistedTaskID }
                 )
             ).first
         )

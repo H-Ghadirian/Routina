@@ -170,6 +170,8 @@ struct RoutineDetailTCAView: View {
                                 !canSaveEdit(
                                     name: store.editRoutineName,
                                     emoji: store.editRoutineEmoji,
+                                    tags: store.editRoutineTags,
+                                    tagDraft: store.editTagDraft,
                                     frequency: store.editFrequency,
                                     frequencyValue: store.editFrequencyValue,
                                     task: store.task
@@ -458,6 +460,8 @@ struct RoutineDetailTCAView: View {
     private func canSaveEdit(
         name: String,
         emoji: String,
+        tags: [String],
+        tagDraft: String,
         frequency: RoutineDetailFeature.EditFrequency,
         frequencyValue: Int,
         task: RoutineTask
@@ -467,10 +471,15 @@ struct RoutineDetailTCAView: View {
 
         let currentName = (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let currentEmoji = task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+        let currentTags = RoutineTag.deduplicated(task.tags)
+        let candidateTags = RoutineTag.appending(tagDraft, to: tags)
         let currentInterval = max(Int(task.interval), 1)
         let newInterval = frequencyValue * frequency.daysMultiplier
 
-        return trimmedName != currentName || emoji != currentEmoji || newInterval != currentInterval
+        return trimmedName != currentName
+            || emoji != currentEmoji
+            || candidateTags != currentTags
+            || newInterval != currentInterval
     }
 
     private func frequencyText(for task: RoutineTask) -> String {

@@ -18,9 +18,10 @@ func makeTask(
     name: String?,
     interval: Int16,
     lastDone: Date?,
-    emoji: String?
+    emoji: String?,
+    tags: [String] = []
 ) -> RoutineTask {
-    let task = RoutineTask(name: name, emoji: emoji, interval: interval, lastDone: lastDone)
+    let task = RoutineTask(name: name, emoji: emoji, tags: tags, interval: interval, lastDone: lastDone)
     context.insert(task)
     return task
 }

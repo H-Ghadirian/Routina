@@ -12,6 +12,13 @@ struct SwiftDataModelTests {
         #expect(task.interval == 1)
         #expect(!task.id.uuidString.isEmpty)
         #expect(task.lastDone == nil)
+        #expect(task.tags.isEmpty)
+    }
+
+    @Test
+    func routineTask_tagsAreSanitizedAndDeduplicated() {
+        let task = RoutineTask(tags: [" Health ", "health", "deep work", ""])
+        #expect(task.tags == ["Health", "deep work"])
     }
 
     @Test
