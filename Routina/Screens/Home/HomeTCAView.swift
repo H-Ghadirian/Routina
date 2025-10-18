@@ -4,10 +4,11 @@ import SwiftUI
 
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
+    @State private var selectedTaskID: NSManagedObjectID?
 
     var body: some View {
         WithPerceptionTracking {
-            NavigationView {
+            NavigationSplitView {
                 Group {
                     if store.routineTasks.isEmpty {
                         Text("No routine defined yet")
@@ -16,8 +17,7 @@ struct HomeTCAView: View {
                             .padding()
                     } else {
                         listOfSortedTasksView(
-                            routineDisplays: store.routineDisplays,
-                            routineTasks: store.routineTasks
+                            routineDisplays: store.routineDisplays
                         )
                     }
                 }
@@ -31,27 +31,38 @@ struct HomeTCAView: View {
                         }
                     }
                 }
-                .sheet(
-                    isPresented: Binding(
-                        get: { store.isAddRoutineSheetPresented },
-                        set: { store.send(.setAddRoutineSheet($0)) }
-                    )
-                ) {
-                    if let addRoutineStore = self.store.scope(
-                        state: \.addRoutineState,
-                        action: \.addRoutineSheet
-                    ) {
-                        AddRoutineTCAView(store: addRoutineStore)
+            } detail: {
+                Group {
+                    if let selectedTaskID {
+                        routineDetailTCAView(taskID: selectedTaskID, routineTasks: store.routineTasks)
+                    } else {
+                        Color.clear
                     }
                 }
-                .onAppear {
-                    store.send(.onAppear)
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { store.isAddRoutineSheetPresented },
+                    set: { store.send(.setAddRoutineSheet($0)) }
+                )
+            ) {
+                if let addRoutineStore = self.store.scope(
+                    state: \.addRoutineState,
+                    action: \.addRoutineSheet
+                ) {
+                    AddRoutineTCAView(store: addRoutineStore)
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
-                    store.send(.onAppear)
-                }
-                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))) { _ in
-                    store.send(.onAppear)
+            }
+            .onAppear {
+                store.send(.onAppear)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))) { _ in
+                store.send(.onAppear)
+            }
+            .onChange(of: store.routineTasks) { _, tasks in
+                guard let selectedTaskID else { return }
+                if !tasks.contains(where: { $0.objectID == selectedTaskID }) {
+                    self.selectedTaskID = nil
                 }
             }
         }
@@ -86,15 +97,13 @@ struct HomeTCAView: View {
     }
 
     private func listOfSortedTasksView(
-        routineDisplays: [HomeFeature.RoutineDisplay],
-        routineTasks: [RoutineTask]
+        routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
         List {
             ForEach(sortedTasks(routineDisplays)) { task in
-                NavigationLink(
-                    destination:
-                        routineDetailTCAView(taskID: task.id, routineTasks: routineTasks)
-                ) {
+                Button {
+                    selectedTaskID = task.objectID
+                } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(task.emoji) \(task.name)")
@@ -116,10 +125,15 @@ struct HomeTCAView: View {
                         urgencySquare(for: task)
                     }
                 }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
             }
             .onDelete { offsets in
                 let sorted = sortedTasks(routineDisplays)
-                let ids = offsets.compactMap { sorted[$0].id }
+                let ids = offsets.compactMap { sorted[$0].objectID }
+                if let selectedTaskID, ids.contains(selectedTaskID) {
+                    self.selectedTaskID = nil
+                }
                 store.send(.deleteTasks(ids))
             }
         }

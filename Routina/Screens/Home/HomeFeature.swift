@@ -5,7 +5,8 @@ import Foundation
 @Reducer
 struct HomeFeature {
     struct RoutineDisplay: Equatable, Identifiable {
-        let id: NSManagedObjectID
+        let id: String
+        let objectID: NSManagedObjectID
         var name: String
         var emoji: String
         var interval: Int
@@ -19,7 +20,6 @@ struct HomeFeature {
         var routineDisplays: [RoutineDisplay] = []
         var isAddRoutineSheetPresented: Bool = false
         var addRoutineState: AddRoutineFeature.State?
-        var refreshVersion: Int = 0
     }
     
     // Actions are now explicit for success and failure, making them Equatable.
@@ -34,6 +34,10 @@ struct HomeFeature {
         case addRoutineSheet(AddRoutineFeature.Action)
         case routineSavedSuccessfully(RoutineTask)
         case routineSaveFailed
+    }
+
+    private enum CancelID {
+        case loadTasks
     }
 
     @Dependency(\.notificationClient) var notificationClient
@@ -55,11 +59,11 @@ struct HomeFeature {
                         send(.tasksLoadFailed)
                     }
                 }
+                .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
                 
             case let .tasksLoadedSuccessfully(tasks):
                 state.routineTasks = tasks
                 state.routineDisplays = tasks.map(makeRoutineDisplay)
-                state.refreshVersion &+= 1
                 return .none
             
             case .tasksLoadFailed:
@@ -75,7 +79,7 @@ struct HomeFeature {
             case let .deleteTasks(ids):
                 let idSet = Set(ids)
                 state.routineTasks.removeAll { idSet.contains($0.objectID) }
-                state.routineDisplays.removeAll { idSet.contains($0.id) }
+                state.routineDisplays.removeAll { idSet.contains($0.objectID) }
                 
                 return .run { @MainActor [ids] _ in
                     for id in ids {
@@ -145,7 +149,8 @@ struct HomeFeature {
         let isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
 
         return RoutineDisplay(
-            id: task.objectID,
+            id: task.objectID.uriRepresentation().absoluteString,
+            objectID: task.objectID,
             name: task.name ?? "Unnamed task",
             emoji: (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
             interval: max(Int(task.interval), 1),

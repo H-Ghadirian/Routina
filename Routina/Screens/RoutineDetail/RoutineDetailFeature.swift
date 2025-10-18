@@ -38,6 +38,8 @@ struct RoutineDetailFeature: Reducer {
         var editRoutineEmoji: String = "✨"
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
+        var isDeleteConfirmationPresented: Bool = false
+        var shouldDismissAfterDelete: Bool = false
     }
 
     enum Action: Equatable {
@@ -48,6 +50,10 @@ struct RoutineDetailFeature: Reducer {
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editSaveTapped
+        case setDeleteConfirmation(Bool)
+        case deleteRoutineConfirmed
+        case routineDeleted
+        case deleteDismissHandled
         case logsLoaded([RoutineLog])
         case onAppear
     }
@@ -99,6 +105,23 @@ struct RoutineDetailFeature: Reducer {
             updateDerivedState(&state)
 
             return handleEditSave(taskID: state.task.objectID)
+
+        case let .setDeleteConfirmation(isPresented):
+            state.isDeleteConfirmationPresented = isPresented
+            return .none
+
+        case .deleteRoutineConfirmed:
+            state.isDeleteConfirmationPresented = false
+            return handleDeleteRoutine(taskID: state.task.objectID)
+
+        case .routineDeleted:
+            state.isEditSheetPresented = false
+            state.shouldDismissAfterDelete = true
+            return .none
+
+        case .deleteDismissHandled:
+            state.shouldDismissAfterDelete = false
+            return .none
 
         case let .logsLoaded(logs):
             state.logs = logs
@@ -195,6 +218,7 @@ struct RoutineDetailFeature: Reducer {
                     lastDone: task.lastDone
                 )
                 await notificationClient.schedule(payload)
+                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
             } catch {
                 print("Error saving context: \(error)")
             }
@@ -217,6 +241,26 @@ struct RoutineDetailFeature: Reducer {
                 send(.onAppear)
             } catch {
                 print("Error saving routine edits: \(error)")
+            }
+        }
+    }
+
+    private func handleDeleteRoutine(taskID: NSManagedObjectID) -> Effect<Action> {
+        return .run { @MainActor [viewContext, notificationClient] send in
+            do {
+                guard let task = try viewContext.existingObject(with: taskID) as? RoutineTask else {
+                    send(.routineDeleted)
+                    return
+                }
+
+                let identifier = task.objectID.uriRepresentation().absoluteString
+                viewContext.delete(task)
+                try viewContext.save()
+                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                await notificationClient.cancel(identifier)
+                send(.routineDeleted)
+            } catch {
+                print("Error deleting routine: \(error)")
             }
         }
     }

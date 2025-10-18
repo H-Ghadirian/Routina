@@ -3,6 +3,7 @@ import ComposableArchitecture
 
 struct RoutineDetailTCAView: View {
     let store: StoreOf<RoutineDetailFeature>
+    @Environment(\.dismiss) private var dismiss
     @State private var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State private var isShowingAllLogs = false
     @State private var isEditEmojiPickerPresented = false
@@ -199,6 +200,16 @@ struct RoutineDetailTCAView: View {
                                 )
                             }
                         }
+
+                        Section {
+                            Button(role: .destructive) {
+                                store.send(.setDeleteConfirmation(true))
+                            } label: {
+                                Text("Delete Routine")
+                            }
+                        } footer: {
+                            Text("This action cannot be undone.")
+                        }
                     }
                     .navigationTitle("Edit Routine")
                     .routinaInlineTitleDisplayMode()
@@ -224,11 +235,30 @@ struct RoutineDetailTCAView: View {
                             emojis: allEmojiOptions
                         )
                     }
+                    .alert(
+                        "Delete routine?",
+                        isPresented: Binding(
+                            get: { store.isDeleteConfirmationPresented },
+                            set: { store.send(.setDeleteConfirmation($0)) }
+                        )
+                    ) {
+                        Button("Delete", role: .destructive) {
+                            store.send(.deleteRoutineConfirmed)
+                        }
+                        Button("Cancel", role: .cancel) { }
+                    } message: {
+                        Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
+                    }
                 }
             }
             .onAppear {
                 store.send(.onAppear)
                 displayedMonthStart = Calendar.current.startOfMonth(for: Date())
+            }
+            .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
+                guard shouldDismiss else { return }
+                dismiss()
+                store.send(.deleteDismissHandled)
             }
         }
     }

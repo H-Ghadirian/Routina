@@ -10,6 +10,7 @@ struct NotificationPayload: Sendable {
 
 struct NotificationClient: Sendable {
     var schedule: @Sendable (_ payload: NotificationPayload) async -> Void
+    var cancel: @Sendable (_ identifier: String) async -> Void
 }
 
 extension NotificationClient {
@@ -24,6 +25,11 @@ extension NotificationClient {
                 )
             )
             try? await UNUserNotificationCenter.current().add(request)
+        },
+        cancel: { identifier in
+            let center = UNUserNotificationCenter.current()
+            center.removePendingNotificationRequests(withIdentifiers: [identifier])
+            center.removeDeliveredNotifications(withIdentifiers: [identifier])
         }
     )
 

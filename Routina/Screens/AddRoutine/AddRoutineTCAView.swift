@@ -10,7 +10,7 @@ struct AddRoutineTCAView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            NavigationView {
+            NavigationStack {
                 Form {
                     Section(header: Text("Name")) {
                         TextField(
@@ -121,6 +121,9 @@ struct AddRoutineTCAView: View {
                         emojis: allEmojiOptions
                     )
                 }
+#if os(macOS)
+                .frame(minWidth: 560, minHeight: 520)
+#endif
             }
         }
     }
