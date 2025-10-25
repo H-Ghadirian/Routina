@@ -47,6 +47,11 @@ struct AddRoutineTCAView: View {
             Section(header: Text("Name")) {
                 TextField("Routine name", text: routineNameBinding)
                     .focused($isRoutineNameFocused)
+                if let nameValidationMessage {
+                    Text(nameValidationMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
 
             Section(header: Text("Emoji")) {
@@ -135,9 +140,11 @@ struct AddRoutineTCAView: View {
     }
 
     private var isSaveDisabled: Bool {
-        store.routineName
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty
+        store.isSaveDisabled
+    }
+
+    private var nameValidationMessage: String? {
+        store.nameValidationMessage
     }
 
     private func stepperLabel(
@@ -176,9 +183,16 @@ struct AddRoutineTCAView: View {
                 macSectionCard(title: "Basic") {
                     VStack(alignment: .leading, spacing: 14) {
                         macFormRow("Name") {
-                            TextField("Routine name", text: routineNameBinding)
-                                .textFieldStyle(.roundedBorder)
-                                .focused($isRoutineNameFocused)
+                            VStack(alignment: .leading, spacing: 6) {
+                                TextField("Routine name", text: routineNameBinding)
+                                    .textFieldStyle(.roundedBorder)
+                                    .focused($isRoutineNameFocused)
+                                if let nameValidationMessage {
+                                    Text(nameValidationMessage)
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                }
+                            }
                         }
 
                         macFormRow("Emoji") {

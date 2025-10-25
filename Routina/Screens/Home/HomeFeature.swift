@@ -61,7 +61,8 @@ struct HomeFeature {
             case let .tasksLoadedSuccessfully(tasks):
                 state.routineTasks = tasks
                 state.routineDisplays = tasks.map(makeRoutineDisplay)
-                return .none
+                guard state.addRoutineState != nil else { return .none }
+                return .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks))))
 
             case .tasksLoadFailed:
                 print("Failed to load tasks.")
@@ -70,7 +71,11 @@ struct HomeFeature {
             case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
                 if isPresented {
-                    state.addRoutineState = AddRoutineFeature.State()
+                    state.addRoutineState = AddRoutineFeature.State(
+                        existingRoutineNames: existingRoutineNames(from: state.routineTasks)
+                    )
+                } else {
+                    state.addRoutineState = nil
                 }
                 return .none
 
@@ -79,7 +84,7 @@ struct HomeFeature {
                 state.routineTasks.removeAll { idSet.contains($0.id) }
                 state.routineDisplays.removeAll { idSet.contains($0.taskID) }
 
-                return .run { @MainActor [ids] _ in
+                let deleteEffect: Effect<Action> = .run { @MainActor [ids] _ in
                     let context = self.modelContext()
                     for id in ids {
                         let descriptor = FetchDescriptor<RoutineTask>(
@@ -99,14 +104,18 @@ struct HomeFeature {
                     try? context.save()
                     NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 }
+                guard state.addRoutineState != nil else { return deleteEffect }
+                return .merge(
+                    deleteEffect,
+                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks))))
+                )
 
             case .addRoutineSheet(.delegate(.didCancel)):
                 state.isAddRoutineSheetPresented = false
+                state.addRoutineState = nil
                 return .none
 
             case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji))):
-                state.isAddRoutineSheetPresented = false
-
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -138,6 +147,8 @@ struct HomeFeature {
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
                 state.routineDisplays.append(makeRoutineDisplay(task))
+                state.isAddRoutineSheetPresented = false
+                state.addRoutineState = nil
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 let payload = makeNotificationPayload(for: task)
                 return .run { _ in
@@ -183,6 +194,10 @@ struct HomeFeature {
 
     private func makeNotificationPayload(for task: RoutineTask) -> NotificationPayload {
         NotificationCoordinator.notificationPayload(for: task)
+    }
+
+    private func existingRoutineNames(from tasks: [RoutineTask]) -> [String] {
+        tasks.compactMap(\.name)
     }
 
     private func hasDuplicateRoutineName(

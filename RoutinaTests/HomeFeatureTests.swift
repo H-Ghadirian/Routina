@@ -18,11 +18,12 @@ struct HomeFeatureTests {
 
         await store.send(.setAddRoutineSheet(true)) {
             $0.isAddRoutineSheetPresented = true
-            $0.addRoutineState = AddRoutineFeature.State()
+            $0.addRoutineState = AddRoutineFeature.State(existingRoutineNames: [])
         }
 
         await store.send(.setAddRoutineSheet(false)) {
             $0.isAddRoutineSheetPresented = false
+            $0.addRoutineState = nil
         }
     }
 
@@ -77,7 +78,7 @@ struct HomeFeatureTests {
             routineTasks: [],
             routineDisplays: [],
             isAddRoutineSheetPresented: true,
-            addRoutineState: AddRoutineFeature.State()
+            addRoutineState: AddRoutineFeature.State(existingRoutineNames: [])
         )
 
         let store = TestStore(initialState: initialState) {
@@ -89,6 +90,7 @@ struct HomeFeatureTests {
 
         await store.send(.addRoutineSheet(.delegate(.didCancel))) {
             $0.isAddRoutineSheetPresented = false
+            $0.addRoutineState = nil
         }
     }
 
@@ -268,7 +270,7 @@ struct HomeFeatureTests {
             routineTasks: [],
             routineDisplays: [],
             isAddRoutineSheetPresented: true,
-            addRoutineState: AddRoutineFeature.State()
+            addRoutineState: AddRoutineFeature.State(existingRoutineNames: [])
         )
 
         let store = TestStore(initialState: initialState) {
@@ -278,14 +280,13 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥")))) {
-            $0.isAddRoutineSheetPresented = false
-        }
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥"))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         #expect(tasks.count == 1)
         #expect(tasks.first?.name == "Read")
+        #expect(store.state.isAddRoutineSheetPresented)
     }
 
     @Test

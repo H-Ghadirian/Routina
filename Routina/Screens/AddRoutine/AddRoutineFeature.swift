@@ -36,6 +36,16 @@ struct AddRoutineFeature: Reducer {
         var routineEmoji: String = "✨"
         var frequency: Frequency = .day
         var frequencyValue: Int = 1
+        var existingRoutineNames: [String] = []
+        var nameValidationMessage: String?
+
+        var trimmedRoutineName: String {
+            routineName.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        var isSaveDisabled: Bool {
+            trimmedRoutineName.isEmpty || nameValidationMessage != nil
+        }
     }
 
     enum Action: Equatable {
@@ -43,6 +53,7 @@ struct AddRoutineFeature: Reducer {
         case routineEmojiChanged(String)
         case frequencyChanged(Frequency)
         case frequencyValueChanged(Int)
+        case existingRoutineNamesChanged([String])
         case saveTapped
         case cancelTapped
         case delegate(Delegate)
@@ -60,6 +71,7 @@ struct AddRoutineFeature: Reducer {
         switch action {
         case let .routineNameChanged(name):
             state.routineName = name
+            updateNameValidation(&state)
             return .none
 
         case let .routineEmojiChanged(emoji):
@@ -74,9 +86,16 @@ struct AddRoutineFeature: Reducer {
             state.frequencyValue = value
             return .none
 
+        case let .existingRoutineNamesChanged(names):
+            state.existingRoutineNames = names
+            updateNameValidation(&state)
+            return .none
+
         case .saveTapped:
+            updateNameValidation(&state)
+            guard !state.isSaveDisabled else { return .none }
             let frequencyInDays = state.frequencyValue * state.frequency.daysMultiplier
-            return onSave(state.routineName, frequencyInDays, state.routineEmoji)
+            return onSave(state.trimmedRoutineName, frequencyInDays, state.routineEmoji)
 
         case .cancelTapped:
             return onCancel()
@@ -89,5 +108,27 @@ struct AddRoutineFeature: Reducer {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.first else { return fallback }
         return String(first)
+    }
+
+    private func updateNameValidation(_ state: inout State) {
+        guard let normalizedName = normalizedRoutineName(state.routineName) else {
+            state.nameValidationMessage = nil
+            return
+        }
+
+        let hasDuplicate = state.existingRoutineNames.contains { existingName in
+            normalizedRoutineName(existingName) == normalizedName
+        }
+
+        state.nameValidationMessage = hasDuplicate
+            ? "A routine with this name already exists."
+            : nil
+    }
+
+    private func normalizedRoutineName(_ name: String?) -> String? {
+        guard let name else { return nil }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 }
