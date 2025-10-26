@@ -6,7 +6,19 @@ struct WatchHomeView: View {
 
     var body: some View {
         List {
-            if syncStore.routines.isEmpty {
+            if !syncStore.isCompanionAppInstalled {
+                watchStateMessage(
+                    systemImage: "iphone.slash",
+                    title: "Install iPhone app",
+                    message: "Install Routina on iPhone to enable watch sync."
+                )
+            } else if !syncStore.isPhoneReachable && syncStore.routines.isEmpty {
+                watchStateMessage(
+                    systemImage: "iphone",
+                    title: "Open Routina on iPhone",
+                    message: "Open Routina on iPhone for the first sync."
+                )
+            } else if syncStore.routines.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "applewatch.slash")
                         .font(.title3)
@@ -22,6 +34,14 @@ struct WatchHomeView: View {
                 .padding(.vertical, 8)
                 .listRowBackground(Color.clear)
             } else {
+                if !syncStore.isPhoneReachable {
+                    watchStateMessage(
+                        systemImage: "arrow.triangle.2.circlepath",
+                        title: "Showing cached routines",
+                        message: "Open iPhone app to sync latest changes."
+                    )
+                }
+
                 ForEach(syncStore.routines) { routine in
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(routine.emoji) \(routine.name)")
@@ -40,7 +60,6 @@ struct WatchHomeView: View {
                         }
                         .tint(.green)
                         .disabled(routine.isDoneToday())
-                        .accessibilityLabel("Done")
                     }
                 }
             }
@@ -54,6 +73,24 @@ struct WatchHomeView: View {
                 syncStore.requestSync()
             }
         }
+    }
+
+    @ViewBuilder
+    private func watchStateMessage(systemImage: String, title: String, message: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.headline)
+            Text(message)
+                .font(.footnote)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .listRowBackground(Color.clear)
     }
 
     private func statusText(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {
