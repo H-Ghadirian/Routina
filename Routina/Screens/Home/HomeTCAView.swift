@@ -57,7 +57,17 @@ struct HomeTCAView: View {
         }
         .navigationTitle("Routina")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+#if os(macOS)
+                Button {
+                    Task { @MainActor in
+                        try? modelContext.save()
+                        store.send(.onAppear)
+                    }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+#endif
                 Button {
                     store.send(.setAddRoutineSheet(true))
                 } label: {
