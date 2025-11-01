@@ -1,12 +1,12 @@
 import ComposableArchitecture
-import CoreData
 import Foundation
+import SwiftData
 
 @Reducer
 struct HomeFeature {
     struct RoutineDisplay: Equatable, Identifiable {
-        let id: String
-        let objectID: NSManagedObjectID
+        let taskID: UUID
+        var id: UUID { taskID }
         var name: String
         var emoji: String
         var interval: Int
@@ -21,16 +21,15 @@ struct HomeFeature {
         var isAddRoutineSheetPresented: Bool = false
         var addRoutineState: AddRoutineFeature.State?
     }
-    
-    // Actions are now explicit for success and failure, making them Equatable.
+
     enum Action: Equatable {
         case onAppear
         case tasksLoadedSuccessfully([RoutineTask])
         case tasksLoadFailed
-        
+
         case setAddRoutineSheet(Bool)
-        case deleteTasks([NSManagedObjectID])
-        
+        case deleteTasks([UUID])
+
         case addRoutineSheet(AddRoutineFeature.Action)
         case routineSavedSuccessfully(RoutineTask)
         case routineSaveFailed
@@ -41,81 +40,87 @@ struct HomeFeature {
     }
 
     @Dependency(\.notificationClient) var notificationClient
-    @Dependency(\.managedObjectContext) var viewContext
-    
+    @Dependency(\.modelContext) var modelContext
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            
-            // MARK: - Core Logic & Effects
             case .onAppear:
                 return .run { @MainActor send in
                     do {
-                        let request = NSFetchRequest<RoutineTask>(entityName: "RoutineTask")
-                        request.sortDescriptors = []
-                        let tasks = try self.viewContext.fetch(request)
+                        let context = self.modelContext()
+                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                         send(.tasksLoadedSuccessfully(tasks))
                     } catch {
                         send(.tasksLoadFailed)
                     }
                 }
                 .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
-                
+
             case let .tasksLoadedSuccessfully(tasks):
                 state.routineTasks = tasks
                 state.routineDisplays = tasks.map(makeRoutineDisplay)
                 return .none
-            
+
             case .tasksLoadFailed:
-                print("❌ Failed to load tasks.")
-                // You could set an error state here to show an alert.
+                print("Failed to load tasks.")
                 return .none
-                
+
             case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
                 if isPresented {
-                    // Always reset form state when presenting.
                     state.addRoutineState = AddRoutineFeature.State()
                 }
                 return .none
-                
+
             case let .deleteTasks(ids):
                 let idSet = Set(ids)
-                state.routineTasks.removeAll { idSet.contains($0.objectID) }
-                state.routineDisplays.removeAll { idSet.contains($0.objectID) }
-                
+                state.routineTasks.removeAll { idSet.contains($0.id) }
+                state.routineDisplays.removeAll { idSet.contains($0.taskID) }
+
                 return .run { @MainActor [ids] _ in
+                    let context = self.modelContext()
                     for id in ids {
-                        if let task = try? self.viewContext.existingObject(with: id) {
-                            self.viewContext.delete(task)
+                        let descriptor = FetchDescriptor<RoutineTask>(
+                            predicate: #Predicate { task in
+                                task.id == id
+                            }
+                        )
+                        if let task = try context.fetch(descriptor).first {
+                            context.delete(task)
+                        }
+                        let logs = try context.fetch(logsDescriptor(for: id))
+                        for log in logs {
+                            context.delete(log)
                         }
                     }
-                    try? self.viewContext.save()
+                    try? context.save()
                 }
-                
-            // MARK: - Child Feature Logic
+
             case .addRoutineSheet(.delegate(.didCancel)):
                 state.isAddRoutineSheetPresented = false
                 return .none
-                
+
             case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji))):
                 state.isAddRoutineSheetPresented = false
-                
+
                 return .run { @MainActor send in
                     do {
-                        let newRoutine = RoutineTask(context: self.viewContext)
-                        newRoutine.name = name
-                        newRoutine.interval = Int16(freq)
-                        newRoutine.lastDone = nil
-                        newRoutine.setValue(emoji, forKey: "emoji")
-
-                        try self.viewContext.save()
+                        let context = self.modelContext()
+                        let newRoutine = RoutineTask(
+                            name: name,
+                            emoji: emoji,
+                            interval: Int16(freq),
+                            lastDone: nil
+                        )
+                        context.insert(newRoutine)
+                        try context.save()
                         send(.routineSavedSuccessfully(newRoutine))
                     } catch {
                         send(.routineSaveFailed)
                     }
                 }
-                
+
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
                 state.routineDisplays.append(makeRoutineDisplay(task))
@@ -123,9 +128,9 @@ struct HomeFeature {
                 return .run { _ in
                     await self.notificationClient.schedule(payload)
                 }
-                
+
             case .routineSaveFailed:
-                print("❌ Failed to save routine.")
+                print("Failed to save routine.")
                 return .none
 
             case .addRoutineSheet:
@@ -141,38 +146,32 @@ struct HomeFeature {
     }
 
     private func makeRoutineDisplay(_ task: RoutineTask) -> RoutineDisplay {
-        let logs = ((task.value(forKey: "logs") as? NSSet)?.allObjects as? [RoutineLog]) ?? []
         let doneTodayFromLastDone = task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
-        let doneTodayFromLogs = logs.contains {
-            guard let timestamp = $0.timestamp else { return false }
-            return Calendar.current.isDateInToday(timestamp)
-        }
-        let isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
 
         return RoutineDisplay(
-            id: task.objectID.uriRepresentation().absoluteString,
-            objectID: task.objectID,
+            taskID: task.id,
             name: task.name ?? "Unnamed task",
-            emoji: (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
+            emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
-            isDoneToday: isDoneToday
+            isDoneToday: doneTodayFromLastDone
+        )
+    }
+
+    private func logsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
+        FetchDescriptor<RoutineLog>(
+            predicate: #Predicate { log in
+                log.taskID == taskID
+            }
         )
     }
 
     private func makeNotificationPayload(for task: RoutineTask) -> NotificationPayload {
         NotificationPayload(
-            identifier: task.objectID.uriRepresentation().absoluteString,
+            identifier: task.id.uuidString,
             name: task.name,
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone
         )
-    }
-}
-
-// This extension is still needed to make the Action enum Equatable.
-extension RoutineTask {
-    public static func == (lhs: RoutineTask, rhs: RoutineTask) -> Bool {
-        lhs.objectID == rhs.objectID
     }
 }

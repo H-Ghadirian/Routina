@@ -1,10 +1,11 @@
 import ComposableArchitecture
-import CoreData
+import SwiftData
 import SwiftUI
 
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
-    @State private var selectedTaskID: NSManagedObjectID?
+    @Environment(\.modelContext) private var modelContext
+    @State private var selectedTaskID: UUID?
 
     var body: some View {
         WithPerceptionTracking {
@@ -17,7 +18,8 @@ struct HomeTCAView: View {
                             .padding()
                     } else {
                         listOfSortedTasksView(
-                            routineDisplays: store.routineDisplays
+                            routineDisplays: store.routineDisplays,
+                            routineTasks: store.routineTasks
                         )
                     }
                 }
@@ -40,9 +42,6 @@ struct HomeTCAView: View {
                     }
                 }
             }
-            .navigationDestination(for: NSManagedObjectID.self) { taskID in
-                routineDetailTCAView(taskID: taskID, routineTasks: store.routineTasks)
-            }
             .sheet(
                 isPresented: Binding(
                     get: { store.isAddRoutineSheetPresented },
@@ -64,7 +63,7 @@ struct HomeTCAView: View {
             }
             .onChange(of: store.routineTasks) { _, tasks in
                 guard let selectedTaskID else { return }
-                if !tasks.contains(where: { $0.objectID == selectedTaskID }) {
+                if !tasks.contains(where: { $0.id == selectedTaskID }) {
                     self.selectedTaskID = nil
                 }
             }
@@ -93,18 +92,19 @@ struct HomeTCAView: View {
     private func urgencyLevel(for task: HomeFeature.RoutineDisplay) -> Int {
         let dueIn = task.interval - daysSinceLastRoutine(task)
 
-        if dueIn < 0 { return 3 } // Overdue, highest priority
-        if dueIn == 0 { return 2 } // Due today
-        if dueIn == 1 { return 1 } // Due tomorrow
-        return 0 // Least urgent
+        if dueIn < 0 { return 3 }
+        if dueIn == 0 { return 2 }
+        if dueIn == 1 { return 1 }
+        return 0
     }
 
     private func listOfSortedTasksView(
-        routineDisplays: [HomeFeature.RoutineDisplay]
+        routineDisplays: [HomeFeature.RoutineDisplay],
+        routineTasks: [RoutineTask]
     ) -> some View {
         List(selection: $selectedTaskID) {
             ForEach(sortedTasks(routineDisplays)) { task in
-                NavigationLink(value: task.objectID) {
+                NavigationLink(value: task.taskID) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(task.emoji) \(task.name)")
@@ -130,22 +130,25 @@ struct HomeTCAView: View {
             }
             .onDelete { offsets in
                 let sorted = sortedTasks(routineDisplays)
-                let ids = offsets.compactMap { sorted[$0].objectID }
+                let ids = offsets.compactMap { sorted[$0].taskID }
                 if let selectedTaskID, ids.contains(selectedTaskID) {
                     self.selectedTaskID = nil
                 }
                 store.send(.deleteTasks(ids))
             }
         }
+        .navigationDestination(for: UUID.self) { taskID in
+            routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
+        }
     }
-    
+
     private func routineDetailTCAView(
-        taskID: NSManagedObjectID,
+        taskID: UUID,
         routineTasks: [RoutineTask]
     ) -> some View {
         Group {
-            if let task = routineTasks.first(where: { $0.objectID == taskID }) {
-                if let context = task.managedObjectContext {
+            if let task = routineTasks.first(where: { $0.id == taskID }) {
+                let currentModelContext = modelContext
                 RoutineDetailTCAView(
                     store: Store(
                         initialState: RoutineDetailFeature.State(
@@ -157,14 +160,10 @@ struct HomeTCAView: View {
                         ),
                         reducer: { RoutineDetailFeature() },
                         withDependencies: {
-                            $0.managedObjectContext = context
+                            $0.modelContext = { @MainActor in currentModelContext }
                         }
                     )
                 )
-                } else {
-                    Text("Routine context unavailable")
-                        .foregroundColor(.secondary)
-                }
             } else {
                 Text("Routine not found")
                     .foregroundColor(.secondary)
@@ -173,15 +172,14 @@ struct HomeTCAView: View {
     }
 
     private func urgencySquare(for task: HomeFeature.RoutineDisplay) -> some View {
-        return Rectangle()
+        Rectangle()
             .fill(urgencyColor(for: task))
             .frame(width: 20, height: 20)
             .cornerRadius(4)
     }
 
-    private func initialLogs(for task: RoutineTask) -> [RoutineLog] {
-        let logs = ((task.value(forKey: "logs") as? NSSet)?.allObjects as? [RoutineLog]) ?? []
-        return logs.sorted { ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast) }
+    private func initialLogs(for _: RoutineTask) -> [RoutineLog] {
+        []
     }
 
     private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {

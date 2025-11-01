@@ -1,7 +1,7 @@
 import ComposableArchitecture
-import CoreData
-import UserNotifications
 import Foundation
+import SwiftData
+import UserNotifications
 
 struct RoutineDetailFeature: Reducer {
     enum EditFrequency: String, CaseIterable, Equatable {
@@ -59,9 +59,10 @@ struct RoutineDetailFeature: Reducer {
     }
 
     @Dependency(\.notificationClient) var notificationClient
-    @Dependency(\.managedObjectContext) var viewContext
+    @Dependency(\.modelContext) var modelContext
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
@@ -69,7 +70,7 @@ struct RoutineDetailFeature: Reducer {
             state.isDoneToday = true
             state.daysSinceLastRoutine = 0
             state.overdueDays = 0
-            return handleMarkAsDone(taskID: state.task.objectID)
+            return handleMarkAsDone(taskID: state.task.id)
 
         case let .setEditSheet(isPresented):
             state.isEditSheetPresented = isPresented
@@ -99,12 +100,12 @@ struct RoutineDetailFeature: Reducer {
             guard !trimmedName.isEmpty else { return .none }
 
             state.task.name = trimmedName
-            state.task.setValue(state.editRoutineEmoji, forKey: "emoji")
+            state.task.emoji = state.editRoutineEmoji
             state.task.interval = Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
             state.isEditSheetPresented = false
             updateDerivedState(&state)
 
-            return handleEditSave(taskID: state.task.objectID)
+            return handleEditSave(taskID: state.task.id)
 
         case let .setDeleteConfirmation(isPresented):
             state.isDeleteConfirmationPresented = isPresented
@@ -112,7 +113,7 @@ struct RoutineDetailFeature: Reducer {
 
         case .deleteRoutineConfirmed:
             state.isDeleteConfirmationPresented = false
-            return handleDeleteRoutine(taskID: state.task.objectID)
+            return handleDeleteRoutine(taskID: state.task.id)
 
         case .routineDeleted:
             state.isEditSheetPresented = false
@@ -127,15 +128,16 @@ struct RoutineDetailFeature: Reducer {
             state.logs = logs
             updateDerivedState(&state)
             return .none
+
         case .onAppear:
             updateDerivedState(&state)
-            return handleOnAppear(taskID: state.task.objectID)
+            return handleOnAppear(taskID: state.task.id)
         }
     }
 
     private func syncEditFormFromTask(_ state: inout State) {
         state.editRoutineName = state.task.name ?? ""
-        state.editRoutineEmoji = (state.task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+        state.editRoutineEmoji = state.task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
 
         let interval = max(Int(state.task.interval), 1)
         if interval % 30 == 0 {
@@ -173,10 +175,11 @@ struct RoutineDetailFeature: Reducer {
         state.overdueDays = max(calendar.dateComponents([.day], from: dueStart, to: nowStart).day ?? 0, 0)
     }
 
-    private func handleOnAppear(taskID: NSManagedObjectID) -> Effect<Action> {
-        return .run { @MainActor [viewContext] send in
+    private func handleOnAppear(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
             do {
-                let logs = try viewContext.fetch(sortedDonesFetchRequest(for: taskID, in: viewContext))
+                let context = modelContext()
+                let logs = try context.fetch(sortedLogsDescriptor(for: taskID))
                 send(.logsLoaded(logs))
             } catch {
                 print("Error loading logs: \(error)")
@@ -184,35 +187,37 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
-    private func sortedDonesFetchRequest(
-        for taskID: NSManagedObjectID,
-        in context: NSManagedObjectContext
-    ) -> NSFetchRequest<RoutineLog> {
-        let fetchRequest: NSFetchRequest<RoutineLog> = RoutineLog.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "task == %@", context.object(with: taskID))
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
-        return fetchRequest
+    private func sortedLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
+        FetchDescriptor<RoutineLog>(
+            predicate: #Predicate { log in
+                log.taskID == taskID
+            },
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
     }
 
-    private func handleMarkAsDone(taskID: NSManagedObjectID) -> Effect<Action> {
-        return .run { @MainActor [viewContext] send in
-            do {
-                guard let task = try viewContext.existingObject(with: taskID) as? RoutineTask else { return }
-                if task.objectID.isTemporaryID {
-                    try viewContext.obtainPermanentIDs(for: [task])
-                }
-                let log = RoutineLog(context: viewContext)
-                log.timestamp = task.lastDone
-                log.task = task
+    private func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
+        FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+    }
 
-                try viewContext.save()
-                let persistedTaskID = task.objectID
-                let updatedLogs = try viewContext.fetch(
-                    sortedDonesFetchRequest(for: persistedTaskID, in: viewContext)
-                )
+    private func handleMarkAsDone(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                let log = RoutineLog(timestamp: task.lastDone, taskID: task.id)
+                context.insert(log)
+                try context.save()
+
+                let updatedLogs = try context.fetch(sortedLogsDescriptor(for: task.id))
                 send(.logsLoaded(updatedLogs))
+
                 let payload = NotificationPayload(
-                    identifier: persistedTaskID.uriRepresentation().absoluteString,
+                    identifier: task.id.uuidString,
                     name: task.name,
                     interval: max(Int(task.interval), 1),
                     lastDone: task.lastDone
@@ -225,14 +230,15 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
-    private func handleEditSave(taskID: NSManagedObjectID) -> Effect<Action> {
-        return .run { @MainActor [viewContext] send in
+    private func handleEditSave(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
             do {
-                guard let task = try viewContext.existingObject(with: taskID) as? RoutineTask else { return }
-                try viewContext.save()
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                try context.save()
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 let payload = NotificationPayload(
-                    identifier: task.objectID.uriRepresentation().absoluteString,
+                    identifier: task.id.uuidString,
                     name: task.name,
                     interval: max(Int(task.interval), 1),
                     lastDone: task.lastDone
@@ -245,17 +251,22 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
-    private func handleDeleteRoutine(taskID: NSManagedObjectID) -> Effect<Action> {
-        return .run { @MainActor [viewContext, notificationClient] send in
+    private func handleDeleteRoutine(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
             do {
-                guard let task = try viewContext.existingObject(with: taskID) as? RoutineTask else {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else {
                     send(.routineDeleted)
                     return
                 }
 
-                let identifier = task.objectID.uriRepresentation().absoluteString
-                viewContext.delete(task)
-                try viewContext.save()
+                let identifier = task.id.uuidString
+                context.delete(task)
+                let logs = try context.fetch(allLogsDescriptor(for: task.id))
+                for log in logs {
+                    context.delete(log)
+                }
+                try context.save()
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 await notificationClient.cancel(identifier)
                 send(.routineDeleted)
@@ -271,4 +282,11 @@ struct RoutineDetailFeature: Reducer {
         return String(first)
     }
 
+    private func allLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
+        FetchDescriptor<RoutineLog>(
+            predicate: #Predicate { log in
+                log.taskID == taskID
+            }
+        )
+    }
 }

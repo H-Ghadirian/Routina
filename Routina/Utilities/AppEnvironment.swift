@@ -18,7 +18,6 @@ enum AppEnvironment {
             return value
         }
 
-        // Fallback for targets where custom Info keys are absent.
         if bundleIdentifier?.contains(".dev") == true {
             return true
         }
@@ -41,7 +40,6 @@ enum AppEnvironment {
             return override
         }
 
-        // Fallback to convention-based containers when custom Info keys are absent.
         if bundleIdentifier?.contains(".dev") == true {
             return "iCloud.ir.hamedgh.Routinam.dev"
         }
@@ -52,6 +50,10 @@ enum AppEnvironment {
         guard !isSandboxDataMode else { return nil }
 
         return "iCloud.ir.hamedgh.Routinam"
+    }()
+
+    static let isCloudSyncEnabled: Bool = {
+        cloudKitContainerIdentifier != nil
     }()
 
     static let persistentStoreFileName: String = {
@@ -78,10 +80,10 @@ enum AppEnvironment {
 
     static let dataModeLabel: String = {
         if isSandboxDataMode {
-            return cloudKitContainerIdentifier == nil ? "Sandbox (local only)" : "Sandbox (separate iCloud)"
+            return isCloudSyncEnabled ? "Sandbox (separate iCloud)" : "Sandbox (local only)"
         }
 
-        return cloudKitContainerIdentifier == nil ? "Production (local only)" : "Production (iCloud)"
+        return isCloudSyncEnabled ? "Production (iCloud)" : "Production (local only)"
     }()
 }
 

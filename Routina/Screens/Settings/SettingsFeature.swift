@@ -1,5 +1,5 @@
 import ComposableArchitecture
-import CoreData
+import SwiftData
 import SwiftUI
 import UserNotifications
 
@@ -10,7 +10,7 @@ struct SettingsFeature {
     struct State: Equatable {
         var appVersion: String = ""
         var dataModeDescription: String = AppEnvironment.dataModeLabel
-        var cloudSyncAvailable: Bool = AppEnvironment.cloudKitContainerIdentifier != nil
+        var cloudSyncAvailable: Bool = AppEnvironment.isCloudSyncEnabled
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
         var systemSettingsNotificationsEnabled: Bool = true
         var isCloudSyncInProgress: Bool = false
@@ -28,7 +28,7 @@ struct SettingsFeature {
         case cloudSyncFinished(success: Bool, message: String)
     }
 
-    @Dependency(\.managedObjectContext) var viewContext
+    @Dependency(\.modelContext) var modelContext
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -45,7 +45,7 @@ struct SettingsFeature {
                     }
                 }
                 return .none
-                
+
             case .onAppear:
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
                 return .run { @MainActor send in
@@ -53,7 +53,7 @@ struct SettingsFeature {
                     let systemEnabled = settings.authorizationStatus == .authorized
                     send(.systemNotificationPermissionChecked(systemEnabled))
                 }
-                
+
             case .contactUsTapped:
                 if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
                     return .run { @MainActor _ in
@@ -65,6 +65,7 @@ struct SettingsFeature {
             case let .systemNotificationPermissionChecked(value):
                 state.systemSettingsNotificationsEnabled = value
                 return .none
+
             case .onAppBecameActive:
                 return .run { @MainActor send in
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
@@ -74,22 +75,16 @@ struct SettingsFeature {
 
             case .syncNowTapped:
                 guard state.cloudSyncAvailable else {
-                    state.cloudSyncStatusMessage = "iCloud sync is disabled in Sandbox mode."
+                    state.cloudSyncStatusMessage = "iCloud sync is disabled in this build."
                     return .none
                 }
 
                 state.isCloudSyncInProgress = true
                 state.cloudSyncStatusMessage = "Syncing with iCloud..."
-                return .run { @MainActor [viewContext] send in
+                return .run { @MainActor send in
                     do {
-                        if viewContext.hasChanges {
-                            try viewContext.save()
-                        }
-                        viewContext.refreshAllObjects()
-
-                        // Trigger a UI refresh for features observing this notification.
+                        try modelContext().save()
                         NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
-
                         await send(
                             .cloudSyncFinished(
                                 success: true,

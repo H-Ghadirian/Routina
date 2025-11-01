@@ -1,6 +1,6 @@
 import ComposableArchitecture
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 #if canImport(RoutinaProd)
 @testable @preconcurrency import RoutinaProd
@@ -82,6 +82,26 @@ struct AddRoutineFeatureTests {
 }
 
 @MainActor
+struct SwiftDataModelTests {
+    @Test
+    func routineTask_defaultsAreInitialized() {
+        let task = RoutineTask()
+        #expect(task.interval == 1)
+        #expect(!task.id.uuidString.isEmpty)
+        #expect(task.lastDone == nil)
+    }
+
+    @Test
+    func routineLog_defaultsAreInitialized() {
+        let taskID = UUID()
+        let log = RoutineLog(taskID: taskID)
+        #expect(log.taskID == taskID)
+        #expect(!log.id.uuidString.isEmpty)
+        #expect(log.timestamp == nil)
+    }
+}
+
+@MainActor
 struct HomeFeatureTests {
     @Test
     func setAddRoutineSheet_togglesPresentationAndChildState() async {
@@ -89,7 +109,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -112,15 +132,14 @@ struct HomeFeatureTests {
             in: context,
             name: nil,
             interval: 0,
-            lastDone: nil,
+            lastDone: today,
             emoji: ""
         )
-        _ = makeLog(in: context, task: task, timestamp: today)
 
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -128,12 +147,11 @@ struct HomeFeatureTests {
             $0.routineTasks = [task]
             $0.routineDisplays = [
                 HomeFeature.RoutineDisplay(
-                    id: task.objectID.uriRepresentation().absoluteString,
-                    objectID: task.objectID,
+                    taskID: task.id,
                     name: "Unnamed task",
                     emoji: "✨",
                     interval: 1,
-                    lastDone: nil,
+                    lastDone: today,
                     isDoneToday: true
                 )
             ]
@@ -162,7 +180,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -180,7 +198,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { payload in
                 scheduledIDs.withValue { $0.append(payload.identifier) }
             }
@@ -190,8 +208,7 @@ struct HomeFeatureTests {
             $0.routineTasks = [task]
             $0.routineDisplays = [
                 HomeFeature.RoutineDisplay(
-                    id: task.objectID.uriRepresentation().absoluteString,
-                    objectID: task.objectID,
+                    taskID: task.id,
                     name: "Walk",
                     emoji: "🚶",
                     interval: 2,
@@ -203,7 +220,7 @@ struct HomeFeatureTests {
 
         #expect(store.state.routineTasks.count == 1)
         #expect(store.state.routineDisplays.count == 1)
-        #expect(scheduledIDs.value == [task.objectID.uriRepresentation().absoluteString])
+        #expect(scheduledIDs.value == [task.id.uuidString])
     }
 
     @Test
@@ -216,8 +233,7 @@ struct HomeFeatureTests {
             routineTasks: [task1, task2],
             routineDisplays: [
                 HomeFeature.RoutineDisplay(
-                    id: task1.objectID.uriRepresentation().absoluteString,
-                    objectID: task1.objectID,
+                    taskID: task1.id,
                     name: "A",
                     emoji: "🅰️",
                     interval: 1,
@@ -225,8 +241,7 @@ struct HomeFeatureTests {
                     isDoneToday: false
                 ),
                 HomeFeature.RoutineDisplay(
-                    id: task2.objectID.uriRepresentation().absoluteString,
-                    objectID: task2.objectID,
+                    taskID: task2.id,
                     name: "B",
                     emoji: "🅱️",
                     interval: 2,
@@ -241,16 +256,15 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.deleteTasks([task1.objectID])) {
+        await store.send(.deleteTasks([task1.id])) {
             $0.routineTasks = [task2]
             $0.routineDisplays = [
                 HomeFeature.RoutineDisplay(
-                    id: task2.objectID.uriRepresentation().absoluteString,
-                    objectID: task2.objectID,
+                    taskID: task2.id,
                     name: "B",
                     emoji: "🅱️",
                     interval: 2,
@@ -259,6 +273,65 @@ struct HomeFeatureTests {
                 )
             ]
         }
+    }
+
+    @Test
+    func deleteTasks_removesAssociatedLogsFromPersistence() async throws {
+        let context = makeInMemoryContext()
+        let task1 = makeTask(in: context, name: "A", interval: 1, lastDone: nil, emoji: "🅰️")
+        let task2 = makeTask(in: context, name: "B", interval: 2, lastDone: nil, emoji: "🅱️")
+        _ = makeLog(in: context, task: task1, timestamp: Date())
+        _ = makeLog(in: context, task: task2, timestamp: Date())
+        try context.save()
+
+        let initialState = HomeFeature.State(
+            routineTasks: [task1, task2],
+            routineDisplays: [
+                HomeFeature.RoutineDisplay(
+                    taskID: task1.id,
+                    name: "A",
+                    emoji: "🅰️",
+                    interval: 1,
+                    lastDone: nil,
+                    isDoneToday: false
+                ),
+                HomeFeature.RoutineDisplay(
+                    taskID: task2.id,
+                    name: "B",
+                    emoji: "🅱️",
+                    interval: 2,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ],
+            isAddRoutineSheetPresented: false,
+            addRoutineState: nil
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.deleteTasks([task1.id])) {
+            $0.routineTasks = [task2]
+            $0.routineDisplays = [
+                HomeFeature.RoutineDisplay(
+                    taskID: task2.id,
+                    name: "B",
+                    emoji: "🅱️",
+                    interval: 2,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+        }
+
+        let remainingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(remainingLogs.count == 1)
+        #expect(remainingLogs.first?.taskID == task2.id)
     }
 }
 
@@ -272,7 +345,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
         }
@@ -290,6 +363,7 @@ struct RoutineDetailFeatureTests {
     func deleteRoutineConfirmed_removesTaskCancelsNotificationAndRequestsDismiss() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Stretch", interval: 3, lastDone: nil, emoji: "🤸")
+        _ = makeLog(in: context, task: task, timestamp: Date())
         try context.save()
 
         let canceledIDs = LockIsolated<[String]>([])
@@ -311,14 +385,14 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { identifier in
                 canceledIDs.withValue { $0.append(identifier) }
             }
         }
 
-        let expectedIdentifier = task.objectID.uriRepresentation().absoluteString
+        let expectedIdentifier = task.id.uuidString
 
         await store.send(.deleteRoutineConfirmed) {
             $0.isDeleteConfirmationPresented = false
@@ -329,8 +403,10 @@ struct RoutineDetailFeatureTests {
             $0.shouldDismissAfterDelete = true
         }
 
-        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "RoutineTask")
-        #expect((try? context.count(for: request)) == 0)
+        let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let remainingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(remainingTasks.isEmpty)
+        #expect(remainingLogs.isEmpty)
         #expect(canceledIDs.value == [expectedIdentifier])
     }
 
@@ -357,7 +433,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
         }
@@ -375,7 +451,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -409,7 +485,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -442,7 +518,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -470,7 +546,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.calendar = calendar
             $0.date.now = now
             $0.notificationClient.schedule = { _ in }
@@ -505,7 +581,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
-            $0.managedObjectContext = context
+            $0.modelContext = { context }
             $0.calendar = calendar
             $0.date.now = now
             $0.notificationClient.schedule = { payload in
@@ -520,56 +596,54 @@ struct RoutineDetailFeatureTests {
             $0.overdueDays = 0
         }
 
+        let taskID = task.id
         await store.receive {
             if case .logsLoaded = $0 { return true }
             return false
         } assert: {
-            let request = NSFetchRequest<RoutineLog>(entityName: "RoutineLog")
-            request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
-            request.predicate = NSPredicate(format: "task == %@", task)
-            $0.logs = (try? context.fetch(request)) ?? []
+            let descriptor = FetchDescriptor<RoutineLog>(
+                predicate: #Predicate<RoutineLog> { $0.taskID == taskID },
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+            $0.logs = (try? context.fetch(descriptor)) ?? []
             #expect($0.logs.count == 1)
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = true
         }
 
-        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "RoutineLog")
-        #expect((try? context.count(for: request)) == 1)
-        #expect(scheduledIDs.value == [task.objectID.uriRepresentation().absoluteString])
+        let persistedLogs = (try? context.fetch(FetchDescriptor<RoutineLog>())) ?? []
+        #expect(persistedLogs.count == 1)
+        #expect(scheduledIDs.value == [task.id.uuidString])
     }
 }
 
 @MainActor
-private func makeInMemoryContext() -> NSManagedObjectContext {
-    PersistenceController(inMemory: true).container.viewContext
+private func makeInMemoryContext() -> ModelContext {
+    PersistenceController(inMemory: true).container.mainContext
 }
 
 @MainActor
 private func makeTask(
-    in context: NSManagedObjectContext,
+    in context: ModelContext,
     name: String?,
     interval: Int16,
     lastDone: Date?,
     emoji: String?
 ) -> RoutineTask {
-    let task = RoutineTask(context: context)
-    task.name = name
-    task.interval = interval
-    task.lastDone = lastDone
-    task.setValue(emoji, forKey: "emoji")
+    let task = RoutineTask(name: name, emoji: emoji, interval: interval, lastDone: lastDone)
+    context.insert(task)
     return task
 }
 
 @MainActor
 private func makeLog(
-    in context: NSManagedObjectContext,
+    in context: ModelContext,
     task: RoutineTask,
     timestamp: Date?
 ) -> RoutineLog {
-    let log = RoutineLog(context: context)
-    log.timestamp = timestamp
-    log.task = task
+    let log = RoutineLog(timestamp: timestamp, taskID: task.id)
+    context.insert(log)
     return log
 }
 

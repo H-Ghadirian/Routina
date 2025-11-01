@@ -1,10 +1,10 @@
 import ComposableArchitecture
-import CoreData
+import SwiftData
 
-private enum ManagedObjectContextKey: DependencyKey {
-    static let liveValue: NSManagedObjectContext = {
-        PersistenceController.shared.container.viewContext
-    }()
+private enum ModelContextProviderKey: DependencyKey {
+    static let liveValue: @MainActor @Sendable () -> ModelContext = {
+        PersistenceController.shared.container.mainContext
+    }
 }
 
 private enum NotificationClientKey: DependencyKey {
@@ -12,10 +12,11 @@ private enum NotificationClientKey: DependencyKey {
 }
 
 extension DependencyValues {
-    var managedObjectContext: NSManagedObjectContext {
-        get { self[ManagedObjectContextKey.self] }
-        set { self[ManagedObjectContextKey.self] = newValue }
+    var modelContext: @MainActor @Sendable () -> ModelContext {
+        get { self[ModelContextProviderKey.self] }
+        set { self[ModelContextProviderKey.self] = newValue }
     }
+
     var notificationClient: NotificationClient {
         get { self[NotificationClientKey.self] }
         set { self[NotificationClientKey.self] = newValue }

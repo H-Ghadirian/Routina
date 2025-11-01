@@ -1,12 +1,14 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftData
+import SwiftUI
 
 @main
 struct RoutinaTCAApp: App {
 
     init() {
+        let cloudContainer = AppEnvironment.cloudKitContainerIdentifier ?? "disabled"
         NSLog(
-            "Routina data mode: \(AppEnvironment.dataModeLabel), store: \(AppEnvironment.persistentStoreFileName), defaults suite: \(AppEnvironment.userDefaultsSuiteName), cloud container: \(AppEnvironment.cloudKitContainerIdentifier ?? "disabled")"
+            "Routina data mode: \(AppEnvironment.dataModeLabel), defaults suite: \(AppEnvironment.userDefaultsSuiteName), cloud container: \(cloudContainer)"
         )
         SharedDefaults.app.register(defaults: [
             .appSettingNotificationsEnabled: true
@@ -15,15 +17,17 @@ struct RoutinaTCAApp: App {
 
     var body: some Scene {
         WindowGroup {
+            let persistence = PersistenceController.shared
             let store = Store(
-              initialState: AppFeature.State(),
-              reducer: { AppFeature() },
-              withDependencies: {
-                $0.managedObjectContext = PersistenceController.shared.container.viewContext
-              }
+                initialState: AppFeature.State(),
+                reducer: { AppFeature() },
+                withDependencies: {
+                    $0.modelContext = { @MainActor in persistence.container.mainContext }
+                }
             )
 
             AppView(store: store)
+                .modelContainer(persistence.container)
         }
     }
 }

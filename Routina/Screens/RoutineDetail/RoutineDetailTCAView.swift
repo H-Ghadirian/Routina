@@ -464,7 +464,7 @@ struct RoutineDetailTCAView: View {
     }
 
     private func routineEmoji(for task: RoutineTask) -> String {
-        (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+        task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
     }
 
     private func frequencyText(for task: RoutineTask) -> String {

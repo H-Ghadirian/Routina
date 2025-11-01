@@ -1,103 +1,116 @@
-import CoreData
 import Foundation
+import SwiftData
 
 public struct PersistenceController {
     public static let shared = PersistenceController()
 
-    let container: NSPersistentCloudKitContainer
+    let container: ModelContainer
 
     init(inMemory: Bool = false) {
-        let primaryContainer = NSPersistentCloudKitContainer(name: "RoutinaModel")
-        let persistentStoreURL = inMemory ? nil : Self.persistentStoreURL()
+        let primaryCloudDatabase = Self.cloudKitDatabase(inMemory: inMemory)
 
-        if inMemory {
-            primaryContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
-        } else if let persistentStoreURL {
-            primaryContainer.persistentStoreDescriptions.first?.url = persistentStoreURL
-        }
-
-        let useCloudKit = !inMemory && AppEnvironment.cloudKitContainerIdentifier != nil
-        Self.configureStoreDescriptions(
-            for: primaryContainer,
-            useCloudKit: useCloudKit,
-            cloudContainerIdentifier: AppEnvironment.cloudKitContainerIdentifier
-        )
-
-        if let primaryError = Self.loadStores(for: primaryContainer) {
-            NSLog("CloudKit store load failed: \(primaryError), \(primaryError.userInfo). Falling back to local store.")
-
-            let fallbackContainer = NSPersistentCloudKitContainer(name: "RoutinaModel")
-            if inMemory {
-                fallbackContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
-            } else if let persistentStoreURL {
-                fallbackContainer.persistentStoreDescriptions.first?.url = persistentStoreURL
-            }
-            Self.configureStoreDescriptions(
-                for: fallbackContainer,
-                useCloudKit: false,
-                cloudContainerIdentifier: nil
+        do {
+            let primaryConfiguration = Self.makeConfiguration(
+                inMemory: inMemory,
+                cloudKitDatabase: primaryCloudDatabase
+            )
+            container = try ModelContainer(
+                for: RoutineTask.self,
+                RoutineLog.self,
+                configurations: primaryConfiguration
+            )
+        } catch {
+            NSLog(
+                "Primary ModelContainer init failed: \(error.localizedDescription)."
             )
 
-            if let fallbackError = Self.loadStores(for: fallbackContainer) {
-                NSLog("Local store load failed: \(fallbackError), \(fallbackError.userInfo). Falling back to in-memory store.")
+            if !inMemory {
+                Self.removePersistentStoreFiles()
 
-                let memoryContainer = NSPersistentCloudKitContainer(name: "RoutinaModel")
-                memoryContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
-                Self.configureStoreDescriptions(
-                    for: memoryContainer,
-                    useCloudKit: false,
-                    cloudContainerIdentifier: nil
-                )
-
-                if let memoryError = Self.loadStores(for: memoryContainer) {
-                    NSLog("In-memory store load failed: \(memoryError), \(memoryError.userInfo)")
+                do {
+                    let retriedConfiguration = Self.makeConfiguration(
+                        inMemory: inMemory,
+                        cloudKitDatabase: primaryCloudDatabase
+                    )
+                    container = try ModelContainer(
+                        for: RoutineTask.self,
+                        RoutineLog.self,
+                        configurations: retriedConfiguration
+                    )
+                    return
+                } catch {
+                    NSLog("Retry after store reset failed: \(error.localizedDescription). Falling back to local-only store.")
                 }
-                container = memoryContainer
-            } else {
-                container = fallbackContainer
             }
-        } else {
-            container = primaryContainer
-        }
 
-        container.viewContext.automaticallyMergesChangesFromParent = true
-        container.viewContext.mergePolicy = NSMergePolicy(merge: .mergeByPropertyObjectTrumpMergePolicyType)
-    }
-
-    private static func configureStoreDescriptions(
-        for container: NSPersistentCloudKitContainer,
-        useCloudKit: Bool,
-        cloudContainerIdentifier: String?
-    ) {
-        container.persistentStoreDescriptions.forEach { description in
-            description.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
-            description.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
-            description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-            description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-
-            if useCloudKit, let cloudContainerIdentifier {
-                description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
-                    containerIdentifier: cloudContainerIdentifier
+            do {
+                let localFallback = Self.makeConfiguration(inMemory: inMemory, cloudKitDatabase: .none)
+                container = try ModelContainer(
+                    for: RoutineTask.self,
+                    RoutineLog.self,
+                    configurations: localFallback
                 )
-            } else {
-                description.cloudKitContainerOptions = nil
+            } catch {
+                NSLog("Local-only ModelContainer init failed: \(error.localizedDescription). Falling back to in-memory store.")
+
+                do {
+                    let memoryFallback = Self.makeConfiguration(inMemory: true, cloudKitDatabase: .none)
+                    container = try ModelContainer(
+                        for: RoutineTask.self,
+                        RoutineLog.self,
+                        configurations: memoryFallback
+                    )
+                } catch {
+                    fatalError("Failed to initialize in-memory ModelContainer: \(error.localizedDescription)")
+                }
             }
         }
     }
 
-    private static func loadStores(for container: NSPersistentCloudKitContainer) -> NSError? {
-        let semaphore = DispatchSemaphore(value: 0)
-        var loadError: NSError?
-
-        container.loadPersistentStores { _, error in
-            if let error = error as NSError? {
-                loadError = error
-            }
-            semaphore.signal()
+    private static func cloudKitDatabase(inMemory: Bool) -> ModelConfiguration.CloudKitDatabase {
+        guard !inMemory,
+              let cloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier,
+              !cloudContainerIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return .none
         }
 
-        semaphore.wait()
-        return loadError
+        return .private(cloudContainerIdentifier)
+    }
+
+    private static func makeConfiguration(
+        inMemory: Bool,
+        cloudKitDatabase: ModelConfiguration.CloudKitDatabase
+    ) -> ModelConfiguration {
+        if inMemory {
+            return ModelConfiguration(
+                nil,
+                schema: nil,
+                isStoredInMemoryOnly: true,
+                allowsSave: true,
+                groupContainer: .automatic,
+                cloudKitDatabase: cloudKitDatabase
+            )
+        }
+
+        if let storeURL = persistentStoreURL() {
+            return ModelConfiguration(
+                nil,
+                schema: nil,
+                url: storeURL,
+                allowsSave: true,
+                cloudKitDatabase: cloudKitDatabase
+            )
+        }
+
+        return ModelConfiguration(
+            nil,
+            schema: nil,
+            isStoredInMemoryOnly: false,
+            allowsSave: true,
+            groupContainer: .automatic,
+            cloudKitDatabase: cloudKitDatabase
+        )
     }
 
     private static func persistentStoreURL() -> URL? {
@@ -114,6 +127,20 @@ public struct PersistenceController {
         } catch {
             NSLog("Failed to resolve persistent store URL: \(error.localizedDescription)")
             return nil
+        }
+    }
+
+    private static func removePersistentStoreFiles() {
+        guard let storeURL = persistentStoreURL() else { return }
+
+        let walURL = URL(fileURLWithPath: storeURL.path + "-wal")
+        let shmURL = URL(fileURLWithPath: storeURL.path + "-shm")
+        let fileManager = FileManager.default
+
+        [storeURL, walURL, shmURL].forEach { url in
+            if fileManager.fileExists(atPath: url.path) {
+                try? fileManager.removeItem(at: url)
+            }
         }
     }
 }
