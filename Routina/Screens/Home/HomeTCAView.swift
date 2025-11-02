@@ -75,7 +75,7 @@ struct HomeTCAView: View {
                 ) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(task.name ?? "Unnamed task")
+                            Text("\(routineEmoji(for: task)) \(task.name ?? "Unnamed task")")
                             if isDoneToday(task) {
                                 Text("Done today")
                                     .font(.caption)
@@ -122,6 +122,10 @@ struct HomeTCAView: View {
             guard let timestamp = $0.timestamp else { return false }
             return Calendar.current.isDateInToday(timestamp)
         }
+    }
+
+    private func routineEmoji(for task: RoutineTask) -> String {
+        (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
     }
 
     private func urgencyColor(for task: RoutineTask) -> Color {

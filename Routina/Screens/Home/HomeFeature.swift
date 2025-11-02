@@ -79,7 +79,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
                 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji))):
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
                 
@@ -90,6 +90,7 @@ struct HomeFeature {
                             newRoutine.name = name
                             newRoutine.interval = Int16(freq)
                             newRoutine.lastDone = Date()
+                            newRoutine.setValue(emoji, forKey: "emoji")
 
                             try self.viewContext.save()
                             return newRoutine
@@ -116,7 +117,7 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq in .send(.delegate(.didSave(name, freq))) },
+                onSave: { name, freq, emoji in .send(.delegate(.didSave(name, freq, emoji))) },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }

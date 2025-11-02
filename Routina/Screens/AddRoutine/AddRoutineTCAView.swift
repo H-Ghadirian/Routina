@@ -4,6 +4,9 @@ import ComposableArchitecture
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
     @FocusState private var isRoutineNameFocused: Bool
+    @State private var isEmojiPickerPresented = false
+    private let emojiOptions = EmojiCatalog.quick
+    private let allEmojiOptions = EmojiCatalog.all
 
     var body: some View {
         WithViewStore(store, observe: \.self) { viewStore in
@@ -15,6 +18,40 @@ struct AddRoutineTCAView: View {
                             send: AddRoutineFeature.Action.routineNameChanged
                         ))
                         .focused($isRoutineNameFocused)
+                    }
+
+                    Section(header: Text("Emoji")) {
+                        HStack(spacing: 12) {
+                            Text("Selected")
+                                .foregroundColor(.secondary)
+                            Text(viewStore.routineEmoji)
+                                .font(.title2)
+                                .frame(width: 44, height: 44)
+                            Spacer()
+                            Button("Choose Emoji") {
+                                isEmojiPickerPresented = true
+                            }
+                        }
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(emojiOptions, id: \.self) { emoji in
+                                    Button {
+                                        viewStore.send(.routineEmojiChanged(emoji))
+                                    } label: {
+                                        Text(emoji)
+                                            .font(.title2)
+                                            .frame(width: 40, height: 40)
+                                            .background(
+                                                Circle()
+                                                    .fill(viewStore.routineEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
                     }
 
                     Section(header: Text("Frequency")) {
@@ -55,6 +92,15 @@ struct AddRoutineTCAView: View {
                         isRoutineNameFocused = true
                     }
                 }
+                .sheet(isPresented: $isEmojiPickerPresented) {
+                    AddRoutineEmojiPickerSheet(
+                        selectedEmoji: viewStore.binding(
+                            get: \.routineEmoji,
+                            send: AddRoutineFeature.Action.routineEmojiChanged
+                        ),
+                        emojis: allEmojiOptions
+                    )
+                }
             }
         }
     }
@@ -73,5 +119,45 @@ struct AddRoutineTCAView: View {
 
         let unit = viewStore.frequency.singularLabel
         return "Every \(viewStore.frequencyValue) \(unit)s"
+    }
+}
+
+private struct AddRoutineEmojiPickerSheet: View {
+    @Binding var selectedEmoji: String
+    let emojis: [String]
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 8)
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(emojis, id: \.self) { emoji in
+                        Button {
+                            selectedEmoji = emoji
+                            dismiss()
+                        } label: {
+                            Text(emoji)
+                                .font(.title2)
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    Circle()
+                                        .fill(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Choose Emoji")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }

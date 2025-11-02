@@ -34,6 +34,7 @@ struct RoutineDetailFeature: Reducer {
         var isDoneToday: Bool = false
         var isEditSheetPresented: Bool = false
         var editRoutineName: String = ""
+        var editRoutineEmoji: String = "✨"
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
     }
@@ -42,6 +43,7 @@ struct RoutineDetailFeature: Reducer {
         case markAsDone
         case setEditSheet(Bool)
         case editRoutineNameChanged(String)
+        case editRoutineEmojiChanged(String)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editSaveTapped
@@ -72,6 +74,10 @@ struct RoutineDetailFeature: Reducer {
             state.editRoutineName = name
             return .none
 
+        case let .editRoutineEmojiChanged(emoji):
+            state.editRoutineEmoji = sanitizedEmoji(from: emoji, fallback: state.editRoutineEmoji)
+            return .none
+
         case let .editFrequencyChanged(frequency):
             state.editFrequency = frequency
             return .none
@@ -85,6 +91,7 @@ struct RoutineDetailFeature: Reducer {
             guard !trimmedName.isEmpty else { return .none }
 
             state.task.name = trimmedName
+            state.task.setValue(state.editRoutineEmoji, forKey: "emoji")
             state.task.interval = Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
             state.isEditSheetPresented = false
             updateDerivedState(&state)
@@ -103,6 +110,7 @@ struct RoutineDetailFeature: Reducer {
 
     private func syncEditFormFromTask(_ state: inout State) {
         state.editRoutineName = state.task.name ?? ""
+        state.editRoutineEmoji = (state.task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
 
         let interval = max(Int(state.task.interval), 1)
         if interval % 30 == 0 {
@@ -191,5 +199,11 @@ struct RoutineDetailFeature: Reducer {
                 print("Error saving routine edits: \(error)")
             }
         }
+    }
+
+    private func sanitizedEmoji(from input: String, fallback: String) -> String {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let first = trimmed.first else { return fallback }
+        return String(first)
     }
 }

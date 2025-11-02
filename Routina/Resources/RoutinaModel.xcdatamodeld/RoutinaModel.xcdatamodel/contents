@@ -5,6 +5,7 @@
         <relationship name="task" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RoutineTask" inverseName="logs" inverseEntity="RoutineTask"/>
     </entity>
     <entity name="RoutineTask" representedClassName="RoutineTask" syncable="YES" codeGenerationType="class">
+        <attribute name="emoji" optional="YES" attributeType="String"/>
         <attribute name="interval" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="lastDone" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" attributeType="String"/>

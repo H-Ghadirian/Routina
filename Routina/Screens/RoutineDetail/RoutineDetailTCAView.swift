@@ -5,6 +5,9 @@ struct RoutineDetailTCAView: View {
     let store: StoreOf<RoutineDetailFeature>
     @State private var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State private var isShowingAllLogs = false
+    @State private var isEditEmojiPickerPresented = false
+    private let emojiOptions = EmojiCatalog.quick
+    private let allEmojiOptions = EmojiCatalog.all
 
     var body: some View {
         WithViewStore(store, observe: \.self) { viewStore in
@@ -87,7 +90,7 @@ struct RoutineDetailTCAView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(viewStore.task.name ?? "Routine")
+                    Text("\(routineEmoji(for: viewStore.task)) \(viewStore.task.name ?? "Routine")")
                         .font(.title2.weight(.bold))
                         .lineLimit(1)
                 }
@@ -113,6 +116,40 @@ struct RoutineDetailTCAView: View {
                                     send: RoutineDetailFeature.Action.editRoutineNameChanged
                                 )
                             )
+                        }
+
+                        Section(header: Text("Emoji")) {
+                            HStack(spacing: 12) {
+                                Text("Selected")
+                                    .foregroundColor(.secondary)
+                                Text(viewStore.editRoutineEmoji)
+                                    .font(.title2)
+                                    .frame(width: 44, height: 44)
+                                Spacer()
+                                Button("Choose Emoji") {
+                                    isEditEmojiPickerPresented = true
+                                }
+                            }
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    ForEach(emojiOptions, id: \.self) { emoji in
+                                        Button {
+                                            viewStore.send(.editRoutineEmojiChanged(emoji))
+                                        } label: {
+                                            Text(emoji)
+                                                .font(.title2)
+                                                .frame(width: 40, height: 40)
+                                                .background(
+                                                    Circle()
+                                                        .fill(viewStore.editRoutineEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                                )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
                         }
 
                         Section(header: Text("Frequency")) {
@@ -156,6 +193,15 @@ struct RoutineDetailTCAView: View {
                             }
                             .disabled(viewStore.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
+                    }
+                    .sheet(isPresented: $isEditEmojiPickerPresented) {
+                        RoutineDetailEmojiPickerSheet(
+                            selectedEmoji: viewStore.binding(
+                                get: \.editRoutineEmoji,
+                                send: RoutineDetailFeature.Action.editRoutineEmojiChanged
+                            ),
+                            emojis: allEmojiOptions
+                        )
                     }
                 }
             }
@@ -345,6 +391,10 @@ struct RoutineDetailTCAView: View {
         return Array(logs.prefix(3))
     }
 
+    private func routineEmoji(for task: RoutineTask) -> String {
+        (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+    }
+
     private func editStepperLabel(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> String {
         if viewStore.editFrequencyValue == 1 {
             switch viewStore.editFrequency {
@@ -354,6 +404,46 @@ struct RoutineDetailTCAView: View {
             }
         }
         return "Every \(viewStore.editFrequencyValue) \(viewStore.editFrequency.singularLabel)s"
+    }
+}
+
+private struct RoutineDetailEmojiPickerSheet: View {
+    @Binding var selectedEmoji: String
+    let emojis: [String]
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 8)
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(emojis, id: \.self) { emoji in
+                        Button {
+                            selectedEmoji = emoji
+                            dismiss()
+                        } label: {
+                            Text(emoji)
+                                .font(.title2)
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    Circle()
+                                        .fill(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Choose Emoji")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
 
