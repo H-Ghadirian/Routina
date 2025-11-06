@@ -26,6 +26,7 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
+    @ObservableState
     struct State: Equatable {
         var task: RoutineTask
         var logs: [RoutineLog] = []

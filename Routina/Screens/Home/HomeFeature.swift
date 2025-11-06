@@ -13,6 +13,7 @@ struct HomeFeature {
         var isDoneToday: Bool
     }
 
+    @ObservableState
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
         var routineDisplays: [RoutineDisplay] = []

@@ -35,6 +35,31 @@ struct SettingsTCAView: View {
                         }
                     }
 
+                    Section(header: Text("iCloud")) {
+                        Button {
+                            viewStore.send(.syncNowTapped)
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.triangle.2.circlepath.icloud")
+                                    .foregroundColor(.blue)
+                                Text("Sync Now")
+                            }
+                        }
+                        .disabled(viewStore.isCloudSyncInProgress)
+
+                        if viewStore.isCloudSyncInProgress {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                Text("Syncing...")
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if !viewStore.cloudSyncStatusMessage.isEmpty {
+                            Text(viewStore.cloudSyncStatusMessage)
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
                     Section(header: Text("About")) {
                         HStack {
                             Text("App Version")

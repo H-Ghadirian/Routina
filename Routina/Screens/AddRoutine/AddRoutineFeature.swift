@@ -30,6 +30,7 @@ struct AddRoutineFeature: Reducer {
         }
     }
 
+    @ObservableState
     struct State: Equatable {
         var routineName: String = ""
         var routineEmoji: String = "✨"
