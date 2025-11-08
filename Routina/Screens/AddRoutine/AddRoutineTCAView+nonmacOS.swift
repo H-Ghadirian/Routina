@@ -17,5 +17,14 @@ extension View {
     func routinaAddRoutineSheetFrame() -> some View {
         self
     }
+
+    func routinaAddRoutineEmojiPicker<Content: View>(
+        isPresented: Binding<Bool>,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        sheet(isPresented: isPresented) {
+            content()
+        }
+    }
 }
 #endif
