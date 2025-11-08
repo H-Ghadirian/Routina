@@ -23,7 +23,7 @@ struct HomeTCAView: View {
                 }
                 .navigationTitle("Routina")
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItem(placement: .primaryAction) {
                         Button {
                             store.send(.setAddRoutineSheet(true))
                         } label: {

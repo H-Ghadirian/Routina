@@ -3,7 +3,7 @@ import CoreData
 
 private enum ManagedObjectContextKey: DependencyKey {
     static let liveValue: NSManagedObjectContext = {
-        fatalError("NSManagedObjectContext has not been set in DependencyValues.")
+        PersistenceController.shared.container.viewContext
     }()
 }
 

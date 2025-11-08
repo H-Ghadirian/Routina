@@ -5,8 +5,8 @@ struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
     @FocusState private var isRoutineNameFocused: Bool
     @State private var isEmojiPickerPresented = false
-    private let emojiOptions = EmojiCatalog.quick
-    private let allEmojiOptions = EmojiCatalog.all
+    private let emojiOptions = EmojiCatalog.uniqueQuick
+    private let allEmojiOptions = EmojiCatalog.uniqueAll
 
     var body: some View {
         WithPerceptionTracking {
@@ -90,21 +90,27 @@ struct AddRoutineTCAView: View {
                     }
                 }
                 .navigationTitle("Add Routine")
-                .navigationBarItems(
-                    leading: Button("Cancel") {
-                        store.send(.cancelTapped)
-                    },
-                    trailing: Button("Save") {
-                        store.send(.saveTapped)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            store.send(.cancelTapped)
+                        }
                     }
-                    .disabled(store.routineName.isEmpty)
-                )
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            store.send(.saveTapped)
+                        }
+                        .disabled(store.routineName.isEmpty)
+                    }
+                }
                 .onAppear {
                     // Real devices can delay the first tap-to-focus inside Form.
                     // Auto-focus improves perceived responsiveness.
+                    #if !os(macOS)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         isRoutineNameFocused = true
                     }
+                    #endif
                 }
                 .sheet(isPresented: $isEmojiPickerPresented) {
                     AddRoutineEmojiPickerSheet(
@@ -150,7 +156,7 @@ private struct AddRoutineEmojiPickerSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(emojis, id: \.self) { emoji in
+                    ForEach(Array(emojis.enumerated()), id: \.offset) { _, emoji in
                         Button {
                             selectedEmoji = emoji
                             dismiss()
@@ -169,9 +175,9 @@ private struct AddRoutineEmojiPickerSheet: View {
                 .padding()
             }
             .navigationTitle("Choose Emoji")
-            .navigationBarTitleDisplayMode(.inline)
+            .routinaInlineTitleDisplayMode()
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }

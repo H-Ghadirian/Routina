@@ -59,4 +59,12 @@ enum EmojiCatalog {
         "☦️", "🛐", "⛎", "♈️", "♉️", "♊️", "♋️", "♌️", "♍️", "♎️", "♏️", "♐️", "♑️", "♒️", "♓️", "🆔", "⚠️",
         "🚫", "✅", "☑️", "❌", "⭕️", "➕", "➖", "➗", "✖️", "♻️"
     ]
+
+    static let uniqueQuick = makeUnique(quick)
+    static let uniqueAll = makeUnique(all)
+
+    private static func makeUnique(_ source: [String]) -> [String] {
+        var seen = Set<String>()
+        return source.filter { seen.insert($0).inserted }
+    }
 }

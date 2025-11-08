@@ -27,9 +27,19 @@ public struct PersistenceController {
             Self.configureStoreDescriptions(for: fallbackContainer, useCloudKit: false)
 
             if let fallbackError = Self.loadStores(for: fallbackContainer) {
-                fatalError("Unresolved error \(fallbackError), \(fallbackError.userInfo)")
+                NSLog("Local store load failed: \(fallbackError), \(fallbackError.userInfo). Falling back to in-memory store.")
+
+                let memoryContainer = NSPersistentCloudKitContainer(name: "RoutinaModel")
+                memoryContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+                Self.configureStoreDescriptions(for: memoryContainer, useCloudKit: false)
+
+                if let memoryError = Self.loadStores(for: memoryContainer) {
+                    NSLog("In-memory store load failed: \(memoryError), \(memoryError.userInfo)")
+                }
+                container = memoryContainer
+            } else {
+                container = fallbackContainer
             }
-            container = fallbackContainer
         } else {
             container = primaryContainer
         }

@@ -6,8 +6,8 @@ struct RoutineDetailTCAView: View {
     @State private var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State private var isShowingAllLogs = false
     @State private var isEditEmojiPickerPresented = false
-    private let emojiOptions = EmojiCatalog.quick
-    private let allEmojiOptions = EmojiCatalog.all
+    private let emojiOptions = EmojiCatalog.uniqueQuick
+    private let allEmojiOptions = EmojiCatalog.uniqueAll
 
     var body: some View {
         WithPerceptionTracking {
@@ -94,7 +94,7 @@ struct RoutineDetailTCAView: View {
                         }
                     }
                     .padding(12)
-                    .background(Color(.systemBackground))
+                    .background(routineLogsBackground)
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -103,14 +103,14 @@ struct RoutineDetailTCAView: View {
                 }
                 .padding()
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .routinaInlineTitleDisplayMode()
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("\(routineEmoji(for: store.task)) \(store.task.name ?? "Routine")")
                         .font(.title2.weight(.bold))
                         .lineLimit(1)
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .primaryAction) {
                     Button("Edit") {
                         store.send(.setEditSheet(true))
                     }
@@ -201,14 +201,14 @@ struct RoutineDetailTCAView: View {
                         }
                     }
                     .navigationTitle("Edit Routine")
-                    .navigationBarTitleDisplayMode(.inline)
+                    .routinaInlineTitleDisplayMode()
                     .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
+                        ToolbarItem(placement: .cancellationAction) {
                             Button("Cancel") {
                                 store.send(.setEditSheet(false))
                             }
                         }
-                        ToolbarItem(placement: .navigationBarTrailing) {
+                        ToolbarItem(placement: .confirmationAction) {
                             Button("Save") {
                                 store.send(.editSaveTapped)
                             }
@@ -281,6 +281,14 @@ struct RoutineDetailTCAView: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
+    }
+
+    private var routineLogsBackground: Color {
+        #if os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+        #else
+        Color(.systemBackground)
+        #endif
     }
 
     private func calendarGrid(doneDates: Set<Date>, dueDate: Date?, isOrangeUrgencyToday: Bool) -> some View {
@@ -472,7 +480,7 @@ private struct RoutineDetailEmojiPickerSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(emojis, id: \.self) { emoji in
+                    ForEach(Array(emojis.enumerated()), id: \.offset) { _, emoji in
                         Button {
                             selectedEmoji = emoji
                             dismiss()
@@ -491,9 +499,9 @@ private struct RoutineDetailEmojiPickerSheet: View {
                 .padding()
             }
             .navigationTitle("Choose Emoji")
-            .navigationBarTitleDisplayMode(.inline)
+            .routinaInlineTitleDisplayMode()
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }

@@ -7,18 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-			2A4B56AE2D8DB48D00760BCA /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
-			2A4B56B02D8DB4AB00760BCA /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */; };
-			2B1000012E5F000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
-			2B1000022E5F000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
-			2B1000032E5F000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
-			2B1000042E5F000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001042E5F000100000001 /* Dependencies */; };
-			2B1000052E5F000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001052E5F000100000001 /* CasePaths */; };
-			2B1000062E5F000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001062E5F000100000001 /* Perception */; };
-			2B1000072E5F000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
-			2B1000082E5F000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
-			2B1000092E5F000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
-			2B1000102E5F000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001102E5F000100000001 /* PerceptionCore */; };
+		2A4B56AE2D8DB48D00760BCA /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
+		2A4B56B02D8DB4AB00760BCA /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */; };
+		2B1000012E5F000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
+		2B1000022E5F000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
+		2B1000032E5F000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
+		2B1000042E5F000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001042E5F000100000001 /* Dependencies */; };
+		2B1000052E5F000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001052E5F000100000001 /* CasePaths */; };
+		2B1000062E5F000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001062E5F000100000001 /* Perception */; };
+		2B1000072E5F000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
+		2B1000082E5F000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
+		2B1000092E5F000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
+		2B1000102E5F000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001102E5F000100000001 /* PerceptionCore */; };
+		2C0000102E60000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
+		2C0000112E60000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
+		2C0000122E60000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
+		2C0000132E60000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
+		2C0000142E60000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
+		2C0000152E60000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +48,7 @@
 		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C0000022E60000100000001 /* RoutinaMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -52,6 +59,13 @@
 			);
 			target = 2A5A74BC2D7B92F600E91075 /* Routina */;
 		};
+		2C0000092E60000100000001 /* Exceptions for "Routina" folder in "RoutinaMac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 2C0000012E60000100000001 /* RoutinaMac */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -59,6 +73,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				2AF327682E3DA5400003D53E /* Exceptions for "Routina" folder in "Routina" target */,
+				2C0000092E60000100000001 /* Exceptions for "Routina" folder in "RoutinaMac" target */,
 			);
 			path = Routina;
 			sourceTree = "<group>";
@@ -76,36 +91,49 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-			2A5A74BA2D7B92F600E91075 /* Frameworks */ = {
-				isa = PBXFrameworksBuildPhase;
-				buildActionMask = 2147483647;
-				files = (
-					2A4B56AE2D8DB48D00760BCA /* ComposableArchitecture in Frameworks */,
-					2B1000012E5F000100000001 /* Dependencies in Frameworks */,
-					2B1000022E5F000100000001 /* CasePaths in Frameworks */,
-					2B1000032E5F000100000001 /* Perception in Frameworks */,
-					2B1000072E5F000100000001 /* ConcurrencyExtras in Frameworks */,
-					2B1000092E5F000100000001 /* PerceptionCore in Frameworks */,
-				);
-				runOnlyForDeploymentPostprocessing = 0;
-			};
-			2A5A74CA2D7B92F900E91075 /* Frameworks */ = {
-				isa = PBXFrameworksBuildPhase;
-				buildActionMask = 2147483647;
-				files = (
-					2A4B56B02D8DB4AB00760BCA /* ComposableArchitecture in Frameworks */,
-					2B1000042E5F000100000001 /* Dependencies in Frameworks */,
-					2B1000052E5F000100000001 /* CasePaths in Frameworks */,
-					2B1000062E5F000100000001 /* Perception in Frameworks */,
-					2B1000082E5F000100000001 /* ConcurrencyExtras in Frameworks */,
-					2B1000102E5F000100000001 /* PerceptionCore in Frameworks */,
-				);
-				runOnlyForDeploymentPostprocessing = 0;
-			};
+		2A5A74BA2D7B92F600E91075 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A4B56AE2D8DB48D00760BCA /* ComposableArchitecture in Frameworks */,
+				2B1000012E5F000100000001 /* Dependencies in Frameworks */,
+				2B1000022E5F000100000001 /* CasePaths in Frameworks */,
+				2B1000032E5F000100000001 /* Perception in Frameworks */,
+				2B1000072E5F000100000001 /* ConcurrencyExtras in Frameworks */,
+				2B1000092E5F000100000001 /* PerceptionCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A5A74CA2D7B92F900E91075 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A4B56B02D8DB4AB00760BCA /* ComposableArchitecture in Frameworks */,
+				2B1000042E5F000100000001 /* Dependencies in Frameworks */,
+				2B1000052E5F000100000001 /* CasePaths in Frameworks */,
+				2B1000062E5F000100000001 /* Perception in Frameworks */,
+				2B1000082E5F000100000001 /* ConcurrencyExtras in Frameworks */,
+				2B1000102E5F000100000001 /* PerceptionCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2A5A74D42D7B92F900E91075 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2C0000032E60000100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2C0000102E60000100000001 /* ComposableArchitecture in Frameworks */,
+				2C0000112E60000100000001 /* Dependencies in Frameworks */,
+				2C0000122E60000100000001 /* CasePaths in Frameworks */,
+				2C0000132E60000100000001 /* Perception in Frameworks */,
+				2C0000142E60000100000001 /* ConcurrencyExtras in Frameworks */,
+				2C0000152E60000100000001 /* PerceptionCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,6 +162,7 @@
 			isa = PBXGroup;
 			children = (
 				2A5A74BD2D7B92F600E91075 /* Routina.app */,
+				2C0000022E60000100000001 /* RoutinaMac.app */,
 				2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */,
 				2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */,
 			);
@@ -158,17 +187,17 @@
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
 			);
-				name = Routina;
-				packageProductDependencies = (
-					2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
-					2B1001012E5F000100000001 /* Dependencies */,
-					2B1001022E5F000100000001 /* CasePaths */,
-					2B1001032E5F000100000001 /* Perception */,
-					2B1001072E5F000100000001 /* ConcurrencyExtras */,
-					2B1001092E5F000100000001 /* PerceptionCore */,
-				);
-				productName = CallMom;
-				productReference = 2A5A74BD2D7B92F600E91075 /* Routina.app */;
+			name = Routina;
+			packageProductDependencies = (
+				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
+				2B1001012E5F000100000001 /* Dependencies */,
+				2B1001022E5F000100000001 /* CasePaths */,
+				2B1001032E5F000100000001 /* Perception */,
+				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				2B1001092E5F000100000001 /* PerceptionCore */,
+			);
+			productName = CallMom;
+			productReference = 2A5A74BD2D7B92F600E91075 /* Routina.app */;
 			productType = "com.apple.product-type.application";
 		};
 		2A5A74CC2D7B92F900E91075 /* RoutinaTests */ = {
@@ -187,17 +216,17 @@
 			fileSystemSynchronizedGroups = (
 				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
 			);
-				name = RoutinaTests;
-				packageProductDependencies = (
-					2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */,
-					2B1001042E5F000100000001 /* Dependencies */,
-					2B1001052E5F000100000001 /* CasePaths */,
-					2B1001062E5F000100000001 /* Perception */,
-					2B1001082E5F000100000001 /* ConcurrencyExtras */,
-					2B1001102E5F000100000001 /* PerceptionCore */,
-				);
-				productName = CallMomTests;
-				productReference = 2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */;
+			name = RoutinaTests;
+			packageProductDependencies = (
+				2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */,
+				2B1001042E5F000100000001 /* Dependencies */,
+				2B1001052E5F000100000001 /* CasePaths */,
+				2B1001062E5F000100000001 /* Perception */,
+				2B1001082E5F000100000001 /* ConcurrencyExtras */,
+				2B1001102E5F000100000001 /* PerceptionCore */,
+			);
+			productName = CallMomTests;
+			productReference = 2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		2A5A74D62D7B92F900E91075 /* RoutinaUITests */ = {
@@ -223,6 +252,34 @@
 			productReference = 2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		2C0000012E60000100000001 /* RoutinaMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2C0000062E60000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMac" */;
+			buildPhases = (
+				2C0000052E60000100000001 /* Sources */,
+				2C0000032E60000100000001 /* Frameworks */,
+				2C0000042E60000100000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				2A5A74BF2D7B92F600E91075 /* Routina */,
+			);
+			name = RoutinaMac;
+			packageProductDependencies = (
+				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
+				2B1001012E5F000100000001 /* Dependencies */,
+				2B1001022E5F000100000001 /* CasePaths */,
+				2B1001032E5F000100000001 /* Perception */,
+				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				2B1001092E5F000100000001 /* PerceptionCore */,
+			);
+			productName = RoutinaMac;
+			productReference = 2C0000022E60000100000001 /* RoutinaMac.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -244,6 +301,9 @@
 						CreatedOnToolsVersion = 16.2;
 						TestTargetID = 2A5A74BC2D7B92F600E91075;
 					};
+					2C0000012E60000100000001 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 				};
 			};
 			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "Routina" */;
@@ -255,19 +315,20 @@
 			);
 			mainGroup = 2A5A74B42D7B92F600E91075;
 			minimizedProjectReferenceProxies = 1;
-				packageReferences = (
-					2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
-					2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
-					2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */,
-					2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */,
-					2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */,
-				);
+			packageReferences = (
+				2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+				2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
+				2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */,
+				2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */,
+				2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2A5A74BE2D7B92F600E91075 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				2A5A74BC2D7B92F600E91075 /* Routina */,
+				2C0000012E60000100000001 /* RoutinaMac */,
 				2A5A74CC2D7B92F900E91075 /* RoutinaTests */,
 				2A5A74D62D7B92F900E91075 /* RoutinaUITests */,
 			);
@@ -296,6 +357,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2C0000042E60000100000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -314,6 +382,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2A5A74D32D7B92F900E91075 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2C0000052E60000100000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -395,8 +470,8 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 			};
@@ -454,8 +529,8 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -492,8 +567,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -531,8 +606,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -555,8 +630,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -580,8 +655,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -603,8 +678,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -626,12 +701,72 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = Routina;
+			};
+			name = Release;
+		};
+			2C0000072E60000100000001 /* Debug */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+					ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+					CODE_SIGN_ENTITLEMENTS = Routina/RoutinaMac.entitlements;
+					CODE_SIGN_STYLE = Automatic;
+					CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = NO;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 6;
+			};
+			name = Debug;
+		};
+			2C0000082E60000100000001 /* Release */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+					ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+					CODE_SIGN_ENTITLEMENTS = Routina/RoutinaMac.entitlements;
+					CODE_SIGN_STYLE = Automatic;
+					CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = NO;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 6;
 			};
 			name = Release;
 		};
@@ -674,112 +809,121 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		2C0000062E60000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2C0000072E60000100000001 /* Debug */,
+				2C0000082E60000100000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-			2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
-				isa = XCRemoteSwiftPackageReference;
-				repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
-				requirement = {
-					kind = upToNextMajorVersion;
-					minimumVersion = 1.24.1;
-				};
+		2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.24.1;
 			};
-			2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
-				isa = XCRemoteSwiftPackageReference;
-				repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
-				requirement = {
-					kind = upToNextMajorVersion;
-					minimumVersion = 1.4.0;
-				};
+		};
+		2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.4.0;
 			};
-			2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */ = {
-				isa = XCRemoteSwiftPackageReference;
-				repositoryURL = "https://github.com/pointfreeco/swift-case-paths";
-				requirement = {
-					kind = upToNextMajorVersion;
-					minimumVersion = 1.5.4;
-				};
+		};
+		2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-case-paths";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.4;
 			};
-			2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */ = {
-				isa = XCRemoteSwiftPackageReference;
-				repositoryURL = "https://github.com/pointfreeco/swift-perception";
-				requirement = {
-					kind = upToNextMajorVersion;
-					minimumVersion = 1.3.4;
-				};
+		};
+		2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-perception";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.4;
 			};
-			2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */ = {
-				isa = XCRemoteSwiftPackageReference;
-				repositoryURL = "https://github.com/pointfreeco/swift-concurrency-extras";
-				requirement = {
-					kind = upToNextMajorVersion;
-					minimumVersion = 1.2.0;
-				};
+		};
+		2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-concurrency-extras";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
 			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-			2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */ = {
-				isa = XCSwiftPackageProductDependency;
+		2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
 			package = 2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
 		};
-			2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
-				productName = ComposableArchitecture;
-			};
-			2B1001012E5F000100000001 /* Dependencies */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
-				productName = Dependencies;
-			};
-			2B1001022E5F000100000001 /* CasePaths */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
-				productName = CasePaths;
-			};
-			2B1001032E5F000100000001 /* Perception */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-				productName = Perception;
-			};
-			2B1001042E5F000100000001 /* Dependencies */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
-				productName = Dependencies;
-			};
-			2B1001052E5F000100000001 /* CasePaths */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
-				productName = CasePaths;
-			};
-			2B1001062E5F000100000001 /* Perception */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-				productName = Perception;
-			};
-			2B1001072E5F000100000001 /* ConcurrencyExtras */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
-				productName = ConcurrencyExtras;
-			};
-			2B1001082E5F000100000001 /* ConcurrencyExtras */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
-				productName = ConcurrencyExtras;
-			};
-			2B1001092E5F000100000001 /* PerceptionCore */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-				productName = PerceptionCore;
-			};
-			2B1001102E5F000100000001 /* PerceptionCore */ = {
-				isa = XCSwiftPackageProductDependency;
-				package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-				productName = PerceptionCore;
-			};
+		2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
+		};
+		2B1001012E5F000100000001 /* Dependencies */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = Dependencies;
+		};
+		2B1001022E5F000100000001 /* CasePaths */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
+			productName = CasePaths;
+		};
+		2B1001032E5F000100000001 /* Perception */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
+			productName = Perception;
+		};
+		2B1001042E5F000100000001 /* Dependencies */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = Dependencies;
+		};
+		2B1001052E5F000100000001 /* CasePaths */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
+			productName = CasePaths;
+		};
+		2B1001062E5F000100000001 /* Perception */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
+			productName = Perception;
+		};
+		2B1001072E5F000100000001 /* ConcurrencyExtras */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
+			productName = ConcurrencyExtras;
+		};
+		2B1001082E5F000100000001 /* ConcurrencyExtras */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
+			productName = ConcurrencyExtras;
+		};
+		2B1001092E5F000100000001 /* PerceptionCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
+			productName = PerceptionCore;
+		};
+		2B1001102E5F000100000001 /* PerceptionCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
+			productName = PerceptionCore;
+		};
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2A5A74B52D7B92F600E91075 /* Project object */;

@@ -78,7 +78,7 @@ struct SettingsTCAView: View {
                 store.send(.onAppear)
             }
             .onReceive(
-                NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+                NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)
             ) { _ in
                 store.send(.onAppBecameActive)
             }

@@ -37,9 +37,9 @@ struct SettingsFeature {
                 return .none
 
             case .openAppSettingsTapped:
-                if let url = URL(string: UIApplication.openSettingsURLString) {
+                if let url = PlatformSupport.notificationSettingsURL {
                     return .run { @MainActor _ in
-                        UIApplication.shared.open(url)
+                        PlatformSupport.open(url)
                     }
                 }
                 return .none
@@ -55,7 +55,7 @@ struct SettingsFeature {
             case .contactUsTapped:
                 if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
                     return .run { @MainActor _ in
-                        UIApplication.shared.open(emailURL)
+                        PlatformSupport.open(emailURL)
                     }
                 }
                 return .none
