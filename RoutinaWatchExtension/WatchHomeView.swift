@@ -33,11 +33,14 @@ struct WatchHomeView: View {
                             .foregroundStyle(statusColor(for: routine))
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button("Done") {
+                        Button {
                             syncStore.markRoutineDone(id: routine.id)
+                        } label: {
+                            Label("Done", systemImage: "checkmark")
                         }
                         .tint(.green)
                         .disabled(routine.isDoneToday())
+                        .accessibilityLabel("Done")
                     }
                 }
             }
