@@ -8,7 +8,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let name: String
         let emoji: String
         let intervalDays: Int
-        let lastDone: Date?
+        var lastDone: Date?
 
         func daysUntilDue(from now: Date) -> Int {
             guard let lastDone else { return 0 }
@@ -17,6 +17,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             let startNow = calendar.startOfDay(for: now)
             let startDue = calendar.startOfDay(for: dueDate)
             return calendar.dateComponents([.day], from: startNow, to: startDue).day ?? 0
+        }
+
+        func isDoneToday(referenceDate: Date = Date()) -> Bool {
+            guard let lastDone else { return false }
+            return Calendar.current.isDate(lastDone, inSameDayAs: referenceDate)
         }
     }
 
@@ -33,7 +38,6 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     }
 
     func requestSync() {
-        print("Hamed requesting sync...")
         guard let session else { return }
 
         if session.activationState == .activated {
@@ -41,11 +45,30 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         if session.isReachable {
-            print("Hamed is reachable!")
             session.sendMessage(["requestSync": true], replyHandler: nil)
         } else {
-            print("Hamed is not reachable!")
             session.transferUserInfo(["requestSync": true])
+        }
+    }
+
+    func markRoutineDone(id: UUID) {
+        guard let session else { return }
+
+        let completionDate = Date()
+        let payload: [String: Any] = [
+            "action": "markDone",
+            "taskID": id.uuidString,
+            "completedAt": completionDate.timeIntervalSince1970
+        ]
+
+        if let idx = routines.firstIndex(where: { $0.id == id }) {
+            routines[idx].lastDone = completionDate
+        }
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
         }
     }
 
@@ -55,7 +78,6 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         error: (any Error)?
     ) {
         if let error {
-            print("Hamed error: \(error.localizedDescription)")
             NSLog("WatchConnectivity (watch) activation failed: \(error.localizedDescription)")
             return
         }
@@ -101,17 +123,12 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     }
 
     private func setRoutines(_ mapped: [WatchRoutine]) {
-        print("Hamed setRoutines")
         routines = mapped.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
     }
 
     nonisolated private static func parsePayload(_ payload: [String: Any]) -> [WatchRoutine] {
-        payload.forEach { (key: String, value: Any) in
-            print("Hamed parsePayload key: \(key) value: \(value)")
-        }
-        print("Hamed parsePayload")
         guard let rawRoutines = payload["routines"] as? [[String: Any]] else { return [] }
 
         return rawRoutines.compactMap { raw in

@@ -7,6 +7,12 @@ import WatchConnectivity
 
 @MainActor
 final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
+    private enum IncomingAction: Sendable {
+        case requestSync
+        case markDone(UUID, Date)
+        case ignore
+    }
+
     static let shared = WatchRoutineSyncBridge()
 
     private let session: WCSession? = WCSession.isSupported() ? WCSession.default : nil
@@ -129,9 +135,9 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     }
 
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-        guard let requestSync = message["requestSync"] as? Bool, requestSync else { return }
+        let action = Self.parseIncomingAction(message)
         Task { @MainActor in
-            self.pushLatestSnapshot()
+            self.handleIncomingAction(action)
         }
     }
 
@@ -140,22 +146,71 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
-        guard let requestSync = message["requestSync"] as? Bool, requestSync else {
-            replyHandler([:])
-            return
-        }
-
+        let action = Self.parseIncomingAction(message)
         Task { @MainActor in
-            self.pushLatestSnapshot()
+            self.handleIncomingAction(action)
         }
         replyHandler(["acknowledged": true])
     }
 
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-        guard let requestSync = userInfo["requestSync"] as? Bool, requestSync else { return }
+        let action = Self.parseIncomingAction(userInfo)
         Task { @MainActor in
-            self.pushLatestSnapshot()
+            self.handleIncomingAction(action)
         }
+    }
+
+    private func handleIncomingAction(_ action: IncomingAction) {
+        switch action {
+        case .requestSync:
+            pushLatestSnapshot()
+        case let .markDone(taskID, date):
+            markRoutineDone(taskID: taskID, completedAt: date)
+        case .ignore:
+            return
+        }
+    }
+
+    private func markRoutineDone(taskID: UUID, completedAt: Date) {
+        guard let modelContextProvider else { return }
+
+        let context = modelContextProvider()
+
+        do {
+            let descriptor = FetchDescriptor<RoutineTask>(
+                predicate: #Predicate { task in
+                    task.id == taskID
+                }
+            )
+
+            guard let task = try context.fetch(descriptor).first else { return }
+
+            task.lastDone = completedAt
+            context.insert(RoutineLog(timestamp: completedAt, taskID: taskID))
+            try context.save()
+            NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+            pushLatestSnapshot()
+        } catch {
+            NSLog("Watch markDone sync failed: \(error.localizedDescription)")
+        }
+    }
+
+    nonisolated private static func parseIncomingAction(_ payload: [String: Any]) -> IncomingAction {
+        if
+            let action = payload["action"] as? String,
+            action == "markDone",
+            let taskIDString = payload["taskID"] as? String,
+            let taskID = UUID(uuidString: taskIDString)
+        {
+            let timestamp = (payload["completedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
+            return .markDone(taskID, timestamp)
+        }
+
+        if let requestSync = payload["requestSync"] as? Bool, requestSync {
+            return .requestSync
+        }
+
+        return .ignore
     }
 }
 #endif

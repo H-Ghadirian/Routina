@@ -32,6 +32,13 @@ struct WatchHomeView: View {
                             .font(.footnote)
                             .foregroundStyle(statusColor(for: routine))
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button("Done") {
+                            syncStore.markRoutineDone(id: routine.id)
+                        }
+                        .tint(.green)
+                        .disabled(routine.isDoneToday())
+                    }
                 }
             }
         }
