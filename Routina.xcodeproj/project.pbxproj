@@ -70,6 +70,12 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				"Screens/AddRoutine/AddRoutineTCAView+macOS.swift",
+				"Screens/App/RoutinaTCAApp+macOS.swift",
+				"Screens/Home/HomeTCAView+macOS.swift",
+				"Screens/Home/HomeTCAView+nonmacOS.swift",
+				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+macOS.swift",
+				"Screens/RoutineDetail/RoutineDetailPlatformStyle+macOS.swift",
 			);
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
 		};
@@ -77,6 +83,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
+				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
+				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
+				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",
 			);
 			target = 2C0000012E60000100000001 /* RoutinaMacProd */;
 		};
@@ -84,6 +94,12 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				"Screens/AddRoutine/AddRoutineTCAView+macOS.swift",
+				"Screens/App/RoutinaTCAApp+macOS.swift",
+				"Screens/Home/HomeTCAView+macOS.swift",
+				"Screens/Home/HomeTCAView+nonmacOS.swift",
+				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+macOS.swift",
+				"Screens/RoutineDetail/RoutineDetailPlatformStyle+macOS.swift",
 			);
 			target = 3D1000402E70000100000001 /* RoutinaDev */;
 		};
@@ -91,6 +107,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
+				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
+				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
+				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",
 			);
 			target = 4E0000012E80000100000001 /* RoutinaMacDev */;
 		};
