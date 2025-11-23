@@ -66,11 +66,17 @@ struct RoutineDetailFeature: Reducer {
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
-            state.task.lastDone = now
+            let completionDate = now
+            state.task.lastDone = completionDate
             state.isDoneToday = true
             state.daysSinceLastRoutine = 0
             state.overdueDays = 0
-            return handleMarkAsDone(taskID: state.task.id)
+            return handleMarkAsDone(
+                taskID: state.task.id,
+                completedAt: completionDate,
+                fallbackName: state.task.name,
+                fallbackInterval: max(Int(state.task.interval), 1)
+            )
 
         case let .setEditSheet(isPresented):
             state.isEditSheetPresented = isPresented
@@ -204,23 +210,30 @@ struct RoutineDetailFeature: Reducer {
         )
     }
 
-    private func handleMarkAsDone(taskID: UUID) -> Effect<Action> {
+    private func handleMarkAsDone(
+        taskID: UUID,
+        completedAt: Date,
+        fallbackName: String?,
+        fallbackInterval: Int
+    ) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
-                let log = RoutineLog(timestamp: task.lastDone, taskID: task.id)
+                let task = try context.fetch(taskDescriptor(for: taskID)).first
+                task?.lastDone = completedAt
+
+                let log = RoutineLog(timestamp: completedAt, taskID: taskID)
                 context.insert(log)
                 try context.save()
 
-                let updatedLogs = try context.fetch(sortedLogsDescriptor(for: task.id))
+                let updatedLogs = try context.fetch(sortedLogsDescriptor(for: taskID))
                 send(.logsLoaded(updatedLogs))
 
                 let payload = NotificationPayload(
-                    identifier: task.id.uuidString,
-                    name: task.name,
-                    interval: max(Int(task.interval), 1),
-                    lastDone: task.lastDone
+                    identifier: taskID.uuidString,
+                    name: task?.name ?? fallbackName,
+                    interval: max(task.map { Int($0.interval) } ?? fallbackInterval, 1),
+                    lastDone: completedAt
                 )
                 await notificationClient.schedule(payload)
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)

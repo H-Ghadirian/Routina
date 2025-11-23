@@ -333,6 +333,27 @@ struct HomeFeatureTests {
         #expect(remainingLogs.count == 1)
         #expect(remainingLogs.first?.taskID == task2.id)
     }
+
+    @Test
+    func detailLogs_returnsPersistedLogsForSelectedTaskSortedNewestFirst() throws {
+        let context = makeInMemoryContext()
+        let selectedTask = makeTask(in: context, name: "Selected", interval: 1, lastDone: nil, emoji: "✅")
+        let otherTask = makeTask(in: context, name: "Other", interval: 1, lastDone: nil, emoji: "❌")
+        let older = makeDate("2026-02-27T08:00:00Z")
+        let newer = makeDate("2026-02-28T08:00:00Z")
+
+        let olderLog = makeLog(in: context, task: selectedTask, timestamp: older)
+        let newerLog = makeLog(in: context, task: selectedTask, timestamp: newer)
+        _ = makeLog(in: context, task: otherTask, timestamp: newer)
+        try context.save()
+
+        let logs = HomeFeature.detailLogs(taskID: selectedTask.id, context: context)
+
+        #expect(logs.count == 2)
+        #expect(logs.allSatisfy { $0.taskID == selectedTask.id })
+        #expect(logs.first?.id == newerLog.id)
+        #expect(logs.last?.id == olderLog.id)
+    }
 }
 
 @MainActor

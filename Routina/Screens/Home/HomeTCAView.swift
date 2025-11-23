@@ -178,8 +178,8 @@ struct HomeTCAView: View {
             .cornerRadius(4)
     }
 
-    private func initialLogs(for _: RoutineTask) -> [RoutineLog] {
-        []
+    private func initialLogs(for task: RoutineTask) -> [RoutineLog] {
+        HomeFeature.detailLogs(taskID: task.id, context: modelContext)
     }
 
     private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {
