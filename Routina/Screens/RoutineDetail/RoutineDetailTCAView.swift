@@ -107,9 +107,24 @@ struct RoutineDetailTCAView: View {
             .routinaInlineTitleDisplayMode()
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("\(routineEmoji(for: store.task)) \(store.task.name ?? "Routine")")
-                        .font(.title2.weight(.bold))
-                        .lineLimit(1)
+                    HStack(spacing: 8) {
+                        Text(routineEmoji(for: store.task))
+                        Text(store.task.name ?? "Routine")
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .font(principalTitleFont)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 999, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 999, style: .continuous)
+                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                    )
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Edit") {
@@ -465,6 +480,14 @@ struct RoutineDetailTCAView: View {
 
     private func routineEmoji(for task: RoutineTask) -> String {
         task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+    }
+
+    private var principalTitleFont: Font {
+        #if os(macOS)
+        .title3.weight(.semibold)
+        #else
+        .title2.weight(.bold)
+        #endif
     }
 
     private func frequencyText(for task: RoutineTask) -> String {
