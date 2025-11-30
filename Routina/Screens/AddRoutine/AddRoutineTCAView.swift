@@ -103,15 +103,7 @@ struct AddRoutineTCAView: View {
                         .disabled(store.routineName.isEmpty)
                     }
                 }
-                .onAppear {
-                    // Real devices can delay the first tap-to-focus inside Form.
-                    // Auto-focus improves perceived responsiveness.
-                    #if !os(macOS)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        isRoutineNameFocused = true
-                    }
-                    #endif
-                }
+                .routinaAddRoutineNameAutofocus(isRoutineNameFocused: $isRoutineNameFocused)
                 .sheet(isPresented: $isEmojiPickerPresented) {
                     AddRoutineEmojiPickerSheet(
                         selectedEmoji: Binding(
@@ -121,9 +113,7 @@ struct AddRoutineTCAView: View {
                         emojis: allEmojiOptions
                     )
                 }
-#if os(macOS)
-                .frame(minWidth: 560, minHeight: 520)
-#endif
+                .routinaAddRoutineSheetFrame()
             }
         }
     }
