@@ -2,6 +2,7 @@ import Foundation
 
 enum AppEnvironment {
     private static let processEnvironment = ProcessInfo.processInfo.environment
+    private static let bundleIdentifier = Bundle.main.bundleIdentifier?.lowercased()
 
     static let isSandboxDataMode: Bool = {
         if let value = boolValue(from: processEnvironment["ROUTINA_SANDBOX"]) {
@@ -17,6 +18,14 @@ enum AppEnvironment {
             return value
         }
 
+        // Fallback for targets where custom Info keys are absent.
+        if bundleIdentifier?.contains(".dev") == true {
+            return true
+        }
+        if bundleIdentifier?.contains(".prod") == true {
+            return false
+        }
+
         #if DEBUG
         return true
         #else
@@ -30,6 +39,14 @@ enum AppEnvironment {
             envKey: "ROUTINA_CLOUDKIT_CONTAINER_ID"
         ) {
             return override
+        }
+
+        // Fallback to convention-based containers when custom Info keys are absent.
+        if bundleIdentifier?.contains(".dev") == true {
+            return "iCloud.ir.hamedgh.Routinam.dev"
+        }
+        if bundleIdentifier?.contains(".prod") == true {
+            return "iCloud.ir.hamedgh.Routinam.prod"
         }
 
         guard !isSandboxDataMode else { return nil }
