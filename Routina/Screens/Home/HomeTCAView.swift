@@ -3,6 +3,14 @@ import SwiftData
 import SwiftUI
 
 struct HomeTCAView: View {
+    #if os(macOS)
+    private enum SidebarSizing {
+        static let minWidth: CGFloat = 320
+        static let idealWidth: CGFloat = 380
+        static let maxWidth: CGFloat = 520
+    }
+    #endif
+
     let store: StoreOf<HomeFeature>
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTaskID: UUID?
@@ -33,6 +41,13 @@ struct HomeTCAView: View {
                         }
                     }
                 }
+                #if os(macOS)
+                .navigationSplitViewColumnWidth(
+                    min: SidebarSizing.minWidth,
+                    ideal: SidebarSizing.idealWidth,
+                    max: SidebarSizing.maxWidth
+                )
+                #endif
             } detail: {
                 Group {
                     if let selectedTaskID {

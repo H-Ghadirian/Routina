@@ -4,6 +4,14 @@ import SwiftUI
 
 @main
 struct RoutinaTCAApp: App {
+    #if os(macOS)
+    private enum WindowSizing {
+        static let defaultWidth: CGFloat = 1080
+        static let defaultHeight: CGFloat = 680
+        static let minWidth: CGFloat = 900
+        static let minHeight: CGFloat = 560
+    }
+    #endif
 
     init() {
         let cloudContainer = AppEnvironment.cloudKitContainerIdentifier ?? "disabled"
@@ -27,7 +35,14 @@ struct RoutinaTCAApp: App {
             )
 
             AppView(store: store)
+                #if os(macOS)
+                .frame(minWidth: WindowSizing.minWidth, minHeight: WindowSizing.minHeight)
+                #endif
                 .modelContainer(persistence.container)
         }
+        #if os(macOS)
+        .defaultSize(width: WindowSizing.defaultWidth, height: WindowSizing.defaultHeight)
+        .windowResizability(.contentMinSize)
+        #endif
     }
 }
