@@ -40,6 +40,9 @@ struct HomeTCAView: View {
                     }
                 }
             }
+            .navigationDestination(for: NSManagedObjectID.self) { taskID in
+                routineDetailTCAView(taskID: taskID, routineTasks: store.routineTasks)
+            }
             .sheet(
                 isPresented: Binding(
                     get: { store.isAddRoutineSheetPresented },
@@ -99,11 +102,9 @@ struct HomeTCAView: View {
     private func listOfSortedTasksView(
         routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
-        List {
+        List(selection: $selectedTaskID) {
             ForEach(sortedTasks(routineDisplays)) { task in
-                Button {
-                    selectedTaskID = task.objectID
-                } label: {
+                NavigationLink(value: task.objectID) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(task.emoji) \(task.name)")
@@ -125,7 +126,6 @@ struct HomeTCAView: View {
                         urgencySquare(for: task)
                     }
                 }
-                .buttonStyle(.plain)
                 .contentShape(Rectangle())
             }
             .onDelete { offsets in

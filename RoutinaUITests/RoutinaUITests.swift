@@ -36,4 +36,29 @@ final class RoutinaUITests: XCTestCase {
             }
         }
     }
+
+    @MainActor
+    func testHomeRowTapOpensRoutineDetail() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let routineName = "UITest-\(UUID().uuidString.prefix(6))"
+
+        app.navigationBars.buttons["Add Routine"].tap()
+
+        let nameField = app.textFields["Routine name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        nameField.tap()
+        nameField.typeText(String(routineName))
+
+        app.navigationBars.buttons["Save"].tap()
+
+        let row = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", String(routineName))).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+
+        let routineLogs = app.staticTexts["Routine Logs"]
+        let editButton = app.buttons["Edit"]
+        XCTAssertTrue(routineLogs.waitForExistence(timeout: 5) || editButton.waitForExistence(timeout: 5))
+    }
 }
