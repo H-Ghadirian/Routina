@@ -10,15 +10,15 @@ struct RoutineDetailTCAView: View {
     private let allEmojiOptions = EmojiCatalog.all
 
     var body: some View {
-        WithViewStore(store, observe: \.self) { viewStore in
+        WithPerceptionTracking {
             ScrollView {
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
                         calendarHeader
                         calendarGrid(
-                            doneDates: doneDates(from: viewStore.logs),
-                            dueDate: dueDate(for: viewStore.task),
-                            isOrangeUrgencyToday: isOrangeUrgency(viewStore.task)
+                            doneDates: doneDates(from: store.logs),
+                            dueDate: dueDate(for: store.task),
+                            isOrangeUrgencyToday: isOrangeUrgency(store.task)
                         )
                         calendarLegend
                     }
@@ -27,13 +27,26 @@ struct RoutineDetailTCAView: View {
                     .cornerRadius(12)
 
                     VStack(spacing: 6) {
-                        Text(summaryTitle(for: viewStore))
+                        Text(
+                            summaryTitle(
+                                isDoneToday: store.isDoneToday,
+                                overdueDays: store.overdueDays,
+                                daysSinceLastRoutine: store.daysSinceLastRoutine,
+                                task: store.task
+                            )
+                        )
                             .font(.title3.weight(.semibold))
-                            .foregroundColor(summaryTitleColor(for: viewStore))
-                        Text("Frequency: \(frequencyText(for: viewStore.task))")
+                            .foregroundColor(
+                                summaryTitleColor(
+                                    isDoneToday: store.isDoneToday,
+                                    overdueDays: store.overdueDays,
+                                    task: store.task
+                                )
+                            )
+                        Text("Frequency: \(frequencyText(for: store.task))")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        if let dueDate = dueDate(for: viewStore.task) {
+                        if let dueDate = dueDate(for: store.task) {
                             Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -42,9 +55,9 @@ struct RoutineDetailTCAView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 4)
 
-                    if !viewStore.isDoneToday {
+                    if !store.isDoneToday {
                         Button("Mark as Done") {
-                            viewStore.send(.markAsDone)
+                            store.send(.markAsDone)
                         }
                         .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
@@ -54,12 +67,12 @@ struct RoutineDetailTCAView: View {
                         Text("Routine Logs")
                             .font(.headline)
 
-                        if viewStore.logs.isEmpty {
+                        if store.logs.isEmpty {
                             Text("No logs yet")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         } else {
-                            let logs = displayedLogs(from: viewStore.logs)
+                            let logs = displayedLogs(from: store.logs)
                             ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
                                 Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
                                     .font(.subheadline)
@@ -71,8 +84,8 @@ struct RoutineDetailTCAView: View {
                                 }
                             }
 
-                            if viewStore.logs.count > 3 {
-                                Button(isShowingAllLogs ? "Show less" : "See all (\(viewStore.logs.count))") {
+                            if store.logs.count > 3 {
+                                Button(isShowingAllLogs ? "Show less" : "See all (\(store.logs.count))") {
                                     isShowingAllLogs.toggle()
                                 }
                                 .font(.footnote.weight(.semibold))
@@ -93,20 +106,20 @@ struct RoutineDetailTCAView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("\(routineEmoji(for: viewStore.task)) \(viewStore.task.name ?? "Routine")")
+                    Text("\(routineEmoji(for: store.task)) \(store.task.name ?? "Routine")")
                         .font(.title2.weight(.bold))
                         .lineLimit(1)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Edit") {
-                        viewStore.send(.setEditSheet(true))
+                        store.send(.setEditSheet(true))
                     }
                 }
             }
             .sheet(
-                isPresented: viewStore.binding(
-                    get: \.isEditSheetPresented,
-                    send: RoutineDetailFeature.Action.setEditSheet
+                isPresented: Binding(
+                    get: { store.isEditSheetPresented },
+                    set: { store.send(.setEditSheet($0)) }
                 )
             ) {
                 NavigationStack {
@@ -114,9 +127,9 @@ struct RoutineDetailTCAView: View {
                         Section(header: Text("Name")) {
                             TextField(
                                 "Routine name",
-                                text: viewStore.binding(
-                                    get: \.editRoutineName,
-                                    send: RoutineDetailFeature.Action.editRoutineNameChanged
+                                text: Binding(
+                                    get: { store.editRoutineName },
+                                    set: { store.send(.editRoutineNameChanged($0)) }
                                 )
                             )
                         }
@@ -125,7 +138,7 @@ struct RoutineDetailTCAView: View {
                             HStack(spacing: 12) {
                                 Text("Selected")
                                     .foregroundColor(.secondary)
-                                Text(viewStore.editRoutineEmoji)
+                                Text(store.editRoutineEmoji)
                                     .font(.title2)
                                     .frame(width: 44, height: 44)
                                 Spacer()
@@ -138,14 +151,14 @@ struct RoutineDetailTCAView: View {
                                 HStack(spacing: 10) {
                                     ForEach(emojiOptions, id: \.self) { emoji in
                                         Button {
-                                            viewStore.send(.editRoutineEmojiChanged(emoji))
+                                            store.send(.editRoutineEmojiChanged(emoji))
                                         } label: {
                                             Text(emoji)
                                                 .font(.title2)
                                                 .frame(width: 40, height: 40)
                                                 .background(
                                                     Circle()
-                                                        .fill(viewStore.editRoutineEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                                        .fill(store.editRoutineEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
                                                 )
                                         }
                                         .buttonStyle(.plain)
@@ -158,9 +171,9 @@ struct RoutineDetailTCAView: View {
                         Section(header: Text("Frequency")) {
                             Picker(
                                 "Frequency",
-                                selection: viewStore.binding(
-                                    get: \.editFrequency,
-                                    send: RoutineDetailFeature.Action.editFrequencyChanged
+                                selection: Binding(
+                                    get: { store.editFrequency },
+                                    set: { store.send(.editFrequencyChanged($0)) }
                                 )
                             ) {
                                 ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
@@ -172,13 +185,18 @@ struct RoutineDetailTCAView: View {
 
                         Section(header: Text("Repeat")) {
                             Stepper(
-                                value: viewStore.binding(
-                                    get: \.editFrequencyValue,
-                                    send: RoutineDetailFeature.Action.editFrequencyValueChanged
+                                value: Binding(
+                                    get: { store.editFrequencyValue },
+                                    set: { store.send(.editFrequencyValueChanged($0)) }
                                 ),
                                 in: 1...365
                             ) {
-                                Text(editStepperLabel(for: viewStore))
+                                Text(
+                                    editStepperLabel(
+                                        frequency: store.editFrequency,
+                                        frequencyValue: store.editFrequencyValue
+                                    )
+                                )
                             }
                         }
                     }
@@ -187,21 +205,21 @@ struct RoutineDetailTCAView: View {
                     .toolbar {
                         ToolbarItem(placement: .navigationBarLeading) {
                             Button("Cancel") {
-                                viewStore.send(.setEditSheet(false))
+                                store.send(.setEditSheet(false))
                             }
                         }
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button("Save") {
-                                viewStore.send(.editSaveTapped)
+                                store.send(.editSaveTapped)
                             }
-                            .disabled(viewStore.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .disabled(store.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
                     }
                     .sheet(isPresented: $isEditEmojiPickerPresented) {
                         RoutineDetailEmojiPickerSheet(
-                            selectedEmoji: viewStore.binding(
-                                get: \.editRoutineEmoji,
-                                send: RoutineDetailFeature.Action.editRoutineEmojiChanged
+                            selectedEmoji: Binding(
+                                get: { store.editRoutineEmoji },
+                                set: { store.send(.editRoutineEmojiChanged($0)) }
                             ),
                             emojis: allEmojiOptions
                         )
@@ -209,7 +227,7 @@ struct RoutineDetailTCAView: View {
                 }
             }
             .onAppear {
-                viewStore.send(.onAppear)
+                store.send(.onAppear)
                 displayedMonthStart = Calendar.current.startOfMonth(for: Date())
             }
         }
@@ -366,15 +384,20 @@ struct RoutineDetailTCAView: View {
         return calendar.dateComponents([.day], from: todayStart, to: dueStart).day
     }
 
-    private func summaryTitle(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> String {
-        if viewStore.isDoneToday {
+    private func summaryTitle(
+        isDoneToday: Bool,
+        overdueDays: Int,
+        daysSinceLastRoutine: Int,
+        task: RoutineTask
+    ) -> String {
+        if isDoneToday {
             return "Done today"
         }
-        if viewStore.overdueDays > 0 {
-            return "Overdue by \(viewStore.overdueDays) \(dayWord(viewStore.overdueDays))"
+        if overdueDays > 0 {
+            return "Overdue by \(overdueDays) \(dayWord(overdueDays))"
         }
-        guard let daysUntilDue = daysUntilDue(viewStore.task) else {
-            return "\(viewStore.daysSinceLastRoutine) \(dayWord(viewStore.daysSinceLastRoutine)) since last done"
+        guard let daysUntilDue = daysUntilDue(task) else {
+            return "\(daysSinceLastRoutine) \(dayWord(daysSinceLastRoutine)) since last done"
         }
         if daysUntilDue == 0 {
             return "Due today"
@@ -385,11 +408,15 @@ struct RoutineDetailTCAView: View {
         return "Overdue by \(-daysUntilDue) \(dayWord(-daysUntilDue))"
     }
 
-    private func summaryTitleColor(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> Color {
-        if viewStore.isDoneToday { return .green }
-        if viewStore.overdueDays > 0 { return .red }
-        if daysUntilDue(viewStore.task) == 0 { return .red }
-        if isOrangeUrgency(viewStore.task) { return .orange }
+    private func summaryTitleColor(
+        isDoneToday: Bool,
+        overdueDays: Int,
+        task: RoutineTask
+    ) -> Color {
+        if isDoneToday { return .green }
+        if overdueDays > 0 { return .red }
+        if daysUntilDue(task) == 0 { return .red }
+        if isOrangeUrgency(task) { return .orange }
         return .primary
     }
 
@@ -419,15 +446,18 @@ struct RoutineDetailTCAView: View {
         abs(count) == 1 ? "day" : "days"
     }
 
-    private func editStepperLabel(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> String {
-        if viewStore.editFrequencyValue == 1 {
-            switch viewStore.editFrequency {
+    private func editStepperLabel(
+        frequency: RoutineDetailFeature.EditFrequency,
+        frequencyValue: Int
+    ) -> String {
+        if frequencyValue == 1 {
+            switch frequency {
             case .day: return "Everyday"
             case .week: return "Everyweek"
             case .month: return "Everymonth"
             }
         }
-        return "Every \(viewStore.editFrequencyValue) \(viewStore.editFrequency.singularLabel)s"
+        return "Every \(frequencyValue) \(frequency.singularLabel)s"
     }
 }
 

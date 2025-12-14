@@ -4,60 +4,61 @@ import SwiftUI
 
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
-    @State private var showingAddRoutine = false
 
     var body: some View {
-        WithViewStore(store, observe: { $0 }) { viewStore in
+        WithPerceptionTracking {
             NavigationView {
                 Group {
-                    if viewStore.routineTasks.isEmpty {
+                    if store.routineTasks.isEmpty {
                         Text("No routine defined yet")
                             .font(.headline)
                             .foregroundColor(.gray)
                             .padding()
                     } else {
-                        listOfSortedTasksView(viewStore)
+                        listOfSortedTasksView(
+                            routineDisplays: store.routineDisplays,
+                            routineTasks: store.routineTasks
+                        )
                     }
                 }
                 .navigationTitle("Routina")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
-                            viewStore.send(.setAddRoutineSheet(true))
+                            store.send(.setAddRoutineSheet(true))
                         } label: {
                             Label("Add Routine", systemImage: "plus")
                         }
                     }
                 }
                 .sheet(
-                    isPresented: viewStore.binding(
-                        get: \.isAddRoutineSheetPresented,
-                        send: HomeFeature.Action.setAddRoutineSheet
+                    isPresented: Binding(
+                        get: { store.isAddRoutineSheetPresented },
+                        set: { store.send(.setAddRoutineSheet($0)) }
                     )
                 ) {
-                    IfLetStore(
-                        self.store.scope(
-                            state: \.addRoutineState,
-                            action: \.addRoutineSheet
-                        ),
-                        then: AddRoutineTCAView.init(store:)
-                    )
+                    if let addRoutineStore = self.store.scope(
+                        state: \.addRoutineState,
+                        action: \.addRoutineSheet
+                    ) {
+                        AddRoutineTCAView(store: addRoutineStore)
+                    }
                 }
                 .onAppear {
-                    viewStore.send(.onAppear)
+                    store.send(.onAppear)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
-                    viewStore.send(.onAppear)
+                    store.send(.onAppear)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))) { _ in
-                    viewStore.send(.onAppear)
+                    store.send(.onAppear)
                 }
             }
         }
     }
 
-    private func sortedTasks(_ viewStore: ViewStoreOf<HomeFeature>) -> [HomeFeature.RoutineDisplay] {
-        viewStore.routineDisplays.sorted { task1, task2 in
+    private func sortedTasks(_ routineDisplays: [HomeFeature.RoutineDisplay]) -> [HomeFeature.RoutineDisplay] {
+        routineDisplays.sorted { task1, task2 in
             let overdueDays1 = daysSinceLastRoutine(task1) - task1.interval
             let overdueDays2 = daysSinceLastRoutine(task2) - task2.interval
 
@@ -84,12 +85,15 @@ struct HomeTCAView: View {
         return 0 // Least urgent
     }
 
-    private func listOfSortedTasksView(_ viewStore: ViewStoreOf<HomeFeature>) -> some View {
+    private func listOfSortedTasksView(
+        routineDisplays: [HomeFeature.RoutineDisplay],
+        routineTasks: [RoutineTask]
+    ) -> some View {
         List {
-            ForEach(sortedTasks(viewStore)) { task in
+            ForEach(sortedTasks(routineDisplays)) { task in
                 NavigationLink(
                     destination:
-                        routineDetailTCAView(taskID: task.id, viewStore: viewStore)
+                        routineDetailTCAView(taskID: task.id, routineTasks: routineTasks)
                 ) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -114,16 +118,19 @@ struct HomeTCAView: View {
                 }
             }
             .onDelete { offsets in
-                let sorted = sortedTasks(viewStore)
+                let sorted = sortedTasks(routineDisplays)
                 let ids = offsets.compactMap { sorted[$0].id }
-                viewStore.send(.deleteTasks(ids))
+                store.send(.deleteTasks(ids))
             }
         }
     }
     
-    private func routineDetailTCAView(taskID: NSManagedObjectID, viewStore: ViewStoreOf<HomeFeature>) -> some View {
+    private func routineDetailTCAView(
+        taskID: NSManagedObjectID,
+        routineTasks: [RoutineTask]
+    ) -> some View {
         Group {
-            if let task = viewStore.routineTasks.first(where: { $0.objectID == taskID }) {
+            if let task = routineTasks.first(where: { $0.objectID == taskID }) {
                 if let context = task.managedObjectContext {
                 RoutineDetailTCAView(
                     store: Store(

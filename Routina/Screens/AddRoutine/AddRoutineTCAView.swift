@@ -9,14 +9,17 @@ struct AddRoutineTCAView: View {
     private let allEmojiOptions = EmojiCatalog.all
 
     var body: some View {
-        WithViewStore(store, observe: \.self) { viewStore in
+        WithPerceptionTracking {
             NavigationView {
                 Form {
                     Section(header: Text("Name")) {
-                        TextField("Routine name", text: viewStore.binding(
-                            get: \.routineName,
-                            send: AddRoutineFeature.Action.routineNameChanged
-                        ))
+                        TextField(
+                            "Routine name",
+                            text: Binding(
+                                get: { store.routineName },
+                                set: { store.send(.routineNameChanged($0)) }
+                            )
+                        )
                         .focused($isRoutineNameFocused)
                     }
 
@@ -24,7 +27,7 @@ struct AddRoutineTCAView: View {
                         HStack(spacing: 12) {
                             Text("Selected")
                                 .foregroundColor(.secondary)
-                            Text(viewStore.routineEmoji)
+                            Text(store.routineEmoji)
                                 .font(.title2)
                                 .frame(width: 44, height: 44)
                             Spacer()
@@ -37,14 +40,14 @@ struct AddRoutineTCAView: View {
                             HStack(spacing: 10) {
                                 ForEach(emojiOptions, id: \.self) { emoji in
                                     Button {
-                                        viewStore.send(.routineEmojiChanged(emoji))
+                                        store.send(.routineEmojiChanged(emoji))
                                     } label: {
                                         Text(emoji)
                                             .font(.title2)
                                             .frame(width: 40, height: 40)
                                             .background(
                                                 Circle()
-                                                    .fill(viewStore.routineEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                                    .fill(store.routineEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
                                             )
                                     }
                                     .buttonStyle(.plain)
@@ -55,10 +58,13 @@ struct AddRoutineTCAView: View {
                     }
 
                     Section(header: Text("Frequency")) {
-                        Picker("Frequency", selection: viewStore.binding(
-                            get: \.frequency,
-                            send: AddRoutineFeature.Action.frequencyChanged
-                        )) {
+                        Picker(
+                            "Frequency",
+                            selection: Binding(
+                                get: { store.frequency },
+                                set: { store.send(.frequencyChanged($0)) }
+                            )
+                        ) {
                             ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
                                 Text(frequency.rawValue).tag(frequency)
                             }
@@ -67,23 +73,31 @@ struct AddRoutineTCAView: View {
                     }
 
                     Section(header: Text("Repeat")) {
-                        Stepper(value: viewStore.binding(
-                            get: \.frequencyValue,
-                            send: AddRoutineFeature.Action.frequencyValueChanged
-                        ), in: 1...365) {
-                            Text(stepperLabel(for: viewStore))
+                        Stepper(
+                            value: Binding(
+                                get: { store.frequencyValue },
+                                set: { store.send(.frequencyValueChanged($0)) }
+                            ),
+                            in: 1...365
+                        ) {
+                            Text(
+                                stepperLabel(
+                                    frequency: store.frequency,
+                                    frequencyValue: store.frequencyValue
+                                )
+                            )
                         }
                     }
                 }
                 .navigationTitle("Add Routine")
                 .navigationBarItems(
                     leading: Button("Cancel") {
-                        viewStore.send(.cancelTapped)
+                        store.send(.cancelTapped)
                     },
                     trailing: Button("Save") {
-                        viewStore.send(.saveTapped)
+                        store.send(.saveTapped)
                     }
-                    .disabled(viewStore.routineName.isEmpty)
+                    .disabled(store.routineName.isEmpty)
                 )
                 .onAppear {
                     // Real devices can delay the first tap-to-focus inside Form.
@@ -94,9 +108,9 @@ struct AddRoutineTCAView: View {
                 }
                 .sheet(isPresented: $isEmojiPickerPresented) {
                     AddRoutineEmojiPickerSheet(
-                        selectedEmoji: viewStore.binding(
-                            get: \.routineEmoji,
-                            send: AddRoutineFeature.Action.routineEmojiChanged
+                        selectedEmoji: Binding(
+                            get: { store.routineEmoji },
+                            set: { store.send(.routineEmojiChanged($0)) }
                         ),
                         emojis: allEmojiOptions
                     )
@@ -105,9 +119,12 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private func stepperLabel(for viewStore: ViewStoreOf<AddRoutineFeature>) -> String {
-        if viewStore.frequencyValue == 1 {
-            switch viewStore.frequency {
+    private func stepperLabel(
+        frequency: AddRoutineFeature.Frequency,
+        frequencyValue: Int
+    ) -> String {
+        if frequencyValue == 1 {
+            switch frequency {
             case .day:
                 return "Everyday"
             case .week:
@@ -117,8 +134,8 @@ struct AddRoutineTCAView: View {
             }
         }
 
-        let unit = viewStore.frequency.singularLabel
-        return "Every \(viewStore.frequencyValue) \(unit)s"
+        let unit = frequency.singularLabel
+        return "Every \(frequencyValue) \(unit)s"
     }
 }
 

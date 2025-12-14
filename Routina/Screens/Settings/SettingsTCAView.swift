@@ -5,19 +5,22 @@ struct SettingsTCAView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithViewStore(store, observe: { $0 }) { viewStore in
+        WithPerceptionTracking {
             NavigationView {
                 Form {
                     Section(header: Text("Notifications")) {
-                        Toggle("Enable notifications", isOn: viewStore.binding(
-                            get: \.notificationsEnabled,
-                            send: SettingsFeature.Action.toggleNotifications
-                        ))
-                        .disabled(viewStore.systemSettingsNotificationsEnabled == false)
+                        Toggle(
+                            "Enable notifications",
+                            isOn: Binding(
+                                get: { store.notificationsEnabled },
+                                set: { store.send(.toggleNotifications($0)) }
+                            )
+                        )
+                        .disabled(store.systemSettingsNotificationsEnabled == false)
 
-                        if viewStore.systemSettingsNotificationsEnabled == false {
+                        if store.systemSettingsNotificationsEnabled == false {
                             Button("Allow Notifications in System Settings") {
-                                viewStore.send(.openAppSettingsTapped)
+                                store.send(.openAppSettingsTapped)
                             }
                             .foregroundColor(.red)
                         }
@@ -25,7 +28,7 @@ struct SettingsTCAView: View {
 
                     Section(header: Text("Support")) {
                         Button(action: {
-                            viewStore.send(.contactUsTapped)
+                            store.send(.contactUsTapped)
                         }) {
                             HStack {
                                 Image(systemName: "envelope")
@@ -37,7 +40,7 @@ struct SettingsTCAView: View {
 
                     Section(header: Text("iCloud")) {
                         Button {
-                            viewStore.send(.syncNowTapped)
+                            store.send(.syncNowTapped)
                         } label: {
                             HStack {
                                 Image(systemName: "arrow.triangle.2.circlepath.icloud")
@@ -45,16 +48,16 @@ struct SettingsTCAView: View {
                                 Text("Sync Now")
                             }
                         }
-                        .disabled(viewStore.isCloudSyncInProgress)
+                        .disabled(store.isCloudSyncInProgress)
 
-                        if viewStore.isCloudSyncInProgress {
+                        if store.isCloudSyncInProgress {
                             HStack(spacing: 10) {
                                 ProgressView()
                                 Text("Syncing...")
                                     .foregroundColor(.secondary)
                             }
-                        } else if !viewStore.cloudSyncStatusMessage.isEmpty {
-                            Text(viewStore.cloudSyncStatusMessage)
+                        } else if !store.cloudSyncStatusMessage.isEmpty {
+                            Text(store.cloudSyncStatusMessage)
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
                         }
@@ -64,7 +67,7 @@ struct SettingsTCAView: View {
                         HStack {
                             Text("App Version")
                             Spacer()
-                            Text(viewStore.appVersion)
+                            Text(store.appVersion)
                                 .foregroundColor(.gray)
                         }
                     }
@@ -72,12 +75,12 @@ struct SettingsTCAView: View {
                 .navigationTitle("Settings")
             }
             .onAppear {
-                viewStore.send(.onAppear)
+                store.send(.onAppear)
             }
             .onReceive(
                 NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
             ) { _ in
-                viewStore.send(.onAppBecameActive)
+                store.send(.onAppBecameActive)
             }
         }
     }

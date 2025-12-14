@@ -5,11 +5,11 @@ struct AppView: View {
     let store: StoreOf<AppFeature>
 
     var body: some View {
-        WithViewStore(store, observe: \.selectedTab) { viewStore in
+        WithPerceptionTracking {
             TabView(
-                selection: viewStore.binding(
-                    get: { $0 },
-                    send: { .tabSelected($0) }
+                selection: Binding(
+                    get: { store.selectedTab },
+                    set: { store.send(.tabSelected($0)) }
                 )
             ) {
                 HomeTCAView(
@@ -29,7 +29,7 @@ struct AppView: View {
                 .tag(Tab.settings)
             }
             .task {
-                viewStore.send(.onAppear)
+                store.send(.onAppear)
             }
         }
     }
