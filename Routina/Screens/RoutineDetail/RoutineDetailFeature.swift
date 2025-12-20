@@ -127,9 +127,11 @@ struct RoutineDetailFeature: Reducer {
 
     private func updateDerivedState(_ state: inout State) {
         let referenceDate = state.task.lastDone ?? now
+        let nowStart = calendar.startOfDay(for: now)
 
         if let lastDone = state.task.lastDone {
-            state.daysSinceLastRoutine = calendar.dateComponents([.day], from: lastDone, to: now).day ?? 0
+            let lastDoneStart = calendar.startOfDay(for: lastDone)
+            state.daysSinceLastRoutine = calendar.dateComponents([.day], from: lastDoneStart, to: nowStart).day ?? 0
         } else {
             state.daysSinceLastRoutine = 0
         }
@@ -140,7 +142,8 @@ struct RoutineDetailFeature: Reducer {
         }
 
         let dueDate = calendar.date(byAdding: .day, value: Int(state.task.interval), to: referenceDate) ?? now
-        state.overdueDays = max(calendar.dateComponents([.day], from: dueDate, to: now).day ?? 0, 0)
+        let dueStart = calendar.startOfDay(for: dueDate)
+        state.overdueDays = max(calendar.dateComponents([.day], from: dueStart, to: nowStart).day ?? 0, 0)
     }
 
     private func handleOnAppear(_ task: RoutineTask) -> Effect<Action> {

@@ -30,6 +30,9 @@ struct RoutineDetailTCAView: View {
                         Text(summaryTitle(for: viewStore))
                             .font(.title3.weight(.semibold))
                             .foregroundColor(summaryTitleColor(for: viewStore))
+                        Text("Frequency: \(frequencyText(for: viewStore.task))")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                         if let dueDate = dueDate(for: viewStore.task) {
                             Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
                                 .font(.subheadline)
@@ -357,7 +360,10 @@ struct RoutineDetailTCAView: View {
 
     private func daysUntilDue(_ task: RoutineTask) -> Int? {
         guard let dueDate = dueDate(for: task) else { return nil }
-        return Calendar.current.dateComponents([.day], from: Date(), to: dueDate).day
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: Date())
+        let dueStart = calendar.startOfDay(for: dueDate)
+        return calendar.dateComponents([.day], from: todayStart, to: dueStart).day
     }
 
     private func summaryTitle(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> String {
@@ -365,18 +371,18 @@ struct RoutineDetailTCAView: View {
             return "Done today"
         }
         if viewStore.overdueDays > 0 {
-            return "Overdue by \(viewStore.overdueDays) day(s)"
+            return "Overdue by \(viewStore.overdueDays) \(dayWord(viewStore.overdueDays))"
         }
         guard let daysUntilDue = daysUntilDue(viewStore.task) else {
-            return "\(viewStore.daysSinceLastRoutine) day(s) since last done"
+            return "\(viewStore.daysSinceLastRoutine) \(dayWord(viewStore.daysSinceLastRoutine)) since last done"
         }
         if daysUntilDue == 0 {
             return "Due today"
         }
         if daysUntilDue > 0 {
-            return "Due in \(daysUntilDue) day(s)"
+            return "Due in \(daysUntilDue) \(dayWord(daysUntilDue))"
         }
-        return "Overdue by \(-daysUntilDue) day(s)"
+        return "Overdue by \(-daysUntilDue) \(dayWord(-daysUntilDue))"
     }
 
     private func summaryTitleColor(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> Color {
@@ -393,6 +399,23 @@ struct RoutineDetailTCAView: View {
 
     private func routineEmoji(for task: RoutineTask) -> String {
         (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
+    }
+
+    private func frequencyText(for task: RoutineTask) -> String {
+        let interval = max(Int(task.interval), 1)
+        if interval % 30 == 0 {
+            let value = interval / 30
+            return value == 1 ? "Every month" : "Every \(value) months"
+        }
+        if interval % 7 == 0 {
+            let value = interval / 7
+            return value == 1 ? "Every week" : "Every \(value) weeks"
+        }
+        return interval == 1 ? "Every day" : "Every \(interval) days"
+    }
+
+    private func dayWord(_ count: Int) -> String {
+        abs(count) == 1 ? "day" : "days"
     }
 
     private func editStepperLabel(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> String {
