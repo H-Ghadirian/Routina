@@ -43,22 +43,27 @@ struct HomeTCAView: View {
                         then: AddRoutineTCAView.init(store:)
                     )
                 }
-                .task {
+                .onAppear {
+                    viewStore.send(.onAppear)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
+                    viewStore.send(.onAppear)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))) { _ in
                     viewStore.send(.onAppear)
                 }
             }
         }
     }
 
-    private func sortedTasks(_ viewStore: ViewStoreOf<HomeFeature>) -> [RoutineTask] {
-        viewStore.routineTasks.sorted { task1, task2 in
+    private func sortedTasks(_ viewStore: ViewStoreOf<HomeFeature>) -> [HomeFeature.RoutineDisplay] {
+        viewStore.routineDisplays.sorted { task1, task2 in
             urgencyLevel(for: task1) > urgencyLevel(for: task2)
         }
     }
 
-    private func urgencyLevel(for task: RoutineTask) -> Int {
-        let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
-        let dueIn = Int(task.interval) - daysSinceLastRoutine
+    private func urgencyLevel(for task: HomeFeature.RoutineDisplay) -> Int {
+        let dueIn = task.interval - daysSinceLastRoutine(task)
 
         if dueIn <= 0 { return 3 } // Overdue, highest priority
         if dueIn == 1 { return 2 } // Due today
@@ -71,12 +76,12 @@ struct HomeTCAView: View {
             ForEach(sortedTasks(viewStore)) { task in
                 NavigationLink(
                     destination:
-                        routineDetailTCAView(task: task)
+                        routineDetailTCAView(taskID: task.id, viewStore: viewStore)
                 ) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(routineEmoji(for: task)) \(task.name ?? "Unnamed task")")
-                            if isDoneToday(task) {
+                            Text("\(task.emoji) \(task.name)")
+                            if task.isDoneToday {
                                 Text("Done today")
                                     .font(.caption)
                                     .foregroundColor(.green)
@@ -91,44 +96,43 @@ struct HomeTCAView: View {
                     }
                 }
             }
-            .onDelete { viewStore.send(.deleteTask($0)) }
+            .onDelete { offsets in
+                let sorted = sortedTasks(viewStore)
+                let ids = offsets.compactMap { sorted[$0].id }
+                viewStore.send(.deleteTasks(ids))
+            }
         }
     }
     
-    private func routineDetailTCAView(task: RoutineTask) -> some View {
-        RoutineDetailTCAView(
-            store: Store(
-                initialState: RoutineDetailFeature.State(
-                    task: task,
-                    logs: [], //task.logs,
-                    daysSinceLastRoutine: Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0,
-                    overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0)
-                ),
-                reducer: { RoutineDetailFeature() }
-            )
-        )
+    private func routineDetailTCAView(taskID: NSManagedObjectID, viewStore: ViewStoreOf<HomeFeature>) -> some View {
+        Group {
+            if let task = viewStore.routineTasks.first(where: { $0.objectID == taskID }) {
+                RoutineDetailTCAView(
+                    store: Store(
+                        initialState: RoutineDetailFeature.State(
+                            task: task,
+                            logs: [],
+                            daysSinceLastRoutine: Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0,
+                            overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0)
+                        ),
+                        reducer: { RoutineDetailFeature() }
+                    )
+                )
+            } else {
+                Text("Routine not found")
+                    .foregroundColor(.secondary)
+            }
+        }
     }
 
-    private func urgencySquare(for task: RoutineTask) -> some View {
+    private func urgencySquare(for task: HomeFeature.RoutineDisplay) -> some View {
         return Rectangle()
             .fill(urgencyColor(for: task))
             .frame(width: 20, height: 20)
             .cornerRadius(4)
     }
 
-    private func isDoneToday(_ task: RoutineTask) -> Bool {
-        let logs = ((task.value(forKey: "logs") as? NSSet)?.allObjects as? [RoutineLog]) ?? []
-        return logs.contains {
-            guard let timestamp = $0.timestamp else { return false }
-            return Calendar.current.isDateInToday(timestamp)
-        }
-    }
-
-    private func routineEmoji(for task: RoutineTask) -> String {
-        (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
-    }
-
-    private func urgencyColor(for task: RoutineTask) -> Color {
+    private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {
         let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
         switch progress {
         case ..<0.75: return .green
@@ -137,16 +141,16 @@ struct HomeTCAView: View {
         }
     }
 
-    private func isYellowUrgency(_ task: RoutineTask) -> Bool {
+    private func isYellowUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
         let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
         return progress >= 0.75 && progress < 0.90
     }
 
-    private func daysSinceLastRoutine(_ task: RoutineTask) -> Int {
+    private func daysSinceLastRoutine(_ task: HomeFeature.RoutineDisplay) -> Int {
         Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
     }
 
-    private func daysToDueDate(_ task: RoutineTask) -> Int {
-        max(Int(task.interval) - daysSinceLastRoutine(task), 0)
+    private func daysToDueDate(_ task: HomeFeature.RoutineDisplay) -> Int {
+        max(task.interval - daysSinceLastRoutine(task), 0)
     }
 }

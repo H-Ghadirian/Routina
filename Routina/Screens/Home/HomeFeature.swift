@@ -4,10 +4,21 @@ import Foundation
 
 @Reducer
 struct HomeFeature {
+    struct RoutineDisplay: Equatable, Identifiable {
+        let id: NSManagedObjectID
+        var name: String
+        var emoji: String
+        var interval: Int
+        var lastDone: Date?
+        var isDoneToday: Bool
+    }
+
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
+        var routineDisplays: [RoutineDisplay] = []
         var isAddRoutineSheetPresented: Bool = false
         var addRoutineState: AddRoutineFeature.State?
+        var refreshVersion: Int = 0
     }
     
     // Actions are now explicit for success and failure, making them Equatable.
@@ -17,7 +28,7 @@ struct HomeFeature {
         case tasksLoadFailed
         
         case setAddRoutineSheet(Bool)
-        case deleteTask(IndexSet)
+        case deleteTasks([NSManagedObjectID])
         
         case addRoutineSheet(AddRoutineFeature.Action)
         case routineSavedSuccessfully(RoutineTask)
@@ -48,6 +59,8 @@ struct HomeFeature {
                 
             case let .tasksLoadedSuccessfully(tasks):
                 state.routineTasks = tasks
+                state.routineDisplays = tasks.map(makeRoutineDisplay)
+                state.refreshVersion &+= 1
                 return .none
             
             case .tasksLoadFailed:
@@ -60,9 +73,11 @@ struct HomeFeature {
                 state.addRoutineState = isPresented ? AddRoutineFeature.State() : nil
                 return .none
                 
-            case let .deleteTask(offsets):
-                let tasksToDelete = offsets.map { state.routineTasks[$0] }
-                state.routineTasks.remove(atOffsets: offsets)
+            case let .deleteTasks(ids):
+                let idSet = Set(ids)
+                let tasksToDelete = state.routineTasks.filter { idSet.contains($0.objectID) }
+                state.routineTasks.removeAll { idSet.contains($0.objectID) }
+                state.routineDisplays.removeAll { idSet.contains($0.id) }
                 
                 return .run { [tasksToDelete] _ in
                     await MainActor.run {
@@ -103,6 +118,7 @@ struct HomeFeature {
                 
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
+                state.routineDisplays.append(makeRoutineDisplay(task))
                 return .run { [task] _ in
                     await self.notificationClient.schedule(task)
                 }
@@ -121,6 +137,23 @@ struct HomeFeature {
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }
+    }
+
+    private func makeRoutineDisplay(_ task: RoutineTask) -> RoutineDisplay {
+        let logs = ((task.value(forKey: "logs") as? NSSet)?.allObjects as? [RoutineLog]) ?? []
+        let isDoneToday = logs.contains {
+            guard let timestamp = $0.timestamp else { return false }
+            return Calendar.current.isDateInToday(timestamp)
+        }
+
+        return RoutineDisplay(
+            id: task.objectID,
+            name: task.name ?? "Unnamed task",
+            emoji: (task.value(forKey: "emoji") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
+            interval: max(Int(task.interval), 1),
+            lastDone: task.lastDone,
+            isDoneToday: isDoneToday
+        )
     }
 }
 

@@ -193,6 +193,7 @@ struct RoutineDetailFeature: Reducer {
                 try await MainActor.run {
                     try context.save()
                 }
+                NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
                 await notificationClient.schedule(task)
                 await send(.onAppear)
             } catch {
