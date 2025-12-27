@@ -25,18 +25,18 @@
 		2C0000132E60000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
 		2C0000142E60000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
 		2C0000152E60000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
-		4E0000102E80000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
-		4E0000112E80000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
-		4E0000122E80000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
-		4E0000132E80000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
-		4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
-		4E0000152E80000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 		3D1000012E70000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
 		3D1000022E70000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		3D1000032E70000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
 		3D1000042E70000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
 		3D1000052E70000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
 		3D1000062E70000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
+		4E0000102E80000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
+		4E0000112E80000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
+		4E0000122E80000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
+		4E0000132E80000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
+		4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
+		4E0000152E80000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,12 +57,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2A5A74BD2D7B92F600E91075 /* RoutinaProd.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaProd.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A5A74BD2D7B92F600E91075 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74CD2D7B92F900E91075 /* RoutinaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5A74D72D7B92F900E91075 /* RoutinaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C0000022E60000100000001 /* Routina.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routina.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4E0000022E80000100000001 /* RoutinaMacDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D1000102E70000100000001 /* RoutinaDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E0000022E80000100000001 /* RoutinaMacDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -80,19 +80,19 @@
 			);
 			target = 2C0000012E60000100000001 /* RoutinaMacProd */;
 		};
-		4E0000092E80000100000001 /* Exceptions for "Routina" folder in "RoutinaMacDev" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 4E0000012E80000100000001 /* RoutinaMacDev */;
-		};
 		3D1000202E70000100000001 /* Exceptions for "Routina" folder in "RoutinaDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 3D1000402E70000100000001 /* RoutinaDev */;
+		};
+		4E0000092E80000100000001 /* Exceptions for "Routina" folder in "RoutinaMacDev" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4E0000012E80000100000001 /* RoutinaMacDev */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -167,19 +167,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		4E0000032E80000100000001 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4E0000102E80000100000001 /* ComposableArchitecture in Frameworks */,
-				4E0000112E80000100000001 /* Dependencies in Frameworks */,
-				4E0000122E80000100000001 /* CasePaths in Frameworks */,
-				4E0000132E80000100000001 /* Perception in Frameworks */,
-				4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */,
-				4E0000152E80000100000001 /* PerceptionCore in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3D1000302E70000100000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -190,6 +177,19 @@
 				3D1000042E70000100000001 /* Perception in Frameworks */,
 				3D1000052E70000100000001 /* ConcurrencyExtras in Frameworks */,
 				3D1000062E70000100000001 /* PerceptionCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4E0000032E80000100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4E0000102E80000100000001 /* ComposableArchitecture in Frameworks */,
+				4E0000112E80000100000001 /* Dependencies in Frameworks */,
+				4E0000122E80000100000001 /* CasePaths in Frameworks */,
+				4E0000132E80000100000001 /* Perception in Frameworks */,
+				4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */,
+				4E0000152E80000100000001 /* PerceptionCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -217,7 +217,7 @@
 		2A5A74BE2D7B92F600E91075 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2A5A74BD2D7B92F600E91075 /* RoutinaProd.app */,
+				2A5A74BD2D7B92F600E91075 /* Routina.app */,
 				3D1000102E70000100000001 /* RoutinaDev.app */,
 				2C0000022E60000100000001 /* Routina.app */,
 				4E0000022E80000100000001 /* RoutinaMacDev.app */,
@@ -255,7 +255,7 @@
 				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
 			productName = RoutinaProd;
-			productReference = 2A5A74BD2D7B92F600E91075 /* RoutinaProd.app */;
+			productReference = 2A5A74BD2D7B92F600E91075 /* Routina.app */;
 			productType = "com.apple.product-type.application";
 		};
 		2A5A74CC2D7B92F900E91075 /* RoutinaTests */ = {
@@ -338,34 +338,6 @@
 			productReference = 2C0000022E60000100000001 /* Routina.app */;
 			productType = "com.apple.product-type.application";
 		};
-		4E0000012E80000100000001 /* RoutinaMacDev */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacDev" */;
-			buildPhases = (
-				4E0000052E80000100000001 /* Sources */,
-				4E0000032E80000100000001 /* Frameworks */,
-				4E0000042E80000100000001 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				2A5A74BF2D7B92F600E91075 /* Routina */,
-			);
-			name = RoutinaMacDev;
-			packageProductDependencies = (
-				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
-				2B1001012E5F000100000001 /* Dependencies */,
-				2B1001022E5F000100000001 /* CasePaths */,
-				2B1001032E5F000100000001 /* Perception */,
-				2B1001072E5F000100000001 /* ConcurrencyExtras */,
-				2B1001092E5F000100000001 /* PerceptionCore */,
-			);
-			productName = RoutinaMacDev;
-			productReference = 4E0000022E80000100000001 /* RoutinaMacDev.app */;
-			productType = "com.apple.product-type.application";
-		};
 		3D1000402E70000100000001 /* RoutinaDev */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3D1000432E70000100000001 /* Build configuration list for PBXNativeTarget "RoutinaDev" */;
@@ -394,6 +366,34 @@
 			productReference = 3D1000102E70000100000001 /* RoutinaDev.app */;
 			productType = "com.apple.product-type.application";
 		};
+		4E0000012E80000100000001 /* RoutinaMacDev */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacDev" */;
+			buildPhases = (
+				4E0000052E80000100000001 /* Sources */,
+				4E0000032E80000100000001 /* Frameworks */,
+				4E0000042E80000100000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				2A5A74BF2D7B92F600E91075 /* Routina */,
+			);
+			name = RoutinaMacDev;
+			packageProductDependencies = (
+				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
+				2B1001012E5F000100000001 /* Dependencies */,
+				2B1001022E5F000100000001 /* CasePaths */,
+				2B1001032E5F000100000001 /* Perception */,
+				2B1001072E5F000100000001 /* ConcurrencyExtras */,
+				2B1001092E5F000100000001 /* PerceptionCore */,
+			);
+			productName = RoutinaMacDev;
+			productReference = 4E0000022E80000100000001 /* RoutinaMacDev.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -418,10 +418,10 @@
 					2C0000012E60000100000001 = {
 						CreatedOnToolsVersion = 16.2;
 					};
-					4E0000012E80000100000001 = {
+					3D1000402E70000100000001 = {
 						CreatedOnToolsVersion = 16.2;
 					};
-					3D1000402E70000100000001 = {
+					4E0000012E80000100000001 = {
 						CreatedOnToolsVersion = 16.2;
 					};
 				};
@@ -486,14 +486,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		4E0000042E80000100000001 /* Resources */ = {
+		3D1000422E70000100000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3D1000422E70000100000001 /* Resources */ = {
+		4E0000042E80000100000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -531,14 +531,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		4E0000052E80000100000001 /* Sources */ = {
+		3D1000412E70000100000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3D1000412E70000100000001 /* Sources */ = {
+		4E0000052E80000100000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -698,17 +698,17 @@
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Routina/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Routina;
 				INFOPLIST_KEY_CFBundleName = Routina;
-				INFOPLIST_FILE = Routina/Info.plist;
-					INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
-					INFOPLIST_KEY_RoutinaSandboxDataMode = NO;
+				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
+				INFOPLIST_KEY_RoutinaSandboxDataMode = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -741,17 +741,17 @@
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Routina/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Routina;
 				INFOPLIST_KEY_CFBundleName = Routina;
-				INFOPLIST_FILE = Routina/Info.plist;
-					INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
-					INFOPLIST_KEY_RoutinaSandboxDataMode = NO;
+				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.prod;
+				INFOPLIST_KEY_RoutinaSandboxDataMode = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -780,10 +780,10 @@
 				CURRENT_PROJECT_VERSION = 0.2;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMomTests;
-					PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMomTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -793,7 +793,7 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
-					TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Routina.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Routina";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Routina.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Routina";
 			};
 			name = Debug;
 		};
@@ -805,10 +805,10 @@
 				CURRENT_PROJECT_VERSION = 0.2;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMomTests;
-					PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMomTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -818,7 +818,7 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
-					TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Routina.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Routina";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Routina.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Routina";
 			};
 			name = Release;
 		};
@@ -829,22 +829,24 @@
 				CURRENT_PROJECT_VERSION = 0.2;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMomUITests;
-					PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
-				SWIFT_USE_INTEGRATED_DRIVER = NO;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_TARGET_NAME = RoutinaProd;
+					SWIFT_EMIT_LOC_STRINGS = NO;
+					SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+					SWIFT_USE_INTEGRATED_DRIVER = NO;
+					SWIFT_VERSION = 6.0;
+					TARGETED_DEVICE_FAMILY = 1;
+					TESTING_FRAMEWORK_MODULE_ALIAS_FLAGS = "";
+					TEST_TARGET_NAME = RoutinaProd;
+				};
+				name = Debug;
 			};
-			name = Debug;
-		};
 		2A5A74E92D7B92F900E91075 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -852,22 +854,24 @@
 				CURRENT_PROJECT_VERSION = 0.2;
 				DEVELOPMENT_TEAM = WV7G3G5SGX;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = hamedgh.ir.CallMomUITests;
-					PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
-				SWIFT_USE_INTEGRATED_DRIVER = NO;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_TARGET_NAME = RoutinaProd;
+					SWIFT_EMIT_LOC_STRINGS = NO;
+					SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+					SWIFT_USE_INTEGRATED_DRIVER = NO;
+					SWIFT_VERSION = 6.0;
+					TARGETED_DEVICE_FAMILY = 1;
+					TESTING_FRAMEWORK_MODULE_ALIAS_FLAGS = "";
+					TEST_TARGET_NAME = RoutinaProd;
+				};
+				name = Release;
 			};
-			name = Release;
-		};
 		2C0000072E60000100000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -887,10 +891,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
-					PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.prod;
-						PRODUCT_NAME = Routina;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.prod;
+				PRODUCT_NAME = Routina;
 				REGISTER_APP_GROUPS = NO;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
@@ -921,10 +925,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
-					PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.prod;
-						PRODUCT_NAME = Routina;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.prod;
+				PRODUCT_NAME = Routina;
 				REGISTER_APP_GROUPS = NO;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
@@ -933,6 +937,88 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 6;
+			};
+			name = Release;
+		};
+		3D1000442E70000100000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaDev.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Routina/Info.plist;
+				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
+				INFOPLIST_KEY_RoutinaSandboxDataMode = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		3D1000452E70000100000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Routina/RoutinaDev.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.2;
+				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Routina/Info.plist;
+				INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
+				INFOPLIST_KEY_RoutinaSandboxDataMode = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_USE_INTEGRATED_DRIVER = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -953,7 +1039,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -985,7 +1071,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -997,88 +1083,6 @@
 				SWIFT_USE_INTEGRATED_DRIVER = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 6;
-			};
-			name = Release;
-		};
-		3D1000442E70000100000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-				buildSettings = {
-					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-					ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-					CODE_SIGN_ENTITLEMENTS = Routina/RoutinaDev.entitlements;
-					CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
-				DEVELOPMENT_TEAM = WV7G3G5SGX;
-				ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_FILE = Routina/Info.plist;
-					INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
-					INFOPLIST_KEY_RoutinaSandboxDataMode = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
-				SWIFT_USE_INTEGRATED_DRIVER = NO;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		3D1000452E70000100000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-				buildSettings = {
-					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-					ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-					CODE_SIGN_ENTITLEMENTS = Routina/RoutinaDev.entitlements;
-					CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.2;
-				DEVELOPMENT_ASSET_PATHS = "\"Routina/Preview Content\"";
-				DEVELOPMENT_TEAM = WV7G3G5SGX;
-				ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_FILE = Routina/Info.plist;
-					INFOPLIST_KEY_RoutinaCloudKitContainerIdentifier = iCloud.ir.hamedgh.Routinam.dev;
-					INFOPLIST_KEY_RoutinaSandboxDataMode = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.dev;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
-				SWIFT_USE_INTEGRATED_DRIVER = NO;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -1130,20 +1134,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacDev" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				4E0000072E80000100000001 /* Debug */,
-				4E0000082E80000100000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		3D1000432E70000100000001 /* Build configuration list for PBXNativeTarget "RoutinaDev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3D1000442E70000100000001 /* Debug */,
 				3D1000452E70000100000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4E0000062E80000100000001 /* Build configuration list for PBXNativeTarget "RoutinaMacDev" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4E0000072E80000100000001 /* Debug */,
+				4E0000082E80000100000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
