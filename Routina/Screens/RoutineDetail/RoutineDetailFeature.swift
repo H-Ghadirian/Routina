@@ -4,16 +4,47 @@ import UserNotifications
 import Foundation
 
 struct RoutineDetailFeature: Reducer {
+    enum EditFrequency: String, CaseIterable, Equatable {
+        case day = "Day"
+        case week = "Week"
+        case month = "Month"
+
+        var daysMultiplier: Int {
+            switch self {
+            case .day: return 1
+            case .week: return 7
+            case .month: return 30
+            }
+        }
+
+        var singularLabel: String {
+            switch self {
+            case .day: return "day"
+            case .week: return "week"
+            case .month: return "month"
+            }
+        }
+    }
+
     struct State: Equatable {
         var task: RoutineTask
         var logs: [RoutineLog] = []
         var daysSinceLastRoutine: Int = 0
         var overdueDays: Int = 0
         var isDoneToday: Bool = false
+        var isEditSheetPresented: Bool = false
+        var editRoutineName: String = ""
+        var editFrequency: EditFrequency = .day
+        var editFrequencyValue: Int = 1
     }
 
     enum Action: Equatable {
         case markAsDone
+        case setEditSheet(Bool)
+        case editRoutineNameChanged(String)
+        case editFrequencyChanged(EditFrequency)
+        case editFrequencyValueChanged(Int)
+        case editSaveTapped
         case logsLoaded([RoutineLog])
         case onAppear
     }
@@ -30,6 +61,36 @@ struct RoutineDetailFeature: Reducer {
             state.overdueDays = 0
             return handleMarkAsDone(task: state.task)
 
+        case let .setEditSheet(isPresented):
+            state.isEditSheetPresented = isPresented
+            if isPresented {
+                syncEditFormFromTask(&state)
+            }
+            return .none
+
+        case let .editRoutineNameChanged(name):
+            state.editRoutineName = name
+            return .none
+
+        case let .editFrequencyChanged(frequency):
+            state.editFrequency = frequency
+            return .none
+
+        case let .editFrequencyValueChanged(value):
+            state.editFrequencyValue = value
+            return .none
+
+        case .editSaveTapped:
+            let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else { return .none }
+
+            state.task.name = trimmedName
+            state.task.interval = Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
+            state.isEditSheetPresented = false
+            updateDerivedState(&state)
+
+            return handleEditSave(task: state.task)
+
         case let .logsLoaded(logs):
             state.logs = logs
             updateDerivedState(&state)
@@ -37,6 +98,22 @@ struct RoutineDetailFeature: Reducer {
         case .onAppear:
             updateDerivedState(&state)
             return handleOnAppear(state.task)
+        }
+    }
+
+    private func syncEditFormFromTask(_ state: inout State) {
+        state.editRoutineName = state.task.name ?? ""
+
+        let interval = max(Int(state.task.interval), 1)
+        if interval % 30 == 0 {
+            state.editFrequency = .month
+            state.editFrequencyValue = max(interval / 30, 1)
+        } else if interval % 7 == 0 {
+            state.editFrequency = .week
+            state.editFrequencyValue = max(interval / 7, 1)
+        } else {
+            state.editFrequency = .day
+            state.editFrequencyValue = interval
         }
     }
 
@@ -97,6 +174,21 @@ struct RoutineDetailFeature: Reducer {
                 await notificationClient.schedule(task)
             } catch {
                 print("Error saving context: \(error)")
+            }
+        }
+    }
+
+    private func handleEditSave(task: RoutineTask) -> Effect<Action> {
+        guard let context = task.managedObjectContext else { return .none }
+        return .run { send in
+            do {
+                try await MainActor.run {
+                    try context.save()
+                }
+                await notificationClient.schedule(task)
+                await send(.onAppear)
+            } catch {
+                print("Error saving routine edits: \(error)")
             }
         }
     }

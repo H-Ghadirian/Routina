@@ -91,6 +91,73 @@ struct RoutineDetailTCAView: View {
                         .font(.title2.weight(.bold))
                         .lineLimit(1)
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Edit") {
+                        viewStore.send(.setEditSheet(true))
+                    }
+                }
+            }
+            .sheet(
+                isPresented: viewStore.binding(
+                    get: \.isEditSheetPresented,
+                    send: RoutineDetailFeature.Action.setEditSheet
+                )
+            ) {
+                NavigationStack {
+                    Form {
+                        Section(header: Text("Name")) {
+                            TextField(
+                                "Routine name",
+                                text: viewStore.binding(
+                                    get: \.editRoutineName,
+                                    send: RoutineDetailFeature.Action.editRoutineNameChanged
+                                )
+                            )
+                        }
+
+                        Section(header: Text("Frequency")) {
+                            Picker(
+                                "Frequency",
+                                selection: viewStore.binding(
+                                    get: \.editFrequency,
+                                    send: RoutineDetailFeature.Action.editFrequencyChanged
+                                )
+                            ) {
+                                ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
+                                    Text(frequency.rawValue).tag(frequency)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+
+                        Section(header: Text("Repeat")) {
+                            Stepper(
+                                value: viewStore.binding(
+                                    get: \.editFrequencyValue,
+                                    send: RoutineDetailFeature.Action.editFrequencyValueChanged
+                                ),
+                                in: 1...365
+                            ) {
+                                Text(editStepperLabel(for: viewStore))
+                            }
+                        }
+                    }
+                    .navigationTitle("Edit Routine")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Cancel") {
+                                viewStore.send(.setEditSheet(false))
+                            }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Save") {
+                                viewStore.send(.editSaveTapped)
+                            }
+                            .disabled(viewStore.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
+                }
             }
             .onAppear {
                 viewStore.send(.onAppear)
@@ -276,6 +343,17 @@ struct RoutineDetailTCAView: View {
     private func displayedLogs(from logs: [RoutineLog]) -> [RoutineLog] {
         if isShowingAllLogs { return logs }
         return Array(logs.prefix(3))
+    }
+
+    private func editStepperLabel(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> String {
+        if viewStore.editFrequencyValue == 1 {
+            switch viewStore.editFrequency {
+            case .day: return "Everyday"
+            case .week: return "Everyweek"
+            case .month: return "Everymonth"
+            }
+        }
+        return "Every \(viewStore.editFrequencyValue) \(viewStore.editFrequency.singularLabel)s"
     }
 }
 
