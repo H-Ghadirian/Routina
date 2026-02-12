@@ -105,7 +105,7 @@ struct HomeFeature {
                             let newRoutine = RoutineTask(context: self.viewContext)
                             newRoutine.name = name
                             newRoutine.interval = Int16(freq)
-                            newRoutine.lastDone = Date()
+                            newRoutine.lastDone = nil
                             newRoutine.setValue(emoji, forKey: "emoji")
 
                             try self.viewContext.save()
@@ -142,10 +142,12 @@ struct HomeFeature {
 
     private func makeRoutineDisplay(_ task: RoutineTask) -> RoutineDisplay {
         let logs = ((task.value(forKey: "logs") as? NSSet)?.allObjects as? [RoutineLog]) ?? []
-        let isDoneToday = logs.contains {
+        let doneTodayFromLastDone = task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
+        let doneTodayFromLogs = logs.contains {
             guard let timestamp = $0.timestamp else { return false }
             return Calendar.current.isDateInToday(timestamp)
         }
+        let isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
 
         return RoutineDisplay(
             id: task.objectID,

@@ -111,9 +111,10 @@ struct HomeTCAView: View {
                     store: Store(
                         initialState: RoutineDetailFeature.State(
                             task: task,
-                            logs: [],
+                            logs: initialLogs(for: task),
                             daysSinceLastRoutine: Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0,
-                            overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0)
+                            overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0),
+                            isDoneToday: task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
                         ),
                         reducer: { RoutineDetailFeature() }
                     )
@@ -130,6 +131,11 @@ struct HomeTCAView: View {
             .fill(urgencyColor(for: task))
             .frame(width: 20, height: 20)
             .cornerRadius(4)
+    }
+
+    private func initialLogs(for task: RoutineTask) -> [RoutineLog] {
+        let logs = ((task.value(forKey: "logs") as? NSSet)?.allObjects as? [RoutineLog]) ?? []
+        return logs.sorted { ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast) }
     }
 
     private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {

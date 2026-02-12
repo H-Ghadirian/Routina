@@ -137,10 +137,12 @@ struct RoutineDetailFeature: Reducer {
             state.daysSinceLastRoutine = 0
         }
 
-        state.isDoneToday = state.logs.contains {
+        let doneTodayFromLastDone = state.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
+        let doneTodayFromLogs = state.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
             return calendar.isDate(timestamp, inSameDayAs: now)
         }
+        state.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
 
         let dueDate = calendar.date(byAdding: .day, value: Int(state.task.interval), to: referenceDate) ?? now
         let dueStart = calendar.startOfDay(for: dueDate)
