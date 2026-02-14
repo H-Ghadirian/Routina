@@ -8,10 +8,6 @@ struct RoutineDetailTCAView: View {
     var body: some View {
         WithViewStore(store, observe: \.self) { viewStore in
             VStack(spacing: 20) {
-                Text(viewStore.task.name ?? "Unnamed Routine")
-                    .font(.largeTitle)
-                    .bold()
-
                 if viewStore.overdueDays > 0 {
                     Text("Overdue by \(viewStore.overdueDays) day(s)")
                         .foregroundColor(.red)
@@ -31,7 +27,8 @@ struct RoutineDetailTCAView: View {
                     calendarHeader
                     calendarGrid(
                         doneDates: doneDates(from: viewStore.logs),
-                        dueDate: dueDate(for: viewStore.task)
+                        dueDate: dueDate(for: viewStore.task),
+                        isOrangeUrgencyToday: isOrangeUrgency(viewStore.task)
                     )
                 }
                 .padding()
@@ -59,6 +56,14 @@ struct RoutineDetailTCAView: View {
                 Spacer()
             }
             .padding()
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(viewStore.task.name ?? "Routine")
+                        .font(.title2.weight(.bold))
+                        .lineLimit(1)
+                }
+            }
             .onAppear {
                 viewStore.send(.onAppear)
                 displayedMonthStart = Calendar.current.startOfMonth(for: Date())
@@ -89,7 +94,7 @@ struct RoutineDetailTCAView: View {
         }
     }
 
-    private func calendarGrid(doneDates: Set<Date>, dueDate: Date?) -> some View {
+    private func calendarGrid(doneDates: Set<Date>, dueDate: Date?, isOrangeUrgencyToday: Bool) -> some View {
         let calendar = Calendar.current
         let start = displayedMonthStart
         let days = calendar.daysInMonthGrid(for: start)
@@ -111,7 +116,8 @@ struct RoutineDetailTCAView: View {
                         calendarDayCell(
                             day: day,
                             doneDates: doneDates,
-                            dueDate: dueDate
+                            dueDate: dueDate,
+                            isOrangeUrgencyToday: isOrangeUrgencyToday
                         )
                     } else {
                         Color.clear
@@ -122,7 +128,7 @@ struct RoutineDetailTCAView: View {
         }
     }
 
-    private func calendarDayCell(day: Date, doneDates: Set<Date>, dueDate: Date?) -> some View {
+    private func calendarDayCell(day: Date, doneDates: Set<Date>, dueDate: Date?, isOrangeUrgencyToday: Bool) -> some View {
         let calendar = Calendar.current
         let isDueDate = dueDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
         let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
@@ -132,6 +138,7 @@ struct RoutineDetailTCAView: View {
         let backgroundColor: Color = {
             if isDoneDate { return .green }
             if isDueToTodayRangeDate || isDueDate { return .red }
+            if isToday && isOrangeUrgencyToday { return .orange }
             if isToday { return .blue }
             return .clear
         }()
@@ -168,6 +175,16 @@ struct RoutineDetailTCAView: View {
 
         guard dueStart <= todayStart else { return false }
         return dayStart >= dueStart && dayStart <= todayStart
+    }
+
+    private func isOrangeUrgency(_ task: RoutineTask) -> Bool {
+        let daysSinceLastRoutine = Calendar.current.dateComponents(
+            [.day],
+            from: task.lastDone ?? Date(),
+            to: Date()
+        ).day ?? 0
+        let progress = Double(daysSinceLastRoutine) / Double(task.interval)
+        return progress >= 0.75 && progress < 0.90
     }
 }
 

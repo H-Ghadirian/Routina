@@ -80,6 +80,10 @@ struct HomeTCAView: View {
                                 Text("Done today")
                                     .font(.caption)
                                     .foregroundColor(.green)
+                            } else if isYellowUrgency(task) {
+                                Text("Due in \(daysToDueDate(task)) days")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
                             }
                         }
                         Spacer()
@@ -106,19 +110,8 @@ struct HomeTCAView: View {
     }
 
     private func urgencySquare(for task: RoutineTask) -> some View {
-        let daysSinceLastRoutine = Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
-        let progress = Double(daysSinceLastRoutine) / Double(task.interval)
-        
-        let color: Color = {
-            switch progress {
-            case ..<0.75: return .green
-            case ..<0.90: return .yellow
-            default: return .red
-            }
-        }()
-
         return Rectangle()
-            .fill(color)
+            .fill(urgencyColor(for: task))
             .frame(width: 20, height: 20)
             .cornerRadius(4)
     }
@@ -129,5 +122,27 @@ struct HomeTCAView: View {
             guard let timestamp = $0.timestamp else { return false }
             return Calendar.current.isDateInToday(timestamp)
         }
+    }
+
+    private func urgencyColor(for task: RoutineTask) -> Color {
+        let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
+        switch progress {
+        case ..<0.75: return .green
+        case ..<0.90: return .orange
+        default: return .red
+        }
+    }
+
+    private func isYellowUrgency(_ task: RoutineTask) -> Bool {
+        let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
+        return progress >= 0.75 && progress < 0.90
+    }
+
+    private func daysSinceLastRoutine(_ task: RoutineTask) -> Int {
+        Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
+    }
+
+    private func daysToDueDate(_ task: RoutineTask) -> Int {
+        max(Int(task.interval) - daysSinceLastRoutine(task), 0)
     }
 }
