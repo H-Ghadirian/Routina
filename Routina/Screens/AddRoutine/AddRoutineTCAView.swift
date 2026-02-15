@@ -3,6 +3,7 @@ import ComposableArchitecture
 
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
+    @FocusState private var isRoutineNameFocused: Bool
 
     var body: some View {
         WithViewStore(store, observe: \.self) { viewStore in
@@ -13,6 +14,7 @@ struct AddRoutineTCAView: View {
                             get: \.routineName,
                             send: AddRoutineFeature.Action.routineNameChanged
                         ))
+                        .focused($isRoutineNameFocused)
                     }
 
                     Section(header: Text("Frequency")) {
@@ -46,6 +48,13 @@ struct AddRoutineTCAView: View {
                     }
                     .disabled(viewStore.routineName.isEmpty)
                 )
+                .onAppear {
+                    // Real devices can delay the first tap-to-focus inside Form.
+                    // Auto-focus improves perceived responsiveness.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        isRoutineNameFocused = true
+                    }
+                }
             }
         }
     }
