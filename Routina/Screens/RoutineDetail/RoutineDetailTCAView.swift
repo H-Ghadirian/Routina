@@ -61,9 +61,7 @@ struct RoutineDetailTCAView: View {
             .padding()
             .onAppear {
                 viewStore.send(.onAppear)
-                if let dueDate = dueDate(for: viewStore.task) {
-                    displayedMonthStart = Calendar.current.startOfMonth(for: dueDate)
-                }
+                displayedMonthStart = Calendar.current.startOfMonth(for: Date())
             }
         }
     }
