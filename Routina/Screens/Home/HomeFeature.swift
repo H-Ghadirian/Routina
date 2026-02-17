@@ -35,9 +35,11 @@ struct HomeFeature {
             case .onAppear:
                 return .run { send in
                     do {
-                        let request = NSFetchRequest<RoutineTask>(entityName: "RoutineTask")
-                        request.sortDescriptors = []
-                        let tasks = try self.viewContext.fetch(request)
+                        let tasks = try await MainActor.run {
+                            let request = NSFetchRequest<RoutineTask>(entityName: "RoutineTask")
+                            request.sortDescriptors = []
+                            return try self.viewContext.fetch(request)
+                        }
                         await send(.tasksLoadedSuccessfully(tasks))
                     } catch {
                         await send(.tasksLoadFailed)
@@ -63,10 +65,12 @@ struct HomeFeature {
                 state.routineTasks.remove(atOffsets: offsets)
                 
                 return .run { [tasksToDelete] _ in
-                    for task in tasksToDelete {
-                        self.viewContext.delete(task)
+                    await MainActor.run {
+                        for task in tasksToDelete {
+                            self.viewContext.delete(task)
+                        }
+                        try? self.viewContext.save()
                     }
-                    try? self.viewContext.save()
                 }
                 
             // MARK: - Child Feature Logic
@@ -81,12 +85,15 @@ struct HomeFeature {
                 
                 return .run { send in
                     do {
-                        let newRoutine = RoutineTask(context: self.viewContext)
-                        newRoutine.name = name
-                        newRoutine.interval = Int16(freq)
-                        newRoutine.lastDone = Date()
-                        
-                        try self.viewContext.save()
+                        let newRoutine = try await MainActor.run { () -> RoutineTask in
+                            let newRoutine = RoutineTask(context: self.viewContext)
+                            newRoutine.name = name
+                            newRoutine.interval = Int16(freq)
+                            newRoutine.lastDone = Date()
+
+                            try self.viewContext.save()
+                            return newRoutine
+                        }
                         await send(.routineSavedSuccessfully(newRoutine))
                     } catch {
                         await send(.routineSaveFailed)

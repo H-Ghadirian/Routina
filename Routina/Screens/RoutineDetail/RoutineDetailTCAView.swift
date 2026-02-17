@@ -19,7 +19,7 @@ struct RoutineDetailTCAView: View {
                     Text("Overdue by \(viewStore.overdueDays) day(s)")
                         .foregroundColor(.red)
                         .fontWeight(.bold)
-                } else if viewStore.daysSinceLastRoutine == 0 {
+                } else if viewStore.isDoneToday || viewStore.daysSinceLastRoutine == 0 {
                     Text(viewStore.logs.isEmpty ? "Created Today!" : "Done Today!")
                 } else {
                     Text("\(viewStore.daysSinceLastRoutine) day(s) since last done")
@@ -44,7 +44,7 @@ struct RoutineDetailTCAView: View {
                     viewStore.send(.markAsDone)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(viewStore.daysSinceLastRoutine == 0)
+                .disabled(viewStore.isDoneToday)
 
                 if viewStore.logs.isEmpty {
                     Text("Never done yet")

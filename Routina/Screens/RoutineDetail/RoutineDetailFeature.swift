@@ -9,6 +9,7 @@ struct RoutineDetailFeature: Reducer {
         var logs: [RoutineLog] = []
         var daysSinceLastRoutine: Int = 0
         var overdueDays: Int = 0
+        var isDoneToday: Bool = false
     }
 
     enum Action: Equatable {
@@ -18,30 +19,52 @@ struct RoutineDetailFeature: Reducer {
     }
 
     @Dependency(\.notificationClient) var notificationClient
-    @Dependency(\.uuid) var uuid
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
-            state.task.lastDone = Date()
+            state.task.lastDone = now
+            state.isDoneToday = true
             state.daysSinceLastRoutine = 0
             state.overdueDays = 0
             return handleMarkAsDone(task: state.task)
 
         case let .logsLoaded(logs):
             state.logs = logs
+            updateDerivedState(&state)
             return .none
         case .onAppear:
+            updateDerivedState(&state)
             return handleOnAppear(state.task)
         }
+    }
+
+    private func updateDerivedState(_ state: inout State) {
+        let referenceDate = state.task.lastDone ?? now
+
+        if let lastDone = state.task.lastDone {
+            state.daysSinceLastRoutine = calendar.dateComponents([.day], from: lastDone, to: now).day ?? 0
+        } else {
+            state.daysSinceLastRoutine = 0
+        }
+
+        state.isDoneToday = state.logs.contains {
+            guard let timestamp = $0.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: now)
+        }
+
+        let dueDate = calendar.date(byAdding: .day, value: Int(state.task.interval), to: referenceDate) ?? now
+        state.overdueDays = max(calendar.dateComponents([.day], from: dueDate, to: now).day ?? 0, 0)
     }
 
     private func handleOnAppear(_ task: RoutineTask) -> Effect<Action> {
         let context = task.managedObjectContext!
         return .run { send in
             do {
-                let logs = try context.fetch(sortedDonesFetchRequest(for: task))
+                let logs = try await MainActor.run {
+                    try context.fetch(sortedDonesFetchRequest(for: task))
+                }
                 await send(.logsLoaded(logs))
             } catch {
                 print("Error loading logs: \(error)")
@@ -60,14 +83,16 @@ struct RoutineDetailFeature: Reducer {
 
     private func handleMarkAsDone(task: RoutineTask) -> Effect<Action> {
         let context = task.managedObjectContext!
-        let log = RoutineLog(context: context)
-        log.timestamp = task.lastDone
-        log.task = task
-
         return .run { send in
             do {
-                try context.save()
-                let updatedLogs = try context.fetch(sortedDonesFetchRequest(for: task))
+                let updatedLogs = try await MainActor.run { () -> [RoutineLog] in
+                    let log = RoutineLog(context: context)
+                    log.timestamp = task.lastDone
+                    log.task = task
+
+                    try context.save()
+                    return try context.fetch(sortedDonesFetchRequest(for: task))
+                }
                 await send(.logsLoaded(updatedLogs))
                 await notificationClient.schedule(task)
             } catch {
