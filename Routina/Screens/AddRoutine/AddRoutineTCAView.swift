@@ -15,12 +15,24 @@ struct AddRoutineTCAView: View {
                         ))
                     }
 
-                    Section(header: Text("Frequency (days)")) {
-                        Stepper(value: viewStore.binding(
+                    Section(header: Text("Frequency")) {
+                        Picker("Frequency", selection: viewStore.binding(
                             get: \.frequency,
                             send: AddRoutineFeature.Action.frequencyChanged
-                        ), in: 1...30) {
-                            Text("\(viewStore.frequency) day(s)")
+                        )) {
+                            ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
+                                Text(frequency.rawValue).tag(frequency)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    Section(header: Text("Repeat")) {
+                        Stepper(value: viewStore.binding(
+                            get: \.frequencyValue,
+                            send: AddRoutineFeature.Action.frequencyValueChanged
+                        ), in: 1...365) {
+                            Text(stepperLabel(for: viewStore))
                         }
                     }
                 }
@@ -36,5 +48,21 @@ struct AddRoutineTCAView: View {
                 )
             }
         }
+    }
+
+    private func stepperLabel(for viewStore: ViewStoreOf<AddRoutineFeature>) -> String {
+        if viewStore.frequencyValue == 1 {
+            switch viewStore.frequency {
+            case .day:
+                return "Everyday"
+            case .week:
+                return "Everyweek"
+            case .month:
+                return "Everymonth"
+            }
+        }
+
+        let unit = viewStore.frequency.singularLabel
+        return "Every \(viewStore.frequencyValue) \(unit)s"
     }
 }

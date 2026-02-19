@@ -2,14 +2,44 @@ import Foundation
 import ComposableArchitecture
 
 struct AddRoutineFeature: Reducer {
+    enum Frequency: String, CaseIterable, Equatable {
+        case day = "Day"
+        case week = "Week"
+        case month = "Month"
+
+        var daysMultiplier: Int {
+            switch self {
+            case .day:
+                return 1
+            case .week:
+                return 7
+            case .month:
+                return 30
+            }
+        }
+
+        var singularLabel: String {
+            switch self {
+            case .day:
+                return "day"
+            case .week:
+                return "week"
+            case .month:
+                return "month"
+            }
+        }
+    }
+
     struct State: Equatable {
         var routineName: String = ""
-        var frequency: Int = 1
+        var frequency: Frequency = .day
+        var frequencyValue: Int = 1
     }
 
     enum Action: Equatable {
         case routineNameChanged(String)
-        case frequencyChanged(Int)
+        case frequencyChanged(Frequency)
+        case frequencyValueChanged(Int)
         case saveTapped
         case cancelTapped
         case delegate(Delegate)
@@ -33,8 +63,13 @@ struct AddRoutineFeature: Reducer {
             state.frequency = freq
             return .none
 
+        case let .frequencyValueChanged(value):
+            state.frequencyValue = value
+            return .none
+
         case .saveTapped:
-            return onSave(state.routineName, state.frequency)
+            let frequencyInDays = state.frequencyValue * state.frequency.daysMultiplier
+            return onSave(state.routineName, frequencyInDays)
 
         case .cancelTapped:
             return onCancel()
