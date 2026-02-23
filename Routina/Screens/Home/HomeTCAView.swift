@@ -58,16 +58,29 @@ struct HomeTCAView: View {
 
     private func sortedTasks(_ viewStore: ViewStoreOf<HomeFeature>) -> [HomeFeature.RoutineDisplay] {
         viewStore.routineDisplays.sorted { task1, task2 in
-            urgencyLevel(for: task1) > urgencyLevel(for: task2)
+            let overdueDays1 = daysSinceLastRoutine(task1) - task1.interval
+            let overdueDays2 = daysSinceLastRoutine(task2) - task2.interval
+
+            if overdueDays1 != overdueDays2 {
+                return overdueDays1 > overdueDays2
+            }
+
+            let urgency1 = urgencyLevel(for: task1)
+            let urgency2 = urgencyLevel(for: task2)
+            if urgency1 != urgency2 {
+                return urgency1 > urgency2
+            }
+
+            return task1.name.localizedCaseInsensitiveCompare(task2.name) == .orderedAscending
         }
     }
 
     private func urgencyLevel(for task: HomeFeature.RoutineDisplay) -> Int {
         let dueIn = task.interval - daysSinceLastRoutine(task)
 
-        if dueIn <= 0 { return 3 } // Overdue, highest priority
-        if dueIn == 1 { return 2 } // Due today
-        if dueIn == 2 { return 1 } // Due tomorrow
+        if dueIn < 0 { return 3 } // Overdue, highest priority
+        if dueIn == 0 { return 2 } // Due today
+        if dueIn == 1 { return 1 } // Due tomorrow
         return 0 // Least urgent
     }
 
@@ -82,9 +95,13 @@ struct HomeTCAView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(task.emoji) \(task.name)")
                             if task.isDoneToday {
-                                Text("Done today")
+                                Text("Done Today")
                                     .font(.caption)
                                     .foregroundColor(.green)
+                            } else if isRedUrgency(task) {
+                                Text(redUrgencySubtitle(for: task))
+                                    .font(.caption)
+                                    .foregroundColor(.red)
                             } else if isYellowUrgency(task) {
                                 Text("Due in \(daysToDueDate(task)) days")
                                     .font(.caption)
@@ -152,11 +169,25 @@ struct HomeTCAView: View {
         return progress >= 0.75 && progress < 0.90
     }
 
+    private func isRedUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
+        return progress >= 0.90
+    }
+
     private func daysSinceLastRoutine(_ task: HomeFeature.RoutineDisplay) -> Int {
         Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
     }
 
     private func daysToDueDate(_ task: HomeFeature.RoutineDisplay) -> Int {
         max(task.interval - daysSinceLastRoutine(task), 0)
+    }
+
+    private func redUrgencySubtitle(for task: HomeFeature.RoutineDisplay) -> String {
+        let dueIn = task.interval - daysSinceLastRoutine(task)
+        if dueIn == 0 { return "Due Today" }
+
+        let overdueDays = max(-dueIn, 1)
+        let dayWord = overdueDays == 1 ? "day" : "days"
+        return "Overdue by \(overdueDays) \(dayWord)"
     }
 }

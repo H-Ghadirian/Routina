@@ -388,6 +388,7 @@ struct RoutineDetailTCAView: View {
     private func summaryTitleColor(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> Color {
         if viewStore.isDoneToday { return .green }
         if viewStore.overdueDays > 0 { return .red }
+        if daysUntilDue(viewStore.task) == 0 { return .red }
         if isOrangeUrgency(viewStore.task) { return .orange }
         return .primary
     }
