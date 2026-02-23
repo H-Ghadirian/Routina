@@ -4,58 +4,86 @@ import ComposableArchitecture
 struct RoutineDetailTCAView: View {
     let store: StoreOf<RoutineDetailFeature>
     @State private var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
+    @State private var isShowingAllLogs = false
 
     var body: some View {
         WithViewStore(store, observe: \.self) { viewStore in
-            VStack(spacing: 20) {
-                if viewStore.overdueDays > 0 {
-                    Text("Overdue by \(viewStore.overdueDays) day(s)")
-                        .foregroundColor(.red)
-                        .fontWeight(.bold)
-                } else if viewStore.isDoneToday || viewStore.daysSinceLastRoutine == 0 {
-                    Text(viewStore.logs.isEmpty ? "Created Today!" : "Done Today!")
-                } else {
-                    Text("\(viewStore.daysSinceLastRoutine) day(s) since last done")
-                }
+            ScrollView {
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        calendarHeader
+                        calendarGrid(
+                            doneDates: doneDates(from: viewStore.logs),
+                            dueDate: dueDate(for: viewStore.task),
+                            isOrangeUrgencyToday: isOrangeUrgency(viewStore.task)
+                        )
+                        calendarLegend
+                    }
+                    .padding(12)
+                    .background(Color.gray.opacity(0.08))
+                    .cornerRadius(12)
 
-                if let dueDate = Calendar.current.date(byAdding: .day, value: Int(viewStore.task.interval), to: viewStore.task.lastDone ?? Date()) {
-                    Text("Due Date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
-                        .foregroundColor(.red)
-                }
+                    VStack(spacing: 6) {
+                        Text(summaryTitle(for: viewStore))
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(summaryTitleColor(for: viewStore))
+                        if let dueDate = dueDate(for: viewStore.task) {
+                            Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    calendarHeader
-                    calendarGrid(
-                        doneDates: doneDates(from: viewStore.logs),
-                        dueDate: dueDate(for: viewStore.task),
-                        isOrangeUrgencyToday: isOrangeUrgency(viewStore.task)
-                    )
-                }
-                .padding()
-                .background(Color.gray.opacity(0.08))
-                .cornerRadius(12)
+                    if !viewStore.isDoneToday {
+                        Button("Mark as Done") {
+                            viewStore.send(.markAsDone)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity)
+                    }
 
-                Button("Mark as Done") {
-                    viewStore.send(.markAsDone)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(viewStore.isDoneToday)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Routine Logs")
+                            .font(.headline)
 
-                if viewStore.logs.isEmpty {
-                    Text("Never done yet")
-                } else {
-                    List {
-                        Section(header: Text("Routine Logs")) {
-                            ForEach(viewStore.logs, id: \.self) { log in
+                        if viewStore.logs.isEmpty {
+                            Text("No logs yet")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        } else {
+                            let logs = displayedLogs(from: viewStore.logs)
+                            ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
                                 Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                                    .font(.subheadline)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 8)
+
+                                if index < logs.count - 1 {
+                                    Divider()
+                                }
+                            }
+
+                            if viewStore.logs.count > 3 {
+                                Button(isShowingAllLogs ? "Show less" : "See all (\(viewStore.logs.count))") {
+                                    isShowingAllLogs.toggle()
+                                }
+                                .font(.footnote.weight(.semibold))
+                                .padding(.top, 4)
                             }
                         }
                     }
+                    .padding(12)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
                 }
-
-                Spacer()
+                .padding()
             }
-            .padding()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -82,7 +110,7 @@ struct RoutineDetailTCAView: View {
             Spacer()
 
             Text(displayedMonthStart.formatted(.dateTime.month(.wide).year()))
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
 
             Spacer()
 
@@ -94,23 +122,50 @@ struct RoutineDetailTCAView: View {
         }
     }
 
+    private var calendarLegend: some View {
+        HStack(spacing: 12) {
+            legendItem(color: .green, label: "Done")
+            legendItem(color: .red, label: "Overdue")
+            HStack(spacing: 4) {
+                Circle()
+                    .stroke(Color.blue, lineWidth: 2)
+                    .frame(width: 10, height: 10)
+                Text("Today")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.top, 2)
+    }
+
+    private func legendItem(color: Color, label: String) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+    }
+
     private func calendarGrid(doneDates: Set<Date>, dueDate: Date?, isOrangeUrgencyToday: Bool) -> some View {
         let calendar = Calendar.current
         let start = displayedMonthStart
         let days = calendar.daysInMonthGrid(for: start)
         let weekdaySymbols = calendar.orderedShortStandaloneWeekdaySymbols
 
-        return VStack(spacing: 8) {
+        return VStack(spacing: 6) {
             HStack {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity)
                 }
             }
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 6) {
                 ForEach(Array(days.enumerated()), id: \.offset) { _, day in
                     if let day {
                         calendarDayCell(
@@ -121,7 +176,7 @@ struct RoutineDetailTCAView: View {
                         )
                     } else {
                         Color.clear
-                            .frame(height: 32)
+                            .frame(height: 28)
                     }
                 }
             }
@@ -149,7 +204,7 @@ struct RoutineDetailTCAView: View {
             .font(.subheadline)
             .foregroundColor(foregroundColor)
             .frame(maxWidth: .infinity)
-            .frame(height: 32)
+            .frame(height: 28)
             .background(Circle().fill(backgroundColor))
             .overlay(
                 Circle()
@@ -185,6 +240,42 @@ struct RoutineDetailTCAView: View {
         ).day ?? 0
         let progress = Double(daysSinceLastRoutine) / Double(task.interval)
         return progress >= 0.75 && progress < 0.90
+    }
+
+    private func daysUntilDue(_ task: RoutineTask) -> Int? {
+        guard let dueDate = dueDate(for: task) else { return nil }
+        return Calendar.current.dateComponents([.day], from: Date(), to: dueDate).day
+    }
+
+    private func summaryTitle(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> String {
+        if viewStore.isDoneToday {
+            return "Done today"
+        }
+        if viewStore.overdueDays > 0 {
+            return "Overdue by \(viewStore.overdueDays) day(s)"
+        }
+        guard let daysUntilDue = daysUntilDue(viewStore.task) else {
+            return "\(viewStore.daysSinceLastRoutine) day(s) since last done"
+        }
+        if daysUntilDue == 0 {
+            return "Due today"
+        }
+        if daysUntilDue > 0 {
+            return "Due in \(daysUntilDue) day(s)"
+        }
+        return "Overdue by \(-daysUntilDue) day(s)"
+    }
+
+    private func summaryTitleColor(for viewStore: ViewStoreOf<RoutineDetailFeature>) -> Color {
+        if viewStore.isDoneToday { return .green }
+        if viewStore.overdueDays > 0 { return .red }
+        if isOrangeUrgency(viewStore.task) { return .orange }
+        return .primary
+    }
+
+    private func displayedLogs(from logs: [RoutineLog]) -> [RoutineLog] {
+        if isShowingAllLogs { return logs }
+        return Array(logs.prefix(3))
     }
 }
 
