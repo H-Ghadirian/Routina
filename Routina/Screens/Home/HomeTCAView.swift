@@ -74,7 +74,14 @@ struct HomeTCAView: View {
                         routineDetailTCAView(task: task)
                 ) {
                     HStack {
-                        Text(task.name ?? "Unnamed task")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(task.name ?? "Unnamed task")
+                            if isDoneToday(task) {
+                                Text("Done today")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                            }
+                        }
                         Spacer()
                         urgencySquare(for: task)
                     }
@@ -114,5 +121,13 @@ struct HomeTCAView: View {
             .fill(color)
             .frame(width: 20, height: 20)
             .cornerRadius(4)
+    }
+
+    private func isDoneToday(_ task: RoutineTask) -> Bool {
+        let logs = ((task.value(forKey: "logs") as? NSSet)?.allObjects as? [RoutineLog]) ?? []
+        return logs.contains {
+            guard let timestamp = $0.timestamp else { return false }
+            return Calendar.current.isDateInToday(timestamp)
+        }
     }
 }
