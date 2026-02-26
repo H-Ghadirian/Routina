@@ -53,6 +53,7 @@ struct RoutineDetailFeature: Reducer {
     }
 
     @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.managedObjectContext) var viewContext
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -62,7 +63,7 @@ struct RoutineDetailFeature: Reducer {
             state.isDoneToday = true
             state.daysSinceLastRoutine = 0
             state.overdueDays = 0
-            return handleMarkAsDone(task: state.task)
+            return handleMarkAsDone(taskID: state.task.objectID)
 
         case let .setEditSheet(isPresented):
             state.isEditSheetPresented = isPresented
@@ -97,7 +98,7 @@ struct RoutineDetailFeature: Reducer {
             state.isEditSheetPresented = false
             updateDerivedState(&state)
 
-            return handleEditSave(task: state.task)
+            return handleEditSave(taskID: state.task.objectID)
 
         case let .logsLoaded(logs):
             state.logs = logs
@@ -105,7 +106,7 @@ struct RoutineDetailFeature: Reducer {
             return .none
         case .onAppear:
             updateDerivedState(&state)
-            return handleOnAppear(state.task)
+            return handleOnAppear(taskID: state.task.objectID)
         }
     }
 
@@ -149,14 +150,11 @@ struct RoutineDetailFeature: Reducer {
         state.overdueDays = max(calendar.dateComponents([.day], from: dueStart, to: nowStart).day ?? 0, 0)
     }
 
-    private func handleOnAppear(_ task: RoutineTask) -> Effect<Action> {
-        let context = task.managedObjectContext!
-        return .run { send in
+    private func handleOnAppear(taskID: NSManagedObjectID) -> Effect<Action> {
+        return .run { @MainActor [viewContext] send in
             do {
-                let logs = try await MainActor.run {
-                    try context.fetch(sortedDonesFetchRequest(for: task))
-                }
-                await send(.logsLoaded(logs))
+                let logs = try viewContext.fetch(sortedDonesFetchRequest(for: taskID, in: viewContext))
+                send(.logsLoaded(logs))
             } catch {
                 print("Error loading logs: \(error)")
             }
@@ -164,44 +162,59 @@ struct RoutineDetailFeature: Reducer {
     }
 
     private func sortedDonesFetchRequest(
-        for task: RoutineTask
+        for taskID: NSManagedObjectID,
+        in context: NSManagedObjectContext
     ) -> NSFetchRequest<RoutineLog> {
         let fetchRequest: NSFetchRequest<RoutineLog> = RoutineLog.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "task == %@", task)
+        fetchRequest.predicate = NSPredicate(format: "task == %@", context.object(with: taskID))
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
         return fetchRequest
     }
 
-    private func handleMarkAsDone(task: RoutineTask) -> Effect<Action> {
-        let context = task.managedObjectContext!
-        return .run { send in
+    private func handleMarkAsDone(taskID: NSManagedObjectID) -> Effect<Action> {
+        return .run { @MainActor [viewContext] send in
             do {
-                let updatedLogs = try await MainActor.run { () -> [RoutineLog] in
-                    let log = RoutineLog(context: context)
-                    log.timestamp = task.lastDone
-                    log.task = task
-
-                    try context.save()
-                    return try context.fetch(sortedDonesFetchRequest(for: task))
+                guard let task = try viewContext.existingObject(with: taskID) as? RoutineTask else { return }
+                if task.objectID.isTemporaryID {
+                    try viewContext.obtainPermanentIDs(for: [task])
                 }
-                await send(.logsLoaded(updatedLogs))
-                await notificationClient.schedule(task)
+                let log = RoutineLog(context: viewContext)
+                log.timestamp = task.lastDone
+                log.task = task
+
+                try viewContext.save()
+                let persistedTaskID = task.objectID
+                let updatedLogs = try viewContext.fetch(
+                    sortedDonesFetchRequest(for: persistedTaskID, in: viewContext)
+                )
+                send(.logsLoaded(updatedLogs))
+                let payload = NotificationPayload(
+                    identifier: persistedTaskID.uriRepresentation().absoluteString,
+                    name: task.name,
+                    interval: max(Int(task.interval), 1),
+                    lastDone: task.lastDone
+                )
+                await notificationClient.schedule(payload)
             } catch {
                 print("Error saving context: \(error)")
             }
         }
     }
 
-    private func handleEditSave(task: RoutineTask) -> Effect<Action> {
-        guard let context = task.managedObjectContext else { return .none }
-        return .run { send in
+    private func handleEditSave(taskID: NSManagedObjectID) -> Effect<Action> {
+        return .run { @MainActor [viewContext] send in
             do {
-                try await MainActor.run {
-                    try context.save()
-                }
+                guard let task = try viewContext.existingObject(with: taskID) as? RoutineTask else { return }
+                try viewContext.save()
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
-                await notificationClient.schedule(task)
-                await send(.onAppear)
+                let payload = NotificationPayload(
+                    identifier: task.objectID.uriRepresentation().absoluteString,
+                    name: task.name,
+                    interval: max(Int(task.interval), 1),
+                    lastDone: task.lastDone
+                )
+                await notificationClient.schedule(payload)
+                send(.onAppear)
             } catch {
                 print("Error saving routine edits: \(error)")
             }
@@ -213,4 +226,5 @@ struct RoutineDetailFeature: Reducer {
         guard let first = trimmed.first else { return fallback }
         return String(first)
     }
+
 }

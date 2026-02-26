@@ -1,5 +1,7 @@
 import Foundation
 
+extension UserDefaults: @retroactive @unchecked Sendable {}
+
 extension UserDefaults: UserDefaultsProtocol {
     public subscript(key: UserDefaultBoolValueKey) -> Bool {
         get {
@@ -20,11 +22,11 @@ extension UserDefaults: UserDefaultsProtocol {
 }
 
 protocol SharedDefaultsProtocol {
-    static var app: UserDefaults { get set }
+    static var app: UserDefaults { get }
 }
 
 enum SharedDefaults: SharedDefaultsProtocol {
-    static var app = UserDefaults(suiteName: "app")!
+    static let app = UserDefaults(suiteName: "app")!
 }
 
 public enum UserDefaultBoolValueKey: String {

@@ -1,19 +1,26 @@
 import Foundation
 import UserNotifications
 
-struct NotificationClient {
-    var schedule: (_ task: RoutineTask) async -> Void
+struct NotificationPayload: Sendable {
+    let identifier: String
+    let name: String?
+    let interval: Int
+    let lastDone: Date?
+}
+
+struct NotificationClient: Sendable {
+    var schedule: @Sendable (_ payload: NotificationPayload) async -> Void
 }
 
 extension NotificationClient {
     static let live = NotificationClient(
-        schedule: { task in
+        schedule: { payload in
             let request = UNNotificationRequest(
-                identifier: task.objectID.uriRepresentation().absoluteString,
-                content: createNotificationContent(for: task.name),
+                identifier: payload.identifier,
+                content: createNotificationContent(for: payload.name),
                 trigger: createCalendarNotificationTriggerFor(
-                    interval: Int(task.interval),
-                    lastDone: task.lastDone ?? Date()
+                    interval: payload.interval,
+                    lastDone: payload.lastDone ?? Date()
                 )
             )
             try? await UNUserNotificationCenter.current().add(request)

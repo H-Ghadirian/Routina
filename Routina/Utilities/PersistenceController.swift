@@ -35,7 +35,7 @@ public struct PersistenceController {
         }
 
         container.viewContext.automaticallyMergesChangesFromParent = true
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.mergePolicy = NSMergePolicy(merge: .mergeByPropertyObjectTrumpMergePolicyType)
     }
 
     private static func configureStoreDescriptions(
@@ -69,3 +69,5 @@ public struct PersistenceController {
         return loadError
     }
 }
+
+extension PersistenceController: @unchecked Sendable {}

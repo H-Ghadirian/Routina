@@ -45,16 +45,14 @@ struct HomeFeature {
             
             // MARK: - Core Logic & Effects
             case .onAppear:
-                return .run { send in
+                return .run { @MainActor send in
                     do {
-                        let tasks = try await MainActor.run {
-                            let request = NSFetchRequest<RoutineTask>(entityName: "RoutineTask")
-                            request.sortDescriptors = []
-                            return try self.viewContext.fetch(request)
-                        }
-                        await send(.tasksLoadedSuccessfully(tasks))
+                        let request = NSFetchRequest<RoutineTask>(entityName: "RoutineTask")
+                        request.sortDescriptors = []
+                        let tasks = try self.viewContext.fetch(request)
+                        send(.tasksLoadedSuccessfully(tasks))
                     } catch {
-                        await send(.tasksLoadFailed)
+                        send(.tasksLoadFailed)
                     }
                 }
                 
@@ -76,17 +74,16 @@ struct HomeFeature {
                 
             case let .deleteTasks(ids):
                 let idSet = Set(ids)
-                let tasksToDelete = state.routineTasks.filter { idSet.contains($0.objectID) }
                 state.routineTasks.removeAll { idSet.contains($0.objectID) }
                 state.routineDisplays.removeAll { idSet.contains($0.id) }
                 
-                return .run { [tasksToDelete] _ in
-                    await MainActor.run {
-                        for task in tasksToDelete {
+                return .run { @MainActor [ids] _ in
+                    for id in ids {
+                        if let task = try? self.viewContext.existingObject(with: id) {
                             self.viewContext.delete(task)
                         }
-                        try? self.viewContext.save()
                     }
+                    try? self.viewContext.save()
                 }
                 
             // MARK: - Child Feature Logic
@@ -99,29 +96,27 @@ struct HomeFeature {
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
                 
-                return .run { send in
+                return .run { @MainActor send in
                     do {
-                        let newRoutine = try await MainActor.run { () -> RoutineTask in
-                            let newRoutine = RoutineTask(context: self.viewContext)
-                            newRoutine.name = name
-                            newRoutine.interval = Int16(freq)
-                            newRoutine.lastDone = nil
-                            newRoutine.setValue(emoji, forKey: "emoji")
+                        let newRoutine = RoutineTask(context: self.viewContext)
+                        newRoutine.name = name
+                        newRoutine.interval = Int16(freq)
+                        newRoutine.lastDone = nil
+                        newRoutine.setValue(emoji, forKey: "emoji")
 
-                            try self.viewContext.save()
-                            return newRoutine
-                        }
-                        await send(.routineSavedSuccessfully(newRoutine))
+                        try self.viewContext.save()
+                        send(.routineSavedSuccessfully(newRoutine))
                     } catch {
-                        await send(.routineSaveFailed)
+                        send(.routineSaveFailed)
                     }
                 }
                 
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
                 state.routineDisplays.append(makeRoutineDisplay(task))
-                return .run { [task] _ in
-                    await self.notificationClient.schedule(task)
+                let payload = makeNotificationPayload(for: task)
+                return .run { _ in
+                    await self.notificationClient.schedule(payload)
                 }
                 
             case .routineSaveFailed:
@@ -156,6 +151,15 @@ struct HomeFeature {
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
             isDoneToday: isDoneToday
+        )
+    }
+
+    private func makeNotificationPayload(for task: RoutineTask) -> NotificationPayload {
+        NotificationPayload(
+            identifier: task.objectID.uriRepresentation().absoluteString,
+            name: task.name,
+            interval: max(Int(task.interval), 1),
+            lastDone: task.lastDone
         )
     }
 }

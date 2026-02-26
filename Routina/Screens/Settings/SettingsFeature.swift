@@ -38,7 +38,9 @@ struct SettingsFeature {
 
             case .openAppSettingsTapped:
                 if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
+                    return .run { @MainActor _ in
+                        UIApplication.shared.open(url)
+                    }
                 }
                 return .none
                 
@@ -47,7 +49,7 @@ struct SettingsFeature {
                 return .run { @MainActor send in
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = settings.authorizationStatus == .authorized
-                    await send(.systemNotificationPermissionChecked(systemEnabled))
+                    send(.systemNotificationPermissionChecked(systemEnabled))
                 }
                 
             case .contactUsTapped:
@@ -65,7 +67,7 @@ struct SettingsFeature {
                 return .run { @MainActor send in
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = settings.authorizationStatus == .authorized
-                    await send(.systemNotificationPermissionChecked(systemEnabled))
+                    send(.systemNotificationPermissionChecked(systemEnabled))
                 }
 
             case .syncNowTapped:

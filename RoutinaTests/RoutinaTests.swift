@@ -173,14 +173,14 @@ struct HomeFeatureTests {
     func routineSavedSuccessfully_appendsTaskAndSchedulesNotification() async {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Walk", interval: 2, lastDone: nil, emoji: "🚶")
-        let scheduledIDs = LockIsolated<[NSManagedObjectID]>([])
+        let scheduledIDs = LockIsolated<[String]>([])
 
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             $0.managedObjectContext = context
-            $0.notificationClient.schedule = { task in
-                scheduledIDs.withValue { $0.append(task.objectID) }
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
             }
         }
 
@@ -200,7 +200,7 @@ struct HomeFeatureTests {
 
         #expect(store.state.routineTasks.count == 1)
         #expect(store.state.routineDisplays.count == 1)
-        #expect(scheduledIDs.value == [task.objectID])
+        #expect(scheduledIDs.value == [task.objectID.uriRepresentation().absoluteString])
     }
 
     @Test
@@ -246,6 +246,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
+            $0.managedObjectContext = context
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -279,6 +280,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
+            $0.managedObjectContext = context
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -311,6 +313,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             RoutineDetailFeature()
         } withDependencies: {
+            $0.managedObjectContext = context
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -338,6 +341,7 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
+            $0.managedObjectContext = context
             $0.calendar = calendar
             $0.date.now = now
             $0.notificationClient.schedule = { _ in }
@@ -367,15 +371,16 @@ struct RoutineDetailFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        let scheduledIDs = LockIsolated<[NSManagedObjectID]>([])
+        let scheduledIDs = LockIsolated<[String]>([])
 
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
+            $0.managedObjectContext = context
             $0.calendar = calendar
             $0.date.now = now
-            $0.notificationClient.schedule = { task in
-                scheduledIDs.withValue { $0.append(task.objectID) }
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
             }
         }
 
@@ -402,7 +407,7 @@ struct RoutineDetailFeatureTests {
 
         let request = NSFetchRequest<NSFetchRequestResult>(entityName: "RoutineLog")
         #expect((try? context.count(for: request)) == 1)
-        #expect(scheduledIDs.value == [task.objectID])
+        #expect(scheduledIDs.value == [task.objectID.uriRepresentation().absoluteString])
     }
 }
 

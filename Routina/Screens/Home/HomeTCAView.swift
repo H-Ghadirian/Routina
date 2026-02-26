@@ -124,6 +124,7 @@ struct HomeTCAView: View {
     private func routineDetailTCAView(taskID: NSManagedObjectID, viewStore: ViewStoreOf<HomeFeature>) -> some View {
         Group {
             if let task = viewStore.routineTasks.first(where: { $0.objectID == taskID }) {
+                if let context = task.managedObjectContext {
                 RoutineDetailTCAView(
                     store: Store(
                         initialState: RoutineDetailFeature.State(
@@ -133,9 +134,16 @@ struct HomeTCAView: View {
                             overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0),
                             isDoneToday: task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
                         ),
-                        reducer: { RoutineDetailFeature() }
+                        reducer: { RoutineDetailFeature() },
+                        withDependencies: {
+                            $0.managedObjectContext = context
+                        }
                     )
                 )
+                } else {
+                    Text("Routine context unavailable")
+                        .foregroundColor(.secondary)
+                }
             } else {
                 Text("Routine not found")
                     .foregroundColor(.secondary)
