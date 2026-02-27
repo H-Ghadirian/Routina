@@ -1,0 +1,4 @@
+module UIKitNavigationShim {
+umbrella "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/UIKitNavigationShim/include"
+export *
+}

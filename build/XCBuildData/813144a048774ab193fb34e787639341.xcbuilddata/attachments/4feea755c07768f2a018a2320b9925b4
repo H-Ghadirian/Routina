@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests-primary.swiftconstvalues",
+    "dependencies" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests-primary.d",
+    "diagnostics" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests-primary.dia",
+    "emit-module-dependencies" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests-primary-emit-module.dia",
+    "pch" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests-primary.swiftdeps"
+  },
+  "/Users/ghadirianh/Routina/RoutinaTests/RoutinaTests.swift" : {
+    "index-unit-output-path" : "/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests.o",
+    "llvm-bc" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests.bc",
+    "object" : "/Users/ghadirianh/Routina/build/Routina.build/Release-iphoneos/RoutinaTests.build/Objects-normal/arm64/RoutinaTests.o"
+  }
+}

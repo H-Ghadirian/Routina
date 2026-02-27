@@ -1,0 +1,116 @@
+{
+  "" : {
+    "const-values" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/SwiftNavigation-primary.swiftconstvalues",
+    "dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/SwiftNavigation-primary.d",
+    "diagnostics" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/SwiftNavigation-primary.dia",
+    "emit-module-dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/SwiftNavigation-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/SwiftNavigation-primary-emit-module.dia",
+    "pch" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/SwiftNavigation-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/SwiftNavigation-primary.swiftdeps"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/AlertState.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/AlertState.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/AlertState.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/AlertState.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Bind.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Bind.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Bind.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Bind.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Binding.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Binding.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Binding.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Binding.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/ButtonState.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ButtonState.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ButtonState.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ButtonState.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/ButtonStateBuilder.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ButtonStateBuilder.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ButtonStateBuilder.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ButtonStateBuilder.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/ConfirmationDialogState.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ConfirmationDialogState.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ConfirmationDialogState.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ConfirmationDialogState.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/HashableObject.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/HashableObject.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/HashableObject.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/HashableObject.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Internal/AssumeIsolated.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/AssumeIsolated.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/AssumeIsolated.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/AssumeIsolated.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Internal/Deprecations.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Deprecations.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Deprecations.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Deprecations.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Internal/ErrorMechanism.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ErrorMechanism.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ErrorMechanism.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ErrorMechanism.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Internal/Exports.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Exports.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Exports.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Exports.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Internal/HashableStaticString.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/HashableStaticString.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/HashableStaticString.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/HashableStaticString.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Internal/KeyPath+Sendable.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/KeyPath+Sendable.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/KeyPath+Sendable.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/KeyPath+Sendable.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Internal/ToOptionalUnit.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ToOptionalUnit.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ToOptionalUnit.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/ToOptionalUnit.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/NSObject+Observe.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/NSObject+Observe.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/NSObject+Observe.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/NSObject+Observe.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/Observe.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Observe.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Observe.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/Observe.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/TextState.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/TextState.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/TextState.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/TextState.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/UIBindable.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UIBindable.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UIBindable.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UIBindable.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/UIBinding.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UIBinding.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UIBinding.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UIBinding.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/UINavigationPath.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UINavigationPath.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UINavigationPath.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UINavigationPath.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/Sources/SwiftNavigation/UITransaction.swift" : {
+    "index-unit-output-path" : "/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UITransaction.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UITransaction.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-navigation/build/swift-navigation.build/Release-iphoneos/SwiftNavigation.build/Objects-normal/arm64/UITransaction.o"
+  }
+}

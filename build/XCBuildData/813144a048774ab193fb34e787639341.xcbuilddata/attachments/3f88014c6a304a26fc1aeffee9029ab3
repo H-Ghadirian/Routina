@@ -1,0 +1,51 @@
+{
+  "" : {
+    "const-values" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Clocks-primary.swiftconstvalues",
+    "dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Clocks-primary.d",
+    "diagnostics" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Clocks-primary.dia",
+    "emit-module-dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Clocks-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Clocks-primary-emit-module.dia",
+    "pch" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Clocks-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Clocks-primary.swiftdeps"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/AnyClock.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/AnyClock.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/AnyClock.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/AnyClock.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/ImmediateClock.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/ImmediateClock.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/ImmediateClock.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/ImmediateClock.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/Internal/Lock.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Lock.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Lock.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Lock.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/Internal/_AsyncTimerSequence.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/_AsyncTimerSequence.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/_AsyncTimerSequence.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/_AsyncTimerSequence.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/SwiftUI.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/SwiftUI.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/SwiftUI.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/SwiftUI.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/TestClock.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/TestClock.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/TestClock.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/TestClock.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/Timer.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Timer.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Timer.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/Timer.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/Sources/Clocks/UnimplementedClock.swift" : {
+    "index-unit-output-path" : "/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/UnimplementedClock.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/UnimplementedClock.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-clocks/build/swift-clocks.build/Release-iphoneos/Clocks.build/Objects-normal/arm64/UnimplementedClock.o"
+  }
+}

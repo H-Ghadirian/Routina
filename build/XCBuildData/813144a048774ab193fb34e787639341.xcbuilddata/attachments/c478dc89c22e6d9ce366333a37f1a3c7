@@ -1,0 +1,76 @@
+{
+  "" : {
+    "const-values" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionCore-primary.swiftconstvalues",
+    "dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionCore-primary.d",
+    "diagnostics" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionCore-primary.dia",
+    "emit-module-dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionCore-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionCore-primary-emit-module.dia",
+    "pch" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionCore-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionCore-primary.swiftdeps"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Bindable.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Bindable.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Bindable.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Bindable.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Environment.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Environment.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Environment.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Environment.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Internal/BetaChecking.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/BetaChecking.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/BetaChecking.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/BetaChecking.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Internal/Exports.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Exports.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Exports.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Exports.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Internal/Locking.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Locking.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Locking.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Locking.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Internal/ThreadLocal.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/ThreadLocal.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/ThreadLocal.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/ThreadLocal.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Internal/Unchecked.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Unchecked.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Unchecked.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Unchecked.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Internal/_PerceptionRegistrar.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/_PerceptionRegistrar.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/_PerceptionRegistrar.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/_PerceptionRegistrar.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/Perceptible.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Perceptible.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Perceptible.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/Perceptible.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/PerceptionChecking.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionChecking.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionChecking.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionChecking.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/PerceptionRegistrar.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionRegistrar.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionRegistrar.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionRegistrar.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/PerceptionTracking.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionTracking.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionTracking.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/PerceptionTracking.o"
+  },
+  "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/Sources/PerceptionCore/WithPerceptionTracking.swift" : {
+    "index-unit-output-path" : "/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/WithPerceptionTracking.o",
+    "llvm-bc" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/WithPerceptionTracking.bc",
+    "object" : "/Users/ghadirianh/Library/Developer/Xcode/DerivedData/Routina-dbtjjpphzgwvyjgitttdjospbcke/SourcePackages/checkouts/swift-perception/build/swift-perception.build/Release-iphoneos/PerceptionCore.build/Objects-normal/arm64/WithPerceptionTracking.o"
+  }
+}

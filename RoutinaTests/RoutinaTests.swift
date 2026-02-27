@@ -2,7 +2,13 @@ import ComposableArchitecture
 import CoreData
 import Foundation
 import Testing
+#if canImport(RoutinaProd)
 @testable @preconcurrency import RoutinaProd
+#elseif canImport(Routina)
+@testable @preconcurrency import Routina
+#else
+#error("Unable to import app module for tests")
+#endif
 
 @MainActor
 struct AddRoutineFeatureTests {
@@ -122,7 +128,8 @@ struct HomeFeatureTests {
             $0.routineTasks = [task]
             $0.routineDisplays = [
                 HomeFeature.RoutineDisplay(
-                    id: task.objectID,
+                    id: task.objectID.uriRepresentation().absoluteString,
+                    objectID: task.objectID,
                     name: "Unnamed task",
                     emoji: "✨",
                     interval: 1,
@@ -130,12 +137,10 @@ struct HomeFeatureTests {
                     isDoneToday: true
                 )
             ]
-            $0.refreshVersion = 1
         }
 
         #expect(store.state.routineTasks.count == 1)
         #expect(store.state.routineDisplays.count == 1)
-        #expect(store.state.refreshVersion == 1)
 
         let display = try #require(store.state.routineDisplays.first)
         #expect(display.name == "Unnamed task")
@@ -151,8 +156,7 @@ struct HomeFeatureTests {
             routineTasks: [],
             routineDisplays: [],
             isAddRoutineSheetPresented: true,
-            addRoutineState: AddRoutineFeature.State(),
-            refreshVersion: 0
+            addRoutineState: AddRoutineFeature.State()
         )
 
         let store = TestStore(initialState: initialState) {
@@ -186,7 +190,8 @@ struct HomeFeatureTests {
             $0.routineTasks = [task]
             $0.routineDisplays = [
                 HomeFeature.RoutineDisplay(
-                    id: task.objectID,
+                    id: task.objectID.uriRepresentation().absoluteString,
+                    objectID: task.objectID,
                     name: "Walk",
                     emoji: "🚶",
                     interval: 2,
@@ -210,12 +215,27 @@ struct HomeFeatureTests {
         let initialState = HomeFeature.State(
             routineTasks: [task1, task2],
             routineDisplays: [
-                HomeFeature.RoutineDisplay(id: task1.objectID, name: "A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false),
-                HomeFeature.RoutineDisplay(id: task2.objectID, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false)
+                HomeFeature.RoutineDisplay(
+                    id: task1.objectID.uriRepresentation().absoluteString,
+                    objectID: task1.objectID,
+                    name: "A",
+                    emoji: "🅰️",
+                    interval: 1,
+                    lastDone: nil,
+                    isDoneToday: false
+                ),
+                HomeFeature.RoutineDisplay(
+                    id: task2.objectID.uriRepresentation().absoluteString,
+                    objectID: task2.objectID,
+                    name: "B",
+                    emoji: "🅱️",
+                    interval: 2,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
             ],
             isAddRoutineSheetPresented: false,
-            addRoutineState: nil,
-            refreshVersion: 0
+            addRoutineState: nil
         )
 
         let store = TestStore(initialState: initialState) {
@@ -228,7 +248,15 @@ struct HomeFeatureTests {
         await store.send(.deleteTasks([task1.objectID])) {
             $0.routineTasks = [task2]
             $0.routineDisplays = [
-                HomeFeature.RoutineDisplay(id: task2.objectID, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false)
+                HomeFeature.RoutineDisplay(
+                    id: task2.objectID.uriRepresentation().absoluteString,
+                    objectID: task2.objectID,
+                    name: "B",
+                    emoji: "🅱️",
+                    interval: 2,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
             ]
         }
     }
@@ -236,6 +264,109 @@ struct HomeFeatureTests {
 
 @MainActor
 struct RoutineDetailFeatureTests {
+    @Test
+    func setDeleteConfirmation_togglesAlertPresentation() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.managedObjectContext = context
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.setDeleteConfirmation(true)) {
+            $0.isDeleteConfirmationPresented = true
+        }
+
+        await store.send(.setDeleteConfirmation(false)) {
+            $0.isDeleteConfirmationPresented = false
+        }
+    }
+
+    @Test
+    func deleteRoutineConfirmed_removesTaskCancelsNotificationAndRequestsDismiss() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Stretch", interval: 3, lastDone: nil, emoji: "🤸")
+        try context.save()
+
+        let canceledIDs = LockIsolated<[String]>([])
+        let initialState = RoutineDetailFeature.State(
+            task: task,
+            logs: [],
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: false,
+            isEditSheetPresented: true,
+            editRoutineName: "Stretch",
+            editRoutineEmoji: "🤸",
+            editFrequency: .day,
+            editFrequencyValue: 3,
+            isDeleteConfirmationPresented: true,
+            shouldDismissAfterDelete: false
+        )
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.managedObjectContext = context
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { identifier in
+                canceledIDs.withValue { $0.append(identifier) }
+            }
+        }
+
+        let expectedIdentifier = task.objectID.uriRepresentation().absoluteString
+
+        await store.send(.deleteRoutineConfirmed) {
+            $0.isDeleteConfirmationPresented = false
+        }
+
+        await store.receive(.routineDeleted) {
+            $0.isEditSheetPresented = false
+            $0.shouldDismissAfterDelete = true
+        }
+
+        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "RoutineTask")
+        #expect((try? context.count(for: request)) == 0)
+        #expect(canceledIDs.value == [expectedIdentifier])
+    }
+
+    @Test
+    func deleteDismissHandled_clearsDismissFlag() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Hydrate", interval: 1, lastDone: nil, emoji: "💧")
+
+        let initialState = RoutineDetailFeature.State(
+            task: task,
+            logs: [],
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: false,
+            isEditSheetPresented: false,
+            editRoutineName: "",
+            editRoutineEmoji: "✨",
+            editFrequency: .day,
+            editFrequencyValue: 1,
+            isDeleteConfirmationPresented: false,
+            shouldDismissAfterDelete: true
+        )
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.managedObjectContext = context
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.deleteDismissHandled) {
+            $0.shouldDismissAfterDelete = false
+        }
+    }
+
     @Test
     func setEditSheetTrue_syncsEditFormFromTask_weekFrequency() async {
         let context = makeInMemoryContext()
