@@ -9,6 +9,8 @@ struct SettingsFeature {
     @ObservableState
     struct State: Equatable {
         var appVersion: String = ""
+        var dataModeDescription: String = AppEnvironment.dataModeLabel
+        var cloudSyncAvailable: Bool = AppEnvironment.cloudKitContainerIdentifier != nil
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
         var systemSettingsNotificationsEnabled: Bool = true
         var isCloudSyncInProgress: Bool = false
@@ -71,6 +73,11 @@ struct SettingsFeature {
                 }
 
             case .syncNowTapped:
+                guard state.cloudSyncAvailable else {
+                    state.cloudSyncStatusMessage = "iCloud sync is disabled in Sandbox mode."
+                    return .none
+                }
+
                 state.isCloudSyncInProgress = true
                 state.cloudSyncStatusMessage = "Syncing with iCloud..."
                 return .run { @MainActor [viewContext] send in

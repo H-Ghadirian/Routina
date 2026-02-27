@@ -5,6 +5,9 @@ import ComposableArchitecture
 struct RoutinaTCAApp: App {
 
     init() {
+        NSLog(
+            "Routina data mode: \(AppEnvironment.dataModeLabel), store: \(AppEnvironment.persistentStoreFileName), defaults suite: \(AppEnvironment.userDefaultsSuiteName), cloud container: \(AppEnvironment.cloudKitContainerIdentifier ?? "disabled")"
+        )
         SharedDefaults.app.register(defaults: [
             .appSettingNotificationsEnabled: true
         ])

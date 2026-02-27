@@ -2,7 +2,7 @@ import ComposableArchitecture
 import CoreData
 import Foundation
 import Testing
-@testable @preconcurrency import Routina
+@testable @preconcurrency import RoutinaProd
 
 @MainActor
 struct AddRoutineFeatureTests {
@@ -94,7 +94,6 @@ struct HomeFeatureTests {
 
         await store.send(.setAddRoutineSheet(false)) {
             $0.isAddRoutineSheetPresented = false
-            $0.addRoutineState = nil
         }
     }
 
@@ -165,7 +164,6 @@ struct HomeFeatureTests {
 
         await store.send(.addRoutineSheet(.delegate(.didCancel))) {
             $0.isAddRoutineSheetPresented = false
-            $0.addRoutineState = nil
         }
     }
 

@@ -73,7 +73,10 @@ struct HomeFeature {
                 
             case let .setAddRoutineSheet(isPresented):
                 state.isAddRoutineSheetPresented = isPresented
-                state.addRoutineState = isPresented ? AddRoutineFeature.State() : nil
+                if isPresented {
+                    // Always reset form state when presenting.
+                    state.addRoutineState = AddRoutineFeature.State()
+                }
                 return .none
                 
             case let .deleteTasks(ids):
@@ -93,12 +96,10 @@ struct HomeFeature {
             // MARK: - Child Feature Logic
             case .addRoutineSheet(.delegate(.didCancel)):
                 state.isAddRoutineSheetPresented = false
-                state.addRoutineState = nil
                 return .none
                 
             case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji))):
                 state.isAddRoutineSheetPresented = false
-                state.addRoutineState = nil
                 
                 return .run { @MainActor send in
                     do {

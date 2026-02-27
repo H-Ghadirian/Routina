@@ -26,7 +26,14 @@ protocol SharedDefaultsProtocol {
 }
 
 enum SharedDefaults: SharedDefaultsProtocol {
-    static let app = UserDefaults(suiteName: "app")!
+    static let app: UserDefaults = {
+        if let suiteDefaults = UserDefaults(suiteName: AppEnvironment.userDefaultsSuiteName) {
+            return suiteDefaults
+        }
+
+        NSLog("Invalid UserDefaults suite '\(AppEnvironment.userDefaultsSuiteName)'. Falling back to standard defaults.")
+        return .standard
+    }()
 }
 
 public enum UserDefaultBoolValueKey: String {

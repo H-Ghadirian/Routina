@@ -6,7 +6,7 @@
 	<string>development</string>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.ir.hamedgh.Routinam.prod</string>
+		<string>iCloud.ir.hamedgh.Routinam.dev</string>
 	</array>
 	<key>com.apple.developer.icloud-services</key>
 	<array>

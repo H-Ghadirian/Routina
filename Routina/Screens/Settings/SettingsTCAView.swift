@@ -48,7 +48,7 @@ struct SettingsTCAView: View {
                                 Text("Sync Now")
                             }
                         }
-                        .disabled(store.isCloudSyncInProgress)
+                        .disabled(store.isCloudSyncInProgress || !store.cloudSyncAvailable)
 
                         if store.isCloudSyncInProgress {
                             HStack(spacing: 10) {
@@ -68,6 +68,13 @@ struct SettingsTCAView: View {
                             Text("App Version")
                             Spacer()
                             Text(store.appVersion)
+                                .foregroundColor(.gray)
+                        }
+
+                        HStack {
+                            Text("Data Mode")
+                            Spacer()
+                            Text(store.dataModeDescription)
                                 .foregroundColor(.gray)
                         }
                     }
