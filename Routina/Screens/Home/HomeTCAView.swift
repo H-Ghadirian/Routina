@@ -1,3 +1,4 @@
+import Combine
 import ComposableArchitecture
 import CoreData
 import SwiftData
@@ -22,13 +23,22 @@ struct HomeTCAView: View {
             .onAppear {
                 store.send(.onAppear)
             }
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))) { _ in
+            .onReceive(
+                NotificationCenter.default.publisher(for: Notification.Name("routineDidUpdate"))
+                    .receive(on: RunLoop.main)
+            ) { _ in
                 store.send(.onAppear)
             }
-            .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)) { _ in
+            .onReceive(
+                NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
+                    .receive(on: RunLoop.main)
+            ) { _ in
                 store.send(.onAppear)
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)) { _ in
+            .onReceive(
+                NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)
+                    .receive(on: RunLoop.main)
+            ) { _ in
                 store.send(.onAppear)
             }
             .onChange(of: store.routineTasks) { _, tasks in
