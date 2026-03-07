@@ -228,12 +228,15 @@ struct RoutineDetailFeature: Reducer {
                 let updatedLogs = try context.fetch(sortedLogsDescriptor(for: taskID))
                 send(.logsLoaded(updatedLogs))
 
-                let payload = NotificationPayload(
-                    identifier: taskID.uuidString,
-                    name: task?.name ?? fallbackName,
-                    interval: max(task.map { Int($0.interval) } ?? fallbackInterval, 1),
-                    lastDone: completedAt
-                )
+                let payload = task.map { NotificationCoordinator.notificationPayload(for: $0) }
+                    ?? NotificationPayload(
+                        identifier: taskID.uuidString,
+                        name: fallbackName,
+                        emoji: nil,
+                        interval: max(fallbackInterval, 1),
+                        lastDone: completedAt,
+                        triggerDate: nil
+                    )
                 await notificationClient.schedule(payload)
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
             } catch {
@@ -260,12 +263,7 @@ struct RoutineDetailFeature: Reducer {
                 task.interval = interval
                 try context.save()
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
-                let payload = NotificationPayload(
-                    identifier: task.id.uuidString,
-                    name: task.name,
-                    interval: max(Int(task.interval), 1),
-                    lastDone: task.lastDone
-                )
+                let payload = NotificationCoordinator.notificationPayload(for: task)
                 await notificationClient.schedule(payload)
                 send(.onAppear)
             } catch {

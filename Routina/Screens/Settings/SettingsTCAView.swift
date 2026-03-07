@@ -41,6 +41,13 @@ struct SettingsTCAView: View {
         )
     }
 
+    private var reminderTimeBinding: Binding<Date> {
+        Binding(
+            get: { store.notificationReminderTime },
+            set: { store.send(.notificationReminderTimeChanged($0)) }
+        )
+    }
+
     private var syncStatusText: String {
         if store.isCloudDataResetInProgress {
             return "Deleting iCloud data..."
@@ -98,7 +105,17 @@ struct SettingsTCAView: View {
     private var notificationsFormSection: some View {
         Section(header: Text("Notifications")) {
             Toggle("Enable notifications", isOn: notificationsBinding)
-                .disabled(store.systemSettingsNotificationsEnabled == false)
+
+            DatePicker(
+                "Reminder time",
+                selection: reminderTimeBinding,
+                displayedComponents: .hourAndMinute
+            )
+            .disabled(store.notificationsEnabled == false)
+
+            Text("Notifications include quick actions for Done and Snooze.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
 
             if store.systemSettingsNotificationsEnabled == false {
                 Button("Allow Notifications in System Settings") {
@@ -236,7 +253,17 @@ struct SettingsTCAView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle("Enable notifications", isOn: notificationsBinding)
                             .toggleStyle(.switch)
-                            .disabled(store.systemSettingsNotificationsEnabled == false)
+
+                        DatePicker(
+                            "Reminder time",
+                            selection: reminderTimeBinding,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .disabled(store.notificationsEnabled == false)
+
+                        Text("Notifications include quick actions for Done and Snooze.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
 
                         if store.systemSettingsNotificationsEnabled == false {
                             Text("Notifications are disabled in system settings.")

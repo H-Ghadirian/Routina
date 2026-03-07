@@ -94,6 +94,7 @@ struct HomeFeature {
                         for log in logs {
                             context.delete(log)
                         }
+                        await self.notificationClient.cancel(id.uuidString)
                     }
                     try? context.save()
                     NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
@@ -181,12 +182,7 @@ struct HomeFeature {
     }
 
     private func makeNotificationPayload(for task: RoutineTask) -> NotificationPayload {
-        NotificationPayload(
-            identifier: task.id.uuidString,
-            name: task.name,
-            interval: max(Int(task.interval), 1),
-            lastDone: task.lastDone
-        )
+        NotificationCoordinator.notificationPayload(for: task)
     }
 
     private func hasDuplicateRoutineName(

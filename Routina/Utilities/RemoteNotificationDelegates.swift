@@ -2,8 +2,17 @@ import Foundation
 
 #if os(iOS)
 import UIKit
+import UserNotifications
 
 final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        NotificationCoordinator.configureCurrentCenter(delegate: self)
+        return true
+    }
+
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
@@ -27,11 +36,29 @@ final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
         NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
         completionHandler(.noData)
     }
+
+}
+
+extension RemoteNotificationIOSDelegate: UNUserNotificationCenterDelegate {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        await NotificationCoordinator.handleResponse(
+            actionIdentifier: response.actionIdentifier,
+            requestIdentifier: response.notification.request.identifier
+        )
+    }
 }
 #elseif os(macOS)
 import AppKit
+import UserNotifications
 
 final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NotificationCoordinator.configureCurrentCenter(delegate: self)
+    }
+
     func application(
         _ application: NSApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
@@ -52,6 +79,19 @@ final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
     ) {
         CloudKitSyncDiagnostics.recordRemoteNotificationReceived()
         NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+    }
+
+}
+
+extension RemoteNotificationMacDelegate: UNUserNotificationCenterDelegate {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        await NotificationCoordinator.handleResponse(
+            actionIdentifier: response.actionIdentifier,
+            requestIdentifier: response.notification.request.identifier
+        )
     }
 }
 #endif

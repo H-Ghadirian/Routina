@@ -22,7 +22,11 @@ struct RoutinaTCAApp: App {
         )
         CloudKitSyncDiagnostics.startIfNeeded()
         SharedDefaults.app.register(defaults: [
-            .appSettingNotificationsEnabled: true
+            .appSettingNotificationsEnabled: false
+        ])
+        SharedDefaults.app.register(defaults: [
+            NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,
+            NotificationPreferences.reminderMinuteDefaultsKey: NotificationPreferences.defaultReminderMinute
         ])
     }
 

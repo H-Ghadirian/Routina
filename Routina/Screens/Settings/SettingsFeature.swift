@@ -19,6 +19,7 @@ struct SettingsFeature {
         var cloudSyncAvailable: Bool = AppEnvironment.isCloudSyncEnabled
         var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
         var systemSettingsNotificationsEnabled: Bool = true
+        var notificationReminderTime: Date = NotificationPreferences.reminderTimeDate()
         var isCloudSyncInProgress: Bool = false
         var isCloudDataResetInProgress: Bool = false
         var isCloudDataResetConfirmationPresented: Bool = false
@@ -30,6 +31,8 @@ struct SettingsFeature {
 
     enum Action: Equatable {
         case toggleNotifications(Bool)
+        case notificationAuthorizationFinished(Bool)
+        case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
         case onAppear
         case onAppBecameActive
@@ -55,9 +58,37 @@ struct SettingsFeature {
         Reduce { state, action in
             switch action {
             case .toggleNotifications(let isOn):
-                state.notificationsEnabled = isOn
-                SharedDefaults.app[.appSettingNotificationsEnabled] = isOn
-                return .none
+                guard isOn else {
+                    state.notificationsEnabled = false
+                    SharedDefaults.app[.appSettingNotificationsEnabled] = false
+                    return .run { _ in
+                        await self.notificationClient.cancelAll()
+                    }
+                }
+
+                return .run { send in
+                    let granted = await self.notificationClient.requestAuthorizationIfNeeded()
+                    await send(.notificationAuthorizationFinished(granted))
+                }
+
+            case .notificationAuthorizationFinished(let isGranted):
+                state.notificationsEnabled = isGranted
+                state.systemSettingsNotificationsEnabled = isGranted
+                SharedDefaults.app[.appSettingNotificationsEnabled] = isGranted
+
+                guard isGranted else { return .none }
+                return .run { @MainActor _ in
+                    try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
+                }
+
+            case .notificationReminderTimeChanged(let reminderTime):
+                state.notificationReminderTime = reminderTime
+                NotificationPreferences.storeReminderTime(reminderTime)
+
+                guard state.notificationsEnabled else { return .none }
+                return .run { @MainActor _ in
+                    try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
+                }
 
             case .openAppSettingsTapped:
                 if let url = PlatformSupport.notificationSettingsURL {
@@ -70,6 +101,7 @@ struct SettingsFeature {
             case .onAppear:
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
                 state.isDebugSectionVisible = false
+                state.notificationReminderTime = NotificationPreferences.reminderTimeDate()
                 state.selectedAppIcon = .persistedSelection
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
                 state.cloudDiagnosticsSummary = diagnostics.summary
@@ -77,7 +109,7 @@ struct SettingsFeature {
                 state.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .run { @MainActor send in
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
-                    let systemEnabled = settings.authorizationStatus == .authorized
+                    let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
                 }
 
@@ -105,10 +137,18 @@ struct SettingsFeature {
                 return .none
 
             case .onAppBecameActive:
+                let notificationsEnabled = state.notificationsEnabled
                 return .run { @MainActor send in
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
-                    let systemEnabled = settings.authorizationStatus == .authorized
+                    let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
+                    if notificationsEnabled {
+                        if systemEnabled {
+                            try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
+                        } else {
+                            await self.notificationClient.cancelAll()
+                        }
+                    }
                 }
 
             case .syncNowTapped:
@@ -477,20 +517,7 @@ struct SettingsFeature {
 
     @MainActor
     private func rescheduleNotificationsAfterImport(in context: ModelContext) async throws {
-        let center = UNUserNotificationCenter.current()
-        center.removeAllPendingNotificationRequests()
-        center.removeAllDeliveredNotifications()
-
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        for task in tasks {
-            let payload = NotificationPayload(
-                identifier: task.id.uuidString,
-                name: task.name,
-                interval: max(Int(task.interval), 1),
-                lastDone: task.lastDone
-            )
-            await notificationClient.schedule(payload)
-        }
+        try await rescheduleNotificationsIfNeeded(in: context)
     }
 
     private func withSecurityScopedAccess<T>(
@@ -504,5 +531,31 @@ struct SettingsFeature {
             }
         }
         return try operation()
+    }
+
+    @MainActor
+    private func rescheduleNotificationsIfNeeded(in context: ModelContext) async throws {
+        await notificationClient.cancelAll()
+
+        guard SharedDefaults.app[.appSettingNotificationsEnabled] else { return }
+
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        guard isSystemNotificationAuthorizationEnabled(settings.authorizationStatus) else { return }
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        for task in tasks {
+            await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
+        }
+    }
+
+    private func isSystemNotificationAuthorizationEnabled(_ status: UNAuthorizationStatus) -> Bool {
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .denied, .notDetermined:
+            return false
+        @unknown default:
+            return false
+        }
     }
 }
