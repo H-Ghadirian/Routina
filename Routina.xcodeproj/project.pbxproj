@@ -121,8 +121,8 @@
 			membershipExceptions = (
 				Info.plist,
 				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
-				"Screens/App/AppView.swift",
-				"Screens/App/RoutinaTCAApp.swift",
+				Screens/App/AppView.swift,
+				Screens/App/RoutinaTCAApp.swift,
 				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",
@@ -141,8 +141,8 @@
 			membershipExceptions = (
 				Info.plist,
 				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
-				"Screens/App/AppView.swift",
-				"Screens/App/RoutinaTCAApp.swift",
+				Screens/App/AppView.swift,
+				Screens/App/RoutinaTCAApp.swift,
 				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",

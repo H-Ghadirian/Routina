@@ -32,6 +32,10 @@ struct RoutinaMacApp: App {
             .onAppear {
                 NSApplication.shared.registerForRemoteNotifications()
                 PlatformSupport.applyAppIcon(.persistedSelection)
+                MacMenuCleanup.removeUnneededMenus()
+                DispatchQueue.main.async {
+                    MacMenuCleanup.removeUnneededMenus()
+                }
                 Task {
                     await CloudKitPushSubscriptionService.ensureSubscriptionIfNeeded(
                         containerIdentifier: AppEnvironment.cloudKitContainerIdentifier
