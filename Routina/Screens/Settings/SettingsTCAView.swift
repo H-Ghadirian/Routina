@@ -251,6 +251,25 @@ struct SettingsTCAView: View {
                     }
                 }
 
+                macSectionCard(title: "App Icon") {
+                    VStack(alignment: .leading, spacing: 14) {
+                        LazyVGrid(
+                            columns: [
+                                GridItem(.adaptive(minimum: 118), spacing: 12)
+                            ],
+                            spacing: 12
+                        ) {
+                            ForEach(AppIconOption.allCases) { option in
+                                macAppIconButton(option)
+                            }
+                        }
+
+                        Text("Changes the Dock and app switcher icon immediately. Finder keeps the bundled app icon.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 macSectionCard(title: "Support") {
                     Button {
                         store.send(.contactUsTapped)
@@ -395,6 +414,44 @@ struct SettingsTCAView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.trailing)
         }
+    }
+
+    @ViewBuilder
+    private func macAppIconButton(_ option: AppIconOption) -> some View {
+        let isSelected = store.selectedAppIcon == option
+
+        Button {
+            store.send(.appIconSelected(option))
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                Image(option.assetName)
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                HStack(spacing: 6) {
+                    Text(option.title)
+                        .font(.subheadline.weight(.medium))
+                    Spacer()
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.tint)
+                    }
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(nsColor: .windowBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(isSelected ? Color.accentColor : sectionCardStroke, lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 #endif
 }

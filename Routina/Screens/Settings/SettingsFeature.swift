@@ -25,6 +25,7 @@ struct SettingsFeature {
         var cloudStatusMessage: String = ""
         var isDataTransferInProgress: Bool = false
         var dataTransferStatusMessage: String = ""
+        var selectedAppIcon: AppIconOption = .persistedSelection
     }
 
     enum Action: Equatable {
@@ -41,6 +42,7 @@ struct SettingsFeature {
         case resetCloudDataConfirmed
         case exportRoutineDataTapped
         case importRoutineDataTapped
+        case appIconSelected(AppIconOption)
         case routineDataTransferFinished(success: Bool, message: String)
         case cloudSyncFinished(success: Bool, message: String)
         case cloudDataResetFinished(success: Bool, message: String)
@@ -68,6 +70,7 @@ struct SettingsFeature {
             case .onAppear:
                 state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
                 state.isDebugSectionVisible = false
+                state.selectedAppIcon = .persistedSelection
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
                 state.cloudDiagnosticsSummary = diagnostics.summary
                 state.cloudDiagnosticsTimestamp = diagnostics.timestampText
@@ -290,6 +293,13 @@ struct SettingsFeature {
 #else
                 return .none
 #endif
+
+            case let .appIconSelected(option):
+                state.selectedAppIcon = option
+                AppIconOption.persist(option)
+                return .run { @MainActor _ in
+                    PlatformSupport.applyAppIcon(option)
+                }
 
             case let .routineDataTransferFinished(_, message):
                 state.isDataTransferInProgress = false

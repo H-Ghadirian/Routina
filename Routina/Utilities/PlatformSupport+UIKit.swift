@@ -27,6 +27,11 @@ extension PlatformSupport {
     static func selectRoutineDataImportURL() -> URL? {
         nil
     }
+
+    @MainActor
+    static func applyAppIcon(_ option: AppIconOption) {
+        _ = option
+    }
 }
 
 extension View {

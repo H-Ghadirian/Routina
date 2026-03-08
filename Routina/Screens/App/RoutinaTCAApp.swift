@@ -55,6 +55,7 @@ struct RoutinaTCAApp: App {
 #elseif os(macOS)
                 .onAppear {
                     NSApplication.shared.registerForRemoteNotifications()
+                    PlatformSupport.applyAppIcon(.persistedSelection)
                     Task {
                         await CloudKitPushSubscriptionService.ensureSubscriptionIfNeeded(
                             containerIdentifier: AppEnvironment.cloudKitContainerIdentifier

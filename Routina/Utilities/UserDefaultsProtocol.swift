@@ -12,6 +12,15 @@ extension UserDefaults: UserDefaultsProtocol {
         }
     }
 
+    public subscript(key: UserDefaultStringValueKey) -> String? {
+        get {
+            string(forKey: key.rawValue)
+        }
+        set {
+            set(newValue, forKey: key.rawValue)
+        }
+    }
+
     public func register(defaults keysWithValues: [UserDefaultBoolValueKey: Bool]) {
         var rawDefaults: [String: Any] = [:]
         for (key, value) in keysWithValues {
@@ -41,7 +50,12 @@ public enum UserDefaultBoolValueKey: String {
     case requestNotificationPermission
 }
 
+public enum UserDefaultStringValueKey: String {
+    case selectedMacAppIcon
+}
+
 public protocol UserDefaultsProtocol {
     subscript(key: UserDefaultBoolValueKey) -> Bool { get set }
+    subscript(key: UserDefaultStringValueKey) -> String? { get set }
     func register(defaults keysWithValues: [UserDefaultBoolValueKey: Bool])
 }

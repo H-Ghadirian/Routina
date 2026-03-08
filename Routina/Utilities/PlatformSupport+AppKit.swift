@@ -43,6 +43,15 @@ extension PlatformSupport {
 
         return panel.runModal() == .OK ? panel.url : nil
     }
+
+    @MainActor
+    static func applyAppIcon(_ option: AppIconOption) {
+        guard let image = NSImage(named: option.assetName) else {
+            NSLog("Missing app icon asset named '\(option.assetName)'")
+            return
+        }
+        NSApplication.shared.applicationIconImage = image
+    }
 }
 
 extension View {
