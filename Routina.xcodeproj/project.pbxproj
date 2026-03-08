@@ -113,11 +113,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"Screens/AddRoutine/AddRoutineTCAView+macOS.swift",
-				"Screens/App/RoutinaTCAApp+macOS.swift",
-				"Screens/Home/HomeTCAView+macOS.swift",
-				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+macOS.swift",
-				"Screens/RoutineDetail/RoutineDetailPlatformStyle+macOS.swift",
 			);
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
 		};
@@ -126,6 +121,8 @@
 			membershipExceptions = (
 				Info.plist,
 				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
+				"Screens/App/AppView.swift",
+				"Screens/App/RoutinaTCAApp.swift",
 				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",
@@ -136,11 +133,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"Screens/AddRoutine/AddRoutineTCAView+macOS.swift",
-				"Screens/App/RoutinaTCAApp+macOS.swift",
-				"Screens/Home/HomeTCAView+macOS.swift",
-				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+macOS.swift",
-				"Screens/RoutineDetail/RoutineDetailPlatformStyle+macOS.swift",
 			);
 			target = 3D1000402E70000100000001 /* RoutinaDev */;
 		};
@@ -149,6 +141,8 @@
 			membershipExceptions = (
 				Info.plist,
 				"Screens/AddRoutine/AddRoutineTCAView+nonmacOS.swift",
+				"Screens/App/AppView.swift",
+				"Screens/App/RoutinaTCAApp.swift",
 				"Screens/App/RoutinaTCAApp+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailEditRoutineContent+nonmacOS.swift",
 				"Screens/RoutineDetail/RoutineDetailPlatformStyle+nonmacOS.swift",
@@ -207,6 +201,11 @@
 				5F1000282E90000100000001 /* Exceptions for "RoutinaWatchExtension" folder in "RoutinaWatchExtension" target */,
 			);
 			path = RoutinaWatchExtension;
+			sourceTree = "<group>";
+		};
+		6A0000012F00000100000001 /* RoutinaMacApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RoutinaMacApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -312,6 +311,7 @@
 			isa = PBXGroup;
 			children = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
+				6A0000012F00000100000001 /* RoutinaMacApp */,
 				2A5A74D02D7B92F900E91075 /* RoutinaTests */,
 				2A5A74DA2D7B92F900E91075 /* RoutinaUITests */,
 				5F1000092E90000100000001 /* RoutinaWatchApp */,
@@ -435,6 +435,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
+				6A0000012F00000100000001 /* RoutinaMacApp */,
 			);
 			name = RoutinaMacProd;
 			packageProductDependencies = (
@@ -491,6 +492,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* Routina */,
+				6A0000012F00000100000001 /* RoutinaMacApp */,
 			);
 			name = RoutinaMacDev;
 			packageProductDependencies = (
