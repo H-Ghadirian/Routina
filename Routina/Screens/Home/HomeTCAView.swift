@@ -245,10 +245,12 @@ struct HomeTCAView: View {
             .frame(width: 36, height: 36)
 
             VStack(alignment: .leading, spacing: 4) {
+#if os(macOS)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(task.name)
                         .font(.headline)
                         .lineLimit(1)
+                        .layoutPriority(1)
 
                     Spacer(minLength: 8)
 
@@ -259,6 +261,19 @@ struct HomeTCAView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+#else
+                Text(task.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .layoutPriority(1)
+
+                statusBadge(for: task)
+
+                Text(rowMetadataText(for: task))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+#endif
             }
 
             Spacer(minLength: 0)
