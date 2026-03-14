@@ -6,7 +6,7 @@ struct AddRoutineTCAView: View {
     @FocusState private var isRoutineNameFocused: Bool
     @State private var isEmojiPickerPresented = false
     private let emojiOptions = EmojiCatalog.uniqueQuick
-    private let allEmojiOptions = EmojiCatalog.uniqueAll
+    private let allEmojiOptions = EmojiCatalog.searchableAll
 
     var body: some View {
         WithPerceptionTracking {
@@ -28,7 +28,7 @@ struct AddRoutineTCAView: View {
                 }
                 .routinaAddRoutineNameAutofocus(isRoutineNameFocused: $isRoutineNameFocused)
                 .routinaAddRoutineEmojiPicker(isPresented: $isEmojiPickerPresented) {
-                    AddRoutineEmojiPickerSheet(
+                    EmojiPickerSheet(
                         selectedEmoji: routineEmojiBinding,
                         emojis: allEmojiOptions
                     )
@@ -310,44 +310,4 @@ struct AddRoutineTCAView: View {
         }
     }
 #endif
-}
-
-private struct AddRoutineEmojiPickerSheet: View {
-    @Binding var selectedEmoji: String
-    let emojis: [String]
-    @Environment(\.dismiss) private var dismiss
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 8)
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(Array(emojis.enumerated()), id: \.offset) { _, emoji in
-                        Button {
-                            selectedEmoji = emoji
-                            dismiss()
-                        } label: {
-                            Text(emoji)
-                                .font(.title2)
-                                .frame(width: 36, height: 36)
-                                .background(
-                                    Circle()
-                                        .fill(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle("Choose Emoji")
-            .routinaInlineTitleDisplayMode()
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-    }
 }

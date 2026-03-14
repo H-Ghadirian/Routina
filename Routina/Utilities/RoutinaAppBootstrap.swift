@@ -8,7 +8,9 @@ enum RoutinaAppBootstrap {
         NSLog(
             "Routina data mode: \(AppEnvironment.dataModeLabel), defaults suite: \(AppEnvironment.userDefaultsSuiteName), cloud container: \(cloudContainer)"
         )
-        CloudKitSyncDiagnostics.startIfNeeded()
+        if !AppEnvironment.isAutomatedTestMode {
+            CloudKitSyncDiagnostics.startIfNeeded()
+        }
         SharedDefaults.app.register(defaults: [
             .appSettingNotificationsEnabled: false
         ])

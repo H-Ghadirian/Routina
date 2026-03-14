@@ -20,6 +20,7 @@ struct RoutinaTCAApp: App {
                 .routinaAppRootWindowFrame()
                 .modelContainer(persistence.container)
                 .onAppear {
+                    guard !AppEnvironment.isAutomatedTestMode else { return }
                     UIApplication.shared.registerForRemoteNotifications()
                     Task {
                         await CloudKitPushSubscriptionService.ensureSubscriptionIfNeeded(

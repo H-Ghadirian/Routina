@@ -3,8 +3,22 @@ import Foundation
 enum AppEnvironment {
     private static let processEnvironment = ProcessInfo.processInfo.environment
     private static let bundleIdentifier = Bundle.main.bundleIdentifier?.lowercased()
+    static let isUITestMode: Bool = {
+        if let value = boolValue(from: processEnvironment["ROUTINA_UI_TEST_MODE"]) {
+            return value
+        }
+
+        return false
+    }()
+    static let isAutomatedTestMode: Bool = {
+        isUITestMode || processEnvironment["XCTestConfigurationFilePath"] != nil
+    }()
 
     static let isSandboxDataMode: Bool = {
+        if isAutomatedTestMode {
+            return true
+        }
+
         if let value = boolValue(from: processEnvironment["ROUTINA_SANDBOX"]) {
             return value
         }
@@ -33,6 +47,10 @@ enum AppEnvironment {
     }()
 
     static let cloudKitContainerIdentifier: String? = {
+        if isAutomatedTestMode {
+            return nil
+        }
+
         if let override = resolvedString(
             infoKey: "RoutinaCloudKitContainerIdentifier",
             envKey: "ROUTINA_CLOUDKIT_CONTAINER_ID"
@@ -57,6 +75,12 @@ enum AppEnvironment {
     }()
 
     static let persistentStoreFileName: String = {
+        if isUITestMode,
+           let override = processEnvironment["ROUTINA_STORE_FILENAME"],
+           !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return override
+        }
+
         if let override = resolvedString(
             infoKey: "RoutinaPersistentStoreFilename",
             envKey: "ROUTINA_STORE_FILENAME"
@@ -64,15 +88,29 @@ enum AppEnvironment {
             return override
         }
 
+        if isUITestMode {
+            return "RoutinaModel-UITests.sqlite"
+        }
+
         return isSandboxDataMode ? "RoutinaModel-Sandbox.sqlite" : "RoutinaModel.sqlite"
     }()
 
     static let userDefaultsSuiteName: String = {
+        if isUITestMode,
+           let override = processEnvironment["ROUTINA_USER_DEFAULTS_SUITE"],
+           !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return override
+        }
+
         if let override = resolvedString(
             infoKey: "RoutinaUserDefaultsSuiteName",
             envKey: "ROUTINA_USER_DEFAULTS_SUITE"
         ) {
             return override
+        }
+
+        if isUITestMode {
+            return "app.ui-tests"
         }
 
         return isSandboxDataMode ? "app.sandbox" : "app"

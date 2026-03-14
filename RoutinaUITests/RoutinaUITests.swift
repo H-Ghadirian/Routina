@@ -7,34 +7,56 @@ struct RoutinaUITests {
     @MainActor
     @Test
     func appLaunches() {
-        let app = XCUIApplication()
+        let app = makeApp()
         app.launch()
-        #expect(app.state == .runningForeground)
+        #expect(app.wait(for: .runningForeground, timeout: 10))
+        #expect(homeAddRoutineButton(in: app).waitForExistence(timeout: 10))
     }
 
     @MainActor
     @Test
     func homeRowTapOpensRoutineDetail() {
-        let app = XCUIApplication()
+        let app = makeApp()
         app.launch()
+        #expect(app.wait(for: .runningForeground, timeout: 10))
 
         let routineName = "UITest-\(UUID().uuidString.prefix(6))"
 
-        app.navigationBars.buttons["Add Routine"].tap()
+        let addRoutineButton = homeAddRoutineButton(in: app)
+        #expect(addRoutineButton.waitForExistence(timeout: 10))
+        addRoutineButton.tap()
 
         let nameField = app.textFields["Routine name"]
-        #expect(nameField.waitForExistence(timeout: 5))
+        #expect(nameField.waitForExistence(timeout: 10))
         nameField.tap()
         nameField.typeText(String(routineName))
 
-        app.navigationBars.buttons["Save"].tap()
+        let saveButton = app.navigationBars.buttons["Save"]
+        #expect(saveButton.waitForExistence(timeout: 10))
+        saveButton.tap()
 
         let row = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", String(routineName))).firstMatch
-        #expect(row.waitForExistence(timeout: 5))
+        #expect(row.waitForExistence(timeout: 10))
         row.tap()
 
         let routineLogs = app.staticTexts["Routine Logs"]
         let editButton = app.buttons["Edit"]
-        #expect(routineLogs.waitForExistence(timeout: 5) || editButton.waitForExistence(timeout: 5))
+        #expect(routineLogs.waitForExistence(timeout: 10) || editButton.waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    private func makeApp() -> XCUIApplication {
+        let app = XCUIApplication()
+        let runID = UUID().uuidString.lowercased()
+        app.launchEnvironment["ROUTINA_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["ROUTINA_SANDBOX"] = "1"
+        app.launchEnvironment["ROUTINA_STORE_FILENAME"] = "RoutinaModel-UITests-\(runID).sqlite"
+        app.launchEnvironment["ROUTINA_USER_DEFAULTS_SUITE"] = "app.ui-tests.\(runID)"
+        return app
+    }
+
+    @MainActor
+    private func homeAddRoutineButton(in app: XCUIApplication) -> XCUIElement {
+        app.navigationBars.buttons["Add Routine"].firstMatch
     }
 }

@@ -9,6 +9,7 @@ final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        guard !AppEnvironment.isAutomatedTestMode else { return true }
         NotificationCoordinator.configureCurrentCenter(delegate: self)
         return true
     }
@@ -56,6 +57,7 @@ import UserNotifications
 
 final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard !AppEnvironment.isAutomatedTestMode else { return }
         NotificationCoordinator.configureCurrentCenter(delegate: self)
         NSWindow.allowsAutomaticWindowTabbing = false
         DispatchQueue.main.async {
