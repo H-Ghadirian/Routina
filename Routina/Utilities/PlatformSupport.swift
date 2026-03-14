@@ -42,6 +42,21 @@ enum AppIconOption: String, CaseIterable, Equatable, Identifiable {
         }
     }
 
+    var iOSAlternateIconName: String? {
+        switch self {
+        case .orange:
+            return nil
+        case .yellow:
+            return "AppIconYellow"
+        case .teal:
+            return "AppIconTeal"
+        case .lightBlue:
+            return "AppIconLightBlue"
+        case .darkBlue:
+            return "AppIconDarkBlue"
+        }
+    }
+
     static var persistedSelection: AppIconOption {
         guard let rawValue = SharedDefaults.app[.selectedMacAppIcon],
               let option = migratedOption(for: rawValue) else {

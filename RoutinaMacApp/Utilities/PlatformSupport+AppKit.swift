@@ -52,6 +52,12 @@ extension PlatformSupport {
         }
         NSApplication.shared.applicationIconImage = image
     }
+
+    @MainActor
+    static func requestAppIconChange(to option: AppIconOption) async -> String? {
+        applyAppIcon(option)
+        return nil
+    }
 }
 
 extension View {

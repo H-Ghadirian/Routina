@@ -26,6 +26,7 @@ struct SettingsFeature {
         var cloudStatusMessage: String = ""
         var isDataTransferInProgress: Bool = false
         var dataTransferStatusMessage: String = ""
+        var appIconStatusMessage: String = ""
         var selectedAppIcon: AppIconOption = .persistedSelection
     }
 
@@ -46,6 +47,7 @@ struct SettingsFeature {
         case exportRoutineDataTapped
         case importRoutineDataTapped
         case appIconSelected(AppIconOption)
+        case appIconChangeFinished(requestedOption: AppIconOption, errorMessage: String?)
         case routineDataTransferFinished(success: Bool, message: String)
         case cloudSyncFinished(success: Bool, message: String)
         case cloudDataResetFinished(success: Bool, message: String)
@@ -53,6 +55,7 @@ struct SettingsFeature {
 
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.appIconClient) var appIconClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -103,6 +106,7 @@ struct SettingsFeature {
                 state.isDebugSectionVisible = false
                 state.notificationReminderTime = NotificationPreferences.reminderTimeDate()
                 state.selectedAppIcon = .persistedSelection
+                state.appIconStatusMessage = ""
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
                 state.cloudDiagnosticsSummary = diagnostics.summary
                 state.cloudDiagnosticsTimestamp = diagnostics.timestampText
@@ -335,11 +339,20 @@ struct SettingsFeature {
 #endif
 
             case let .appIconSelected(option):
-                state.selectedAppIcon = option
-                AppIconOption.persist(option)
-                return .run { @MainActor _ in
-                    PlatformSupport.applyAppIcon(option)
+                state.appIconStatusMessage = ""
+                return .run { send in
+                    let errorMessage = await self.appIconClient.requestChange(option)
+                    await send(.appIconChangeFinished(requestedOption: option, errorMessage: errorMessage))
                 }
+
+            case let .appIconChangeFinished(option, errorMessage):
+                if let errorMessage {
+                    state.appIconStatusMessage = "App icon update failed: \(errorMessage)"
+                } else {
+                    state.selectedAppIcon = option
+                    AppIconOption.persist(option)
+                }
+                return .none
 
             case let .routineDataTransferFinished(_, message):
                 state.isDataTransferInProgress = false

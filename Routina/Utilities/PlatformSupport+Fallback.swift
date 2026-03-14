@@ -29,6 +29,12 @@ extension PlatformSupport {
     static func applyAppIcon(_ option: AppIconOption) {
         _ = option
     }
+
+    @MainActor
+    static func requestAppIconChange(to option: AppIconOption) async -> String? {
+        _ = option
+        return "Alternate app icons are unavailable on this platform."
+    }
 }
 
 extension View {

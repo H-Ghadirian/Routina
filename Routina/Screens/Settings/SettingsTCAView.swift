@@ -94,6 +94,7 @@ struct SettingsTCAView: View {
         NavigationStack {
             Form {
                 notificationsFormSection
+                appIconFormSection
                 supportFormSection
                 iCloudFormSection
                 aboutFormSection
@@ -145,6 +146,33 @@ struct SettingsTCAView: View {
             }
         }
     }
+
+#if !os(macOS)
+    @ViewBuilder
+    private var appIconFormSection: some View {
+        Section(header: Text("App Icon")) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(AppIconOption.allCases) { option in
+                        iosAppIconButton(option)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+
+            Text("iOS confirms icon changes before applying them.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+
+            if !store.appIconStatusMessage.isEmpty {
+                Text(store.appIconStatusMessage)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+#endif
 
     @ViewBuilder
     private var iCloudFormSection: some View {
@@ -481,6 +509,45 @@ struct SettingsTCAView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(isSelected ? Color.accentColor : sectionCardStroke, lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+#else
+    @ViewBuilder
+    private func iosAppIconButton(_ option: AppIconOption) -> some View {
+        let isSelected = store.selectedAppIcon == option
+
+        Button {
+            store.send(.appIconSelected(option))
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(option.assetName)
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(width: 72, height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                HStack(spacing: 6) {
+                    Text(option.title)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 0)
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.tint)
+                    }
+                }
+            }
+            .padding(10)
+            .frame(width: 108, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(uiColor: .secondarySystemGroupedBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(isSelected ? Color.accentColor : Color(uiColor: .separator), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)

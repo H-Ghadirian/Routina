@@ -11,6 +11,10 @@ private enum NotificationClientKey: DependencyKey {
     static let liveValue = NotificationClient.live
 }
 
+private enum AppIconClientKey: DependencyKey {
+    static let liveValue = AppIconClient.live
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -20,5 +24,10 @@ extension DependencyValues {
     var notificationClient: NotificationClient {
         get { self[NotificationClientKey.self] }
         set { self[NotificationClientKey.self] = newValue }
+    }
+
+    var appIconClient: AppIconClient {
+        get { self[AppIconClientKey.self] }
+        set { self[AppIconClientKey.self] = newValue }
     }
 }
