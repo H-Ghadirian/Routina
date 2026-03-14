@@ -29,6 +29,7 @@ struct HomeFeature {
 
         case setAddRoutineSheet(Bool)
         case deleteTasks([UUID])
+        case markTaskDone(UUID)
 
         case addRoutineSheet(AddRoutineFeature.Action)
         case routineSavedSuccessfully(RoutineTask)
@@ -41,6 +42,8 @@ struct HomeFeature {
 
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.modelContext) var modelContext
+    @Dependency(\.calendar) var calendar
+    @Dependency(\.date.now) var now
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -109,6 +112,40 @@ struct HomeFeature {
                     deleteEffect,
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks))))
                 )
+
+            case let .markTaskDone(id):
+                let completionDate = now
+
+                if let index = state.routineTasks.firstIndex(where: { $0.id == id }) {
+                    state.routineTasks[index].lastDone = completionDate
+                }
+
+                if let index = state.routineDisplays.firstIndex(where: { $0.taskID == id }) {
+                    state.routineDisplays[index].lastDone = completionDate
+                    state.routineDisplays[index].isDoneToday = true
+                }
+
+                let currentCalendar = calendar
+                return .run { @MainActor [id, completionDate, currentCalendar] _ in
+                    do {
+                        let context = self.modelContext()
+                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+
+                        if let lastDone = task.lastDone,
+                           currentCalendar.isDate(lastDone, inSameDayAs: completionDate) {
+                            await self.notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
+                            return
+                        }
+
+                        task.lastDone = completionDate
+                        context.insert(RoutineLog(timestamp: completionDate, taskID: id))
+                        try context.save()
+                        await self.notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
+                        NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
+                    } catch {
+                        print("Failed to mark routine as done from home list: \(error)")
+                    }
+                }
 
             case .addRoutineSheet(.delegate(.didCancel)):
                 state.isAddRoutineSheetPresented = false
@@ -181,6 +218,14 @@ struct HomeFeature {
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
             isDoneToday: doneTodayFromLastDone
+        )
+    }
+
+    private func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
+        FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
         )
     }
 

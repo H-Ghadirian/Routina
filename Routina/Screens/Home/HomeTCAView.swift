@@ -5,9 +5,26 @@ import SwiftData
 import SwiftUI
 
 struct HomeTCAView: View {
+    private enum RoutineListFilter: String, CaseIterable, Identifiable {
+        case all = "All"
+        case due = "Due"
+        case doneToday = "Done Today"
+
+        var id: String { rawValue }
+    }
+
+    private struct RoutineListSection: Identifiable {
+        let title: String
+        let tasks: [HomeFeature.RoutineDisplay]
+
+        var id: String { title }
+    }
+
     let store: StoreOf<HomeFeature>
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTaskID: UUID?
+    @State private var searchText = ""
+    @State private var selectedFilter: RoutineListFilter = .all
 
     var body: some View {
         WithPerceptionTracking {
@@ -58,13 +75,18 @@ struct HomeTCAView: View {
     }
 
     private var sidebarContent: some View {
-        Group {
+        VStack(spacing: 12) {
             if store.routineTasks.isEmpty {
-                Text("No routine defined yet")
-                    .font(.headline)
-                    .foregroundColor(.gray)
-                    .padding()
+                emptyStateView(
+                    title: "No routines yet",
+                    message: "Start with one recurring task, and the sidebar will organize what needs attention for you.",
+                    systemImage: "checklist"
+                ) {
+                    store.send(.setAddRoutineSheet(true))
+                }
             } else {
+                filterPicker
+
                 listOfSortedTasksView(
                     routineDisplays: store.routineDisplays,
                     routineTasks: store.routineTasks
@@ -72,6 +94,7 @@ struct HomeTCAView: View {
             }
         }
         .navigationTitle("Routina")
+        .searchable(text: $searchText, prompt: "Search routines")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 platformRefreshButton
@@ -111,6 +134,17 @@ struct HomeTCAView: View {
         }
     }
 
+    private var filterPicker: some View {
+        Picker("Routine Filter", selection: $selectedFilter) {
+            ForEach(RoutineListFilter.allCases) { filter in
+                Text(filter.rawValue).tag(filter)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .padding(.top, 4)
+    }
+
     private func sortedTasks(_ routineDisplays: [HomeFeature.RoutineDisplay]) -> [HomeFeature.RoutineDisplay] {
         routineDisplays.sorted { task1, task2 in
             let overdueDays1 = daysSinceLastRoutine(task1) - task1.interval
@@ -131,7 +165,7 @@ struct HomeTCAView: View {
     }
 
     private func urgencyLevel(for task: HomeFeature.RoutineDisplay) -> Int {
-        let dueIn = task.interval - daysSinceLastRoutine(task)
+        let dueIn = dueInDays(for: task)
 
         if dueIn < 0 { return 3 }
         if dueIn == 0 { return 2 }
@@ -143,44 +177,93 @@ struct HomeTCAView: View {
         routineDisplays: [HomeFeature.RoutineDisplay],
         routineTasks: [RoutineTask]
     ) -> some View {
-        List(selection: $selectedTaskID) {
-            ForEach(sortedTasks(routineDisplays)) { task in
-                NavigationLink(value: task.taskID) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(task.emoji) \(task.name)")
-                            if task.isDoneToday {
-                                Text("Done Today")
-                                    .font(.caption)
-                                    .foregroundColor(.green)
-                            } else if isRedUrgency(task) {
-                                Text(redUrgencySubtitle(for: task))
-                                    .font(.caption)
-                                    .foregroundColor(.red)
-                            } else if isYellowUrgency(task) {
-                                Text("Due in \(daysToDueDate(task)) days")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
+        let sections = groupedRoutineSections(from: routineDisplays)
+
+        return Group {
+            if sections.isEmpty {
+                emptyStateView(
+                    title: "No matching routines",
+                    message: "Try a different search or switch back to another filter.",
+                    systemImage: "magnifyingglass"
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(selection: $selectedTaskID) {
+                    ForEach(sections) { section in
+                        Section(section.title) {
+                            ForEach(section.tasks) { task in
+                                NavigationLink(value: task.taskID) {
+                                    routineRow(for: task)
+                                }
+                                .contentShape(Rectangle())
+                                .contextMenu {
+                                    Button {
+                                        selectedTaskID = task.taskID
+                                    } label: {
+                                        Label("Open", systemImage: "arrow.right.circle")
+                                    }
+
+                                    Button {
+                                        store.send(.markTaskDone(task.taskID))
+                                    } label: {
+                                        Label("Mark Done", systemImage: "checkmark.circle")
+                                    }
+                                    .disabled(task.isDoneToday)
+
+                                    Button(role: .destructive) {
+                                        if selectedTaskID == task.taskID {
+                                            selectedTaskID = nil
+                                        }
+                                        store.send(.deleteTasks([task.taskID]))
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                            .onDelete { offsets in
+                                deleteTasks(at: offsets, from: section.tasks)
                             }
                         }
-                        Spacer()
-                        urgencySquare(for: task)
                     }
                 }
-                .contentShape(Rectangle())
-            }
-            .onDelete { offsets in
-                let sorted = sortedTasks(routineDisplays)
-                let ids = offsets.compactMap { sorted[$0].taskID }
-                if let selectedTaskID, ids.contains(selectedTaskID) {
-                    self.selectedTaskID = nil
+                .listStyle(.sidebar)
+                .navigationDestination(for: UUID.self) { taskID in
+                    routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
                 }
-                store.send(.deleteTasks(ids))
             }
         }
-        .navigationDestination(for: UUID.self) { taskID in
-            routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
+    }
+
+    private func routineRow(for task: HomeFeature.RoutineDisplay) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(rowIconBackgroundColor(for: task))
+                Text(task.emoji)
+                    .font(.title3)
+            }
+            .frame(width: 36, height: 36)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(task.name)
+                        .font(.headline)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 8)
+
+                    statusBadge(for: task)
+                }
+
+                Text(rowMetadataText(for: task))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, 4)
     }
 
     private func routineDetailTCAView(
@@ -212,11 +295,43 @@ struct HomeTCAView: View {
         }
     }
 
-    private func urgencySquare(for task: HomeFeature.RoutineDisplay) -> some View {
-        Rectangle()
-            .fill(urgencyColor(for: task))
-            .frame(width: 20, height: 20)
-            .cornerRadius(4)
+    private func groupedRoutineSections(
+        from routineDisplays: [HomeFeature.RoutineDisplay]
+    ) -> [RoutineListSection] {
+        let filtered = filteredTasks(routineDisplays)
+
+        let overdue = filtered.filter { overdueDays(for: $0) > 0 }
+        let dueSoon = filtered.filter {
+            !($0.isDoneToday) &&
+            overdueDays(for: $0) == 0 &&
+            (urgencyLevel(for: $0) > 0 || isYellowUrgency($0))
+        }
+        let onTrack = filtered.filter {
+            !($0.isDoneToday) &&
+            overdueDays(for: $0) == 0 &&
+            urgencyLevel(for: $0) == 0 &&
+            !isYellowUrgency($0)
+        }
+        let doneToday = filtered.filter(\.isDoneToday)
+
+        return [
+            RoutineListSection(title: "Overdue", tasks: overdue),
+            RoutineListSection(title: "Due Soon", tasks: dueSoon),
+            RoutineListSection(title: "On Track", tasks: onTrack),
+            RoutineListSection(title: "Done Today", tasks: doneToday)
+        ]
+        .filter { !$0.tasks.isEmpty }
+    }
+
+    private func deleteTasks(
+        at offsets: IndexSet,
+        from sectionTasks: [HomeFeature.RoutineDisplay]
+    ) {
+        let ids = offsets.compactMap { sectionTasks[$0].taskID }
+        if let selectedTaskID, ids.contains(selectedTaskID) {
+            self.selectedTaskID = nil
+        }
+        store.send(.deleteTasks(ids))
     }
 
     private func initialLogs(for task: RoutineTask) -> [RoutineLog] {
@@ -232,31 +347,142 @@ struct HomeTCAView: View {
         }
     }
 
+    private func rowIconBackgroundColor(for task: HomeFeature.RoutineDisplay) -> Color {
+        urgencyColor(for: task).opacity(task.isDoneToday ? 0.22 : 0.14)
+    }
+
     private func isYellowUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
         let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
         return progress >= 0.75 && progress < 0.90
-    }
-
-    private func isRedUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        let progress = Double(daysSinceLastRoutine(task)) / Double(task.interval)
-        return progress >= 0.90
     }
 
     private func daysSinceLastRoutine(_ task: HomeFeature.RoutineDisplay) -> Int {
         Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
     }
 
-    private func daysToDueDate(_ task: HomeFeature.RoutineDisplay) -> Int {
-        max(task.interval - daysSinceLastRoutine(task), 0)
+    private func filteredTasks(
+        _ routineDisplays: [HomeFeature.RoutineDisplay]
+    ) -> [HomeFeature.RoutineDisplay] {
+        sortedTasks(routineDisplays).filter { task in
+            matchesSearch(task) && matchesFilter(task)
+        }
     }
 
-    private func redUrgencySubtitle(for task: HomeFeature.RoutineDisplay) -> String {
-        let dueIn = task.interval - daysSinceLastRoutine(task)
-        if dueIn == 0 { return "Due Today" }
+    private func matchesSearch(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSearch.isEmpty else { return true }
+        return task.name.localizedCaseInsensitiveContains(trimmedSearch)
+            || task.emoji.localizedCaseInsensitiveContains(trimmedSearch)
+    }
 
-        let overdueDays = max(-dueIn, 1)
-        let dayWord = overdueDays == 1 ? "day" : "days"
-        return "Overdue by \(overdueDays) \(dayWord)"
+    private func matchesFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        switch selectedFilter {
+        case .all:
+            return true
+        case .due:
+            return !task.isDoneToday && (urgencyLevel(for: task) > 0 || isYellowUrgency(task))
+        case .doneToday:
+            return task.isDoneToday
+        }
+    }
+
+    private func dueInDays(for task: HomeFeature.RoutineDisplay) -> Int {
+        task.interval - daysSinceLastRoutine(task)
+    }
+
+    private func overdueDays(for task: HomeFeature.RoutineDisplay) -> Int {
+        max(-dueInDays(for: task), 0)
+    }
+
+    private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String {
+        "\(cadenceDescription(for: task.interval)) • \(completionDescription(for: task))"
+    }
+
+    private func cadenceDescription(for interval: Int) -> String {
+        if interval == 1 { return "Daily" }
+        if interval % 30 == 0 {
+            let months = interval / 30
+            return months == 1 ? "Monthly" : "Every \(months) months"
+        }
+        if interval % 7 == 0 {
+            let weeks = interval / 7
+            return weeks == 1 ? "Weekly" : "Every \(weeks) weeks"
+        }
+        return "Every \(interval) days"
+    }
+
+    private func completionDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        guard task.lastDone != nil else { return "Never completed" }
+
+        let elapsedDays = daysSinceLastRoutine(task)
+        if elapsedDays == 0 { return "Completed today" }
+        if elapsedDays == 1 { return "Completed yesterday" }
+        return "Completed \(elapsedDays) days ago"
+    }
+
+    private func statusBadge(for task: HomeFeature.RoutineDisplay) -> some View {
+        let style = badgeStyle(for: task)
+
+        return Label(style.title, systemImage: style.systemImage)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(style.foregroundColor)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(style.backgroundColor, in: Capsule())
+    }
+
+    private func badgeStyle(
+        for task: HomeFeature.RoutineDisplay
+    ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color) {
+        if task.isDoneToday {
+            return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
+        }
+
+        let dueIn = dueInDays(for: task)
+        if dueIn < 0 {
+            return ("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
+        }
+        if dueIn == 0 {
+            return ("Today", "clock.fill", .orange, Color.orange.opacity(0.16))
+        }
+        if dueIn == 1 {
+            return ("Tomorrow", "calendar", .orange, Color.orange.opacity(0.14))
+        }
+        if isYellowUrgency(task) {
+            return ("\(dueIn)d left", "calendar.badge.clock", .orange, Color.orange.opacity(0.12))
+        }
+
+        return ("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
+    }
+
+    @ViewBuilder
+    private func emptyStateView(
+        title: String,
+        message: String,
+        systemImage: String,
+        action: (() -> Void)? = nil
+    ) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 34, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            Text(title)
+                .font(.title3.weight(.semibold))
+
+            Text(message)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+
+            if let action {
+                Button("Add Routine", action: action)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(24)
     }
 
     @MainActor

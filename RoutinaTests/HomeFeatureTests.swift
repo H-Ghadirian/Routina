@@ -339,6 +339,60 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func markTaskDone_updatesStateAndPersistsLog() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚")
+        try context.save()
+
+        let now = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+
+        let initialState = HomeFeature.State(
+            routineTasks: [task],
+            routineDisplays: [
+                HomeFeature.RoutineDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ],
+            isAddRoutineSheetPresented: false,
+            addRoutineState: nil
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+            $0.calendar = calendar
+            $0.date.now = now
+        }
+
+        await store.send(.markTaskDone(task.id)) {
+            $0.routineTasks[0].lastDone = now
+            $0.routineDisplays[0].lastDone = now
+            $0.routineDisplays[0].isDoneToday = true
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(savedTask.lastDone == now)
+        #expect(logs.count == 1)
+        #expect(logs.first?.taskID == task.id)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func detailLogs_returnsPersistedLogsForSelectedTaskSortedNewestFirst() throws {
         let context = makeInMemoryContext()
         let selectedTask = makeTask(in: context, name: "Selected", interval: 1, lastDone: nil, emoji: "✅")
