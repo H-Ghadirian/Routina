@@ -47,6 +47,9 @@ struct RoutineDetailTCAView: View {
                         Text("Frequency: \(frequencyText(for: store.task))")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                        Text(totalDoneCountText(for: store.logs.count))
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(.secondary)
                         if let dueDate = dueDate(for: store.task) {
                             Text("Due date: \(dueDate.formatted(date: .abbreviated, time: .omitted))")
                                 .font(.subheadline)
@@ -433,6 +436,10 @@ struct RoutineDetailTCAView: View {
             return value == 1 ? "Every week" : "Every \(value) weeks"
         }
         return interval == 1 ? "Every day" : "Every \(interval) days"
+    }
+
+    private func totalDoneCountText(for count: Int) -> String {
+        count == 1 ? "1 total done" : "\(count) total dones"
     }
 
     private func dayWord(_ count: Int) -> String {

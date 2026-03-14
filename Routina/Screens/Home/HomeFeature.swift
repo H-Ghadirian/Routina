@@ -4,6 +4,11 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
+    struct DoneStats: Equatable {
+        var totalCount: Int = 0
+        var countsByTaskID: [UUID: Int] = [:]
+    }
+
     struct RoutineDisplay: Equatable, Identifiable {
         let taskID: UUID
         var id: UUID { taskID }
@@ -12,19 +17,21 @@ struct HomeFeature {
         var interval: Int
         var lastDone: Date?
         var isDoneToday: Bool
+        var doneCount: Int
     }
 
     @ObservableState
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
         var routineDisplays: [RoutineDisplay] = []
+        var doneStats: DoneStats = DoneStats()
         var isAddRoutineSheetPresented: Bool = false
         var addRoutineState: AddRoutineFeature.State?
     }
 
     enum Action: Equatable {
         case onAppear
-        case tasksLoadedSuccessfully([RoutineTask])
+        case tasksLoadedSuccessfully([RoutineTask], DoneStats)
         case tasksLoadFailed
 
         case setAddRoutineSheet(Bool)
@@ -54,16 +61,18 @@ struct HomeFeature {
                         let context = ModelContext(self.modelContext().container)
                         try self.enforceUniqueRoutineNames(in: context)
                         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                        send(.tasksLoadedSuccessfully(tasks))
+                        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+                        send(.tasksLoadedSuccessfully(tasks, self.makeDoneStats(tasks: tasks, logs: logs)))
                     } catch {
                         send(.tasksLoadFailed)
                     }
                 }
                 .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
 
-            case let .tasksLoadedSuccessfully(tasks):
+            case let .tasksLoadedSuccessfully(tasks, doneStats):
                 state.routineTasks = tasks
-                state.routineDisplays = tasks.map(makeRoutineDisplay)
+                state.doneStats = doneStats
+                state.routineDisplays = tasks.map { makeRoutineDisplay($0, doneStats: doneStats) }
                 guard state.addRoutineState != nil else { return .none }
                 return .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks))))
 
@@ -86,6 +95,12 @@ struct HomeFeature {
                 let idSet = Set(ids)
                 state.routineTasks.removeAll { idSet.contains($0.id) }
                 state.routineDisplays.removeAll { idSet.contains($0.taskID) }
+                var removedDoneCount = 0
+                for id in ids {
+                    removedDoneCount += state.doneStats.countsByTaskID[id, default: 0]
+                    state.doneStats.countsByTaskID.removeValue(forKey: id)
+                }
+                state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
 
                 let deleteEffect: Effect<Action> = .run { @MainActor [ids] _ in
                     let context = self.modelContext()
@@ -115,6 +130,9 @@ struct HomeFeature {
 
             case let .markTaskDone(id):
                 let completionDate = now
+                let shouldCountNewDone = state.routineTasks.first(where: { $0.id == id }).flatMap(\.lastDone).map {
+                    !calendar.isDate($0, inSameDayAs: completionDate)
+                } ?? true
 
                 if let index = state.routineTasks.firstIndex(where: { $0.id == id }) {
                     state.routineTasks[index].lastDone = completionDate
@@ -123,6 +141,14 @@ struct HomeFeature {
                 if let index = state.routineDisplays.firstIndex(where: { $0.taskID == id }) {
                     state.routineDisplays[index].lastDone = completionDate
                     state.routineDisplays[index].isDoneToday = true
+                    if shouldCountNewDone {
+                        state.routineDisplays[index].doneCount += 1
+                    }
+                }
+
+                if shouldCountNewDone {
+                    state.doneStats.totalCount += 1
+                    state.doneStats.countsByTaskID[id, default: 0] += 1
                 }
 
                 let currentCalendar = calendar
@@ -183,7 +209,7 @@ struct HomeFeature {
 
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task)
-                state.routineDisplays.append(makeRoutineDisplay(task))
+                state.routineDisplays.append(makeRoutineDisplay(task, doneStats: state.doneStats))
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
                 NotificationCenter.default.post(name: Notification.Name("routineDidUpdate"), object: nil)
@@ -208,7 +234,7 @@ struct HomeFeature {
         }
     }
 
-    private func makeRoutineDisplay(_ task: RoutineTask) -> RoutineDisplay {
+    private func makeRoutineDisplay(_ task: RoutineTask, doneStats: DoneStats) -> RoutineDisplay {
         let doneTodayFromLastDone = task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
 
         return RoutineDisplay(
@@ -217,7 +243,8 @@ struct HomeFeature {
             emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
-            isDoneToday: doneTodayFromLastDone
+            isDoneToday: doneTodayFromLastDone,
+            doneCount: doneStats.countsByTaskID[task.id, default: 0]
         )
     }
 
@@ -243,6 +270,18 @@ struct HomeFeature {
 
     private func existingRoutineNames(from tasks: [RoutineTask]) -> [String] {
         tasks.compactMap(\.name)
+    }
+
+    private func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {
+        let taskIDs = Set(tasks.map(\.id))
+        let countsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
+            guard taskIDs.contains(log.taskID) else { return }
+            partialResult[log.taskID, default: 0] += 1
+        }
+        return DoneStats(
+            totalCount: countsByTaskID.values.reduce(0, +),
+            countsByTaskID: countsByTaskID
+        )
     }
 
     private func hasDuplicateRoutineName(

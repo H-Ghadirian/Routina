@@ -86,6 +86,7 @@ struct HomeTCAView: View {
                 }
             } else {
                 filterPicker
+                overallDoneCountSummary
 
                 listOfSortedTasksView(
                     routineDisplays: store.routineDisplays,
@@ -143,6 +144,21 @@ struct HomeTCAView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal)
         .padding(.top, 4)
+    }
+
+    private var overallDoneCountSummary: some View {
+        HStack(spacing: 8) {
+            Label("\(store.doneStats.totalCount) total dones", systemImage: "checkmark.seal.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.green)
+
+            Spacer(minLength: 0)
+
+            Text("\(store.routineTasks.count) routines")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
     }
 
     private func sortedTasks(_ routineDisplays: [HomeFeature.RoutineDisplay]) -> [HomeFeature.RoutineDisplay] {
@@ -410,7 +426,11 @@ struct HomeTCAView: View {
     }
 
     private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String {
-        "\(cadenceDescription(for: task.interval)) • \(completionDescription(for: task))"
+        "\(cadenceDescription(for: task.interval)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))"
+    }
+
+    private func doneCountDescription(for count: Int) -> String {
+        count == 1 ? "1 done" : "\(count) dones"
     }
 
     private func cadenceDescription(for interval: Int) -> String {
