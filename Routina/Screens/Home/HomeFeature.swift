@@ -60,6 +60,7 @@ struct HomeFeature {
                     do {
                         let context = ModelContext(self.modelContext().container)
                         try self.enforceUniqueRoutineNames(in: context)
+                        _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
                         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
                         send(.tasksLoadedSuccessfully(tasks, self.makeDoneStats(tasks: tasks, logs: logs)))
@@ -352,13 +353,6 @@ struct HomeFeature {
 extension HomeFeature {
     @MainActor
     static func detailLogs(taskID: UUID, context: ModelContext) -> [RoutineLog] {
-        let descriptor = FetchDescriptor<RoutineLog>(
-            predicate: #Predicate { log in
-                log.taskID == taskID
-            },
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
-
-        return (try? context.fetch(descriptor)) ?? []
+        RoutineLogHistory.detailLogs(taskID: taskID, context: context)
     }
 }

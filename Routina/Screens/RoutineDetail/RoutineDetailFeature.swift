@@ -30,6 +30,7 @@ struct RoutineDetailFeature: Reducer {
     struct State: Equatable {
         var task: RoutineTask
         var logs: [RoutineLog] = []
+        var selectedDate: Date?
         var daysSinceLastRoutine: Int = 0
         var overdueDays: Int = 0
         var isDoneToday: Bool = false
@@ -44,6 +45,7 @@ struct RoutineDetailFeature: Reducer {
 
     enum Action: Equatable {
         case markAsDone
+        case selectedDateChanged(Date)
         case setEditSheet(Bool)
         case editRoutineNameChanged(String)
         case editRoutineEmojiChanged(String)
@@ -66,17 +68,21 @@ struct RoutineDetailFeature: Reducer {
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
-            let completionDate = now
-            state.task.lastDone = completionDate
-            state.isDoneToday = true
-            state.daysSinceLastRoutine = 0
-            state.overdueDays = 0
+            let completionDate = resolvedCompletionDate(for: state.selectedDate)
+            if shouldUpdateLastDone(current: state.task.lastDone, candidate: completionDate) {
+                state.task.lastDone = completionDate
+            }
+            updateDerivedState(&state)
             return handleMarkAsDone(
                 taskID: state.task.id,
                 completedAt: completionDate,
                 fallbackName: state.task.name,
                 fallbackInterval: max(Int(state.task.interval), 1)
             )
+
+        case let .selectedDateChanged(date):
+            state.selectedDate = calendar.startOfDay(for: date)
+            return .none
 
         case let .setEditSheet(isPresented):
             state.isEditSheetPresented = isPresented
@@ -135,6 +141,9 @@ struct RoutineDetailFeature: Reducer {
             return .none
 
         case .onAppear:
+            if state.selectedDate == nil {
+                state.selectedDate = calendar.startOfDay(for: now)
+            }
             updateDerivedState(&state)
             return handleOnAppear(taskID: state.task.id)
         }
@@ -180,11 +189,27 @@ struct RoutineDetailFeature: Reducer {
         state.overdueDays = max(calendar.dateComponents([.day], from: dueStart, to: nowStart).day ?? 0, 0)
     }
 
+    private func resolvedCompletionDate(for selectedDate: Date?) -> Date {
+        let baseDate = selectedDate ?? now
+        if calendar.isDate(baseDate, inSameDayAs: now) {
+            return now
+        }
+
+        let startOfDay = calendar.startOfDay(for: baseDate)
+        return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: startOfDay) ?? startOfDay
+    }
+
+    private func shouldUpdateLastDone(current: Date?, candidate: Date) -> Bool {
+        guard let current else { return true }
+        return candidate > current
+    }
+
     private func handleOnAppear(taskID: UUID) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = modelContext()
-                let logs = try context.fetch(sortedLogsDescriptor(for: taskID))
+                _ = try RoutineLogHistory.backfillMissingLastDoneLog(for: taskID, in: context)
+                let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(logs))
             } catch {
                 print("Error loading logs: \(error)")
@@ -219,13 +244,24 @@ struct RoutineDetailFeature: Reducer {
             do {
                 let context = modelContext()
                 let task = try context.fetch(taskDescriptor(for: taskID)).first
-                task?.lastDone = completedAt
+                let existingLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                if existingLogs.contains(where: { log in
+                    guard let timestamp = log.timestamp else { return false }
+                    return calendar.isDate(timestamp, inSameDayAs: completedAt)
+                }) {
+                    send(.logsLoaded(existingLogs))
+                    return
+                }
+
+                if shouldUpdateLastDone(current: task?.lastDone, candidate: completedAt) {
+                    task?.lastDone = completedAt
+                }
 
                 let log = RoutineLog(timestamp: completedAt, taskID: taskID)
                 context.insert(log)
                 try context.save()
 
-                let updatedLogs = try context.fetch(sortedLogsDescriptor(for: taskID))
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
 
                 let payload = task.map { NotificationCoordinator.notificationPayload(for: $0) }

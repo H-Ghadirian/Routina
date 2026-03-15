@@ -22,6 +22,14 @@ enum CloudKitDirectPullService {
         try merge(result: result, into: modelContext)
     }
 
+    @MainActor
+    static func mergeForTesting(
+        _ result: PullResult,
+        into context: ModelContext
+    ) throws {
+        try merge(result: result, into: context)
+    }
+
     private static func fetchZoneChanges(containerIdentifier: String) async throws -> PullResult {
         let database = CKContainer(identifier: containerIdentifier).privateCloudDatabase
         var changedRecords: [CKRecord] = []
@@ -86,19 +94,36 @@ enum CloudKitDirectPullService {
 
     @MainActor
     private static func merge(result: PullResult, into context: ModelContext) throws {
+        var mergedTaskIDs: [UUID: UUID] = [:]
+        var logPayloads: [LogPayload] = []
+
         for record in result.changedRecords {
             if let taskPayload = parseTask(from: record) {
-                try upsertTask(taskPayload, in: context)
+                mergedTaskIDs[taskPayload.id] = try upsertTask(taskPayload, in: context)
                 continue
             }
 
             if let logPayload = parseLog(from: record) {
-                try upsertLog(logPayload, in: context)
+                logPayloads.append(logPayload)
             }
+        }
+
+        for logPayload in logPayloads {
+            var canonicalPayload = logPayload
+            canonicalPayload.taskID = mergedTaskIDs[logPayload.taskID]
+                ?? canonicalTaskID(for: logPayload.taskID, in: context)
+            try upsertLog(canonicalPayload, in: context)
+        }
+
+        for (sourceTaskID, targetTaskID) in mergedTaskIDs where sourceTaskID != targetTaskID {
+            try migrateLogs(from: sourceTaskID, to: targetTaskID, in: context)
         }
 
         for recordID in result.deletedRecordIDs {
             guard let id = UUID(uuidString: recordID.recordName) else { continue }
+            if let targetTaskID = mergedTaskIDs[id], targetTaskID != id {
+                continue
+            }
 
             let taskDescriptor = FetchDescriptor<RoutineTask>(
                 predicate: #Predicate { task in
@@ -177,7 +202,7 @@ enum CloudKitDirectPullService {
     }
 
     @MainActor
-    private static func upsertTask(_ payload: TaskPayload, in context: ModelContext) throws {
+    private static func upsertTask(_ payload: TaskPayload, in context: ModelContext) throws -> UUID {
         let payloadID = payload.id
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -191,23 +216,27 @@ enum CloudKitDirectPullService {
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context),
                taskWithSameName.id != existing.id {
                 // Keep local uniqueness invariant if cloud data contains a duplicate name.
-                existing.emoji = payload.emoji
-                existing.interval = payload.interval
-                existing.lastDone = payload.lastDone
-                return
+                taskWithSameName.name = cleanedRoutineName(payload.name)
+                taskWithSameName.emoji = payload.emoji
+                taskWithSameName.interval = payload.interval
+                taskWithSameName.lastDone = payload.lastDone
+                try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
+                return taskWithSameName.id
             }
 
             existing.name = cleanedRoutineName(payload.name)
             existing.emoji = payload.emoji
             existing.interval = payload.interval
             existing.lastDone = payload.lastDone
+            return existing.id
         } else {
             if let normalizedIncomingName,
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context) {
                 taskWithSameName.emoji = payload.emoji
                 taskWithSameName.interval = payload.interval
                 taskWithSameName.lastDone = payload.lastDone
-                return
+                try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
+                return taskWithSameName.id
             }
 
             context.insert(
@@ -219,6 +248,7 @@ enum CloudKitDirectPullService {
                     lastDone: payload.lastDone
                 )
             )
+            return payload.id
         }
     }
 
@@ -234,6 +264,9 @@ enum CloudKitDirectPullService {
         if let existing = try context.fetch(descriptor).first {
             existing.timestamp = payload.timestamp
             existing.taskID = payload.taskID
+        } else if let existing = try existingLog(matching: payload, in: context) {
+            existing.timestamp = payload.timestamp
+            existing.taskID = payload.taskID
         } else {
             context.insert(
                 RoutineLog(
@@ -242,6 +275,89 @@ enum CloudKitDirectPullService {
                     taskID: payload.taskID
                 )
             )
+        }
+    }
+
+    @MainActor
+    private static func existingLog(
+        matching payload: LogPayload,
+        in context: ModelContext
+    ) throws -> RoutineLog? {
+        let taskID = payload.taskID
+        let descriptor = FetchDescriptor<RoutineLog>(
+            predicate: #Predicate { log in
+                log.taskID == taskID
+            }
+        )
+
+        return try context.fetch(descriptor).first { log in
+            timestampsMatch(log.timestamp, payload.timestamp)
+        }
+    }
+
+    @MainActor
+    private static func deduplicateLogs(in context: ModelContext) throws {
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        var keptLogIDsByKey: [LogDeduplicationKey: UUID] = [:]
+        for log in logs {
+            let key = LogDeduplicationKey(taskID: log.taskID, timestamp: log.timestamp)
+            if let keptLogID = keptLogIDsByKey[key], keptLogID != log.id {
+                context.delete(log)
+            } else {
+                keptLogIDsByKey[key] = log.id
+            }
+        }
+    }
+
+    @MainActor
+    private static func migrateLogs(
+        from sourceTaskID: UUID,
+        to targetTaskID: UUID,
+        in context: ModelContext
+    ) throws {
+        guard sourceTaskID != targetTaskID else { return }
+
+        let descriptor = FetchDescriptor<RoutineLog>(
+            predicate: #Predicate { log in
+                log.taskID == sourceTaskID
+            }
+        )
+
+        for log in try context.fetch(descriptor) {
+            log.taskID = targetTaskID
+        }
+    }
+
+    @MainActor
+    private static func canonicalTaskID(for taskID: UUID, in context: ModelContext) -> UUID {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+        let task = try? context.fetch(descriptor).first
+        return task?.id ?? taskID
+    }
+
+    private struct LogDeduplicationKey: Hashable {
+        let taskID: UUID
+        let timestampBucket: Int?
+
+        init(taskID: UUID, timestamp: Date?) {
+            self.taskID = taskID
+            self.timestampBucket = timestamp.map { Int($0.timeIntervalSince1970.rounded()) }
+        }
+    }
+
+    private static func timestampsMatch(_ lhs: Date?, _ rhs: Date?) -> Bool {
+        switch (lhs, rhs) {
+        case (nil, nil):
+            return true
+        case let (lhs?, rhs?):
+            return abs(lhs.timeIntervalSince1970 - rhs.timeIntervalSince1970) < 1
+        default:
+            return false
         }
     }
 

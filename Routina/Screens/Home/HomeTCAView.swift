@@ -366,7 +366,8 @@ struct HomeTCAView: View {
     }
 
     private func initialLogs(for task: RoutineTask) -> [RoutineLog] {
-        HomeFeature.detailLogs(taskID: task.id, context: modelContext)
+        _ = try? RoutineLogHistory.backfillMissingLastDoneLog(for: task.id, in: modelContext)
+        return HomeFeature.detailLogs(taskID: task.id, context: modelContext)
     }
 
     private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {

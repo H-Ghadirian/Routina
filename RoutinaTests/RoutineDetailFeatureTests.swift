@@ -280,6 +280,61 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func selectedDateChanged_updatesSelectedDate() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Journal", interval: 1, lastDone: nil, emoji: "📓")
+        let selectedDate = makeDate("2026-02-22T08:00:00Z")
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.selectedDateChanged(selectedDate)) {
+            $0.selectedDate = calendar.startOfDay(for: selectedDate)
+        }
+    }
+
+    @Test
+    func onAppear_setsSelectedDateToTodayWhenUnset() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T10:00:00Z")
+        let task = makeTask(in: context, name: "Journal", interval: 1, lastDone: nil, emoji: "📓")
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        await store.receive(.logsLoaded([])) {
+            $0.logs = []
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+    }
+
+    @Test
     func markAsDone_setsImmediateStateAndPersistsLog() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T10:00:00Z")
@@ -327,5 +382,130 @@ struct RoutineDetailFeatureTests {
         let persistedLogs = (try? context.fetch(FetchDescriptor<RoutineLog>())) ?? []
         #expect(persistedLogs.count == 1)
         #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func markAsDone_forSelectedPastDate_persistsLogWithoutRewindingLastDone() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T10:00:00Z")
+        let selectedDate = makeDate("2026-02-24T08:00:00Z")
+        let todayLog = makeDate("2026-02-25T09:00:00Z")
+        let task = makeTask(in: context, name: "Hydrate", interval: 2, lastDone: now, emoji: "💧")
+        _ = makeLog(in: context, task: task, timestamp: todayLog)
+        try context.save()
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let selectedDayStart = calendar.startOfDay(for: selectedDate)
+
+        let initialState = RoutineDetailFeature.State(
+            task: task,
+            logs: [RoutineLog(timestamp: todayLog, taskID: task.id)],
+            selectedDate: selectedDayStart,
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: true
+        )
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.markAsDone)
+
+        let taskID = task.id
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            return false
+        } assert: {
+            let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+            $0.logs = logs
+            #expect(logs.count == 2)
+            #expect(logs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return calendar.isDate(timestamp, inSameDayAs: selectedDayStart)
+            })
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = true
+        }
+
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate { $0.id == task.id }
+                )
+            ).first
+        )
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedLogs.count == 2)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func markAsDone_withExistingLogOnSelectedDate_doesNotCreateDuplicate() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T10:00:00Z")
+        let selectedDate = makeDate("2026-02-24T12:00:00Z")
+        let task = makeTask(in: context, name: "Hydrate", interval: 2, lastDone: now, emoji: "💧")
+        let existingLog = makeLog(in: context, task: task, timestamp: selectedDate)
+        try context.save()
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let selectedDayStart = calendar.startOfDay(for: selectedDate)
+
+        let initialState = RoutineDetailFeature.State(
+            task: task,
+            logs: [existingLog],
+            selectedDate: selectedDayStart,
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: true
+        )
+
+        let store = TestStore(initialState: initialState) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.markAsDone)
+
+        await store.receive(.logsLoaded([existingLog])) {
+            $0.logs = [existingLog]
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = true
+        }
+
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate { $0.id == task.id }
+                )
+            ).first
+        )
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedLogs.count == 1)
+        #expect(scheduledIDs.value.isEmpty)
     }
 }

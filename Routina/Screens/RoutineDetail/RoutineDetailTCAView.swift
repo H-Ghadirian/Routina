@@ -19,7 +19,9 @@ struct RoutineDetailTCAView: View {
                         calendarGrid(
                             doneDates: doneDates(from: store.logs),
                             dueDate: dueDate(for: store.task),
-                            isOrangeUrgencyToday: isOrangeUrgency(store.task)
+                            isOrangeUrgencyToday: isOrangeUrgency(store.task),
+                            selectedDate: selectedDate,
+                            onSelectDate: { store.send(.selectedDateChanged($0)) }
                         )
                         calendarLegend
                     }
@@ -59,12 +61,17 @@ struct RoutineDetailTCAView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 4)
 
-                    if !store.isDoneToday {
-                        Button("Mark as Done") {
+                    VStack(spacing: 10) {
+                        Text("Selected date: \(selectedDate.formatted(date: .abbreviated, time: .omitted))")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Button(markDoneButtonTitle(for: selectedDate, isDone: isSelectedDateDone, isFuture: isSelectedDateInFuture)) {
                             store.send(.markAsDone)
                         }
                         .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
+                        .disabled(isSelectedDateDone || isSelectedDateInFuture)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -197,14 +204,35 @@ struct RoutineDetailTCAView: View {
             }
             .onAppear {
                 store.send(.onAppear)
-                displayedMonthStart = Calendar.current.startOfMonth(for: Date())
+                displayedMonthStart = Calendar.current.startOfMonth(for: selectedDate)
             }
             .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
                 guard shouldDismiss else { return }
                 dismiss()
                 store.send(.deleteDismissHandled)
             }
+            .onChange(of: selectedDate) { _, newValue in
+                displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
+            }
         }
+    }
+
+    private var selectedDate: Date {
+        let calendar = Calendar.current
+        return calendar.startOfDay(for: store.selectedDate ?? Date())
+    }
+
+    private var isSelectedDateDone: Bool {
+        let calendar = Calendar.current
+        return store.logs.contains {
+            guard let timestamp = $0.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: selectedDate)
+        }
+        || store.task.lastDone.map { calendar.isDate($0, inSameDayAs: selectedDate) } == true
+    }
+
+    private var isSelectedDateInFuture: Bool {
+        Calendar.current.startOfDay(for: selectedDate) > Calendar.current.startOfDay(for: Date())
     }
 
     private var calendarHeader: some View {
@@ -261,7 +289,13 @@ struct RoutineDetailTCAView: View {
         RoutineDetailPlatformStyle.routineLogsBackground
     }
 
-    private func calendarGrid(doneDates: Set<Date>, dueDate: Date?, isOrangeUrgencyToday: Bool) -> some View {
+    private func calendarGrid(
+        doneDates: Set<Date>,
+        dueDate: Date?,
+        isOrangeUrgencyToday: Bool,
+        selectedDate: Date,
+        onSelectDate: @escaping (Date) -> Void
+    ) -> some View {
         let calendar = Calendar.current
         let start = displayedMonthStart
         let days = calendar.daysInMonthGrid(for: start)
@@ -284,7 +318,9 @@ struct RoutineDetailTCAView: View {
                             day: day,
                             doneDates: doneDates,
                             dueDate: dueDate,
-                            isOrangeUrgencyToday: isOrangeUrgencyToday
+                            isOrangeUrgencyToday: isOrangeUrgencyToday,
+                            isSelected: calendar.isDate(day, inSameDayAs: selectedDate),
+                            onSelectDate: onSelectDate
                         )
                     } else {
                         Color.clear
@@ -295,7 +331,14 @@ struct RoutineDetailTCAView: View {
         }
     }
 
-    private func calendarDayCell(day: Date, doneDates: Set<Date>, dueDate: Date?, isOrangeUrgencyToday: Bool) -> some View {
+    private func calendarDayCell(
+        day: Date,
+        doneDates: Set<Date>,
+        dueDate: Date?,
+        isOrangeUrgencyToday: Bool,
+        isSelected: Bool,
+        onSelectDate: @escaping (Date) -> Void
+    ) -> some View {
         let calendar = Calendar.current
         let isDueDate = dueDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
         let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
@@ -312,16 +355,21 @@ struct RoutineDetailTCAView: View {
 
         let foregroundColor: Color = (isDueDate || isDoneDate || isDueToTodayRangeDate || isToday) ? .white : .primary
 
-        return Text(day.formatted(.dateTime.day()))
-            .font(.subheadline)
-            .foregroundColor(foregroundColor)
-            .frame(maxWidth: .infinity)
-            .frame(height: 28)
-            .background(Circle().fill(backgroundColor))
-            .overlay(
-                Circle()
-                    .stroke((isToday && (isDoneDate || isDueToTodayRangeDate || isDueDate)) ? Color.blue : Color.clear, lineWidth: 2)
-            )
+        return Button {
+            onSelectDate(day)
+        } label: {
+            Text(day.formatted(.dateTime.day()))
+                .font(.subheadline)
+                .foregroundColor(foregroundColor)
+                .frame(maxWidth: .infinity)
+                .frame(height: 28)
+                .background(Circle().fill(backgroundColor))
+                .overlay(
+                    Circle()
+                        .stroke(selectionStrokeColor(isSelected: isSelected, isToday: isToday, isHighlightedDay: isDoneDate || isDueToTodayRangeDate || isDueDate), lineWidth: isSelected ? 3 : 2)
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private func doneDates(from logs: [RoutineLog]) -> Set<Date> {
@@ -440,6 +488,25 @@ struct RoutineDetailTCAView: View {
 
     private func totalDoneCountText(for count: Int) -> String {
         count == 1 ? "1 total done" : "\(count) total dones"
+    }
+
+    private func markDoneButtonTitle(for selectedDate: Date, isDone: Bool, isFuture: Bool) -> String {
+        if isFuture {
+            return "Future dates can't be marked done"
+        }
+        if isDone {
+            return "Already done on \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
+        }
+        if Calendar.current.isDateInToday(selectedDate) {
+            return "Mark Today as Done"
+        }
+        return "Mark \(selectedDate.formatted(date: .abbreviated, time: .omitted)) as Done"
+    }
+
+    private func selectionStrokeColor(isSelected: Bool, isToday: Bool, isHighlightedDay: Bool) -> Color {
+        if isSelected { return .blue }
+        if isToday && isHighlightedDay { return .blue }
+        return .clear
     }
 
     private func dayWord(_ count: Int) -> String {
