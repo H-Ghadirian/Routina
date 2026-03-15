@@ -309,7 +309,7 @@ struct HomeTCAView: View {
                         initialState: RoutineDetailFeature.State(
                             task: task,
                             logs: initialLogs(for: task),
-                            daysSinceLastRoutine: Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0,
+                            daysSinceLastRoutine: RoutineDateMath.elapsedDaysSinceLastDone(from: task.lastDone, referenceDate: Date()),
                             overdueDays: max((Calendar.current.dateComponents([.day], from: (Calendar.current.date(byAdding: .day, value: Int(task.interval), to: task.lastDone ?? Date()) ?? Date()), to: Date()).day ?? 0), 0),
                             isDoneToday: task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
                         ),
@@ -389,7 +389,7 @@ struct HomeTCAView: View {
     }
 
     private func daysSinceLastRoutine(_ task: HomeFeature.RoutineDisplay) -> Int {
-        Calendar.current.dateComponents([.day], from: task.lastDone ?? Date(), to: Date()).day ?? 0
+        RoutineDateMath.elapsedDaysSinceLastDone(from: task.lastDone, referenceDate: Date())
     }
 
     private func filteredTasks(
