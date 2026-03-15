@@ -75,38 +75,41 @@ struct HomeTCAView: View {
     }
 
     private var sidebarContent: some View {
-        VStack(spacing: 12) {
-            if store.routineTasks.isEmpty {
-                emptyStateView(
-                    title: "No routines yet",
-                    message: "Start with one recurring task, and the sidebar will organize what needs attention for you.",
-                    systemImage: "checklist"
-                ) {
-                    store.send(.setAddRoutineSheet(true))
-                }
-            } else {
-                filterPicker
-                overallDoneCountSummary
+        applyPlatformSidebarSearch(
+            to: VStack(spacing: 12) {
+                if store.routineTasks.isEmpty {
+                    emptyStateView(
+                        title: "No routines yet",
+                        message: "Start with one recurring task, and the sidebar will organize what needs attention for you.",
+                        systemImage: "checklist"
+                    ) {
+                        store.send(.setAddRoutineSheet(true))
+                    }
+                } else {
+                    platformSearchField(searchText: $searchText)
+                    filterPicker
+                    overallDoneCountSummary
 
-                listOfSortedTasksView(
-                    routineDisplays: store.routineDisplays,
-                    routineTasks: store.routineTasks
-                )
-            }
-        }
-        .navigationTitle("Routina")
-        .searchable(text: $searchText, prompt: "Search routines")
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                platformRefreshButton
-                Button {
-                    store.send(.setAddRoutineSheet(true))
-                } label: {
-                    Label("Add Routine", systemImage: "plus")
+                    listOfSortedTasksView(
+                        routineDisplays: store.routineDisplays,
+                        routineTasks: store.routineTasks
+                    )
                 }
             }
-        }
-        .routinaHomeSidebarColumnWidth()
+            .navigationTitle("Routina")
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    platformRefreshButton
+                    Button {
+                        store.send(.setAddRoutineSheet(true))
+                    } label: {
+                        Label("Add Routine", systemImage: "plus")
+                    }
+                }
+            }
+            .routinaHomeSidebarColumnWidth(),
+            searchText: $searchText
+        )
     }
 
     @ViewBuilder
