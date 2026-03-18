@@ -4,6 +4,7 @@ import SwiftData
 import Testing
 @testable @preconcurrency import Routina
 
+@Suite(.serialized)
 @MainActor
 struct RoutineDetailFeatureTests {
     @Test
@@ -358,6 +359,7 @@ struct RoutineDetailFeatureTests {
         await store.receive(.onAppear) {
             $0.selectedDate = calendar.startOfDay(for: now)
         }
+        await store.receive(.availablePlacesLoaded([]))
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -459,16 +461,26 @@ struct RoutineDetailFeatureTests {
         await store.receive {
             guard case let .availablePlacesLoaded(places) = $0 else { return false }
             #expect(places.count == 2)
+            #expect(places == [
+                RoutinePlaceSummary(id: home.id, name: "Home", radiusMeters: home.radiusMeters, linkedRoutineCount: 0),
+                RoutinePlaceSummary(id: office.id, name: "Office", radiusMeters: office.radiusMeters, linkedRoutineCount: 1)
+            ])
             return true
         } assert: {
-            #expect($0.availablePlaces.count == 2)
+            $0.availablePlaces = [
+                RoutinePlaceSummary(id: home.id, name: "Home", radiusMeters: home.radiusMeters, linkedRoutineCount: 0),
+                RoutinePlaceSummary(id: office.id, name: "Office", radiusMeters: office.radiusMeters, linkedRoutineCount: 1)
+            ]
         }
         await store.receive(.logsLoaded([]))
 
+        let persistedTaskID = task.id
         let persistedTask = try #require(
             context.fetch(
                 FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { $0.id == task.id }
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
                 )
             ).first
         )
@@ -587,32 +599,35 @@ struct RoutineDetailFeatureTests {
         }
 
         await store.send(.markAsDone) {
-            $0.task.lastDone = now
-            $0.task.scheduleAnchor = now
             $0.isDoneToday = true
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
         }
+        #expect(store.state.task.lastDone == now)
+        #expect(store.state.task.scheduleAnchor == now)
 
         let taskID = task.id
         await store.receive {
             if case .logsLoaded = $0 { return true }
             return false
         } assert: {
+            let verificationContext = ModelContext(context.container)
             let descriptor = FetchDescriptor<RoutineLog>(
                 predicate: #Predicate<RoutineLog> { $0.taskID == taskID },
                 sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
             )
-            $0.logs = (try? context.fetch(descriptor)) ?? []
+            $0.logs = (try? verificationContext.fetch(descriptor)) ?? []
             #expect($0.logs.count == 1)
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = true
         }
 
-        let persistedLogs = (try? context.fetch(FetchDescriptor<RoutineLog>())) ?? []
-        let persistedTask = try? #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let verificationContext = ModelContext(context.container)
+        let persistedLogs = (try? verificationContext.fetch(FetchDescriptor<RoutineLog>())) ?? []
+        let persistedTask = try? verificationContext.fetch(FetchDescriptor<RoutineTask>()).first
         #expect(persistedLogs.count == 1)
+        #expect(persistedTask != nil)
         #expect(persistedTask?.scheduleAnchor == now)
         #expect(scheduledIDs.value == [task.id.uuidString])
     }
@@ -650,18 +665,15 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone) {
-            $0.task.completedStepCount = 1
-            $0.task.sequenceStartedAt = now
-            $0.isDoneToday = false
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
-        }
+        await store.send(.markAsDone)
+        #expect(store.state.task.completedStepCount == 1)
+        #expect(store.state.task.sequenceStartedAt == now)
 
         await store.receive(.logsLoaded([]))
 
-        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
-        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let verificationContext = ModelContext(context.container)
+        let persistedTask = try #require(try verificationContext.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try verificationContext.fetch(FetchDescriptor<RoutineLog>())
         #expect(persistedTask.completedStepCount == 1)
         #expect(persistedTask.lastDone == nil)
         #expect(persistedLogs.isEmpty)
@@ -727,7 +739,9 @@ struct RoutineDetailFeatureTests {
         let persistedTask = try #require(
             try context.fetch(
                 FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { $0.id == persistedTaskID }
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
                 )
             ).first
         )
@@ -781,7 +795,9 @@ struct RoutineDetailFeatureTests {
         let persistedTask = try #require(
             try context.fetch(
                 FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { $0.id == persistedTaskID }
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
                 )
             ).first
         )
@@ -833,12 +849,7 @@ struct RoutineDetailFeatureTests {
             $0.isDoneToday = false
         }
 
-        await store.receive(.logsLoaded([])) {
-            $0.logs = []
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
-            $0.isDoneToday = false
-        }
+        await store.receive(.logsLoaded([]))
 
         let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -892,12 +903,7 @@ struct RoutineDetailFeatureTests {
             $0.isDoneToday = true
         }
 
-        await store.receive(.logsLoaded([todayLog])) {
-            $0.logs = [todayLog]
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
-            $0.isDoneToday = true
-        }
+        await store.receive(.logsLoaded([todayLog]))
 
         let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())

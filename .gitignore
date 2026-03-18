@@ -3,3 +3,5 @@ Routina.xcodeproj/xcuserdata/ghadirianh.xcuserdatad/
 # Xcode local build artifacts
 /build/
 /build/XCBuildData/
+*.xcresult/
+.xcresulttmp/

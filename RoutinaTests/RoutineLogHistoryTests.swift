@@ -1,0 +1,130 @@
+import Foundation
+import SwiftData
+import Testing
+@testable @preconcurrency import Routina
+
+@MainActor
+struct RoutineLogHistoryTests {
+    @Test
+    func backfillMissingLastDoneLogs_insertsOnlyMissingEntries() throws {
+        let context = makeInMemoryContext()
+        let insertedCompletion = makeDate("2026-03-15T09:00:00Z")
+        let duplicateCompletion = makeDate("2026-03-14T09:00:00Z")
+        let insertedTask = makeTask(
+            in: context,
+            name: "Hydrate",
+            interval: 1,
+            lastDone: insertedCompletion,
+            emoji: "💧"
+        )
+        let duplicateTask = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 2,
+            lastDone: duplicateCompletion,
+            emoji: "🧘"
+        )
+        _ = makeTask(
+            in: context,
+            name: "Read",
+            interval: 3,
+            lastDone: nil,
+            emoji: "📚"
+        )
+        _ = makeLog(in: context, task: duplicateTask, timestamp: duplicateCompletion)
+        try context.save()
+
+        let didInsert = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(didInsert)
+        #expect(logs.count == 2)
+        #expect(logs.contains { $0.taskID == insertedTask.id && $0.timestamp == insertedCompletion })
+        #expect(logs.contains { $0.taskID == duplicateTask.id && $0.timestamp == duplicateCompletion })
+    }
+
+    @Test
+    func advanceTask_withSequentialSteps_savesLogOnlyAfterFinalStep() throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Laundry",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🧺",
+            steps: [
+                RoutineStep(title: "Wash"),
+                RoutineStep(title: "Dry")
+            ]
+        )
+        try context.save()
+
+        let firstCompletion = makeDate("2026-03-15T09:00:00Z")
+        let firstResult = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: firstCompletion,
+                context: context
+            )
+        )
+
+        #expect(firstResult.result == .advancedStep(completedSteps: 1, totalSteps: 2))
+        #expect(firstResult.task.completedStepCount == 1)
+        #expect(try context.fetch(FetchDescriptor<RoutineLog>()).isEmpty)
+
+        let finalCompletion = makeDate("2026-03-15T09:05:00Z")
+        let finalResult = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: finalCompletion,
+                context: context
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(finalResult.result == .completedRoutine)
+        #expect(finalResult.task.completedStepCount == 0)
+        #expect(finalResult.task.sequenceStartedAt == nil)
+        #expect(finalResult.task.lastDone == finalCompletion)
+        #expect(finalResult.task.scheduleAnchor == finalCompletion)
+        #expect(logs.count == 1)
+        #expect(logs.first?.taskID == task.id)
+        #expect(logs.first?.timestamp == finalCompletion)
+    }
+
+    @Test
+    func removeCompletion_forPausedTaskWithoutRemainingLogs_restoresPausedAnchor() throws {
+        let context = makeInMemoryContext()
+        let completionDate = makeDate("2026-03-15T09:00:00Z")
+        let pausedAt = makeDate("2026-03-16T12:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Walk",
+            interval: 2,
+            lastDone: completionDate,
+            emoji: "🚶",
+            steps: [RoutineStep(title: "Shoes on")],
+            scheduleAnchor: completionDate,
+            pausedAt: pausedAt
+        )
+        _ = makeLog(in: context, task: task, timestamp: completionDate)
+        task.completedStepCount = 1
+        task.sequenceStartedAt = makeDate("2026-03-15T08:50:00Z")
+        try context.save()
+
+        let updatedTask = try #require(
+            try RoutineLogHistory.removeCompletion(
+                taskID: task.id,
+                on: completionDate,
+                context: context
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(updatedTask.lastDone == nil)
+        #expect(updatedTask.scheduleAnchor == pausedAt)
+        #expect(updatedTask.completedStepCount == 0)
+        #expect(updatedTask.sequenceStartedAt == nil)
+        #expect(logs.isEmpty)
+    }
+}

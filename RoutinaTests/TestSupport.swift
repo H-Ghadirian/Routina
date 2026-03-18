@@ -37,6 +37,11 @@ func makeTask(
         pausedAt: pausedAt
     )
     context.insert(task)
+    do {
+        try context.save()
+    } catch {
+        fatalError("Failed to save task fixture: \(error)")
+    }
     return task
 }
 
@@ -55,6 +60,11 @@ func makePlace(
         radiusMeters: radiusMeters
     )
     context.insert(place)
+    do {
+        try context.save()
+    } catch {
+        fatalError("Failed to save place fixture: \(error)")
+    }
     return place
 }
 
@@ -66,6 +76,11 @@ func makeLog(
 ) -> RoutineLog {
     let log = RoutineLog(timestamp: timestamp, taskID: task.id)
     context.insert(log)
+    do {
+        try context.save()
+    } catch {
+        fatalError("Failed to save log fixture: \(error)")
+    }
     return log
 }
 

@@ -99,7 +99,7 @@ struct HomeFeature {
                 }
                 .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
 #else
-                return .merge(
+                return .concatenate(
                     .run { @MainActor send in
                         do {
                             let context = ModelContext(self.modelContext().container)
@@ -127,7 +127,7 @@ struct HomeFeature {
                 state.doneStats = doneStats
                 refreshDisplays(&state)
                 guard state.addRoutineState != nil else { return .none }
-                return .merge(
+                return .concatenate(
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks)))),
                     .send(.addRoutineSheet(.availablePlacesChanged(placeSummaries(from: tasks, places: places))))
                 )
@@ -211,7 +211,7 @@ struct HomeFeature {
                 let currentCalendar = calendar
                 return .run { @MainActor [id, completionDate, currentCalendar] _ in
                     do {
-                        let context = self.modelContext()
+                        let context = ModelContext(self.modelContext().container)
                         guard let taskState = try RoutineLogHistory.advanceTask(
                             taskID: id,
                             completedAt: completionDate,
@@ -368,7 +368,7 @@ struct HomeFeature {
         locationSnapshot: LocationSnapshot,
         doneStats: DoneStats
     ) -> RoutineDisplay {
-        let doneTodayFromLastDone = task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
+        let doneTodayFromLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
         let linkedPlace = task.placeID.flatMap { placesByID[$0] }
         let locationAvailability: RoutineLocationAvailability
 

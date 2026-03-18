@@ -239,9 +239,9 @@ struct RoutineDetailFeature: Reducer {
                 state.selectedDate = calendar.startOfDay(for: now)
             }
             updateDerivedState(&state)
-            return .merge(
-                handleOnAppear(taskID: state.task.id),
-                loadAvailablePlaces()
+            return .concatenate(
+                loadAvailablePlaces(),
+                handleOnAppear(taskID: state.task.id)
             )
         }
     }
@@ -368,7 +368,7 @@ struct RoutineDetailFeature: Reducer {
     private func handleMarkAsDone(taskID: UUID, completedAt: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = modelContext()
+                let context = ModelContext(modelContext().container)
                 guard let advancedTask = try RoutineLogHistory.advanceTask(
                     taskID: taskID,
                     completedAt: completedAt,
@@ -398,7 +398,7 @@ struct RoutineDetailFeature: Reducer {
     private func handleUndoCompletion(taskID: UUID, completedDay: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = modelContext()
+                let context = ModelContext(modelContext().container)
                 guard let updatedTask = try RoutineLogHistory.removeCompletion(
                     taskID: taskID,
                     on: completedDay,

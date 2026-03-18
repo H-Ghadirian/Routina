@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 import SwiftData
 import Testing
 @testable @preconcurrency import Routina
@@ -104,6 +105,7 @@ struct SettingsFeatureTests {
             $0.modelContext = { context }
             $0.locationClient.snapshot = { _ in snapshot }
         }
+        var loadedPlaces: [RoutinePlaceSummary] = []
 
         await store.send(.saveCurrentLocationAsPlaceTapped) {
             $0.isPlaceOperationInProgress = true
@@ -114,14 +116,13 @@ struct SettingsFeatureTests {
         }
         await store.receive { action in
             guard case let .placesLoaded(places) = action else { return false }
+            loadedPlaces = places
             #expect(places.count == 1)
             #expect(places.first?.name == "Home")
             #expect(places.first?.radiusMeters == 180)
             return true
         } assert: {
-            #expect($0.savedPlaces.count == 1)
-            #expect($0.savedPlaces.first?.name == "Home")
-            #expect($0.savedPlaces.first?.radiusMeters == 180)
+            $0.savedPlaces = loadedPlaces
         }
         await store.receive(.placeOperationFinished(success: true, message: "Saved Home.")) {
             $0.isPlaceOperationInProgress = false
@@ -219,8 +220,8 @@ struct SettingsFeatureTests {
 
         let store = TestStore(
             initialState: SettingsFeature.State(
-                savedPlaces: [initialSummary],
                 isDeletePlaceConfirmationPresented: true,
+                savedPlaces: [initialSummary],
                 placePendingDeletion: initialSummary
             )
         ) {

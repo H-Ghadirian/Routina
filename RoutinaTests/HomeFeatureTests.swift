@@ -56,7 +56,9 @@ struct HomeFeatureTests {
     @Test
     func tasksLoadedSuccessfully_mapsDisplayWithFallbacksAndDoneToday() async throws {
         let context = makeInMemoryContext()
-        let today = Date()
+        let today = makeDate("2026-03-18T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
         let task = makeTask(
             in: context,
@@ -72,6 +74,8 @@ struct HomeFeatureTests {
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.calendar = calendar
+            $0.date.now = today
         }
 
         await store.send(.tasksLoadedSuccessfully([task], [], HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3]))) {
@@ -124,6 +128,7 @@ struct HomeFeatureTests {
             $0.addRoutineState?.existingRoutineNames = ["Read"]
             $0.addRoutineState?.nameValidationMessage = "A routine with this name already exists."
         }
+        await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
     }
 
     @Test
@@ -222,6 +227,7 @@ struct HomeFeatureTests {
                     taskID: task.id,
                     name: "Wash Bedsheets",
                     emoji: "🛏️",
+                    placeID: home.id,
                     placeName: "Home",
                     locationAvailability: .away(placeName: "Home", distanceMeters: home.distance(to: LocationCoordinate(latitude: 48.1374, longitude: 11.5755))),
                     interval: 7,
@@ -863,14 +869,20 @@ struct HomeFeatureTests {
     func onAppear_backfillsMissingLogFromLastDone() async throws {
         let context = makeInMemoryContext()
         let lastDone = makeDate("2026-03-14T10:00:00Z")
+        let now = makeDate("2026-03-14T12:00:00Z")
         let task = makeTask(in: context, name: "Shave Beard", interval: 4, lastDone: lastDone, emoji: "💪")
         try context.save()
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
+            $0.calendar = calendar
+            $0.date.now = now
             $0.locationClient.snapshot = { _ in
                 try? await Task.sleep(nanoseconds: 20_000_000)
                 return LocationSnapshot(
@@ -895,7 +907,7 @@ struct HomeFeatureTests {
             $0.routineTasks = [task]
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
             $0.routineDisplays = [
-                makeDisplay(taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: Calendar.current.isDateInToday(lastDone), doneCount: 1)
+                makeDisplay(taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: true, doneCount: 1)
             ]
         }
         await store.receive(.locationSnapshotUpdated(

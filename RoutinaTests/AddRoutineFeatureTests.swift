@@ -260,6 +260,7 @@ struct AddRoutineFeatureTests {
         let washID = UUID()
         let capturedNames = LockIsolated<[String]>([])
         let capturedStepTitles = LockIsolated<[String]>([])
+        let capturedSteps = LockIsolated<[RoutineStep]>([])
         let store = TestStore(
             initialState: AddRoutineFeature.State(
                 routineName: "Laundry",
@@ -272,6 +273,7 @@ struct AddRoutineFeatureTests {
                 onSave: { name, frequencyInDays, emoji, placeID, tags, steps in
                     capturedNames.withValue { $0 = [name, "\(frequencyInDays)", emoji] + tags }
                     #expect(placeID == nil)
+                    capturedSteps.withValue { $0 = steps }
                     capturedStepTitles.withValue { $0 = steps.map(\.title) }
                     return .none
                 },
@@ -279,9 +281,10 @@ struct AddRoutineFeatureTests {
             )
         }
 
-        await store.send(.saveTapped)
-        #expect(store.state.stepDraft.isEmpty)
-        #expect(store.state.routineSteps.map(\.title) == ["Wash clothes", "Hang on the line"])
+        await store.send(.saveTapped) {
+            $0.routineSteps = capturedSteps.value
+            $0.stepDraft = ""
+        }
         #expect(capturedNames.value == ["Laundry", "1", "✨"])
         #expect(capturedStepTitles.value == ["Wash clothes", "Hang on the line"])
     }
