@@ -119,7 +119,6 @@ struct RoutineDetailTCAView: View {
                 }
             }
             .onAppear {
-                store.send(.onAppear)
                 displayedMonthStart = Calendar.current.startOfMonth(for: selectedDate)
             }
             .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in

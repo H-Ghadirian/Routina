@@ -4,6 +4,10 @@ import SwiftData
 import UserNotifications
 
 struct RoutineDetailFeature: Reducer {
+    private enum CancelID {
+        case loadContext
+    }
+
     enum EditFrequency: String, CaseIterable, Equatable {
         case day = "Day"
         case week = "Week"
@@ -243,6 +247,7 @@ struct RoutineDetailFeature: Reducer {
                 loadAvailablePlaces(),
                 handleOnAppear(taskID: state.task.id)
             )
+            .cancellable(id: CancelID.loadContext, cancelInFlight: true)
         }
     }
 

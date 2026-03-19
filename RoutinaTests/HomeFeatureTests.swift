@@ -54,6 +54,173 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func setSelectedTask_populatesReducerOwnedDetailState() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        let lastDone = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 2,
+            lastDone: lastDone,
+            emoji: "📚",
+            scheduleAnchor: lastDone
+        )
+        let log = makeLog(in: context, task: task, timestamp: lastDone)
+        try context.save()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(routineTasks: [task])
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.setSelectedTask(task.id)) {
+            $0.selectedTaskID = task.id
+            $0.routineDetailState = RoutineDetailFeature.State(
+                task: task,
+                logs: [],
+                selectedDate: calendar.startOfDay(for: now),
+                daysSinceLastRoutine: 2,
+                overdueDays: 0,
+                isDoneToday: false
+            )
+        }
+
+        let detailState = try #require(store.state.routineDetailState)
+        #expect(store.state.selectedTaskID == task.id)
+        #expect(detailState.task.id == task.id)
+        #expect(detailState.selectedDate == calendar.startOfDay(for: now))
+        #expect(detailState.daysSinceLastRoutine == 2)
+        #expect(!detailState.isDoneToday)
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([log]))) {
+            $0.routineDetailState?.logs = [log]
+            $0.routineDetailState?.daysSinceLastRoutine = 2
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = false
+        }
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_refreshesLogsForOpenRoutineDetail() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        let lastDone = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 2,
+            lastDone: lastDone,
+            emoji: "📚",
+            scheduleAnchor: lastDone
+        )
+        let log = makeLog(in: context, task: task, timestamp: lastDone)
+        try context.save()
+
+        let initialDetailState = RoutineDetailFeature.State(
+            task: task,
+            logs: [],
+            selectedDate: calendar.startOfDay(for: now),
+            daysSinceLastRoutine: 2,
+            overdueDays: 0,
+            isDoneToday: false
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                selectedTaskID: task.id,
+                routineDetailState: initialDetailState
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([task], [], HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1]))) {
+            $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 2,
+                    lastDone: lastDone,
+                    isDoneToday: false,
+                    doneCount: 1
+                )
+            ]
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([log]))) {
+            $0.routineDetailState?.logs = [log]
+            $0.routineDetailState?.daysSinceLastRoutine = 2
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = false
+        }
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_clearsSelectedDetailWhenTaskDisappears() async {
+        let context = makeInMemoryContext()
+        let removedTask = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+        let survivingTask = makeTask(in: context, name: "Stretch", interval: 3, lastDone: nil, emoji: "🤸")
+
+        let initialState = HomeFeature.State(
+            routineTasks: [removedTask],
+            selectedTaskID: removedTask.id,
+            routineDetailState: RoutineDetailFeature.State(task: removedTask)
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([survivingTask], [], HomeFeature.DoneStats())) {
+            $0.routineTasks = [survivingTask]
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: survivingTask.id,
+                    name: "Stretch",
+                    emoji: "🤸",
+                    interval: 3,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+            $0.selectedTaskID = nil
+            $0.routineDetailState = nil
+        }
+
+        #expect(store.state.routineTasks == [survivingTask])
+        #expect(store.state.selectedTaskID == nil)
+        #expect(store.state.routineDetailState == nil)
+    }
+
+    @Test
     func tasksLoadedSuccessfully_mapsDisplayWithFallbacksAndDoneToday() async throws {
         let context = makeInMemoryContext()
         let today = makeDate("2026-03-18T10:00:00Z")

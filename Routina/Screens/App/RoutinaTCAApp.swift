@@ -6,16 +6,20 @@ import UIKit
 @main
 struct RoutinaTCAApp: App {
     @UIApplicationDelegateAdaptor(RemoteNotificationIOSDelegate.self) private var remoteNotificationDelegate
+    private let persistence: PersistenceController
+    private let store: StoreOf<AppFeature>
 
+    @MainActor
     init() {
         RoutinaAppBootstrap.configure()
+
+        let persistence = PersistenceController.shared
+        self.persistence = persistence
+        self.store = RoutinaAppBootstrap.makeStore(using: persistence)
     }
 
     var body: some Scene {
         WindowGroup {
-            let persistence = PersistenceController.shared
-            let store = RoutinaAppBootstrap.makeStore(using: persistence)
-
             AppView(store: store)
                 .routinaAppRootWindowFrame()
                 .modelContainer(persistence.container)

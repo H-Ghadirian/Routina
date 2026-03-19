@@ -22,7 +22,6 @@ struct HomeTCAView: View {
 
     let store: StoreOf<HomeFeature>
     @Environment(\.modelContext) private var modelContext
-    @State private var selectedTaskID: UUID?
     @State private var searchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
@@ -71,12 +70,6 @@ struct HomeTCAView: View {
                     .receive(on: RunLoop.main)
             ) { _ in
                 requestRefresh()
-            }
-            .onChange(of: store.routineTasks) { _, tasks in
-                guard let selectedTaskID else { return }
-                if !tasks.contains(where: { $0.id == selectedTaskID }) {
-                    self.selectedTaskID = nil
-                }
             }
             .onChange(of: store.routineDisplays) { _, displays in
                 validateSelectedTag(
@@ -138,8 +131,7 @@ struct HomeTCAView: View {
                     listOfSortedTasksView(
                         routineDisplays: store.routineDisplays,
                         awayRoutineDisplays: store.awayRoutineDisplays,
-                        archivedRoutineDisplays: store.archivedRoutineDisplays,
-                        routineTasks: store.routineTasks
+                        archivedRoutineDisplays: store.archivedRoutineDisplays
                     )
                 }
             }
@@ -163,8 +155,7 @@ struct HomeTCAView: View {
                     listOfSortedTasksView(
                         routineDisplays: store.routineDisplays,
                         awayRoutineDisplays: store.awayRoutineDisplays,
-                        archivedRoutineDisplays: store.archivedRoutineDisplays,
-                        routineTasks: store.routineTasks
+                        archivedRoutineDisplays: store.archivedRoutineDisplays
                     )
                 }
             }
@@ -191,8 +182,11 @@ struct HomeTCAView: View {
 
     @ViewBuilder
     private var detailContent: some View {
-        if let selectedTaskID {
-            routineDetailTCAView(taskID: selectedTaskID, routineTasks: store.routineTasks)
+        if let detailStore = self.store.scope(
+            state: \.routineDetailState,
+            action: \.routineDetail
+        ) {
+            RoutineDetailTCAView(store: detailStore)
         } else {
             ContentUnavailableView(
                 "Select a routine",
@@ -207,6 +201,13 @@ struct HomeTCAView: View {
         Binding(
             get: { store.isAddRoutineSheetPresented },
             set: { store.send(.setAddRoutineSheet($0)) }
+        )
+    }
+
+    private var selectedTaskBinding: Binding<UUID?> {
+        Binding(
+            get: { store.selectedTaskID },
+            set: { store.send(.setSelectedTask($0)) }
         )
     }
 
@@ -301,8 +302,7 @@ struct HomeTCAView: View {
     private func listOfSortedTasksView(
         routineDisplays: [HomeFeature.RoutineDisplay],
         awayRoutineDisplays: [HomeFeature.RoutineDisplay],
-        archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
-        routineTasks: [RoutineTask]
+        archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
 #if os(macOS)
         let sections = groupedRoutineSections(from: routineDisplays + awayRoutineDisplays)
@@ -345,7 +345,7 @@ struct HomeTCAView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(selection: $selectedTaskID) {
+                List(selection: selectedTaskBinding) {
                     ForEach(sections) { section in
                         Section(section.title) {
                             ForEach(section.tasks) { task in
@@ -355,7 +355,7 @@ struct HomeTCAView: View {
                                 .contentShape(Rectangle())
                                 .contextMenu {
                                     Button {
-                                        selectedTaskID = task.taskID
+                                        openTask(task.taskID)
                                     } label: {
                                         Label("Open", systemImage: "arrow.right.circle")
                                     }
@@ -375,10 +375,7 @@ struct HomeTCAView: View {
                                     .disabled(task.isPaused)
 
                                     Button(role: .destructive) {
-                                        if selectedTaskID == task.taskID {
-                                            selectedTaskID = nil
-                                        }
-                                        store.send(.deleteTasks([task.taskID]))
+                                        deleteTask(task.taskID)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
@@ -399,7 +396,7 @@ struct HomeTCAView: View {
                                 .contentShape(Rectangle())
                                 .contextMenu {
                                     Button {
-                                        selectedTaskID = task.taskID
+                                        openTask(task.taskID)
                                     } label: {
                                         Label("Open", systemImage: "arrow.right.circle")
                                     }
@@ -411,10 +408,7 @@ struct HomeTCAView: View {
                                     }
 
                                     Button(role: .destructive) {
-                                        if selectedTaskID == task.taskID {
-                                            selectedTaskID = nil
-                                        }
-                                        store.send(.deleteTasks([task.taskID]))
+                                        deleteTask(task.taskID)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
@@ -428,7 +422,7 @@ struct HomeTCAView: View {
                 }
                 .listStyle(.sidebar)
                 .navigationDestination(for: UUID.self) { taskID in
-                    routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
+                    routineDetailDestination(taskID: taskID)
                 }
             }
 #else
@@ -448,7 +442,7 @@ struct HomeTCAView: View {
                         systemImage: inlineEmptyState.systemImage
                     )
                 } else {
-                    List(selection: $selectedTaskID) {
+                    List(selection: selectedTaskBinding) {
                         ForEach(sections) { section in
                             Section(section.title) {
                                 ForEach(section.tasks) { task in
@@ -458,7 +452,7 @@ struct HomeTCAView: View {
                                     .contentShape(Rectangle())
                                     .contextMenu {
                                         Button {
-                                            selectedTaskID = task.taskID
+                                            openTask(task.taskID)
                                         } label: {
                                             Label("Open", systemImage: "arrow.right.circle")
                                         }
@@ -478,10 +472,7 @@ struct HomeTCAView: View {
                                         .disabled(task.isPaused)
 
                                         Button(role: .destructive) {
-                                            if selectedTaskID == task.taskID {
-                                                selectedTaskID = nil
-                                            }
-                                            store.send(.deleteTasks([task.taskID]))
+                                            deleteTask(task.taskID)
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -503,7 +494,7 @@ struct HomeTCAView: View {
                                     .contentShape(Rectangle())
                                     .contextMenu {
                                         Button {
-                                            selectedTaskID = task.taskID
+                                            openTask(task.taskID)
                                         } label: {
                                             Label("Open", systemImage: "arrow.right.circle")
                                         }
@@ -516,10 +507,7 @@ struct HomeTCAView: View {
                                         .disabled(task.isPaused)
 
                                         Button(role: .destructive) {
-                                            if selectedTaskID == task.taskID {
-                                                selectedTaskID = nil
-                                            }
-                                            store.send(.deleteTasks([task.taskID]))
+                                            deleteTask(task.taskID)
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -541,7 +529,7 @@ struct HomeTCAView: View {
                                     .contentShape(Rectangle())
                                     .contextMenu {
                                         Button {
-                                            selectedTaskID = task.taskID
+                                            openTask(task.taskID)
                                         } label: {
                                             Label("Open", systemImage: "arrow.right.circle")
                                         }
@@ -553,10 +541,7 @@ struct HomeTCAView: View {
                                         }
 
                                         Button(role: .destructive) {
-                                            if selectedTaskID == task.taskID {
-                                                selectedTaskID = nil
-                                            }
-                                            store.send(.deleteTasks([task.taskID]))
+                                            deleteTask(task.taskID)
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -575,7 +560,7 @@ struct HomeTCAView: View {
                         handleCompactHeaderScroll(oldOffset: oldOffset, newOffset: newOffset)
                     }
                     .navigationDestination(for: UUID.self) { taskID in
-                        routineDetailTCAView(taskID: taskID, routineTasks: routineTasks)
+                        routineDetailDestination(taskID: taskID)
                     }
                 }
             }
@@ -1009,32 +994,27 @@ struct HomeTCAView: View {
         .padding(.vertical, 4)
     }
 
-    private func routineDetailTCAView(
-        taskID: UUID,
-        routineTasks: [RoutineTask]
-    ) -> some View {
-        Group {
-            if let task = routineTasks.first(where: { $0.id == taskID }) {
-                let currentModelContext = modelContext
-                RoutineDetailTCAView(
-                    store: Store(
-                        initialState: RoutineDetailFeature.State(
-                            task: task,
-                            logs: initialLogs(for: task),
-                            daysSinceLastRoutine: RoutineDateMath.elapsedDaysSinceLastDone(from: task.lastDone, referenceDate: Date()),
-                            overdueDays: task.isPaused ? 0 : RoutineDateMath.overdueDays(for: task, referenceDate: Date()),
-                            isDoneToday: task.lastDone.map { Calendar.current.isDateInToday($0) } ?? false
-                        ),
-                        reducer: { RoutineDetailFeature() },
-                        withDependencies: {
-                            $0.modelContext = { @MainActor in currentModelContext }
-                        }
-                    )
-                )
-            } else {
-                Text("Routine not found")
-                    .foregroundColor(.secondary)
-            }
+    @ViewBuilder
+    private func routineDetailDestination(taskID: UUID) -> some View {
+        if store.selectedTaskID == taskID,
+           let detailStore = self.store.scope(
+               state: \.routineDetailState,
+               action: \.routineDetail
+           ) {
+            RoutineDetailTCAView(store: detailStore)
+        } else if store.routineTasks.contains(where: { $0.id == taskID }) {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onAppear {
+                    openTask(taskID)
+                }
+        } else {
+            ContentUnavailableView(
+                "Routine not found",
+                systemImage: "exclamationmark.triangle",
+                description: Text("The selected routine is no longer available.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -1071,15 +1051,21 @@ struct HomeTCAView: View {
         from sectionTasks: [HomeFeature.RoutineDisplay]
     ) {
         let ids = offsets.compactMap { sectionTasks[$0].taskID }
-        if let selectedTaskID, ids.contains(selectedTaskID) {
-            self.selectedTaskID = nil
+        if let selectedTaskID = store.selectedTaskID, ids.contains(selectedTaskID) {
+            store.send(.setSelectedTask(nil))
         }
         store.send(.deleteTasks(ids))
     }
 
-    private func initialLogs(for task: RoutineTask) -> [RoutineLog] {
-        _ = try? RoutineLogHistory.backfillMissingLastDoneLog(for: task.id, in: modelContext)
-        return HomeFeature.detailLogs(taskID: task.id, context: modelContext)
+    private func openTask(_ taskID: UUID) {
+        store.send(.setSelectedTask(taskID))
+    }
+
+    private func deleteTask(_ taskID: UUID) {
+        if store.selectedTaskID == taskID {
+            store.send(.setSelectedTask(nil))
+        }
+        store.send(.deleteTasks([taskID]))
     }
 
     private func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {
