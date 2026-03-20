@@ -3,39 +3,50 @@ import ComposableArchitecture
 
 struct AppView: View {
     let store: StoreOf<AppFeature>
+    @State private var searchText = ""
 
     var body: some View {
         WithPerceptionTracking {
-            TabView(
+            let tabView = TabView(
                 selection: Binding(
                     get: { store.selectedTab },
                     set: { store.send(.tabSelected($0)) }
                 )
             ) {
-                HomeTCAView(
-                    store: store.scope(state: \.home, action: \.home)
-                )
-                .tabItem {
-                    Label(Tab.home.rawValue, systemImage: "house")
+                SwiftUI.Tab(Tab.home.rawValue, systemImage: "house", value: Tab.home) {
+                    HomeTCAView(
+                        store: store.scope(state: \.home, action: \.home)
+                    )
                 }
-                .tag(Tab.home)
 
-                StatsView()
-                    .tabItem {
-                        Label(Tab.stats.rawValue, systemImage: "chart.bar.xaxis")
-                    }
-                    .tag(Tab.stats)
-
-                SettingsTCAView(
-                    store: store.scope(state: \.settings, action: \.settings)
-                )
-                .tabItem {
-                    Label(Tab.settings.rawValue, systemImage: "gear")
+                SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: Tab.search, role: .search) {
+                    HomeTCAView(
+                        store: store.scope(state: \.home, action: \.home),
+                        searchText: $searchText
+                    )
                 }
-                .tag(Tab.settings)
+
+                SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
+                    StatsView()
+                }
+
+                SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: Tab.settings) {
+                    SettingsTCAView(
+                        store: store.scope(state: \.settings, action: \.settings)
+                    )
+                }
             }
-            .task {
-                store.send(.onAppear)
+            if store.selectedTab == .search {
+                tabView
+                    .searchable(text: $searchText, prompt: "Search routines")
+                    .task {
+                        store.send(.onAppear)
+                    }
+            } else {
+                tabView
+                    .task {
+                        store.send(.onAppear)
+                    }
             }
         }
     }

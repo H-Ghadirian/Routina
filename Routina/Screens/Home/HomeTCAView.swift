@@ -21,14 +21,23 @@ struct HomeTCAView: View {
     }
 
     let store: StoreOf<HomeFeature>
+    private let externalSearchText: Binding<String>?
     @Environment(\.modelContext) private var modelContext
-    @State private var searchText = ""
+    @State private var localSearchText = ""
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
     @State private var selectedManualPlaceFilterID: UUID?
     @State private var isFilterSheetPresented = false
     @State private var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
+
+    init(
+        store: StoreOf<HomeFeature>,
+        searchText: Binding<String>? = nil
+    ) {
+        self.store = store
+        self.externalSearchText = searchText
+    }
 
     var body: some View {
         WithPerceptionTracking {
@@ -37,7 +46,12 @@ struct HomeTCAView: View {
     }
 
     private var homeContent: some View {
-        applyPlatformRefresh(to: navigationContent)
+        applyPlatformRefresh(
+            to: applyPlatformSearchExperience(
+                to: navigationContent,
+                searchText: searchTextBinding
+            )
+        )
             .sheet(isPresented: addRoutineSheetBinding) {
                 addRoutineSheetContent
             }
@@ -111,60 +125,54 @@ struct HomeTCAView: View {
     @ViewBuilder
     private var sidebarContent: some View {
 #if os(macOS)
-        applyPlatformSidebarSearch(
-            to: VStack(spacing: 12) {
-                if store.routineTasks.isEmpty {
-                    emptyStateView(
-                        title: "No routines yet",
-                        message: "Start with one recurring task, and the sidebar will organize what needs attention for you.",
-                        systemImage: "checklist"
-                    ) {
-                        store.send(.setAddRoutineSheet(true))
-                    }
-                } else {
-                    platformSearchField(searchText: $searchText)
-                    filterPicker
-                    tagFilterBar
-                    locationFilterPanel
-                    overallDoneCountSummary
+        VStack(spacing: 12) {
+            if store.routineTasks.isEmpty {
+                emptyStateView(
+                    title: "No routines yet",
+                    message: "Start with one recurring task, and the sidebar will organize what needs attention for you.",
+                    systemImage: "checklist"
+                ) {
+                    store.send(.setAddRoutineSheet(true))
+                }
+            } else {
+                platformSearchField(searchText: searchTextBinding)
+                filterPicker
+                tagFilterBar
+                locationFilterPanel
+                overallDoneCountSummary
 
-                    listOfSortedTasksView(
-                        routineDisplays: store.routineDisplays,
-                        awayRoutineDisplays: store.awayRoutineDisplays,
-                        archivedRoutineDisplays: store.archivedRoutineDisplays
-                    )
-                }
+                listOfSortedTasksView(
+                    routineDisplays: store.routineDisplays,
+                    awayRoutineDisplays: store.awayRoutineDisplays,
+                    archivedRoutineDisplays: store.archivedRoutineDisplays
+                )
             }
-            .navigationTitle("Routina")
-            .toolbar { homeToolbarContent }
-            .routinaHomeSidebarColumnWidth(),
-            searchText: $searchText
-        )
+        }
+        .navigationTitle("Routina")
+        .toolbar { homeToolbarContent }
+        .routinaHomeSidebarColumnWidth()
 #else
-        applyPlatformSidebarSearch(
-            to: Group {
-                if store.routineTasks.isEmpty {
-                    emptyStateView(
-                        title: "No routines yet",
-                        message: "Start with one recurring task, and the home list will organize what needs attention for you.",
-                        systemImage: "checklist"
-                    ) {
-                        store.send(.setAddRoutineSheet(true))
-                    }
-                } else {
-                    listOfSortedTasksView(
-                        routineDisplays: store.routineDisplays,
-                        awayRoutineDisplays: store.awayRoutineDisplays,
-                        archivedRoutineDisplays: store.archivedRoutineDisplays
-                    )
+        Group {
+            if store.routineTasks.isEmpty {
+                emptyStateView(
+                    title: "No routines yet",
+                    message: "Start with one recurring task, and the home list will organize what needs attention for you.",
+                    systemImage: "checklist"
+                ) {
+                    store.send(.setAddRoutineSheet(true))
                 }
+            } else {
+                listOfSortedTasksView(
+                    routineDisplays: store.routineDisplays,
+                    awayRoutineDisplays: store.awayRoutineDisplays,
+                    archivedRoutineDisplays: store.archivedRoutineDisplays
+                )
             }
-            .navigationTitle("Routina")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { homeToolbarContent }
-            .routinaHomeSidebarColumnWidth(),
-            searchText: $searchText
-        )
+        }
+        .navigationTitle("Routina")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { homeToolbarContent }
+        .routinaHomeSidebarColumnWidth()
 #endif
     }
 
@@ -172,6 +180,9 @@ struct HomeTCAView: View {
     private var homeToolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             platformRefreshButton
+#if !os(macOS)
+            filterSheetButton
+#endif
             Button {
                 store.send(.setAddRoutineSheet(true))
             } label: {
@@ -202,6 +213,14 @@ struct HomeTCAView: View {
             get: { store.isAddRoutineSheetPresented },
             set: { store.send(.setAddRoutineSheet($0)) }
         )
+    }
+
+    private var searchTextBinding: Binding<String> {
+        if let externalSearchText {
+            externalSearchText
+        } else {
+            $localSearchText
+        }
     }
 
     private var selectedTaskBinding: Binding<UUID?> {
@@ -576,14 +595,8 @@ struct HomeTCAView: View {
         EmptyView()
 #else
         VStack(alignment: .leading, spacing: 10) {
-            compactSearchField
+            compactSummaryRow
             compactFilterPicker
-
-            Text(compactSummaryText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
 
             if hasActiveOptionalFilters {
                 activeFilterChipBar
@@ -601,31 +614,29 @@ struct HomeTCAView: View {
         .pickerStyle(.segmented)
     }
 
-    private var compactSearchField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
+    private var compactSummaryRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(compactSummaryText)
+                .font(.caption)
                 .foregroundStyle(.secondary)
-
-            TextField("Search routines", text: $searchText)
-                .textFieldStyle(.plain)
-
-            if showsFilterSheetButton {
-                Button {
-                    isFilterSheetPresented = true
-                } label: {
-                    Image(systemName: hasActiveOptionalFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                        .foregroundStyle(hasActiveOptionalFilters ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Filters")
-            }
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.secondary.opacity(0.12))
-        )
+    }
+
+    private var filterSheetButton: some View {
+        Button {
+            isFilterSheetPresented = true
+        } label: {
+            Image(
+                systemName: hasActiveOptionalFilters
+                    ? "line.3.horizontal.decrease.circle.fill"
+                    : "line.3.horizontal.decrease.circle"
+            )
+            .foregroundStyle(hasActiveOptionalFilters ? Color.accentColor : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Filters")
     }
 
     @ViewBuilder
@@ -822,6 +833,15 @@ struct HomeTCAView: View {
 #else
         NavigationStack {
             List {
+                Section("Status") {
+                    Picker("Show routines", selection: $selectedFilter) {
+                        ForEach(RoutineListFilter.allCases) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
+
                 if !availableTags.isEmpty {
                     Section("Tags") {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -1140,7 +1160,7 @@ struct HomeTCAView: View {
     }
 
     private func matchesSearch(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSearch = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearch.isEmpty else { return true }
         return task.name.localizedCaseInsensitiveContains(trimmedSearch)
             || task.emoji.localizedCaseInsensitiveContains(trimmedSearch)

@@ -8,7 +8,7 @@ extension View {
 }
 
 extension HomeTCAView {
-    func applyPlatformSidebarSearch<Content: View>(
+    func applyPlatformSearchExperience<Content: View>(
         to view: Content,
         searchText: Binding<String>
     ) -> some View {
