@@ -83,8 +83,12 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                             "interval": Int(task.interval),
                             "scheduleMode": task.scheduleMode.rawValue,
                             "isChecklistDriven": task.isChecklistDriven,
+                            "isChecklistCompletionRoutine": task.isChecklistCompletionRoutine,
                             "steps": task.steps.map(\.title),
                             "completedStepCount": task.completedSteps,
+                            "checklistItemCount": task.totalChecklistItemCount,
+                            "completedChecklistItemCount": task.completedChecklistItemCount,
+                            "nextPendingChecklistItemTitle": task.nextPendingChecklistItemTitle as Any,
                             "dueDate": RoutineDateMath.dueDate(for: task, referenceDate: Date()).timeIntervalSince1970,
                             "dueChecklistItemCount": task.dueChecklistItems(referenceDate: Date()).count,
                             "nextDueChecklistItemTitle": task.nextDueChecklistItem(referenceDate: Date())?.title as Any
@@ -193,6 +197,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
 
             guard let task = try context.fetch(descriptor).first else { return }
             guard !task.isPaused else { return }
+            guard !task.isChecklistCompletionRoutine else { return }
             if task.isChecklistDriven {
                 _ = try RoutineLogHistory.markDueChecklistItemsPurchased(
                     taskID: taskID,

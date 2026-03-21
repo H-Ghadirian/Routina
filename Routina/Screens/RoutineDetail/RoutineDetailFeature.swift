@@ -33,6 +33,7 @@ struct RoutineDetailFeature: Reducer {
     @ObservableState
     struct State: Equatable {
         var task: RoutineTask
+        var taskRefreshID: UInt64 = 0
         var logs: [RoutineLog] = []
         var selectedDate: Date?
         var daysSinceLastRoutine: Int = 0
@@ -60,6 +61,8 @@ struct RoutineDetailFeature: Reducer {
     enum Action: Equatable {
         case markAsDone
         case markChecklistItemPurchased(UUID)
+        case toggleChecklistItemCompletion(UUID)
+        case markChecklistItemCompleted(UUID)
         case undoSelectedDateCompletion
         case pauseTapped
         case resumeTapped
@@ -117,6 +120,7 @@ struct RoutineDetailFeature: Reducer {
                     purchasedAt: completionDate
                 )
                 guard updatedItemCount > 0 else { return .none }
+                refreshTaskView(&state)
                 upsertLocalLog(at: completionDate, in: &state)
                 updateDerivedState(&state)
                 return handleChecklistItemsPurchased(
@@ -125,11 +129,15 @@ struct RoutineDetailFeature: Reducer {
                     purchasedAt: completionDate
                 )
             }
+            if state.task.isChecklistCompletionRoutine {
+                return .none
+            }
             let completionDate = resolvedCompletionDate(for: state.selectedDate)
             guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
                 return .none
             }
             _ = state.task.advance(completedAt: completionDate, calendar: calendar)
+            refreshTaskView(&state)
             updateDerivedState(&state)
             return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate)
 
@@ -138,6 +146,7 @@ struct RoutineDetailFeature: Reducer {
             let completionDate = now
             let updatedItemCount = state.task.markChecklistItemsPurchased([itemID], purchasedAt: completionDate)
             guard updatedItemCount > 0 else { return .none }
+            refreshTaskView(&state)
             upsertLocalLog(at: completionDate, in: &state)
             updateDerivedState(&state)
             return handleChecklistItemsPurchased(
@@ -146,12 +155,102 @@ struct RoutineDetailFeature: Reducer {
                 purchasedAt: completionDate
             )
 
+        case let .toggleChecklistItemCompletion(itemID):
+            guard !state.task.isPaused else { return .none }
+            guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
+                return .none
+            }
+
+            let referenceDate = now
+            if state.task.isChecklistItemCompleted(itemID) {
+                guard state.task.isChecklistInProgress else { return .none }
+                guard state.task.unmarkChecklistItemCompleted(itemID) else { return .none }
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleChecklistItemUnmarked(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    referenceDate: referenceDate
+                )
+            }
+
+            let result = state.task.markChecklistItemCompleted(
+                itemID,
+                completedAt: referenceDate,
+                calendar: calendar
+            )
+            switch result {
+            case .ignoredPaused, .ignoredAlreadyCompletedToday:
+                return .none
+
+            case .advancedChecklist:
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleChecklistItemCompleted(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    completedAt: referenceDate
+                )
+
+            case .completedRoutine:
+                refreshTaskView(&state)
+                upsertLocalLog(at: referenceDate, in: &state)
+                updateDerivedState(&state)
+                return handleChecklistItemCompleted(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    completedAt: referenceDate
+                )
+
+            case .advancedStep:
+                return .none
+            }
+
+        case let .markChecklistItemCompleted(itemID):
+            guard !state.task.isPaused else { return .none }
+            guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
+                return .none
+            }
+            let completionDate = now
+            let result = state.task.markChecklistItemCompleted(
+                itemID,
+                completedAt: completionDate,
+                calendar: calendar
+            )
+            switch result {
+            case .ignoredPaused, .ignoredAlreadyCompletedToday:
+                return .none
+
+            case .advancedChecklist:
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleChecklistItemCompleted(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    completedAt: completionDate
+                )
+
+            case .completedRoutine:
+                refreshTaskView(&state)
+                upsertLocalLog(at: completionDate, in: &state)
+                updateDerivedState(&state)
+                return handleChecklistItemCompleted(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    completedAt: completionDate
+                )
+
+            case .advancedStep:
+                return .none
+            }
+
         case .undoSelectedDateCompletion:
             if state.task.isChecklistDriven {
                 return .none
             }
             let selectedDay = resolvedSelectedDay(for: state.selectedDate)
             removeCompletion(on: selectedDay, from: &state)
+            refreshTaskView(&state)
             updateDerivedState(&state)
             return handleUndoCompletion(taskID: state.task.id, completedDay: selectedDay)
 
@@ -162,6 +261,7 @@ struct RoutineDetailFeature: Reducer {
                 state.task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: state.task, referenceDate: pauseDate)
             }
             state.task.pausedAt = pauseDate
+            refreshTaskView(&state)
             updateDerivedState(&state)
             return handlePauseRoutine(taskID: state.task.id, pausedAt: pauseDate)
 
@@ -173,6 +273,7 @@ struct RoutineDetailFeature: Reducer {
             }
             state.task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: state.task, resumedAt: resumeDate)
             state.task.pausedAt = nil
+            refreshTaskView(&state)
             updateDerivedState(&state)
             return handleResumeRoutine(taskID: state.task.id, resumedAt: resumeDate)
 
@@ -292,7 +393,7 @@ struct RoutineDetailFeature: Reducer {
             state.editChecklistItemDraftInterval = 3
             let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedName.isEmpty else { return .none }
-            guard state.editScheduleMode != .derivedFromChecklist || !state.editRoutineChecklistItems.isEmpty else {
+            guard !scheduleModeRequiresChecklistItems(state.editScheduleMode) || !state.editRoutineChecklistItems.isEmpty else {
                 return .none
             }
             state.isEditSheetPresented = false
@@ -303,7 +404,7 @@ struct RoutineDetailFeature: Reducer {
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
                 steps: state.editScheduleMode == .fixedInterval ? state.editRoutineSteps : [],
-                checklistItems: state.editScheduleMode == .derivedFromChecklist ? state.editRoutineChecklistItems : [],
+                checklistItems: state.editScheduleMode == .fixedInterval ? [] : state.editRoutineChecklistItems,
                 scheduleMode: state.editScheduleMode,
                 interval: Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
             )
@@ -326,7 +427,7 @@ struct RoutineDetailFeature: Reducer {
             return .none
 
         case let .logsLoaded(logs):
-            state.logs = logs
+            state.logs = logs.map { $0.detachedCopy() }
             updateDerivedState(&state)
             return .none
 
@@ -393,6 +494,10 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
+    private func refreshTaskView(_ state: inout State) {
+        state.taskRefreshID &+= 1
+    }
+
     private func resolvedCompletionDate(for selectedDate: Date?) -> Date {
         let baseDate = selectedDate ?? now
         if calendar.isDate(baseDate, inSameDayAs: now) {
@@ -434,6 +539,7 @@ struct RoutineDetailFeature: Reducer {
         }
 
         state.task.resetStepProgress()
+        state.task.resetChecklistProgress()
     }
 
     private func upsertLocalLog(at timestamp: Date, in state: inout State) {
@@ -698,6 +804,70 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
+    private func handleChecklistItemCompleted(
+        taskID: UUID,
+        itemID: UUID,
+        completedAt: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let updatedTask = try RoutineLogHistory.advanceChecklistItem(
+                    taskID: taskID,
+                    itemID: itemID,
+                    completedAt: completedAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: updatedTask.task,
+                        referenceDate: completedAt,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating checklist progress: \(error)")
+            }
+        }
+    }
+
+    private func handleChecklistItemUnmarked(
+        taskID: UUID,
+        itemID: UUID,
+        referenceDate: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let updatedTask = try RoutineLogHistory.unmarkChecklistItem(
+                    taskID: taskID,
+                    itemID: itemID,
+                    context: context
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: updatedTask,
+                        referenceDate: referenceDate,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error removing checklist progress: \(error)")
+            }
+        }
+    }
+
     private func allLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
         FetchDescriptor<RoutineLog>(
             predicate: #Predicate { log in
@@ -737,6 +907,10 @@ struct RoutineDetailFeature: Reducer {
                 createdAt: createdAt
             )
         ]
+    }
+
+    private func scheduleModeRequiresChecklistItems(_ scheduleMode: RoutineScheduleMode) -> Bool {
+        scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
     }
 
     private func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {

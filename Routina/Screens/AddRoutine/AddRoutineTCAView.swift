@@ -100,7 +100,8 @@ struct AddRoutineTCAView: View {
             Section(header: Text("Schedule Type")) {
                 Picker("Schedule Type", selection: scheduleModeBinding) {
                     Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                    Text("Checklist").tag(RoutineScheduleMode.derivedFromChecklist)
+                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
                 }
                 .pickerStyle(.segmented)
 
@@ -123,7 +124,7 @@ struct AddRoutineTCAView: View {
                     checklistItemComposer
                     editableChecklistItemsContent
 
-                    Text("Each item gets its own due date. The routine becomes due when the earliest item is due.")
+                    Text(checklistSectionDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -142,7 +143,7 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
 
-            if store.scheduleMode == .fixedInterval {
+            if store.scheduleMode != .derivedFromChecklist {
                 Section(header: Text("Frequency")) {
                     Picker("Frequency", selection: frequencyBinding) {
                         ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
@@ -261,8 +262,21 @@ struct AddRoutineTCAView: View {
         switch store.scheduleMode {
         case .fixedInterval:
             return "Use one overall repeat interval for the whole routine."
+        case .fixedIntervalChecklist:
+            return "Use one overall repeat interval and complete every checklist item to finish the routine."
         case .derivedFromChecklist:
             return "Use checklist item due dates to decide when the routine is due."
+        }
+    }
+
+    private var checklistSectionDescription: String {
+        switch store.scheduleMode {
+        case .fixedIntervalChecklist:
+            return "The routine is done when every checklist item is completed."
+        case .derivedFromChecklist:
+            return "Each item gets its own due date. The routine becomes due when the earliest item is due."
+        case .fixedInterval:
+            return ""
         }
     }
 
@@ -309,8 +323,10 @@ struct AddRoutineTCAView: View {
                     store.send(.addChecklistItemTapped)
                 }
 
-            Stepper(value: checklistItemDraftIntervalBinding, in: 1...365) {
-                Text(checklistIntervalLabel(for: store.checklistItemDraftInterval))
+            if store.scheduleMode == .derivedFromChecklist {
+                Stepper(value: checklistItemDraftIntervalBinding, in: 1...365) {
+                    Text(checklistIntervalLabel(for: store.checklistItemDraftInterval))
+                }
             }
 
             Button("Add Item") {
@@ -412,9 +428,11 @@ struct AddRoutineTCAView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.title)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            Text(checklistIntervalLabel(for: item.intervalDays))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if store.scheduleMode == .derivedFromChecklist {
+                                Text(checklistIntervalLabel(for: item.intervalDays))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
 
                         Button(role: .destructive) {
@@ -538,11 +556,12 @@ struct AddRoutineTCAView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Picker("Schedule Type", selection: scheduleModeBinding) {
                                     Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                                    Text("Checklist").tag(RoutineScheduleMode.derivedFromChecklist)
+                                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: 240)
+                                .frame(width: 320)
 
                                 Text(scheduleModeDescription)
                                     .font(.footnote)
@@ -582,7 +601,7 @@ struct AddRoutineTCAView: View {
                                 VStack(alignment: .leading, spacing: 10) {
                                     checklistItemComposer
                                     editableChecklistItemsContent
-                                    Text("The routine becomes due when the earliest item is due.")
+                                    Text(checklistSectionDescription)
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                 }
@@ -591,7 +610,7 @@ struct AddRoutineTCAView: View {
                     }
                 }
 
-                if store.scheduleMode == .fixedInterval {
+                if store.scheduleMode != .derivedFromChecklist {
                     macSectionCard(title: "Schedule") {
                         VStack(alignment: .leading, spacing: 10) {
                             macFormRow("Repeat") {

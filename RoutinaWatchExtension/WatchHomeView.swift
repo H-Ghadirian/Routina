@@ -63,7 +63,7 @@ struct WatchHomeView: View {
                         Button {
                             syncStore.markRoutineDone(id: routine.id)
                         } label: {
-                            Label(routine.isChecklistDriven ? "Buy Due" : "Done", systemImage: "checkmark")
+                            Label(actionTitle(for: routine), systemImage: "checkmark")
                         }
                         .tint(.green)
                         .disabled(!routine.canMarkDone())
@@ -115,6 +115,25 @@ struct WatchHomeView: View {
             if routine.isDoneToday() { return "Updated today" }
             return "Due in \(dueIn) days"
         }
+        if routine.isChecklistCompletionRoutine {
+            if routine.isDoneToday() {
+                return "Done today"
+            }
+            if routine.completedChecklistItemCount > 0 {
+                return "Checklist \(routine.completedChecklistItemCount) of \(max(routine.checklistItemCount, 1))"
+            }
+            let dueIn = routine.daysUntilDue(from: Date())
+            if dueIn < 0 {
+                let overdueDays = abs(dueIn)
+                let dayWord = overdueDays == 1 ? "day" : "days"
+                return "Overdue by \(overdueDays) \(dayWord)"
+            }
+            if dueIn == 0 { return "Due today" }
+            if let nextPendingChecklistItemTitle = routine.nextPendingChecklistItemTitle {
+                return "Next: \(nextPendingChecklistItemTitle)"
+            }
+            return "Due in \(dueIn) days"
+        }
         if routine.isInProgress {
             return "Step \(routine.completedStepCount + 1) of \(routine.steps.count)"
         }
@@ -136,11 +155,29 @@ struct WatchHomeView: View {
             if routine.isDoneToday() { return .green }
             return .secondary
         }
+        if routine.isChecklistCompletionRoutine {
+            if routine.completedChecklistItemCount > 0 { return .orange }
+            if routine.isDoneToday() { return .green }
+            let dueIn = routine.daysUntilDue(from: Date())
+            if dueIn < 0 { return .red }
+            if dueIn == 0 { return .orange }
+            return .secondary
+        }
         if routine.isInProgress { return .orange }
         let dueIn = routine.daysUntilDue(from: Date())
         if dueIn < 0 { return .red }
         if dueIn == 0 { return .orange }
         return .secondary
+    }
+
+    private func actionTitle(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {
+        if routine.isChecklistDriven {
+            return "Buy Due"
+        }
+        if routine.isChecklistCompletionRoutine {
+            return "Checklist"
+        }
+        return "Done"
     }
 }
 

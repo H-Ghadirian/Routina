@@ -10,6 +10,7 @@ struct NotificationPayload: Sendable {
     let triggerDate: Date?
     let isPaused: Bool
     let isChecklistDriven: Bool
+    let isChecklistCompletionRoutine: Bool
     let nextDueChecklistItemTitle: String?
 }
 
@@ -100,6 +101,8 @@ extension NotificationClient {
             content.body = "\(nextDueChecklistItemTitle) is due today. Tap Done to buy due items or Snooze until tomorrow."
         } else if payload.isChecklistDriven {
             content.body = "Checklist items are due today. Tap Done to buy due items or Snooze until tomorrow."
+        } else if payload.isChecklistCompletionRoutine {
+            content.body = "Due today. Open the app to complete each checklist item."
         } else {
             content.body = "Due today. Tap Done to reset the timer or Snooze until tomorrow."
         }

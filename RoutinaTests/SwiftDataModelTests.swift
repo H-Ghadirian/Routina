@@ -93,4 +93,36 @@ struct SwiftDataModelTests {
         #expect(task.checklistItems.first(where: { $0.id == milkID })?.lastPurchasedAt == nil)
         #expect(task.lastDone == makeDate("2026-03-18T12:00:00Z"))
     }
+
+    @Test
+    func routineTask_fixedIntervalChecklist_completesOnlyAfterAllItemsAreDone() {
+        let breadID = UUID()
+        let milkID = UUID()
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 7
+        )
+
+        let firstCompletion = task.markChecklistItemCompleted(
+            breadID,
+            completedAt: makeDate("2026-03-18T12:00:00Z")
+        )
+        #expect(firstCompletion == .advancedChecklist(completedItems: 1, totalItems: 2))
+        #expect(task.completedChecklistItemCount == 1)
+        #expect(task.isChecklistInProgress)
+        #expect(task.lastDone == nil)
+
+        let finalCompletion = task.markChecklistItemCompleted(
+            milkID,
+            completedAt: makeDate("2026-03-18T12:05:00Z")
+        )
+        #expect(finalCompletion == .completedRoutine)
+        #expect(task.completedChecklistItemCount == 0)
+        #expect(!task.isChecklistInProgress)
+        #expect(task.lastDone == makeDate("2026-03-18T12:05:00Z"))
+    }
 }

@@ -14,7 +14,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let emoji: String
         let intervalDays: Int
         let isChecklistDriven: Bool
+        let isChecklistCompletionRoutine: Bool
         let steps: [String]
+        var checklistItemCount: Int
+        var completedChecklistItemCount: Int
+        var nextPendingChecklistItemTitle: String?
         var dueDate: Date?
         var dueChecklistItemCount: Int
         var nextDueChecklistItemTitle: String?
@@ -50,6 +54,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             if isChecklistDriven {
                 return dueChecklistItemCount > 0
             }
+            if isChecklistCompletionRoutine {
+                return false
+            }
             return !(isDoneToday(referenceDate: referenceDate) && !isInProgress)
         }
 
@@ -61,13 +68,21 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                     emoji: emoji,
                     intervalDays: intervalDays,
                     isChecklistDriven: true,
+                    isChecklistCompletionRoutine: false,
                     steps: steps,
+                    checklistItemCount: checklistItemCount,
+                    completedChecklistItemCount: completedChecklistItemCount,
+                    nextPendingChecklistItemTitle: nextPendingChecklistItemTitle,
                     dueDate: dueDate,
                     dueChecklistItemCount: 0,
                     nextDueChecklistItemTitle: nextDueChecklistItemTitle,
                     lastDone: completionDate,
                     completedStepCount: completedStepCount
                 )
+            }
+
+            if isChecklistCompletionRoutine {
+                return self
             }
 
             guard !steps.isEmpty else {
@@ -77,7 +92,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                     emoji: emoji,
                     intervalDays: intervalDays,
                     isChecklistDriven: false,
+                    isChecklistCompletionRoutine: false,
                     steps: steps,
+                    checklistItemCount: checklistItemCount,
+                    completedChecklistItemCount: completedChecklistItemCount,
+                    nextPendingChecklistItemTitle: nextPendingChecklistItemTitle,
                     dueDate: dueDate,
                     dueChecklistItemCount: dueChecklistItemCount,
                     nextDueChecklistItemTitle: nextDueChecklistItemTitle,
@@ -89,17 +108,21 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             let nextCompletedStepCount = min(completedStepCount + 1, steps.count)
             if nextCompletedStepCount < steps.count {
                 return WatchRoutine(
-                    id: id,
-                    name: name,
-                    emoji: emoji,
-                    intervalDays: intervalDays,
-                    isChecklistDriven: false,
-                    steps: steps,
-                    dueDate: dueDate,
-                    dueChecklistItemCount: dueChecklistItemCount,
-                    nextDueChecklistItemTitle: nextDueChecklistItemTitle,
-                    lastDone: lastDone,
-                    completedStepCount: nextCompletedStepCount
+                id: id,
+                name: name,
+                emoji: emoji,
+                intervalDays: intervalDays,
+                isChecklistDriven: false,
+                isChecklistCompletionRoutine: false,
+                steps: steps,
+                checklistItemCount: checklistItemCount,
+                completedChecklistItemCount: completedChecklistItemCount,
+                nextPendingChecklistItemTitle: nextPendingChecklistItemTitle,
+                dueDate: dueDate,
+                dueChecklistItemCount: dueChecklistItemCount,
+                nextDueChecklistItemTitle: nextDueChecklistItemTitle,
+                lastDone: lastDone,
+                completedStepCount: nextCompletedStepCount
                 )
             }
 
@@ -109,7 +132,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 emoji: emoji,
                 intervalDays: intervalDays,
                 isChecklistDriven: false,
+                isChecklistCompletionRoutine: false,
                 steps: steps,
+                checklistItemCount: checklistItemCount,
+                completedChecklistItemCount: completedChecklistItemCount,
+                nextPendingChecklistItemTitle: nextPendingChecklistItemTitle,
                 dueDate: dueDate,
                 dueChecklistItemCount: dueChecklistItemCount,
                 nextDueChecklistItemTitle: nextDueChecklistItemTitle,
@@ -124,8 +151,8 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     @Published private(set) var isPhoneReachable = false
 
     private let session: WCSession? = WCSession.isSupported() ? WCSession.default : nil
-    private let cacheKey = "watch.cachedRoutines.v2"
-    private let pendingRoutineKey = "watch.pendingRoutines.v2"
+    private let cacheKey = "watch.cachedRoutines.v3"
+    private let pendingRoutineKey = "watch.pendingRoutines.v3"
     private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
 
     override init() {
@@ -284,10 +311,15 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             let emoji = ((raw["emoji"] as? String) ?? "").isEmpty ? "✨" : ((raw["emoji"] as? String) ?? "✨")
             let interval = max((raw["interval"] as? Int) ?? 1, 1)
             let isChecklistDriven = (raw["isChecklistDriven"] as? Bool) ?? false
+            let isChecklistCompletionRoutine = (raw["isChecklistCompletionRoutine"] as? Bool) ?? false
             let steps = ((raw["steps"] as? [String]) ?? []).compactMap { value in
                 let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
                 return trimmed.isEmpty ? nil : trimmed
             }
+            let checklistItemCount = max((raw["checklistItemCount"] as? Int) ?? 0, 0)
+            let completedChecklistItemCount = max((raw["completedChecklistItemCount"] as? Int) ?? 0, 0)
+            let nextPendingChecklistItemTitle = (raw["nextPendingChecklistItemTitle"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             let dueDateTimestamp = raw["dueDate"] as? TimeInterval
             let dueDate = dueDateTimestamp.map(Date.init(timeIntervalSince1970:))
             let dueChecklistItemCount = max((raw["dueChecklistItemCount"] as? Int) ?? 0, 0)
@@ -303,7 +335,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 emoji: emoji,
                 intervalDays: interval,
                 isChecklistDriven: isChecklistDriven,
+                isChecklistCompletionRoutine: isChecklistCompletionRoutine,
                 steps: steps,
+                checklistItemCount: checklistItemCount,
+                completedChecklistItemCount: min(completedChecklistItemCount, checklistItemCount),
+                nextPendingChecklistItemTitle: nextPendingChecklistItemTitle?.isEmpty == true ? nil : nextPendingChecklistItemTitle,
                 dueDate: dueDate,
                 dueChecklistItemCount: dueChecklistItemCount,
                 nextDueChecklistItemTitle: nextDueChecklistItemTitle?.isEmpty == true ? nil : nextDueChecklistItemTitle,

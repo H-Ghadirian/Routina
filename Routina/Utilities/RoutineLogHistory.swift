@@ -97,7 +97,7 @@ enum RoutineLogHistory {
         case .ignoredPaused, .ignoredAlreadyCompletedToday:
             return (task, result)
 
-        case .advancedStep:
+        case .advancedStep, .advancedChecklist:
             try context.save()
             return (task, result)
 
@@ -106,6 +106,80 @@ enum RoutineLogHistory {
             try context.save()
             return (task, result)
         }
+    }
+
+    @MainActor
+    static func advanceChecklistItem(
+        taskID: UUID,
+        itemID: UUID,
+        completedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> (task: RoutineTask, result: RoutineAdvanceResult)? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let result = task.markChecklistItemCompleted(
+            itemID,
+            completedAt: completedAt,
+            calendar: calendar
+        )
+
+        switch result {
+        case .ignoredPaused, .ignoredAlreadyCompletedToday:
+            return (task, result)
+
+        case .advancedStep, .advancedChecklist:
+            try context.save()
+            return (task, result)
+
+        case .completedRoutine:
+            if let existingLog = detailLogs(taskID: taskID, context: context).first(where: { log in
+                guard let timestamp = log.timestamp else { return false }
+                return calendar.isDate(timestamp, inSameDayAs: completedAt)
+            }) {
+                let currentTimestamp = existingLog.timestamp ?? .distantPast
+                if completedAt > currentTimestamp {
+                    existingLog.timestamp = completedAt
+                }
+            } else {
+                context.insert(RoutineLog(timestamp: completedAt, taskID: taskID))
+            }
+
+            try context.save()
+            return (task, result)
+        }
+    }
+
+    @discardableResult
+    static func unmarkChecklistItem(
+        taskID: UUID,
+        itemID: UUID,
+        context: ModelContext
+    ) throws -> RoutineTask? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        guard task.unmarkChecklistItemCompleted(itemID) else {
+            return task
+        }
+
+        try context.save()
+        return task
     }
 
     @MainActor
@@ -231,6 +305,7 @@ enum RoutineLogHistory {
         }
 
         task.resetStepProgress()
+        task.resetChecklistProgress()
 
         try context.save()
         return task

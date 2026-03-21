@@ -1090,6 +1090,11 @@ struct HomeTCAView: View {
         if task.isInProgress {
             return .orange
         }
+        if task.scheduleMode == .fixedIntervalChecklist
+            && task.completedChecklistItemCount > 0
+            && !task.isDoneToday {
+            return .orange
+        }
         let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
         switch progress {
         case ..<0.75: return .green
@@ -1103,7 +1108,9 @@ struct HomeTCAView: View {
     }
 
     private func isYellowUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        if task.isInProgress || task.scheduleMode == .derivedFromChecklist {
+        if task.isInProgress
+            || task.scheduleMode == .derivedFromChecklist
+            || (task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0) {
             return false
         }
         let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
@@ -1232,6 +1239,9 @@ struct HomeTCAView: View {
             if elapsedDays == 1 { return "Updated yesterday" }
             return "Updated \(elapsedDays) days ago"
         }
+        if task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0 {
+            return "Checklist \(task.completedChecklistItemCount) of \(max(task.checklistItemCount, 1))"
+        }
         if task.isInProgress {
             let totalSteps = max(task.steps.count, 1)
             return "Step \(task.completedStepCount + 1) of \(totalSteps)"
@@ -1304,6 +1314,17 @@ struct HomeTCAView: View {
             return ("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
         }
 
+        if task.scheduleMode == .fixedIntervalChecklist
+            && task.completedChecklistItemCount > 0
+            && !task.isDoneToday {
+            return (
+                "\(task.completedChecklistItemCount)/\(max(task.checklistItemCount, 1)) done",
+                "checklist.checked",
+                .orange,
+                Color.orange.opacity(0.16)
+            )
+        }
+
         if task.isDoneToday {
             return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
         }
@@ -1335,6 +1356,15 @@ struct HomeTCAView: View {
             let totalItems = task.checklistItemCount
             return totalItems == 0 ? "" : " • \(totalItems) \(totalItems == 1 ? "item" : "items")"
         }
+        if task.scheduleMode == .fixedIntervalChecklist {
+            if let nextPendingChecklistItemTitle = task.nextPendingChecklistItemTitle,
+               task.completedChecklistItemCount < task.checklistItemCount {
+                return " • Next: \(nextPendingChecklistItemTitle)"
+            }
+            let totalItems = task.checklistItemCount
+            if totalItems == 0 { return "" }
+            return " • Checklist \(task.completedChecklistItemCount)/\(totalItems)"
+        }
         guard !task.steps.isEmpty else { return "" }
         if let nextStepTitle = task.nextStepTitle {
             return " • Next: \(nextStepTitle)"
@@ -1353,12 +1383,18 @@ struct HomeTCAView: View {
             }
             return "Buy Due Items"
         }
+        if task.scheduleMode == .fixedIntervalChecklist {
+            return "Checklist"
+        }
         return task.steps.isEmpty ? "Mark Done" : "Complete Next Step"
     }
 
     private func isMarkDoneDisabled(_ task: HomeFeature.RoutineDisplay) -> Bool {
         if task.scheduleMode == .derivedFromChecklist {
             return task.isPaused || task.dueChecklistItemCount == 0
+        }
+        if task.scheduleMode == .fixedIntervalChecklist {
+            return true
         }
         return task.isDoneToday || task.isPaused
     }

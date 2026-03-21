@@ -65,7 +65,11 @@ struct AddRoutineFeature: Reducer {
         var isSaveDisabled: Bool {
             trimmedRoutineName.isEmpty
                 || nameValidationMessage != nil
-                || (scheduleMode == .derivedFromChecklist && candidateChecklistItems.isEmpty)
+                || (requiresChecklistItems && candidateChecklistItems.isEmpty)
+        }
+
+        var requiresChecklistItems: Bool {
+            scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
         }
     }
 
@@ -226,7 +230,7 @@ struct AddRoutineFeature: Reducer {
                 state.routineTags,
                 state.scheduleMode == .fixedInterval ? RoutineStep.sanitized(state.routineSteps) : [],
                 state.scheduleMode,
-                state.scheduleMode == .derivedFromChecklist ? RoutineChecklistItem.sanitized(state.routineChecklistItems) : []
+                state.scheduleMode == .fixedInterval ? [] : RoutineChecklistItem.sanitized(state.routineChecklistItems)
             )
 
         case .cancelTapped:

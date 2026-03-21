@@ -344,4 +344,43 @@ struct AddRoutineFeatureTests {
         #expect(store.state.routineChecklistItems.map(\.intervalDays) == [3, 5])
         #expect(store.state.routineChecklistItems.allSatisfy { $0.createdAt == now })
     }
+
+    @Test
+    func saveTapped_inCompletionChecklistMode_sendsChecklistItemsAndMode() async {
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let capturedChecklistTitles = LockIsolated<[String]>([])
+        let capturedScheduleModes = LockIsolated<[RoutineScheduleMode]>([])
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Pack gym bag",
+                scheduleMode: .fixedIntervalChecklist,
+                routineChecklistItems: [RoutineChecklistItem(title: "Shoes", intervalDays: 3, createdAt: now)],
+                checklistItemDraftTitle: "Towel",
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, _, _, _, _, steps, scheduleMode, checklistItems in
+                    #expect(steps.isEmpty)
+                    capturedScheduleModes.withValue { $0 = [scheduleMode] }
+                    capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now)
+            $0.date.now = now
+        }
+
+        await store.withExhaustivity(.off) {
+            await store.send(.saveTapped) {
+                $0.checklistItemDraftTitle = ""
+                $0.checklistItemDraftInterval = 3
+            }
+        }
+
+        #expect(capturedScheduleModes.value == [.fixedIntervalChecklist])
+        #expect(capturedChecklistTitles.value == ["Shoes", "Towel"])
+    }
 }

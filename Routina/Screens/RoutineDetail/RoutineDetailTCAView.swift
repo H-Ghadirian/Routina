@@ -13,6 +13,7 @@ struct RoutineDetailTCAView: View {
 
     var body: some View {
         WithPerceptionTracking {
+            let _ = store.taskRefreshID
             let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
                 isPaused: store.task.isPaused,
                 context: .detail
@@ -20,7 +21,7 @@ struct RoutineDetailTCAView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
-                    if store.task.isChecklistDriven {
+                    if store.task.hasChecklistItems {
                         checklistItemsSection
                     }
                     routineLogsSection
@@ -313,6 +314,15 @@ struct RoutineDetailTCAView: View {
                 if let nextDueChecklistItemTitle = store.task.nextDueChecklistItem(referenceDate: Date())?.title {
                     statusMetadataRow(label: "Next Due", value: nextDueChecklistItemTitle)
                 }
+            } else if store.task.isChecklistCompletionRoutine {
+                statusMetadataRow(
+                    label: "Checklist",
+                    value: "\(store.task.totalChecklistItemCount) \(store.task.totalChecklistItemCount == 1 ? "item" : "items")"
+                )
+                statusMetadataRow(label: "Progress", value: checklistProgressText(for: store.task))
+                if let nextPendingChecklistItemTitle = store.task.nextPendingChecklistItemTitle {
+                    statusMetadataRow(label: "Next Item", value: nextPendingChecklistItemTitle)
+                }
             } else if store.task.hasSequentialSteps {
                 statusMetadataRow(label: "Progress", value: stepProgressText(for: store.task))
                 if let nextStepTitle = store.task.nextStepTitle {
@@ -351,6 +361,13 @@ struct RoutineDetailTCAView: View {
 
             if isStepRoutineOffToday {
                 Text("Step-based routines can only be progressed for today.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if store.task.isChecklistCompletionRoutine && !canUndoSelectedDate {
+                Text("Complete checklist items below to finish this routine.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -451,24 +468,7 @@ struct RoutineDetailTCAView: View {
                     .foregroundColor(.secondary)
             } else {
                 ForEach(sortedChecklistItems, id: \.id) { item in
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.title)
-                                .font(.subheadline.weight(.semibold))
-                            Text(checklistStatusText(for: item))
-                                .font(.caption)
-                                .foregroundStyle(checklistStatusColor(for: item))
-                        }
-
-                        Spacer(minLength: 0)
-
-                        Button("Bought") {
-                            store.send(.markChecklistItemPurchased(item.id))
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                        .disabled(store.task.isPaused || !Calendar.current.isDateInToday(selectedDate))
-                    }
+                    checklistRow(for: item)
 
                     if item.id != sortedChecklistItems.last?.id {
                         Divider()
@@ -537,6 +537,9 @@ struct RoutineDetailTCAView: View {
 
     private var isCompletionButtonDisabled: Bool {
         guard !canUndoSelectedDate else { return false }
+        if store.task.isChecklistCompletionRoutine {
+            return true
+        }
         if store.task.isChecklistDriven {
             return store.task.isPaused
                 || !Calendar.current.isDateInToday(selectedDate)
@@ -799,6 +802,27 @@ struct RoutineDetailTCAView: View {
         if let pausedAt {
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
         }
+        if task.isChecklistCompletionRoutine {
+            if task.isChecklistInProgress {
+                return "Checklist \(task.completedChecklistItemCount) of \(task.totalChecklistItemCount) in progress"
+            }
+            if isDoneToday {
+                return "Done today"
+            }
+            if overdueDays > 0 {
+                return "Overdue by \(overdueDays) \(dayWord(overdueDays))"
+            }
+            guard let daysUntilDue = daysUntilDue(task) else {
+                return "\(daysSinceLastRoutine) \(dayWord(daysSinceLastRoutine)) since last done"
+            }
+            if daysUntilDue == 0 {
+                return "Due today"
+            }
+            if daysUntilDue > 0 {
+                return "Due in \(daysUntilDue) \(dayWord(daysUntilDue))"
+            }
+            return "Overdue by \(-daysUntilDue) \(dayWord(-daysUntilDue))"
+        }
         if task.isChecklistDriven {
             if overdueDays > 0 {
                 return "Overdue by \(overdueDays) \(dayWord(overdueDays))"
@@ -844,6 +868,14 @@ struct RoutineDetailTCAView: View {
         task: RoutineTask
     ) -> Color {
         if pausedAt != nil { return .teal }
+        if task.isChecklistCompletionRoutine {
+            if task.isChecklistInProgress { return .orange }
+            if isDoneToday { return .green }
+            if overdueDays > 0 { return .red }
+            if daysUntilDue(task) == 0 { return RoutineDetailPlatformStyle.dueTodayTitleColor }
+            if isOrangeUrgency(task) { return .orange }
+            return .primary
+        }
         if task.isChecklistDriven {
             if overdueDays > 0 { return .red }
             if daysUntilDue(task) == 0 { return RoutineDetailPlatformStyle.dueTodayTitleColor }
@@ -868,13 +900,76 @@ struct RoutineDetailTCAView: View {
     }
 
     private var sortedChecklistItems: [RoutineChecklistItem] {
-        store.task.checklistItems.sorted {
+        if store.task.isChecklistCompletionRoutine {
+            return store.task.checklistItems
+        }
+        return store.task.checklistItems.sorted {
             RoutineDateMath.dueDate(for: $0, referenceDate: Date())
                 < RoutineDateMath.dueDate(for: $1, referenceDate: Date())
         }
     }
 
+    @ViewBuilder
+    private func checklistRow(for item: RoutineChecklistItem) -> some View {
+        if store.task.isChecklistCompletionRoutine {
+            completionChecklistRow(for: item)
+        } else {
+            dueChecklistRow(for: item)
+        }
+    }
+
+    private func completionChecklistRow(for item: RoutineChecklistItem) -> some View {
+        let isDone = isChecklistItemMarkedDone(item)
+        let isInteractive = canToggleChecklistItem(item)
+
+        return Button {
+            store.send(.toggleChecklistItemCompletion(item.id))
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(isDone ? .green : checklistCompletionControlColor(isInteractive: isInteractive))
+                    .frame(width: 24, height: 24)
+
+                Text(item.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isDone ? .secondary : .primary)
+                    .strikethrough(isDone, color: .secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isInteractive)
+        .accessibilityLabel(item.title)
+        .accessibilityValue(isDone ? "Completed" : "Not completed")
+    }
+
+    private func dueChecklistRow(for item: RoutineChecklistItem) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(checklistStatusText(for: item))
+                    .font(.caption)
+                    .foregroundStyle(checklistStatusColor(for: item))
+            }
+
+            Spacer(minLength: 0)
+
+            Button("Bought") {
+                store.send(.markChecklistItemPurchased(item.id))
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(store.task.isPaused || !Calendar.current.isDateInToday(selectedDate))
+        }
+    }
+
     private func checklistStatusText(for item: RoutineChecklistItem) -> String {
+        if store.task.isChecklistCompletionRoutine {
+            return isChecklistItemMarkedDone(item) ? "Done" : "Pending"
+        }
         let calendar = Calendar.current
         let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: Date(), calendar: calendar)
         let daysUntilDue = calendar.dateComponents(
@@ -896,6 +991,9 @@ struct RoutineDetailTCAView: View {
     }
 
     private func checklistStatusColor(for item: RoutineChecklistItem) -> Color {
+        if store.task.isChecklistCompletionRoutine {
+            return isChecklistItemMarkedDone(item) ? .green : .secondary
+        }
         let calendar = Calendar.current
         let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: Date(), calendar: calendar)
         let daysUntilDue = calendar.dateComponents(
@@ -944,7 +1042,7 @@ struct RoutineDetailTCAView: View {
         let newInterval = frequencyValue * frequency.daysMultiplier
         let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
 
-        guard scheduleMode != .derivedFromChecklist || !sanitizedCandidateChecklistItems.isEmpty else {
+        guard scheduleMode == .fixedInterval || !sanitizedCandidateChecklistItems.isEmpty else {
             return false
         }
 
@@ -986,6 +1084,15 @@ struct RoutineDetailTCAView: View {
         return "\(task.totalSteps) sequential \(task.totalSteps == 1 ? "step" : "steps")"
     }
 
+    private func checklistProgressText(for task: RoutineTask) -> String {
+        if store.isDoneToday && !task.isChecklistInProgress {
+            return "All items completed today"
+        }
+        let completed = task.completedChecklistItemCount
+        let total = max(task.totalChecklistItemCount, 1)
+        return "\(completed) of \(total) items completed"
+    }
+
     private func completionButtonText(
         for selectedDate: Date,
         isDone: Bool,
@@ -998,6 +1105,12 @@ struct RoutineDetailTCAView: View {
         }
         if isPaused {
             return "Resume the routine to mark dates done"
+        }
+        if task.isChecklistCompletionRoutine && !Calendar.current.isDateInToday(selectedDate) {
+            return "Checklist progress can only be updated today"
+        }
+        if task.isChecklistCompletionRoutine {
+            return "Complete checklist items below"
         }
         if task.isChecklistDriven && !Calendar.current.isDateInToday(selectedDate) {
             return "Checklist routines can only be updated today"
@@ -1025,6 +1138,36 @@ struct RoutineDetailTCAView: View {
             return "Mark Today as Done"
         }
         return "Mark \(selectedDate.formatted(date: .abbreviated, time: .omitted)) as Done"
+    }
+
+    private func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
+        guard store.task.isChecklistCompletionRoutine else { return false }
+        if store.isDoneToday && !store.task.isChecklistInProgress {
+            return true
+        }
+        return store.task.isChecklistItemCompleted(item.id)
+    }
+
+    private func canToggleChecklistItem(_ item: RoutineChecklistItem) -> Bool {
+        guard store.task.isChecklistCompletionRoutine,
+              !store.task.isPaused,
+              Calendar.current.isDateInToday(selectedDate) else {
+            return false
+        }
+
+        if store.isDoneToday && !store.task.isChecklistInProgress {
+            return false
+        }
+
+        if store.task.isChecklistItemCompleted(item.id) {
+            return store.task.isChecklistInProgress
+        }
+
+        return true
+    }
+
+    private func checklistCompletionControlColor(isInteractive: Bool) -> Color {
+        isInteractive ? .secondary : .secondary.opacity(0.45)
     }
 
     private func selectionStrokeColor(isSelected: Bool, isToday: Bool, isHighlightedDay: Bool) -> Color {

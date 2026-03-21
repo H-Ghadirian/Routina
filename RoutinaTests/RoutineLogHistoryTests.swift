@@ -93,6 +93,59 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func advanceChecklistItem_savesLogOnlyAfterFinalChecklistItem() throws {
+        let context = makeInMemoryContext()
+        let breadID = UUID()
+        let milkID = UUID()
+        let task = makeTask(
+            in: context,
+            name: "Groceries",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🛒",
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        try context.save()
+
+        let firstCompletion = makeDate("2026-03-15T09:00:00Z")
+        let firstResult = try #require(
+            try RoutineLogHistory.advanceChecklistItem(
+                taskID: task.id,
+                itemID: breadID,
+                completedAt: firstCompletion,
+                context: context
+            )
+        )
+
+        #expect(firstResult.result == .advancedChecklist(completedItems: 1, totalItems: 2))
+        #expect(firstResult.task.completedChecklistItemCount == 1)
+        #expect(try context.fetch(FetchDescriptor<RoutineLog>()).isEmpty)
+
+        let finalCompletion = makeDate("2026-03-15T09:05:00Z")
+        let finalResult = try #require(
+            try RoutineLogHistory.advanceChecklistItem(
+                taskID: task.id,
+                itemID: milkID,
+                completedAt: finalCompletion,
+                context: context
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(finalResult.result == .completedRoutine)
+        #expect(finalResult.task.completedChecklistItemCount == 0)
+        #expect(finalResult.task.lastDone == finalCompletion)
+        #expect(finalResult.task.scheduleAnchor == finalCompletion)
+        #expect(logs.count == 1)
+        #expect(logs.first?.taskID == task.id)
+        #expect(logs.first?.timestamp == finalCompletion)
+    }
+
+    @Test
     func removeCompletion_forPausedTaskWithoutRemainingLogs_restoresPausedAnchor() throws {
         let context = makeInMemoryContext()
         let completionDate = makeDate("2026-03-15T09:00:00Z")

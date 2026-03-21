@@ -26,6 +26,7 @@ struct RoutineStep: Codable, Equatable, Hashable, Identifiable, Sendable {
 
 enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case fixedInterval
+    case fixedIntervalChecklist
     case derivedFromChecklist
 }
 
@@ -78,6 +79,7 @@ enum RoutineAdvanceResult: Equatable {
     case ignoredPaused
     case ignoredAlreadyCompletedToday
     case advancedStep(completedSteps: Int, totalSteps: Int)
+    case advancedChecklist(completedItems: Int, totalItems: Int)
     case completedRoutine
 }
 
@@ -127,6 +129,29 @@ private enum RoutineChecklistItemStorage {
     }
 }
 
+private enum RoutineChecklistProgressStorage {
+    static func serialize(_ itemIDs: Set<UUID>) -> String {
+        let sorted = itemIDs.sorted { $0.uuidString < $1.uuidString }
+        guard !sorted.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(sorted),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> Set<UUID> {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([UUID].self, from: data) else {
+            return []
+        }
+        return Set(decoded)
+    }
+}
+
 @Model
 final class RoutineTask {
     var id: UUID = UUID()
@@ -136,6 +161,7 @@ final class RoutineTask {
     var tagsStorage: String = ""
     var stepsStorage: String = ""
     var checklistItemsStorage: String = ""
+    var completedChecklistItemIDsStorage: String = ""
     var scheduleModeRawValue: String = RoutineScheduleMode.fixedInterval.rawValue
     var interval: Int16 = 1
     var lastDone: Date?
@@ -167,12 +193,23 @@ final class RoutineTask {
 
     var checklistItems: [RoutineChecklistItem] {
         get { RoutineChecklistItemStorage.deserialize(checklistItemsStorage) }
-        set { checklistItemsStorage = RoutineChecklistItemStorage.serialize(newValue) }
+        set {
+            checklistItemsStorage = RoutineChecklistItemStorage.serialize(newValue)
+            sanitizeChecklistProgress()
+        }
+    }
+
+    var completedChecklistItemIDs: Set<UUID> {
+        get { RoutineChecklistProgressStorage.deserialize(completedChecklistItemIDsStorage) }
+        set { completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(newValue) }
     }
 
     var scheduleMode: RoutineScheduleMode {
         get { RoutineScheduleMode(rawValue: scheduleModeRawValue) ?? .fixedInterval }
-        set { scheduleModeRawValue = newValue.rawValue }
+        set {
+            scheduleModeRawValue = newValue.rawValue
+            sanitizeChecklistProgress()
+        }
     }
 
     var hasSequentialSteps: Bool {
@@ -185,6 +222,10 @@ final class RoutineTask {
 
     var isChecklistDriven: Bool {
         scheduleMode == .derivedFromChecklist && hasChecklistItems
+    }
+
+    var isChecklistCompletionRoutine: Bool {
+        scheduleMode == .fixedIntervalChecklist && hasChecklistItems
     }
 
     var completedSteps: Int {
@@ -207,6 +248,26 @@ final class RoutineTask {
     var nextStepTitle: String? {
         guard hasSequentialSteps, completedSteps < steps.count else { return nil }
         return steps[completedSteps].title
+    }
+
+    var completedChecklistItemCount: Int {
+        let validIDs = Set(checklistItems.map(\.id))
+        return completedChecklistItemIDs.intersection(validIDs).count
+    }
+
+    var totalChecklistItemCount: Int {
+        checklistItems.count
+    }
+
+    var isChecklistInProgress: Bool {
+        isChecklistCompletionRoutine
+            && completedChecklistItemCount > 0
+            && completedChecklistItemCount < totalChecklistItemCount
+    }
+
+    var nextPendingChecklistItemTitle: String? {
+        guard isChecklistCompletionRoutine else { return nil }
+        return checklistItems.first(where: { !completedChecklistItemIDs.contains($0.id) })?.title
     }
 
     func nextDueChecklistItem(
@@ -270,6 +331,7 @@ final class RoutineTask {
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
             resetStepProgress()
         }
+        sanitizeChecklistProgress()
     }
 
     func replaceSteps(_ updatedSteps: [RoutineStep]) {
@@ -289,6 +351,7 @@ final class RoutineTask {
 
     func replaceChecklistItems(_ updatedItems: [RoutineChecklistItem]) {
         checklistItemsStorage = RoutineChecklistItemStorage.serialize(updatedItems)
+        sanitizeChecklistProgress()
     }
 
     func shiftChecklistItems(by duration: TimeInterval) {
@@ -307,6 +370,14 @@ final class RoutineTask {
     func resetStepProgress() {
         completedStepCount = 0
         sequenceStartedAt = nil
+    }
+
+    func resetChecklistProgress() {
+        completedChecklistItemIDsStorage = ""
+    }
+
+    func isChecklistItemCompleted(_ itemID: UUID) -> Bool {
+        completedChecklistItemIDs.contains(itemID)
     }
 
     @discardableResult
@@ -336,6 +407,59 @@ final class RoutineTask {
             scheduleAnchor = purchasedAt
         }
         return updatedCount
+    }
+
+    @discardableResult
+    func markChecklistItemCompleted(
+        _ itemID: UUID,
+        completedAt: Date,
+        calendar: Calendar = .current
+    ) -> RoutineAdvanceResult {
+        guard !isPaused else { return .ignoredPaused }
+        guard isChecklistCompletionRoutine,
+              checklistItems.contains(where: { $0.id == itemID }) else {
+            return .ignoredAlreadyCompletedToday
+        }
+
+        if completedChecklistItemIDs.isEmpty,
+           let lastDone,
+           calendar.isDate(lastDone, inSameDayAs: completedAt) {
+            return .ignoredAlreadyCompletedToday
+        }
+
+        var updatedIDs = completedChecklistItemIDs
+        let insertResult = updatedIDs.insert(itemID)
+        guard insertResult.inserted else {
+            return .advancedChecklist(
+                completedItems: completedChecklistItemCount,
+                totalItems: totalChecklistItemCount
+            )
+        }
+
+        completedChecklistItemIDs = updatedIDs
+        let completedCount = updatedIDs.count
+        let totalCount = totalChecklistItemCount
+
+        if completedCount < totalCount {
+            return .advancedChecklist(completedItems: completedCount, totalItems: totalCount)
+        }
+
+        if shouldUpdateLastDone(with: completedAt) {
+            lastDone = completedAt
+            scheduleAnchor = completedAt
+        }
+        resetChecklistProgress()
+        return .completedRoutine
+    }
+
+    @discardableResult
+    func unmarkChecklistItemCompleted(_ itemID: UUID) -> Bool {
+        guard isChecklistCompletionRoutine else { return false }
+
+        var updatedIDs = completedChecklistItemIDs
+        guard updatedIDs.remove(itemID) != nil else { return false }
+        completedChecklistItemIDs = updatedIDs
+        return true
     }
 
     @discardableResult
@@ -382,6 +506,17 @@ final class RoutineTask {
         return candidate > lastDone
     }
 
+    private func sanitizeChecklistProgress() {
+        guard isChecklistCompletionRoutine else {
+            completedChecklistItemIDsStorage = ""
+            return
+        }
+
+        let validIDs = Set(checklistItems.map(\.id))
+        let sanitizedIDs = completedChecklistItemIDs.intersection(validIDs)
+        completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(sanitizedIDs)
+    }
+
     static func trimmedName(_ name: String?) -> String? {
         name?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -395,6 +530,28 @@ final class RoutineTask {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.first else { return fallback }
         return String(first)
+    }
+
+    func detachedCopy() -> RoutineTask {
+        let copy = RoutineTask(
+            id: id,
+            name: name,
+            emoji: emoji,
+            placeID: placeID,
+            tags: tags,
+            steps: steps,
+            checklistItems: checklistItems,
+            scheduleMode: scheduleMode,
+            interval: interval,
+            lastDone: lastDone,
+            scheduleAnchor: scheduleAnchor,
+            pausedAt: pausedAt,
+            completedStepCount: completedStepCount,
+            sequenceStartedAt: sequenceStartedAt
+        )
+        copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
+        copy.scheduleAnchor = scheduleAnchor
+        return copy
     }
 }
 
@@ -412,6 +569,10 @@ final class RoutineLog {
         self.id = id
         self.timestamp = timestamp
         self.taskID = taskID
+    }
+
+    func detachedCopy() -> RoutineLog {
+        RoutineLog(id: id, timestamp: timestamp, taskID: taskID)
     }
 }
 

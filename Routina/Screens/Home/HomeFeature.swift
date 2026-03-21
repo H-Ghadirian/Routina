@@ -4,6 +4,13 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
+    struct SelectedTaskReloadGuard: Equatable {
+        var taskID: UUID
+        var completedChecklistItemIDsStorage: String
+        var lastDone: Date?
+        var scheduleAnchor: Date?
+    }
+
     struct DoneStats: Equatable {
         var totalCount: Int = 0
         var countsByTaskID: [UUID: Int] = [:]
@@ -31,7 +38,9 @@ struct HomeFeature {
         var isInProgress: Bool
         var nextStepTitle: String?
         var checklistItemCount: Int
+        var completedChecklistItemCount: Int
         var dueChecklistItemCount: Int
+        var nextPendingChecklistItemTitle: String?
         var nextDueChecklistItemTitle: String?
         var doneCount: Int
     }
@@ -55,6 +64,8 @@ struct HomeFeature {
         var hideUnavailableRoutines: Bool = false
         var addRoutineState: AddRoutineFeature.State?
         var routineDetailState: RoutineDetailFeature.State?
+        var selectedTaskReloadGuard: SelectedTaskReloadGuard?
+        var pendingSelectedChecklistReloadGuardTaskID: UUID?
     }
 
     enum Action: Equatable {
@@ -101,8 +112,11 @@ struct HomeFeature {
                 )
 
             case let .tasksLoadedSuccessfully(tasks, places, doneStats):
-                state.routineTasks = tasks
-                state.routinePlaces = places
+                let detachedTasks = detachedTasks(from: tasks)
+                let detachedPlaces = detachedPlaces(from: places)
+                let reconciledTasks = reconcileSelectedDetailTask(detachedTasks, state: &state)
+                state.routineTasks = reconciledTasks
+                state.routinePlaces = detachedPlaces
                 state.doneStats = doneStats
                 refreshDisplays(&state)
                 syncSelectedRoutineDetailState(&state)
@@ -110,8 +124,8 @@ struct HomeFeature {
                 guard state.addRoutineState != nil else { return detailRefreshEffect }
                 return .merge(
                     detailRefreshEffect,
-                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: tasks)))),
-                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: places, linkedTo: tasks))))
+                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: reconciledTasks)))),
+                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: detachedPlaces, linkedTo: reconciledTasks))))
                 )
 
             case .tasksLoadFailed:
@@ -129,13 +143,22 @@ struct HomeFeature {
                 return .none
 
             case let .setSelectedTask(taskID):
+                if let taskID,
+                   state.selectedTaskID == taskID,
+                   state.routineDetailState?.task.id == taskID {
+                    return .none
+                }
                 state.selectedTaskID = taskID
                 guard let taskID,
                       let task = state.routineTasks.first(where: { $0.id == taskID }) else {
                     state.routineDetailState = nil
+                    state.selectedTaskReloadGuard = nil
+                    state.pendingSelectedChecklistReloadGuardTaskID = nil
                     return .none
                 }
                 state.routineDetailState = makeRoutineDetailState(for: task)
+                state.selectedTaskReloadGuard = nil
+                state.pendingSelectedChecklistReloadGuardTaskID = nil
                 return refreshSelectedRoutineDetailEffect(for: state)
 
             case let .setAddRoutineSheet(isPresented):
@@ -191,6 +214,9 @@ struct HomeFeature {
 
             case let .markTaskDone(id):
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id && !$0.isPaused }) else {
+                    return .none
+                }
+                if state.routineTasks[index].isChecklistCompletionRoutine {
                     return .none
                 }
                 let completionDate = now
@@ -378,7 +404,7 @@ struct HomeFeature {
                 }
 
             case let .routineSavedSuccessfully(task):
-                state.routineTasks.append(task)
+                state.routineTasks.append(task.detachedCopy())
                 refreshDisplays(&state)
                 syncSelectedRoutineDetailState(&state)
                 state.isAddRoutineSheetPresented = false
@@ -396,6 +422,24 @@ struct HomeFeature {
             case .routineDetail(.routineDeleted):
                 state.selectedTaskID = nil
                 state.routineDetailState = nil
+                state.selectedTaskReloadGuard = nil
+                state.pendingSelectedChecklistReloadGuardTaskID = nil
+                return .none
+
+            case let .routineDetail(.toggleChecklistItemCompletion(itemID)):
+                trackSelectedChecklistReloadGuardIfNeeded(for: itemID, in: &state)
+                return .none
+
+            case let .routineDetail(.markChecklistItemCompleted(itemID)):
+                trackSelectedChecklistReloadGuardIfNeeded(for: itemID, in: &state)
+                return .none
+
+            case .routineDetail(.undoSelectedDateCompletion):
+                trackSelectedChecklistUndoReloadGuardIfNeeded(in: &state)
+                return .none
+
+            case .routineDetail(.logsLoaded):
+                syncSelectedTaskFromRoutineDetail(&state)
                 return .none
 
             case .routineDetail:
@@ -473,7 +517,9 @@ struct HomeFeature {
             isInProgress: task.isInProgress,
             nextStepTitle: task.nextStepTitle,
             checklistItemCount: task.checklistItems.count,
+            completedChecklistItemCount: task.completedChecklistItemCount,
             dueChecklistItemCount: dueChecklistItems.count,
+            nextPendingChecklistItemTitle: task.nextPendingChecklistItemTitle,
             nextDueChecklistItemTitle: nextDueChecklistItem?.title,
             doneCount: doneStats.countsByTaskID[task.id, default: 0]
         )
@@ -552,43 +598,49 @@ struct HomeFeature {
     }
 
     private func makeRoutineDetailState(for task: RoutineTask) -> RoutineDetailFeature.State {
-        RoutineDetailFeature.State(
-            task: task,
+        let detailTask = task.detachedCopy()
+        return RoutineDetailFeature.State(
+            task: detailTask,
             logs: [],
             selectedDate: calendar.startOfDay(for: now),
             daysSinceLastRoutine: RoutineDateMath.elapsedDaysSinceLastDone(
-                from: task.lastDone,
+                from: detailTask.lastDone,
                 referenceDate: now
             ),
-            overdueDays: task.isPaused
+            overdueDays: detailTask.isPaused
                 ? 0
-                : RoutineDateMath.overdueDays(for: task, referenceDate: now, calendar: calendar),
-            isDoneToday: task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
+                : RoutineDateMath.overdueDays(for: detailTask, referenceDate: now, calendar: calendar),
+            isDoneToday: detailTask.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
         )
     }
 
     private func syncSelectedRoutineDetailState(_ state: inout State) {
         guard let selectedTaskID = state.selectedTaskID else {
             state.routineDetailState = nil
+            state.selectedTaskReloadGuard = nil
+            state.pendingSelectedChecklistReloadGuardTaskID = nil
             return
         }
 
         guard let task = state.routineTasks.first(where: { $0.id == selectedTaskID }) else {
             state.selectedTaskID = nil
             state.routineDetailState = nil
+            state.selectedTaskReloadGuard = nil
+            state.pendingSelectedChecklistReloadGuardTaskID = nil
             return
         }
 
         if var detailState = state.routineDetailState {
-            detailState.task = task
+            detailState.task = task.detachedCopy()
+            detailState.taskRefreshID &+= 1
             detailState.daysSinceLastRoutine = RoutineDateMath.elapsedDaysSinceLastDone(
-                from: task.lastDone,
+                from: detailState.task.lastDone,
                 referenceDate: now
             )
-            detailState.overdueDays = task.isPaused
+            detailState.overdueDays = detailState.task.isPaused
                 ? 0
-                : RoutineDateMath.overdueDays(for: task, referenceDate: now, calendar: calendar)
-            detailState.isDoneToday = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
+                : RoutineDateMath.overdueDays(for: detailState.task, referenceDate: now, calendar: calendar)
+            detailState.isDoneToday = detailState.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
             state.routineDetailState = detailState
         } else {
             state.routineDetailState = makeRoutineDetailState(for: task)
@@ -610,6 +662,143 @@ struct HomeFeature {
             totalCount: countsByTaskID.values.reduce(0, +),
             countsByTaskID: countsByTaskID
         )
+    }
+
+    private func syncSelectedTaskFromRoutineDetail(_ state: inout State) {
+        guard let detailTask = state.routineDetailState?.task else { return }
+        guard let index = state.routineTasks.firstIndex(where: { $0.id == detailTask.id }) else { return }
+        let syncedTask = detailTask.detachedCopy()
+        state.routineTasks[index] = syncedTask
+        if state.pendingSelectedChecklistReloadGuardTaskID == syncedTask.id,
+           syncedTask.isChecklistCompletionRoutine,
+           state.selectedTaskID == detailTask.id {
+            state.selectedTaskReloadGuard = makeSelectedTaskReloadGuard(for: syncedTask)
+        }
+        state.pendingSelectedChecklistReloadGuardTaskID = nil
+        refreshDisplays(&state)
+    }
+
+    private func reconcileSelectedDetailTask(_ incomingTasks: [RoutineTask], state: inout State) -> [RoutineTask] {
+        guard let selectedTaskID = state.selectedTaskID,
+              let detailTask = state.routineDetailState?.task,
+              detailTask.id == selectedTaskID else {
+            state.selectedTaskReloadGuard = nil
+            return incomingTasks
+        }
+
+        guard let incomingIndex = incomingTasks.firstIndex(where: { $0.id == selectedTaskID }) else {
+            state.selectedTaskReloadGuard = nil
+            return incomingTasks
+        }
+
+        guard let reloadGuard = state.selectedTaskReloadGuard,
+              reloadGuard.taskID == selectedTaskID else {
+            return incomingTasks
+        }
+
+        let incomingTask = incomingTasks[incomingIndex]
+        if matchesSelectedTaskReloadGuard(incomingTask, guard: reloadGuard) {
+            return incomingTasks
+        }
+
+        guard shouldPreserveSelectedDetailTask(detailTask, over: incomingTask, guardedBy: reloadGuard) else {
+            state.selectedTaskReloadGuard = nil
+            return incomingTasks
+        }
+
+        var reconciledTasks = incomingTasks
+        reconciledTasks[incomingIndex] = detailTask.detachedCopy()
+        return reconciledTasks
+    }
+
+    private func detachedTasks(from tasks: [RoutineTask]) -> [RoutineTask] {
+        tasks.map { $0.detachedCopy() }
+    }
+
+    private func detachedPlaces(from places: [RoutinePlace]) -> [RoutinePlace] {
+        places.map { $0.detachedCopy() }
+    }
+
+    private func makeSelectedTaskReloadGuard(for task: RoutineTask) -> SelectedTaskReloadGuard {
+        SelectedTaskReloadGuard(
+            taskID: task.id,
+            completedChecklistItemIDsStorage: task.completedChecklistItemIDsStorage,
+            lastDone: task.lastDone,
+            scheduleAnchor: task.scheduleAnchor
+        )
+    }
+
+    private func matchesSelectedTaskReloadGuard(
+        _ task: RoutineTask,
+        guard reloadGuard: SelectedTaskReloadGuard
+    ) -> Bool {
+        task.id == reloadGuard.taskID
+            && task.completedChecklistItemIDsStorage == reloadGuard.completedChecklistItemIDsStorage
+            && task.lastDone == reloadGuard.lastDone
+            && task.scheduleAnchor == reloadGuard.scheduleAnchor
+    }
+
+    private func shouldPreserveSelectedDetailTask(
+        _ current: RoutineTask,
+        over incoming: RoutineTask,
+        guardedBy reloadGuard: SelectedTaskReloadGuard
+    ) -> Bool {
+        guard current.id == incoming.id,
+              current.id == reloadGuard.taskID,
+              current.isChecklistCompletionRoutine,
+              incoming.isChecklistCompletionRoutine else {
+            return false
+        }
+
+        return current.name == incoming.name
+            && current.emoji == incoming.emoji
+            && current.placeID == incoming.placeID
+            && current.tags == incoming.tags
+            && current.steps == incoming.steps
+            && current.checklistItems == incoming.checklistItems
+            && current.scheduleMode == incoming.scheduleMode
+            && current.interval == incoming.interval
+            && current.pausedAt == incoming.pausedAt
+            && current.completedStepCount == incoming.completedStepCount
+            && current.sequenceStartedAt == incoming.sequenceStartedAt
+    }
+
+    private func trackSelectedChecklistReloadGuardIfNeeded(
+        for itemID: UUID,
+        in state: inout State
+    ) {
+        guard let selectedTaskID = state.selectedTaskID,
+              let detailState = state.routineDetailState,
+              detailState.task.id == selectedTaskID,
+              detailState.task.isChecklistCompletionRoutine,
+              !detailState.task.isPaused,
+              detailState.task.checklistItems.contains(where: { $0.id == itemID }),
+              calendar.isDate(detailState.selectedDate ?? now, inSameDayAs: now) else {
+            state.pendingSelectedChecklistReloadGuardTaskID = nil
+            return
+        }
+
+        let task = detailState.task
+        if task.isChecklistItemCompleted(itemID) {
+            state.pendingSelectedChecklistReloadGuardTaskID = task.isChecklistInProgress ? task.id : nil
+            return
+        }
+
+        let alreadyCompletedToday = task.completedChecklistItemIDs.isEmpty
+            && task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } == true
+        state.pendingSelectedChecklistReloadGuardTaskID = alreadyCompletedToday ? nil : task.id
+    }
+
+    private func trackSelectedChecklistUndoReloadGuardIfNeeded(in state: inout State) {
+        guard let selectedTaskID = state.selectedTaskID,
+              let detailState = state.routineDetailState,
+              detailState.task.id == selectedTaskID,
+              detailState.task.isChecklistCompletionRoutine else {
+            state.pendingSelectedChecklistReloadGuardTaskID = nil
+            return
+        }
+
+        state.pendingSelectedChecklistReloadGuardTaskID = detailState.task.id
     }
 
     private func hasDuplicateRoutineName(

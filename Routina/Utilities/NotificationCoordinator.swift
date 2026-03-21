@@ -53,6 +53,7 @@ enum NotificationCoordinator {
             triggerDate: triggerDate ?? NotificationPreferences.reminderDate(on: dueDate, calendar: calendar),
             isPaused: task.isPaused,
             isChecklistDriven: task.isChecklistDriven,
+            isChecklistCompletionRoutine: task.isChecklistCompletionRoutine,
             nextDueChecklistItemTitle: task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)?.title
         )
     }
@@ -82,6 +83,11 @@ enum NotificationCoordinator {
             let now = Date()
             let descriptor = taskDescriptor(for: taskID)
             guard let task = try context.fetch(descriptor).first else { return }
+
+            if task.isChecklistCompletionRoutine {
+                NotificationCenter.default.postRoutineDidUpdate()
+                return
+            }
 
             if task.isChecklistDriven {
                 guard let updatedTask = try RoutineLogHistory.markDueChecklistItemsPurchased(

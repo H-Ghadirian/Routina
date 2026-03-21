@@ -143,7 +143,9 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.send(.pauseTapped)
+        await store.send(.pauseTapped) {
+            $0.taskRefreshID = 1
+        }
 
         #expect(store.state.task.pausedAt == now)
         let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
@@ -183,7 +185,9 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.send(.resumeTapped)
+        await store.send(.resumeTapped) {
+            $0.taskRefreshID = 1
+        }
 
         #expect(store.state.task.scheduleAnchor == expectedAnchor)
         #expect(store.state.task.pausedAt == nil)
@@ -603,6 +607,7 @@ struct RoutineDetailFeatureTests {
         }
 
         await store.send(.markAsDone) {
+            $0.taskRefreshID = 1
             $0.isDoneToday = true
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
@@ -610,17 +615,15 @@ struct RoutineDetailFeatureTests {
         #expect(store.state.task.lastDone == now)
         #expect(store.state.task.scheduleAnchor == now)
 
-        let taskID = task.id
         await store.receive {
             if case .logsLoaded = $0 { return true }
             return false
         } assert: {
             let verificationContext = ModelContext(context.container)
             let descriptor = FetchDescriptor<RoutineLog>(
-                predicate: #Predicate<RoutineLog> { $0.taskID == taskID },
                 sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
             )
-            $0.logs = (try? verificationContext.fetch(descriptor)) ?? []
+            $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
             #expect($0.logs.count == 1)
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
@@ -671,8 +674,9 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.withExhaustivity(.off) {
+        _ = await store.withExhaustivity(.off) {
             await store.send(.markAsDone) {
+                $0.taskRefreshID = 1
                 $0.isDoneToday = true
                 $0.daysSinceLastRoutine = 0
                 $0.overdueDays = 0
@@ -711,6 +715,146 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func markChecklistItemCompleted_forCompletionChecklist_completesOnlyAfterFinalItem() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let shoesID = UUID()
+        let towelID = UUID()
+        let task = makeTask(
+            in: context,
+            name: "Pack gym bag",
+            interval: 2,
+            lastDone: nil,
+            emoji: "🎒",
+            checklistItems: [
+                RoutineChecklistItem(id: shoesID, title: "Shoes", intervalDays: 3, createdAt: now),
+                RoutineChecklistItem(id: towelID, title: "Towel", intervalDays: 3, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        await store.send(.markChecklistItemCompleted(shoesID)) {
+            $0.taskRefreshID = 1
+        }
+        #expect(store.state.task.completedChecklistItemCount == 1)
+        #expect(store.state.logs.isEmpty)
+        #expect(!store.state.isDoneToday)
+
+        await store.receive(.logsLoaded([]))
+
+        let persistedAfterFirst = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let logsAfterFirst = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedAfterFirst.completedChecklistItemCount == 1)
+        #expect(logsAfterFirst.isEmpty)
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markChecklistItemCompleted(towelID)) {
+                $0.taskRefreshID = 2
+                $0.isDoneToday = true
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+                #expect($0.logs.count == 1)
+            }
+        }
+
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            return false
+        } assert: {
+            let verificationContext = ModelContext(context.container)
+            let descriptor = FetchDescriptor<RoutineLog>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+            $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
+            #expect($0.logs.count == 1)
+            $0.isDoneToday = true
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.completedChecklistItemCount == 0)
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedLogs.count == 1)
+        #expect(scheduledIDs.value == [task.id.uuidString, task.id.uuidString])
+    }
+
+    @Test
+    func toggleChecklistItemCompletion_forCompletionChecklist_canClearInProgressItem() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let shoesID = UUID()
+        let towelID = UUID()
+        let task = makeTask(
+            in: context,
+            name: "Pack gym bag",
+            interval: 2,
+            lastDone: nil,
+            emoji: "🎒",
+            checklistItems: [
+                RoutineChecklistItem(id: shoesID, title: "Shoes", intervalDays: 3, createdAt: now),
+                RoutineChecklistItem(id: towelID, title: "Towel", intervalDays: 3, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.toggleChecklistItemCompletion(shoesID)) {
+            $0.taskRefreshID = 1
+        }
+        #expect(store.state.task.completedChecklistItemCount == 1)
+        #expect(store.state.logs.isEmpty)
+        #expect(!store.state.isDoneToday)
+
+        await store.receive(.logsLoaded([]))
+
+        await store.send(.toggleChecklistItemCompletion(shoesID)) {
+            $0.taskRefreshID = 2
+            $0.task.resetChecklistProgress()
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        await store.receive(.logsLoaded([]))
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.completedChecklistItemCount == 0)
+        #expect(persistedLogs.isEmpty)
+    }
+
+    @Test
     func markAsDone_forStepRoutine_advancesWithoutCreatingCompletionLog() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T10:00:00Z")
@@ -743,7 +887,9 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone)
+        await store.send(.markAsDone) {
+            $0.taskRefreshID = 1
+        }
         #expect(store.state.task.completedStepCount == 1)
         #expect(store.state.task.sequenceStartedAt == now)
 
@@ -794,7 +940,9 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone)
+        await store.send(.markAsDone) {
+            $0.taskRefreshID = 1
+        }
 
         let taskID = task.id
         await store.receive {
@@ -865,7 +1013,9 @@ struct RoutineDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone)
+        await store.send(.markAsDone) {
+            $0.taskRefreshID = 1
+        }
 
         await store.receive(.logsLoaded([existingLog]))
 
@@ -919,6 +1069,7 @@ struct RoutineDetailFeatureTests {
         }
 
         await store.send(.undoSelectedDateCompletion) {
+            $0.taskRefreshID = 1
             $0.task.lastDone = nil
             $0.task.scheduleAnchor = nil
             $0.logs = []
@@ -973,6 +1124,7 @@ struct RoutineDetailFeatureTests {
         }
 
         await store.send(.undoSelectedDateCompletion) {
+            $0.taskRefreshID = 1
             $0.task.lastDone = now
             $0.task.scheduleAnchor = now
             $0.logs = [todayLog]

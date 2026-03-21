@@ -112,7 +112,8 @@ struct RoutineDetailEditRoutineContent: View {
                     )
                 ) {
                     Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                    Text("Checklist").tag(RoutineScheduleMode.derivedFromChecklist)
+                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
                 }
                 .pickerStyle(.segmented)
 
@@ -205,14 +206,16 @@ struct RoutineDetailEditRoutineContent: View {
                             store.send(.editAddChecklistItemTapped)
                         }
 
-                        Stepper(
-                            value: Binding(
-                                get: { store.editChecklistItemDraftInterval },
-                                set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
-                            ),
-                            in: 1...365
-                        ) {
-                            Text(checklistIntervalLabel(for: store.editChecklistItemDraftInterval))
+                        if store.editScheduleMode == .derivedFromChecklist {
+                            Stepper(
+                                value: Binding(
+                                    get: { store.editChecklistItemDraftInterval },
+                                    set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
+                                ),
+                                in: 1...365
+                            ) {
+                                Text(checklistIntervalLabel(for: store.editChecklistItemDraftInterval))
+                            }
                         }
 
                         Button("Add Item") {
@@ -232,9 +235,11 @@ struct RoutineDetailEditRoutineContent: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(item.title)
                                             .frame(maxWidth: .infinity, alignment: .leading)
-                                        Text(checklistIntervalLabel(for: item.intervalDays))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                        if store.editScheduleMode == .derivedFromChecklist {
+                                            Text(checklistIntervalLabel(for: item.intervalDays))
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
 
                                     Button(role: .destructive) {
@@ -249,7 +254,7 @@ struct RoutineDetailEditRoutineContent: View {
                         .padding(.vertical, 4)
                     }
 
-                Text("The routine becomes due when the earliest checklist item is due.")
+                Text(checklistSectionDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
@@ -274,7 +279,7 @@ struct RoutineDetailEditRoutineContent: View {
                     .foregroundStyle(.secondary)
             }
 
-            if store.editScheduleMode == .fixedInterval {
+            if store.editScheduleMode != .derivedFromChecklist {
                 Section(header: Text("Frequency")) {
                     Picker(
                         "Frequency",
@@ -346,8 +351,21 @@ struct RoutineDetailEditRoutineContent: View {
         switch store.editScheduleMode {
         case .fixedInterval:
             return "Use one overall repeat interval for the whole routine."
+        case .fixedIntervalChecklist:
+            return "Use one overall repeat interval and complete every checklist item to finish the routine."
         case .derivedFromChecklist:
             return "Use checklist item due dates to decide when the routine is due."
+        }
+    }
+
+    private var checklistSectionDescription: String {
+        switch store.editScheduleMode {
+        case .fixedIntervalChecklist:
+            return "The routine is done when every checklist item is completed."
+        case .derivedFromChecklist:
+            return "The routine becomes due when the earliest checklist item is due."
+        case .fixedInterval:
+            return ""
         }
     }
 

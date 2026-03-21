@@ -75,6 +75,17 @@ final class RoutinePlace {
         Self.cleanedName(name) ?? "Unnamed place"
     }
 
+    func detachedCopy() -> RoutinePlace {
+        RoutinePlace(
+            id: id,
+            name: name,
+            latitude: latitude,
+            longitude: longitude,
+            radiusMeters: radiusMeters,
+            createdAt: createdAt
+        )
+    }
+
     static func cleanedName(_ name: String?) -> String? {
         guard let name else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)

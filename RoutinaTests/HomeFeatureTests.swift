@@ -106,11 +106,79 @@ struct HomeFeatureTests {
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([log]))) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 2,
+                    lastDone: lastDone,
+                    scheduleAnchor: lastDone,
+                    daysUntilDue: 0,
+                    isDoneToday: false
+                )
+            ]
             $0.routineDetailState?.logs = [log]
             $0.routineDetailState?.daysSinceLastRoutine = 2
             $0.routineDetailState?.overdueDays = 0
             $0.routineDetailState?.isDoneToday = false
         }
+    }
+
+    @Test
+    func setSelectedTask_sameIDPreservesDetailStateAndReloadGuard() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(title: "Excel", intervalDays: 30, createdAt: now),
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        let detailTask = task.detachedCopy()
+        let log = RoutineLog(timestamp: now, taskID: task.id)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task.detachedCopy()],
+                selectedTaskID: task.id,
+                routineDetailState: RoutineDetailFeature.State(
+                    task: detailTask,
+                    logs: [log],
+                    selectedDate: calendar.startOfDay(for: now),
+                    daysSinceLastRoutine: 0,
+                    overdueDays: 0,
+                    isDoneToday: false
+                ),
+                selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
+                    taskID: task.id,
+                    completedChecklistItemIDsStorage: detailTask.completedChecklistItemIDsStorage,
+                    lastDone: detailTask.lastDone,
+                    scheduleAnchor: detailTask.scheduleAnchor
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.setSelectedTask(task.id))
+
+        #expect(store.state.selectedTaskID == task.id)
+        #expect(store.state.routineDetailState?.logs == [log])
+        #expect(store.state.routineDetailState?.task.id == detailTask.id)
+        #expect(store.state.selectedTaskReloadGuard?.taskID == task.id)
     }
 
     @Test
@@ -170,6 +238,7 @@ struct HomeFeatureTests {
                     doneCount: 1
                 )
             ]
+            $0.routineDetailState?.taskRefreshID = 1
         }
 
         await store.receive(.routineDetail(.onAppear))
@@ -180,6 +249,959 @@ struct HomeFeatureTests {
             $0.routineDetailState?.overdueDays = 0
             $0.routineDetailState?.isDoneToday = false
         }
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_detachesReducerStateFromIncomingTaskModels() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let firstItemID = UUID()
+        let secondItemID = UUID()
+        let thirdItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let sourceTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                selectedTaskID: taskID,
+                routineDetailState: RoutineDetailFeature.State(
+                    task: sourceTask,
+                    selectedDate: calendar.startOfDay(for: now)
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([sourceTask], [], HomeFeature.DoneStats())) {
+            $0.routineTasks = [sourceTask]
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: nil,
+                    scheduleAnchor: nil,
+                    daysUntilDue: 30,
+                    isDoneToday: false,
+                    checklistItemCount: 3,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 1
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = false
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        _ = sourceTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
+        _ = sourceTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
+
+        #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
+        #expect(store.state.routineTasks[0].lastDone == nil)
+        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 0)
+        #expect(store.state.routineDetailState?.task.lastDone == nil)
+        #expect(store.state.routineDetailState?.isDoneToday == false)
+    }
+
+    @Test
+    func routineDetailLogsLoaded_syncsSelectedTaskBackIntoHomeState() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let completedItemID = UUID()
+        let pendingItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let sidebarTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+
+        let detailTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        _ = detailTask.markChecklistItemCompleted(completedItemID, completedAt: now, calendar: calendar)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [sidebarTask],
+                selectedTaskID: taskID,
+                routineDetailState: RoutineDetailFeature.State(task: detailTask)
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.routineDetail(.logsLoaded([]))) {
+            $0.routineTasks[0] = detailTask
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: nil,
+                    daysUntilDue: 30,
+                    isDoneToday: false,
+                    checklistItemCount: 2,
+                    completedChecklistItemCount: 1,
+                    nextPendingChecklistItemTitle: "Excel"
+                )
+            ]
+            $0.routineDetailState?.logs = []
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = false
+        }
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_preservesSelectedChecklistProgressDuringReload() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let completedItemID = UUID()
+        let pendingItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let staleReloadTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+
+        let selectedDetailTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        _ = selectedDetailTask.markChecklistItemCompleted(completedItemID, completedAt: now, calendar: calendar)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [selectedDetailTask],
+                selectedTaskID: taskID,
+                routineDetailState: RoutineDetailFeature.State(task: selectedDetailTask),
+                selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
+                    taskID: taskID,
+                    completedChecklistItemIDsStorage: selectedDetailTask.completedChecklistItemIDsStorage,
+                    lastDone: selectedDetailTask.lastDone,
+                    scheduleAnchor: selectedDetailTask.scheduleAnchor
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: nil,
+                    daysUntilDue: 30,
+                    isDoneToday: false,
+                    checklistItemCount: 2,
+                    completedChecklistItemCount: 1,
+                    nextPendingChecklistItemTitle: "Excel"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 1
+        }
+        await store.receive(.routineDetail(.onAppear)) {
+            $0.routineDetailState?.selectedDate = calendar.startOfDay(for: now)
+        }
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        #expect(store.state.routineTasks[0].completedChecklistItemCount == 1)
+        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 1)
+        #expect(store.state.selectedTaskReloadGuard?.taskID == taskID)
+    }
+
+    @Test
+    func routineDetailToggleChecklistItemCompletion_tracksReloadGuardForSharedSelectedTask() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let completedItemID = UUID()
+        let pendingItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let sharedTask = makeTask(
+            in: context,
+            name: "Working hours",
+            interval: 30,
+            lastDone: nil,
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: completedItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        let taskID = sharedTask.id
+
+        let initialState = HomeFeature.State(
+            routineTasks: [sharedTask],
+            selectedTaskID: taskID,
+            routineDetailState: RoutineDetailFeature.State(
+                task: sharedTask,
+                selectedDate: calendar.startOfDay(for: now)
+            )
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.routineDetail(.toggleChecklistItemCompletion(completedItemID))) {
+            $0.pendingSelectedChecklistReloadGuardTaskID = taskID
+            $0.routineDetailState?.taskRefreshID = 1
+        }
+
+        await store.receive(.routineDetail(.logsLoaded([]))) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: nil,
+                    daysUntilDue: 30,
+                    isDoneToday: false,
+                    checklistItemCount: 2,
+                    completedChecklistItemCount: 1,
+                    nextPendingChecklistItemTitle: "Excel"
+                )
+            ]
+            $0.routineDetailState?.logs = []
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = false
+            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
+                taskID: taskID,
+                completedChecklistItemIDsStorage: sharedTask.completedChecklistItemIDsStorage,
+                lastDone: nil,
+                scheduleAnchor: nil
+            )
+            $0.pendingSelectedChecklistReloadGuardTaskID = nil
+        }
+
+        #expect(store.state.routineTasks[0].completedChecklistItemCount == 1)
+        #expect(store.state.selectedTaskReloadGuard?.completedChecklistItemIDsStorage == sharedTask.completedChecklistItemIDsStorage)
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_preservesFreshlyCompletedChecklistRoutineDuringStaleReload() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let firstItemID = UUID()
+        let secondItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let staleReloadTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+
+        let selectedDetailTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        _ = selectedDetailTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
+        _ = selectedDetailTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
+
+        let initialState = HomeFeature.State(
+            routineTasks: [selectedDetailTask],
+            selectedTaskID: taskID,
+            routineDetailState: RoutineDetailFeature.State(
+                task: selectedDetailTask,
+                selectedDate: calendar.startOfDay(for: now),
+                daysSinceLastRoutine: 0,
+                overdueDays: 0,
+                isDoneToday: true
+            ),
+            selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
+                taskID: taskID,
+                completedChecklistItemIDsStorage: selectedDetailTask.completedChecklistItemIDsStorage,
+                lastDone: selectedDetailTask.lastDone,
+                scheduleAnchor: selectedDetailTask.scheduleAnchor
+            )
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: now,
+                    scheduleAnchor: now,
+                    daysUntilDue: 30,
+                    isDoneToday: true,
+                    checklistItemCount: 2,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 1
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = true
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        #expect(store.state.routineTasks[0].lastDone == now)
+        #expect(store.state.routineDetailState?.task.lastDone == now)
+        #expect(store.state.routineDetailState?.isDoneToday == true)
+        #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_keepsChecklistCompletionGuardAfterMatchingRefresh() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let firstItemID = UUID()
+        let secondItemID = UUID()
+        let thirdItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let completedTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30,
+            lastDone: now,
+            scheduleAnchor: now
+        )
+
+        let initialState = HomeFeature.State(
+            routineTasks: [completedTask],
+            selectedTaskID: taskID,
+            routineDetailState: RoutineDetailFeature.State(
+                task: completedTask,
+                selectedDate: calendar.startOfDay(for: now),
+                daysSinceLastRoutine: 0,
+                overdueDays: 0,
+                isDoneToday: true
+            ),
+            selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
+                taskID: taskID,
+                completedChecklistItemIDsStorage: "",
+                lastDone: now,
+                scheduleAnchor: now
+            )
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([completedTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: now,
+                    scheduleAnchor: now,
+                    daysUntilDue: 30,
+                    isDoneToday: true,
+                    checklistItemCount: 3,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 1
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = true
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_preservesChecklistCompletionAfterMatchingThenStaleRefresh() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let firstItemID = UUID()
+        let secondItemID = UUID()
+        let thirdItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let completedTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30,
+            lastDone: now,
+            scheduleAnchor: now
+        )
+
+        let stalePartialTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        _ = stalePartialTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
+
+        let initialState = HomeFeature.State(
+            routineTasks: [completedTask],
+            selectedTaskID: taskID,
+            routineDetailState: RoutineDetailFeature.State(
+                task: completedTask,
+                selectedDate: calendar.startOfDay(for: now),
+                daysSinceLastRoutine: 0,
+                overdueDays: 0,
+                isDoneToday: true
+            ),
+            selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
+                taskID: taskID,
+                completedChecklistItemIDsStorage: "",
+                lastDone: now,
+                scheduleAnchor: now
+            )
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([completedTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: now,
+                    scheduleAnchor: now,
+                    daysUntilDue: 30,
+                    isDoneToday: true,
+                    checklistItemCount: 3,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 1
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = true
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: now,
+                    scheduleAnchor: now,
+                    daysUntilDue: 30,
+                    isDoneToday: true,
+                    checklistItemCount: 3,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 2
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = true
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        #expect(store.state.routineTasks[0].lastDone == now)
+        #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
+        #expect(store.state.routineDetailState?.task.lastDone == now)
+        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 0)
+        #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_preservesChecklistCompletionDuringMultiplePartialReplays() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let firstItemID = UUID()
+        let secondItemID = UUID()
+        let thirdItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let completedTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        _ = completedTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
+        _ = completedTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
+        _ = completedTask.markChecklistItemCompleted(thirdItemID, completedAt: now, calendar: calendar)
+
+        let staleOneOfThreeTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        _ = staleOneOfThreeTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
+
+        let staleTwoOfThreeTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+        _ = staleTwoOfThreeTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
+        _ = staleTwoOfThreeTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [completedTask],
+                selectedTaskID: taskID,
+                routineDetailState: RoutineDetailFeature.State(
+                    task: completedTask,
+                    selectedDate: calendar.startOfDay(for: now),
+                    daysSinceLastRoutine: 0,
+                    overdueDays: 0,
+                    isDoneToday: true
+                ),
+                selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
+                    taskID: taskID,
+                    completedChecklistItemIDsStorage: "",
+                    lastDone: now,
+                    scheduleAnchor: now
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([staleOneOfThreeTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: now,
+                    scheduleAnchor: now,
+                    daysUntilDue: 30,
+                    isDoneToday: true,
+                    checklistItemCount: 3,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 1
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = true
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: now,
+                    scheduleAnchor: now,
+                    daysUntilDue: 30,
+                    isDoneToday: true,
+                    checklistItemCount: 3,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 2
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = true
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        #expect(store.state.routineTasks[0].lastDone == now)
+        #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
+        #expect(store.state.routineDetailState?.task.lastDone == now)
+        #expect(store.state.routineDetailState?.task.completedChecklistItemCount == 0)
+        #expect(store.state.routineDetailState?.isDoneToday == true)
+        #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
+    }
+
+    @Test
+    func routineDetailUndoSelectedDateCompletion_tracksReloadGuardForChecklistRoutine() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let firstItemID = UUID()
+        let secondItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let sharedTask = makeTask(
+            in: context,
+            name: "Working hours",
+            interval: 30,
+            lastDone: now,
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            scheduleAnchor: now
+        )
+        let taskID = sharedTask.id
+        let todayLog = makeLog(in: context, task: sharedTask, timestamp: now)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [sharedTask],
+                selectedTaskID: taskID,
+                routineDetailState: RoutineDetailFeature.State(
+                    task: sharedTask,
+                    logs: [todayLog],
+                    selectedDate: calendar.startOfDay(for: now),
+                    daysSinceLastRoutine: 0,
+                    overdueDays: 0,
+                    isDoneToday: true
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.routineDetail(.undoSelectedDateCompletion)) {
+            $0.pendingSelectedChecklistReloadGuardTaskID = taskID
+            $0.routineDetailState?.taskRefreshID = 1
+            $0.routineDetailState?.task.lastDone = nil
+            $0.routineDetailState?.task.scheduleAnchor = nil
+            $0.routineDetailState?.logs = []
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = false
+        }
+
+        await store.receive(.routineDetail(.logsLoaded([]))) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: nil,
+                    scheduleAnchor: nil,
+                    daysUntilDue: 30,
+                    isDoneToday: false,
+                    checklistItemCount: 2,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
+                taskID: taskID,
+                completedChecklistItemIDsStorage: "",
+                lastDone: nil,
+                scheduleAnchor: nil
+            )
+            $0.pendingSelectedChecklistReloadGuardTaskID = nil
+        }
+
+        #expect(store.state.routineTasks[0].lastDone == nil)
+        #expect(store.state.selectedTaskReloadGuard?.lastDone == nil)
+    }
+
+    @Test
+    func tasksLoadedSuccessfully_preservesChecklistUndoStateDuringStaleReload() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-24T10:00:00Z")
+        let taskID = UUID()
+        let firstItemID = UUID()
+        let secondItemID = UUID()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let staleReloadTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30,
+            lastDone: now,
+            scheduleAnchor: now
+        )
+
+        let selectedDetailTask = RoutineTask(
+            id: taskID,
+            name: "Working hours",
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(id: firstItemID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            interval: 30
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [selectedDetailTask],
+                selectedTaskID: taskID,
+                routineDetailState: RoutineDetailFeature.State(
+                    task: selectedDetailTask,
+                    selectedDate: calendar.startOfDay(for: now),
+                    daysSinceLastRoutine: 0,
+                    overdueDays: 0,
+                    isDoneToday: false
+                ),
+                selectedTaskReloadGuard: HomeFeature.SelectedTaskReloadGuard(
+                    taskID: taskID,
+                    completedChecklistItemIDsStorage: "",
+                    lastDone: nil,
+                    scheduleAnchor: nil
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], HomeFeature.DoneStats())) {
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: taskID,
+                    name: "Working hours",
+                    emoji: "✨",
+                    interval: 30,
+                    scheduleMode: .fixedIntervalChecklist,
+                    lastDone: nil,
+                    scheduleAnchor: nil,
+                    daysUntilDue: 30,
+                    isDoneToday: false,
+                    checklistItemCount: 2,
+                    completedChecklistItemCount: 0,
+                    nextPendingChecklistItemTitle: "Sciforma"
+                )
+            ]
+            $0.routineDetailState?.taskRefreshID = 1
+            $0.routineDetailState?.daysSinceLastRoutine = 0
+            $0.routineDetailState?.overdueDays = 0
+            $0.routineDetailState?.isDoneToday = false
+        }
+
+        await store.receive(.routineDetail(.onAppear))
+        await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.logsLoaded([])))
+
+        #expect(store.state.routineTasks[0].lastDone == nil)
+        #expect(store.state.routineDetailState?.task.lastDone == nil)
+        #expect(store.state.routineDetailState?.isDoneToday == false)
+        #expect(store.state.selectedTaskReloadGuard?.lastDone == nil)
     }
 
     @Test
@@ -1227,7 +2249,9 @@ private func makeDisplay(
     isInProgress: Bool = false,
     nextStepTitle: String? = nil,
     checklistItemCount: Int = 0,
+    completedChecklistItemCount: Int = 0,
     dueChecklistItemCount: Int = 0,
+    nextPendingChecklistItemTitle: String? = nil,
     nextDueChecklistItemTitle: String? = nil,
     doneCount: Int = 0
 ) -> HomeFeature.RoutineDisplay {
@@ -1255,7 +2279,9 @@ private func makeDisplay(
         isInProgress: isInProgress,
         nextStepTitle: nextStepTitle,
         checklistItemCount: checklistItemCount,
+        completedChecklistItemCount: completedChecklistItemCount,
         dueChecklistItemCount: dueChecklistItemCount,
+        nextPendingChecklistItemTitle: nextPendingChecklistItemTitle,
         nextDueChecklistItemTitle: nextDueChecklistItemTitle,
         doneCount: doneCount
     )
