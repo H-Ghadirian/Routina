@@ -33,6 +33,17 @@ struct SettingsIOSRootView: View {
                     }
 
                     NavigationLink {
+                        SettingsTagsDetailView(store: store)
+                    } label: {
+                        SettingsNavigationRow(
+                            icon: "tag.fill",
+                            tint: .pink,
+                            title: "Tags",
+                            subtitle: store.tagsOverviewSubtitle
+                        )
+                    }
+
+                    NavigationLink {
                         SettingsAppearanceDetailView(store: store)
                     } label: {
                         SettingsNavigationRow(
@@ -308,6 +319,115 @@ private struct SettingsPlacesDetailView: View {
         Binding(
             get: { store.isDeletePlaceConfirmationPresented },
             set: { store.send(.setDeletePlaceConfirmation($0)) }
+        )
+    }
+}
+
+struct SettingsTagsDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            List {
+                Section("Info") {
+                    Text("Rename or delete tags across every routine that uses them.")
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Saved Tags") {
+                    if store.savedTags.isEmpty {
+                        Text("No tags yet. Tags you add to routines will appear here.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(store.savedTags) { tag in
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(tag.name)
+                                    Text(settingsTagSubtitle(for: tag))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+
+                                Menu {
+                                    Button {
+                                        store.send(.renameTagTapped(tag.name))
+                                    } label: {
+                                        Label("Rename", systemImage: "pencil")
+                                    }
+
+                                    Button(role: .destructive) {
+                                        store.send(.deleteTagTapped(tag.name))
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                } label: {
+                                    Image(systemName: "ellipsis.circle")
+                                        .font(.title3)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .disabled(store.isTagOperationInProgress)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    store.send(.renameTagTapped(tag.name))
+                                } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+
+                                Button(role: .destructive) {
+                                    store.send(.deleteTagTapped(tag.name))
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !store.tagStatusMessage.isEmpty {
+                    Section("Status") {
+                        Text(store.tagStatusMessage)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Tags")
+            .navigationBarTitleDisplayMode(.inline)
+            .alert(
+                "Delete Tag?",
+                isPresented: deleteTagConfirmationBinding
+            ) {
+                Button("Delete", role: .destructive) {
+                    store.send(.deleteTagConfirmed)
+                }
+                Button("Cancel", role: .cancel) {
+                    store.send(.setDeleteTagConfirmation(false))
+                }
+            } message: {
+                Text(store.deleteTagConfirmationMessage)
+            }
+            .sheet(isPresented: renameTagSheetBinding) {
+                SettingsTagRenameSheet(store: store)
+                    .presentationDetents([.height(240)])
+            }
+        }
+    }
+
+    private var deleteTagConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.isDeleteTagConfirmationPresented },
+            set: { store.send(.setDeleteTagConfirmation($0)) }
+        )
+    }
+
+    private var renameTagSheetBinding: Binding<Bool> {
+        Binding(
+            get: { store.isTagRenameSheetPresented },
+            set: { store.send(.setTagRenameSheet($0)) }
         )
     }
 }

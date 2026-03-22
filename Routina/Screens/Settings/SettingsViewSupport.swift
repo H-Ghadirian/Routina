@@ -27,6 +27,17 @@ extension SettingsFeature.State {
         return "Export or import all routine data as JSON."
     }
 
+    var tagsOverviewSubtitle: String {
+        switch savedTags.count {
+        case 0:
+            return "Review and manage tags across routines"
+        case 1:
+            return "1 saved tag"
+        default:
+            return "\(savedTags.count) saved tags"
+        }
+    }
+
     var deletePlaceConfirmationMessage: String {
         guard let place = placePendingDeletion else {
             return "This will remove the place."
@@ -40,6 +51,33 @@ extension SettingsFeature.State {
         }
 
         return "Delete \(place.name)? This cannot be undone, and \(linkedRoutinesText)."
+    }
+
+    var deleteTagConfirmationMessage: String {
+        guard let tag = tagPendingDeletion else {
+            return "This will remove the tag from every routine that uses it."
+        }
+
+        let linkedRoutinesText: String
+        if tag.linkedRoutineCount == 1 {
+            linkedRoutinesText = "1 routine will lose it"
+        } else {
+            linkedRoutinesText = "\(tag.linkedRoutineCount) routines will lose it"
+        }
+
+        return "Delete \(tag.name)? This cannot be undone, and \(linkedRoutinesText)."
+    }
+
+    var isSaveTagRenameDisabled: Bool {
+        guard
+            !isTagOperationInProgress,
+            let cleanedTagName = RoutineTag.cleaned(tagRenameDraft)
+        else {
+            return true
+        }
+
+        guard let pendingTag = tagPendingRename else { return false }
+        return cleanedTagName == pendingTag.name
     }
 
     var placeSelectionButtonTitle: String {
@@ -76,4 +114,10 @@ func settingsPlaceSubtitle(for place: RoutinePlaceSummary) -> String {
         ? "1 linked routine"
         : "\(place.linkedRoutineCount) linked routines"
     return "\(Int(place.radiusMeters)) m radius • \(linkedText)"
+}
+
+func settingsTagSubtitle(for tag: RoutineTagSummary) -> String {
+    tag.linkedRoutineCount == 1
+        ? "Used by 1 routine"
+        : "Used by \(tag.linkedRoutineCount) routines"
 }

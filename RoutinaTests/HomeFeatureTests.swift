@@ -49,7 +49,7 @@ struct HomeFeatureTests {
 
         await store.send(.setAddRoutineSheet(true)) {
             $0.isAddRoutineSheetPresented = true
-            $0.addRoutineState = AddRoutineFeature.State(existingRoutineNames: ["Read"])
+            $0.addRoutineState = AddRoutineFeature.State(availableTags: ["Learning"], existingRoutineNames: ["Read"])
         }
     }
 
@@ -105,6 +105,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([log]))) {
             $0.routineDisplays = [
                 makeDisplay(
@@ -243,6 +244,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([log]))) {
             $0.routineDetailState?.logs = [log]
             $0.routineDetailState?.daysSinceLastRoutine = 2
@@ -318,6 +320,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         _ = sourceTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
@@ -482,6 +485,7 @@ struct HomeFeatureTests {
             $0.routineDetailState?.selectedDate = calendar.startOfDay(for: now)
         }
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 1)
@@ -656,6 +660,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
@@ -742,6 +747,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
@@ -839,6 +845,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], HomeFeature.DoneStats())) {
@@ -866,6 +873,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
@@ -983,6 +991,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], HomeFeature.DoneStats())) {
@@ -1010,6 +1019,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == now)
@@ -1196,6 +1206,7 @@ struct HomeFeatureTests {
 
         await store.receive(.routineDetail(.onAppear))
         await store.receive(.routineDetail(.availablePlacesLoaded([])))
+        await store.receive(.routineDetail(.availableTagsLoaded([])))
         await store.receive(.routineDetail(.logsLoaded([])))
 
         #expect(store.state.routineTasks[0].lastDone == nil)
@@ -1321,6 +1332,7 @@ struct HomeFeatureTests {
             $0.addRoutineState?.existingRoutineNames = ["Read"]
             $0.addRoutineState?.nameValidationMessage = "A routine with this name already exists."
         }
+        await store.receive(.addRoutineSheet(.availableTagsChanged([])))
         await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
     }
 

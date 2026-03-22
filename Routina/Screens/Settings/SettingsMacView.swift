@@ -6,6 +6,7 @@ import SwiftUI
 private enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
     case notifications
     case places
+    case tags
     case appearance
     case iCloud
     case backup
@@ -20,6 +21,8 @@ private enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
             return "Notifications"
         case .places:
             return "Places"
+        case .tags:
+            return "Tags"
         case .appearance:
             return "Appearance"
         case .iCloud:
@@ -39,6 +42,8 @@ private enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
             return "bell.badge.fill"
         case .places:
             return "mappin.and.ellipse"
+        case .tags:
+            return "tag.fill"
         case .appearance:
             return "app.badge.fill"
         case .iCloud:
@@ -58,6 +63,8 @@ private enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
             return .red
         case .places:
             return .blue
+        case .tags:
+            return .pink
         case .appearance:
             return .orange
         case .iCloud:
@@ -226,6 +233,9 @@ private struct SettingsMacSidebarRow: View {
                 return "\(store.savedPlaces.count) saved places"
             }
 
+        case .tags:
+            return store.tagsOverviewSubtitle
+
         case .appearance:
             return "Current icon: \(store.selectedAppIcon.title)"
 
@@ -337,6 +347,8 @@ private struct SettingsMacDetailView: View {
                 store: store,
                 isPlacePickerPresented: $isPlacePickerPresented
             )
+        case .tags:
+            SettingsMacTagsDetailView(store: store)
         case .appearance:
             SettingsMacAppearanceDetailView(store: store)
         case .iCloud:
@@ -509,6 +521,101 @@ private struct SettingsMacPlacesDetailView: View {
         Binding(
             get: { store.placeDraftName },
             set: { store.send(.placeDraftNameChanged($0)) }
+        )
+    }
+}
+
+struct SettingsMacTagsDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            SettingsMacDetailShell(
+                title: "Tags",
+                subtitle: "Review every tag in Routina and rename or remove them globally."
+            ) {
+                SettingsMacDetailCard(title: "All Tags") {
+                    if store.savedTags.isEmpty {
+                        Text("No tags yet. Tags you add to routines will appear here.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VStack(spacing: 0) {
+                            ForEach(Array(store.savedTags.enumerated()), id: \.element.id) { index, tag in
+                                HStack(spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(tag.name)
+                                        Text(settingsTagSubtitle(for: tag))
+                                            .font(.footnote)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Button {
+                                        store.send(.renameTagTapped(tag.name))
+                                    } label: {
+                                        Label("Rename", systemImage: "pencil")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .disabled(store.isTagOperationInProgress)
+
+                                    Button(role: .destructive) {
+                                        store.send(.deleteTagTapped(tag.name))
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .disabled(store.isTagOperationInProgress)
+                                }
+                                .padding(.vertical, 12)
+
+                                if index < store.savedTags.count - 1 {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !store.tagStatusMessage.isEmpty {
+                    SettingsMacDetailCard(title: "Status") {
+                        Text(store.tagStatusMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .alert(
+                "Delete Tag?",
+                isPresented: deleteTagConfirmationBinding
+            ) {
+                Button("Delete", role: .destructive) {
+                    store.send(.deleteTagConfirmed)
+                }
+                Button("Cancel", role: .cancel) {
+                    store.send(.setDeleteTagConfirmation(false))
+                }
+            } message: {
+                Text(store.deleteTagConfirmationMessage)
+            }
+            .sheet(isPresented: renameTagSheetBinding) {
+                SettingsTagRenameSheet(store: store)
+            }
+        }
+    }
+
+    private var deleteTagConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { store.isDeleteTagConfirmationPresented },
+            set: { store.send(.setDeleteTagConfirmation($0)) }
+        )
+    }
+
+    private var renameTagSheetBinding: Binding<Bool> {
+        Binding(
+            get: { store.isTagRenameSheetPresented },
+            set: { store.send(.setTagRenameSheet($0)) }
         )
     }
 }

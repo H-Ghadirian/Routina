@@ -223,6 +223,70 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func availableTagsChanged_deduplicatesAndSortsChoices() async {
+        let store = TestStore(initialState: AddRoutineFeature.State()) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        await store.send(.availableTagsChanged([" health ", "Focus", "focus", "Morning"])) {
+            $0.availableTags = ["Focus", "health", "Morning"]
+        }
+    }
+
+    @Test
+    func toggleTagSelection_addsAndRemovesChosenTag() async {
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineTags: ["Focus"],
+                availableTags: ["Focus", "Morning"]
+            )
+        ) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        await store.send(.toggleTagSelection("Morning")) {
+            $0.routineTags = ["Focus", "Morning"]
+        }
+
+        await store.send(.toggleTagSelection("focus")) {
+            $0.routineTags = ["Morning"]
+        }
+    }
+
+    @Test
+    func tagRenamed_doesNotAddReplacementToUnrelatedSelectedTags() async {
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineTags: ["Morning"],
+                availableTags: ["Focus", "Morning"]
+            )
+        ) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        await store.send(.tagRenamed(oldName: "focus", newName: "Deep Work")) {
+            $0.availableTags = ["Deep Work", "Morning"]
+        }
+    }
+
+    @Test
+    func tagDeleted_removesTagFromAvailableAndSelectedTags() async {
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineTags: ["Morning", "Deep Work"],
+                availableTags: ["Deep Work", "Morning"]
+            )
+        ) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        await store.send(.tagDeleted("morning")) {
+            $0.routineTags = ["Deep Work"]
+            $0.availableTags = ["Deep Work"]
+        }
+    }
+
+    @Test
     func saveTapped_commitsPendingTagsBeforeDelegating() async {
         let store = TestStore(
             initialState: AddRoutineFeature.State(

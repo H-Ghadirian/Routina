@@ -5,6 +5,10 @@ struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
     @FocusState private var isRoutineNameFocused: Bool
     @State private var isEmojiPickerPresented = false
+    @State private var isTagManagerPresented = false
+    @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
+        SettingsFeature()
+    }
     private let emojiOptions = EmojiCatalog.uniqueQuick
     private let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -32,6 +36,23 @@ struct AddRoutineTCAView: View {
                         selectedEmoji: routineEmojiBinding,
                         emojis: allEmojiOptions
                     )
+                }
+                .sheet(isPresented: $isTagManagerPresented) {
+                    SettingsTagManagerPresentationView(store: tagManagerStore)
+                }
+                .onReceive(
+                    NotificationCenter.default.publisher(for: .routineTagDidRename)
+                        .receive(on: RunLoop.main)
+                ) { notification in
+                    guard let payload = notification.routineTagRenamePayload else { return }
+                    store.send(.tagRenamed(oldName: payload.oldName, newName: payload.newName))
+                }
+                .onReceive(
+                    NotificationCenter.default.publisher(for: .routineTagDidDelete)
+                        .receive(on: RunLoop.main)
+                ) { notification in
+                    guard let tagName = notification.routineTagDeletedName else { return }
+                    store.send(.tagDeleted(tagName))
                 }
                 .routinaAddRoutineSheetFrame()
             }
@@ -90,9 +111,11 @@ struct AddRoutineTCAView: View {
 
             Section(header: Text("Tags")) {
                 tagComposer
+                availableTagSuggestionsContent
+                manageTagsButton
                 editableTagsContent
 
-                Text("Press return or Add. Separate multiple tags with commas.")
+                Text(tagSectionHelpText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -288,6 +311,13 @@ struct AddRoutineTCAView: View {
         return "Anywhere means the routine is always visible."
     }
 
+    private var tagSectionHelpText: String {
+        if store.availableTags.isEmpty {
+            return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
+        }
+        return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
+    }
+
     private var tagComposer: some View {
         HStack(spacing: 10) {
             TextField("health, focus, morning", text: tagDraftBinding)
@@ -299,6 +329,14 @@ struct AddRoutineTCAView: View {
                 store.send(.addTagTapped)
             }
             .disabled(isAddTagDisabled)
+        }
+    }
+
+    private var manageTagsButton: some View {
+        Button {
+            isTagManagerPresented = true
+        } label: {
+            Label("Manage Tags", systemImage: "slider.horizontal.3")
         }
     }
 
@@ -337,9 +375,46 @@ struct AddRoutineTCAView: View {
     }
 
     @ViewBuilder
+    private var availableTagSuggestionsContent: some View {
+        if !store.availableTags.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Choose from existing tags")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
+                    ForEach(store.availableTags, id: \.self) { tag in
+                        let isSelected = RoutineTag.contains(tag, in: store.routineTags)
+                        Button {
+                            store.send(.toggleTagSelection(tag))
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
+                                    .font(.caption)
+                                Text("#\(tag)")
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(isSelected ? "Remove" : "Add") tag \(tag)")
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    @ViewBuilder
     private var editableTagsContent: some View {
         if store.routineTags.isEmpty {
-            Text("No tags yet")
+            Text(store.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
@@ -545,8 +620,10 @@ struct AddRoutineTCAView: View {
                         macFormRow("Tags") {
                             VStack(alignment: .leading, spacing: 10) {
                                 tagComposer
+                                availableTagSuggestionsContent
+                                manageTagsButton
                                 editableTagsContent
-                                Text("Press return or Add. Separate multiple tags with commas.")
+                                Text(tagSectionHelpText)
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }

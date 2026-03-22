@@ -1,5 +1,14 @@
 import Foundation
 
+struct RoutineTagSummary: Equatable, Identifiable, Sendable {
+    var name: String
+    var linkedRoutineCount: Int
+
+    var id: String {
+        RoutineTag.normalized(name) ?? name
+    }
+}
+
 enum RoutineTag {
     static func cleaned(_ value: String) -> String? {
         let collapsed = value
@@ -46,6 +55,46 @@ enum RoutineTag {
         return deduplicated(existingTags).filter { normalized($0) != normalizedTag }
     }
 
+    static func replacing(_ tag: String, with replacement: String, in existingTags: [String]) -> [String] {
+        guard
+            let normalizedTag = normalized(tag),
+            let cleanedReplacement = cleaned(replacement),
+            let normalizedReplacement = normalized(cleanedReplacement)
+        else {
+            return deduplicated(existingTags)
+        }
+
+        var seen = Set<String>()
+        var didReplace = false
+        var updatedTags: [String] = []
+
+        for existingTag in existingTags {
+            guard
+                let cleanedExistingTag = cleaned(existingTag),
+                let normalizedExistingTag = normalized(cleanedExistingTag)
+            else {
+                continue
+            }
+
+            if normalizedExistingTag == normalizedTag {
+                if !didReplace, seen.insert(normalizedReplacement).inserted {
+                    updatedTags.append(cleanedReplacement)
+                }
+                didReplace = true
+                continue
+            }
+
+            guard seen.insert(normalizedExistingTag).inserted else { continue }
+            updatedTags.append(cleanedExistingTag)
+        }
+
+        if !didReplace, seen.insert(normalizedReplacement).inserted {
+            updatedTags.append(cleanedReplacement)
+        }
+
+        return updatedTags
+    }
+
     static func contains(_ tag: String, in tags: [String]) -> Bool {
         guard let normalizedTag = normalized(tag) else { return false }
         return tags.contains { normalized($0) == normalizedTag }
@@ -59,6 +108,22 @@ enum RoutineTag {
     static func allTags(from tagCollections: [[String]]) -> [String] {
         deduplicated(tagCollections.flatMap(\.self)).sorted {
             $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+    }
+
+    static func summaries(from tasks: [RoutineTask]) -> [RoutineTagSummary] {
+        let tagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
+            for tag in task.tags {
+                guard let normalizedTag = normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += 1
+            }
+        }
+
+        return allTags(from: tasks.map(\.tags)).map { tag in
+            RoutineTagSummary(
+                name: tag,
+                linkedRoutineCount: tagCounts[normalized(tag) ?? tag, default: 0]
+            )
         }
     }
 

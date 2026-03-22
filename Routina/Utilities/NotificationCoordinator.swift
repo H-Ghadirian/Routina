@@ -4,11 +4,56 @@ import UserNotifications
 
 extension Notification.Name {
     static let routineDidUpdate = Notification.Name("routineDidUpdate")
+    static let routineTagDidRename = Notification.Name("routineTagDidRename")
+    static let routineTagDidDelete = Notification.Name("routineTagDidDelete")
 }
 
 extension NotificationCenter {
     func postRoutineDidUpdate() {
         post(name: .routineDidUpdate, object: nil)
+    }
+
+    func postRoutineTagDidRename(from oldName: String, to newName: String) {
+        post(
+            name: .routineTagDidRename,
+            object: nil,
+            userInfo: [
+                RoutineTagNotificationKey.oldName.rawValue: oldName,
+                RoutineTagNotificationKey.newName.rawValue: newName
+            ]
+        )
+    }
+
+    func postRoutineTagDidDelete(_ tagName: String) {
+        post(
+            name: .routineTagDidDelete,
+            object: nil,
+            userInfo: [
+                RoutineTagNotificationKey.tagName.rawValue: tagName
+            ]
+        )
+    }
+}
+
+enum RoutineTagNotificationKey: String {
+    case oldName
+    case newName
+    case tagName
+}
+
+extension Notification {
+    var routineTagRenamePayload: (oldName: String, newName: String)? {
+        guard
+            let oldName = userInfo?[RoutineTagNotificationKey.oldName.rawValue] as? String,
+            let newName = userInfo?[RoutineTagNotificationKey.newName.rawValue] as? String
+        else {
+            return nil
+        }
+        return (oldName, newName)
+    }
+
+    var routineTagDeletedName: String? {
+        userInfo?[RoutineTagNotificationKey.tagName.rawValue] as? String
     }
 }
 

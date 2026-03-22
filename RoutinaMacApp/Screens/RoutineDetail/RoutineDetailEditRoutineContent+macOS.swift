@@ -6,6 +6,10 @@ struct RoutineDetailEditRoutineContent: View {
     let store: StoreOf<RoutineDetailFeature>
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
+    @State private var isTagManagerPresented = false
+    @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
+        SettingsFeature()
+    }
 
     private var sectionHeaderFont: Font { .headline.weight(.semibold) }
 
@@ -85,8 +89,11 @@ struct RoutineDetailEditRoutineContent: View {
                             .disabled(RoutineTag.parseDraft(store.editTagDraft).isEmpty)
                         }
 
+                        availableTagSuggestionsContent
+                        manageTagsButton
+
                         if store.editRoutineTags.isEmpty {
-                            Text("No tags yet")
+                            Text(store.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         } else {
@@ -110,7 +117,7 @@ struct RoutineDetailEditRoutineContent: View {
                             }
                         }
 
-                        Text("Press return or Add. Separate multiple tags with commas.")
+                        Text(tagSectionHelpText)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -215,6 +222,75 @@ struct RoutineDetailEditRoutineContent: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minWidth: 520, minHeight: 460)
+        .sheet(isPresented: $isTagManagerPresented) {
+            SettingsTagManagerPresentationView(store: tagManagerStore)
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: .routineTagDidRename)
+                .receive(on: RunLoop.main)
+        ) { notification in
+            guard let payload = notification.routineTagRenamePayload else { return }
+            store.send(.editTagRenamed(oldName: payload.oldName, newName: payload.newName))
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: .routineTagDidDelete)
+                .receive(on: RunLoop.main)
+        ) { notification in
+            guard let tagName = notification.routineTagDeletedName else { return }
+            store.send(.editTagDeleted(tagName))
+        }
+    }
+
+    private var manageTagsButton: some View {
+        Button {
+            isTagManagerPresented = true
+        } label: {
+            Label("Manage Tags", systemImage: "slider.horizontal.3")
+        }
+        .buttonStyle(.bordered)
+    }
+
+    private var tagSectionHelpText: String {
+        if store.availableTags.isEmpty {
+            return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
+        }
+        return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
+    }
+
+    @ViewBuilder
+    private var availableTagSuggestionsContent: some View {
+        if !store.availableTags.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Choose from existing tags")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
+                    ForEach(store.availableTags, id: \.self) { tag in
+                        let isSelected = RoutineTag.contains(tag, in: store.editRoutineTags)
+                        Button {
+                            store.send(.editToggleTagSelection(tag))
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
+                                    .font(.caption)
+                                Text("#\(tag)")
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(isSelected ? "Remove" : "Add") tag \(tag)")
+                    }
+                }
+            }
+        }
     }
 
     @ViewBuilder

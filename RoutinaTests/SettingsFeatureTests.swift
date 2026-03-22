@@ -245,4 +245,154 @@ struct SettingsFeatureTests {
             $0.placePendingDeletion = updatedSummary
         }
     }
+
+    @Test
+    func renameTagTapped_populatesDraftAndPresentsSheet() async {
+        let context = makeInMemoryContext()
+        let summary = RoutineTagSummary(name: "Fitness", linkedRoutineCount: 2)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                savedTags: [summary]
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.renameTagTapped("Fitness")) {
+            $0.tagPendingRename = summary
+            $0.tagRenameDraft = "Fitness"
+            $0.isTagRenameSheetPresented = true
+        }
+    }
+
+    @Test
+    func saveTagRenameTapped_updatesAllMatchingRoutines() async throws {
+        let context = makeInMemoryContext()
+        let fitness = makeTask(in: context, name: "Workout", interval: 1, lastDone: nil, emoji: "💪", tags: ["Fitness", "Morning"])
+        let stretch = makeTask(in: context, name: "Stretch", interval: 2, lastDone: nil, emoji: "🧘", tags: ["fitness"])
+        _ = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚", tags: ["Morning"])
+        try context.save()
+
+        let fitnessSummary = RoutineTagSummary(name: "Fitness", linkedRoutineCount: 2)
+        let morningSummary = RoutineTagSummary(name: "Morning", linkedRoutineCount: 2)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                savedTags: [fitnessSummary, morningSummary],
+                tagPendingRename: fitnessSummary,
+                tagRenameDraft: "Health",
+                isTagRenameSheetPresented: true
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+        var loadedTags: [RoutineTagSummary] = []
+
+        await store.send(.saveTagRenameTapped) {
+            $0.tagPendingRename = nil
+            $0.tagRenameDraft = ""
+            $0.isTagOperationInProgress = true
+            $0.isTagRenameSheetPresented = false
+            $0.tagStatusMessage = ""
+        }
+        await store.receive { action in
+            guard case let .tagsLoaded(tags) = action else { return false }
+            loadedTags = tags
+            #expect(tags.map(\.name) == ["Health", "Morning"])
+            #expect(tags.map(\.linkedRoutineCount) == [2, 2])
+            return true
+        } assert: {
+            $0.savedTags = loadedTags
+        }
+        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Health in 2 routines.")) {
+            $0.isTagOperationInProgress = false
+            $0.tagStatusMessage = "Updated tag to Health in 2 routines."
+        }
+
+        let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let persistedFitness = try #require(persistedTasks.first(where: { $0.id == fitness.id }))
+        let persistedStretch = try #require(persistedTasks.first(where: { $0.id == stretch.id }))
+        #expect(persistedFitness.tags == ["Health", "Morning"])
+        #expect(persistedStretch.tags == ["Health"])
+    }
+
+    @Test
+    func saveTagRenameTapped_withoutNameShowsValidationMessage() async {
+        let context = makeInMemoryContext()
+        let summary = RoutineTagSummary(name: "Fitness", linkedRoutineCount: 1)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                tagPendingRename: summary,
+                tagRenameDraft: "   ",
+                isTagRenameSheetPresented: true
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.saveTagRenameTapped) {
+            $0.tagStatusMessage = "Enter a tag name first."
+        }
+    }
+
+    @Test
+    func deleteTagConfirmed_removesTagFromAllMatchingRoutines() async throws {
+        let context = makeInMemoryContext()
+        _ = makeTask(in: context, name: "Workout", interval: 1, lastDone: nil, emoji: "💪", tags: ["Health", "Morning"])
+        let read = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚", tags: ["Morning"])
+        let plan = makeTask(in: context, name: "Plan", interval: 4, lastDone: nil, emoji: "📝", tags: ["Evening", "Morning"])
+        try context.save()
+
+        let morningSummary = RoutineTagSummary(name: "Morning", linkedRoutineCount: 3)
+        let healthSummary = RoutineTagSummary(name: "Health", linkedRoutineCount: 1)
+        let eveningSummary = RoutineTagSummary(name: "Evening", linkedRoutineCount: 1)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                savedTags: [eveningSummary, healthSummary, morningSummary],
+                tagPendingDeletion: morningSummary,
+                isDeleteTagConfirmationPresented: true
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+        var loadedTags: [RoutineTagSummary] = []
+
+        await store.send(.deleteTagConfirmed) {
+            $0.tagPendingDeletion = nil
+            $0.isDeleteTagConfirmationPresented = false
+            $0.isTagOperationInProgress = true
+            $0.tagStatusMessage = ""
+        }
+        await store.receive { action in
+            guard case let .tagsLoaded(tags) = action else { return false }
+            loadedTags = tags
+            #expect(tags.map(\.name) == ["Evening", "Health"])
+            #expect(tags.map(\.linkedRoutineCount) == [1, 1])
+            return true
+        } assert: {
+            $0.savedTags = loadedTags
+        }
+        await store.receive(.tagOperationFinished(success: true, message: "Deleted Morning from 3 routines.")) {
+            $0.isTagOperationInProgress = false
+            $0.tagStatusMessage = "Deleted Morning from 3 routines."
+        }
+
+        let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let persistedRead = try #require(persistedTasks.first(where: { $0.id == read.id }))
+        let persistedPlan = try #require(persistedTasks.first(where: { $0.id == plan.id }))
+        #expect(persistedRead.tags.isEmpty)
+        #expect(persistedPlan.tags == ["Evening"])
+        #expect(persistedTasks.allSatisfy { !RoutineTag.contains("Morning", in: $0.tags) })
+    }
 }

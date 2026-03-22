@@ -51,6 +51,7 @@ struct RoutineDetailFeature: Reducer {
         var editChecklistItemDraftTitle: String = ""
         var editChecklistItemDraftInterval: Int = 3
         var availablePlaces: [RoutinePlaceSummary] = []
+        var availableTags: [String] = []
         var editSelectedPlaceID: UUID?
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
@@ -73,6 +74,8 @@ struct RoutineDetailFeature: Reducer {
         case editTagDraftChanged(String)
         case editAddTagTapped
         case editRemoveTag(String)
+        case editTagRenamed(oldName: String, newName: String)
+        case editTagDeleted(String)
         case editScheduleModeChanged(RoutineScheduleMode)
         case editStepDraftChanged(String)
         case editAddStepTapped
@@ -84,7 +87,9 @@ struct RoutineDetailFeature: Reducer {
         case editAddChecklistItemTapped
         case editRemoveChecklistItem(UUID)
         case availablePlacesLoaded([RoutinePlaceSummary])
+        case availableTagsLoaded([String])
         case editSelectedPlaceChanged(UUID?)
+        case editToggleTagSelection(String)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editSaveTapped
@@ -285,7 +290,7 @@ struct RoutineDetailFeature: Reducer {
             state.isEditSheetPresented = isPresented
             if isPresented {
                 syncEditFormFromTask(&state)
-                return loadAvailablePlaces()
+                return loadEditContext()
             }
             return .none
 
@@ -308,6 +313,26 @@ struct RoutineDetailFeature: Reducer {
 
         case let .editRemoveTag(tag):
             state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+            return .none
+
+        case let .editTagRenamed(oldName, newName):
+            state.availableTags = RoutineTag.replacing(oldName, with: newName, in: state.availableTags)
+            if RoutineTag.contains(oldName, in: state.editRoutineTags) {
+                state.editRoutineTags = RoutineTag.replacing(oldName, with: newName, in: state.editRoutineTags)
+            }
+            if RoutineTag.contains(oldName, in: state.task.tags) {
+                state.task.tags = RoutineTag.replacing(oldName, with: newName, in: state.task.tags)
+                refreshTaskView(&state)
+            }
+            return .none
+
+        case let .editTagDeleted(tag):
+            state.availableTags = RoutineTag.removing(tag, from: state.availableTags)
+            state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+            if RoutineTag.contains(tag, in: state.task.tags) {
+                state.task.tags = RoutineTag.removing(tag, from: state.task.tags)
+                refreshTaskView(&state)
+            }
             return .none
 
         case let .editScheduleModeChanged(mode):
@@ -366,8 +391,20 @@ struct RoutineDetailFeature: Reducer {
             }
             return .none
 
+        case let .availableTagsLoaded(tags):
+            state.availableTags = RoutineTag.allTags(from: [tags])
+            return .none
+
         case let .editSelectedPlaceChanged(placeID):
             state.editSelectedPlaceID = placeID
+            return .none
+
+        case let .editToggleTagSelection(tag):
+            if RoutineTag.contains(tag, in: state.editRoutineTags) {
+                state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+            } else {
+                state.editRoutineTags = RoutineTag.appending(tag, to: state.editRoutineTags)
+            }
             return .none
 
         case let .editFrequencyChanged(frequency):
@@ -437,7 +474,7 @@ struct RoutineDetailFeature: Reducer {
             }
             updateDerivedState(&state)
             return .concatenate(
-                loadAvailablePlaces(),
+                loadEditContext(),
                 handleOnAppear(taskID: state.task.id)
             )
             .cancellable(id: CancelID.loadContext, cancelInFlight: true)
@@ -695,12 +732,13 @@ struct RoutineDetailFeature: Reducer {
         }
     }
 
-    private func loadAvailablePlaces() -> Effect<Action> {
+    private func loadEditContext() -> Effect<Action> {
         .run { @MainActor send in
             let context = modelContext()
             let places = (try? context.fetch(FetchDescriptor<RoutinePlace>())) ?? []
             let tasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
             send(.availablePlacesLoaded(RoutinePlace.summaries(from: places, linkedTo: tasks)))
+            send(.availableTagsLoaded(RoutineTag.allTags(from: tasks.map(\.tags))))
         }
     }
 

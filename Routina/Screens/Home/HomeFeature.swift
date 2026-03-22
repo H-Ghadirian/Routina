@@ -125,6 +125,7 @@ struct HomeFeature {
                 return .merge(
                     detailRefreshEffect,
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: reconciledTasks)))),
+                    .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: reconciledTasks)))),
                     .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: detachedPlaces, linkedTo: reconciledTasks))))
                 )
 
@@ -165,6 +166,7 @@ struct HomeFeature {
                 state.isAddRoutineSheetPresented = isPresented
                 if isPresented {
                     state.addRoutineState = AddRoutineFeature.State(
+                        availableTags: availableTags(from: state.routineTasks),
                         existingRoutineNames: existingRoutineNames(from: state.routineTasks),
                         availablePlaces: RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)
                     )
@@ -209,6 +211,7 @@ struct HomeFeature {
                 return .merge(
                     deleteEffect,
                     .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
+                    .send(.addRoutineSheet(.availableTagsChanged(availableTags(from: state.routineTasks)))),
                     .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks))))
                 )
 
@@ -567,6 +570,10 @@ struct HomeFeature {
 
     private func existingRoutineNames(from tasks: [RoutineTask]) -> [String] {
         tasks.compactMap(\.name)
+    }
+
+    private func availableTags(from tasks: [RoutineTask]) -> [String] {
+        RoutineTag.allTags(from: tasks.map(\.tags))
     }
 
     private func refreshDisplays(_ state: inout State) {

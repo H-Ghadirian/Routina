@@ -30,14 +30,22 @@ struct SettingsFeature {
         var appIconStatusMessage: String = ""
         var selectedAppIcon: AppIconOption = .persistedSelection
         var savedPlaces: [RoutinePlaceSummary] = []
+        var savedTags: [RoutineTagSummary] = []
         var placePendingDeletion: RoutinePlaceSummary?
+        var tagPendingDeletion: RoutineTagSummary?
+        var tagPendingRename: RoutineTagSummary?
         var placeDraftName: String = ""
+        var tagRenameDraft: String = ""
         var placeDraftCoordinate: LocationCoordinate?
         var placeDraftRadiusMeters: Double = 150
         var placeStatusMessage: String = ""
+        var tagStatusMessage: String = ""
         var isPlaceOperationInProgress: Bool = false
+        var isTagOperationInProgress: Bool = false
         var locationAuthorizationStatus: LocationAuthorizationStatus = .notDetermined
         var lastKnownLocationCoordinate: LocationCoordinate?
+        var isDeleteTagConfirmationPresented: Bool = false
+        var isTagRenameSheetPresented: Bool = false
     }
 
     enum Action: Equatable {
@@ -46,6 +54,7 @@ struct SettingsFeature {
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
         case onAppear
+        case tagManagerAppeared
         case onAppBecameActive
         case contactUsTapped
         case aboutSectionLongPressed
@@ -55,15 +64,24 @@ struct SettingsFeature {
         case setCloudDataResetConfirmation(Bool)
         case resetCloudDataConfirmed
         case setDeletePlaceConfirmation(Bool)
+        case setDeleteTagConfirmation(Bool)
+        case setTagRenameSheet(Bool)
         case placesLoaded([RoutinePlaceSummary])
+        case tagsLoaded([RoutineTagSummary])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
+        case tagRenameDraftChanged(String)
         case placeDraftCoordinateChanged(LocationCoordinate?)
         case placeDraftRadiusChanged(Double)
         case savePlaceTapped
+        case renameTagTapped(String)
+        case saveTagRenameTapped
         case deletePlaceTapped(UUID)
+        case deleteTagTapped(String)
         case deletePlaceConfirmed
+        case deleteTagConfirmed
         case placeOperationFinished(success: Bool, message: String)
+        case tagOperationFinished(success: Bool, message: String)
         case exportRoutineDataTapped
         case importRoutineDataTapped
         case appIconSelected(AppIconOption)
@@ -133,13 +151,22 @@ struct SettingsFeature {
                 state.cloudDiagnosticsTimestamp = diagnostics.timestampText
                 state.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .run { @MainActor send in
+                    let context = self.modelContext()
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
-                    let placeSummaries = try? self.fetchPlaceSummaries(in: self.modelContext())
+                    let placeSummaries = try? self.fetchPlaceSummaries(in: context)
                     send(.placesLoaded(placeSummaries ?? []))
+                    let tagSummaries = try? self.fetchTagSummaries(in: context)
+                    send(.tagsLoaded(tagSummaries ?? []))
                     let locationSnapshot = await self.locationClient.snapshot(false)
                     send(.locationSnapshotUpdated(locationSnapshot))
+                }
+
+            case .tagManagerAppeared:
+                return .run { @MainActor send in
+                    let tagSummaries = try? self.fetchTagSummaries(in: self.modelContext())
+                    send(.tagsLoaded(tagSummaries ?? []))
                 }
 
             case .contactUsTapped:
@@ -168,16 +195,19 @@ struct SettingsFeature {
             case .onAppBecameActive:
                 let notificationsEnabled = state.notificationsEnabled
                 return .run { @MainActor send in
+                    let context = self.modelContext()
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
                     let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
                     send(.systemNotificationPermissionChecked(systemEnabled))
-                    let placeSummaries = try? self.fetchPlaceSummaries(in: self.modelContext())
+                    let placeSummaries = try? self.fetchPlaceSummaries(in: context)
                     send(.placesLoaded(placeSummaries ?? []))
+                    let tagSummaries = try? self.fetchTagSummaries(in: context)
+                    send(.tagsLoaded(tagSummaries ?? []))
                     let locationSnapshot = await self.locationClient.snapshot(false)
                     send(.locationSnapshotUpdated(locationSnapshot))
                     if notificationsEnabled {
                         if systemEnabled {
-                            try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
+                            try? await self.rescheduleNotificationsIfNeeded(in: context)
                         } else {
                             await self.notificationClient.cancelAll()
                         }
@@ -276,11 +306,38 @@ struct SettingsFeature {
                 }
                 return .none
 
+            case let .setDeleteTagConfirmation(isPresented):
+                state.isDeleteTagConfirmationPresented = isPresented
+                if !isPresented {
+                    state.tagPendingDeletion = nil
+                }
+                return .none
+
+            case let .setTagRenameSheet(isPresented):
+                state.isTagRenameSheetPresented = isPresented
+                if !isPresented {
+                    state.tagPendingRename = nil
+                    state.tagRenameDraft = ""
+                }
+                return .none
+
             case let .placesLoaded(places):
                 state.savedPlaces = places
                 if let pendingPlace = state.placePendingDeletion,
                    let updatedPlace = places.first(where: { $0.id == pendingPlace.id }) {
                     state.placePendingDeletion = updatedPlace
+                }
+                return .none
+
+            case let .tagsLoaded(tags):
+                state.savedTags = tags
+                if let pendingTag = state.tagPendingDeletion,
+                   let updatedTag = self.tagSummary(named: pendingTag.name, in: tags) {
+                    state.tagPendingDeletion = updatedTag
+                }
+                if let pendingTag = state.tagPendingRename,
+                   let updatedTag = self.tagSummary(named: pendingTag.name, in: tags) {
+                    state.tagPendingRename = updatedTag
                 }
                 return .none
 
@@ -296,6 +353,11 @@ struct SettingsFeature {
                 state.placeStatusMessage = ""
                 return .none
 
+            case let .tagRenameDraftChanged(name):
+                state.tagRenameDraft = name
+                state.tagStatusMessage = ""
+                return .none
+
             case let .placeDraftCoordinateChanged(coordinate):
                 state.placeDraftCoordinate = coordinate
                 state.placeStatusMessage = ""
@@ -304,6 +366,19 @@ struct SettingsFeature {
             case let .placeDraftRadiusChanged(radius):
                 state.placeDraftRadiusMeters = min(max(radius, 25), 2_000)
                 state.placeStatusMessage = ""
+                return .none
+
+            case let .renameTagTapped(tagName):
+                guard !state.isTagOperationInProgress,
+                      let tag = self.tagSummary(named: tagName, in: state.savedTags)
+                else {
+                    return .none
+                }
+
+                state.tagPendingRename = tag
+                state.tagRenameDraft = tag.name
+                state.tagStatusMessage = ""
+                state.isTagRenameSheetPresented = true
                 return .none
 
             case .savePlaceTapped:
@@ -365,6 +440,67 @@ struct SettingsFeature {
                     }
                 }
 
+            case .saveTagRenameTapped:
+                guard !state.isTagOperationInProgress else {
+                    return .none
+                }
+                guard let pendingTag = state.tagPendingRename else {
+                    return .none
+                }
+                guard let cleanedName = RoutineTag.cleaned(state.tagRenameDraft) else {
+                    state.tagStatusMessage = "Enter a tag name first."
+                    return .none
+                }
+
+                state.isTagRenameSheetPresented = false
+                state.tagPendingRename = nil
+                state.tagRenameDraft = ""
+                state.isTagOperationInProgress = true
+                state.tagStatusMessage = ""
+                let originalTagName = pendingTag.name
+
+                return .run { @MainActor send in
+                    do {
+                        let context = self.modelContext()
+                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                        var updatedRoutineCount = 0
+
+                        for task in tasks where RoutineTag.contains(originalTagName, in: task.tags) {
+                            let updatedTags = RoutineTag.replacing(
+                                originalTagName,
+                                with: cleanedName,
+                                in: task.tags
+                            )
+                            if updatedTags != task.tags {
+                                task.tags = updatedTags
+                                updatedRoutineCount += 1
+                            }
+                        }
+
+                        try context.save()
+                        NotificationCenter.default.postRoutineDidUpdate()
+                        NotificationCenter.default.postRoutineTagDidRename(from: originalTagName, to: cleanedName)
+                        let summaries = try self.fetchTagSummaries(in: context)
+                        send(.tagsLoaded(summaries))
+                        send(
+                            .tagOperationFinished(
+                                success: true,
+                                message: self.renameTagSuccessMessage(
+                                    updatedTagName: cleanedName,
+                                    updatedRoutineCount: updatedRoutineCount
+                                )
+                            )
+                        )
+                    } catch {
+                        send(
+                            .tagOperationFinished(
+                                success: false,
+                                message: "Updating tag failed: \(error.localizedDescription)"
+                            )
+                        )
+                    }
+                }
+
             case let .deletePlaceTapped(placeID):
                 guard !state.isPlaceOperationInProgress else {
                     return .none
@@ -376,6 +512,18 @@ struct SettingsFeature {
 
                 state.placePendingDeletion = place
                 state.isDeletePlaceConfirmationPresented = true
+                return .none
+
+            case let .deleteTagTapped(tagName):
+                guard !state.isTagOperationInProgress,
+                      let tag = self.tagSummary(named: tagName, in: state.savedTags)
+                else {
+                    return .none
+                }
+
+                state.tagPendingDeletion = tag
+                state.tagStatusMessage = ""
+                state.isDeleteTagConfirmationPresented = true
                 return .none
 
             case .deletePlaceConfirmed:
@@ -425,6 +573,58 @@ struct SettingsFeature {
                     }
                 }
 
+            case .deleteTagConfirmed:
+                guard !state.isTagOperationInProgress else {
+                    return .none
+                }
+                guard let pendingTag = state.tagPendingDeletion else {
+                    return .none
+                }
+
+                state.isDeleteTagConfirmationPresented = false
+                state.tagPendingDeletion = nil
+                state.isTagOperationInProgress = true
+                state.tagStatusMessage = ""
+                let tagName = pendingTag.name
+
+                return .run { @MainActor send in
+                    do {
+                        let context = self.modelContext()
+                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                        var updatedRoutineCount = 0
+
+                        for task in tasks where RoutineTag.contains(tagName, in: task.tags) {
+                            let updatedTags = RoutineTag.removing(tagName, from: task.tags)
+                            if updatedTags != task.tags {
+                                task.tags = updatedTags
+                                updatedRoutineCount += 1
+                            }
+                        }
+
+                        try context.save()
+                        NotificationCenter.default.postRoutineDidUpdate()
+                        NotificationCenter.default.postRoutineTagDidDelete(tagName)
+                        let summaries = try self.fetchTagSummaries(in: context)
+                        send(.tagsLoaded(summaries))
+                        send(
+                            .tagOperationFinished(
+                                success: true,
+                                message: self.deleteTagSuccessMessage(
+                                    deletedTagName: tagName,
+                                    updatedRoutineCount: updatedRoutineCount
+                                )
+                            )
+                        )
+                    } catch {
+                        send(
+                            .tagOperationFinished(
+                                success: false,
+                                message: "Deleting tag failed: \(error.localizedDescription)"
+                            )
+                        )
+                    }
+                }
+
             case let .placeOperationFinished(success, message):
                 state.isPlaceOperationInProgress = false
                 state.placeStatusMessage = message
@@ -432,6 +632,11 @@ struct SettingsFeature {
                     state.placeDraftName = ""
                     state.placeDraftCoordinate = nil
                 }
+                return .none
+
+            case let .tagOperationFinished(_, message):
+                state.isTagOperationInProgress = false
+                state.tagStatusMessage = message
                 return .none
 
             case .exportRoutineDataTapped:
@@ -590,11 +795,44 @@ struct SettingsFeature {
         return RoutinePlace.summaries(from: places, linkedTo: tasks)
     }
 
+    @MainActor
+    private func fetchTagSummaries(in context: ModelContext) throws -> [RoutineTagSummary] {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        return RoutineTag.summaries(from: tasks)
+    }
+
     private func hasDuplicatePlaceName(_ name: String, in context: ModelContext) throws -> Bool {
         guard let normalizedName = RoutinePlace.normalizedName(name) else { return false }
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         return places.contains { place in
             RoutinePlace.normalizedName(place.name) == normalizedName
+        }
+    }
+
+    private func tagSummary(named name: String, in tags: [RoutineTagSummary]) -> RoutineTagSummary? {
+        guard let normalizedTagName = RoutineTag.normalized(name) else { return nil }
+        return tags.first { RoutineTag.normalized($0.name) == normalizedTagName }
+    }
+
+    private func renameTagSuccessMessage(updatedTagName: String, updatedRoutineCount: Int) -> String {
+        switch updatedRoutineCount {
+        case ..<1:
+            return "Updated tag to \(updatedTagName)."
+        case 1:
+            return "Updated tag to \(updatedTagName) in 1 routine."
+        default:
+            return "Updated tag to \(updatedTagName) in \(updatedRoutineCount) routines."
+        }
+    }
+
+    private func deleteTagSuccessMessage(deletedTagName: String, updatedRoutineCount: Int) -> String {
+        switch updatedRoutineCount {
+        case ..<1:
+            return "Deleted \(deletedTagName)."
+        case 1:
+            return "Deleted \(deletedTagName) from 1 routine."
+        default:
+            return "Deleted \(deletedTagName) from \(updatedRoutineCount) routines."
         }
     }
 

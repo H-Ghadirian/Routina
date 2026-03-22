@@ -35,6 +35,7 @@ struct AddRoutineFeature: Reducer {
         var routineName: String = ""
         var routineEmoji: String = "✨"
         var routineTags: [String] = []
+        var availableTags: [String] = []
         var tagDraft: String = ""
         var scheduleMode: RoutineScheduleMode = .fixedInterval
         var routineSteps: [RoutineStep] = []
@@ -76,9 +77,13 @@ struct AddRoutineFeature: Reducer {
     enum Action: Equatable {
         case routineNameChanged(String)
         case routineEmojiChanged(String)
+        case availableTagsChanged([String])
         case tagDraftChanged(String)
         case addTagTapped
         case removeTag(String)
+        case toggleTagSelection(String)
+        case tagRenamed(oldName: String, newName: String)
+        case tagDeleted(String)
         case scheduleModeChanged(RoutineScheduleMode)
         case stepDraftChanged(String)
         case addStepTapped
@@ -120,6 +125,10 @@ struct AddRoutineFeature: Reducer {
             state.routineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.routineEmoji)
             return .none
 
+        case let .availableTagsChanged(tags):
+            state.availableTags = RoutineTag.allTags(from: [tags])
+            return .none
+
         case let .tagDraftChanged(value):
             state.tagDraft = value
             return .none
@@ -130,6 +139,26 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .removeTag(tag):
+            state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
+            return .none
+
+        case let .toggleTagSelection(tag):
+            if RoutineTag.contains(tag, in: state.routineTags) {
+                state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
+            } else {
+                state.routineTags = RoutineTag.appending(tag, to: state.routineTags)
+            }
+            return .none
+
+        case let .tagRenamed(oldName, newName):
+            state.availableTags = RoutineTag.replacing(oldName, with: newName, in: state.availableTags)
+            if RoutineTag.contains(oldName, in: state.routineTags) {
+                state.routineTags = RoutineTag.replacing(oldName, with: newName, in: state.routineTags)
+            }
+            return .none
+
+        case let .tagDeleted(tag):
+            state.availableTags = RoutineTag.removing(tag, from: state.availableTags)
             state.routineTags = RoutineTag.removing(tag, from: state.routineTags)
             return .none
 

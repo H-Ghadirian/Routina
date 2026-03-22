@@ -234,6 +234,9 @@ struct RoutineDetailFeatureTests {
                 RoutinePlaceSummary(id: place.id, name: "Gym", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)
             ]
         }
+        await store.receive(.availableTagsLoaded(["Evening", "Mobility"])) {
+            $0.availableTags = ["Evening", "Mobility"]
+        }
     }
 
     @Test
@@ -254,6 +257,116 @@ struct RoutineDetailFeatureTests {
         await store.send(.editAddTagTapped) {
             $0.editRoutineTags = ["Focus", "night"]
             $0.editTagDraft = ""
+        }
+    }
+
+    @Test
+    func availableTagsLoaded_deduplicatesAndSortsChoices() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.availableTagsLoaded([" focus ", "Morning", "focus"])) {
+            $0.availableTags = ["focus", "Morning"]
+        }
+    }
+
+    @Test
+    func editToggleTagSelection_addsAndRemovesChosenTag() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                editRoutineTags: ["Focus"],
+                availableTags: ["Focus", "Night"]
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.editToggleTagSelection("Night")) {
+            $0.editRoutineTags = ["Focus", "Night"]
+        }
+
+        await store.send(.editToggleTagSelection("focus")) {
+            $0.editRoutineTags = ["Night"]
+        }
+    }
+
+    @Test
+    func editTagRenamed_updatesSelectedAndPersistedTags() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            tags: ["Focus", "Morning"]
+        )
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                editRoutineTags: ["Morning", "Focus"],
+                availableTags: ["Focus", "Morning"]
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.editTagRenamed(oldName: "focus", newName: "Deep Work")) {
+            $0.task.tags = ["Deep Work", "Morning"]
+            $0.taskRefreshID = 1
+            $0.editRoutineTags = ["Morning", "Deep Work"]
+            $0.availableTags = ["Deep Work", "Morning"]
+        }
+    }
+
+    @Test
+    func editTagDeleted_removesTagFromSelectedAndPersistedTags() async {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            tags: ["Deep Work", "Morning"]
+        )
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                editRoutineTags: ["Morning", "Deep Work"],
+                availableTags: ["Deep Work", "Morning"]
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.editTagDeleted("morning")) {
+            $0.task.tags = ["Deep Work"]
+            $0.taskRefreshID = 1
+            $0.editRoutineTags = ["Deep Work"]
+            $0.availableTags = ["Deep Work"]
         }
     }
 
@@ -367,6 +480,9 @@ struct RoutineDetailFeatureTests {
             $0.selectedDate = calendar.startOfDay(for: now)
         }
         await store.receive(.availablePlacesLoaded([]))
+        await store.receive(.availableTagsLoaded(["Focus", "Night"])) {
+            $0.availableTags = ["Focus", "Night"]
+        }
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -480,6 +596,7 @@ struct RoutineDetailFeatureTests {
                 RoutinePlaceSummary(id: office.id, name: "Office", radiusMeters: office.radiusMeters, linkedRoutineCount: 1)
             ]
         }
+        await store.receive(.availableTagsLoaded([]))
         await store.receive(.logsLoaded([]))
 
         let persistedTaskID = task.id
@@ -581,6 +698,7 @@ struct RoutineDetailFeatureTests {
         }
 
         await store.receive(.availablePlacesLoaded([]))
+        await store.receive(.availableTagsLoaded([]))
         await store.receive(.logsLoaded([]))
     }
 
