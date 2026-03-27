@@ -320,8 +320,8 @@ struct HomeTCAView: View {
         _ lhs: HomeFeature.RoutineDisplay,
         _ rhs: HomeFeature.RoutineDisplay
     ) -> Bool {
-        let lhsDate = lhs.pausedAt ?? .distantPast
-        let rhsDate = rhs.pausedAt ?? .distantPast
+        let lhsDate = lhs.pausedAt ?? lhs.lastDone ?? .distantPast
+        let rhsDate = rhs.pausedAt ?? rhs.lastDone ?? .distantPast
         if lhsDate != rhsDate {
             return lhsDate > rhsDate
         }
@@ -1018,6 +1018,9 @@ struct HomeTCAView: View {
         if task.isInProgress {
             return .orange
         }
+        if task.isOneOffTask {
+            return task.isCompletedOneOff ? .green : .blue
+        }
         if task.scheduleMode == .fixedIntervalChecklist
             && task.completedChecklistItemCount > 0
             && !task.isDoneToday {
@@ -1036,6 +1039,9 @@ struct HomeTCAView: View {
     }
 
     private func isYellowUrgency(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        if task.isOneOffTask {
+            return false
+        }
         if task.isInProgress
             || task.scheduleMode == .derivedFromChecklist
             || (task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0) {
@@ -1161,6 +1167,8 @@ struct HomeTCAView: View {
             } label: {
                 Label("Resume", systemImage: "play.circle")
             }
+        } else if task.isCompletedOneOff {
+            EmptyView()
         } else {
             if includeMarkDone {
                 Button {
@@ -1171,10 +1179,12 @@ struct HomeTCAView: View {
                 .disabled(isMarkDoneDisabled(task))
             }
 
-            Button {
-                store.send(.pauseTask(task.taskID))
-            } label: {
-                Label("Pause", systemImage: "pause.circle")
+            if !task.isOneOffTask {
+                Button {
+                    store.send(.pauseTask(task.taskID))
+                } label: {
+                    Label("Pause", systemImage: "pause.circle")
+                }
             }
         }
 
@@ -1216,6 +1226,9 @@ struct HomeTCAView: View {
     }
 
     private func cadenceDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.isOneOffTask {
+            return "One-off todo"
+        }
         if task.scheduleMode == .derivedFromChecklist {
             return "Checklist-driven"
         }
@@ -1233,6 +1246,18 @@ struct HomeTCAView: View {
     }
 
     private func completionDescription(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.isOneOffTask {
+            if task.isInProgress {
+                let totalSteps = max(task.steps.count, 1)
+                return "Step \(task.completedStepCount + 1) of \(totalSteps)"
+            }
+            guard task.lastDone != nil else { return "Not completed yet" }
+
+            let elapsedDays = daysSinceLastRoutine(task)
+            if elapsedDays == 0 { return "Completed today" }
+            if elapsedDays == 1 { return "Completed yesterday" }
+            return "Completed \(elapsedDays) days ago"
+        }
         if task.scheduleMode == .derivedFromChecklist {
             if task.isDoneToday && overdueDays(for: task) == 0 {
                 return "Updated today"
@@ -1300,6 +1325,12 @@ struct HomeTCAView: View {
         }
         if task.isInProgress {
             return ("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))
+        }
+        if task.isOneOffTask {
+            if task.isCompletedOneOff {
+                return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
+            }
+            return ("To Do", "circle", .blue, Color.blue.opacity(0.12))
         }
         let dueIn = dueInDays(for: task)
 
@@ -1395,6 +1426,9 @@ struct HomeTCAView: View {
     }
 
     private func isMarkDoneDisabled(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        if task.isOneOffTask {
+            return task.isCompletedOneOff || task.isPaused
+        }
         if task.scheduleMode == .derivedFromChecklist {
             return task.isPaused || task.dueChecklistItemCount == 0
         }
@@ -1413,7 +1447,7 @@ struct HomeTCAView: View {
         case let .away(placeName, _):
             return " • Away from \(placeName)"
         case let .unknown(placeName):
-            return " • \(placeName) routine"
+            return " • \(placeName) task"
         }
     }
 
@@ -1522,7 +1556,7 @@ struct HomeTCAView: View {
         let archivedCount = store.archivedRoutineDisplays.count
 
         if awayCount == 0 && archivedCount == 0 {
-            return activeCount == 1 ? "1 active routine" : "\(activeCount) active routines"
+            return activeCount == 1 ? "1 active task" : "\(activeCount) active tasks"
         }
 
         if archivedCount == 0 {

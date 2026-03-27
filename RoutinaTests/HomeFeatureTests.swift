@@ -1330,7 +1330,7 @@ struct HomeFeatureTests {
         }
         await store.receive(.addRoutineSheet(.existingRoutineNamesChanged(["Read"]))) {
             $0.addRoutineState?.existingRoutineNames = ["Read"]
-            $0.addRoutineState?.nameValidationMessage = "A routine with this name already exists."
+            $0.addRoutineState?.nameValidationMessage = "A task with this name already exists."
         }
         await store.receive(.addRoutineSheet(.availableTagsChanged([])))
         await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
@@ -2077,6 +2077,85 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func markTaskDone_forOneOffTaskArchivesItAndCancelsNotification() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-14T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = makeTask(
+            in: context,
+            name: "Buy milk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🥛",
+            scheduleMode: .oneOff
+        )
+        try context.save()
+
+        let canceledIDs = LockIsolated<[String]>([])
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                routineDisplays: [
+                    makeDisplay(
+                        taskID: task.id,
+                        name: "Buy milk",
+                        emoji: "🥛",
+                        interval: 1,
+                        scheduleMode: .oneOff,
+                        lastDone: nil,
+                        daysUntilDue: 0,
+                        isOneOffTask: true,
+                        isDoneToday: false
+                    )
+                ]
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.cancel = { identifier in
+                canceledIDs.withValue { $0.append(identifier) }
+            }
+        }
+
+        await store.send(.markTaskDone(task.id)) {
+            $0.routineTasks[0].lastDone = now
+            $0.routineTasks[0].scheduleAnchor = now
+            $0.routineDisplays = []
+            $0.archivedRoutineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Buy milk",
+                    emoji: "🥛",
+                    interval: 1,
+                    scheduleMode: .oneOff,
+                    lastDone: now,
+                    scheduleAnchor: now,
+                    daysUntilDue: Int.max,
+                    isOneOffTask: true,
+                    isCompletedOneOff: true,
+                    isDoneToday: true,
+                    doneCount: 1
+                )
+            ]
+            $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(savedTask.lastDone == now)
+        #expect(savedTask.scheduleMode == .oneOff)
+        #expect(logs.count == 1)
+        #expect(canceledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func detailLogs_returnsPersistedLogsForSelectedTaskSortedNewestFirst() throws {
         let context = makeInMemoryContext()
         let selectedTask = makeTask(in: context, name: "Selected", interval: 1, lastDone: nil, emoji: "✅")
@@ -2419,6 +2498,8 @@ private func makeDisplay(
     pausedAt: Date? = nil,
     pinnedAt: Date? = nil,
     daysUntilDue: Int? = nil,
+    isOneOffTask: Bool = false,
+    isCompletedOneOff: Bool = false,
     isDoneToday: Bool,
     isPaused: Bool = false,
     completedStepCount: Int = 0,
@@ -2433,7 +2514,9 @@ private func makeDisplay(
 ) -> HomeFeature.RoutineDisplay {
     let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
     let resolvedIsPaused = isPaused || pausedAt != nil
-    let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : interval)
+    let resolvedIsOneOffTask = isOneOffTask || scheduleMode == .oneOff
+    let resolvedIsCompletedOneOff = isCompletedOneOff || (resolvedIsOneOffTask && lastDone != nil && !isInProgress)
+    let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : (resolvedIsCompletedOneOff ? Int.max : interval))
     return HomeFeature.RoutineDisplay(
         taskID: taskID,
         name: name,
@@ -2450,6 +2533,8 @@ private func makeDisplay(
         pausedAt: pausedAt,
         pinnedAt: pinnedAt,
         daysUntilDue: resolvedDaysUntilDue,
+        isOneOffTask: resolvedIsOneOffTask,
+        isCompletedOneOff: resolvedIsCompletedOneOff,
         isDoneToday: isDoneToday,
         isPaused: resolvedIsPaused,
         isPinned: pinnedAt != nil,

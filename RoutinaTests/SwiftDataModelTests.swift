@@ -95,6 +95,49 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_oneOffStripsChecklistAndForcesSingleDayInterval() {
+        let completedAt = makeDate("2026-03-18T12:00:00Z")
+        let task = RoutineTask(
+            steps: [RoutineStep(title: "Buy milk")],
+            checklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 3)],
+            scheduleMode: .oneOff,
+            interval: 14,
+            lastDone: completedAt
+        )
+
+        #expect(task.scheduleMode == .oneOff)
+        #expect(task.isOneOffTask)
+        #expect(task.interval == 1)
+        #expect(task.steps.map(\.title) == ["Buy milk"])
+        #expect(task.checklistItems.isEmpty)
+        #expect(task.scheduleAnchor == completedAt)
+    }
+
+    @Test
+    func routineTask_completedOneOffDependsOnCompletionState() {
+        let completedAt = makeDate("2026-03-18T12:00:00Z")
+        let completedTask = RoutineTask(
+            scheduleMode: .oneOff,
+            interval: 10,
+            lastDone: completedAt
+        )
+        let inProgressTask = RoutineTask(
+            steps: [
+                RoutineStep(title: "Pack bag"),
+                RoutineStep(title: "Leave home")
+            ],
+            scheduleMode: .oneOff,
+            interval: 10,
+            lastDone: completedAt,
+            completedStepCount: 1,
+            sequenceStartedAt: makeDate("2026-03-18T11:00:00Z")
+        )
+
+        #expect(completedTask.isCompletedOneOff)
+        #expect(!inProgressTask.isCompletedOneOff)
+    }
+
+    @Test
     func routineTask_fixedIntervalChecklist_completesOnlyAfterAllItemsAreDone() {
         let breadID = UUID()
         let milkID = UUID()

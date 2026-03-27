@@ -36,7 +36,7 @@ struct RoutineDetailEditRoutineContent: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             TextField(
-                                "Routine name",
+                                "Task name",
                                 text: Binding(
                                     get: { store.editRoutineName },
                                     set: { store.send(.editRoutineNameChanged($0)) }
@@ -123,69 +123,80 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
-                sectionCard(title: "Type") {
+                sectionCard(title: "Task Type") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Picker(
-                            "Type",
-                            selection: Binding(
-                                get: { store.editScheduleMode },
-                                set: { store.send(.editScheduleModeChanged($0)) }
-                            )
-                        ) {
-                            Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                            Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                            Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                        Picker("Task Type", selection: taskTypeBinding) {
+                            Text("Routine").tag(RoutineTaskType.routine)
+                            Text("Todo").tag(RoutineTaskType.todo)
                         }
                         .labelsHidden()
                         .pickerStyle(.segmented)
-                        .frame(width: 320)
+                        .frame(width: 260)
 
-                        Text(scheduleModeDescription)
+                        Text(taskTypeDescription)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
 
-                        if store.editScheduleMode != .fixedInterval {
+                        if store.editScheduleMode.taskType == .routine {
                             Divider()
                                 .padding(.vertical, 2)
 
-                            VStack(alignment: .leading, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    TextField(
-                                        "Bread",
-                                        text: Binding(
-                                            get: { store.editChecklistItemDraftTitle },
-                                            set: { store.send(.editChecklistItemDraftTitleChanged($0)) }
+                            Picker("Schedule Type", selection: scheduleModeBinding) {
+                                Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                                Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                                Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: 320)
+
+                            Text(scheduleModeDescription)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+
+                            if !isStepBasedMode {
+                                Divider()
+                                    .padding(.vertical, 2)
+
+                                VStack(alignment: .leading, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        TextField(
+                                            "Bread",
+                                            text: Binding(
+                                                get: { store.editChecklistItemDraftTitle },
+                                                set: { store.send(.editChecklistItemDraftTitleChanged($0)) }
+                                            )
                                         )
-                                    )
-                                    .textFieldStyle(.roundedBorder)
-                                    .onSubmit {
-                                        store.send(.editAddChecklistItemTapped)
-                                    }
-
-                                    if store.editScheduleMode == .derivedFromChecklist {
-                                        Stepper(
-                                            value: Binding(
-                                                get: { store.editChecklistItemDraftInterval },
-                                                set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
-                                            ),
-                                            in: 1...365
-                                        ) {
-                                            Text(checklistIntervalLabel(for: store.editChecklistItemDraftInterval))
+                                        .textFieldStyle(.roundedBorder)
+                                        .onSubmit {
+                                            store.send(.editAddChecklistItemTapped)
                                         }
+
+                                        if store.editScheduleMode == .derivedFromChecklist {
+                                            Stepper(
+                                                value: Binding(
+                                                    get: { store.editChecklistItemDraftInterval },
+                                                    set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
+                                                ),
+                                                in: 1...365
+                                            ) {
+                                                Text(checklistIntervalLabel(for: store.editChecklistItemDraftInterval))
+                                            }
+                                        }
+
+                                        Button("Add Item") {
+                                            store.send(.editAddChecklistItemTapped)
+                                        }
+                                        .buttonStyle(.bordered)
+                                        .disabled(RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil)
                                     }
 
-                                    Button("Add Item") {
-                                        store.send(.editAddChecklistItemTapped)
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .disabled(RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil)
+                                    editableChecklistItemsContent
+
+                                    Text(checklistSectionDescription)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
                                 }
-
-                                editableChecklistItemsContent
-
-                                Text(checklistSectionDescription)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -214,7 +225,7 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
-                if store.editScheduleMode != .derivedFromChecklist {
+                if showsRepeatControls {
                     sectionCard(title: "Schedule") {
                         VStack(alignment: .leading, spacing: 16) {
                             VStack(alignment: .leading, spacing: 6) {
@@ -259,7 +270,7 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
-                if store.editScheduleMode == .fixedInterval {
+                if isStepBasedMode {
                     sectionCard(title: "Steps") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 10) {
@@ -284,7 +295,7 @@ struct RoutineDetailEditRoutineContent: View {
 
                             editableStepsContent
 
-                            Text("Steps run in order. Leave this empty for a one-step routine.")
+                            Text(stepsSectionDescription)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
@@ -293,22 +304,24 @@ struct RoutineDetailEditRoutineContent: View {
 
                 sectionCard(title: "Danger Zone") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Button(pauseArchivePresentation.actionTitle) {
-                            store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                        if !store.task.isOneOffTask {
+                            Button(pauseArchivePresentation.actionTitle) {
+                                store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(store.task.isPaused ? .teal : .orange)
+
+                            Text(pauseArchivePresentation.description ?? "")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+
+                            Divider()
                         }
-                        .buttonStyle(.bordered)
-                        .tint(store.task.isPaused ? .teal : .orange)
-
-                        Text(pauseArchivePresentation.description ?? "")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-
-                        Divider()
 
                         Button(role: .destructive) {
                             store.send(.setDeleteConfirmation(true))
                         } label: {
-                            Text("Delete Routine")
+                            Text("Delete Task")
                         }
                         .buttonStyle(.borderless)
 
@@ -339,6 +352,46 @@ struct RoutineDetailEditRoutineContent: View {
         ) { notification in
             guard let tagName = notification.routineTagDeletedName else { return }
             store.send(.editTagDeleted(tagName))
+        }
+    }
+
+    private var scheduleModeBinding: Binding<RoutineScheduleMode> {
+        Binding(
+            get: { store.editScheduleMode },
+            set: { store.send(.editScheduleModeChanged($0)) }
+        )
+    }
+
+    private var taskTypeBinding: Binding<RoutineTaskType> {
+        Binding(
+            get: { store.editScheduleMode.taskType },
+            set: { taskType in
+                let nextMode: RoutineScheduleMode
+                switch taskType {
+                case .routine:
+                    nextMode = store.editScheduleMode == .oneOff ? .fixedInterval : store.editScheduleMode
+                case .todo:
+                    nextMode = .oneOff
+                }
+                store.send(.editScheduleModeChanged(nextMode))
+            }
+        )
+    }
+
+    private var isStepBasedMode: Bool {
+        store.editScheduleMode == .fixedInterval || store.editScheduleMode == .oneOff
+    }
+
+    private var showsRepeatControls: Bool {
+        store.editScheduleMode != .derivedFromChecklist && store.editScheduleMode != .oneOff
+    }
+
+    private var taskTypeDescription: String {
+        switch store.editScheduleMode.taskType {
+        case .routine:
+            return "Routines repeat on a schedule and stay in your rotation."
+        case .todo:
+            return "Todos are one-off tasks. Once you finish one, it stays completed."
         }
     }
 
@@ -515,9 +568,16 @@ struct RoutineDetailEditRoutineContent: View {
     private var editPlaceDescription: String {
         if let selectedPlaceID = store.editSelectedPlaceID,
            let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
-            return "Show this routine when you are at \(place.name)."
+            return "Show this task when you are at \(place.name)."
         }
-        return "Anywhere means the routine is always visible."
+        return "Anywhere means the task is always visible."
+    }
+
+    private var stepsSectionDescription: String {
+        if store.editScheduleMode == .oneOff {
+            return "Steps run in order. Leave this empty for a single-step todo."
+        }
+        return "Steps run in order. Leave this empty for a one-step routine."
     }
 
     private var scheduleModeDescription: String {
@@ -528,6 +588,8 @@ struct RoutineDetailEditRoutineContent: View {
             return "Use one overall repeat interval and complete every checklist item to finish the routine."
         case .derivedFromChecklist:
             return "Use checklist item due dates to decide when the routine is due."
+        case .oneOff:
+            return "This task does not repeat."
         }
     }
 
@@ -537,7 +599,7 @@ struct RoutineDetailEditRoutineContent: View {
             return "The routine is done when every checklist item is completed."
         case .derivedFromChecklist:
             return "The routine becomes due when the earliest checklist item is due."
-        case .fixedInterval:
+        case .fixedInterval, .oneOff:
             return ""
         }
     }

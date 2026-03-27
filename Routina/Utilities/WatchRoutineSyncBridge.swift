@@ -75,7 +75,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                 let tasks = try context.fetch(descriptor)
                 let payload: [String: Any] = [
                     "routines": tasks.compactMap { task -> [String: Any]? in
-                        guard !task.isPaused else { return nil }
+                        guard !task.isPaused, !task.isCompletedOneOff else { return nil }
                         var routinePayload: [String: Any] = [
                             "id": task.id.uuidString,
                             "name": (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
@@ -89,7 +89,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                             "checklistItemCount": task.totalChecklistItemCount,
                             "completedChecklistItemCount": task.completedChecklistItemCount,
                             "nextPendingChecklistItemTitle": task.nextPendingChecklistItemTitle as Any,
-                            "dueDate": RoutineDateMath.dueDate(for: task, referenceDate: Date()).timeIntervalSince1970,
+                            "dueDate": task.isOneOffTask ? Date().timeIntervalSince1970 : RoutineDateMath.dueDate(for: task, referenceDate: Date()).timeIntervalSince1970,
                             "dueChecklistItemCount": task.dueChecklistItems(referenceDate: Date()).count,
                             "nextDueChecklistItemTitle": task.nextDueChecklistItem(referenceDate: Date())?.title as Any
                         ]
@@ -197,6 +197,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
 
             guard let task = try context.fetch(descriptor).first else { return }
             guard !task.isPaused else { return }
+            guard !task.isCompletedOneOff else { return }
             guard !task.isChecklistCompletionRoutine else { return }
             if task.isChecklistDriven {
                 _ = try RoutineLogHistory.markDueChecklistItemsPurchased(

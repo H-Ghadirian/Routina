@@ -16,7 +16,7 @@ struct AddRoutineTCAView: View {
         WithPerceptionTracking {
             NavigationStack {
                 addRoutineContent
-                .navigationTitle("Add Routine")
+                .navigationTitle("Add Task")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") {
@@ -66,13 +66,25 @@ struct AddRoutineTCAView: View {
         #else
         Form {
             Section(header: Text("Name")) {
-                TextField("Routine name", text: routineNameBinding)
+                TextField("Task name", text: routineNameBinding)
                     .focused($isRoutineNameFocused)
                 if let nameValidationMessage {
                     Text(nameValidationMessage)
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
+            }
+
+            Section(header: Text("Task Type")) {
+                Picker("Task Type", selection: taskTypeBinding) {
+                    Text("Routine").tag(RoutineTaskType.routine)
+                    Text("Todo").tag(RoutineTaskType.todo)
+                }
+                .pickerStyle(.segmented)
+
+                Text(taskTypeDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section(header: Text("Emoji")) {
@@ -120,25 +132,27 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section(header: Text("Schedule Type")) {
-                Picker("Schedule Type", selection: scheduleModeBinding) {
-                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
-                }
-                .pickerStyle(.segmented)
+            if store.taskType == .routine {
+                Section(header: Text("Schedule Type")) {
+                    Picker("Schedule Type", selection: scheduleModeBinding) {
+                        Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                        Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                        Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                    }
+                    .pickerStyle(.segmented)
 
-                Text(scheduleModeDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Text(scheduleModeDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
-            if store.scheduleMode == .fixedInterval {
+            if isStepBasedMode {
                 Section(header: Text("Steps")) {
                     stepComposer
                     editableStepsContent
 
-                    Text("Steps run in order. Leave this empty for a one-step routine.")
+                    Text(stepsSectionDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -166,7 +180,7 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
 
-            if store.scheduleMode != .derivedFromChecklist {
+            if showsRepeatControls {
                 Section(header: Text("Frequency")) {
                     Picker("Frequency", selection: frequencyBinding) {
                         ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
@@ -202,6 +216,13 @@ struct AddRoutineTCAView: View {
         Binding(
             get: { store.routineEmoji },
             set: { store.send(.routineEmojiChanged($0)) }
+        )
+    }
+
+    private var taskTypeBinding: Binding<RoutineTaskType> {
+        Binding(
+            get: { store.taskType },
+            set: { store.send(.taskTypeChanged($0)) }
         )
     }
 
@@ -281,6 +302,23 @@ struct AddRoutineTCAView: View {
         RoutineChecklistItem.normalizedTitle(store.checklistItemDraftTitle) == nil
     }
 
+    private var isStepBasedMode: Bool {
+        store.scheduleMode == .fixedInterval || store.scheduleMode == .oneOff
+    }
+
+    private var showsRepeatControls: Bool {
+        store.scheduleMode != .derivedFromChecklist && store.scheduleMode != .oneOff
+    }
+
+    private var taskTypeDescription: String {
+        switch store.taskType {
+        case .routine:
+            return "Routines repeat on a schedule and stay in your rotation."
+        case .todo:
+            return "Todos are one-off tasks. Once you finish one, it stays completed."
+        }
+    }
+
     private var scheduleModeDescription: String {
         switch store.scheduleMode {
         case .fixedInterval:
@@ -289,6 +327,8 @@ struct AddRoutineTCAView: View {
             return "Use one overall repeat interval and complete every checklist item to finish the routine."
         case .derivedFromChecklist:
             return "Use checklist item due dates to decide when the routine is due."
+        case .oneOff:
+            return "This task does not repeat."
         }
     }
 
@@ -298,7 +338,7 @@ struct AddRoutineTCAView: View {
             return "The routine is done when every checklist item is completed."
         case .derivedFromChecklist:
             return "Each item gets its own due date. The routine becomes due when the earliest item is due."
-        case .fixedInterval:
+        case .fixedInterval, .oneOff:
             return ""
         }
     }
@@ -306,9 +346,16 @@ struct AddRoutineTCAView: View {
     private var placeSelectionDescription: String {
         if let selectedPlaceID = store.selectedPlaceID,
            let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
-            return "Show this routine when you are at \(place.name)."
+            return "Show this task when you are at \(place.name)."
         }
-        return "Anywhere means the routine is always visible."
+        return "Anywhere means the task is always visible."
+    }
+
+    private var stepsSectionDescription: String {
+        if store.scheduleMode == .oneOff {
+            return "Steps run in order. Leave this empty for a single-step todo."
+        }
+        return "Steps run in order. Leave this empty for a one-step routine."
     }
 
     private var tagSectionHelpText: String {
@@ -567,7 +614,7 @@ struct AddRoutineTCAView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         macFormRow("Name") {
                             VStack(alignment: .leading, spacing: 6) {
-                                TextField("Routine name", text: routineNameBinding)
+                                TextField("Task name", text: routineNameBinding)
                                     .textFieldStyle(.roundedBorder)
                                     .focused($isRoutineNameFocused)
                                 if let nameValidationMessage {
@@ -629,20 +676,38 @@ struct AddRoutineTCAView: View {
                             }
                         }
 
-                        macFormRow("Type") {
+                        macFormRow("Task Type") {
                             VStack(alignment: .leading, spacing: 10) {
-                                Picker("Schedule Type", selection: scheduleModeBinding) {
-                                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                                Picker("Task Type", selection: taskTypeBinding) {
+                                    Text("Routine").tag(RoutineTaskType.routine)
+                                    Text("Todo").tag(RoutineTaskType.todo)
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: 320)
+                                .frame(width: 260)
 
-                                Text(scheduleModeDescription)
+                                Text(taskTypeDescription)
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        if store.taskType == .routine {
+                            macFormRow("Schedule") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Picker("Schedule Type", selection: scheduleModeBinding) {
+                                        Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                                        Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                                        Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.segmented)
+                                    .frame(width: 320)
+
+                                    Text(scheduleModeDescription)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
 
@@ -663,12 +728,12 @@ struct AddRoutineTCAView: View {
                             }
                         }
 
-                        if store.scheduleMode == .fixedInterval {
+                        if isStepBasedMode {
                             macFormRow("Steps") {
                                 VStack(alignment: .leading, spacing: 10) {
                                     stepComposer
                                     editableStepsContent
-                                    Text("Steps run in order. Leave this empty for a one-step routine.")
+                                    Text(stepsSectionDescription)
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                 }
@@ -687,7 +752,7 @@ struct AddRoutineTCAView: View {
                     }
                 }
 
-                if store.scheduleMode != .derivedFromChecklist {
+                if showsRepeatControls {
                     macSectionCard(title: "Schedule") {
                         VStack(alignment: .leading, spacing: 10) {
                             macFormRow("Repeat") {

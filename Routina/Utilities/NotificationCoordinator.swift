@@ -156,7 +156,11 @@ enum NotificationCoordinator {
             ) else {
                 return
             }
-            await NotificationClient.live.schedule(notificationPayload(for: advancedTask.task, referenceDate: now))
+            if advancedTask.task.isOneOffTask {
+                await NotificationClient.live.cancel(taskID.uuidString)
+            } else {
+                await NotificationClient.live.schedule(notificationPayload(for: advancedTask.task, referenceDate: now))
+            }
             NotificationCenter.default.postRoutineDidUpdate()
         } catch {
             context.rollback()

@@ -133,7 +133,7 @@ struct AddRoutineFeatureTests {
 
         await store.send(.routineNameChanged("  read  ")) {
             $0.routineName = "  read  "
-            $0.nameValidationMessage = "A routine with this name already exists."
+            $0.nameValidationMessage = "A task with this name already exists."
         }
     }
 
@@ -143,7 +143,7 @@ struct AddRoutineFeatureTests {
             initialState: AddRoutineFeature.State(
                 routineName: "Read",
                 existingRoutineNames: ["Read"],
-                nameValidationMessage: "A routine with this name already exists."
+                nameValidationMessage: "A task with this name already exists."
             )
         ) {
             AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
@@ -164,7 +164,7 @@ struct AddRoutineFeatureTests {
                 frequency: .day,
                 frequencyValue: 1,
                 existingRoutineNames: ["read"],
-                nameValidationMessage: "A routine with this name already exists."
+                nameValidationMessage: "A task with this name already exists."
             )
         ) {
             AddRoutineFeature(
@@ -179,6 +179,23 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
+    }
+
+    @Test
+    func taskTypeChanged_togglesBetweenRoutineAndTodoModes() async {
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(scheduleMode: .fixedIntervalChecklist)
+        ) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        await store.send(.taskTypeChanged(.todo)) {
+            $0.scheduleMode = .oneOff
+        }
+
+        await store.send(.taskTypeChanged(.routine)) {
+            $0.scheduleMode = .fixedInterval
+        }
     }
 
     @Test
@@ -204,6 +221,52 @@ struct AddRoutineFeatureTests {
 
         await store.send(.saveTapped)
         await store.receive(.delegate(.didSave("Read", 5, "📚", nil, [], [], .fixedInterval, [])))
+    }
+
+    @Test
+    func saveTapped_forTodoUsesOneOffModeAndKeepsSteps() async {
+        let capturedFrequencyInDays = LockIsolated<Int?>(nil)
+        let capturedScheduleModes = LockIsolated<[RoutineScheduleMode]>([])
+        let capturedStepTitles = LockIsolated<[String]>([])
+        let capturedChecklistTitles = LockIsolated<[String]>([])
+
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Buy milk",
+                routineEmoji: "🥛",
+                scheduleMode: .oneOff,
+                routineSteps: [RoutineStep(title: "Open the fridge")],
+                stepDraft: "Add it to the cart",
+                frequency: .month,
+                frequencyValue: 2,
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, frequencyInDays, _, _, _, steps, scheduleMode, checklistItems in
+                    capturedFrequencyInDays.withValue { $0 = frequencyInDays }
+                    capturedScheduleModes.withValue { $0 = [scheduleMode] }
+                    capturedStepTitles.withValue { $0 = steps.map(\.title) }
+                    capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.saveTapped) {
+                $0.stepDraft = ""
+            }
+        }
+
+        #expect(capturedFrequencyInDays.value == 1)
+        #expect(capturedScheduleModes.value == [.oneOff])
+        #expect(capturedStepTitles.value == ["Open the fridge", "Add it to the cart"])
+        #expect(capturedChecklistTitles.value.isEmpty)
+        #expect(store.state.routineSteps.map(\.title) == ["Open the fridge", "Add it to the cart"])
     }
 
     @Test
@@ -395,7 +458,7 @@ struct AddRoutineFeatureTests {
             $0.date.now = now
         }
 
-        await store.withExhaustivity(.off) {
+        _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
                 $0.checklistItemDraftTitle = ""
                 $0.checklistItemDraftInterval = 3
@@ -437,7 +500,7 @@ struct AddRoutineFeatureTests {
             $0.date.now = now
         }
 
-        await store.withExhaustivity(.off) {
+        _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
                 $0.checklistItemDraftTitle = ""
                 $0.checklistItemDraftInterval = 3

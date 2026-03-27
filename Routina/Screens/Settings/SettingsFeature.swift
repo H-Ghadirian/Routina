@@ -1078,7 +1078,7 @@ struct SettingsFeature {
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         for task in tasks {
-            guard !task.isPaused else { continue }
+            guard !task.isPaused, !task.isOneOffTask else { continue }
             await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
         }
     }

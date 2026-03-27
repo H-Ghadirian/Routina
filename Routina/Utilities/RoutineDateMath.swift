@@ -51,6 +51,9 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Int {
+        if task.isOneOffTask {
+            return task.isCompletedOneOff ? Int.max : 0
+        }
         let todayStart = calendar.startOfDay(for: referenceDate)
         let dueStart = calendar.startOfDay(for: dueDate(for: task, referenceDate: referenceDate, calendar: calendar))
         return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0

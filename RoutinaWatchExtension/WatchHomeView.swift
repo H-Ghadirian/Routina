@@ -101,6 +101,12 @@ struct WatchHomeView: View {
     }
 
     private func statusText(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {
+        if routine.isOneOffTask {
+            if routine.isInProgress {
+                return "Step \(routine.completedStepCount + 1) of \(routine.steps.count)"
+            }
+            return "To do"
+        }
         if routine.isChecklistDriven {
             let dueIn = routine.daysUntilDue(from: Date())
             if dueIn < 0 {
@@ -148,6 +154,9 @@ struct WatchHomeView: View {
     }
 
     private func statusColor(for routine: WatchRoutineSyncStore.WatchRoutine) -> Color {
+        if routine.isOneOffTask {
+            return routine.isInProgress ? .orange : .blue
+        }
         if routine.isChecklistDriven {
             let dueIn = routine.daysUntilDue(from: Date())
             if dueIn < 0 { return .red }

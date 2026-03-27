@@ -33,6 +33,8 @@ struct HomeFeature {
         var pausedAt: Date?
         var pinnedAt: Date?
         var daysUntilDue: Int
+        var isOneOffTask: Bool
+        var isCompletedOneOff: Bool
         var isDoneToday: Bool
         var isPaused: Bool
         var isPinned: Bool
@@ -211,6 +213,9 @@ struct HomeFeature {
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id && !$0.isPaused }) else {
                     return .none
                 }
+                guard !state.routineTasks[index].isCompletedOneOff else {
+                    return .none
+                }
                 if state.routineTasks[index].isChecklistCompletionRoutine {
                     return .none
                 }
@@ -282,13 +287,17 @@ struct HomeFeature {
                         ) else {
                             return
                         }
-                        await self.notificationClient.schedule(
-                            NotificationCoordinator.notificationPayload(
-                                for: taskState.task,
-                                referenceDate: completionDate,
-                                calendar: currentCalendar
+                        if taskState.task.isOneOffTask {
+                            await self.notificationClient.cancel(id.uuidString)
+                        } else {
+                            await self.notificationClient.schedule(
+                                NotificationCoordinator.notificationPayload(
+                                    for: taskState.task,
+                                    referenceDate: completionDate,
+                                    calendar: currentCalendar
+                                )
                             )
-                        )
+                        }
                         NotificationCenter.default.postRoutineDidUpdate()
                     } catch {
                         print("Failed to mark routine as done from home list: \(error)")
@@ -298,6 +307,7 @@ struct HomeFeature {
             case let .pauseTask(id):
                 let pauseDate = now
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard !state.routineTasks[index].isOneOffTask else { return .none }
                 guard !state.routineTasks[index].isPaused else { return .none }
 
                 if state.routineTasks[index].scheduleAnchor == nil {
@@ -329,6 +339,7 @@ struct HomeFeature {
             case let .resumeTask(id):
                 let resumeDate = now
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard !state.routineTasks[index].isOneOffTask else { return .none }
                 guard state.routineTasks[index].isPaused else { return .none }
 
                 state.routineTasks[index].scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(
@@ -429,7 +440,7 @@ struct HomeFeature {
                             scheduleMode: scheduleMode,
                             interval: Int16(freq),
                             lastDone: nil,
-                            scheduleAnchor: self.now
+                            scheduleAnchor: scheduleMode == .oneOff ? nil : self.now
                         )
                         context.insert(newRoutine)
                         try context.save()
@@ -446,6 +457,7 @@ struct HomeFeature {
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
                 NotificationCenter.default.postRoutineDidUpdate()
+                guard !task.isOneOffTask else { return .none }
                 let payload = makeNotificationPayload(for: task, referenceDate: now)
                 return .run { _ in
                     await self.notificationClient.schedule(payload)
@@ -530,6 +542,8 @@ struct HomeFeature {
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
         let daysUntilDue = task.isPaused
             ? 0
+            : task.isCompletedOneOff
+                ? Int.max
             : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
 
         return RoutineDisplay(
@@ -548,6 +562,8 @@ struct HomeFeature {
             pausedAt: task.pausedAt,
             pinnedAt: task.pinnedAt,
             daysUntilDue: daysUntilDue,
+            isOneOffTask: task.isOneOffTask,
+            isCompletedOneOff: task.isCompletedOneOff,
             isDoneToday: doneTodayFromLastDone,
             isPaused: task.isPaused,
             isPinned: task.isPinned,
@@ -674,7 +690,7 @@ struct HomeFeature {
                 doneStats: state.doneStats
             )
 
-            if task.isPaused {
+            if task.isPaused || task.isCompletedOneOff {
                 archived.append(display)
             } else if case .away = display.locationAvailability {
                 away.append(display)
@@ -690,10 +706,13 @@ struct HomeFeature {
 
     private func makeRoutineDetailState(for task: RoutineTask) -> RoutineDetailFeature.State {
         let detailTask = task.detachedCopy()
+        let defaultSelectedDate = detailTask.isCompletedOneOff
+            ? calendar.startOfDay(for: detailTask.lastDone ?? now)
+            : calendar.startOfDay(for: now)
         return RoutineDetailFeature.State(
             task: detailTask,
             logs: [],
-            selectedDate: calendar.startOfDay(for: now),
+            selectedDate: defaultSelectedDate,
             daysSinceLastRoutine: RoutineDateMath.elapsedDaysSinceLastDone(
                 from: detailTask.lastDone,
                 referenceDate: now

@@ -110,6 +110,7 @@ struct RoutineDetailFeature: Reducer {
         switch action {
         case .markAsDone:
             guard !state.task.isPaused else { return .none }
+            guard !state.task.isCompletedOneOff else { return .none }
             if state.task.isChecklistDriven {
                 guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
                     return .none
@@ -260,6 +261,7 @@ struct RoutineDetailFeature: Reducer {
             return handleUndoCompletion(taskID: state.task.id, completedDay: selectedDay)
 
         case .pauseTapped:
+            guard !state.task.isOneOffTask else { return .none }
             guard !state.task.isPaused else { return .none }
             let pauseDate = now
             if state.task.scheduleAnchor == nil {
@@ -271,6 +273,7 @@ struct RoutineDetailFeature: Reducer {
             return handlePauseRoutine(taskID: state.task.id, pausedAt: pauseDate)
 
         case .resumeTapped:
+            guard !state.task.isOneOffTask else { return .none }
             guard state.task.isPaused else { return .none }
             let resumeDate = now
             if let pausedAt = state.task.pausedAt, state.task.isChecklistDriven {
@@ -434,16 +437,23 @@ struct RoutineDetailFeature: Reducer {
                 return .none
             }
             state.isEditSheetPresented = false
+            let frequencyInterval = state.editScheduleMode == .oneOff
+                ? 1
+                : state.editFrequencyValue * state.editFrequency.daysMultiplier
             return handleEditSave(
                 taskID: state.task.id,
                 name: trimmedName,
                 emoji: state.editRoutineEmoji,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
-                steps: state.editScheduleMode == .fixedInterval ? state.editRoutineSteps : [],
-                checklistItems: state.editScheduleMode == .fixedInterval ? [] : state.editRoutineChecklistItems,
+                steps: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
+                    ? state.editRoutineSteps
+                    : [],
+                checklistItems: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
+                    ? []
+                    : state.editRoutineChecklistItems,
                 scheduleMode: state.editScheduleMode,
-                interval: Int16(state.editFrequencyValue * state.editFrequency.daysMultiplier)
+                interval: Int16(frequencyInterval)
             )
 
         case let .setDeleteConfirmation(isPresented):
@@ -641,13 +651,17 @@ struct RoutineDetailFeature: Reducer {
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
                 if advancedTask.result != .ignoredAlreadyCompletedToday {
-                    await notificationClient.schedule(
-                        NotificationCoordinator.notificationPayload(
-                            for: advancedTask.task,
-                            referenceDate: completedAt,
-                            calendar: calendar
+                    if advancedTask.task.isOneOffTask {
+                        await notificationClient.cancel(taskID.uuidString)
+                    } else {
+                        await notificationClient.schedule(
+                            NotificationCoordinator.notificationPayload(
+                                for: advancedTask.task,
+                                referenceDate: completedAt,
+                                calendar: calendar
+                            )
                         )
-                    )
+                    }
                 }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
@@ -670,13 +684,17 @@ struct RoutineDetailFeature: Reducer {
                 }
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
-                await notificationClient.schedule(
-                    NotificationCoordinator.notificationPayload(
-                        for: updatedTask,
-                        referenceDate: now,
-                        calendar: calendar
+                if updatedTask.isOneOffTask {
+                    await notificationClient.cancel(taskID.uuidString)
+                } else {
+                    await notificationClient.schedule(
+                        NotificationCoordinator.notificationPayload(
+                            for: updatedTask,
+                            referenceDate: now,
+                            calendar: calendar
+                        )
                     )
-                )
+                }
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error undoing routine completion: \(error)")
@@ -710,12 +728,14 @@ struct RoutineDetailFeature: Reducer {
                 task.scheduleMode = scheduleMode
                 task.replaceChecklistItems(checklistItems)
                 task.interval = interval
-                if task.scheduleAnchor == nil {
+                if scheduleMode == .oneOff {
+                    task.scheduleAnchor = task.lastDone
+                } else if task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: now)
                 }
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
-                if task.isPaused {
+                if task.isPaused || task.isOneOffTask {
                     await notificationClient.cancel(task.id.uuidString)
                 } else {
                     let payload = NotificationCoordinator.notificationPayload(

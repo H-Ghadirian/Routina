@@ -50,6 +50,10 @@ struct AddRoutineFeature: Reducer {
         var selectedPlaceID: UUID?
         var nameValidationMessage: String?
 
+        var taskType: RoutineTaskType {
+            scheduleMode.taskType
+        }
+
         var trimmedRoutineName: String {
             RoutineTask.trimmedName(routineName) ?? ""
         }
@@ -77,6 +81,7 @@ struct AddRoutineFeature: Reducer {
     enum Action: Equatable {
         case routineNameChanged(String)
         case routineEmojiChanged(String)
+        case taskTypeChanged(RoutineTaskType)
         case availableTagsChanged([String])
         case tagDraftChanged(String)
         case addTagTapped
@@ -123,6 +128,17 @@ struct AddRoutineFeature: Reducer {
 
         case let .routineEmojiChanged(emoji):
             state.routineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.routineEmoji)
+            return .none
+
+        case let .taskTypeChanged(taskType):
+            switch taskType {
+            case .routine:
+                if state.scheduleMode == .oneOff {
+                    state.scheduleMode = .fixedInterval
+                }
+            case .todo:
+                state.scheduleMode = .oneOff
+            }
             return .none
 
         case let .availableTagsChanged(tags):
@@ -250,16 +266,22 @@ struct AddRoutineFeature: Reducer {
             state.checklistItemDraftInterval = 3
             updateNameValidation(&state)
             guard !state.isSaveDisabled else { return .none }
-            let frequencyInDays = state.frequencyValue * state.frequency.daysMultiplier
+            let frequencyInDays = state.scheduleMode == .oneOff
+                ? 1
+                : state.frequencyValue * state.frequency.daysMultiplier
             return onSave(
                 state.trimmedRoutineName,
                 frequencyInDays,
                 state.routineEmoji,
                 state.selectedPlaceID,
                 state.routineTags,
-                state.scheduleMode == .fixedInterval ? RoutineStep.sanitized(state.routineSteps) : [],
+                (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)
+                    ? RoutineStep.sanitized(state.routineSteps)
+                    : [],
                 state.scheduleMode,
-                state.scheduleMode == .fixedInterval ? [] : RoutineChecklistItem.sanitized(state.routineChecklistItems)
+                (state.scheduleMode == .fixedInterval || state.scheduleMode == .oneOff)
+                    ? []
+                    : RoutineChecklistItem.sanitized(state.routineChecklistItems)
             )
 
         case .cancelTapped:
@@ -280,7 +302,7 @@ struct AddRoutineFeature: Reducer {
         }
 
         state.nameValidationMessage = hasDuplicate
-            ? "A routine with this name already exists."
+            ? "A task with this name already exists."
             : nil
     }
 

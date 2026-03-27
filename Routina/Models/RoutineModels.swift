@@ -24,10 +24,20 @@ struct RoutineStep: Codable, Equatable, Hashable, Identifiable, Sendable {
     }
 }
 
+enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
+    case routine = "Routine"
+    case todo = "Todo"
+}
+
 enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case fixedInterval
     case fixedIntervalChecklist
     case derivedFromChecklist
+    case oneOff
+
+    var taskType: RoutineTaskType {
+        self == .oneOff ? .todo : .routine
+    }
 }
 
 struct RoutineChecklistItem: Codable, Equatable, Hashable, Identifiable, Sendable {
@@ -213,8 +223,16 @@ final class RoutineTask {
         get { RoutineScheduleMode(rawValue: scheduleModeRawValue) ?? .fixedInterval }
         set {
             scheduleModeRawValue = newValue.rawValue
+            if newValue == .oneOff {
+                checklistItemsStorage = ""
+                completedChecklistItemIDsStorage = ""
+            }
             sanitizeChecklistProgress()
         }
+    }
+
+    var isOneOffTask: Bool {
+        scheduleMode == .oneOff
     }
 
     var hasSequentialSteps: Bool {
@@ -231,6 +249,10 @@ final class RoutineTask {
 
     var isChecklistCompletionRoutine: Bool {
         scheduleMode == .fixedIntervalChecklist && hasChecklistItems
+    }
+
+    var isCompletedOneOff: Bool {
+        isOneOffTask && lastDone != nil && !isInProgress
     }
 
     var completedSteps: Int {
@@ -320,17 +342,19 @@ final class RoutineTask {
         completedStepCount: Int16 = 0,
         sequenceStartedAt: Date? = nil
     ) {
+        let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
+        let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
         self.id = id
         self.name = name
         self.emoji = emoji
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
         self.stepsStorage = RoutineStepStorage.serialize(steps)
-        self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(checklistItems)
-        self.scheduleModeRawValue = (scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)).rawValue
-        self.interval = interval
+        self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(resolvedChecklistItems)
+        self.scheduleModeRawValue = resolvedScheduleMode.rawValue
+        self.interval = resolvedScheduleMode == .oneOff ? 1 : interval
         self.lastDone = lastDone
-        self.scheduleAnchor = scheduleAnchor ?? lastDone
+        self.scheduleAnchor = resolvedScheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
         self.pinnedAt = pinnedAt
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))

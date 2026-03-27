@@ -898,6 +898,65 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func markAsDone_forOneOffTaskCancelsNotification() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T10:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Pay rent",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🏠",
+            scheduleMode: .oneOff
+        )
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let canceledIDs = LockIsolated<[String]>([])
+
+        let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.cancel = { identifier in
+                canceledIDs.withValue { $0.append(identifier) }
+            }
+        }
+
+        await store.send(.markAsDone) {
+            $0.taskRefreshID = 1
+            $0.isDoneToday = true
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            return false
+        } assert: {
+            let verificationContext = ModelContext(context.container)
+            let descriptor = FetchDescriptor<RoutineLog>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+            $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
+            #expect($0.logs.count == 1)
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+            $0.isDoneToday = true
+        }
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedTask.scheduleMode == .oneOff)
+        #expect(persistedLogs.count == 1)
+        #expect(canceledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func markAsDone_forChecklistRoutine_updatesDueItemsAndPersistsSingleLog() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-20T10:00:00Z")

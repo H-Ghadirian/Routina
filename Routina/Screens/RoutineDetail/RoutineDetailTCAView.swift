@@ -69,7 +69,7 @@ struct RoutineDetailTCAView: View {
                         isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
                         emojiOptions: emojiOptions
                     )
-                    .navigationTitle("Edit Routine")
+                    .navigationTitle("Edit Task")
                     .routinaInlineTitleDisplayMode()
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -286,7 +286,7 @@ struct RoutineDetailTCAView: View {
 
     private func statusMetadataSection() -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            statusMetadataRow(label: "Frequency", value: frequencyText(for: store.task))
+            statusMetadataRow(label: store.task.isOneOffTask ? "Type" : "Frequency", value: frequencyText(for: store.task))
             statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
 
             if let linkedPlace = linkedPlaceSummary {
@@ -353,15 +353,17 @@ struct RoutineDetailTCAView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .disabled(isCompletionButtonDisabled)
 
-            Button(pauseArchivePresentation.actionTitle) {
-                store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
-            }
-            .buttonStyle(.bordered)
-            .tint(store.task.isPaused ? .teal : .orange)
+            if !store.task.isOneOffTask {
+                Button(pauseArchivePresentation.actionTitle) {
+                    store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+                }
+                .buttonStyle(.bordered)
+                .tint(store.task.isPaused ? .teal : .orange)
 #if os(macOS)
-            .controlSize(.regular)
+                .controlSize(.regular)
 #endif
-            .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             if isStepRoutineOffToday {
                 Text("Step-based routines can only be progressed for today.")
@@ -448,7 +450,13 @@ struct RoutineDetailTCAView: View {
 
     private var statusContextMessage: String {
         if store.task.isPaused {
-            return "This routine is archived until you resume it."
+            return "This task is archived until you resume it."
+        }
+        if store.task.isOneOffTask {
+            if store.task.isCompletedOneOff {
+                return "This todo is complete. Select its completion date to undo it if needed."
+            }
+            return "This todo does not repeat."
         }
         if Calendar.current.isDateInToday(selectedDate) {
             return "Today is selected. Use the calendar to review another day when needed."
@@ -576,6 +584,9 @@ struct RoutineDetailTCAView: View {
 
     private var isCompletionButtonDisabled: Bool {
         guard !canUndoSelectedDate else { return false }
+        if store.task.isCompletedOneOff {
+            return true
+        }
         if store.task.isChecklistCompletionRoutine {
             return true
         }
@@ -795,7 +806,8 @@ struct RoutineDetailTCAView: View {
     }
 
     private func dueDate(for task: RoutineTask) -> Date? {
-        RoutineDateMath.dueDate(for: task, referenceDate: Date())
+        guard !task.isOneOffTask else { return nil }
+        return RoutineDateMath.dueDate(for: task, referenceDate: Date())
     }
 
     private func isInDueToTodayRange(day: Date, dueDate: Date?) -> Bool {
@@ -819,7 +831,7 @@ struct RoutineDetailTCAView: View {
     }
 
     private func isOrangeUrgency(_ task: RoutineTask) -> Bool {
-        guard !task.isPaused, !task.isChecklistDriven else { return false }
+        guard !task.isPaused, !task.isChecklistDriven, !task.isOneOffTask else { return false }
         let anchor = task.scheduleAnchor ?? task.lastDone
         let daysSinceAnchor = RoutineDateMath.elapsedDaysSinceLastDone(from: anchor, referenceDate: Date())
         let progress = Double(daysSinceAnchor) / Double(task.interval)
@@ -840,6 +852,18 @@ struct RoutineDetailTCAView: View {
     ) -> String {
         if let pausedAt {
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
+        }
+        if task.isOneOffTask {
+            if task.isInProgress {
+                return "Step \(task.completedSteps + 1) of \(task.totalSteps) in progress"
+            }
+            if let lastDone = task.lastDone {
+                if isDoneToday {
+                    return "Completed today"
+                }
+                return "Completed on \(lastDone.formatted(date: .abbreviated, time: .omitted))"
+            }
+            return "To do"
         }
         if task.isChecklistCompletionRoutine {
             if task.isChecklistInProgress {
@@ -907,6 +931,11 @@ struct RoutineDetailTCAView: View {
         task: RoutineTask
     ) -> Color {
         if pausedAt != nil { return .teal }
+        if task.isOneOffTask {
+            if task.isInProgress { return .orange }
+            if task.isCompletedOneOff || isDoneToday { return .green }
+            return .primary
+        }
         if task.isChecklistCompletionRoutine {
             if task.isChecklistInProgress { return .orange }
             if isDoneToday { return .green }
@@ -1081,7 +1110,7 @@ struct RoutineDetailTCAView: View {
         let newInterval = frequencyValue * frequency.daysMultiplier
         let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
 
-        guard scheduleMode == .fixedInterval || !sanitizedCandidateChecklistItems.isEmpty else {
+        guard scheduleMode == .fixedInterval || scheduleMode == .oneOff || !sanitizedCandidateChecklistItems.isEmpty else {
             return false
         }
 
@@ -1096,6 +1125,9 @@ struct RoutineDetailTCAView: View {
     }
 
     private func frequencyText(for task: RoutineTask) -> String {
+        if task.isOneOffTask {
+            return "One-off todo"
+        }
         if task.isChecklistDriven {
             return "Checklist-driven"
         }
@@ -1141,6 +1173,9 @@ struct RoutineDetailTCAView: View {
     ) -> String {
         if !task.isChecklistDriven && isDone {
             return "Undo"
+        }
+        if task.isCompletedOneOff {
+            return "Select the completion date to undo this todo"
         }
         if isPaused {
             return "Resume the routine to mark dates done"

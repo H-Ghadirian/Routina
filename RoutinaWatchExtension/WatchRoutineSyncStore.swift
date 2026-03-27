@@ -13,6 +13,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let name: String
         let emoji: String
         let intervalDays: Int
+        let isOneOffTask: Bool
         let isChecklistDriven: Bool
         let isChecklistCompletionRoutine: Bool
         let steps: [String]
@@ -29,12 +30,19 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             !steps.isEmpty && completedStepCount > 0 && completedStepCount < steps.count
         }
 
+        var isCompletedOneOff: Bool {
+            isOneOffTask && lastDone != nil && !isInProgress
+        }
+
         var nextStepTitle: String? {
             guard !steps.isEmpty, completedStepCount < steps.count else { return nil }
             return steps[completedStepCount]
         }
 
         func daysUntilDue(from now: Date) -> Int {
+            if isOneOffTask {
+                return isCompletedOneOff ? Int.max : 0
+            }
             let calendar = Calendar.current
             let dueDate = dueDate ?? {
                 guard let lastDone else { return now }
@@ -51,6 +59,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         func canMarkDone(referenceDate: Date = Date()) -> Bool {
+            if isOneOffTask {
+                return !isCompletedOneOff
+            }
             if isChecklistDriven {
                 return dueChecklistItemCount > 0
             }
@@ -67,6 +78,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                     name: name,
                     emoji: emoji,
                     intervalDays: intervalDays,
+                    isOneOffTask: isOneOffTask,
                     isChecklistDriven: true,
                     isChecklistCompletionRoutine: false,
                     steps: steps,
@@ -91,6 +103,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                     name: name,
                     emoji: emoji,
                     intervalDays: intervalDays,
+                    isOneOffTask: isOneOffTask,
                     isChecklistDriven: false,
                     isChecklistCompletionRoutine: false,
                     steps: steps,
@@ -112,6 +125,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 name: name,
                 emoji: emoji,
                 intervalDays: intervalDays,
+                isOneOffTask: isOneOffTask,
                 isChecklistDriven: false,
                 isChecklistCompletionRoutine: false,
                 steps: steps,
@@ -131,6 +145,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 name: name,
                 emoji: emoji,
                 intervalDays: intervalDays,
+                isOneOffTask: isOneOffTask,
                 isChecklistDriven: false,
                 isChecklistCompletionRoutine: false,
                 steps: steps,
@@ -279,11 +294,15 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         pendingRoutineByID = pendingRoutineByID.filter { routineID, pendingRoutine in
-            guard let remoteRoutine = mapped.first(where: { $0.id == routineID }) else { return true }
+            guard let remoteRoutine = mapped.first(where: { $0.id == routineID }) else {
+                return !pendingRoutine.isCompletedOneOff
+            }
             return !remoteHasCaughtUp(remoteRoutine, pending: pendingRoutine)
         }
 
-        routines = merged.sorted {
+        routines = merged
+            .filter { !$0.isCompletedOneOff }
+            .sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
         savePendingRoutines()
@@ -310,6 +329,8 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             let safeName = name.isEmpty ? "Unnamed task" : name
             let emoji = ((raw["emoji"] as? String) ?? "").isEmpty ? "✨" : ((raw["emoji"] as? String) ?? "✨")
             let interval = max((raw["interval"] as? Int) ?? 1, 1)
+            let scheduleModeRawValue = (raw["scheduleMode"] as? String) ?? "fixedInterval"
+            let isOneOffTask = scheduleModeRawValue == "oneOff"
             let isChecklistDriven = (raw["isChecklistDriven"] as? Bool) ?? false
             let isChecklistCompletionRoutine = (raw["isChecklistCompletionRoutine"] as? Bool) ?? false
             let steps = ((raw["steps"] as? [String]) ?? []).compactMap { value in
@@ -334,6 +355,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 name: safeName,
                 emoji: emoji,
                 intervalDays: interval,
+                isOneOffTask: isOneOffTask,
                 isChecklistDriven: isChecklistDriven,
                 isChecklistCompletionRoutine: isChecklistCompletionRoutine,
                 steps: steps,
@@ -366,7 +388,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let merged = decoded.map { routine in
             pendingRoutineByID[routine.id] ?? routine
         }
-        routines = merged.sorted {
+        routines = merged
+            .filter { !$0.isCompletedOneOff }
+            .sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
     }
@@ -400,7 +424,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             pendingRoutineByID[id] = advancedRoutine
             return advancedRoutine
         }
-        routines = updated
+        routines = updated.filter { !$0.isCompletedOneOff }
     }
 
     private func remoteHasCaughtUp(_ remote: WatchRoutine, pending: WatchRoutine) -> Bool {
