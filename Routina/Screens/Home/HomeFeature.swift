@@ -31,9 +31,11 @@ struct HomeFeature {
         var lastDone: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var pinnedAt: Date?
         var daysUntilDue: Int
         var isDoneToday: Bool
         var isPaused: Bool
+        var isPinned: Bool
         var completedStepCount: Int
         var isInProgress: Bool
         var nextStepTitle: String?
@@ -86,6 +88,8 @@ struct HomeFeature {
         case markTaskDone(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
+        case pinTask(UUID)
+        case unpinTask(UUID)
 
         case addRoutineSheet(AddRoutineFeature.Action)
         case routineDetail(RoutineDetailFeature.Action)
@@ -355,6 +359,47 @@ struct HomeFeature {
                     }
                 }
 
+            case let .pinTask(id):
+                let pinDate = now
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard state.routineTasks[index].pinnedAt == nil else { return .none }
+
+                state.routineTasks[index].pinnedAt = pinDate
+                refreshDisplays(&state)
+                syncSelectedRoutineDetailState(&state)
+
+                return .run { @MainActor [id, pinDate] _ in
+                    do {
+                        let context = self.modelContext()
+                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                        task.pinnedAt = pinDate
+                        try context.save()
+                        NotificationCenter.default.postRoutineDidUpdate()
+                    } catch {
+                        print("Failed to pin routine from home list: \(error)")
+                    }
+                }
+
+            case let .unpinTask(id):
+                guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+                guard state.routineTasks[index].pinnedAt != nil else { return .none }
+
+                state.routineTasks[index].pinnedAt = nil
+                refreshDisplays(&state)
+                syncSelectedRoutineDetailState(&state)
+
+                return .run { @MainActor [id] _ in
+                    do {
+                        let context = self.modelContext()
+                        guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                        task.pinnedAt = nil
+                        try context.save()
+                        NotificationCenter.default.postRoutineDidUpdate()
+                    } catch {
+                        print("Failed to unpin routine from home list: \(error)")
+                    }
+                }
+
             case .addRoutineSheet(.delegate(.didCancel)):
                 state.isAddRoutineSheetPresented = false
                 state.addRoutineState = nil
@@ -501,9 +546,11 @@ struct HomeFeature {
             lastDone: task.lastDone,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
+            pinnedAt: task.pinnedAt,
             daysUntilDue: daysUntilDue,
             isDoneToday: doneTodayFromLastDone,
             isPaused: task.isPaused,
+            isPinned: task.isPinned,
             completedStepCount: task.completedSteps,
             isInProgress: task.isInProgress,
             nextStepTitle: task.nextStepTitle,

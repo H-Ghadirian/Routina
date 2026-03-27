@@ -1930,6 +1930,100 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func pinTask_marksRoutinePinnedAndPersists() async throws {
+        let context = makeInMemoryContext()
+        let pinDate = makeDate("2026-03-15T10:00:00Z")
+        let task = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚")
+        try context.save()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task]
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: pinDate)
+            $0.modelContext = { context }
+            $0.date.now = pinDate
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.pinTask(task.id)) {
+            $0.routineTasks[0].pinnedAt = pinDate
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    pinnedAt: pinDate,
+                    isDoneToday: false
+                )
+            ]
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pinnedAt == pinDate)
+    }
+
+    @Test
+    func unpinTask_clearsPinnedStateAndPersists() async throws {
+        let context = makeInMemoryContext()
+        let pinDate = makeDate("2026-03-15T10:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 3,
+            lastDone: nil,
+            emoji: "📚",
+            pinnedAt: pinDate
+        )
+        try context.save()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                routineDisplays: [
+                    makeDisplay(
+                        taskID: task.id,
+                        name: "Read",
+                        emoji: "📚",
+                        interval: 3,
+                        lastDone: nil,
+                        pinnedAt: pinDate,
+                        isDoneToday: false
+                    )
+                ]
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: makeDate("2026-03-16T10:00:00Z"))
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.unpinTask(task.id)) {
+            $0.routineTasks[0].pinnedAt = nil
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    isDoneToday: false
+                )
+            ]
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.pinnedAt == nil)
+    }
+
+    @Test
     func markTaskDone_updatesStateAndPersistsLog() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚")
@@ -2323,6 +2417,7 @@ private func makeDisplay(
     lastDone: Date?,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
+    pinnedAt: Date? = nil,
     daysUntilDue: Int? = nil,
     isDoneToday: Bool,
     isPaused: Bool = false,
@@ -2353,9 +2448,11 @@ private func makeDisplay(
         lastDone: lastDone,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
+        pinnedAt: pinnedAt,
         daysUntilDue: resolvedDaysUntilDue,
         isDoneToday: isDoneToday,
         isPaused: resolvedIsPaused,
+        isPinned: pinnedAt != nil,
         completedStepCount: completedStepCount,
         isInProgress: isInProgress,
         nextStepTitle: nextStepTitle,

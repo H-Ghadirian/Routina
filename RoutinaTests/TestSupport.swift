@@ -26,7 +26,8 @@ func makeTask(
     checklistItems: [RoutineChecklistItem] = [],
     scheduleMode: RoutineScheduleMode? = nil,
     scheduleAnchor: Date? = nil,
-    pausedAt: Date? = nil
+    pausedAt: Date? = nil,
+    pinnedAt: Date? = nil
 ) -> RoutineTask {
     let task = RoutineTask(
         name: name,
@@ -39,7 +40,8 @@ func makeTask(
         interval: interval,
         lastDone: lastDone,
         scheduleAnchor: scheduleAnchor,
-        pausedAt: pausedAt
+        pausedAt: pausedAt,
+        pinnedAt: pinnedAt
     )
     context.insert(task)
     do {

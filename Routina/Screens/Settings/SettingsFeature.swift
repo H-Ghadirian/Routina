@@ -865,6 +865,7 @@ struct SettingsFeature {
             var lastDone: Date?
             var scheduleAnchor: Date?
             var pausedAt: Date?
+            var pinnedAt: Date?
             var completedStepCount: Int?
             var sequenceStartedAt: Date?
         }
@@ -906,7 +907,7 @@ struct SettingsFeature {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = RoutineDataBackup(
-            schemaVersion: 5,
+            schemaVersion: 6,
             exportedAt: Date(),
             places: places.map {
                 .init(
@@ -932,6 +933,7 @@ struct SettingsFeature {
                     lastDone: $0.lastDone,
                     scheduleAnchor: $0.scheduleAnchor,
                     pausedAt: $0.pausedAt,
+                    pinnedAt: $0.pinnedAt,
                     completedStepCount: $0.completedSteps,
                     sequenceStartedAt: $0.sequenceStartedAt
                 )
@@ -960,7 +962,7 @@ struct SettingsFeature {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
 
-        guard (1...5).contains(backup.schemaVersion) else {
+        guard (1...6).contains(backup.schemaVersion) else {
             throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -1016,6 +1018,7 @@ struct SettingsFeature {
                     lastDone: task.lastDone,
                     scheduleAnchor: task.scheduleAnchor,
                     pausedAt: task.pausedAt,
+                    pinnedAt: task.pinnedAt,
                     completedStepCount: Int16(clamping: task.completedStepCount ?? 0),
                     sequenceStartedAt: task.sequenceStartedAt
                 )

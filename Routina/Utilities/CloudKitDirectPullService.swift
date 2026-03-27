@@ -191,6 +191,7 @@ enum CloudKitDirectPullService {
         var lastDone: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
+        var pinnedAt: Date?
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
     }
@@ -283,6 +284,10 @@ enum CloudKitDirectPullService {
             in: record,
             keys: ["pausedAt", "PAUSEDAT", "zpausedat", "ZPAUSEDAT", "cd_pausedat"]
         )
+        let pinnedAtValue = dateValue(
+            in: record,
+            keys: ["pinnedAt", "PINNEDAT", "zpinnedat", "ZPINNEDAT", "cd_pinnedat"]
+        )
         let completedStepCountValue = intValue(
             in: record,
             keys: ["completedStepCount", "COMPLETEDSTEPCOUNT", "zcompletedstepcount", "ZCOMPLETEDSTEPCOUNT", "cd_completedstepcount"]
@@ -304,6 +309,7 @@ enum CloudKitDirectPullService {
                 || lastDoneValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
+                || pinnedAtValue != nil
                 || completedStepCountValue != nil
                 || sequenceStartedAtValue != nil
         else {
@@ -339,6 +345,7 @@ enum CloudKitDirectPullService {
             lastDone: lastDoneValue,
             scheduleAnchor: scheduleAnchorValue,
             pausedAt: pausedAtValue,
+            pinnedAt: pinnedAtValue,
             completedStepCount: Int16(clamping: completedStepCountValue ?? 0),
             sequenceStartedAt: sequenceStartedAtValue
         )
@@ -424,6 +431,7 @@ enum CloudKitDirectPullService {
                 taskWithSameName.lastDone = payload.lastDone
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
+                taskWithSameName.pinnedAt = payload.pinnedAt
                 taskWithSameName.completedStepCount = payload.completedStepCount
                 taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
@@ -449,6 +457,7 @@ enum CloudKitDirectPullService {
             existing.lastDone = payload.lastDone
             existing.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? existing.scheduleAnchor
             existing.pausedAt = payload.pausedAt
+            existing.pinnedAt = payload.pinnedAt
             existing.completedStepCount = payload.completedStepCount
             existing.sequenceStartedAt = payload.sequenceStartedAt
             return existing.id
@@ -473,6 +482,7 @@ enum CloudKitDirectPullService {
                 taskWithSameName.lastDone = payload.lastDone
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
+                taskWithSameName.pinnedAt = payload.pinnedAt
                 taskWithSameName.completedStepCount = payload.completedStepCount
                 taskWithSameName.sequenceStartedAt = payload.sequenceStartedAt
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
@@ -493,6 +503,7 @@ enum CloudKitDirectPullService {
                     lastDone: payload.lastDone,
                     scheduleAnchor: payload.scheduleAnchor,
                     pausedAt: payload.pausedAt,
+                    pinnedAt: payload.pinnedAt,
                     completedStepCount: payload.completedStepCount,
                     sequenceStartedAt: payload.sequenceStartedAt
                 )

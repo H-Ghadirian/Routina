@@ -167,11 +167,16 @@ final class RoutineTask {
     var lastDone: Date?
     var scheduleAnchor: Date?
     var pausedAt: Date?
+    var pinnedAt: Date?
     var completedStepCount: Int16 = 0
     var sequenceStartedAt: Date?
 
     var isPaused: Bool {
         pausedAt != nil
+    }
+
+    var isPinned: Bool {
+        pinnedAt != nil
     }
 
     var tags: [String] {
@@ -311,6 +316,7 @@ final class RoutineTask {
         lastDone: Date? = nil,
         scheduleAnchor: Date? = nil,
         pausedAt: Date? = nil,
+        pinnedAt: Date? = nil,
         completedStepCount: Int16 = 0,
         sequenceStartedAt: Date? = nil
     ) {
@@ -326,6 +332,7 @@ final class RoutineTask {
         self.lastDone = lastDone
         self.scheduleAnchor = scheduleAnchor ?? lastDone
         self.pausedAt = pausedAt
+        self.pinnedAt = pinnedAt
         self.completedStepCount = Int16(max(Int(completedStepCount), 0))
         self.sequenceStartedAt = sequenceStartedAt
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
@@ -546,6 +553,7 @@ final class RoutineTask {
             lastDone: lastDone,
             scheduleAnchor: scheduleAnchor,
             pausedAt: pausedAt,
+            pinnedAt: pinnedAt,
             completedStepCount: completedStepCount,
             sequenceStartedAt: sequenceStartedAt
         )

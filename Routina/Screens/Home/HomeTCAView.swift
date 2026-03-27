@@ -293,22 +293,54 @@ struct HomeTCAView: View {
     }
 
     private func sortedTasks(_ routineDisplays: [HomeFeature.RoutineDisplay]) -> [HomeFeature.RoutineDisplay] {
-        routineDisplays.sorted { task1, task2 in
-            let overdueDays1 = overdueDays(for: task1)
-            let overdueDays2 = overdueDays(for: task2)
+        routineDisplays.sorted(by: regularTaskSort)
+    }
 
-            if overdueDays1 != overdueDays2 {
-                return overdueDays1 > overdueDays2
-            }
+    private func regularTaskSort(
+        _ task1: HomeFeature.RoutineDisplay,
+        _ task2: HomeFeature.RoutineDisplay
+    ) -> Bool {
+        let overdueDays1 = overdueDays(for: task1)
+        let overdueDays2 = overdueDays(for: task2)
 
-            let urgency1 = urgencyLevel(for: task1)
-            let urgency2 = urgencyLevel(for: task2)
-            if urgency1 != urgency2 {
-                return urgency1 > urgency2
-            }
-
-            return task1.name.localizedCaseInsensitiveCompare(task2.name) == .orderedAscending
+        if overdueDays1 != overdueDays2 {
+            return overdueDays1 > overdueDays2
         }
+
+        let urgency1 = urgencyLevel(for: task1)
+        let urgency2 = urgencyLevel(for: task2)
+        if urgency1 != urgency2 {
+            return urgency1 > urgency2
+        }
+
+        return task1.name.localizedCaseInsensitiveCompare(task2.name) == .orderedAscending
+    }
+
+    private func archivedTaskSort(
+        _ lhs: HomeFeature.RoutineDisplay,
+        _ rhs: HomeFeature.RoutineDisplay
+    ) -> Bool {
+        let lhsDate = lhs.pausedAt ?? .distantPast
+        let rhsDate = rhs.pausedAt ?? .distantPast
+        if lhsDate != rhsDate {
+            return lhsDate > rhsDate
+        }
+        return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+    }
+
+    private func pinnedTaskSort(
+        _ lhs: HomeFeature.RoutineDisplay,
+        _ rhs: HomeFeature.RoutineDisplay
+    ) -> Bool {
+        let lhsDate = lhs.pinnedAt ?? .distantPast
+        let rhsDate = rhs.pinnedAt ?? .distantPast
+        if lhsDate != rhsDate {
+            return lhsDate > rhsDate
+        }
+        if lhs.isPaused != rhs.isPaused {
+            return !lhs.isPaused && rhs.isPaused
+        }
+        return lhs.isPaused && rhs.isPaused ? archivedTaskSort(lhs, rhs) : regularTaskSort(lhs, rhs)
     }
 
     private func urgencyLevel(for task: HomeFeature.RoutineDisplay) -> Int {
@@ -326,7 +358,13 @@ struct HomeTCAView: View {
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
 #if os(macOS)
-        let sections = groupedRoutineSections(from: routineDisplays + awayRoutineDisplays)
+        let pinnedTasks = filteredPinnedTasks(
+            activeRoutineDisplays: routineDisplays,
+            awayRoutineDisplays: awayRoutineDisplays,
+            archivedRoutineDisplays: archivedRoutineDisplays
+        )
+        let sections = groupedRoutineSections(from: (routineDisplays + awayRoutineDisplays).filter { !$0.isPinned })
+        let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays, includePinned: false)
 #else
         let sections = groupedRoutineSections(from: routineDisplays)
         let awayTasks = filteredAwayTasks(awayRoutineDisplays)
@@ -352,13 +390,9 @@ struct HomeTCAView: View {
             )
         }()
 #endif
-#if os(macOS)
-        let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays)
-#endif
-
         return Group {
 #if os(macOS)
-            if sections.isEmpty && archivedTasks.isEmpty {
+            if pinnedTasks.isEmpty && sections.isEmpty && archivedTasks.isEmpty {
                 emptyStateView(
                     title: "No matching routines",
                     message: "Try a different place or switch back to all routines.",
@@ -367,40 +401,21 @@ struct HomeTCAView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(selection: selectedTaskBinding) {
+                    if !pinnedTasks.isEmpty {
+                        Section("Pinned") {
+                            ForEach(pinnedTasks) { task in
+                                routineNavigationRow(for: task)
+                            }
+                            .onDelete { offsets in
+                                deleteTasks(at: offsets, from: pinnedTasks)
+                            }
+                        }
+                    }
+
                     ForEach(sections) { section in
                         Section(section.title) {
                             ForEach(section.tasks) { task in
-                                NavigationLink(value: task.taskID) {
-                                    routineRow(for: task)
-                                }
-                                .contentShape(Rectangle())
-                                .contextMenu {
-                                    Button {
-                                        openTask(task.taskID)
-                                    } label: {
-                                        Label("Open", systemImage: "arrow.right.circle")
-                                    }
-
-                                    Button {
-                                        store.send(.markTaskDone(task.taskID))
-                                    } label: {
-                                        Label(markDoneLabel(for: task), systemImage: "checkmark.circle")
-                                    }
-                                    .disabled(isMarkDoneDisabled(task))
-
-                                    Button {
-                                        store.send(.pauseTask(task.taskID))
-                                    } label: {
-                                        Label("Pause", systemImage: "pause.circle")
-                                    }
-                                    .disabled(task.isPaused)
-
-                                    Button(role: .destructive) {
-                                        deleteTask(task.taskID)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
+                                routineNavigationRow(for: task)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: section.tasks)
@@ -411,29 +426,7 @@ struct HomeTCAView: View {
                     if !archivedTasks.isEmpty {
                         Section("Archived") {
                             ForEach(archivedTasks) { task in
-                                NavigationLink(value: task.taskID) {
-                                    routineRow(for: task)
-                                }
-                                .contentShape(Rectangle())
-                                .contextMenu {
-                                    Button {
-                                        openTask(task.taskID)
-                                    } label: {
-                                        Label("Open", systemImage: "arrow.right.circle")
-                                    }
-
-                                    Button {
-                                        store.send(.resumeTask(task.taskID))
-                                    } label: {
-                                        Label("Resume", systemImage: "play.circle")
-                                    }
-
-                                    Button(role: .destructive) {
-                                        deleteTask(task.taskID)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
+                                routineNavigationRow(for: task)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: archivedTasks)
@@ -467,37 +460,7 @@ struct HomeTCAView: View {
                         ForEach(sections) { section in
                             Section(section.title) {
                                 ForEach(section.tasks) { task in
-                                    NavigationLink(value: task.taskID) {
-                                        routineRow(for: task)
-                                    }
-                                    .contentShape(Rectangle())
-                                    .contextMenu {
-                                        Button {
-                                            openTask(task.taskID)
-                                        } label: {
-                                            Label("Open", systemImage: "arrow.right.circle")
-                                        }
-
-                                        Button {
-                                            store.send(.markTaskDone(task.taskID))
-                                        } label: {
-                                            Label(markDoneLabel(for: task), systemImage: "checkmark.circle")
-                                        }
-                                        .disabled(isMarkDoneDisabled(task))
-
-                                        Button {
-                                            store.send(.pauseTask(task.taskID))
-                                        } label: {
-                                            Label("Pause", systemImage: "pause.circle")
-                                        }
-                                        .disabled(task.isPaused)
-
-                                        Button(role: .destructive) {
-                                            deleteTask(task.taskID)
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
-                                    }
+                                    routineNavigationRow(for: task)
                                 }
                                 .onDelete { offsets in
                                     deleteTasks(at: offsets, from: section.tasks)
@@ -509,30 +472,7 @@ struct HomeTCAView: View {
                         if !store.hideUnavailableRoutines && !awayTasks.isEmpty {
                             Section("Not Here Right Now") {
                                 ForEach(awayTasks) { task in
-                                    NavigationLink(value: task.taskID) {
-                                        routineRow(for: task)
-                                    }
-                                    .contentShape(Rectangle())
-                                    .contextMenu {
-                                        Button {
-                                            openTask(task.taskID)
-                                        } label: {
-                                            Label("Open", systemImage: "arrow.right.circle")
-                                        }
-
-                                        Button {
-                                            store.send(.pauseTask(task.taskID))
-                                        } label: {
-                                            Label("Pause", systemImage: "pause.circle")
-                                        }
-                                        .disabled(task.isPaused)
-
-                                        Button(role: .destructive) {
-                                            deleteTask(task.taskID)
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
-                                    }
+                                    routineNavigationRow(for: task, includeMarkDone: false)
                                 }
                                 .onDelete { offsets in
                                     deleteTasks(at: offsets, from: awayTasks)
@@ -544,29 +484,7 @@ struct HomeTCAView: View {
                         if !archivedTasks.isEmpty {
                             Section("Archived") {
                                 ForEach(archivedTasks) { task in
-                                    NavigationLink(value: task.taskID) {
-                                        routineRow(for: task)
-                                    }
-                                    .contentShape(Rectangle())
-                                    .contextMenu {
-                                        Button {
-                                            openTask(task.taskID)
-                                        } label: {
-                                            Label("Open", systemImage: "arrow.right.circle")
-                                        }
-
-                                        Button {
-                                            store.send(.resumeTask(task.taskID))
-                                        } label: {
-                                            Label("Resume", systemImage: "play.circle")
-                                        }
-
-                                        Button(role: .destructive) {
-                                            deleteTask(task.taskID)
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
-                                    }
+                                    routineNavigationRow(for: task)
                                 }
                                 .onDelete { offsets in
                                     deleteTasks(at: offsets, from: archivedTasks)
@@ -1150,22 +1068,34 @@ struct HomeTCAView: View {
     }
 
     private func filteredArchivedTasks(
-        _ routineDisplays: [HomeFeature.RoutineDisplay]
+        _ routineDisplays: [HomeFeature.RoutineDisplay],
+        includePinned: Bool = true
     ) -> [HomeFeature.RoutineDisplay] {
         routineDisplays
             .filter { task in
-                matchesSearch(task)
+                (includePinned || !task.isPinned)
+                    && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
                     && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
             }
-            .sorted { lhs, rhs in
-                let lhsDate = lhs.pausedAt ?? .distantPast
-                let rhsDate = rhs.pausedAt ?? .distantPast
-                if lhsDate != rhsDate {
-                    return lhsDate > rhsDate
-                }
-                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-            }
+            .sorted(by: archivedTaskSort)
+    }
+
+    private func filteredPinnedTasks(
+        activeRoutineDisplays: [HomeFeature.RoutineDisplay],
+        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
+        archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
+    ) -> [HomeFeature.RoutineDisplay] {
+        let activePinned = sortedTasks(activeRoutineDisplays + awayRoutineDisplays).filter { task in
+            task.isPinned
+                && matchesSearch(task)
+                && matchesFilter(task)
+                && matchesManualPlaceFilter(task)
+                && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+        }
+        let archivedPinned = filteredArchivedTasks(archivedRoutineDisplays).filter(\.isPinned)
+
+        return (activePinned + archivedPinned).sorted(by: pinnedTaskSort)
     }
 
     private func matchesSearch(_ task: HomeFeature.RoutineDisplay) -> Bool {
@@ -1199,6 +1129,71 @@ struct HomeTCAView: View {
 
     private func overdueDays(for task: HomeFeature.RoutineDisplay) -> Int {
         max(-dueInDays(for: task), 0)
+    }
+
+    private func routineNavigationRow(
+        for task: HomeFeature.RoutineDisplay,
+        includeMarkDone: Bool = true
+    ) -> some View {
+        NavigationLink(value: task.taskID) {
+            routineRow(for: task)
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            routineContextMenu(for: task, includeMarkDone: includeMarkDone)
+        }
+    }
+
+    @ViewBuilder
+    private func routineContextMenu(
+        for task: HomeFeature.RoutineDisplay,
+        includeMarkDone: Bool
+    ) -> some View {
+        Button {
+            openTask(task.taskID)
+        } label: {
+            Label("Open", systemImage: "arrow.right.circle")
+        }
+
+        if task.isPaused {
+            Button {
+                store.send(.resumeTask(task.taskID))
+            } label: {
+                Label("Resume", systemImage: "play.circle")
+            }
+        } else {
+            if includeMarkDone {
+                Button {
+                    store.send(.markTaskDone(task.taskID))
+                } label: {
+                    Label(markDoneLabel(for: task), systemImage: "checkmark.circle")
+                }
+                .disabled(isMarkDoneDisabled(task))
+            }
+
+            Button {
+                store.send(.pauseTask(task.taskID))
+            } label: {
+                Label("Pause", systemImage: "pause.circle")
+            }
+        }
+
+#if os(macOS)
+        Button {
+            store.send(task.isPinned ? .unpinTask(task.taskID) : .pinTask(task.taskID))
+        } label: {
+            Label(
+                task.isPinned ? "Unpin from Top" : "Pin to Top",
+                systemImage: task.isPinned ? "pin.slash" : "pin"
+            )
+        }
+#endif
+
+        Button(role: .destructive) {
+            deleteTask(task.taskID)
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
     }
 
     private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String {
