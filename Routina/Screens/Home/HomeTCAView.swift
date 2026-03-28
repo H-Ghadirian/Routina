@@ -34,8 +34,7 @@ struct HomeTCAView: View {
     @State private var selectedTag: String?
     @State private var selectedManualPlaceFilterID: UUID?
 #if os(macOS)
-    @State private var isMacPlaceFilterDetailPresented = false
-    @State private var isMacFilterSectionExpanded = true
+    @State private var isMacFilterDetailPresented = false
 #endif
     @State private var isFilterSheetPresented = false
     @State private var isCompactHeaderHidden = false
@@ -127,7 +126,7 @@ struct HomeTCAView: View {
 #if os(macOS)
             .onChange(of: store.selectedTaskID) { _, taskID in
                 guard taskID != nil else { return }
-                isMacPlaceFilterDetailPresented = false
+                isMacFilterDetailPresented = false
             }
 #endif
     }
@@ -224,7 +223,6 @@ struct HomeTCAView: View {
     private var macSidebarHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             macSearchPanel
-            macFiltersPanel
             overallDoneCountSummary
         }
         .padding(.horizontal, 14)
@@ -233,84 +231,46 @@ struct HomeTCAView: View {
     }
 
     private var macSearchPanel: some View {
-        platformSearchField(searchText: searchTextBinding)
-    }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 10) {
+                platformSearchField(searchText: searchTextBinding)
 
-    private var macFiltersPanel: some View {
-        macSidebarSectionCard {
-            VStack(alignment: .leading, spacing: 14) {
                 Button {
-                    withAnimation(.snappy(duration: 0.22)) {
-                        isMacFilterSectionExpanded.toggle()
-                    }
+                    isMacFilterDetailPresented.toggle()
                 } label: {
-                    HStack(alignment: .center, spacing: 10) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Filters")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-
-                            Text(macFiltersSummaryText)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-
-                        Spacer(minLength: 0)
-
-                        if macHasCustomFiltersApplied {
-                            Text("Active")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(Color.accentColor)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.accentColor.opacity(0.14))
-                                )
-                        }
-
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                            .rotationEffect(.degrees(isMacFilterSectionExpanded ? 0 : -90))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(
+                        systemName: macHasCustomFiltersApplied
+                            ? "line.3.horizontal.decrease.circle.fill"
+                            : "line.3.horizontal.decrease.circle"
+                    )
+                    .font(.title3)
+                    .foregroundStyle(
+                        isMacFilterDetailPresented || macHasCustomFiltersApplied
+                            ? Color.accentColor
+                            : Color.secondary
+                    )
+                    .frame(width: 38, height: 38)
                     .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.secondary.opacity(0.07))
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(
+                                isMacFilterDetailPresented
+                                    ? Color.accentColor.opacity(0.14)
+                                    : Color.secondary.opacity(0.07)
+                            )
                     )
                 }
                 .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-
-                if isMacFilterSectionExpanded {
-                    VStack(alignment: .leading, spacing: 14) {
-                        filterPicker
-
-                        if !availableTags.isEmpty {
-                            tagFilterBar
-                        }
-
-                        if hasPlaceAwareContent {
-                            locationFilterPanel
-                        }
-
-                        if macHasCustomFiltersApplied {
-                            Button("Clear Filters") {
-                                clearAllMacFilters()
-                            }
-                            .font(.caption.weight(.semibold))
-                            .buttonStyle(.plain)
-                            .foregroundStyle(Color.accentColor)
-                        }
-                    }
-                }
+                .accessibilityLabel("Show filters")
             }
-            .clipped()
+
+            if macHasCustomFiltersApplied {
+                Button("Clear All Filters") {
+                    clearAllMacFilters()
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+            }
         }
     }
 
@@ -318,27 +278,66 @@ struct HomeTCAView: View {
         selectedFilter != .all || hasActiveOptionalFilters
     }
 
-    private var macFiltersSummaryText: String {
-        var parts = [selectedFilter.rawValue]
-
-        if let selectedTag {
-            parts.append("#\(selectedTag)")
-        }
-
-        if let selectedPlaceName {
-            parts.append(selectedPlaceName)
-        }
-
-        if store.hideUnavailableRoutines {
-            parts.append("Away hidden")
-        }
-
-        return parts.joined(separator: " • ")
-    }
-
     private func clearAllMacFilters() {
         selectedFilter = .all
         clearOptionalFilters()
+    }
+
+    private var macFiltersDetailView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Filters")
+                            .font(.largeTitle.weight(.semibold))
+
+                        Text("Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    if macHasCustomFiltersApplied {
+                        Button("Clear All Filters") {
+                            clearAllMacFilters()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                    }
+                }
+
+                macSidebarSectionCard {
+                    filterPicker
+                }
+
+                if !availableTags.isEmpty {
+                    macSidebarSectionCard {
+                        tagFilterBar
+                    }
+                }
+
+                if hasPlaceAwareContent {
+                    macSidebarSectionCard {
+                        MacPlaceFilterPanel(
+                            options: macPlaceFilterOptions,
+                            selectedPlaceID: manualPlaceFilterBinding,
+                            hideUnavailableRoutines: hideUnavailableRoutinesBinding,
+                            showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
+                            currentLocation: store.locationSnapshot.coordinate,
+                            manualPlaceFilterDescription: manualPlaceFilterDescription,
+                            locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
+                            onManagePlaces: { openSettings() }
+                        )
+                    }
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: 860, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private func macSidebarSectionCard<Content: View>(
@@ -370,17 +369,8 @@ struct HomeTCAView: View {
     @ViewBuilder
     private var detailContent: some View {
 #if os(macOS)
-        if isMacPlaceFilterDetailPresented {
-            MacPlaceFilterDetailView(
-                options: macPlaceFilterOptions,
-                selectedPlaceID: manualPlaceFilterBinding,
-                hideUnavailableRoutines: hideUnavailableRoutinesBinding,
-                showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
-                currentLocation: store.locationSnapshot.coordinate,
-                manualPlaceFilterDescription: manualPlaceFilterDescription,
-                locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
-                onManagePlaces: { openSettings() }
-            )
+        if isMacFilterDetailPresented {
+            macFiltersDetailView
         } else if let detailStore = self.store.scope(
             state: \.routineDetailState,
             action: \.routineDetail
@@ -388,9 +378,9 @@ struct HomeTCAView: View {
             RoutineDetailTCAView(store: detailStore)
         } else {
             ContentUnavailableView(
-                "Select a routine or place filter",
+                "Select a routine or open filters",
                 systemImage: "sidebar.right",
-                description: Text("Choose a routine from the sidebar, or open the place filter to browse routines by location.")
+                description: Text("Choose a routine from the sidebar, or open filters beside search to refine the routine list.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -854,7 +844,7 @@ struct HomeTCAView: View {
         if hasPlaceAwareContent {
             Group {
 #if os(macOS)
-                macPlaceFilterSummaryRow
+                EmptyView()
 #else
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
@@ -947,69 +937,6 @@ struct HomeTCAView: View {
                 status: status
             )
         }
-    }
-
-    private var macPlaceFilterSummaryRow: some View {
-        Button {
-            store.send(.setSelectedTask(nil))
-            isMacPlaceFilterDetailPresented = true
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "mappin.and.ellipse")
-                    .font(.headline)
-                    .foregroundStyle(isMacPlaceFilterDetailPresented ? Color.accentColor : Color.secondary)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(
-                                isMacPlaceFilterDetailPresented
-                                    ? Color.accentColor.opacity(0.16)
-                                    : Color.secondary.opacity(0.10)
-                            )
-                    )
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(selectedPlaceName ?? "Choose a place")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-
-                    Text(macPlaceFilterSummaryText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 11)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(
-                        isMacPlaceFilterDetailPresented
-                            ? Color.accentColor.opacity(0.14)
-                            : Color.secondary.opacity(0.07)
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var macPlaceFilterSummaryText: String {
-        if let selectedPlaceName {
-            return "Showing routines linked to \(selectedPlaceName)"
-        }
-        if hasSavedPlaces {
-            let placeCount = sortedRoutinePlaces.count
-            return placeCount == 1 ? "1 saved place" : "\(placeCount) saved places"
-        }
-        return "Open the filter screen to choose a saved place"
     }
 #endif
 
@@ -1319,7 +1246,7 @@ struct HomeTCAView: View {
 
     private func openTask(_ taskID: UUID) {
 #if os(macOS)
-        isMacPlaceFilterDetailPresented = false
+        isMacFilterDetailPresented = false
 #endif
         store.send(.setSelectedTask(taskID))
     }
