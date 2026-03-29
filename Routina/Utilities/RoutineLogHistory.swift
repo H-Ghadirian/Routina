@@ -294,14 +294,10 @@ enum RoutineLogHistory {
             task.lastDone = remainingLatestCompletion
         }
 
-        if task.isPaused {
-            if let remainingLatestCompletion {
-                task.scheduleAnchor = remainingLatestCompletion
-            } else if didMatchLastDone {
-                task.scheduleAnchor = task.pausedAt
-            }
-        } else if didMatchLastDone {
-            task.scheduleAnchor = remainingLatestCompletion
+        if didMatchLastDone {
+            task.refreshScheduleAnchorAfterRemovingLatestCompletion(
+                remainingLatestCompletion: remainingLatestCompletion
+            )
         }
 
         task.resetStepProgress()

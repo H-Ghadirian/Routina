@@ -214,9 +214,15 @@ struct RoutineDetailFeatureTests {
         let store = TestStore(initialState: RoutineDetailFeature.State(task: task)) {
             RoutineDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+
+        var calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let expectedWeekday = calendar.component(.weekday, from: now)
+        let expectedDayOfMonth = calendar.component(.day, from: now)
 
         await store.send(.setEditSheet(true)) {
             $0.isEditSheetPresented = true
@@ -226,6 +232,8 @@ struct RoutineDetailFeatureTests {
             $0.editSelectedPlaceID = place.id
             $0.editFrequency = .week
             $0.editFrequencyValue = 2
+            $0.editRecurrenceWeekday = expectedWeekday
+            $0.editRecurrenceDayOfMonth = expectedDayOfMonth
         }
         await store.receive(.availablePlacesLoaded([
             RoutinePlaceSummary(id: place.id, name: "Gym", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)

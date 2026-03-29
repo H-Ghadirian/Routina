@@ -89,13 +89,19 @@ enum NotificationCoordinator {
         calendar: Calendar = .current
     ) -> NotificationPayload {
         let dueDate = RoutineDateMath.dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        let resolvedTriggerDate = triggerDate ?? {
+            if task.recurrenceRule.usesExplicitTimeOfDay {
+                return dueDate
+            }
+            return NotificationPreferences.reminderDate(on: dueDate, calendar: calendar)
+        }()
         return NotificationPayload(
             identifier: task.id.uuidString,
             name: task.name,
             emoji: task.emoji,
             interval: max(Int(task.interval), 1),
             lastDone: task.lastDone,
-            triggerDate: triggerDate ?? NotificationPreferences.reminderDate(on: dueDate, calendar: calendar),
+            triggerDate: resolvedTriggerDate,
             isPaused: task.isPaused,
             isChecklistDriven: task.isChecklistDriven,
             isChecklistCompletionRoutine: task.isChecklistCompletionRoutine,

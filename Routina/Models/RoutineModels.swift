@@ -29,6 +29,235 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     case todo = "Todo"
 }
 
+struct RoutineTimeOfDay: Codable, Equatable, Hashable, Sendable {
+    var hour: Int
+    var minute: Int
+
+    init(hour: Int, minute: Int) {
+        self.hour = min(max(hour, 0), 23)
+        self.minute = min(max(minute, 0), 59)
+    }
+
+    static let defaultValue = RoutineTimeOfDay(
+        hour: NotificationPreferences.defaultReminderHour,
+        minute: NotificationPreferences.defaultReminderMinute
+    )
+
+    static func from(
+        _ date: Date,
+        calendar: Calendar = .current
+    ) -> RoutineTimeOfDay {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        return RoutineTimeOfDay(
+            hour: components.hour ?? defaultValue.hour,
+            minute: components.minute ?? defaultValue.minute
+        )
+    }
+
+    func date(
+        on date: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        let dayComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        let components = DateComponents(
+            year: dayComponents.year,
+            month: dayComponents.month,
+            day: dayComponents.day,
+            hour: hour,
+            minute: minute
+        )
+        return calendar.date(from: components) ?? date
+    }
+
+    func formatted(calendar: Calendar = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = .current
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date(on: Date(), calendar: calendar))
+    }
+}
+
+struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
+    enum Kind: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+        case intervalDays
+        case dailyTime
+        case weekly
+        case monthlyDay
+
+        var pickerTitle: String {
+            switch self {
+            case .intervalDays:
+                return "Interval"
+            case .dailyTime:
+                return "Time"
+            case .weekly:
+                return "Week"
+            case .monthlyDay:
+                return "Month"
+            }
+        }
+    }
+
+    var kind: Kind
+    var interval: Int
+    var timeOfDay: RoutineTimeOfDay?
+    var weekday: Int?
+    var dayOfMonth: Int?
+
+    init(
+        kind: Kind,
+        interval: Int = 1,
+        timeOfDay: RoutineTimeOfDay? = nil,
+        weekday: Int? = nil,
+        dayOfMonth: Int? = nil
+    ) {
+        self.kind = kind
+
+        switch kind {
+        case .intervalDays:
+            self.interval = max(interval, 1)
+            self.timeOfDay = nil
+            self.weekday = nil
+            self.dayOfMonth = nil
+
+        case .dailyTime:
+            self.interval = 1
+            self.timeOfDay = timeOfDay ?? .defaultValue
+            self.weekday = nil
+            self.dayOfMonth = nil
+
+        case .weekly:
+            self.interval = 1
+            self.timeOfDay = timeOfDay
+            self.weekday = Self.clampedWeekday(weekday)
+            self.dayOfMonth = nil
+
+        case .monthlyDay:
+            self.interval = 1
+            self.timeOfDay = timeOfDay
+            self.weekday = nil
+            self.dayOfMonth = Self.clampedDayOfMonth(dayOfMonth)
+        }
+    }
+
+    static func interval(days: Int) -> RoutineRecurrenceRule {
+        RoutineRecurrenceRule(kind: .intervalDays, interval: days)
+    }
+
+    static func daily(at timeOfDay: RoutineTimeOfDay) -> RoutineRecurrenceRule {
+        RoutineRecurrenceRule(kind: .dailyTime, timeOfDay: timeOfDay)
+    }
+
+    static func weekly(
+        on weekday: Int,
+        at timeOfDay: RoutineTimeOfDay? = nil
+    ) -> RoutineRecurrenceRule {
+        RoutineRecurrenceRule(kind: .weekly, timeOfDay: timeOfDay, weekday: weekday)
+    }
+
+    static func monthly(
+        on dayOfMonth: Int,
+        at timeOfDay: RoutineTimeOfDay? = nil
+    ) -> RoutineRecurrenceRule {
+        RoutineRecurrenceRule(kind: .monthlyDay, timeOfDay: timeOfDay, dayOfMonth: dayOfMonth)
+    }
+
+    var isFixedCalendar: Bool {
+        kind != .intervalDays
+    }
+
+    var approximateIntervalDays: Int {
+        switch kind {
+        case .intervalDays:
+            return max(interval, 1)
+        case .dailyTime:
+            return 1
+        case .weekly:
+            return 7
+        case .monthlyDay:
+            return 30
+        }
+    }
+
+    var usesExplicitTimeOfDay: Bool {
+        timeOfDay != nil
+    }
+
+    func displayText(calendar: Calendar = .current) -> String {
+        switch kind {
+        case .intervalDays:
+            let resolvedInterval = max(interval, 1)
+            if resolvedInterval % 30 == 0 {
+                let months = resolvedInterval / 30
+                return months == 1 ? "Every month" : "Every \(months) months"
+            }
+            if resolvedInterval % 7 == 0 {
+                let weeks = resolvedInterval / 7
+                return weeks == 1 ? "Every week" : "Every \(weeks) weeks"
+            }
+            return resolvedInterval == 1 ? "Every day" : "Every \(resolvedInterval) days"
+
+        case .dailyTime:
+            let timeText = (timeOfDay ?? .defaultValue).formatted(calendar: calendar)
+            return "Every day at \(timeText)"
+
+        case .weekly:
+            let weekdayName = Self.weekdayName(for: weekday ?? calendar.firstWeekday, calendar: calendar)
+            if let timeOfDay {
+                return "Every \(weekdayName) at \(timeOfDay.formatted(calendar: calendar))"
+            }
+            return "Every \(weekdayName)"
+
+        case .monthlyDay:
+            let ordinalDay = Self.ordinalString(for: dayOfMonth ?? 1)
+            if let timeOfDay {
+                return "Every \(ordinalDay) at \(timeOfDay.formatted(calendar: calendar))"
+            }
+            return "Every \(ordinalDay) of the month"
+        }
+    }
+
+    private static func clampedWeekday(_ weekday: Int?) -> Int {
+        min(max(weekday ?? Calendar.current.firstWeekday, 1), 7)
+    }
+
+    private static func clampedDayOfMonth(_ dayOfMonth: Int?) -> Int {
+        min(max(dayOfMonth ?? Calendar.current.component(.day, from: Date()), 1), 31)
+    }
+
+    private static func weekdayName(
+        for weekday: Int,
+        calendar: Calendar
+    ) -> String {
+        let symbols = calendar.weekdaySymbols
+        let safeIndex = min(max(weekday - 1, 0), max(symbols.count - 1, 0))
+        return symbols[safeIndex]
+    }
+
+    private static func ordinalString(for day: Int) -> String {
+        let resolvedDay = clampedDayOfMonth(day)
+        let suffix: String
+        switch resolvedDay % 100 {
+        case 11, 12, 13:
+            suffix = "th"
+        default:
+            switch resolvedDay % 10 {
+            case 1:
+                suffix = "st"
+            case 2:
+                suffix = "nd"
+            case 3:
+                suffix = "rd"
+            default:
+                suffix = "th"
+            }
+        }
+        return "\(resolvedDay)\(suffix)"
+    }
+}
+
 enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case fixedInterval
     case fixedIntervalChecklist
@@ -162,6 +391,26 @@ private enum RoutineChecklistProgressStorage {
     }
 }
 
+enum RoutineRecurrenceRuleStorage {
+    static func serialize(_ recurrenceRule: RoutineRecurrenceRule) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(recurrenceRule),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> RoutineRecurrenceRule? {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(RoutineRecurrenceRule.self, from: data)
+    }
+}
+
 @Model
 final class RoutineTask {
     var id: UUID = UUID()
@@ -173,6 +422,7 @@ final class RoutineTask {
     var checklistItemsStorage: String = ""
     var completedChecklistItemIDsStorage: String = ""
     var scheduleModeRawValue: String = RoutineScheduleMode.fixedInterval.rawValue
+    var recurrenceRuleStorage: String = ""
     var interval: Int16 = 1
     var lastDone: Date?
     var scheduleAnchor: Date?
@@ -231,6 +481,17 @@ final class RoutineTask {
         }
     }
 
+    var recurrenceRule: RoutineRecurrenceRule {
+        get {
+            RoutineRecurrenceRuleStorage.deserialize(recurrenceRuleStorage)
+                ?? .interval(days: max(Int(interval), 1))
+        }
+        set {
+            recurrenceRuleStorage = RoutineRecurrenceRuleStorage.serialize(newValue)
+            interval = Int16(clamping: scheduleMode == .oneOff ? 1 : newValue.approximateIntervalDays)
+        }
+    }
+
     var isOneOffTask: Bool {
         scheduleMode == .oneOff
     }
@@ -249,6 +510,10 @@ final class RoutineTask {
 
     var isChecklistCompletionRoutine: Bool {
         scheduleMode == .fixedIntervalChecklist && hasChecklistItems
+    }
+
+    var usesRollingScheduleAnchor: Bool {
+        recurrenceRule.kind == .intervalDays || isChecklistDriven
     }
 
     var isCompletedOneOff: Bool {
@@ -335,6 +600,7 @@ final class RoutineTask {
         checklistItems: [RoutineChecklistItem] = [],
         scheduleMode: RoutineScheduleMode? = nil,
         interval: Int16 = 1,
+        recurrenceRule: RoutineRecurrenceRule? = nil,
         lastDone: Date? = nil,
         scheduleAnchor: Date? = nil,
         pausedAt: Date? = nil,
@@ -344,6 +610,9 @@ final class RoutineTask {
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
+        let resolvedRecurrenceRule = resolvedScheduleMode == .oneOff
+            ? RoutineRecurrenceRule.interval(days: 1)
+            : recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1))
         self.id = id
         self.name = name
         self.emoji = emoji
@@ -352,7 +621,8 @@ final class RoutineTask {
         self.stepsStorage = RoutineStepStorage.serialize(steps)
         self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(resolvedChecklistItems)
         self.scheduleModeRawValue = resolvedScheduleMode.rawValue
-        self.interval = resolvedScheduleMode == .oneOff ? 1 : interval
+        self.recurrenceRuleStorage = RoutineRecurrenceRuleStorage.serialize(resolvedRecurrenceRule)
+        self.interval = Int16(clamping: resolvedScheduleMode == .oneOff ? 1 : resolvedRecurrenceRule.approximateIntervalDays)
         self.lastDone = lastDone
         self.scheduleAnchor = resolvedScheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
@@ -433,10 +703,7 @@ final class RoutineTask {
 
         guard updatedCount > 0 else { return 0 }
         checklistItems = updatedItems
-        if shouldUpdateLastDone(with: purchasedAt) {
-            lastDone = purchasedAt
-            scheduleAnchor = purchasedAt
-        }
+        recordCompletion(at: purchasedAt)
         return updatedCount
     }
 
@@ -475,10 +742,7 @@ final class RoutineTask {
             return .advancedChecklist(completedItems: completedCount, totalItems: totalCount)
         }
 
-        if shouldUpdateLastDone(with: completedAt) {
-            lastDone = completedAt
-            scheduleAnchor = completedAt
-        }
+        recordCompletion(at: completedAt)
         resetChecklistProgress()
         return .completedRoutine
     }
@@ -501,10 +765,7 @@ final class RoutineTask {
             if let lastDone, calendar.isDate(lastDone, inSameDayAs: completedAt) {
                 return .ignoredAlreadyCompletedToday
             }
-            if shouldUpdateLastDone(with: completedAt) {
-                lastDone = completedAt
-                scheduleAnchor = completedAt
-            }
+            recordCompletion(at: completedAt)
             return .completedRoutine
         }
 
@@ -524,17 +785,45 @@ final class RoutineTask {
             return .advancedStep(completedSteps: nextCompletedStepCount, totalSteps: totalSteps)
         }
 
-        if shouldUpdateLastDone(with: completedAt) {
-            lastDone = completedAt
-            scheduleAnchor = completedAt
-        }
+        recordCompletion(at: completedAt)
         resetStepProgress()
         return .completedRoutine
+    }
+
+    func refreshScheduleAnchorAfterRemovingLatestCompletion(
+        remainingLatestCompletion: Date?
+    ) {
+        if usesRollingScheduleAnchor {
+            if isPaused {
+                if let remainingLatestCompletion {
+                    scheduleAnchor = remainingLatestCompletion
+                } else {
+                    scheduleAnchor = pausedAt
+                }
+            } else {
+                scheduleAnchor = remainingLatestCompletion
+            }
+            return
+        }
+
+        if isPaused {
+            scheduleAnchor = pausedAt ?? scheduleAnchor
+        } else if scheduleAnchor == nil {
+            scheduleAnchor = remainingLatestCompletion
+        }
     }
 
     private func shouldUpdateLastDone(with candidate: Date) -> Bool {
         guard let lastDone else { return true }
         return candidate > lastDone
+    }
+
+    private func recordCompletion(at completedAt: Date) {
+        guard shouldUpdateLastDone(with: completedAt) else { return }
+        lastDone = completedAt
+        if usesRollingScheduleAnchor {
+            scheduleAnchor = completedAt
+        }
     }
 
     private func sanitizeChecklistProgress() {
@@ -574,6 +863,7 @@ final class RoutineTask {
             checklistItems: checklistItems,
             scheduleMode: scheduleMode,
             interval: interval,
+            recurrenceRule: recurrenceRule,
             lastDone: lastDone,
             scheduleAnchor: scheduleAnchor,
             pausedAt: pausedAt,

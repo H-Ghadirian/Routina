@@ -2260,7 +2260,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, "🔥", nil, ["Evening"], [], .fixedInterval, []))))
+        await store.send(.addRoutineSheet(.delegate(.didSave("  read  ", 7, .interval(days: 7), "🔥", nil, ["Evening"], [], .fixedInterval, []))))
         await store.receive(.routineSaveFailed)
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -2636,8 +2636,10 @@ private func makeDisplay(
     tags: [String] = [],
     steps: [String] = [],
     interval: Int,
+    recurrenceRule: RoutineRecurrenceRule? = nil,
     scheduleMode: RoutineScheduleMode = .fixedInterval,
     lastDone: Date?,
+    dueDate: Date? = nil,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
     pinnedAt: Date? = nil,
@@ -2661,6 +2663,7 @@ private func makeDisplay(
     let resolvedIsOneOffTask = isOneOffTask || scheduleMode == .oneOff
     let resolvedIsCompletedOneOff = isCompletedOneOff || (resolvedIsOneOffTask && lastDone != nil && !isInProgress)
     let resolvedDaysUntilDue = daysUntilDue ?? (resolvedIsPaused ? 0 : (resolvedIsCompletedOneOff ? Int.max : interval))
+    let resolvedRecurrenceRule = recurrenceRule ?? .interval(days: interval)
     return HomeFeature.RoutineDisplay(
         taskID: taskID,
         name: name,
@@ -2671,8 +2674,10 @@ private func makeDisplay(
         tags: tags,
         steps: steps,
         interval: interval,
+        recurrenceRule: resolvedRecurrenceRule,
         scheduleMode: scheduleMode,
         lastDone: lastDone,
+        dueDate: dueDate,
         scheduleAnchor: resolvedScheduleAnchor,
         pausedAt: pausedAt,
         pinnedAt: pinnedAt,

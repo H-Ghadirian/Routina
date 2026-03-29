@@ -200,6 +200,7 @@ enum CloudKitDirectPullService {
         var checklistItems: [RoutineChecklistItem]?
         var scheduleMode: RoutineScheduleMode?
         var interval: Int16
+        var recurrenceRule: RoutineRecurrenceRule?
         var lastDone: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
@@ -287,6 +288,17 @@ enum CloudKitDirectPullService {
                 "cd_schedulemoderawvalue"
             ]
         )
+        let recurrenceRuleStorageValue = stringValue(
+            in: record,
+            keys: [
+                "recurrenceRuleStorage",
+                "recurrencerulestorage",
+                "RECURRENCERULESTORAGE",
+                "zrecurrencerulestorage",
+                "ZRECURRENCERULESTORAGE",
+                "cd_recurrencerulestorage"
+            ]
+        )
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
         let scheduleAnchorValue = dateValue(
             in: record,
@@ -318,6 +330,7 @@ enum CloudKitDirectPullService {
                 || stepsStorageValue != nil
                 || checklistItemsStorageValue != nil
                 || scheduleModeValue != nil
+                || recurrenceRuleStorageValue != nil
                 || lastDoneValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
@@ -354,6 +367,7 @@ enum CloudKitDirectPullService {
             checklistItems: checklistItemsValue,
             scheduleMode: scheduleModeValue.flatMap(RoutineScheduleMode.init(rawValue:)),
             interval: Int16(clamping: intervalValue ?? 1),
+            recurrenceRule: recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize),
             lastDone: lastDoneValue,
             scheduleAnchor: scheduleAnchorValue,
             pausedAt: pausedAtValue,
@@ -452,7 +466,11 @@ enum CloudKitDirectPullService {
                 if let scheduleMode = payload.scheduleMode {
                     taskWithSameName.scheduleMode = scheduleMode
                 }
-                taskWithSameName.interval = payload.interval
+                if let recurrenceRule = payload.recurrenceRule {
+                    taskWithSameName.recurrenceRule = recurrenceRule
+                } else {
+                    taskWithSameName.interval = payload.interval
+                }
                 taskWithSameName.lastDone = payload.lastDone
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
@@ -478,7 +496,11 @@ enum CloudKitDirectPullService {
             if let scheduleMode = payload.scheduleMode {
                 existing.scheduleMode = scheduleMode
             }
-            existing.interval = payload.interval
+            if let recurrenceRule = payload.recurrenceRule {
+                existing.recurrenceRule = recurrenceRule
+            } else {
+                existing.interval = payload.interval
+            }
             existing.lastDone = payload.lastDone
             existing.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? existing.scheduleAnchor
             existing.pausedAt = payload.pausedAt
@@ -503,7 +525,11 @@ enum CloudKitDirectPullService {
                 if let scheduleMode = payload.scheduleMode {
                     taskWithSameName.scheduleMode = scheduleMode
                 }
-                taskWithSameName.interval = payload.interval
+                if let recurrenceRule = payload.recurrenceRule {
+                    taskWithSameName.recurrenceRule = recurrenceRule
+                } else {
+                    taskWithSameName.interval = payload.interval
+                }
                 taskWithSameName.lastDone = payload.lastDone
                 taskWithSameName.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? taskWithSameName.scheduleAnchor
                 taskWithSameName.pausedAt = payload.pausedAt
@@ -525,6 +551,7 @@ enum CloudKitDirectPullService {
                     checklistItems: payload.checklistItems ?? [],
                     scheduleMode: payload.scheduleMode,
                     interval: payload.interval,
+                    recurrenceRule: payload.recurrenceRule,
                     lastDone: payload.lastDone,
                     scheduleAnchor: payload.scheduleAnchor,
                     pausedAt: payload.pausedAt,

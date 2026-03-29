@@ -171,10 +171,3 @@ struct PlaceLocationPickerSheet: View {
     }
 }
 
-extension LocationCoordinate {
-    var formattedForPlaceSelection: String {
-        let latitude = latitude.formatted(.number.precision(.fractionLength(4)))
-        let longitude = longitude.formatted(.number.precision(.fractionLength(4)))
-        return "\(latitude), \(longitude)"
-    }
-}

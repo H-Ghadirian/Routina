@@ -212,10 +212,16 @@ struct HomeTCAView: View {
             platformRefreshButton
 #if !os(macOS)
             filterSheetButton
-#endif
+            Button {
+                store.send(.setAddRoutineSheet(true))
+            } label: {
+                Label("Add Routine", systemImage: "plus")
+            }
+#else
             MacToolbarIconButton(title: "Add Routine", systemImage: "plus") {
                 store.send(.setAddRoutineSheet(true))
             }
+#endif
         }
     }
 
@@ -1280,6 +1286,17 @@ struct HomeTCAView: View {
             && !task.isDoneToday {
             return .orange
         }
+        if task.recurrenceRule.isFixedCalendar {
+            let urgency = urgencyLevel(for: task)
+            switch urgency {
+            case 3:
+                return .red
+            case 2, 1:
+                return .orange
+            default:
+                return .green
+            }
+        }
         let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
         switch progress {
         case ..<0.75: return .green
@@ -1300,6 +1317,9 @@ struct HomeTCAView: View {
             || task.scheduleMode == .derivedFromChecklist
             || (task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0) {
             return false
+        }
+        if task.recurrenceRule.isFixedCalendar {
+            return dueInDays(for: task) == 1
         }
         let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
         return progress >= 0.75 && progress < 0.90
@@ -1488,17 +1508,7 @@ struct HomeTCAView: View {
         if task.scheduleMode == .derivedFromChecklist {
             return "Checklist-driven"
         }
-        let interval = task.interval
-        if interval == 1 { return "Daily" }
-        if interval % 30 == 0 {
-            let months = interval / 30
-            return months == 1 ? "Monthly" : "Every \(months) months"
-        }
-        if interval % 7 == 0 {
-            let weeks = interval / 7
-            return weeks == 1 ? "Weekly" : "Every \(weeks) weeks"
-        }
-        return "Every \(interval) days"
+        return task.recurrenceRule.displayText()
     }
 
     private func completionDescription(for task: HomeFeature.RoutineDisplay) -> String {
@@ -1689,6 +1699,11 @@ struct HomeTCAView: View {
             return task.isPaused || task.dueChecklistItemCount == 0
         }
         if task.scheduleMode == .fixedIntervalChecklist {
+            return true
+        }
+        if task.recurrenceRule.isFixedCalendar,
+           let dueDate = task.dueDate,
+           dueDate > Date() {
             return true
         }
         return task.isDoneToday || task.isPaused

@@ -10,6 +10,7 @@ struct SwiftDataModelTests {
     func routineTask_defaultsAreInitialized() {
         let task = RoutineTask()
         #expect(task.interval == 1)
+        #expect(task.recurrenceRule == .interval(days: 1))
         #expect(!task.id.uuidString.isEmpty)
         #expect(task.lastDone == nil)
         #expect(task.placeID == nil)
@@ -167,5 +168,22 @@ struct SwiftDataModelTests {
         #expect(task.completedChecklistItemCount == 0)
         #expect(!task.isChecklistInProgress)
         #expect(task.lastDone == makeDate("2026-03-18T12:05:00Z"))
+    }
+
+    @Test
+    func routineTask_dailyTimeRecurrencePreservesExplicitScheduleRule() {
+        let task = RoutineTask(
+            name: "Stretch",
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 15)),
+            scheduleAnchor: makeDate("2026-03-18T10:00:00Z")
+        )
+
+        #expect(task.recurrenceRule == .daily(at: RoutineTimeOfDay(hour: 21, minute: 15)))
+        #expect(task.interval == 1)
+
+        _ = task.advance(completedAt: makeDate("2026-03-18T21:30:00Z"))
+
+        #expect(task.lastDone == makeDate("2026-03-18T21:30:00Z"))
+        #expect(task.scheduleAnchor == makeDate("2026-03-18T10:00:00Z"))
     }
 }

@@ -862,6 +862,7 @@ struct SettingsFeature {
             var checklistItems: [RoutineChecklistItem]?
             var scheduleMode: RoutineScheduleMode?
             var interval: Int
+            var recurrenceRule: RoutineRecurrenceRule?
             var lastDone: Date?
             var scheduleAnchor: Date?
             var pausedAt: Date?
@@ -907,7 +908,7 @@ struct SettingsFeature {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = RoutineDataBackup(
-            schemaVersion: 6,
+            schemaVersion: 7,
             exportedAt: Date(),
             places: places.map {
                 .init(
@@ -930,6 +931,7 @@ struct SettingsFeature {
                     checklistItems: $0.checklistItems,
                     scheduleMode: $0.scheduleMode,
                     interval: max(Int($0.interval), 1),
+                    recurrenceRule: $0.recurrenceRule,
                     lastDone: $0.lastDone,
                     scheduleAnchor: $0.scheduleAnchor,
                     pausedAt: $0.pausedAt,
@@ -962,7 +964,7 @@ struct SettingsFeature {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
 
-        guard (1...6).contains(backup.schemaVersion) else {
+        guard (1...7).contains(backup.schemaVersion) else {
             throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -1015,6 +1017,7 @@ struct SettingsFeature {
                     checklistItems: task.checklistItems ?? [],
                     scheduleMode: task.scheduleMode,
                     interval: Int16(clampedInterval),
+                    recurrenceRule: task.recurrenceRule,
                     lastDone: task.lastDone,
                     scheduleAnchor: task.scheduleAnchor,
                     pausedAt: task.pausedAt,

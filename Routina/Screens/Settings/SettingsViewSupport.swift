@@ -140,3 +140,11 @@ func settingsTagSubtitle(for tag: RoutineTagSummary) -> String {
         ? "Used by 1 routine"
         : "Used by \(tag.linkedRoutineCount) routines"
 }
+
+extension LocationCoordinate {
+    var formattedForPlaceSelection: String {
+        let latitude = latitude.formatted(.number.precision(.fractionLength(4)))
+        let longitude = longitude.formatted(.number.precision(.fractionLength(4)))
+        return "\(latitude), \(longitude)"
+    }
+}

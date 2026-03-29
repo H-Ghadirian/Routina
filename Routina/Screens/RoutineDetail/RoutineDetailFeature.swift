@@ -55,6 +55,10 @@ struct RoutineDetailFeature: Reducer {
         var editSelectedPlaceID: UUID?
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
+        var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
+        var editRecurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
+        var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
+        var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var isDeleteConfirmationPresented: Bool = false
         var shouldDismissAfterDelete: Bool = false
     }
@@ -92,6 +96,10 @@ struct RoutineDetailFeature: Reducer {
         case editToggleTagSelection(String)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
+        case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
+        case editRecurrenceTimeOfDayChanged(RoutineTimeOfDay)
+        case editRecurrenceWeekdayChanged(Int)
+        case editRecurrenceDayOfMonthChanged(Int)
         case editSaveTapped
         case setDeleteConfirmation(Bool)
         case deleteRoutineConfirmed
@@ -116,6 +124,13 @@ struct RoutineDetailFeature: Reducer {
                     return .none
                 }
                 let completionDate = now
+                guard RoutineDateMath.canMarkDone(
+                    for: state.task,
+                    referenceDate: completionDate,
+                    calendar: calendar
+                ) else {
+                    return .none
+                }
                 let dueItemIDs = Set(
                     state.task
                         .dueChecklistItems(referenceDate: completionDate, calendar: calendar)
@@ -142,6 +157,13 @@ struct RoutineDetailFeature: Reducer {
             guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
                 return .none
             }
+            guard RoutineDateMath.canMarkDone(
+                for: state.task,
+                referenceDate: completionDate,
+                calendar: calendar
+            ) else {
+                return .none
+            }
             _ = state.task.advance(completedAt: completionDate, calendar: calendar)
             refreshTaskView(&state)
             updateDerivedState(&state)
@@ -164,6 +186,13 @@ struct RoutineDetailFeature: Reducer {
         case let .toggleChecklistItemCompletion(itemID):
             guard !state.task.isPaused else { return .none }
             guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
+                return .none
+            }
+            guard RoutineDateMath.canMarkDone(
+                for: state.task,
+                referenceDate: now,
+                calendar: calendar
+            ) else {
                 return .none
             }
 
@@ -218,6 +247,13 @@ struct RoutineDetailFeature: Reducer {
                 return .none
             }
             let completionDate = now
+            guard RoutineDateMath.canMarkDone(
+                for: state.task,
+                referenceDate: completionDate,
+                calendar: calendar
+            ) else {
+                return .none
+            }
             let result = state.task.markChecklistItemCompleted(
                 itemID,
                 completedAt: completionDate,
@@ -418,6 +454,22 @@ struct RoutineDetailFeature: Reducer {
             state.editFrequencyValue = value
             return .none
 
+        case let .editRecurrenceKindChanged(kind):
+            state.editRecurrenceKind = kind
+            return .none
+
+        case let .editRecurrenceTimeOfDayChanged(timeOfDay):
+            state.editRecurrenceTimeOfDay = timeOfDay
+            return .none
+
+        case let .editRecurrenceWeekdayChanged(weekday):
+            state.editRecurrenceWeekday = min(max(weekday, 1), 7)
+            return .none
+
+        case let .editRecurrenceDayOfMonthChanged(dayOfMonth):
+            state.editRecurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+            return .none
+
         case .editSaveTapped:
             state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
             state.editTagDraft = ""
@@ -440,6 +492,10 @@ struct RoutineDetailFeature: Reducer {
             let frequencyInterval = state.editScheduleMode == .oneOff
                 ? 1
                 : state.editFrequencyValue * state.editFrequency.daysMultiplier
+            let recurrenceRule = selectedRecurrenceRule(
+                for: state,
+                fallbackInterval: frequencyInterval
+            )
             return handleEditSave(
                 taskID: state.task.id,
                 name: trimmedName,
@@ -453,7 +509,7 @@ struct RoutineDetailFeature: Reducer {
                     ? []
                     : state.editRoutineChecklistItems,
                 scheduleMode: state.editScheduleMode,
-                interval: Int16(frequencyInterval)
+                recurrenceRule: recurrenceRule
             )
 
         case let .setDeleteConfirmation(isPresented):
@@ -504,16 +560,27 @@ struct RoutineDetailFeature: Reducer {
         state.editChecklistItemDraftInterval = 3
         state.editSelectedPlaceID = state.task.placeID
 
-        let interval = max(Int(state.task.interval), 1)
-        if interval % 30 == 0 {
-            state.editFrequency = .month
-            state.editFrequencyValue = max(interval / 30, 1)
-        } else if interval % 7 == 0 {
-            state.editFrequency = .week
-            state.editFrequencyValue = max(interval / 7, 1)
+        let recurrenceRule = state.task.recurrenceRule
+        state.editRecurrenceKind = recurrenceRule.kind
+        state.editRecurrenceTimeOfDay = recurrenceRule.timeOfDay ?? .defaultValue
+        state.editRecurrenceWeekday = recurrenceRule.weekday ?? Calendar.current.component(.weekday, from: now)
+        state.editRecurrenceDayOfMonth = recurrenceRule.dayOfMonth ?? Calendar.current.component(.day, from: now)
+
+        let interval = max(recurrenceRule.interval, 1)
+        if recurrenceRule.kind == .intervalDays {
+            if interval % 30 == 0 {
+                state.editFrequency = .month
+                state.editFrequencyValue = max(interval / 30, 1)
+            } else if interval % 7 == 0 {
+                state.editFrequency = .week
+                state.editFrequencyValue = max(interval / 7, 1)
+            } else {
+                state.editFrequency = .day
+                state.editFrequencyValue = interval
+            }
         } else {
             state.editFrequency = .day
-            state.editFrequencyValue = interval
+            state.editFrequencyValue = 1
         }
     }
 
@@ -575,14 +642,10 @@ struct RoutineDetailFeature: Reducer {
             state.task.lastDone = remainingLatestCompletion
         }
 
-        if state.task.isPaused {
-            if let remainingLatestCompletion {
-                state.task.scheduleAnchor = remainingLatestCompletion
-            } else if removedLatestCompletion {
-                state.task.scheduleAnchor = state.task.pausedAt
-            }
-        } else if removedLatestCompletion {
-            state.task.scheduleAnchor = remainingLatestCompletion
+        if removedLatestCompletion {
+            state.task.refreshScheduleAnchorAfterRemovingLatestCompletion(
+                remainingLatestCompletion: remainingLatestCompletion
+            )
         }
 
         state.task.resetStepProgress()
@@ -711,7 +774,7 @@ struct RoutineDetailFeature: Reducer {
         steps: [RoutineStep],
         checklistItems: [RoutineChecklistItem],
         scheduleMode: RoutineScheduleMode,
-        interval: Int16
+        recurrenceRule: RoutineRecurrenceRule
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -720,16 +783,21 @@ struct RoutineDetailFeature: Reducer {
                 if try hasDuplicateRoutineName(name, in: context, excludingID: taskID) {
                     return
                 }
+                let previousScheduleMode = task.scheduleMode
+                let previousRecurrenceRule = task.recurrenceRule
                 task.name = name
                 task.emoji = emoji
                 task.placeID = placeID
                 task.tags = tags
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
+                task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
-                task.interval = interval
                 if scheduleMode == .oneOff {
                     task.scheduleAnchor = task.lastDone
+                    task.interval = 1
+                } else if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
+                    task.scheduleAnchor = now
                 } else if task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: now)
                 }
@@ -969,6 +1037,30 @@ struct RoutineDetailFeature: Reducer {
 
     private func scheduleModeRequiresChecklistItems(_ scheduleMode: RoutineScheduleMode) -> Bool {
         scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
+    }
+
+    private func selectedRecurrenceRule(
+        for state: State,
+        fallbackInterval: Int
+    ) -> RoutineRecurrenceRule {
+        guard state.editScheduleMode != .oneOff else {
+            return .interval(days: 1)
+        }
+
+        guard state.editScheduleMode != .derivedFromChecklist else {
+            return .interval(days: max(fallbackInterval, 1))
+        }
+
+        switch state.editRecurrenceKind {
+        case .intervalDays:
+            return .interval(days: max(fallbackInterval, 1))
+        case .dailyTime:
+            return .daily(at: state.editRecurrenceTimeOfDay)
+        case .weekly:
+            return .weekly(on: state.editRecurrenceWeekday)
+        case .monthlyDay:
+            return .monthly(on: state.editRecurrenceDayOfMonth)
+        }
     }
 
     private func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {

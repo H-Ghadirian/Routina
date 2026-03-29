@@ -72,7 +72,6 @@ let package = Package(
                 "Routina/RoutinaMacDev.entitlements",
                 "Routina/RoutinaMacProd.entitlements",
                 "Routina/Screens/App/RoutinaTCAApp.swift",
-                "Routina/Utilities/PlatformSupport+UIKit.swift",
                 "Routina/Utilities/RemoteNotificationIOSDelegate.swift",
                 "Routina/Utilities/WatchRoutineSyncBridge.swift",
                 "RoutinaWatchApp",

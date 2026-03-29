@@ -294,37 +294,7 @@ struct RoutineDetailEditRoutineContent: View {
             }
 
             if showsRepeatControls {
-                Section(header: Text("Frequency")) {
-                    Picker(
-                        "Frequency",
-                        selection: Binding(
-                            get: { store.editFrequency },
-                            set: { store.send(.editFrequencyChanged($0)) }
-                        )
-                    ) {
-                        ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
-                            Text(frequency.rawValue).tag(frequency)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                Section(header: Text("Repeat")) {
-                    Stepper(
-                        value: Binding(
-                            get: { store.editFrequencyValue },
-                            set: { store.send(.editFrequencyValueChanged($0)) }
-                        ),
-                        in: 1...365
-                    ) {
-                        Text(
-                            editStepperLabel(
-                                frequency: store.editFrequency,
-                                frequencyValue: store.editFrequencyValue
-                            )
-                        )
-                    }
-                }
+                repeatPatternSections
             }
 
             Section {
@@ -460,6 +430,168 @@ struct RoutineDetailEditRoutineContent: View {
             }
         }
         return "Every \(frequencyValue) \(frequency.singularLabel)s"
+    }
+
+    private var recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind> {
+        Binding(
+            get: { store.editRecurrenceKind },
+            set: { store.send(.editRecurrenceKindChanged($0)) }
+        )
+    }
+
+    private var recurrenceTimeBinding: Binding<Date> {
+        Binding(
+            get: { store.editRecurrenceTimeOfDay.date(on: Date()) },
+            set: { store.send(.editRecurrenceTimeOfDayChanged(RoutineTimeOfDay.from($0))) }
+        )
+    }
+
+    private var recurrenceWeekdayBinding: Binding<Int> {
+        Binding(
+            get: { store.editRecurrenceWeekday },
+            set: { store.send(.editRecurrenceWeekdayChanged($0)) }
+        )
+    }
+
+    private var recurrenceDayOfMonthBinding: Binding<Int> {
+        Binding(
+            get: { store.editRecurrenceDayOfMonth },
+            set: { store.send(.editRecurrenceDayOfMonthChanged($0)) }
+        )
+    }
+
+    @ViewBuilder
+    private var repeatPatternSections: some View {
+        Section(header: Text("Repeat Pattern")) {
+            Picker("Repeat Pattern", selection: recurrenceKindBinding) {
+                ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
+                    Text(kind.pickerTitle).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text(recurrencePatternDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        switch store.editRecurrenceKind {
+        case .intervalDays:
+            Section(header: Text("Frequency")) {
+                Picker(
+                    "Frequency",
+                    selection: Binding(
+                        get: { store.editFrequency },
+                        set: { store.send(.editFrequencyChanged($0)) }
+                    )
+                ) {
+                    ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
+                        Text(frequency.rawValue).tag(frequency)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
+            Section(header: Text("Repeat")) {
+                Stepper(
+                    value: Binding(
+                        get: { store.editFrequencyValue },
+                        set: { store.send(.editFrequencyValueChanged($0)) }
+                    ),
+                    in: 1...365
+                ) {
+                    Text(
+                        editStepperLabel(
+                            frequency: store.editFrequency,
+                            frequencyValue: store.editFrequencyValue
+                        )
+                    )
+                }
+            }
+
+        case .dailyTime:
+            Section(header: Text("Time of Day")) {
+                DatePicker(
+                    "Time",
+                    selection: recurrenceTimeBinding,
+                    displayedComponents: .hourAndMinute
+                )
+
+                Text("Due every day at \(store.editRecurrenceTimeOfDay.formatted()).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+        case .weekly:
+            Section(header: Text("Weekday")) {
+                Picker("Weekday", selection: recurrenceWeekdayBinding) {
+                    ForEach(weekdayOptions, id: \.id) { option in
+                        Text(option.name).tag(option.id)
+                    }
+                }
+
+                Text("Due every \(weekdayName(for: store.editRecurrenceWeekday)).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+        case .monthlyDay:
+            Section(header: Text("Day of Month")) {
+                Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
+                    Text("Every \(ordinalDay(store.editRecurrenceDayOfMonth))")
+                }
+
+                Text("Due on the \(ordinalDay(store.editRecurrenceDayOfMonth)) of each month.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var recurrencePatternDescription: String {
+        switch store.editRecurrenceKind {
+        case .intervalDays:
+            return "Repeat after a fixed number of days, weeks, or months."
+        case .dailyTime:
+            return "Repeat every day at a specific time."
+        case .weekly:
+            return "Repeat on the same weekday each week."
+        case .monthlyDay:
+            return "Repeat on the same calendar day each month."
+        }
+    }
+
+    private var weekdayOptions: [(id: Int, name: String)] {
+        Calendar.current.weekdaySymbols.enumerated().map { index, name in
+            (id: index + 1, name: name)
+        }
+    }
+
+    private func weekdayName(for weekday: Int) -> String {
+        let symbols = Calendar.current.weekdaySymbols
+        let safeIndex = min(max(weekday - 1, 0), max(symbols.count - 1, 0))
+        return symbols[safeIndex]
+    }
+
+    private func ordinalDay(_ day: Int) -> String {
+        let resolvedDay = min(max(day, 1), 31)
+        let suffix: String
+        switch resolvedDay % 100 {
+        case 11, 12, 13:
+            suffix = "th"
+        default:
+            switch resolvedDay % 10 {
+            case 1:
+                suffix = "st"
+            case 2:
+                suffix = "nd"
+            case 3:
+                suffix = "rd"
+            default:
+                suffix = "th"
+            }
+        }
+        return "\(resolvedDay)\(suffix)"
     }
 
     private var editPlaceDescription: String {

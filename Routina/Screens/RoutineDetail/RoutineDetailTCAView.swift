@@ -96,6 +96,10 @@ struct RoutineDetailTCAView: View {
                                     checklistItemDraftInterval: store.editChecklistItemDraftInterval,
                                     frequency: store.editFrequency,
                                     frequencyValue: store.editFrequencyValue,
+                                    recurrenceKind: store.editRecurrenceKind,
+                                    recurrenceTimeOfDay: store.editRecurrenceTimeOfDay,
+                                    recurrenceWeekday: store.editRecurrenceWeekday,
+                                    recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
                                     task: store.task
                                 )
                             )
@@ -832,6 +836,9 @@ struct RoutineDetailTCAView: View {
 
     private func isOrangeUrgency(_ task: RoutineTask) -> Bool {
         guard !task.isPaused, !task.isChecklistDriven, !task.isOneOffTask else { return false }
+        if task.recurrenceRule.isFixedCalendar {
+            return daysUntilDue(task) == 1
+        }
         let anchor = task.scheduleAnchor ?? task.lastDone
         let daysSinceAnchor = RoutineDateMath.elapsedDaysSinceLastDone(from: anchor, referenceDate: Date())
         let progress = Double(daysSinceAnchor) / Double(task.interval)
@@ -1089,6 +1096,10 @@ struct RoutineDetailTCAView: View {
         checklistItemDraftInterval: Int,
         frequency: RoutineDetailFeature.EditFrequency,
         frequencyValue: Int,
+        recurrenceKind: RoutineRecurrenceRule.Kind,
+        recurrenceTimeOfDay: RoutineTimeOfDay,
+        recurrenceWeekday: Int,
+        recurrenceDayOfMonth: Int,
         task: RoutineTask
     ) -> Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1106,8 +1117,18 @@ struct RoutineDetailTCAView: View {
         let candidateChecklistItems = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle).map { title in
             checklistItems + [RoutineChecklistItem(title: title, intervalDays: checklistItemDraftInterval)]
         } ?? checklistItems
-        let currentInterval = max(Int(task.interval), 1)
-        let newInterval = frequencyValue * frequency.daysMultiplier
+        let currentRecurrenceRule = task.recurrenceRule
+        let newRecurrenceRule: RoutineRecurrenceRule
+        switch recurrenceKind {
+        case .intervalDays:
+            newRecurrenceRule = .interval(days: frequencyValue * frequency.daysMultiplier)
+        case .dailyTime:
+            newRecurrenceRule = .daily(at: recurrenceTimeOfDay)
+        case .weekly:
+            newRecurrenceRule = .weekly(on: recurrenceWeekday)
+        case .monthlyDay:
+            newRecurrenceRule = .monthly(on: recurrenceDayOfMonth)
+        }
         let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
 
         guard scheduleMode == .fixedInterval || scheduleMode == .oneOff || !sanitizedCandidateChecklistItems.isEmpty else {
@@ -1121,7 +1142,7 @@ struct RoutineDetailTCAView: View {
             || scheduleMode != task.scheduleMode
             || RoutineStep.sanitized(candidateSteps) != currentSteps
             || sanitizedCandidateChecklistItems != currentChecklistItems
-            || newInterval != currentInterval
+            || newRecurrenceRule != currentRecurrenceRule
     }
 
     private func frequencyText(for task: RoutineTask) -> String {
@@ -1131,16 +1152,7 @@ struct RoutineDetailTCAView: View {
         if task.isChecklistDriven {
             return "Checklist-driven"
         }
-        let interval = max(Int(task.interval), 1)
-        if interval % 30 == 0 {
-            let value = interval / 30
-            return value == 1 ? "Every month" : "Every \(value) months"
-        }
-        if interval % 7 == 0 {
-            let value = interval / 7
-            return value == 1 ? "Every week" : "Every \(value) weeks"
-        }
-        return interval == 1 ? "Every day" : "Every \(interval) days"
+        return task.recurrenceRule.displayText()
     }
 
     private func totalDoneCountText(for count: Int) -> String {

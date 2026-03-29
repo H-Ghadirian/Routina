@@ -25,6 +25,7 @@ func makeTask(
     steps: [RoutineStep] = [],
     checklistItems: [RoutineChecklistItem] = [],
     scheduleMode: RoutineScheduleMode? = nil,
+    recurrenceRule: RoutineRecurrenceRule? = nil,
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
     pinnedAt: Date? = nil
@@ -38,6 +39,7 @@ func makeTask(
         checklistItems: checklistItems,
         scheduleMode: scheduleMode,
         interval: interval,
+        recurrenceRule: recurrenceRule,
         lastDone: lastDone,
         scheduleAnchor: scheduleAnchor,
         pausedAt: pausedAt,

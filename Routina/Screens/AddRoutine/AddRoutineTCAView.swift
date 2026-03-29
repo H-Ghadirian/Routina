@@ -181,25 +181,7 @@ struct AddRoutineTCAView: View {
             }
 
             if showsRepeatControls {
-                Section(header: Text("Frequency")) {
-                    Picker("Frequency", selection: frequencyBinding) {
-                        ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
-                            Text(frequency.rawValue).tag(frequency)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                Section(header: Text("Repeat")) {
-                    Stepper(value: frequencyValueBinding, in: 1...365) {
-                        Text(
-                            stepperLabel(
-                                frequency: store.frequency,
-                                frequencyValue: store.frequencyValue
-                            )
-                        )
-                    }
-                }
+                repeatPatternSections
             }
         }
         #endif
@@ -272,6 +254,34 @@ struct AddRoutineTCAView: View {
         Binding(
             get: { store.frequencyValue },
             set: { store.send(.frequencyValueChanged($0)) }
+        )
+    }
+
+    private var recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind> {
+        Binding(
+            get: { store.recurrenceKind },
+            set: { store.send(.recurrenceKindChanged($0)) }
+        )
+    }
+
+    private var recurrenceTimeBinding: Binding<Date> {
+        Binding(
+            get: { store.recurrenceTimeOfDay.date(on: Date()) },
+            set: { store.send(.recurrenceTimeOfDayChanged(RoutineTimeOfDay.from($0))) }
+        )
+    }
+
+    private var recurrenceWeekdayBinding: Binding<Int> {
+        Binding(
+            get: { store.recurrenceWeekday },
+            set: { store.send(.recurrenceWeekdayChanged($0)) }
+        )
+    }
+
+    private var recurrenceDayOfMonthBinding: Binding<Int> {
+        Binding(
+            get: { store.recurrenceDayOfMonth },
+            set: { store.send(.recurrenceDayOfMonthChanged($0)) }
         )
     }
 
@@ -596,6 +606,129 @@ struct AddRoutineTCAView: View {
         return "Runs out in \(intervalDays) days"
     }
 
+    @ViewBuilder
+    private var repeatPatternSections: some View {
+        Section(header: Text("Repeat Pattern")) {
+            Picker("Repeat Pattern", selection: recurrenceKindBinding) {
+                ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
+                    Text(kind.pickerTitle).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text(recurrencePatternDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        switch store.recurrenceKind {
+        case .intervalDays:
+            Section(header: Text("Frequency")) {
+                Picker("Frequency", selection: frequencyBinding) {
+                    ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
+                        Text(frequency.rawValue).tag(frequency)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
+            Section(header: Text("Repeat")) {
+                Stepper(value: frequencyValueBinding, in: 1...365) {
+                    Text(
+                        stepperLabel(
+                            frequency: store.frequency,
+                            frequencyValue: store.frequencyValue
+                        )
+                    )
+                }
+            }
+
+        case .dailyTime:
+            Section(header: Text("Time of Day")) {
+                DatePicker(
+                    "Time",
+                    selection: recurrenceTimeBinding,
+                    displayedComponents: .hourAndMinute
+                )
+
+                Text("Due every day at \(store.recurrenceTimeOfDay.formatted()).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+        case .weekly:
+            Section(header: Text("Weekday")) {
+                Picker("Weekday", selection: recurrenceWeekdayBinding) {
+                    ForEach(weekdayOptions, id: \.id) { option in
+                        Text(option.name).tag(option.id)
+                    }
+                }
+
+                Text("Due every \(weekdayName(for: store.recurrenceWeekday)).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+        case .monthlyDay:
+            Section(header: Text("Day of Month")) {
+                Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
+                    Text("Every \(ordinalDay(store.recurrenceDayOfMonth))")
+                }
+
+                Text("Due on the \(ordinalDay(store.recurrenceDayOfMonth)) of each month.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var recurrencePatternDescription: String {
+        switch store.recurrenceKind {
+        case .intervalDays:
+            return "Repeat after a fixed number of days, weeks, or months."
+        case .dailyTime:
+            return "Repeat every day at a specific time."
+        case .weekly:
+            return "Repeat on the same weekday each week."
+        case .monthlyDay:
+            return "Repeat on the same calendar day each month."
+        }
+    }
+
+    private var weekdayOptions: [(id: Int, name: String)] {
+        let symbols = Calendar.current.weekdaySymbols
+        return symbols.enumerated().map { index, name in
+            (id: index + 1, name: name)
+        }
+    }
+
+    private func weekdayName(for weekday: Int) -> String {
+        let symbols = Calendar.current.weekdaySymbols
+        let safeIndex = min(max(weekday - 1, 0), max(symbols.count - 1, 0))
+        return symbols[safeIndex]
+    }
+
+    private func ordinalDay(_ day: Int) -> String {
+        let resolvedDay = min(max(day, 1), 31)
+        let suffix: String
+        switch resolvedDay % 100 {
+        case 11, 12, 13:
+            suffix = "th"
+        default:
+            switch resolvedDay % 10 {
+            case 1:
+                suffix = "st"
+            case 2:
+                suffix = "nd"
+            case 3:
+                suffix = "rd"
+            default:
+                suffix = "th"
+            }
+        }
+        return "\(resolvedDay)\(suffix)"
+    }
+
 #if os(macOS)
     private let formLabelWidth: CGFloat = 110
 
@@ -755,32 +888,100 @@ struct AddRoutineTCAView: View {
                 if showsRepeatControls {
                     macSectionCard(title: "Schedule") {
                         VStack(alignment: .leading, spacing: 10) {
-                            macFormRow("Repeat") {
-                                HStack(spacing: 10) {
-                                    Text("Every")
-                                        .foregroundStyle(.secondary)
-                                    Stepper(value: frequencyValueBinding, in: 1...365) {
-                                        Text("\(store.frequencyValue)")
-                                            .font(.body.monospacedDigit())
-                                            .frame(minWidth: 28, alignment: .trailing)
-                                    }
-                                    .fixedSize()
-                                    Picker("Unit", selection: frequencyBinding) {
-                                        ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
-                                            Text(frequency.rawValue).tag(frequency)
+                            macFormRow("Pattern") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Picker("Repeat Pattern", selection: recurrenceKindBinding) {
+                                        ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
+                                            Text(kind.pickerTitle).tag(kind)
                                         }
                                     }
                                     .labelsHidden()
                                     .pickerStyle(.segmented)
-                                    .frame(width: 220)
-                                    Spacer(minLength: 0)
+                                    .frame(width: 320)
+
+                                    Text(recurrencePatternDescription)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
 
-                            macFormRow("") {
-                                Text(stepperLabel(frequency: store.frequency, frequencyValue: store.frequencyValue))
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                            switch store.recurrenceKind {
+                            case .intervalDays:
+                                macFormRow("Repeat") {
+                                    HStack(spacing: 10) {
+                                        Text("Every")
+                                            .foregroundStyle(.secondary)
+                                        Stepper(value: frequencyValueBinding, in: 1...365) {
+                                            Text("\(store.frequencyValue)")
+                                                .font(.body.monospacedDigit())
+                                                .frame(minWidth: 28, alignment: .trailing)
+                                        }
+                                        .fixedSize()
+                                        Picker("Unit", selection: frequencyBinding) {
+                                            ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
+                                                Text(frequency.rawValue).tag(frequency)
+                                            }
+                                        }
+                                        .labelsHidden()
+                                        .pickerStyle(.segmented)
+                                        .frame(width: 220)
+                                        Spacer(minLength: 0)
+                                    }
+                                }
+
+                                macFormRow("") {
+                                    Text(stepperLabel(frequency: store.frequency, frequencyValue: store.frequencyValue))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                            case .dailyTime:
+                                macFormRow("Time") {
+                                    DatePicker(
+                                        "Time",
+                                        selection: recurrenceTimeBinding,
+                                        displayedComponents: .hourAndMinute
+                                    )
+                                    .labelsHidden()
+                                }
+
+                                macFormRow("") {
+                                    Text("Due every day at \(store.recurrenceTimeOfDay.formatted()).")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                            case .weekly:
+                                macFormRow("Weekday") {
+                                    Picker("Weekday", selection: recurrenceWeekdayBinding) {
+                                        ForEach(weekdayOptions, id: \.id) { option in
+                                            Text(option.name).tag(option.id)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.menu)
+                                }
+
+                                macFormRow("") {
+                                    Text("Due every \(weekdayName(for: store.recurrenceWeekday)).")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                            case .monthlyDay:
+                                macFormRow("Month Day") {
+                                    Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
+                                        Text(ordinalDay(store.recurrenceDayOfMonth))
+                                            .frame(minWidth: 40, alignment: .leading)
+                                    }
+                                    .fixedSize()
+                                }
+
+                                macFormRow("") {
+                                    Text("Due on the \(ordinalDay(store.recurrenceDayOfMonth)) of each month.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }

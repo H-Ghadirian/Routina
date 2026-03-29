@@ -18,9 +18,17 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func recurrenceRuleMetadata_describesNewScheduleTypes() {
+        #expect(RoutineRecurrenceRule.Kind.intervalDays.pickerTitle == "Interval")
+        #expect(RoutineRecurrenceRule.Kind.dailyTime.pickerTitle == "Time")
+        #expect(RoutineRecurrenceRule.Kind.weekly.pickerTitle == "Week")
+        #expect(RoutineRecurrenceRule.Kind.monthlyDay.pickerTitle == "Month")
+    }
+
+    @Test
     func emojiSanitization_keepsOnlyFirstCharacter() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineEmojiChanged("  🔥🎯  ")) {
@@ -32,7 +40,7 @@ struct AddRoutineFeatureTests {
     func emojiSanitization_usesFallbackWhenEmptyInput() async {
         let initialState = AddRoutineFeature.State(routineName: "", routineEmoji: "✅", frequency: .day, frequencyValue: 1)
         let store = TestStore(initialState: initialState) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineEmojiChanged("   \n  "))
@@ -51,8 +59,8 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
+                onSave: { name, frequencyInDays, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
@@ -61,7 +69,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 21, "📚", nil, [], [], .fixedInterval, [])))
+        await store.receive(.delegate(.didSave("Read", 21, .interval(days: 21), "📚", nil, [], [], .fixedInterval, [])))
     }
 
     @Test
@@ -82,8 +90,8 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, selectedPlaceID, tags, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, selectedPlaceID, tags, steps, scheduleMode, checklistItems)))
+                onSave: { name, frequencyInDays, recurrenceRule, emoji, selectedPlaceID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, selectedPlaceID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
@@ -92,7 +100,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Laundry", 1, "✨", placeID, [], [], .fixedInterval, [])))
+        await store.receive(.delegate(.didSave("Laundry", 1, .interval(days: 1), "✨", placeID, [], [], .fixedInterval, [])))
     }
 
     @Test
@@ -108,7 +116,7 @@ struct AddRoutineFeatureTests {
                 selectedPlaceID: removedPlaceID
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(
@@ -128,7 +136,7 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(existingRoutineNames: ["Read"])
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.routineNameChanged("  read  ")) {
@@ -146,7 +154,7 @@ struct AddRoutineFeatureTests {
                 nameValidationMessage: "A task with this name already exists."
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.existingRoutineNamesChanged(["Walk"])) {
@@ -168,7 +176,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, _, _, _ in
+                onSave: { _, _, _, _, _, _, _, _, _ in
                     Issue.record("Save effect should not run for duplicate routine names")
                     return .none
                 },
@@ -186,7 +194,7 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(scheduleMode: .fixedIntervalChecklist)
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.taskTypeChanged(.todo)) {
@@ -210,8 +218,8 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
+                onSave: { name, frequencyInDays, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
@@ -220,12 +228,13 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 5, "📚", nil, [], [], .fixedInterval, [])))
+        await store.receive(.delegate(.didSave("Read", 5, .interval(days: 5), "📚", nil, [], [], .fixedInterval, [])))
     }
 
     @Test
     func saveTapped_forTodoUsesOneOffModeAndKeepsSteps() async {
         let capturedFrequencyInDays = LockIsolated<Int?>(nil)
+        let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
         let capturedScheduleModes = LockIsolated<[RoutineScheduleMode]>([])
         let capturedStepTitles = LockIsolated<[String]>([])
         let capturedChecklistTitles = LockIsolated<[String]>([])
@@ -243,8 +252,9 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, frequencyInDays, _, _, _, steps, scheduleMode, checklistItems in
+                onSave: { _, frequencyInDays, recurrenceRule, _, _, _, steps, scheduleMode, checklistItems in
                     capturedFrequencyInDays.withValue { $0 = frequencyInDays }
+                    capturedRecurrenceRules.withValue { $0 = [recurrenceRule] }
                     capturedScheduleModes.withValue { $0 = [scheduleMode] }
                     capturedStepTitles.withValue { $0 = steps.map(\.title) }
                     capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
@@ -263,6 +273,7 @@ struct AddRoutineFeatureTests {
         }
 
         #expect(capturedFrequencyInDays.value == 1)
+        #expect(capturedRecurrenceRules.value == [.interval(days: 1)])
         #expect(capturedScheduleModes.value == [.oneOff])
         #expect(capturedStepTitles.value == ["Open the fridge", "Add it to the cart"])
         #expect(capturedChecklistTitles.value.isEmpty)
@@ -272,7 +283,7 @@ struct AddRoutineFeatureTests {
     @Test
     func addTagTapped_parsesMultipleTagsAndDeduplicates() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.tagDraftChanged(" Health, focus ,health ")) {
@@ -288,7 +299,7 @@ struct AddRoutineFeatureTests {
     @Test
     func availableTagsChanged_deduplicatesAndSortsChoices() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.availableTagsChanged([" health ", "Focus", "focus", "Morning"])) {
@@ -304,7 +315,7 @@ struct AddRoutineFeatureTests {
                 availableTags: ["Focus", "Morning"]
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.toggleTagSelection("Morning")) {
@@ -324,7 +335,7 @@ struct AddRoutineFeatureTests {
                 availableTags: ["Focus", "Morning"]
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.tagRenamed(oldName: "focus", newName: "Deep Work")) {
@@ -340,7 +351,7 @@ struct AddRoutineFeatureTests {
                 availableTags: ["Deep Work", "Morning"]
             )
         ) {
-            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
         }
 
         await store.send(.tagDeleted("morning")) {
@@ -363,8 +374,8 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, frequencyInDays, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
+                onSave: { name, frequencyInDays, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .none }
             )
@@ -376,14 +387,14 @@ struct AddRoutineFeatureTests {
             $0.routineTags = ["Mindset", "night", "focus"]
             $0.tagDraft = ""
         }
-        await store.receive(.delegate(.didSave("Read", 1, "📚", nil, ["Mindset", "night", "focus"], [], .fixedInterval, [])))
+        await store.receive(.delegate(.didSave("Read", 1, .interval(days: 1), "📚", nil, ["Mindset", "night", "focus"], [], .fixedInterval, [])))
     }
 
     @Test
     func cancelTapped_sendsCancelDelegate() async {
         let store = TestStore(initialState: AddRoutineFeature.State()) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, _, _, _ in .none },
+                onSave: { _, _, _, _, _, _, _, _, _ in .none },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
         }
@@ -407,7 +418,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, emoji, placeID, tags, steps, _, checklistItems in
+                onSave: { name, frequencyInDays, _, emoji, placeID, tags, steps, _, checklistItems in
                     capturedNames.withValue { $0 = [name, "\(frequencyInDays)", emoji] + tags }
                     #expect(placeID == nil)
                     capturedSteps.withValue { $0 = steps }
@@ -445,7 +456,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, steps, scheduleMode, checklistItems in
+                onSave: { _, _, _, _, _, _, steps, scheduleMode, checklistItems in
                     #expect(steps.isEmpty)
                     capturedScheduleModes.withValue { $0 = [scheduleMode] }
                     capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
@@ -487,7 +498,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, steps, scheduleMode, checklistItems in
+                onSave: { _, _, _, _, _, _, steps, scheduleMode, checklistItems in
                     #expect(steps.isEmpty)
                     capturedScheduleModes.withValue { $0 = [scheduleMode] }
                     capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
@@ -509,5 +520,79 @@ struct AddRoutineFeatureTests {
 
         #expect(capturedScheduleModes.value == [.fixedIntervalChecklist])
         #expect(capturedChecklistTitles.value == ["Shoes", "Towel"])
+    }
+
+    @Test
+    func saveTapped_dailyTimeSchedule_sendsDailyRecurrenceRule() async {
+        let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Stretch",
+                recurrenceKind: .dailyTime,
+                recurrenceTimeOfDay: RoutineTimeOfDay(hour: 21, minute: 15),
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _ in
+                    capturedRecurrenceRules.withValue { $0 = [recurrenceRule] }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRecurrenceRules.value == [.daily(at: RoutineTimeOfDay(hour: 21, minute: 15))])
+    }
+
+    @Test
+    func saveTapped_weeklyAndMonthlySchedules_sendCalendarRecurrenceRules() async {
+        let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
+        let weeklyStore = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Review Week",
+                recurrenceKind: .weekly,
+                recurrenceWeekday: 6,
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _ in
+                    capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        let monthlyStore = TestStore(
+            initialState: AddRoutineFeature.State(
+                routineName: "Pay Bills",
+                recurrenceKind: .monthlyDay,
+                recurrenceDayOfMonth: 21,
+                existingRoutineNames: []
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _ in
+                    capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await weeklyStore.send(.saveTapped)
+        await monthlyStore.send(.saveTapped)
+
+        #expect(capturedRecurrenceRules.value == [.weekly(on: 6), .monthly(on: 21)])
     }
 }

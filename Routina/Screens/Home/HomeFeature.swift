@@ -27,8 +27,10 @@ struct HomeFeature {
         var tags: [String]
         var steps: [String]
         var interval: Int
+        var recurrenceRule: RoutineRecurrenceRule
         var scheduleMode: RoutineScheduleMode
         var lastDone: Date?
+        var dueDate: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
         var pinnedAt: Date?
@@ -221,6 +223,13 @@ struct HomeFeature {
                 }
                 let completionDate = now
                 let currentCalendar = calendar
+                guard RoutineDateMath.canMarkDone(
+                    for: state.routineTasks[index],
+                    referenceDate: completionDate,
+                    calendar: currentCalendar
+                ) else {
+                    return .none
+                }
 
                 if state.routineTasks[index].isChecklistDriven {
                     let hadCompletionToday = state.routineTasks[index].lastDone.map {
@@ -416,7 +425,7 @@ struct HomeFeature {
                 state.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, emoji, placeID, tags, steps, scheduleMode, checklistItems))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -439,6 +448,7 @@ struct HomeFeature {
                             checklistItems: checklistItems,
                             scheduleMode: scheduleMode,
                             interval: Int16(freq),
+                            recurrenceRule: recurrenceRule,
                             lastDone: nil,
                             scheduleAnchor: scheduleMode == .oneOff ? nil : self.now
                         )
@@ -499,8 +509,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, emoji, placeID, tags, steps, scheduleMode, checklistItems in
-                    .send(.delegate(.didSave(name, freq, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
+                onSave: { name, freq, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, placeID, tags, steps, scheduleMode, checklistItems)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
@@ -540,11 +550,14 @@ struct HomeFeature {
 
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
+        let dueDate: Date? = !task.isPaused && !task.isOneOffTask && !task.isChecklistDriven && task.recurrenceRule.isFixedCalendar
+            ? RoutineDateMath.dueDate(for: task, referenceDate: now, calendar: calendar)
+            : nil
         let daysUntilDue = task.isPaused
             ? 0
             : task.isCompletedOneOff
                 ? Int.max
-            : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
+                : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
 
         return RoutineDisplay(
             taskID: task.id,
@@ -556,8 +569,10 @@ struct HomeFeature {
             tags: task.tags,
             steps: task.steps.map(\.title),
             interval: max(Int(task.interval), 1),
+            recurrenceRule: task.recurrenceRule,
             scheduleMode: task.scheduleMode,
             lastDone: task.lastDone,
+            dueDate: dueDate,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
             pinnedAt: task.pinnedAt,
@@ -868,6 +883,7 @@ struct HomeFeature {
             && current.steps == incoming.steps
             && current.checklistItems == incoming.checklistItems
             && current.scheduleMode == incoming.scheduleMode
+            && current.recurrenceRule == incoming.recurrenceRule
             && current.interval == incoming.interval
             && current.pausedAt == incoming.pausedAt
             && current.completedStepCount == incoming.completedStepCount

@@ -45,6 +45,10 @@ struct AddRoutineFeature: Reducer {
         var checklistItemDraftInterval: Int = 3
         var frequency: Frequency = .day
         var frequencyValue: Int = 1
+        var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
+        var recurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
+        var recurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
+        var recurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var existingRoutineNames: [String] = []
         var availablePlaces: [RoutinePlaceSummary] = []
         var selectedPlaceID: UUID?
@@ -101,6 +105,10 @@ struct AddRoutineFeature: Reducer {
         case removeChecklistItem(UUID)
         case frequencyChanged(Frequency)
         case frequencyValueChanged(Int)
+        case recurrenceKindChanged(RoutineRecurrenceRule.Kind)
+        case recurrenceTimeOfDayChanged(RoutineTimeOfDay)
+        case recurrenceWeekdayChanged(Int)
+        case recurrenceDayOfMonthChanged(Int)
         case existingRoutineNamesChanged([String])
         case availablePlacesChanged([RoutinePlaceSummary])
         case selectedPlaceChanged(UUID?)
@@ -110,13 +118,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -234,6 +242,22 @@ struct AddRoutineFeature: Reducer {
             state.frequencyValue = value
             return .none
 
+        case let .recurrenceKindChanged(kind):
+            state.recurrenceKind = kind
+            return .none
+
+        case let .recurrenceTimeOfDayChanged(timeOfDay):
+            state.recurrenceTimeOfDay = timeOfDay
+            return .none
+
+        case let .recurrenceWeekdayChanged(weekday):
+            state.recurrenceWeekday = min(max(weekday, 1), 7)
+            return .none
+
+        case let .recurrenceDayOfMonthChanged(dayOfMonth):
+            state.recurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+            return .none
+
         case let .existingRoutineNamesChanged(names):
             state.existingRoutineNames = names
             updateNameValidation(&state)
@@ -269,9 +293,14 @@ struct AddRoutineFeature: Reducer {
             let frequencyInDays = state.scheduleMode == .oneOff
                 ? 1
                 : state.frequencyValue * state.frequency.daysMultiplier
+            let recurrenceRule = selectedRecurrenceRule(
+                for: state,
+                fallbackInterval: frequencyInDays
+            )
             return onSave(
                 state.trimmedRoutineName,
                 frequencyInDays,
+                recurrenceRule,
                 state.routineEmoji,
                 state.selectedPlaceID,
                 state.routineTags,
@@ -333,5 +362,29 @@ struct AddRoutineFeature: Reducer {
         guard state.routineSteps.indices.contains(targetIndex) else { return }
         let step = state.routineSteps.remove(at: index)
         state.routineSteps.insert(step, at: targetIndex)
+    }
+
+    private func selectedRecurrenceRule(
+        for state: State,
+        fallbackInterval: Int
+    ) -> RoutineRecurrenceRule {
+        guard state.scheduleMode != .oneOff else {
+            return .interval(days: 1)
+        }
+
+        guard state.scheduleMode != .derivedFromChecklist else {
+            return .interval(days: max(fallbackInterval, 1))
+        }
+
+        switch state.recurrenceKind {
+        case .intervalDays:
+            return .interval(days: max(fallbackInterval, 1))
+        case .dailyTime:
+            return .daily(at: state.recurrenceTimeOfDay)
+        case .weekly:
+            return .weekly(on: state.recurrenceWeekday)
+        case .monthlyDay:
+            return .monthly(on: state.recurrenceDayOfMonth)
+        }
     }
 }
