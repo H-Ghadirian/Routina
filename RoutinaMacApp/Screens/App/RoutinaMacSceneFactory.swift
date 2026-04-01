@@ -40,6 +40,18 @@ enum RoutinaMacSceneFactory {
     }
 
     @MainActor
+    static func makeTimelineRoot(persistence: PersistenceController) -> AnyView {
+        AnyView(
+            TimelineView()
+                .frame(
+                    minWidth: RoutinaMacTimelineSizing.minWidth,
+                    minHeight: RoutinaMacTimelineSizing.minHeight
+                )
+                .modelContainer(persistence.container)
+        )
+    }
+
+    @MainActor
     static func makeSettingsRoot(persistence: PersistenceController) -> AnyView {
         let store = RoutinaAppBootstrap.makeStore(using: persistence)
 
@@ -73,4 +85,11 @@ enum RoutinaMacStatsSizing {
     static let defaultHeight: CGFloat = 620
     static let minWidth: CGFloat = 760
     static let minHeight: CGFloat = 520
+}
+
+enum RoutinaMacTimelineSizing {
+    static let defaultWidth: CGFloat = 900
+    static let defaultHeight: CGFloat = 620
+    static let minWidth: CGFloat = 640
+    static let minHeight: CGFloat = 480
 }

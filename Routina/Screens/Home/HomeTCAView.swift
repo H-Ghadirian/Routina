@@ -203,6 +203,10 @@ struct HomeTCAView: View {
                 openWindow(id: RoutinaMacWindowID.stats)
             }
 
+            MacToolbarIconButton(title: "Timeline", systemImage: "clock.arrow.circlepath") {
+                openWindow(id: RoutinaMacWindowID.timeline)
+            }
+
             MacToolbarIconButton(title: "Settings", systemImage: "gearshape") {
                 openSettings()
             }

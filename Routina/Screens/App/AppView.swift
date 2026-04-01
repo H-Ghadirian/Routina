@@ -26,6 +26,10 @@ struct AppView: View {
                     )
                 }
 
+                SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
+                    TimelineView()
+                }
+
                 SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
                     StatsView()
                 }
