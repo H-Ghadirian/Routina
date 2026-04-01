@@ -33,9 +33,6 @@ struct HomeTCAView: View {
     @State private var selectedFilter: RoutineListFilter = .all
     @State private var selectedTag: String?
     @State private var selectedManualPlaceFilterID: UUID?
-#if os(macOS)
-    @State private var isMacFilterDetailPresented = false
-#endif
     @State private var isFilterSheetPresented = false
     @State private var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
@@ -123,19 +120,23 @@ struct HomeTCAView: View {
                     self.selectedManualPlaceFilterID = nil
                 }
             }
-#if os(macOS)
-            .onChange(of: store.selectedTaskID) { _, taskID in
-                guard taskID != nil else { return }
-                isMacFilterDetailPresented = false
-            }
-#endif
     }
 
     private var navigationContent: some View {
         NavigationSplitView {
-            sidebarContent
+            WithPerceptionTracking {
+                sidebarContent
+            }
         } detail: {
-            detailContent
+#if os(macOS)
+            MacDetailContainerView(store: store) {
+                macFiltersDetailView
+            }
+#else
+            WithPerceptionTracking {
+                detailContent
+            }
+#endif
         }
     }
 
@@ -242,7 +243,7 @@ struct HomeTCAView: View {
                 platformSearchField(searchText: searchTextBinding)
 
                 Button {
-                    isMacFilterDetailPresented.toggle()
+                    store.send(.setMacFilterDetailPresented(!store.isMacFilterDetailPresented))
                 } label: {
                     Image(
                         systemName: macHasCustomFiltersApplied
@@ -251,7 +252,7 @@ struct HomeTCAView: View {
                     )
                     .font(.title3)
                     .foregroundStyle(
-                        isMacFilterDetailPresented || macHasCustomFiltersApplied
+                        store.isMacFilterDetailPresented || macHasCustomFiltersApplied
                             ? Color.accentColor
                             : Color.secondary
                     )
@@ -259,7 +260,7 @@ struct HomeTCAView: View {
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(
-                                isMacFilterDetailPresented
+                                store.isMacFilterDetailPresented
                                     ? Color.accentColor.opacity(0.14)
                                     : Color.secondary.opacity(0.07)
                             )
@@ -374,23 +375,6 @@ struct HomeTCAView: View {
 
     @ViewBuilder
     private var detailContent: some View {
-#if os(macOS)
-        if isMacFilterDetailPresented {
-            macFiltersDetailView
-        } else if let detailStore = self.store.scope(
-            state: \.routineDetailState,
-            action: \.routineDetail
-        ) {
-            RoutineDetailTCAView(store: detailStore)
-        } else {
-            ContentUnavailableView(
-                "Select a routine or open filters",
-                systemImage: "sidebar.right",
-                description: Text("Choose a routine from the sidebar, or open filters beside search to refine the routine list.")
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-#else
         if let detailStore = self.store.scope(
             state: \.routineDetailState,
             action: \.routineDetail
@@ -404,7 +388,6 @@ struct HomeTCAView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-#endif
     }
 
     private var addRoutineSheetBinding: Binding<Bool> {
@@ -1251,9 +1234,6 @@ struct HomeTCAView: View {
     }
 
     private func openTask(_ taskID: UUID) {
-#if os(macOS)
-        isMacFilterDetailPresented = false
-#endif
         store.send(.setSelectedTask(taskID))
     }
 
@@ -1417,6 +1397,17 @@ struct HomeTCAView: View {
         for task: HomeFeature.RoutineDisplay,
         includeMarkDone: Bool = true
     ) -> some View {
+#if os(macOS)
+        // Use .tag() instead of NavigationLink so the List selection binding
+        // drives the sidebar highlight without NavigationLink hijacking the
+        // NavigationSplitView detail column.
+        routineRow(for: task)
+            .tag(task.taskID)
+            .contentShape(Rectangle())
+            .contextMenu {
+                routineContextMenu(for: task, includeMarkDone: includeMarkDone)
+            }
+#else
         NavigationLink(value: task.taskID) {
             routineRow(for: task)
         }
@@ -1424,6 +1415,7 @@ struct HomeTCAView: View {
         .contextMenu {
             routineContextMenu(for: task, includeMarkDone: includeMarkDone)
         }
+#endif
     }
 
     @ViewBuilder
@@ -1861,6 +1853,37 @@ struct HomeTCAView: View {
         }
     }
 }
+
+#if os(macOS)
+/// Separate View struct so SwiftUI gives it its own observation lifecycle.
+/// Inline closures inside `NavigationSplitView.detail` on macOS can lose
+/// observation tracking after several view swaps, causing state changes
+/// (like toggling the filter panel) to stop updating the detail column.
+private struct MacDetailContainerView<FilterView: View>: View {
+    let store: StoreOf<HomeFeature>
+    @ViewBuilder let filterView: () -> FilterView
+
+    var body: some View {
+        WithPerceptionTracking {
+            if store.isMacFilterDetailPresented {
+                filterView()
+            } else if let detailStore = store.scope(
+                state: \.routineDetailState,
+                action: \.routineDetail
+            ) {
+                RoutineDetailTCAView(store: detailStore)
+            } else {
+                ContentUnavailableView(
+                    "Select a routine or open filters",
+                    systemImage: "sidebar.right",
+                    description: Text("Choose a routine from the sidebar, or open filters beside search to refine the routine list.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+}
+#endif
 
 #if os(macOS)
 private struct MacPlaceFilterOption: Equatable, Identifiable {

@@ -74,6 +74,7 @@ struct HomeFeature {
         var pendingSelectedChecklistReloadGuardTaskID: UUID?
         var pendingDeleteTaskIDs: [UUID] = []
         var isDeleteConfirmationPresented: Bool = false
+        var isMacFilterDetailPresented: Bool = false
     }
 
     enum Action: Equatable {
@@ -87,6 +88,7 @@ struct HomeFeature {
         case setAddRoutineSheet(Bool)
         case deleteTasksTapped([UUID])
         case setDeleteConfirmation(Bool)
+        case setMacFilterDetailPresented(Bool)
         case deleteTasksConfirmed
         case deleteTasks([UUID])
         case markTaskDone(UUID)
@@ -160,9 +162,13 @@ struct HomeFeature {
                 if let taskID,
                    state.selectedTaskID == taskID,
                    state.routineDetailState?.task.id == taskID {
+                    state.isMacFilterDetailPresented = false
                     return .none
                 }
                 state.selectedTaskID = taskID
+                if taskID != nil {
+                    state.isMacFilterDetailPresented = false
+                }
                 guard let taskID,
                       let task = state.routineTasks.first(where: { $0.id == taskID }) else {
                     state.routineDetailState = nil
@@ -199,6 +205,15 @@ struct HomeFeature {
                 state.isDeleteConfirmationPresented = isPresented
                 if !isPresented {
                     state.pendingDeleteTaskIDs = []
+                }
+                return .none
+
+            case let .setMacFilterDetailPresented(isPresented):
+                state.isMacFilterDetailPresented = isPresented
+                if isPresented {
+                    // Clear list selection so re-clicking the same routine
+                    // triggers a fresh selection change on macOS.
+                    state.selectedTaskID = nil
                 }
                 return .none
 
