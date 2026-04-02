@@ -281,17 +281,24 @@ struct RoutineDetailTCAView: View {
                 .font(titleFont)
                 .foregroundColor(summaryStatusColor)
 
-            Text(statusContextMessage)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            if let statusContextMessage {
+                Text(statusContextMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
     private func statusMetadataSection() -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            statusMetadataRow(label: store.task.isOneOffTask ? "Type" : "Frequency", value: frequencyText(for: store.task))
-            statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
+            if !store.task.isOneOffTask {
+                statusMetadataRow(label: "Frequency", value: frequencyText(for: store.task))
+            }
+
+            if shouldShowCompletionCount {
+                statusMetadataRow(label: "Completed", value: totalDoneCountText(for: store.logs.count))
+            }
 
             if let linkedPlace = linkedPlaceSummary {
                 statusMetadataRow(label: "Location", value: linkedPlace.name, systemImage: "location")
@@ -452,20 +459,27 @@ struct RoutineDetailTCAView: View {
             )
     }
 
-    private var statusContextMessage: String {
+    private var statusContextMessage: String? {
         if store.task.isPaused {
-            return "This task is archived until you resume it."
+            return "Resume it anytime to put it back in rotation."
         }
         if store.task.isOneOffTask {
             if store.task.isCompletedOneOff {
-                return "This todo is complete. Select its completion date to undo it if needed."
+                return "Select the completion date to undo it if needed."
             }
-            return "This todo does not repeat."
+            return nil
         }
         if Calendar.current.isDateInToday(selectedDate) {
-            return "Today is selected. Use the calendar to review another day when needed."
+            return "Today is selected. Pick another date to review its history."
         }
         return "Reviewing \(selectedDate.formatted(date: .abbreviated, time: .omitted))."
+    }
+
+    private var shouldShowCompletionCount: Bool {
+        if store.task.isOneOffTask {
+            return store.logs.count > 0
+        }
+        return true
     }
 
     private var routineLogsSection: some View {
@@ -1187,10 +1201,16 @@ struct RoutineDetailTCAView: View {
             return "Undo"
         }
         if task.isCompletedOneOff {
-            return "Select the completion date to undo this todo"
+            return "Select the completion date to undo"
         }
         if isPaused {
             return "Resume the routine to mark dates done"
+        }
+        if task.isOneOffTask {
+            if Calendar.current.isDateInToday(selectedDate) {
+                return "Mark Done"
+            }
+            return "Mark \(selectedDate.formatted(date: .abbreviated, time: .omitted)) as Done"
         }
         if task.isChecklistCompletionRoutine && !Calendar.current.isDateInToday(selectedDate) {
             return "Checklist progress can only be updated today"

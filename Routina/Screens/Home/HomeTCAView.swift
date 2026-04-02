@@ -1117,7 +1117,9 @@ struct HomeTCAView: View {
     }
 
     private func routineRow(for task: HomeFeature.RoutineDisplay) -> some View {
-        HStack(alignment: .center, spacing: 12) {
+        let metadataText = rowMetadataText(for: task)
+
+        return HStack(alignment: .center, spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(rowIconBackgroundColor(for: task))
@@ -1139,10 +1141,12 @@ struct HomeTCAView: View {
                     statusBadge(for: task)
                 }
 
-                Text(rowMetadataText(for: task))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if let metadataText {
+                    Text(metadataText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
 #else
                 Text(task.name)
                     .font(.headline)
@@ -1151,10 +1155,12 @@ struct HomeTCAView: View {
 
                 statusBadge(for: task)
 
-                Text(rowMetadataText(for: task))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if let metadataText {
+                    Text(metadataText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
 #endif
 
                 if !task.tags.isEmpty {
@@ -1478,11 +1484,36 @@ struct HomeTCAView: View {
         }
     }
 
-    private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String {
+    private func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String? {
+        if task.isOneOffTask {
+            let items = todoRowMetadataItems(for: task)
+            return items.isEmpty ? nil : items.joined(separator: " • ")
+        }
+
         if task.isPaused {
             return "\(cadenceDescription(for: task)) • \(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
         }
         return "\(cadenceDescription(for: task)) • \(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+    }
+
+    private func todoRowMetadataItems(for task: HomeFeature.RoutineDisplay) -> [String] {
+        var items: [String] = []
+
+        if task.isPaused {
+            items.append(pauseDescription(for: task))
+        } else if task.isCompletedOneOff || task.isInProgress {
+            items.append(completionDescription(for: task))
+        }
+
+        if let stepText = conciseTodoStepText(for: task) {
+            items.append(stepText)
+        }
+
+        if let placeText = concisePlaceMetadataText(for: task) {
+            items.append(placeText)
+        }
+
+        return items
     }
 
     private func pauseDescription(for task: HomeFeature.RoutineDisplay) -> String {
@@ -1671,6 +1702,18 @@ struct HomeTCAView: View {
         return " • \(totalSteps) \(totalSteps == 1 ? "step" : "steps")"
     }
 
+    private func conciseTodoStepText(for task: HomeFeature.RoutineDisplay) -> String? {
+        guard !task.steps.isEmpty else { return nil }
+        if task.isCompletedOneOff { return nil }
+        if let nextStepTitle = task.nextStepTitle {
+            return "Next: \(nextStepTitle)"
+        }
+        if task.steps.count > 1 {
+            return "\(task.steps.count) steps"
+        }
+        return nil
+    }
+
     private func markDoneLabel(for task: HomeFeature.RoutineDisplay) -> String {
         if task.scheduleMode == .derivedFromChecklist {
             if task.dueChecklistItemCount == 0 {
@@ -1715,6 +1758,19 @@ struct HomeTCAView: View {
             return " • Away from \(placeName)"
         case let .unknown(placeName):
             return " • \(placeName) task"
+        }
+    }
+
+    private func concisePlaceMetadataText(for task: HomeFeature.RoutineDisplay) -> String? {
+        switch task.locationAvailability {
+        case .unrestricted:
+            return nil
+        case let .available(placeName):
+            return "At \(placeName)"
+        case let .away(placeName, _):
+            return "Away from \(placeName)"
+        case let .unknown(placeName):
+            return placeName
         }
     }
 
