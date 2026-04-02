@@ -35,6 +35,7 @@ struct AddRoutineFeature: Reducer {
         var routineName: String = ""
         var routineEmoji: String = "✨"
         var routineNotes: String = ""
+        var routineLink: String = ""
         var deadline: Date?
         var imageData: Data?
         var routineTags: [String] = []
@@ -93,6 +94,7 @@ struct AddRoutineFeature: Reducer {
         case routineNameChanged(String)
         case routineEmojiChanged(String)
         case routineNotesChanged(String)
+        case routineLinkChanged(String)
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
         case imagePicked(Data?)
@@ -130,13 +132,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem])
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, Data?, UUID?, [String], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem]) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -152,6 +154,10 @@ struct AddRoutineFeature: Reducer {
 
         case let .routineNotesChanged(notes):
             state.routineNotes = notes
+            return .none
+
+        case let .routineLinkChanged(link):
+            state.routineLink = link
             return .none
 
         case let .deadlineEnabledChanged(isEnabled):
@@ -336,6 +342,7 @@ struct AddRoutineFeature: Reducer {
                 recurrenceRule,
                 state.routineEmoji,
                 RoutineTask.sanitizedNotes(state.routineNotes),
+                RoutineTask.sanitizedLink(state.routineLink),
                 state.taskType == .todo ? state.deadline : nil,
                 state.imageData,
                 state.selectedPlaceID,

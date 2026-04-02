@@ -195,6 +195,7 @@ enum CloudKitDirectPullService {
         var name: String?
         var emoji: String?
         var notes: String?
+        var link: String?
         var deadline: Date?
         var placeID: UUID?
         var tags: [String]?
@@ -267,6 +268,7 @@ enum CloudKitDirectPullService {
         let nameValue = stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
         let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
         let notesValue = stringValue(in: record, keys: ["notes", "NOTES", "znotes", "ZNOTES", "cd_notes"])
+        let linkValue = stringValue(in: record, keys: ["link", "LINK", "zlink", "ZLINK", "cd_link"])
         let deadlineValue = dateValue(in: record, keys: ["deadline", "DEADLINE", "zdeadline", "ZDEADLINE", "cd_deadline"])
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
@@ -335,6 +337,7 @@ enum CloudKitDirectPullService {
                 || nameValue != nil
                 || emojiValue != nil
                 || notesValue != nil
+                || linkValue != nil
                 || deadlineValue != nil
                 || placeIDValue != nil
                 || tagsStorageValue != nil
@@ -374,6 +377,7 @@ enum CloudKitDirectPullService {
             name: nameValue,
             emoji: emojiValue,
             notes: notesValue,
+            link: linkValue,
             deadline: deadlineValue,
             placeID: placeIDValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
@@ -469,6 +473,7 @@ enum CloudKitDirectPullService {
                 taskWithSameName.name = RoutineTask.trimmedName(payload.name)
                 taskWithSameName.emoji = payload.emoji
                 taskWithSameName.notes = RoutineTask.sanitizedNotes(payload.notes)
+                taskWithSameName.link = RoutineTask.sanitizedLink(payload.link)
                 taskWithSameName.imageData = payload.imageData
                 taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
@@ -502,6 +507,7 @@ enum CloudKitDirectPullService {
             existing.name = RoutineTask.trimmedName(payload.name)
             existing.emoji = payload.emoji
             existing.notes = RoutineTask.sanitizedNotes(payload.notes)
+            existing.link = RoutineTask.sanitizedLink(payload.link)
             existing.imageData = payload.imageData
             existing.placeID = payload.placeID
             if let tags = payload.tags {
@@ -534,6 +540,7 @@ enum CloudKitDirectPullService {
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context) {
                 taskWithSameName.emoji = payload.emoji
                 taskWithSameName.notes = RoutineTask.sanitizedNotes(payload.notes)
+                taskWithSameName.link = RoutineTask.sanitizedLink(payload.link)
                 taskWithSameName.imageData = payload.imageData
                 taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
@@ -570,6 +577,7 @@ enum CloudKitDirectPullService {
                     name: RoutineTask.trimmedName(payload.name),
                     emoji: payload.emoji,
                     notes: payload.notes,
+                    link: payload.link,
                     deadline: payload.deadline,
                     imageData: payload.imageData,
                     placeID: payload.placeID,

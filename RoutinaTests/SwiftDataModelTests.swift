@@ -191,19 +191,30 @@ struct SwiftDataModelTests {
     func routineTask_sanitizesNotesAndKeepsDeadlineOnlyForTodos() {
         let todoDeadline = makeDate("2026-03-21T09:00:00Z")
         let todo = RoutineTask(
-            scheduleMode: .oneOff,
             notes: "  pick whole milk  ",
-            deadline: todoDeadline
+            deadline: todoDeadline,
+            scheduleMode: .oneOff
         )
         let routine = RoutineTask(
-            scheduleMode: .fixedInterval,
             notes: " \n ",
-            deadline: todoDeadline
+            deadline: todoDeadline,
+            scheduleMode: .fixedInterval
         )
 
         #expect(todo.notes == "pick whole milk")
         #expect(todo.deadline == todoDeadline)
         #expect(routine.notes == nil)
         #expect(routine.deadline == nil)
+    }
+
+    @Test
+    func routineTask_sanitizesLinksAndBuildsResolvedURL() {
+        let task = RoutineTask(link: " example.com/docs ")
+        let invalid = RoutineTask(link: "not a valid url")
+
+        #expect(task.link == "https://example.com/docs")
+        #expect(task.resolvedLinkURL?.absoluteString == "https://example.com/docs")
+        #expect(invalid.link == nil)
+        #expect(invalid.resolvedLinkURL == nil)
     }
 }

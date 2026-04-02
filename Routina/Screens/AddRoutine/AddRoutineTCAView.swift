@@ -143,6 +143,19 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(header: Text("Link")) {
+                TextField("https://example.com", text: routineLinkBinding)
+                    .textInputAutocapitalization(.never)
+#if !os(macOS)
+                    .autocorrectionDisabled()
+#endif
+                    .keyboardType(.URL)
+
+                Text(linkHelpText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             if store.taskType == .todo {
                 Section(header: Text("Deadline")) {
                     Toggle("Set deadline", isOn: deadlineEnabledBinding)
@@ -240,6 +253,13 @@ struct AddRoutineTCAView: View {
         Binding(
             get: { store.routineNotes },
             set: { store.send(.routineNotesChanged($0)) }
+        )
+    }
+
+    private var routineLinkBinding: Binding<String> {
+        Binding(
+            get: { store.routineLink },
+            set: { store.send(.routineLinkChanged($0)) }
         )
     }
 
@@ -435,6 +455,10 @@ struct AddRoutineTCAView: View {
         store.taskType == .todo
             ? "Capture extra context, links, or reminders for this todo."
             : "Add any details you want to keep with this routine."
+    }
+
+    private var linkHelpText: String {
+        "Add a website to open from the task detail screen. If you skip the scheme, https will be used."
     }
 
     private var tagComposer: some View {
@@ -970,6 +994,17 @@ struct AddRoutineTCAView: View {
                                     )
 
                                 Text(notesHelpText)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        macFormRow("Link") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                TextField("https://example.com", text: routineLinkBinding)
+                                    .textFieldStyle(.roundedBorder)
+
+                                Text(linkHelpText)
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }

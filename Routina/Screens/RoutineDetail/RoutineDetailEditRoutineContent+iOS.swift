@@ -93,6 +93,23 @@ struct RoutineDetailEditRoutineContent: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(header: Text("Link")) {
+                TextField(
+                    "https://example.com",
+                    text: Binding(
+                        get: { store.editRoutineLink },
+                        set: { store.send(.editRoutineLinkChanged($0)) }
+                    )
+                )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+
+                Text("Add a website to open from the detail screen. If you skip the scheme, https will be used.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Tags")) {
                 HStack(spacing: 10) {
                     TextField(

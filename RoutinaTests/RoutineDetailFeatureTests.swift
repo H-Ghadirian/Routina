@@ -505,6 +505,60 @@ struct RoutineDetailFeatureTests {
     }
 
     @Test
+    func editSaveTapped_normalizesAndPersistsLink() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚")
+
+        let store = TestStore(
+            initialState: RoutineDetailFeature.State(
+                task: task,
+                logs: [],
+                isEditSheetPresented: true,
+                editRoutineName: "Read",
+                editRoutineEmoji: "📚",
+                editRoutineLink: "example.com/article",
+                editFrequency: .week,
+                editFrequencyValue: 1
+            )
+        ) {
+            RoutineDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+        await store.receive(.availablePlacesLoaded([]))
+        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.logsLoaded([]))
+
+        let persistedTaskID = task.id
+        let persistedTask = try #require(
+            context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.link == "https://example.com/article")
+        #expect(persistedTask.resolvedLinkURL?.absoluteString == "https://example.com/article")
+    }
+
+    @Test
     func editSaveTapped_rejectsDuplicateName_caseInsensitiveAndTrimmed() async throws {
         let context = makeInMemoryContext()
         _ = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")

@@ -417,6 +417,7 @@ final class RoutineTask {
     var name: String?
     var emoji: String?
     var notes: String?
+    var link: String?
     var deadline: Date?
     @Attribute(.externalStorage) var imageData: Data?
     var placeID: UUID?
@@ -608,6 +609,7 @@ final class RoutineTask {
         name: String? = nil,
         emoji: String? = nil,
         notes: String? = nil,
+        link: String? = nil,
         deadline: Date? = nil,
         imageData: Data? = nil,
         placeID: UUID? = nil,
@@ -633,6 +635,7 @@ final class RoutineTask {
         self.name = name
         self.emoji = emoji
         self.notes = Self.sanitizedNotes(notes)
+        self.link = Self.sanitizedLink(link)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.imageData = imageData
         self.placeID = placeID
@@ -873,6 +876,30 @@ final class RoutineTask {
         return trimmed
     }
 
+    static func sanitizedLink(_ link: String?) -> String? {
+        guard var trimmed = link?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty else {
+            return nil
+        }
+
+        if !trimmed.contains("://") {
+            trimmed = "https://\(trimmed)"
+        }
+
+        guard let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              ["http", "https"].contains(scheme),
+              url.host?.isEmpty == false else {
+            return nil
+        }
+
+        return url.absoluteString
+    }
+
+    var resolvedLinkURL: URL? {
+        Self.sanitizedLink(link).flatMap(URL.init(string:))
+    }
+
     static func sanitizedEmoji(_ input: String, fallback: String) -> String {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.first else { return fallback }
@@ -885,6 +912,7 @@ final class RoutineTask {
             name: name,
             emoji: emoji,
             notes: notes,
+            link: link,
             deadline: deadline,
             imageData: imageData,
             placeID: placeID,

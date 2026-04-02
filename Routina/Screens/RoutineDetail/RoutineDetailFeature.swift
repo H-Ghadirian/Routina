@@ -43,6 +43,7 @@ struct RoutineDetailFeature: Reducer {
         var editRoutineName: String = ""
         var editRoutineEmoji: String = "✨"
         var editRoutineNotes: String = ""
+        var editRoutineLink: String = ""
         var editDeadline: Date?
         var editImageData: Data?
         var editRoutineTags: [String] = []
@@ -79,6 +80,7 @@ struct RoutineDetailFeature: Reducer {
         case editRoutineNameChanged(String)
         case editRoutineEmojiChanged(String)
         case editRoutineNotesChanged(String)
+        case editRoutineLinkChanged(String)
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
         case editImagePicked(Data?)
@@ -353,6 +355,10 @@ struct RoutineDetailFeature: Reducer {
             state.editRoutineNotes = notes
             return .none
 
+        case let .editRoutineLinkChanged(link):
+            state.editRoutineLink = link
+            return .none
+
         case let .editDeadlineEnabledChanged(isEnabled):
             state.editDeadline = isEnabled ? (state.editDeadline ?? now) : nil
             return .none
@@ -532,6 +538,7 @@ struct RoutineDetailFeature: Reducer {
                 name: trimmedName,
                 emoji: state.editRoutineEmoji,
                 notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
+                link: RoutineTask.sanitizedLink(state.editRoutineLink),
                 deadline: state.editScheduleMode == .oneOff ? state.editDeadline : nil,
                 imageData: state.editImageData,
                 placeID: state.editSelectedPlaceID,
@@ -585,6 +592,7 @@ struct RoutineDetailFeature: Reducer {
         state.editRoutineName = state.task.name ?? ""
         state.editRoutineEmoji = state.task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
         state.editRoutineNotes = state.task.notes ?? ""
+        state.editRoutineLink = state.task.link ?? ""
         state.editDeadline = state.task.deadline
         state.editImageData = state.task.imageData
         state.editRoutineTags = state.task.tags
@@ -807,6 +815,7 @@ struct RoutineDetailFeature: Reducer {
         name: String,
         emoji: String,
         notes: String?,
+        link: String?,
         deadline: Date?,
         imageData: Data?,
         placeID: UUID?,
@@ -828,6 +837,7 @@ struct RoutineDetailFeature: Reducer {
                 task.name = name
                 task.emoji = emoji
                 task.notes = notes
+                task.link = link
                 task.imageData = imageData
                 task.placeID = placeID
                 task.tags = tags

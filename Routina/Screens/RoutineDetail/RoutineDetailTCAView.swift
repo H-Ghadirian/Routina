@@ -21,7 +21,7 @@ struct RoutineDetailTCAView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     detailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
-                    if store.task.hasNotes || store.task.hasImage {
+                    if store.task.hasNotes || store.task.hasImage || store.task.resolvedLinkURL != nil {
                         taskExtrasSection
                     }
                     if store.task.hasChecklistItems {
@@ -89,6 +89,7 @@ struct RoutineDetailTCAView: View {
                                     name: store.editRoutineName,
                                     emoji: store.editRoutineEmoji,
                                     notes: store.editRoutineNotes,
+                                    link: store.editRoutineLink,
                                     deadline: store.editDeadline,
                                     imageData: store.editImageData,
                                     selectedPlaceID: store.editSelectedPlaceID,
@@ -280,6 +281,21 @@ struct RoutineDetailTCAView: View {
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let linkURL = store.task.resolvedLinkURL {
+                Link(destination: linkURL) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "link")
+                            .foregroundStyle(.blue)
+                        Text(store.task.link ?? linkURL.absoluteString)
+                            .font(.subheadline)
+                            .foregroundStyle(.blue)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
         .padding(12)
@@ -1153,6 +1169,7 @@ struct RoutineDetailTCAView: View {
         name: String,
         emoji: String,
         notes: String,
+        link: String,
         deadline: Date?,
         imageData: Data?,
         selectedPlaceID: UUID?,
@@ -1178,6 +1195,7 @@ struct RoutineDetailTCAView: View {
         let currentName = (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let currentEmoji = task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨"
         let currentNotes = task.notes ?? ""
+        let currentLink = task.link ?? ""
         let currentTags = RoutineTag.deduplicated(task.tags)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
         let currentImageData = task.imageData
@@ -1211,6 +1229,7 @@ struct RoutineDetailTCAView: View {
         return trimmedName != currentName
             || emoji != currentEmoji
             || notes != currentNotes
+            || link != currentLink
             || deadline != currentDeadline
             || imageData != currentImageData
             || selectedPlaceID != task.placeID

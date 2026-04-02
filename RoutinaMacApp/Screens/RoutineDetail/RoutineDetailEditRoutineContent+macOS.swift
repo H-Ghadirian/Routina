@@ -63,6 +63,24 @@ struct RoutineDetailEditRoutineContent: View {
                                 Spacer(minLength: 0)
                             }
                         }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Link")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            TextField(
+                                "https://example.com",
+                                text: Binding(
+                                    get: { store.editRoutineLink },
+                                    set: { store.send(.editRoutineLinkChanged($0)) }
+                                )
+                            )
+                            .textFieldStyle(.roundedBorder)
+
+                            Text("Add a website to open from the detail screen. If you skip the scheme, https will be used.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
