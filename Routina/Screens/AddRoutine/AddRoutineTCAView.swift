@@ -1064,25 +1064,31 @@ struct AddRoutineTCAView: View {
                 ) {
                     VStack(alignment: .leading, spacing: 18) {
                         macControlBlock(title: "Type", caption: taskTypeDescription) {
-                            Picker("Task Type", selection: taskTypeBinding) {
-                                Text("Routine").tag(RoutineTaskType.routine)
-                                Text("Todo").tag(RoutineTaskType.todo)
+                            HStack(spacing: 0) {
+                                Picker("Task Type", selection: taskTypeBinding) {
+                                    Text("Routine").tag(RoutineTaskType.routine)
+                                    Text("Todo").tag(RoutineTaskType.todo)
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .fixedSize()
+                                Spacer(minLength: 0)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                            .frame(width: macCompactControlWidth)
                         }
 
                         if store.taskType == .routine {
                             macControlBlock(title: "Schedule style", caption: scheduleModeDescription) {
-                                Picker("Schedule Type", selection: scheduleModeBinding) {
-                                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                                HStack(spacing: 0) {
+                                    Picker("Schedule Type", selection: scheduleModeBinding) {
+                                        Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                                        Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                                        Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.segmented)
+                                    .fixedSize()
+                                    Spacer(minLength: 0)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(width: 340)
                             }
 
                             if !isStepBasedMode {
@@ -1100,14 +1106,17 @@ struct AddRoutineTCAView: View {
 
                         if showsRepeatControls {
                             macControlBlock(title: "Repeat pattern", caption: recurrencePatternDescription) {
-                                Picker("Repeat Pattern", selection: recurrenceKindBinding) {
-                                    ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                                        Text(kind.pickerTitle).tag(kind)
+                                HStack(spacing: 0) {
+                                    Picker("Repeat Pattern", selection: recurrenceKindBinding) {
+                                        ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
+                                            Text(kind.pickerTitle).tag(kind)
+                                        }
                                     }
+                                    .labelsHidden()
+                                    .pickerStyle(.segmented)
+                                    .fixedSize()
+                                    Spacer(minLength: 0)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(width: 340)
                             }
 
                             switch store.recurrenceKind {
@@ -1308,10 +1317,9 @@ struct AddRoutineTCAView: View {
                     imageAttachmentContent
                 }
                 }
-                .frame(maxWidth: macContentMaxWidth, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 22)
-                .frame(maxWidth: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -1441,6 +1449,7 @@ struct AddRoutineTCAView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func macInfoPill(_ title: String, systemImage: String) -> some View {

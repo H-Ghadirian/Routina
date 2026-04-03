@@ -173,13 +173,16 @@ struct RoutineDetailEditRoutineContent: View {
 
                 sectionCard(title: "Task Type") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Picker("Task Type", selection: taskTypeBinding) {
-                            Text("Routine").tag(RoutineTaskType.routine)
-                            Text("Todo").tag(RoutineTaskType.todo)
+                        HStack(spacing: 0) {
+                            Picker("Task Type", selection: taskTypeBinding) {
+                                Text("Routine").tag(RoutineTaskType.routine)
+                                Text("Todo").tag(RoutineTaskType.todo)
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .fixedSize()
+                            Spacer(minLength: 0)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 260)
 
                         Text(taskTypeDescription)
                             .font(.footnote)
@@ -189,14 +192,17 @@ struct RoutineDetailEditRoutineContent: View {
                             Divider()
                                 .padding(.vertical, 2)
 
-                            Picker("Schedule Type", selection: scheduleModeBinding) {
-                                Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                                Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                                Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                            HStack(spacing: 0) {
+                                Picker("Schedule Type", selection: scheduleModeBinding) {
+                                    Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
+                                    Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
+                                    Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .fixedSize()
+                                Spacer(minLength: 0)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                            .frame(width: 320)
 
                             Text(scheduleModeDescription)
                                 .font(.footnote)
@@ -248,6 +254,7 @@ struct RoutineDetailEditRoutineContent: View {
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 sectionCard(title: "Place") {
@@ -722,19 +729,23 @@ struct RoutineDetailEditRoutineContent: View {
             Text("Repeat Pattern")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-            Picker("Repeat Pattern", selection: recurrenceKindBinding) {
-                ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                    Text(kind.pickerTitle).tag(kind)
+            HStack(spacing: 0) {
+                Picker("Repeat Pattern", selection: recurrenceKindBinding) {
+                    ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
+                        Text(kind.pickerTitle).tag(kind)
+                    }
                 }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+                Spacer(minLength: 0)
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(width: 320)
 
             Text(recurrencePatternDescription)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
 
         switch store.editRecurrenceKind {
         case .intervalDays:
@@ -742,20 +753,25 @@ struct RoutineDetailEditRoutineContent: View {
                 Text("Frequency")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                Picker(
-                    "Frequency",
-                    selection: Binding(
-                        get: { store.editFrequency },
-                        set: { store.send(.editFrequencyChanged($0)) }
-                    )
-                ) {
-                    ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
-                        Text(frequency.rawValue).tag(frequency)
+                HStack(spacing: 0) {
+                    Picker(
+                        "Frequency",
+                        selection: Binding(
+                            get: { store.editFrequency },
+                            set: { store.send(.editFrequencyChanged($0)) }
+                        )
+                    ) {
+                        ForEach(RoutineDetailFeature.EditFrequency.allCases, id: \.self) { frequency in
+                            Text(frequency.rawValue).tag(frequency)
+                        }
                     }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                    Spacer(minLength: 0)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Repeat")
