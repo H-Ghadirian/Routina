@@ -28,6 +28,13 @@ struct HomeTCAView: View {
         case timelineEntry(UUID)
     }
 
+    private enum MacTaskListMode: String, CaseIterable, Identifiable {
+        case routines = "Routines"
+        case todos = "Todos"
+
+        var id: Self { self }
+    }
+
     private enum MacSidebarMode: String, CaseIterable, Identifiable {
         case routines = "Routines"
         case timeline = "Timeline"
@@ -59,6 +66,7 @@ struct HomeTCAView: View {
 #if os(macOS)
     @State private var macSidebarSelection: MacSidebarSelection?
     @State private var macSidebarMode: MacSidebarMode = .routines
+    @State private var macTaskListMode: MacTaskListMode = .routines
     @State private var selectedSettingsSection: SettingsMacSection? = .notifications
 #endif
 
@@ -166,6 +174,9 @@ struct HomeTCAView: View {
 #if os(macOS)
             .onChange(of: store.selectedTaskID) { _, selectedTaskID in
                 guard macSidebarMode == .routines else { return }
+                if let selectedTaskID {
+                    syncMacTaskListMode(for: selectedTaskID)
+                }
                 macSidebarSelection = selectedTaskID.map(MacSidebarSelection.task)
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenRoutinesInSidebar)) { _ in
@@ -180,6 +191,24 @@ struct HomeTCAView: View {
             .onChange(of: macSidebarMode) { _, mode in
                 if mode == .settings {
                     settingsStore.send(.onAppear)
+                }
+            }
+            .onChange(of: macTaskListMode) { _, _ in
+                selectedFilter = .all
+                store.send(.setMacFilterDetailPresented(false))
+                if let selectedTaskID = store.selectedTaskID,
+                   let task = store.routineTasks.first(where: { $0.id == selectedTaskID }) {
+                    let shouldKeepSelection: Bool
+                    switch macTaskListMode {
+                    case .routines:
+                        shouldKeepSelection = !task.isOneOffTask
+                    case .todos:
+                        shouldKeepSelection = task.isOneOffTask
+                    }
+                    if !shouldKeepSelection {
+                        macSidebarSelection = nil
+                        store.send(.setSelectedTask(nil))
+                    }
                 }
             }
 #endif
@@ -305,6 +334,9 @@ struct HomeTCAView: View {
     private var macSidebarHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             macSidebarModeStrip
+            if macSidebarMode == .routines {
+                macTaskListModeStrip
+            }
             if macSidebarMode == .routines || macSidebarMode == .timeline {
                 macSearchPanel
             }
@@ -357,6 +389,34 @@ struct HomeTCAView: View {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .stroke(Color.white.opacity(0.06), lineWidth: 1)
         )
+    }
+
+    private var macTaskListModeStrip: some View {
+        HStack(spacing: 8) {
+            ForEach(MacTaskListMode.allCases) { mode in
+                Button {
+                    macTaskListMode = mode
+                } label: {
+                    Text(mode.rawValue)
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(
+                            macTaskListMode == mode ? Color.white : Color.primary
+                        )
+                        .background(
+                            Capsule()
+                                .fill(
+                                    macTaskListMode == mode
+                                        ? Color.accentColor
+                                        : Color.secondary.opacity(0.10)
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private func macSidebarModeIcon(for mode: MacSidebarMode) -> String {
@@ -428,6 +488,15 @@ struct HomeTCAView: View {
         return selectedFilter != .all || hasActiveOptionalFilters
     }
 
+    private var macFilterDetailDescription: String {
+        switch macTaskListMode {
+        case .routines:
+            return "Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately."
+        case .todos:
+            return "Refine the todo list by status, tag, and place. Changes apply to the sidebar immediately."
+        }
+    }
+
     private func clearAllMacFilters() {
         if macSidebarMode == .timeline {
             selectedTimelineRange = .week
@@ -456,7 +525,7 @@ struct HomeTCAView: View {
                         Text("Filters")
                             .font(.largeTitle.weight(.semibold))
 
-                        Text("Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately.")
+                        Text(macFilterDetailDescription)
                             .font(.body)
                             .foregroundStyle(.secondary)
                     }
@@ -616,7 +685,15 @@ struct HomeTCAView: View {
 
     var searchPlaceholderText: String {
 #if os(macOS)
-        macSidebarMode == .timeline ? "Search dones" : "Search routines and todos"
+        if macSidebarMode == .timeline {
+            return "Search dones"
+        }
+        switch macTaskListMode {
+        case .routines:
+            return "Search routines"
+        case .todos:
+            return "Search todos"
+        }
 #else
         "Search routines and todos"
 #endif
@@ -671,7 +748,7 @@ struct HomeTCAView: View {
                 alignment: .leading,
                 spacing: 8
             ) {
-                ForEach(RoutineListFilter.allCases) { filter in
+                ForEach(macAvailableFilters) { filter in
                     Button {
                         selectedFilter = filter
                     } label: {
@@ -778,6 +855,12 @@ struct HomeTCAView: View {
         routineDisplays.sorted(by: regularTaskSort)
     }
 
+#if os(macOS)
+    private var macAvailableFilters: [RoutineListFilter] {
+        [.all, .due, .doneToday]
+    }
+#endif
+
     private func regularTaskSort(
         _ task1: HomeFeature.RoutineDisplay,
         _ task2: HomeFeature.RoutineDisplay
@@ -876,8 +959,10 @@ struct HomeTCAView: View {
 #if os(macOS)
             if pinnedTasks.isEmpty && sections.isEmpty && archivedTasks.isEmpty {
                 emptyStateView(
-                    title: "No matching routines",
-                    message: "Try a different place or switch back to all routines.",
+                    title: macTaskListMode == .todos ? "No matching todos" : "No matching routines",
+                    message: macTaskListMode == .todos
+                        ? "Try a different place or switch back to all todos."
+                        : "Try a different place or switch back to all routines.",
                     systemImage: "magnifyingglass"
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1608,6 +1693,7 @@ struct HomeTCAView: View {
     private func openTask(_ taskID: UUID) {
 #if os(macOS)
         macSidebarMode = .routines
+        syncMacTaskListMode(for: taskID)
         macSidebarSelection = .task(taskID)
 #endif
         store.send(.setSelectedTask(taskID))
@@ -1651,6 +1737,7 @@ struct HomeTCAView: View {
                 switch selection {
                 case let .task(taskID):
                     macSidebarMode = .routines
+                    syncMacTaskListMode(for: taskID)
                     if store.isAddRoutineSheetPresented {
                         store.send(.setAddRoutineSheet(false))
                     }
@@ -1691,6 +1778,9 @@ struct HomeTCAView: View {
 
     private func showRoutinesInSidebar() {
         macSidebarMode = .routines
+        if let selectedTaskID = store.selectedTaskID {
+            syncMacTaskListMode(for: selectedTaskID)
+        }
         macSidebarSelection = store.selectedTaskID.map(MacSidebarSelection.task)
         store.send(.setMacFilterDetailPresented(false))
     }
@@ -1733,6 +1823,11 @@ struct HomeTCAView: View {
     private func openSettingsPlacesInSidebar() {
         selectedSettingsSection = .places
         openSettingsInSidebar()
+    }
+
+    private func syncMacTaskListMode(for taskID: UUID) {
+        guard let task = store.routineTasks.first(where: { $0.id == taskID }) else { return }
+        macTaskListMode = task.isOneOffTask ? .todos : .routines
     }
 
     private func timelineSidebarRow(_ entry: TimelineEntry) -> some View {
@@ -1891,11 +1986,25 @@ struct HomeTCAView: View {
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {
         sortedTasks(routineDisplays).filter { task in
-            matchesSearch(task)
+            matchesMacTaskListMode(task)
+                && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
                 && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
         }
+    }
+
+    private func matchesMacTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
+#if os(macOS)
+        switch macTaskListMode {
+        case .routines:
+            return !task.isOneOffTask
+        case .todos:
+            return task.isOneOffTask
+        }
+#else
+        return true
+#endif
     }
 
     private func filteredArchivedTasks(
@@ -1904,7 +2013,8 @@ struct HomeTCAView: View {
     ) -> [HomeFeature.RoutineDisplay] {
         routineDisplays
             .filter { task in
-                !task.isCompletedOneOff
+                matchesMacTaskListMode(task)
+                    && !task.isCompletedOneOff
                     && (includePinned || !task.isPinned)
                     && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
@@ -1920,6 +2030,7 @@ struct HomeTCAView: View {
     ) -> [HomeFeature.RoutineDisplay] {
         let activePinned = sortedTasks(activeRoutineDisplays + awayRoutineDisplays).filter { task in
             task.isPinned
+                && matchesMacTaskListMode(task)
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
