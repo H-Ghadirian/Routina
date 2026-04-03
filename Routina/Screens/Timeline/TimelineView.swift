@@ -48,9 +48,7 @@ struct TimelineView: View {
         NavigationStack {
             content
                 .navigationTitle("Timeline")
-#if !os(macOS)
-                .navigationBarTitleDisplayMode(.large)
-#endif
+                .routinaTimelineNavigationTitleDisplayMode()
         }
     }
 

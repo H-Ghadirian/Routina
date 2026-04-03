@@ -4,12 +4,12 @@ import ComposableArchitecture
 struct RoutineDetailTCAView: View {
     let store: StoreOf<RoutineDetailFeature>
     @Environment(\.dismiss) private var dismiss
-    @State private var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
-    @State private var isShowingAllLogs = false
-    @State private var isEditEmojiPickerPresented = false
-    @State private var syncedMacOverviewHeight: CGFloat = 0
-    private let emojiOptions = EmojiCatalog.uniqueQuick
-    private let allEmojiOptions = EmojiCatalog.searchableAll
+    @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
+    @State var isShowingAllLogs = false
+    @State var isEditEmojiPickerPresented = false
+    @State var syncedMacOverviewHeight: CGFloat = 0
+    let emojiOptions = EmojiCatalog.uniqueQuick
+    let allEmojiOptions = EmojiCatalog.searchableAll
 
     var body: some View {
         WithPerceptionTracking {
@@ -56,37 +56,13 @@ struct RoutineDetailTCAView: View {
                     }
                 }
             }
-#if !os(macOS)
-            .sheet(
-                isPresented: Binding(
-                    get: { store.isEditSheetPresented },
-                    set: { store.send(.setEditSheet($0)) }
-                )
-            ) {
-                NavigationStack {
-                    RoutineDetailEditRoutineContent(
-                        store: store,
-                        isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
-                        emojiOptions: emojiOptions
-                    )
-                    .navigationTitle("Edit Task")
-                    .routinaInlineTitleDisplayMode()
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                store.send(.setEditSheet(false))
-                            }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") {
-                                store.send(.editSaveTapped)
-                            }
-                            .disabled(!canSaveCurrentEdit)
-                        }
-                    }
-                }
-            }
-#endif
+            .routinaPlatformEditPresentation(
+                isPresented: editSheetBinding,
+                store: store,
+                isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
+                emojiOptions: emojiOptions,
+                canSaveCurrentEdit: canSaveCurrentEdit
+            )
             .sheet(isPresented: $isEditEmojiPickerPresented) {
                 EmojiPickerSheet(
                     selectedEmoji: Binding(
@@ -190,63 +166,25 @@ struct RoutineDetailTCAView: View {
         )
     }
 
-    private var isInlineEditPresented: Bool {
-#if os(macOS)
-        store.isEditSheetPresented
-#else
-        false
-#endif
+    var editSheetBinding: Binding<Bool> {
+        Binding(
+            get: { store.isEditSheetPresented },
+            set: { store.send(.setEditSheet($0)) }
+        )
+    }
+
+    var isInlineEditPresented: Bool {
+        platformIsInlineEditPresented
     }
 
     @ViewBuilder
-    private func detailOverviewSection(
+    func detailOverviewSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
-#if os(macOS)
-        HStack(alignment: .top, spacing: 20) {
-            calendarSection
-                .background(heightReader(id: "calendar"))
-                .frame(
-                    maxWidth: .infinity,
-                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
-                    alignment: .topLeading
-                )
-                .background(RoutineDetailPlatformStyle.calendarCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-                )
-                .layoutPriority(1)
-
-            macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
-                .background(heightReader(id: "status"))
-                .frame(width: 320)
-                .frame(
-                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
-                    alignment: .topLeading
-                )
-                .background(RoutineDetailPlatformStyle.summaryCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-                )
-        }
-        .onPreferenceChange(RoutineDetailOverviewHeightsPreferenceKey.self) { heights in
-            let maxHeight = heights.values.max() ?? 0
-            guard abs(maxHeight - syncedMacOverviewHeight) > 0.5 else { return }
-            syncedMacOverviewHeight = maxHeight
-        }
-#else
-        VStack(spacing: 16) {
-            calendarSection
-            compactStatusSection(pauseArchivePresentation: pauseArchivePresentation)
-        }
-#endif
+        platformDetailOverviewSection(pauseArchivePresentation: pauseArchivePresentation)
     }
 
-    private var calendarSection: some View {
+    var calendarSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             calendarHeader
                 .padding(.bottom, 8)
@@ -269,17 +207,10 @@ struct RoutineDetailTCAView: View {
             calendarLegend
         }
         .padding(12)
-#if !os(macOS)
-        .background(RoutineDetailPlatformStyle.calendarCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-        )
-#endif
+        .routinaPlatformCalendarCardStyle()
     }
 
-    private func heightReader(id: String) -> some View {
+    func heightReader(id: String) -> some View {
         GeometryReader { proxy in
             Color.clear
                 .preference(
@@ -289,7 +220,7 @@ struct RoutineDetailTCAView: View {
         }
     }
 
-    private func compactStatusSection(
+    func compactStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -354,7 +285,7 @@ struct RoutineDetailTCAView: View {
         )
     }
 
-    private func macStatusSection(
+    func macStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -468,9 +399,7 @@ struct RoutineDetailTCAView: View {
                 completionButtonLabel
             }
             .buttonStyle(.borderedProminent)
-#if os(macOS)
-            .controlSize(useLargePrimaryControl ? .large : .regular)
-#endif
+            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
             .frame(maxWidth: .infinity, alignment: .leading)
             .disabled(isCompletionButtonDisabled)
 
@@ -480,9 +409,7 @@ struct RoutineDetailTCAView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(store.task.isPaused ? .teal : .orange)
-#if os(macOS)
-                .controlSize(.regular)
-#endif
+                .routinaPlatformSecondaryActionControlSize()
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 

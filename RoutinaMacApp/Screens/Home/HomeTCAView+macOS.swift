@@ -19,6 +19,48 @@ extension View {
 }
 
 extension HomeTCAView {
+    enum MacSidebarSelection: Hashable {
+        case task(UUID)
+        case timelineEntry(UUID)
+    }
+
+    enum MacTaskListMode: String, CaseIterable, Identifiable {
+        case routines = "Routines"
+        case todos = "Todos"
+
+        var id: Self { self }
+    }
+
+    enum MacSidebarMode: String, CaseIterable, Identifiable {
+        case routines = "Routines"
+        case timeline = "Timeline"
+        case stats = "Stats"
+        case settings = "Settings"
+
+        var id: Self { self }
+    }
+
+    init(
+        store: StoreOf<HomeFeature>,
+        settingsStore: StoreOf<SettingsFeature>,
+        searchText: Binding<String>? = nil
+    ) {
+        self.store = store
+        self.settingsStore = settingsStore
+        self.externalSearchText = searchText
+    }
+
+    @ToolbarContentBuilder
+    var homeToolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            macDoneCountToolbarItem
+            platformRefreshButton
+            MacToolbarIconButton(title: "Add Task", systemImage: "plus") {
+                openAddTask()
+            }
+        }
+    }
+
     var platformNavigationContent: some View {
         NavigationSplitView {
             WithPerceptionTracking {
@@ -108,6 +150,680 @@ extension HomeTCAView {
             Task { @MainActor in
                 await performManualRefresh()
             }
+        }
+    }
+
+    func applyPlatformHomeObservers<Content: View>(to view: Content) -> some View {
+        view
+            .onChange(of: store.selectedTaskID) { _, selectedTaskID in
+                guard macSidebarMode == .routines else { return }
+                if let selectedTaskID {
+                    syncMacTaskListMode(for: selectedTaskID)
+                }
+                macSidebarSelection = selectedTaskID.map(MacSidebarSelection.task)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenRoutinesInSidebar)) { _ in
+                showRoutinesInSidebar()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenTimelineInSidebar)) { _ in
+                openTimelineInSidebar()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenStatsInSidebar)) { _ in
+                openStatsInSidebar()
+            }
+            .onChange(of: macSidebarMode) { _, mode in
+                if mode == .settings {
+                    settingsStore.send(.onAppear)
+                }
+            }
+            .onChange(of: macTaskListMode) { _, _ in
+                selectedFilter = .all
+                store.send(.setMacFilterDetailPresented(false))
+                if let selectedTaskID = store.selectedTaskID,
+                   let task = store.routineTasks.first(where: { $0.id == selectedTaskID }) {
+                    let shouldKeepSelection: Bool
+                    switch macTaskListMode {
+                    case .routines:
+                        shouldKeepSelection = !task.isOneOffTask
+                    case .todos:
+                        shouldKeepSelection = task.isOneOffTask
+                    }
+                    if !shouldKeepSelection {
+                        macSidebarSelection = nil
+                        store.send(.setSelectedTask(nil))
+                    }
+                }
+            }
+    }
+
+    var searchPlaceholderText: String {
+        if macSidebarMode == .timeline {
+            return "Search dones"
+        }
+        switch macTaskListMode {
+        case .routines:
+            return "Search routines"
+        case .todos:
+            return "Search todos"
+        }
+    }
+
+    func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
+        content
+    }
+
+    func openAddTask() {
+        macSidebarMode = .routines
+        macSidebarSelection = nil
+        store.send(.setMacFilterDetailPresented(false))
+        store.send(.setAddRoutineSheet(true))
+    }
+
+    var filterPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Show")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(macAvailableFilters) { filter in
+                    Button {
+                        selectedFilter = filter
+                    } label: {
+                        Text(filter.rawValue)
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(
+                                selectedFilter == filter ? Color.white : Color.primary
+                            )
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        selectedFilter == filter
+                                            ? Color.accentColor
+                                            : Color.secondary.opacity(0.10)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    var locationFilterPanel: some View {
+        EmptyView()
+    }
+
+    @ViewBuilder
+    var homeFiltersSheet: some View {
+        EmptyView()
+    }
+
+    func matchesCurrentTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        switch macTaskListMode {
+        case .routines:
+            return !task.isOneOffTask
+        case .todos:
+            return task.isOneOffTask
+        }
+    }
+
+    private var macAvailableFilters: [RoutineListFilter] {
+        [.all, .due, .doneToday]
+    }
+
+    var macPlaceFilterOptions: [MacPlaceFilterOption] {
+        let linkedRoutineCounts = store.routineTasks.reduce(into: [UUID: Int]()) { partialResult, task in
+            guard let placeID = task.placeID else { return }
+            partialResult[placeID, default: 0] += 1
+        }
+
+        return sortedRoutinePlaces.map { place in
+            let linkedRoutineCount = linkedRoutineCounts[place.id, default: 0]
+            let status: MacPlaceFilterOption.Status
+
+            if let coordinate = store.locationSnapshot.coordinate,
+               store.locationSnapshot.authorizationStatus.isAuthorized {
+                if place.contains(coordinate) {
+                    status = .here
+                } else {
+                    status = .away(distanceMeters: place.distance(to: coordinate))
+                }
+            } else {
+                status = .unknown
+            }
+
+            return MacPlaceFilterOption(
+                place: place,
+                linkedRoutineCount: linkedRoutineCount,
+                status: status
+            )
+        }
+    }
+
+    var isMacTimelineMode: Bool { macSidebarMode == .timeline }
+    var isMacStatsMode: Bool { macSidebarMode == .stats }
+    var isMacSettingsMode: Bool { macSidebarMode == .settings }
+    var isMacRoutinesMode: Bool { macSidebarMode == .routines }
+    var currentSelectedSettingsSection: SettingsMacSection { selectedSettingsSection ?? .notifications }
+
+    var macHasCustomFiltersApplied: Bool {
+        if macSidebarMode == .timeline {
+            return selectedTimelineRange != .week
+                || selectedTimelineFilterType != .all
+                || selectedTimelineTag != nil
+        }
+        if macSidebarMode == .stats {
+            return false
+        }
+        return selectedFilter != .all || hasActiveOptionalFilters
+    }
+
+    var macFilterDetailDescription: String {
+        switch macTaskListMode {
+        case .routines:
+            return "Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately."
+        case .todos:
+            return "Refine the todo list by status, tag, and place. Changes apply to the sidebar immediately."
+        }
+    }
+
+    func clearAllMacFilters() {
+        if macSidebarMode == .timeline {
+            selectedTimelineRange = .week
+            selectedTimelineFilterType = .all
+            selectedTimelineTag = nil
+        } else {
+            selectedFilter = .all
+            clearOptionalFilters()
+        }
+    }
+
+    func macSidebarSectionCard<Content: View>(
+        title: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let title {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            content()
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.quaternary.opacity(0.32))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(.white.opacity(0.06), lineWidth: 1)
+        )
+    }
+
+    var timelineEntries: [TimelineEntry] {
+        baseTimelineEntries
+            .filter { entry in
+                TimelineLogic.matchesSelectedTag(selectedTimelineTag, in: entry.tags)
+            }
+            .filter(matchesTimelineSearch)
+    }
+
+    private var baseTimelineEntries: [TimelineEntry] {
+        TimelineLogic.filteredEntries(
+            logs: timelineLogs,
+            tasks: store.routineTasks,
+            range: selectedTimelineRange,
+            filterType: selectedTimelineFilterType,
+            now: Date(),
+            calendar: calendar
+        )
+    }
+
+    var availableTimelineTags: [String] {
+        TimelineLogic.availableTags(from: baseTimelineEntries)
+    }
+
+    var groupedTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
+        TimelineLogic.groupedByDay(entries: timelineEntries, calendar: calendar)
+    }
+
+    var macSidebarModeBinding: Binding<MacSidebarMode> {
+        Binding(
+            get: { macSidebarMode },
+            set: { mode in
+                switch mode {
+                case .routines:
+                    showRoutinesInSidebar()
+                case .timeline:
+                    openTimelineInSidebar()
+                case .stats:
+                    openStatsInSidebar()
+                case .settings:
+                    openSettingsInSidebar()
+                }
+            }
+        )
+    }
+
+    var macSidebarSelectionBinding: Binding<MacSidebarSelection?> {
+        Binding(
+            get: { macSidebarSelection },
+            set: { selection in
+                macSidebarSelection = selection
+                switch selection {
+                case let .task(taskID):
+                    macSidebarMode = .routines
+                    syncMacTaskListMode(for: taskID)
+                    if store.isAddRoutineSheetPresented {
+                        store.send(.setAddRoutineSheet(false))
+                    }
+                    store.send(.setSelectedTask(taskID))
+                case let .timelineEntry(entryID):
+                    macSidebarMode = .timeline
+                    if store.isAddRoutineSheetPresented {
+                        store.send(.setAddRoutineSheet(false))
+                    }
+                    store.send(.setMacFilterDetailPresented(false))
+                    if let taskID = timelineEntries.first(where: { $0.id == entryID })?.taskID {
+                        store.send(.setSelectedTask(taskID))
+                    } else {
+                        store.send(.setSelectedTask(nil))
+                    }
+                case nil:
+                    if macSidebarMode == .routines {
+                        store.send(.setSelectedTask(nil))
+                    }
+                }
+            }
+        )
+    }
+
+    private func openTimelineEntry(_ entry: TimelineEntry) {
+        macSidebarMode = .timeline
+        macSidebarSelection = .timelineEntry(entry.id)
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
+        store.send(.setMacFilterDetailPresented(false))
+        if let taskID = entry.taskID {
+            store.send(.setSelectedTask(taskID))
+        } else {
+            store.send(.setSelectedTask(nil))
+        }
+    }
+
+    private func showRoutinesInSidebar() {
+        macSidebarMode = .routines
+        if let selectedTaskID = store.selectedTaskID {
+            syncMacTaskListMode(for: selectedTaskID)
+        }
+        macSidebarSelection = store.selectedTaskID.map(MacSidebarSelection.task)
+        store.send(.setMacFilterDetailPresented(false))
+    }
+
+    private func openTimelineInSidebar() {
+        macSidebarMode = .timeline
+        validateSelectedTimelineTag()
+        macSidebarSelection = nil
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
+        store.send(.setMacFilterDetailPresented(false))
+        store.send(.setSelectedTask(nil))
+    }
+
+    private func openStatsInSidebar() {
+        macSidebarMode = .stats
+        macSidebarSelection = nil
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
+        store.send(.setMacFilterDetailPresented(false))
+        store.send(.setSelectedTask(nil))
+    }
+
+    private func openSettingsInSidebar() {
+        macSidebarMode = .settings
+        macSidebarSelection = nil
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
+        if selectedSettingsSection == nil {
+            selectedSettingsSection = .notifications
+        }
+        store.send(.setMacFilterDetailPresented(false))
+        store.send(.setSelectedTask(nil))
+        settingsStore.send(.onAppear)
+    }
+
+    func openSettingsPlacesInSidebar() {
+        selectedSettingsSection = .places
+        openSettingsInSidebar()
+    }
+
+    private func syncMacTaskListMode(for taskID: UUID) {
+        guard let task = store.routineTasks.first(where: { $0.id == taskID }) else { return }
+        macTaskListMode = task.isOneOffTask ? .todos : .routines
+    }
+
+    func timelineSidebarRow(_ entry: TimelineEntry) -> some View {
+        Button {
+            openTimelineEntry(entry)
+        } label: {
+            HStack(spacing: 12) {
+                Text(entry.taskEmoji)
+                    .font(.title2)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.primary.opacity(0.06))
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.taskName)
+                        .font(.body.weight(.medium))
+                        .lineLimit(1)
+
+                    Text(entry.timestamp, style: .time)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Text(entry.isOneOff ? "Todo" : "Routine")
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill(entry.isOneOff
+                                ? Color.purple.opacity(0.15)
+                                : Color.accentColor.opacity(0.15)
+                            )
+                    )
+                    .foregroundStyle(entry.isOneOff ? .purple : .accentColor)
+            }
+            .padding(.vertical, 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .tag(MacSidebarSelection.timelineEntry(entry.id))
+        .contentShape(Rectangle())
+    }
+
+    private func matchesTimelineSearch(_ entry: TimelineEntry) -> Bool {
+        let trimmedSearch = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSearch.isEmpty else { return true }
+        return entry.taskName.localizedCaseInsensitiveContains(trimmedSearch)
+            || entry.taskEmoji.localizedCaseInsensitiveContains(trimmedSearch)
+            || (entry.isOneOff
+                ? "todo".localizedCaseInsensitiveContains(trimmedSearch)
+                : "routine".localizedCaseInsensitiveContains(trimmedSearch))
+    }
+
+    @ViewBuilder
+    var timelineTagFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                tagFilterButton(title: "All Tags", isSelected: selectedTimelineTag == nil) {
+                    selectedTimelineTag = nil
+                }
+
+                ForEach(availableTimelineTags, id: \.self) { tag in
+                    tagFilterButton(
+                        title: "#\(tag)",
+                        isSelected: selectedTimelineTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                    ) {
+                        selectedTimelineTag = tag
+                    }
+                }
+            }
+        }
+    }
+
+    func validateSelectedTimelineTag() {
+        guard let selectedTimelineTag else { return }
+        if !RoutineTag.contains(selectedTimelineTag, in: availableTimelineTags) {
+            self.selectedTimelineTag = nil
+        }
+    }
+
+    var platformTimelineRangePicker: some View {
+        Picker("Range", selection: $selectedTimelineRange) {
+            ForEach(TimelineRange.allCases) { range in
+                Text(range.rawValue).tag(range)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    var platformTimelineTypePicker: some View {
+        Picker("Type", selection: $selectedTimelineFilterType) {
+            ForEach(TimelineFilterType.allCases) { type in
+                Text(type.rawValue).tag(type)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    @ViewBuilder
+    var platformTagFilterBar: some View {
+        if !availableTags.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Tags")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
+                            selectedTag = nil
+                        }
+
+                        ForEach(availableTags, id: \.self) { tag in
+                            tagFilterButton(
+                                title: "#\(tag)",
+                                isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                            ) {
+                                selectedTag = tag
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    var platformCompactHomeHeader: some View {
+        EmptyView()
+    }
+
+    @ViewBuilder
+    func platformListOfSortedTasksView(
+        routineDisplays: [HomeFeature.RoutineDisplay],
+        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
+        archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
+    ) -> some View {
+        let pinnedTasks = filteredPinnedTasks(
+            activeRoutineDisplays: routineDisplays,
+            awayRoutineDisplays: awayRoutineDisplays,
+            archivedRoutineDisplays: archivedRoutineDisplays
+        )
+        let sections = groupedRoutineSections(from: (routineDisplays + awayRoutineDisplays).filter { !$0.isPinned })
+        let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays, includePinned: false)
+
+        if pinnedTasks.isEmpty && sections.isEmpty && archivedTasks.isEmpty {
+            emptyStateView(
+                title: macTaskListMode == .todos ? "No matching todos" : "No matching routines",
+                message: macTaskListMode == .todos
+                    ? "Try a different place or switch back to all todos."
+                    : "Try a different place or switch back to all routines.",
+                systemImage: "magnifyingglass"
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            List(selection: macSidebarSelectionBinding) {
+                if !pinnedTasks.isEmpty {
+                    Section("Pinned") {
+                        ForEach(pinnedTasks) { task in
+                            routineNavigationRow(for: task)
+                        }
+                        .onDelete { offsets in
+                            deleteTasks(at: offsets, from: pinnedTasks)
+                        }
+                    }
+                }
+
+                ForEach(sections) { section in
+                    Section(section.title) {
+                        ForEach(section.tasks) { task in
+                            routineNavigationRow(for: task)
+                        }
+                        .onDelete { offsets in
+                            deleteTasks(at: offsets, from: section.tasks)
+                        }
+                    }
+                }
+
+                if !archivedTasks.isEmpty {
+                    Section("Archived") {
+                        ForEach(archivedTasks) { task in
+                            routineNavigationRow(for: task)
+                        }
+                        .onDelete { offsets in
+                            deleteTasks(at: offsets, from: archivedTasks)
+                        }
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationDestination(for: UUID.self) { taskID in
+                routineDetailDestination(taskID: taskID)
+            }
+        }
+    }
+
+    func platformRoutineRow(for task: HomeFeature.RoutineDisplay) -> some View {
+        let metadataText = rowMetadataText(for: task)
+
+        return HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(rowIconBackgroundColor(for: task))
+                Text(task.emoji)
+                    .font(.title3)
+                if task.hasImage {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Image(systemName: "photo.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.primary)
+                                .padding(4)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                    }
+                    .padding(2)
+                }
+            }
+            .frame(width: 36, height: 36)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(task.name)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .layoutPriority(1)
+
+                    Spacer(minLength: 8)
+
+                    statusBadge(for: task)
+                }
+
+                if let metadataText {
+                    Text(metadataText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                if !task.tags.isEmpty {
+                    Text(task.tags.map { "#\($0)" }.joined(separator: "  "))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 4)
+    }
+
+    func platformDeleteTasks(
+        at offsets: IndexSet,
+        from sectionTasks: [HomeFeature.RoutineDisplay]
+    ) {
+        let ids = offsets.compactMap { sectionTasks[$0].taskID }
+        store.send(.deleteTasksTapped(ids))
+    }
+
+    func platformOpenTask(_ taskID: UUID) {
+        macSidebarMode = .routines
+        syncMacTaskListMode(for: taskID)
+        macSidebarSelection = .task(taskID)
+        store.send(.setSelectedTask(taskID))
+    }
+
+    func platformDeleteTask(_ taskID: UUID) {
+        store.send(.deleteTasksTapped([taskID]))
+    }
+
+    func platformRoutineNavigationRow(
+        for task: HomeFeature.RoutineDisplay,
+        includeMarkDone: Bool
+    ) -> some View {
+        routineRow(for: task)
+            .tag(MacSidebarSelection.task(task.taskID))
+            .contentShape(Rectangle())
+            .contextMenu {
+                routineContextMenu(for: task, includeMarkDone: includeMarkDone)
+            }
+    }
+
+    @ViewBuilder
+    func platformPinMenuItem(for task: HomeFeature.RoutineDisplay) -> some View {
+        Button {
+            store.send(task.isPinned ? .unpinTask(task.taskID) : .pinTask(task.taskID))
+        } label: {
+            Label(
+                task.isPinned ? "Unpin from Top" : "Pin to Top",
+                systemImage: task.isPinned ? "pin.slash" : "pin"
+            )
+        }
+    }
+
+    @ViewBuilder
+    func platformDeleteMenuItem(for task: HomeFeature.RoutineDisplay) -> some View {
+        Button(role: .destructive) {
+            deleteTask(task.taskID)
+        } label: {
+            Label("Delete", systemImage: "trash")
         }
     }
 

@@ -3,33 +3,10 @@ import SwiftUI
 
 struct SettingsTagManagerPresentationView: View {
     let store: StoreOf<SettingsFeature>
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) var dismiss
 
     var body: some View {
-        Group {
-#if os(macOS)
-            SettingsMacTagsDetailView(store: store)
-                .frame(minWidth: 640, minHeight: 520)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") {
-                            dismiss()
-                        }
-                    }
-                }
-#else
-            NavigationStack {
-                SettingsTagsDetailView(store: store)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") {
-                                dismiss()
-                            }
-                        }
-                    }
-            }
-#endif
-        }
+        platformTagManagerContent
         .onAppear {
             store.send(.tagManagerAppeared)
         }

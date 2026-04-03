@@ -9,17 +9,17 @@ import PhotosUI
 
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
-    @FocusState private var isRoutineNameFocused: Bool
-    @State private var isEmojiPickerPresented = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var isImageFileImporterPresented = false
-    @State private var isImageDropTargeted = false
-    @State private var isTagManagerPresented = false
-    @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
+    @FocusState var isRoutineNameFocused: Bool
+    @State var isEmojiPickerPresented = false
+    @State var selectedPhotoItem: PhotosPickerItem?
+    @State var isImageFileImporterPresented = false
+    @State var isImageDropTargeted = false
+    @State var isTagManagerPresented = false
+    @State var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
-    private let emojiOptions = EmojiCatalog.uniqueQuick
-    private let allEmojiOptions = EmojiCatalog.searchableAll
+    let emojiOptions = EmojiCatalog.uniqueQuick
+    let allEmojiOptions = EmojiCatalog.searchableAll
 
     var body: some View {
         WithPerceptionTracking {
@@ -73,344 +73,162 @@ struct AddRoutineTCAView: View {
     }
 
     @ViewBuilder
-    private var addRoutineContent: some View {
-        #if os(macOS)
-        macOSContent
-        #else
-        Form {
-            Section(header: Text("Name")) {
-                TextField("Task name", text: routineNameBinding)
-                    .focused($isRoutineNameFocused)
-                if let nameValidationMessage {
-                    Text(nameValidationMessage)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            }
-
-            Section(header: Text("Task Type")) {
-                Picker("Task Type", selection: taskTypeBinding) {
-                    Text("Routine").tag(RoutineTaskType.routine)
-                    Text("Todo").tag(RoutineTaskType.todo)
-                }
-                .pickerStyle(.segmented)
-
-                Text(taskTypeDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(header: Text("Emoji")) {
-                HStack(spacing: 12) {
-                    Text("Selected")
-                        .foregroundColor(.secondary)
-                    Text(store.routineEmoji)
-                        .font(.title2)
-                        .frame(width: 44, height: 44)
-                    Spacer()
-                    Button("Choose Emoji") {
-                        isEmojiPickerPresented = true
-                    }
-                }
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(emojiOptions, id: \.self) { emoji in
-                            Button {
-                                store.send(.routineEmojiChanged(emoji))
-                            } label: {
-                                Text(emoji)
-                                    .font(.title2)
-                                    .frame(width: 40, height: 40)
-                                    .background(
-                                        Circle()
-                                            .fill(store.routineEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-
-            Section(header: Text("Notes")) {
-                TextField("Add notes", text: routineNotesBinding, axis: .vertical)
-                    .lineLimit(4...8)
-
-                Text(notesHelpText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(header: Text("Link")) {
-                TextField("https://example.com", text: routineLinkBinding)
-                    .textInputAutocapitalization(.never)
-#if !os(macOS)
-                    .autocorrectionDisabled()
-#endif
-                    .keyboardType(.URL)
-
-                Text(linkHelpText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if store.taskType == .todo {
-                Section(header: Text("Deadline")) {
-                    Toggle("Set deadline", isOn: deadlineEnabledBinding)
-                    if store.hasDeadline {
-                        DatePicker("Deadline", selection: deadlineBinding)
-                    }
-                }
-            }
-
-            Section(header: Text("Importance & Urgency")) {
-                ImportanceUrgencyMatrixPicker(
-                    importance: importanceBinding,
-                    urgency: urgencyBinding
-                )
-
-                Text(importanceUrgencyDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(header: Text("Image")) {
-                imageAttachmentContent
-            }
-
-            Section(header: Text("Tags")) {
-                tagComposer
-                availableTagSuggestionsContent
-                manageTagsButton
-                editableTagsContent
-
-                Text(tagSectionHelpText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(header: Text("Relationships")) {
-                TaskRelationshipsEditor(
-                    relationships: store.relationships,
-                    candidates: store.availableRelationshipTasks,
-                    addRelationship: { store.send(.addRelationship($0, $1)) },
-                    removeRelationship: { store.send(.removeRelationship($0)) }
-                )
-
-                Text("Link this task to another task as related work or a blocker.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if store.taskType == .routine {
-                Section(header: Text("Schedule Type")) {
-                    Picker("Schedule Type", selection: scheduleModeBinding) {
-                        Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                        Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                        Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
-                    }
-                    .pickerStyle(.segmented)
-
-                    Text(scheduleModeDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if isStepBasedMode {
-                Section(header: Text("Steps")) {
-                    stepComposer
-                    editableStepsContent
-
-                    Text(stepsSectionDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } else {
-                Section(header: Text("Checklist Items")) {
-                    checklistItemComposer
-                    editableChecklistItemsContent
-
-                    Text(checklistSectionDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Section(header: Text("Place")) {
-                Picker("Place", selection: selectedPlaceBinding) {
-                    Text("Anywhere").tag(Optional<UUID>.none)
-                    ForEach(store.availablePlaces) { place in
-                        Text(place.name).tag(Optional(place.id))
-                    }
-                }
-
-                Text(placeSelectionDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if showsRepeatControls {
-                repeatPatternSections
-            }
-        }
-        #endif
+    var addRoutineContent: some View {
+        platformAddRoutineContent
     }
 
-    private var routineNameBinding: Binding<String> {
+    var routineNameBinding: Binding<String> {
         Binding(
             get: { store.routineName },
             set: { store.send(.routineNameChanged($0)) }
         )
     }
 
-    private var routineEmojiBinding: Binding<String> {
+    var routineEmojiBinding: Binding<String> {
         Binding(
             get: { store.routineEmoji },
             set: { store.send(.routineEmojiChanged($0)) }
         )
     }
 
-    private var routineNotesBinding: Binding<String> {
+    var routineNotesBinding: Binding<String> {
         Binding(
             get: { store.routineNotes },
             set: { store.send(.routineNotesChanged($0)) }
         )
     }
 
-    private var routineLinkBinding: Binding<String> {
+    var routineLinkBinding: Binding<String> {
         Binding(
             get: { store.routineLink },
             set: { store.send(.routineLinkChanged($0)) }
         )
     }
 
-    private var taskTypeBinding: Binding<RoutineTaskType> {
+    var taskTypeBinding: Binding<RoutineTaskType> {
         Binding(
             get: { store.taskType },
             set: { store.send(.taskTypeChanged($0)) }
         )
     }
 
-    private var tagDraftBinding: Binding<String> {
+    var tagDraftBinding: Binding<String> {
         Binding(
             get: { store.tagDraft },
             set: { store.send(.tagDraftChanged($0)) }
         )
     }
 
-    private var stepDraftBinding: Binding<String> {
+    var stepDraftBinding: Binding<String> {
         Binding(
             get: { store.stepDraft },
             set: { store.send(.stepDraftChanged($0)) }
         )
     }
 
-    private var checklistItemDraftTitleBinding: Binding<String> {
+    var checklistItemDraftTitleBinding: Binding<String> {
         Binding(
             get: { store.checklistItemDraftTitle },
             set: { store.send(.checklistItemDraftTitleChanged($0)) }
         )
     }
 
-    private var checklistItemDraftIntervalBinding: Binding<Int> {
+    var checklistItemDraftIntervalBinding: Binding<Int> {
         Binding(
             get: { store.checklistItemDraftInterval },
             set: { store.send(.checklistItemDraftIntervalChanged($0)) }
         )
     }
 
-    private var scheduleModeBinding: Binding<RoutineScheduleMode> {
+    var scheduleModeBinding: Binding<RoutineScheduleMode> {
         Binding(
             get: { store.scheduleMode },
             set: { store.send(.scheduleModeChanged($0)) }
         )
     }
 
-    private var frequencyBinding: Binding<AddRoutineFeature.Frequency> {
+    var frequencyBinding: Binding<AddRoutineFeature.Frequency> {
         Binding(
             get: { store.frequency },
             set: { store.send(.frequencyChanged($0)) }
         )
     }
 
-    private var frequencyValueBinding: Binding<Int> {
+    var frequencyValueBinding: Binding<Int> {
         Binding(
             get: { store.frequencyValue },
             set: { store.send(.frequencyValueChanged($0)) }
         )
     }
 
-    private var recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind> {
+    var recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind> {
         Binding(
             get: { store.recurrenceKind },
             set: { store.send(.recurrenceKindChanged($0)) }
         )
     }
 
-    private var recurrenceTimeBinding: Binding<Date> {
+    var recurrenceTimeBinding: Binding<Date> {
         Binding(
             get: { store.recurrenceTimeOfDay.date(on: Date()) },
             set: { store.send(.recurrenceTimeOfDayChanged(RoutineTimeOfDay.from($0))) }
         )
     }
 
-    private var recurrenceWeekdayBinding: Binding<Int> {
+    var recurrenceWeekdayBinding: Binding<Int> {
         Binding(
             get: { store.recurrenceWeekday },
             set: { store.send(.recurrenceWeekdayChanged($0)) }
         )
     }
 
-    private var recurrenceDayOfMonthBinding: Binding<Int> {
+    var recurrenceDayOfMonthBinding: Binding<Int> {
         Binding(
             get: { store.recurrenceDayOfMonth },
             set: { store.send(.recurrenceDayOfMonthChanged($0)) }
         )
     }
 
-    private var selectedPlaceBinding: Binding<UUID?> {
+    var selectedPlaceBinding: Binding<UUID?> {
         Binding(
             get: { store.selectedPlaceID },
             set: { store.send(.selectedPlaceChanged($0)) }
         )
     }
 
-    private var deadlineEnabledBinding: Binding<Bool> {
+    var deadlineEnabledBinding: Binding<Bool> {
         Binding(
             get: { store.hasDeadline },
             set: { store.send(.deadlineEnabledChanged($0)) }
         )
     }
 
-    private var deadlineBinding: Binding<Date> {
+    var deadlineBinding: Binding<Date> {
         Binding(
             get: { store.deadline ?? Date() },
             set: { store.send(.deadlineDateChanged($0)) }
         )
     }
 
-    private var importanceBinding: Binding<RoutineTaskImportance> {
+    var importanceBinding: Binding<RoutineTaskImportance> {
         Binding(
             get: { store.importance },
             set: { store.send(.importanceChanged($0)) }
         )
     }
 
-    private var urgencyBinding: Binding<RoutineTaskUrgency> {
+    var urgencyBinding: Binding<RoutineTaskUrgency> {
         Binding(
             get: { store.urgency },
             set: { store.send(.urgencyChanged($0)) }
         )
     }
 
-    private var isSaveDisabled: Bool {
+    var isSaveDisabled: Bool {
         store.isSaveDisabled
     }
 
-    private var nameValidationMessage: String? {
+    var nameValidationMessage: String? {
         store.nameValidationMessage
     }
 
@@ -426,15 +244,15 @@ struct AddRoutineTCAView: View {
         RoutineChecklistItem.normalizedTitle(store.checklistItemDraftTitle) == nil
     }
 
-    private var isStepBasedMode: Bool {
+    var isStepBasedMode: Bool {
         store.scheduleMode == .fixedInterval || store.scheduleMode == .oneOff
     }
 
-    private var showsRepeatControls: Bool {
+    var showsRepeatControls: Bool {
         store.scheduleMode != .derivedFromChecklist && store.scheduleMode != .oneOff
     }
 
-    private var taskTypeDescription: String {
+    var taskTypeDescription: String {
         switch store.taskType {
         case .routine:
             return "Routines repeat on a schedule and stay in your rotation."
@@ -443,7 +261,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var scheduleModeDescription: String {
+    var scheduleModeDescription: String {
         switch store.scheduleMode {
         case .fixedInterval:
             return "Use one overall repeat interval for the whole routine."
@@ -456,7 +274,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var checklistSectionDescription: String {
+    var checklistSectionDescription: String {
         switch store.scheduleMode {
         case .fixedIntervalChecklist:
             return "The routine is done when every checklist item is completed."
@@ -467,7 +285,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var placeSelectionDescription: String {
+    var placeSelectionDescription: String {
         if let selectedPlaceID = store.selectedPlaceID,
            let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
             return "Show this task when you are at \(place.name)."
@@ -475,35 +293,35 @@ struct AddRoutineTCAView: View {
         return "Anywhere means the task is always visible."
     }
 
-    private var importanceUrgencyDescription: String {
+    var importanceUrgencyDescription: String {
         "\(store.importance.title) importance and \(store.urgency.title.lowercased()) urgency map to \(store.priority.title.lowercased()) priority for sorting."
     }
 
-    private var stepsSectionDescription: String {
+    var stepsSectionDescription: String {
         if store.scheduleMode == .oneOff {
             return "Steps run in order. Leave this empty for a single-step todo."
         }
         return "Steps run in order. Leave this empty for a one-step routine."
     }
 
-    private var tagSectionHelpText: String {
+    var tagSectionHelpText: String {
         if store.availableTags.isEmpty {
             return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
         }
         return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
     }
 
-    private var notesHelpText: String {
+    var notesHelpText: String {
         store.taskType == .todo
             ? "Capture extra context, links, or reminders for this todo."
             : "Add any details you want to keep with this routine."
     }
 
-    private var linkHelpText: String {
+    var linkHelpText: String {
         "Add a website to open from the task detail screen. If you skip the scheme, https will be used."
     }
 
-    private var tagComposer: some View {
+    var tagComposer: some View {
         HStack(spacing: 10) {
             TextField("health, focus, morning", text: tagDraftBinding)
                 .onSubmit {
@@ -517,7 +335,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var manageTagsButton: some View {
+    var manageTagsButton: some View {
         Button {
             isTagManagerPresented = true
         } label: {
@@ -525,7 +343,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var stepComposer: some View {
+    var stepComposer: some View {
         HStack(spacing: 10) {
             TextField("Wash clothes", text: stepDraftBinding)
                 .onSubmit {
@@ -539,7 +357,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var checklistItemComposer: some View {
+    var checklistItemComposer: some View {
         VStack(alignment: .leading, spacing: 10) {
             TextField("Bread", text: checklistItemDraftTitleBinding)
                 .onSubmit {
@@ -560,7 +378,7 @@ struct AddRoutineTCAView: View {
     }
 
     @ViewBuilder
-    private var imageAttachmentContent: some View {
+    var imageAttachmentContent: some View {
         let imagePickerLabel = store.imageData == nil ? "Choose Image" : "Replace Image"
 
         VStack(alignment: .leading, spacing: 10) {
@@ -584,12 +402,7 @@ struct AddRoutineTCAView: View {
                 }
                 .buttonStyle(.bordered)
 
-#if os(macOS)
-                Button(store.imageData == nil ? "Browse in Finder" : "Browse Another File") {
-                    isImageFileImporterPresented = true
-                }
-                .buttonStyle(.bordered)
-#endif
+                platformImageImportButton
 
                 if store.imageData != nil {
                     Button("Remove") {
@@ -604,47 +417,19 @@ struct AddRoutineTCAView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-#if os(macOS)
-            Text("You can also drag an image from Finder onto this area.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-#endif
+            platformImageDropHint
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 2)
-#if os(macOS)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(isImageDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
+        .routinaAddRoutineImageImportSupport(
+            isDropTargeted: $isImageDropTargeted,
+            isFileImporterPresented: $isImageFileImporterPresented,
+            onImport: loadPickedImage(fromFileAt:)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(
-                    isImageDropTargeted ? Color.accentColor : Color.secondary.opacity(0.18),
-                    style: StrokeStyle(lineWidth: isImageDropTargeted ? 2 : 1, dash: [8, 6])
-                )
-        )
-        .dropDestination(for: URL.self) { urls, _ in
-            guard let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
-                return false
-            }
-            loadPickedImage(fromFileAt: imageURL)
-            return true
-        } isTargeted: { isTargeted in
-            isImageDropTargeted = isTargeted
-        }
-        .fileImporter(
-            isPresented: $isImageFileImporterPresented,
-            allowedContentTypes: [.image],
-            allowsMultipleSelection: false
-        ) { result in
-            handleImageFileImport(result)
-        }
-#endif
     }
 
     @ViewBuilder
-    private var availableTagSuggestionsContent: some View {
+    var availableTagSuggestionsContent: some View {
         if !store.availableTags.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Choose from existing tags")
@@ -681,7 +466,7 @@ struct AddRoutineTCAView: View {
     }
 
     @ViewBuilder
-    private var editableTagsContent: some View {
+    var editableTagsContent: some View {
         if store.routineTags.isEmpty {
             Text(store.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
                 .font(.caption)
@@ -711,7 +496,7 @@ struct AddRoutineTCAView: View {
     }
 
     @ViewBuilder
-    private var editableStepsContent: some View {
+    var editableStepsContent: some View {
         if store.routineSteps.isEmpty {
             Label("No steps yet", systemImage: "list.bullet")
                 .font(.caption)
@@ -765,7 +550,7 @@ struct AddRoutineTCAView: View {
     }
 
     @ViewBuilder
-    private var editableChecklistItemsContent: some View {
+    var editableChecklistItemsContent: some View {
         if store.routineChecklistItems.isEmpty {
             Label("No checklist items yet", systemImage: "checklist")
                 .font(.caption)
@@ -802,7 +587,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private func stepperLabel(
+    func stepperLabel(
         frequency: AddRoutineFeature.Frequency,
         frequencyValue: Int
     ) -> String {
@@ -829,7 +614,7 @@ struct AddRoutineTCAView: View {
     }
 
     @ViewBuilder
-    private var repeatPatternSections: some View {
+    var repeatPatternSections: some View {
         Section(header: Text("Repeat Pattern")) {
             Picker("Repeat Pattern", selection: recurrenceKindBinding) {
                 ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
@@ -904,7 +689,7 @@ struct AddRoutineTCAView: View {
         }
     }
 
-    private var recurrencePatternDescription: String {
+    var recurrencePatternDescription: String {
         switch store.recurrenceKind {
         case .intervalDays:
             return "Repeat after a fixed number of days, weeks, or months."
@@ -951,519 +736,6 @@ struct AddRoutineTCAView: View {
         return "\(resolvedDay)\(suffix)"
     }
 
-#if os(macOS)
-    private let macContentMaxWidth: CGFloat = 980
-    private let macCompactControlWidth: CGFloat = 320
-
-    private var sectionCardBackground: some ShapeStyle {
-        Color(nsColor: .controlBackgroundColor)
-    }
-
-    private var sectionCardStroke: Color {
-        Color.gray.opacity(0.18)
-    }
-
-    private var macOSContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            macSectionCard(
-                title: "Identity",
-                subtitle: "Start with the essentials so the task feels defined right away."
-            ) {
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack(alignment: .top, spacing: 16) {
-                        Text(store.routineEmoji)
-                            .font(.system(size: 30))
-                            .frame(width: 60, height: 60)
-                            .background(
-                                Circle()
-                                    .fill(Color.accentColor.opacity(0.16))
-                            )
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(macPreviewTitle)
-                                .font(.title2.weight(.semibold))
-                                .lineLimit(1)
-
-                            Text(macPreviewSubtitle)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    if let scheduleModeTitle = macScheduleModeTitle {
-                                        macInfoPill(scheduleModeTitle, systemImage: "repeat")
-                                    }
-
-                                    macInfoPill(macScheduleSummary, systemImage: "calendar")
-                                    macInfoPill(macPlaceSummary, systemImage: "mappin.and.ellipse")
-                                }
-                            }
-                        }
-
-                        Spacer(minLength: 0)
-                    }
-
-                    macControlBlock(title: "Task name") {
-                        VStack(alignment: .leading, spacing: 6) {
-                            TextField("Task name", text: routineNameBinding)
-                                .textFieldStyle(.roundedBorder)
-                                .focused($isRoutineNameFocused)
-
-                            if let nameValidationMessage {
-                                Text(nameValidationMessage)
-                                    .font(.caption)
-                                    .foregroundStyle(.red)
-                            }
-                        }
-                    }
-
-                    macControlBlock(title: "Emoji") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(spacing: 10) {
-                                Button("Choose Emoji") {
-                                    isEmojiPickerPresented = true
-                                }
-                                .buttonStyle(.bordered)
-
-                                Text("Quick picks")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(Array(emojiOptions.prefix(8)), id: \.self) { emoji in
-                                        Button {
-                                            store.send(.routineEmojiChanged(emoji))
-                                        } label: {
-                                            Text(emoji)
-                                                .font(.title3)
-                                                .frame(width: 34, height: 34)
-                                                .background(
-                                                    Circle()
-                                                        .fill(
-                                                            store.routineEmoji == emoji
-                                                                ? Color.accentColor.opacity(0.20)
-                                                                : Color.secondary.opacity(0.08)
-                                                        )
-                                                )
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 22)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                macSectionCard(
-                    title: "Behavior",
-                    subtitle: "Choose how this task repeats, where it appears, and when it is due."
-                ) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        macControlBlock(title: "Type", caption: taskTypeDescription) {
-                            HStack(spacing: 0) {
-                                Picker("Task Type", selection: taskTypeBinding) {
-                                    Text("Routine").tag(RoutineTaskType.routine)
-                                    Text("Todo").tag(RoutineTaskType.todo)
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .fixedSize()
-                                Spacer(minLength: 0)
-                            }
-                        }
-
-                        if store.taskType == .routine {
-                            macControlBlock(title: "Schedule style", caption: scheduleModeDescription) {
-                                HStack(spacing: 0) {
-                                    Picker("Schedule Type", selection: scheduleModeBinding) {
-                                        Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                                        Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                                        Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.segmented)
-                                    .fixedSize()
-                                    Spacer(minLength: 0)
-                                }
-                            }
-
-                            if !isStepBasedMode {
-                                macControlBlock(
-                                    title: "Checklist",
-                                    caption: checklistSectionDescription
-                                ) {
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        checklistItemComposer
-                                        editableChecklistItemsContent
-                                    }
-                                }
-                            }
-                        }
-
-                        if showsRepeatControls {
-                            macControlBlock(title: "Repeat pattern", caption: recurrencePatternDescription) {
-                                HStack(spacing: 0) {
-                                    Picker("Repeat Pattern", selection: recurrenceKindBinding) {
-                                        ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                                            Text(kind.pickerTitle).tag(kind)
-                                        }
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.segmented)
-                                    .fixedSize()
-                                    Spacer(minLength: 0)
-                                }
-                            }
-
-                            switch store.recurrenceKind {
-                            case .intervalDays:
-                                macControlBlock(
-                                    title: "Repeat",
-                                    caption: stepperLabel(
-                                        frequency: store.frequency,
-                                        frequencyValue: store.frequencyValue
-                                    )
-                                ) {
-                                    HStack(spacing: 10) {
-                                        Text("Every")
-                                            .foregroundStyle(.secondary)
-
-                                        Stepper(value: frequencyValueBinding, in: 1...365) {
-                                            Text("\(store.frequencyValue)")
-                                                .font(.body.monospacedDigit())
-                                                .frame(minWidth: 28, alignment: .trailing)
-                                        }
-                                        .fixedSize()
-
-                                        Picker("Unit", selection: frequencyBinding) {
-                                            ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
-                                                Text(frequency.rawValue).tag(frequency)
-                                            }
-                                        }
-                                        .labelsHidden()
-                                        .pickerStyle(.segmented)
-                                        .frame(width: 220)
-
-                                        Spacer(minLength: 0)
-                                    }
-                                }
-
-                            case .dailyTime:
-                                macControlBlock(
-                                    title: "Time",
-                                    caption: "Due every day at \(store.recurrenceTimeOfDay.formatted())."
-                                ) {
-                                    DatePicker(
-                                        "Time",
-                                        selection: recurrenceTimeBinding,
-                                        displayedComponents: .hourAndMinute
-                                    )
-                                    .labelsHidden()
-                                }
-
-                            case .weekly:
-                                macControlBlock(
-                                    title: "Weekday",
-                                    caption: "Due every \(weekdayName(for: store.recurrenceWeekday))."
-                                ) {
-                                    Picker("Weekday", selection: recurrenceWeekdayBinding) {
-                                        ForEach(weekdayOptions, id: \.id) { option in
-                                            Text(option.name).tag(option.id)
-                                        }
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.menu)
-                                }
-
-                            case .monthlyDay:
-                                macControlBlock(
-                                    title: "Month day",
-                                    caption: "Due on the \(ordinalDay(store.recurrenceDayOfMonth)) of each month."
-                                ) {
-                                    Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
-                                        Text(ordinalDay(store.recurrenceDayOfMonth))
-                                            .frame(minWidth: 40, alignment: .leading)
-                                    }
-                                    .fixedSize()
-                                }
-                            }
-                        }
-
-                        HStack(alignment: .top, spacing: 16) {
-                            macControlBlock(title: "Place", caption: placeSelectionDescription) {
-                                Picker("Place", selection: selectedPlaceBinding) {
-                                    Text("Anywhere").tag(Optional<UUID>.none)
-                                    ForEach(store.availablePlaces) { place in
-                                        Text(place.name).tag(Optional(place.id))
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                            if store.taskType == .todo {
-                                macControlBlock(
-                                    title: "Deadline",
-                                    caption: store.hasDeadline
-                                        ? "This todo will use the selected due date."
-                                        : "Leave this off until the task has a real deadline."
-                                ) {
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        Toggle("Set deadline", isOn: deadlineEnabledBinding)
-                                        if store.hasDeadline {
-                                            DatePicker("Deadline", selection: deadlineBinding)
-                                                .labelsHidden()
-                                        }
-                                    }
-                                }
-                                .frame(width: macCompactControlWidth, alignment: .leading)
-                            }
-                        }
-
-                        macControlBlock(title: "Importance & Urgency", caption: importanceUrgencyDescription) {
-                            ImportanceUrgencyMatrixPicker(
-                                importance: importanceBinding,
-                                urgency: urgencyBinding
-                            )
-                            .frame(maxWidth: 420, alignment: .leading)
-                        }
-                    }
-                }
-
-                macSectionCard(
-                    title: "Context",
-                    subtitle: "Keep supporting metadata lightweight and easy to scan."
-                ) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        macControlBlock(title: "Tags", caption: tagSectionHelpText) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                tagComposer
-                                editableTagsContent
-                                availableTagSuggestionsContent
-                                manageTagsButton
-                            }
-                        }
-
-                        macControlBlock(
-                            title: "Linked tasks",
-                            caption: "Link this task to another task as related work or a blocker."
-                        ) {
-                            TaskRelationshipsEditor(
-                                relationships: store.relationships,
-                                candidates: store.availableRelationshipTasks,
-                                addRelationship: { store.send(.addRelationship($0, $1)) },
-                                removeRelationship: { store.send(.removeRelationship($0)) }
-                            )
-                        }
-
-                        macControlBlock(title: "Open link", caption: linkHelpText) {
-                            TextField("https://example.com", text: routineLinkBinding)
-                                .textFieldStyle(.roundedBorder)
-                        }
-                    }
-                }
-
-                macSectionCard(
-                    title: "Notes",
-                    subtitle: notesHelpText
-                ) {
-                    ZStack(alignment: .topLeading) {
-                        TextEditor(text: routineNotesBinding)
-                            .frame(minHeight: 120)
-                            .padding(6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(Color(nsColor: .textBackgroundColor))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(sectionCardStroke, lineWidth: 1)
-                            )
-
-                        if store.routineNotes.isEmpty {
-                            Text("Add notes, reminders, or context")
-                                .foregroundStyle(.tertiary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 14)
-                                .allowsHitTesting(false)
-                        }
-                    }
-                }
-
-                if isStepBasedMode {
-                    macSectionCard(
-                        title: "Steps",
-                        subtitle: stepsSectionDescription
-                    ) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            stepComposer
-                            editableStepsContent
-                        }
-                    }
-                }
-
-                macSectionCard(
-                    title: "Image",
-                    subtitle: "Optional artwork or reference material for this task."
-                ) {
-                    imageAttachmentContent
-                }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 22)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    private var macPreviewTitle: String {
-        let trimmedName = store.trimmedRoutineName
-        return trimmedName.isEmpty ? "New \(macTaskTypeLabel.lowercased())" : trimmedName
-    }
-
-    private var macPreviewSubtitle: String {
-        if store.taskType == .todo {
-            return store.hasDeadline
-                ? "A one-off task with a deadline."
-                : "A one-off task you can finish once."
-        }
-
-        switch store.scheduleMode {
-        case .fixedInterval:
-            return "A repeating routine with one shared cadence."
-        case .fixedIntervalChecklist:
-            return "A routine you complete by finishing every checklist item."
-        case .derivedFromChecklist:
-            return "A routine driven by the due dates of its checklist items."
-        case .oneOff:
-            return "A one-off task you can finish once."
-        }
-    }
-
-    private var macTaskTypeLabel: String {
-        store.taskType == .todo ? "Todo" : "Routine"
-    }
-
-    private var macScheduleModeTitle: String? {
-        guard store.taskType == .routine else { return nil }
-
-        switch store.scheduleMode {
-        case .fixedInterval:
-            return "Fixed"
-        case .fixedIntervalChecklist:
-            return "Checklist"
-        case .derivedFromChecklist:
-            return "Runout"
-        case .oneOff:
-            return nil
-        }
-    }
-
-    private var macScheduleSummary: String {
-        if store.taskType == .todo {
-            if let deadline = store.deadline {
-                return "Due \(deadline.formatted(date: .abbreviated, time: .omitted))"
-            }
-            return "One-off"
-        }
-
-        switch store.recurrenceKind {
-        case .intervalDays:
-            return stepperLabel(
-                frequency: store.frequency,
-                frequencyValue: store.frequencyValue
-            )
-        case .dailyTime:
-            return "Daily at \(store.recurrenceTimeOfDay.formatted())"
-        case .weekly:
-            return "Every \(weekdayName(for: store.recurrenceWeekday))"
-        case .monthlyDay:
-            return "Monthly on the \(ordinalDay(store.recurrenceDayOfMonth))"
-        }
-    }
-
-    private var macPlaceSummary: String {
-        guard let selectedPlaceID = store.selectedPlaceID,
-              let place = store.availablePlaces.first(where: { $0.id == selectedPlaceID }) else {
-            return "Anywhere"
-        }
-        return place.name
-    }
-
-    @ViewBuilder
-    private func macSectionCard<Content: View>(
-        title: String,
-        subtitle: String? = nil,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline.weight(.semibold))
-
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            content()
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(sectionCardBackground)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(sectionCardStroke, lineWidth: 1)
-        )
-    }
-
-    @ViewBuilder
-    private func macControlBlock<Content: View>(
-        title: String,
-        caption: String? = nil,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            content()
-
-            if let caption {
-                Text(caption)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func macInfoPill(_ title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(Color.secondary.opacity(0.10))
-            )
-    }
-#endif
-
     private func loadPickedImage(from item: PhotosPickerItem) {
         _ = Task {
             let data = try? await item.loadTransferable(type: Data.self)
@@ -1478,22 +750,6 @@ struct AddRoutineTCAView: View {
         store.send(.imagePicked(compressedData))
     }
 
-#if os(macOS)
-    private func handleImageFileImport(_ result: Result<[URL], Error>) {
-        guard case let .success(urls) = result,
-              let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
-            return
-        }
-        loadPickedImage(fromFileAt: imageURL)
-    }
-
-    private func isSupportedImageFile(_ url: URL) -> Bool {
-        guard let type = UTType(filenameExtension: url.pathExtension) else {
-            return false
-        }
-        return type.conforms(to: .image)
-    }
-#endif
 }
 
 struct TaskRelationshipsEditor: View {
@@ -1633,10 +889,7 @@ struct TaskRelationshipPickerSheet: View {
                             .foregroundStyle(.secondary)
 
                         TextField("Search tasks", text: $searchText)
-#if !os(macOS)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-#endif
+                            .routinaTaskRelationshipSearchFieldPlatform()
 
                         if !searchText.isEmpty {
                             Button {

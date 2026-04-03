@@ -32,13 +32,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		2A5A74CE2D7B92F900E91075 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 2A5A74BC2D7B92F600E91075;
-			remoteInfo = RoutinaProd;
-		};
 		2A5A74D82D7B92F900E91075 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
@@ -587,11 +580,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		2A5A74CF2D7B92F900E91075 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;
-			targetProxy = 2A5A74CE2D7B92F900E91075 /* PBXContainerItemProxy */;
-		};
 		2A5A74D92D7B92F900E91075 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaProd */;

@@ -1,8 +1,5 @@
 import ComposableArchitecture
 import SwiftUI
-#if canImport(UniformTypeIdentifiers)
-import UniformTypeIdentifiers
-#endif
 #if canImport(PhotosUI)
 import PhotosUI
 #endif
@@ -12,8 +9,6 @@ struct RoutineDetailEditRoutineContent: View {
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
     @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var isImageFileImporterPresented = false
-    @State private var isImageDropTargeted = false
     @State private var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
@@ -786,13 +781,6 @@ struct RoutineDetailEditRoutineContent: View {
                 }
                 .buttonStyle(.bordered)
 
-#if os(macOS)
-                Button(store.editImageData == nil ? "Browse in Finder" : "Browse Another File") {
-                    isImageFileImporterPresented = true
-                }
-                .buttonStyle(.bordered)
-#endif
-
                 if store.editImageData != nil {
                     Button("Remove") {
                         selectedPhotoItem = nil
@@ -805,44 +793,9 @@ struct RoutineDetailEditRoutineContent: View {
             Text("Images are resized and compressed before saving to reduce storage use.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
-#if os(macOS)
-            Text("You can also drag an image from Finder onto this area.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-#endif
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 2)
-#if os(macOS)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(isImageDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(
-                    isImageDropTargeted ? Color.accentColor : Color.secondary.opacity(0.18),
-                    style: StrokeStyle(lineWidth: isImageDropTargeted ? 2 : 1, dash: [8, 6])
-                )
-        )
-        .dropDestination(for: URL.self) { urls, _ in
-            guard let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
-                return false
-            }
-            loadPickedImage(fromFileAt: imageURL)
-            return true
-        } isTargeted: { isTargeted in
-            isImageDropTargeted = isTargeted
-        }
-        .fileImporter(
-            isPresented: $isImageFileImporterPresented,
-            allowedContentTypes: [.image],
-            allowsMultipleSelection: false
-        ) { result in
-            handleImageFileImport(result)
-        }
-#endif
     }
 
     private func loadPickedImage(from item: PhotosPickerItem) {
@@ -853,26 +806,4 @@ struct RoutineDetailEditRoutineContent: View {
             }
         }
     }
-
-    private func loadPickedImage(fromFileAt url: URL) {
-        let compressedData = TaskImageProcessor.compressedImageData(fromFileAt: url)
-        store.send(.editImagePicked(compressedData))
-    }
-
-#if os(macOS)
-    private func handleImageFileImport(_ result: Result<[URL], Error>) {
-        guard case let .success(urls) = result,
-              let imageURL = urls.first(where: { isSupportedImageFile($0) }) else {
-            return
-        }
-        loadPickedImage(fromFileAt: imageURL)
-    }
-
-    private func isSupportedImageFile(_ url: URL) -> Bool {
-        guard let type = UTType(filenameExtension: url.pathExtension) else {
-            return false
-        }
-        return type.conforms(to: .image)
-    }
-#endif
 }

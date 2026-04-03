@@ -27,13 +27,7 @@ struct SettingsTCAView: View {
     }
 
     @ViewBuilder
-    private var settingsContent: some View {
-#if os(macOS)
-        SettingsMacView(store: store)
-#else
-        NavigationStack {
-            SettingsIOSRootView(store: store)
-        }
-#endif
+    var settingsContent: some View {
+        platformSettingsContent
     }
 }

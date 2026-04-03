@@ -132,9 +132,7 @@ struct PlaceLocationPickerSheet: View {
             }
             .padding(16)
             .navigationTitle("Choose Place")
-#if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
+            .routinaPlaceLocationPickerNavigationTitleDisplayMode()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -157,9 +155,7 @@ struct PlaceLocationPickerSheet: View {
             guard let selectedCoordinate else { return }
             animateCamera(to: selectedCoordinate)
         }
-#if os(macOS)
-        .frame(minWidth: 680, minHeight: 620)
-#endif
+        .routinaPlaceLocationPickerFrame()
     }
 
     private func animateCamera(to coordinate: LocationCoordinate) {
@@ -170,4 +166,3 @@ struct PlaceLocationPickerSheet: View {
         cameraAnimationTrigger += 1
     }
 }
-
