@@ -922,7 +922,8 @@ extension HomeTCAView {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.secondary)
             }
-            .frame(width: 40, maxHeight: .infinity)
+            .frame(width: 40)
+            .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
