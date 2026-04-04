@@ -555,8 +555,8 @@ struct HomeTCAView: View {
         }
     }
 
-    func routineRow(for task: HomeFeature.RoutineDisplay) -> some View {
-        platformRoutineRow(for: task)
+    func routineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
+        platformRoutineRow(for: task, rowNumber: rowNumber)
     }
 
     @ViewBuilder
@@ -841,9 +841,10 @@ struct HomeTCAView: View {
 
     func routineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int,
         includeMarkDone: Bool = true
     ) -> some View {
-        platformRoutineNavigationRow(for: task, includeMarkDone: includeMarkDone)
+        platformRoutineNavigationRow(for: task, rowNumber: rowNumber, includeMarkDone: includeMarkDone)
     }
 
     @ViewBuilder

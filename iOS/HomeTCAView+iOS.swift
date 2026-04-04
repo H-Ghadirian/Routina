@@ -345,8 +345,8 @@ extension HomeTCAView {
                 List(selection: selectedTaskBinding) {
                     ForEach(sections) { section in
                         Section(section.title) {
-                            ForEach(section.tasks) { task in
-                                routineNavigationRow(for: task)
+                            ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                                routineNavigationRow(for: task, rowNumber: index + 1)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: section.tasks)
@@ -356,8 +356,8 @@ extension HomeTCAView {
 
                     if !store.hideUnavailableRoutines && !awayTasks.isEmpty {
                         Section("Not Here Right Now") {
-                            ForEach(awayTasks) { task in
-                                routineNavigationRow(for: task, includeMarkDone: false)
+                            ForEach(Array(awayTasks.enumerated()), id: \.element.id) { index, task in
+                                routineNavigationRow(for: task, rowNumber: index + 1, includeMarkDone: false)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: awayTasks)
@@ -367,8 +367,8 @@ extension HomeTCAView {
 
                     if !archivedTasks.isEmpty {
                         Section("Archived") {
-                            ForEach(archivedTasks) { task in
-                                routineNavigationRow(for: task)
+                            ForEach(Array(archivedTasks.enumerated()), id: \.element.id) { index, task in
+                                routineNavigationRow(for: task, rowNumber: index + 1)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: archivedTasks)
@@ -391,10 +391,15 @@ extension HomeTCAView {
         .animation(.snappy(duration: 0.25), value: isCompactHeaderHidden)
     }
 
-    func platformRoutineRow(for task: HomeFeature.RoutineDisplay) -> some View {
+    func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
         let metadataText = rowMetadataText(for: task)
 
         return HStack(alignment: .center, spacing: 12) {
+            Text("\(rowNumber)")
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.tertiary)
+                .frame(width: 18, alignment: .trailing)
+
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(rowIconBackgroundColor(for: task))
@@ -469,10 +474,11 @@ extension HomeTCAView {
 
     func platformRoutineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int,
         includeMarkDone: Bool
     ) -> some View {
         NavigationLink(value: task.taskID) {
-            routineRow(for: task)
+            routineRow(for: task, rowNumber: rowNumber)
         }
         .contentShape(Rectangle())
         .contextMenu {

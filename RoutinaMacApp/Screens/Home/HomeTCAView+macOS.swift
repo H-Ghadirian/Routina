@@ -520,11 +520,16 @@ extension HomeTCAView {
         macTaskListMode = task.isOneOffTask ? .todos : .routines
     }
 
-    func timelineSidebarRow(_ entry: TimelineEntry) -> some View {
+    func timelineSidebarRow(_ entry: TimelineEntry, rowNumber: Int) -> some View {
         Button {
             openTimelineEntry(entry)
         } label: {
             HStack(spacing: 12) {
+                Text("\(rowNumber)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 18, alignment: .trailing)
+
                 Text(entry.taskEmoji)
                     .font(.title2)
                     .frame(width: 36, height: 36)
@@ -681,8 +686,8 @@ extension HomeTCAView {
             List(selection: macSidebarSelectionBinding) {
                 if !pinnedTasks.isEmpty {
                     Section("Pinned") {
-                        ForEach(pinnedTasks) { task in
-                            routineNavigationRow(for: task)
+                        ForEach(Array(pinnedTasks.enumerated()), id: \.element.id) { index, task in
+                            routineNavigationRow(for: task, rowNumber: index + 1)
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: pinnedTasks)
@@ -692,8 +697,8 @@ extension HomeTCAView {
 
                 ForEach(sections) { section in
                     Section(section.title) {
-                        ForEach(section.tasks) { task in
-                            routineNavigationRow(for: task)
+                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                            routineNavigationRow(for: task, rowNumber: index + 1)
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: section.tasks)
@@ -703,8 +708,8 @@ extension HomeTCAView {
 
                 if !archivedTasks.isEmpty {
                     Section("Archived") {
-                        ForEach(archivedTasks) { task in
-                            routineNavigationRow(for: task)
+                        ForEach(Array(archivedTasks.enumerated()), id: \.element.id) { index, task in
+                            routineNavigationRow(for: task, rowNumber: index + 1)
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: archivedTasks)
@@ -719,10 +724,15 @@ extension HomeTCAView {
         }
     }
 
-    func platformRoutineRow(for task: HomeFeature.RoutineDisplay) -> some View {
+    func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
         let metadataText = rowMetadataText(for: task)
 
         return HStack(alignment: .center, spacing: 12) {
+            Text("\(rowNumber)")
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.tertiary)
+                .frame(width: 18, alignment: .trailing)
+
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(rowIconBackgroundColor(for: task))
@@ -798,9 +808,10 @@ extension HomeTCAView {
 
     func platformRoutineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int,
         includeMarkDone: Bool
     ) -> some View {
-        routineRow(for: task)
+        routineRow(for: task, rowNumber: rowNumber)
             .tag(MacSidebarSelection.task(task.taskID))
             .contentShape(Rectangle())
             .contextMenu {
@@ -1186,8 +1197,8 @@ extension HomeTCAView {
                 List(selection: macSidebarSelectionBinding) {
                     ForEach(groupedTimelineEntries, id: \.date) { section in
                         Section(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar)) {
-                            ForEach(section.entries) { entry in
-                                timelineSidebarRow(entry)
+                            ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
+                                timelineSidebarRow(entry, rowNumber: index + 1)
                             }
                         }
                     }
