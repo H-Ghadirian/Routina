@@ -127,7 +127,9 @@ struct RoutineDetailTCAView: View {
                     if store.task.hasChecklistItems {
                         checklistItemsSection
                     }
-                    routineLogsSection
+                    if !store.task.isOneOffTask {
+                        routineLogsSection
+                    }
                 }
                 .padding(RoutineDetailPlatformStyle.detailContentPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -729,7 +731,7 @@ struct RoutineDetailTCAView: View {
     }
 
     private var shouldShowSelectedDateMetadata: Bool {
-        !Calendar.current.isDateInToday(selectedDate)
+        !Calendar.current.isDateInToday(selectedDate) && !store.task.isCompletedOneOff
     }
 
     private var selectedDateMetadataText: String {

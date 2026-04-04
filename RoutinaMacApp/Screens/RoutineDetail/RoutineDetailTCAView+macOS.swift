@@ -32,25 +32,28 @@ extension RoutineDetailTCAView {
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         HStack(alignment: .top, spacing: 20) {
-            calendarSection
-                .background(heightReader(id: "calendar"))
-                .frame(
-                    maxWidth: .infinity,
-                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
-                    alignment: .topLeading
-                )
-                .background(RoutineDetailPlatformStyle.calendarCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-                )
-                .layoutPriority(1)
+            if !store.task.isCompletedOneOff {
+                calendarSection
+                    .background(heightReader(id: "calendar"))
+                    .frame(
+                        maxWidth: .infinity,
+                        minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
+                        alignment: .topLeading
+                    )
+                    .background(RoutineDetailPlatformStyle.calendarCardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(RoutineDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                    )
+                    .layoutPriority(1)
+            }
 
             macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
                 .background(heightReader(id: "status"))
-                .frame(width: 320)
+                .frame(width: store.task.isCompletedOneOff ? nil : 320)
                 .frame(
+                    maxWidth: store.task.isCompletedOneOff ? .infinity : nil,
                     minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                     alignment: .topLeading
                 )

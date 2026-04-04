@@ -60,7 +60,9 @@ extension RoutineDetailTCAView {
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         VStack(spacing: 16) {
-            calendarSection
+            if !store.task.isCompletedOneOff {
+                calendarSection
+            }
             compactStatusSection(pauseArchivePresentation: pauseArchivePresentation)
         }
     }
