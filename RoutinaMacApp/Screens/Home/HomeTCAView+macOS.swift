@@ -56,7 +56,6 @@ extension HomeTCAView {
             macDoneCountToolbarItem
             macRoutineCountToolbarItem
             macTodoCountToolbarItem
-            platformRefreshButton
             MacToolbarIconButton(title: "Add Task", systemImage: "plus") {
                 openAddTask()
             }
