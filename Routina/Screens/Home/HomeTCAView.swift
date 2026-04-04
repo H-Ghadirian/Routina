@@ -233,10 +233,18 @@ struct HomeTCAView: View {
     }
 
     var overallDoneCountSummary: some View {
-        HStack(spacing: 8) {
-            Label("\(store.doneStats.totalCount) total dones", systemImage: "checkmark.seal.fill")
+        HStack(spacing: 12) {
+            Label("\(store.doneStats.totalCount) dones", systemImage: "checkmark.seal.fill")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.green)
+
+            Label("\(store.routineTasks.filter { !$0.isOneOffTask }.count) routines", systemImage: "arrow.clockwise")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Label("\(store.routineTasks.filter { $0.isOneOffTask }.count) todos", systemImage: "checkmark.circle")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
     }
 

@@ -54,6 +54,8 @@ extension HomeTCAView {
     var homeToolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             macDoneCountToolbarItem
+            macRoutineCountToolbarItem
+            macTodoCountToolbarItem
             platformRefreshButton
             MacToolbarIconButton(title: "Add Task", systemImage: "plus") {
                 openAddTask()
@@ -1197,11 +1199,29 @@ extension HomeTCAView {
 
     var macDoneCountToolbarItem: some View {
         MacToolbarStatusBadge(
-            title: "\(store.doneStats.totalCount) total dones",
+            title: "\(store.doneStats.totalCount) dones",
             systemImage: "checkmark.seal.fill",
             tintColor: .systemGreen
         )
         .help("\(store.doneStats.totalCount) total dones")
+    }
+
+    var macRoutineCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(store.routineTasks.filter { !$0.isOneOffTask }.count) routines",
+            systemImage: "arrow.clockwise",
+            tintColor: .secondaryLabelColor
+        )
+        .help("Total routines")
+    }
+
+    var macTodoCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(store.routineTasks.filter { $0.isOneOffTask }.count) todos",
+            systemImage: "checkmark.circle",
+            tintColor: .secondaryLabelColor
+        )
+        .help("Total todos")
     }
 }
 
