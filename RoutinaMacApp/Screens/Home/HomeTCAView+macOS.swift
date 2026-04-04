@@ -1228,7 +1228,7 @@ extension HomeTCAView {
 
     var macTodoCountToolbarItem: some View {
         MacToolbarStatusBadge(
-            title: "\(store.routineTasks.filter { $0.isOneOffTask }.count) todos",
+            title: "\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff }.count) todos",
             systemImage: "checkmark.circle",
             tintColor: .secondaryLabelColor
         )

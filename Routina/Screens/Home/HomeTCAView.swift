@@ -242,7 +242,7 @@ struct HomeTCAView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Label("\(store.routineTasks.filter { $0.isOneOffTask }.count) todos", systemImage: "checkmark.circle")
+            Label("\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff }.count) todos", systemImage: "checkmark.circle")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
