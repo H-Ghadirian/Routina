@@ -56,9 +56,6 @@ extension HomeTCAView {
             macDoneCountToolbarItem
             macRoutineCountToolbarItem
             macTodoCountToolbarItem
-            MacToolbarIconButton(title: "Add Task", systemImage: "plus") {
-                openAddTask()
-            }
         }
     }
 
@@ -935,6 +932,27 @@ extension HomeTCAView {
                 .frame(maxWidth: .infinity)
                 .accessibilityLabel(mode.rawValue)
             }
+
+            Rectangle()
+                .fill(Color.white.opacity(0.1))
+                .frame(width: 1)
+                .padding(.vertical, 8)
+
+            Button {
+                openAddTask()
+            } label: {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.clear)
+                    Image(systemName: "plus")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.secondary)
+                }
+                .frame(width: 40, maxHeight: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add Task")
         }
         .frame(height: 42)
         .padding(4)
