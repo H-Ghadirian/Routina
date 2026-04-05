@@ -314,6 +314,21 @@ extension HomeTCAView {
     var isMacSettingsMode: Bool { macSidebarMode == .settings }
     var isMacRoutinesMode: Bool { macSidebarMode == .routines }
     var isMacAddTaskMode: Bool { macSidebarMode == .addTask }
+
+    var macSidebarNavigationTitle: String {
+        switch macSidebarMode {
+        case .routines:
+            return macTaskListMode == .todos ? "Todos" : "Routines"
+        case .timeline:
+            return "Dones"
+        case .stats:
+            return "Stats"
+        case .settings:
+            return "Settings"
+        case .addTask:
+            return "Add Task"
+        }
+    }
     var currentSelectedSettingsSection: SettingsMacSection { selectedSettingsSection ?? .notifications }
 
     var macHasCustomFiltersApplied: Bool {
@@ -906,7 +921,7 @@ extension HomeTCAView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
-        .navigationTitle("Routina")
+        .navigationTitle(macSidebarNavigationTitle)
         .toolbar { homeToolbarContent }
         .routinaHomeSidebarColumnWidth()
     }
