@@ -344,9 +344,10 @@ extension HomeTCAView {
             } else {
                 List(selection: selectedTaskBinding) {
                     ForEach(sections) { section in
+                        let sectionStart = sections.prefix(while: { $0.id != section.id }).reduce(0) { $0 + $1.tasks.count }
                         Section(section.title) {
                             ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                                routineNavigationRow(for: task, rowNumber: index + 1)
+                                routineNavigationRow(for: task, rowNumber: sectionStart + index + 1)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: section.tasks)
@@ -355,9 +356,10 @@ extension HomeTCAView {
                     }
 
                     if !store.hideUnavailableRoutines && !awayTasks.isEmpty {
+                        let awayOffset = sections.reduce(0) { $0 + $1.tasks.count }
                         Section("Not Here Right Now") {
                             ForEach(Array(awayTasks.enumerated()), id: \.element.id) { index, task in
-                                routineNavigationRow(for: task, rowNumber: index + 1, includeMarkDone: false)
+                                routineNavigationRow(for: task, rowNumber: awayOffset + index + 1, includeMarkDone: false)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: awayTasks)
@@ -366,9 +368,10 @@ extension HomeTCAView {
                     }
 
                     if !archivedTasks.isEmpty {
+                        let archivedOffset = sections.reduce(0) { $0 + $1.tasks.count } + (store.hideUnavailableRoutines ? 0 : awayTasks.count)
                         Section("Archived") {
                             ForEach(Array(archivedTasks.enumerated()), id: \.element.id) { index, task in
-                                routineNavigationRow(for: task, rowNumber: index + 1)
+                                routineNavigationRow(for: task, rowNumber: archivedOffset + index + 1)
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: archivedTasks)

@@ -706,10 +706,11 @@ extension HomeTCAView {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(selection: macSidebarSelectionBinding) {
+                let pinnedOffset = 0
                 if !pinnedTasks.isEmpty {
                     Section("Pinned") {
                         ForEach(Array(pinnedTasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(for: task, rowNumber: index + 1)
+                            routineNavigationRow(for: task, rowNumber: pinnedOffset + index + 1)
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: pinnedTasks)
@@ -717,10 +718,12 @@ extension HomeTCAView {
                     }
                 }
 
+                let sectionOffset = pinnedTasks.count
                 ForEach(sections) { section in
+                    let sectionStart = sectionOffset + sections.prefix(while: { $0.id != section.id }).reduce(0) { $0 + $1.tasks.count }
                     Section(section.title) {
                         ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(for: task, rowNumber: index + 1)
+                            routineNavigationRow(for: task, rowNumber: sectionStart + index + 1)
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: section.tasks)
@@ -729,9 +732,10 @@ extension HomeTCAView {
                 }
 
                 if !archivedTasks.isEmpty {
+                    let archivedOffset = sectionOffset + sections.reduce(0) { $0 + $1.tasks.count }
                     Section("Archived") {
                         ForEach(Array(archivedTasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(for: task, rowNumber: index + 1)
+                            routineNavigationRow(for: task, rowNumber: archivedOffset + index + 1)
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: archivedTasks)
@@ -1493,10 +1497,11 @@ extension HomeTCAView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(selection: macSidebarSelectionBinding) {
-                    ForEach(groupedTimelineEntries, id: \.date) { section in
+                    ForEach(Array(groupedTimelineEntries.enumerated()), id: \.element.date) { sectionIndex, section in
+                        let sectionStart = groupedTimelineEntries.prefix(sectionIndex).reduce(0) { $0 + $1.entries.count }
                         Section(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar)) {
                             ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
-                                timelineSidebarRow(entry, rowNumber: index + 1)
+                                timelineSidebarRow(entry, rowNumber: sectionStart + index + 1)
                             }
                         }
                     }
