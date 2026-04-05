@@ -921,36 +921,44 @@ extension HomeTCAView {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(sections, id: \.self) { section in
                         Button {
                             addEditFormCoordinator.scrollTarget = section
                         } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: formSectionIcon(for: section))
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(Color.accentColor)
-                                    .frame(width: 22, alignment: .center)
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(Color.accentColor.opacity(0.12))
+                                    Image(systemName: formSectionIcon(for: section))
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Color.accentColor)
+                                }
+                                .frame(width: 32, height: 32)
 
                                 Text(section)
-                                    .font(.callout)
+                                    .font(.body.weight(.medium))
                                     .foregroundStyle(.primary)
 
                                 Spacer(minLength: 0)
+
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(Color.secondary.opacity(0.6))
                             }
                             .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 11)
                             .background(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .fill(Color.clear)
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Color.secondary.opacity(0.07))
                             )
-                            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
