@@ -76,6 +76,8 @@ struct HomeTCAView: View {
     @State var macTaskListMode: MacTaskListMode = .routines
     @State var selectedSettingsSection: SettingsMacSection? = .notifications
     @State var addEditFormCoordinator = AddEditFormCoordinator()
+    @State var statsSelectedRange: DoneChartRange = .week
+    @State var statsSelectedTag: String? = nil
 #endif
 
     init(

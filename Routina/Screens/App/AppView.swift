@@ -26,7 +26,7 @@ struct AppView: View {
                 }
 
                 SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
-                    StatsView()
+                    StatsViewWrapper()
                 }
 
                 SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: Tab.settings) {

@@ -76,7 +76,9 @@ extension HomeTCAView {
                 addRoutineStore: self.store.scope(
                     state: \.addRoutineState,
                     action: \.addRoutineSheet
-                )
+                ),
+                statsSelectedRange: $statsSelectedRange,
+                statsSelectedTag: $statsSelectedTag
             ) {
                 macActiveFiltersDetailView
             }
@@ -1277,16 +1279,165 @@ extension HomeTCAView {
     }
 
     var macStatsSidebarView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Stats", systemImage: "chart.bar.xaxis")
-                .font(.title3.weight(.semibold))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Time Range")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
 
-            Text("Use the navigator above to switch sections. Stats is shown in the right panel.")
-                .font(.body)
-                .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(DoneChartRange.allCases) { range in
+                            Button {
+                                statsSelectedRange = range
+                            } label: {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(statsSelectedRange == range
+                                                ? Color.accentColor
+                                                : Color.accentColor.opacity(0.10))
+                                        Image(systemName: statsRangeIcon(for: range))
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(statsSelectedRange == range ? .white : Color.accentColor)
+                                    }
+                                    .frame(width: 32, height: 32)
+
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(range.rawValue)
+                                            .font(.body.weight(.medium))
+                                            .foregroundStyle(.primary)
+                                        Text(range.periodDescription)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer(minLength: 0)
+
+                                    if statsSelectedRange == range {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundStyle(Color.accentColor)
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(statsSelectedRange == range
+                                            ? Color.accentColor.opacity(0.08)
+                                            : Color.secondary.opacity(0.07))
+                                )
+                                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                if !availableTags.isEmpty {
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Filter by Tag")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Button {
+                                statsSelectedTag = nil
+                            } label: {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(statsSelectedTag == nil
+                                                ? Color.accentColor
+                                                : Color.accentColor.opacity(0.10))
+                                        Image(systemName: "tag.slash.fill")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundStyle(statsSelectedTag == nil ? .white : Color.accentColor)
+                                    }
+                                    .frame(width: 32, height: 32)
+
+                                    Text("All Tags")
+                                        .font(.body.weight(.medium))
+                                        .foregroundStyle(.primary)
+
+                                    Spacer(minLength: 0)
+
+                                    if statsSelectedTag == nil {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundStyle(Color.accentColor)
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(statsSelectedTag == nil
+                                            ? Color.accentColor.opacity(0.08)
+                                            : Color.secondary.opacity(0.07))
+                                )
+                                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+
+                            ForEach(availableTags, id: \.self) { tag in
+                                Button {
+                                    statsSelectedTag = tag
+                                } label: {
+                                    let isSelected = statsSelectedTag == tag
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                .fill(isSelected ? Color.accentColor : Color.accentColor.opacity(0.10))
+                                            Image(systemName: "tag.fill")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundStyle(isSelected ? .white : Color.accentColor)
+                                        }
+                                        .frame(width: 32, height: 32)
+
+                                        Text("#\(tag)")
+                                            .font(.body.weight(.medium))
+                                            .foregroundStyle(.primary)
+
+                                        Spacer(minLength: 0)
+
+                                        if isSelected {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundStyle(Color.accentColor)
+                                        }
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.secondary.opacity(0.07))
+                                    )
+                                    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(20)
+    }
+
+    private func statsRangeIcon(for range: DoneChartRange) -> String {
+        switch range {
+        case .week:  return "calendar.badge.clock"
+        case .month: return "calendar"
+        case .year:  return "calendar.badge.plus"
+        }
     }
 
     var macSettingsSidebarView: some View {
@@ -1407,6 +1558,8 @@ struct MacDetailContainerView<FilterView: View>: View {
     let settingsStore: StoreOf<SettingsFeature>
     let selectedSettingsSection: SettingsMacSection
     let addRoutineStore: StoreOf<AddRoutineFeature>?
+    @Binding var statsSelectedRange: DoneChartRange
+    @Binding var statsSelectedTag: String?
     @ViewBuilder let filterView: () -> FilterView
 
     var body: some View {
@@ -1416,7 +1569,7 @@ struct MacDetailContainerView<FilterView: View>: View {
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
             } else if isStatsPresented {
-                StatsView()
+                StatsView(selectedRange: $statsSelectedRange, selectedTag: $statsSelectedTag)
             } else if isSettingsPresented {
                 EmbeddedSettingsMacDetailView(
                     store: settingsStore,

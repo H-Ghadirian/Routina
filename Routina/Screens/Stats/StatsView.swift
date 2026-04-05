@@ -2,6 +2,15 @@ import Charts
 import SwiftData
 import SwiftUI
 
+struct StatsViewWrapper: View {
+    @State private var selectedRange: DoneChartRange = .week
+    @State private var selectedTag: String? = nil
+
+    var body: some View {
+        StatsView(selectedRange: $selectedRange, selectedTag: $selectedTag)
+    }
+}
+
 struct StatsView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
@@ -9,7 +18,8 @@ struct StatsView: View {
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
 
-    @State private var selectedRange: DoneChartRange = .week
+    @Binding var selectedRange: DoneChartRange
+    @Binding var selectedTag: String?
 
     private struct Metrics {
         let chartPoints: [DoneChartPoint]
@@ -133,7 +143,9 @@ struct StatsView: View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
+#if os(iOS)
                     rangeSection
+#endif
                     heroSection(metrics: metrics)
                     summaryCards(metrics: metrics)
                     chartSection(metrics: metrics)
@@ -352,7 +364,7 @@ struct StatsView: View {
     }
 
     private func activeRoutineCardCaption(metrics: Metrics) -> String {
-        if tasks.isEmpty {
+        if filteredTasks.isEmpty {
             return "No routines created yet"
         }
 
@@ -372,7 +384,7 @@ struct StatsView: View {
     }
 
     private func archivedRoutineCardCaption(metrics: Metrics) -> String {
-        if tasks.isEmpty {
+        if filteredTasks.isEmpty {
             return "No routines created yet"
         }
 
@@ -743,8 +755,19 @@ struct StatsView: View {
         return "Average \(averagePerDayText(for: metrics)) per day across \(metrics.chartPoints.count) days."
     }
 
+    private var filteredLogs: [RoutineLog] {
+        guard let tag = selectedTag else { return logs }
+        let taskIDsWithTag = Set(tasks.filter { $0.tags.contains(tag) }.map(\.id))
+        return logs.filter { taskIDsWithTag.contains($0.taskID) }
+    }
+
+    private var filteredTasks: [RoutineTask] {
+        guard let tag = selectedTag else { return tasks }
+        return tasks.filter { $0.tags.contains(tag) }
+    }
+
     private func makeMetrics() -> Metrics {
-        let completionDates = logs.compactMap(\.timestamp)
+        let completionDates = filteredLogs.compactMap(\.timestamp)
         let chartPoints = RoutineCompletionStats.points(
             for: selectedRange,
             timestamps: completionDates,
@@ -762,8 +785,8 @@ struct StatsView: View {
         return Metrics(
             chartPoints: chartPoints,
             totalDoneCount: completionDates.count,
-            activeRoutineCount: tasks.filter { !$0.isPaused }.count,
-            archivedRoutineCount: tasks.filter(\.isPaused).count,
+            activeRoutineCount: filteredTasks.filter { !$0.isPaused }.count,
+            archivedRoutineCount: filteredTasks.filter(\.isPaused).count,
             totalCount: totalCount,
             averagePerDay: averagePerDay,
             highlightedBusiestDay: highlightedBusiestDay,
