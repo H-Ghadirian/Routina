@@ -336,7 +336,7 @@ extension HomeTCAView {
 
     var macHasCustomFiltersApplied: Bool {
         if macSidebarMode == .timeline {
-            return selectedTimelineRange != .week
+            return selectedTimelineRange != .all
                 || selectedTimelineFilterType != .all
                 || selectedTimelineTag != nil
         }
@@ -357,7 +357,7 @@ extension HomeTCAView {
 
     func clearAllMacFilters() {
         if macSidebarMode == .timeline {
-            selectedTimelineRange = .week
+            selectedTimelineRange = .all
             selectedTimelineFilterType = .all
             selectedTimelineTag = nil
         } else {

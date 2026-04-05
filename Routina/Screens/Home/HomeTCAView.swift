@@ -67,7 +67,7 @@ struct HomeTCAView: View {
     @State var isFilterSheetPresented = false
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
-    @State var selectedTimelineRange: TimelineRange = .week
+    @State var selectedTimelineRange: TimelineRange = .all
     @State var selectedTimelineFilterType: TimelineFilterType = .all
     @State var selectedTimelineTag: String?
 #if os(macOS)

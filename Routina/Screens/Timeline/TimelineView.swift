@@ -7,12 +7,12 @@ struct TimelineView: View {
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
 
-    @State private var selectedRange: TimelineRange = .week
+    @State private var selectedRange: TimelineRange = .all
     @State private var filterType: TimelineFilterType = .all
     @State private var selectedTag: String?
 
     init(
-        selectedRange: TimelineRange = .week,
+        selectedRange: TimelineRange = .all,
         filterType: TimelineFilterType = .all
     ) {
         _selectedRange = State(initialValue: selectedRange)
