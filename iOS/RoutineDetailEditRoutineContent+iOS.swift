@@ -105,6 +105,30 @@ struct RoutineDetailEditRoutineContent: View {
                     .foregroundStyle(.secondary)
             }
 
+            if store.editScheduleMode.taskType == .todo {
+                Section(header: Text("Deadline")) {
+                    Toggle("Set deadline", isOn: editDeadlineEnabledBinding)
+                    if store.editDeadline != nil {
+                        DatePicker("Deadline", selection: editDeadlineBinding)
+                    }
+                }
+            }
+
+            Section(header: Text("Importance & Urgency")) {
+                ImportanceUrgencyMatrixPicker(
+                    importance: editImportanceBinding,
+                    urgency: editUrgencyBinding
+                )
+
+                Text(importanceUrgencyDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section(header: Text("Image")) {
+                editImageAttachmentContent
+            }
+
             Section(header: Text("Tags")) {
                 HStack(spacing: 10) {
                     TextField(
@@ -341,30 +365,6 @@ struct RoutineDetailEditRoutineContent: View {
                 Text(editPlaceDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            }
-
-            if store.editScheduleMode.taskType == .todo {
-                Section(header: Text("Deadline")) {
-                    Toggle("Set deadline", isOn: editDeadlineEnabledBinding)
-                    if store.editDeadline != nil {
-                        DatePicker("Deadline", selection: editDeadlineBinding)
-                    }
-                }
-            }
-
-            Section(header: Text("Importance & Urgency")) {
-                ImportanceUrgencyMatrixPicker(
-                    importance: editImportanceBinding,
-                    urgency: editUrgencyBinding
-                )
-
-                Text(importanceUrgencyDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(header: Text("Image")) {
-                editImageAttachmentContent
             }
 
             if showsRepeatControls {
