@@ -1336,7 +1336,7 @@ extension HomeTCAView {
                     }
                 }
 
-                if !availableTags.isEmpty {
+                if !statsAllTags.isEmpty {
                     Divider()
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -1385,7 +1385,7 @@ extension HomeTCAView {
                             }
                             .buttonStyle(.plain)
 
-                            ForEach(availableTags, id: \.self) { tag in
+                            ForEach(statsAllTags, id: \.self) { tag in
                                 Button {
                                     statsSelectedTag = tag
                                 } label: {
@@ -1430,6 +1430,18 @@ extension HomeTCAView {
             .padding(.vertical, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var statsAllTags: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for task in store.routineTasks {
+            for tag in task.tags where !seen.contains(tag) {
+                seen.insert(tag)
+                result.append(tag)
+            }
+        }
+        return result.sorted()
     }
 
     private func statsRangeIcon(for range: DoneChartRange) -> String {
