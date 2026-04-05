@@ -36,6 +36,7 @@ extension HomeTCAView {
         case timeline = "Timeline"
         case stats = "Stats"
         case settings = "Settings"
+        case addTask = "Add Task"
 
         var id: Self { self }
     }
@@ -212,7 +213,7 @@ extension HomeTCAView {
     }
 
     func openAddTask() {
-        macSidebarMode = .routines
+        macSidebarMode = .addTask
         macSidebarSelection = nil
         store.send(.setMacFilterDetailPresented(false))
         store.send(.setAddRoutineSheet(true))
@@ -312,6 +313,7 @@ extension HomeTCAView {
     var isMacStatsMode: Bool { macSidebarMode == .stats }
     var isMacSettingsMode: Bool { macSidebarMode == .settings }
     var isMacRoutinesMode: Bool { macSidebarMode == .routines }
+    var isMacAddTaskMode: Bool { macSidebarMode == .addTask }
     var currentSelectedSettingsSection: SettingsMacSection { selectedSettingsSection ?? .notifications }
 
     var macHasCustomFiltersApplied: Bool {
@@ -411,6 +413,8 @@ extension HomeTCAView {
                     openStatsInSidebar()
                 case .settings:
                     openSettingsInSidebar()
+                case .addTask:
+                    openAddTask()
                 }
             }
         )
@@ -464,6 +468,9 @@ extension HomeTCAView {
     }
 
     private func showRoutinesInSidebar() {
+        if store.isAddRoutineSheetPresented {
+            store.send(.setAddRoutineSheet(false))
+        }
         macSidebarMode = .routines
         if let selectedTaskID = store.selectedTaskID {
             syncMacTaskListMode(for: selectedTaskID)
@@ -860,17 +867,22 @@ extension HomeTCAView {
 
     @ViewBuilder
     private var macSidebarContent: some View {
-        VStack(spacing: 12) {
-            if store.addRoutineState != nil || store.routineDetailState?.isEditSheetPresented == true {
+        Group {
+            if isMacAddTaskMode || store.routineDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
             } else if isMacRoutinesMode && store.routineTasks.isEmpty {
-                emptyStateView(
-                    title: "No tasks yet",
-                    message: "Add a routine or to-do, and the sidebar will organize what needs attention for you.",
-                    systemImage: "checklist"
-                ) {
-                    openAddTask()
+                VStack(spacing: 0) {
+                    macSidebarHeader
+                    Divider()
+                    emptyStateView(
+                        title: "No tasks yet",
+                        message: "Add a routine or to-do, and the sidebar will organize what needs attention for you.",
+                        systemImage: "checklist"
+                    ) {
+                        openAddTask()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 VStack(spacing: 0) {
                     macSidebarHeader
@@ -900,49 +912,68 @@ extension HomeTCAView {
     }
 
     private var macFormSectionNav: some View {
-        let isAdding = store.addRoutineState != nil
+        let isAdding = isMacAddTaskMode
         let sections = isAdding ? macAddFormSections : macEditFormSections
-        let title = isAdding ? "Add Task" : "Edit Task"
 
         return VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                Text("Tap a section to jump to it")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 14)
-            .padding(.bottom, 12)
+            macSidebarHeader
 
             Divider()
 
-            List {
-                ForEach(Array(sections.enumerated()), id: \.element) { index, section in
-                    Button {
-                        addEditFormCoordinator.scrollTarget = section
-                    } label: {
-                        HStack(spacing: 10) {
-                            Text("\(index + 1)")
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(.tertiary)
-                                .frame(width: 18, alignment: .trailing)
-                            Text(section)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                            Spacer(minLength: 0)
-                            Image(systemName: "chevron.right")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.tertiary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(sections, id: \.self) { section in
+                        Button {
+                            addEditFormCoordinator.scrollTarget = section
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: formSectionIcon(for: section))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(Color.accentColor)
+                                    .frame(width: 22, alignment: .center)
+
+                                Text(section)
+                                    .font(.callout)
+                                    .foregroundStyle(.primary)
+
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.clear)
+                            )
+                            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
             }
-            .listStyle(.sidebar)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func formSectionIcon(for section: String) -> String {
+        switch section {
+        case "Identity":           return "person.fill"
+        case "Behavior":           return "repeat"
+        case "Context":            return "tag.fill"
+        case "Notes":              return "note.text"
+        case "Steps":              return "list.number"
+        case "Image":              return "photo.fill"
+        case "Basic":              return "pencil"
+        case "Tags":               return "tag.fill"
+        case "Relationships":      return "link"
+        case "Task Type":          return "square.grid.2x2.fill"
+        case "Place":              return "mappin.fill"
+        case "Importance & Urgency": return "flag.fill"
+        case "Schedule":           return "calendar"
+        case "Danger Zone":        return "exclamationmark.triangle.fill"
+        default:                   return "circle.fill"
+        }
     }
 
     private var macAddFormSections: [String] {
@@ -983,38 +1014,23 @@ extension HomeTCAView {
         .padding(.bottom, 12)
     }
 
-    private var macSidebarAddTaskButton: some View {
-        Button {
-            openAddTask()
-        } label: {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.clear)
-                Image(systemName: "plus")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.secondary)
-            }
-            .frame(width: 40)
-            .frame(maxHeight: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Add Task")
-    }
-
     private var macSidebarModeStrip: some View {
         HStack(spacing: 0) {
             ForEach(MacSidebarMode.allCases) { mode in
                 Button {
                     macSidebarModeBinding.wrappedValue = mode
                 } label: {
+                    let isSelected = macSidebarModeBinding.wrappedValue == mode
+                    let isAddTab = mode == .addTask
                     ZStack {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(macSidebarModeBinding.wrappedValue == mode ? Color.accentColor : Color.clear)
+                            .fill(isSelected
+                                ? (isAddTab ? Color.accentColor : Color.accentColor)
+                                : Color.clear)
 
                         Image(systemName: macSidebarModeIcon(for: mode))
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(macSidebarModeBinding.wrappedValue == mode ? Color.white : Color.secondary)
+                            .foregroundStyle(isSelected ? Color.white : (isAddTab ? Color.accentColor : Color.secondary))
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
@@ -1022,14 +1038,14 @@ extension HomeTCAView {
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
                 .accessibilityLabel(mode.rawValue)
+
+                if mode == .settings {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 1)
+                        .padding(.vertical, 8)
+                }
             }
-
-            Rectangle()
-                .fill(Color.white.opacity(0.1))
-                .frame(width: 1)
-                .padding(.vertical, 8)
-
-            macSidebarAddTaskButton
         }
         .frame(height: 42)
         .padding(4)
@@ -1071,6 +1087,7 @@ extension HomeTCAView {
         case .timeline: return "clock.arrow.circlepath"
         case .stats: return "chart.bar.xaxis"
         case .settings: return "gearshape"
+        case .addTask: return "plus"
         }
     }
 
