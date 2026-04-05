@@ -85,4 +85,9 @@ struct TaskFormModel {
     // MARK: Extras
     var autofocusName: Bool = false
     var onDelete: (() -> Void)? = nil
+    // macOS Edit only — Danger Zone pause/resume
+    var pauseResumeAction: (() -> Void)? = nil
+    var pauseResumeTitle: String? = nil
+    var pauseResumeDescription: String? = nil
+    var pauseResumeTint: Color? = nil
 }
