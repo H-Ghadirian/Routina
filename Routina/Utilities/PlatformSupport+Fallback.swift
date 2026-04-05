@@ -1,4 +1,4 @@
-#if !canImport(UIKit) && (!canImport(AppKit) || SWIFT_PACKAGE)
+#if SWIFT_PACKAGE || (!canImport(UIKit) && !canImport(AppKit))
 import Foundation
 import SwiftUI
 
