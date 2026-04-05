@@ -80,6 +80,7 @@ extension HomeTCAView {
             ) {
                 macActiveFiltersDetailView
             }
+            .navigationTitle(macSidebarNavigationTitle)
             .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
     }
@@ -921,7 +922,7 @@ extension HomeTCAView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
-        .navigationTitle(macSidebarNavigationTitle)
+        .navigationTitle("Routina")
         .toolbar { homeToolbarContent }
         .routinaHomeSidebarColumnWidth()
     }
