@@ -75,6 +75,7 @@ struct HomeTCAView: View {
     @State var macSidebarMode: MacSidebarMode = .routines
     @State var macTaskListMode: MacTaskListMode = .routines
     @State var selectedSettingsSection: SettingsMacSection? = .notifications
+    @State var addEditFormCoordinator = AddEditFormCoordinator()
 #endif
 
     init(

@@ -79,6 +79,7 @@ extension HomeTCAView {
             ) {
                 macActiveFiltersDetailView
             }
+            .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
     }
 
@@ -860,7 +861,9 @@ extension HomeTCAView {
     @ViewBuilder
     private var macSidebarContent: some View {
         VStack(spacing: 12) {
-            if isMacRoutinesMode && store.routineTasks.isEmpty {
+            if store.addRoutineState != nil || store.routineDetailState?.isEditSheetPresented == true {
+                macFormSectionNav
+            } else if isMacRoutinesMode && store.routineTasks.isEmpty {
                 emptyStateView(
                     title: "No tasks yet",
                     message: "Add a routine or to-do, and the sidebar will organize what needs attention for you.",
@@ -894,6 +897,75 @@ extension HomeTCAView {
         .navigationTitle("Routina")
         .toolbar { homeToolbarContent }
         .routinaHomeSidebarColumnWidth()
+    }
+
+    private var macFormSectionNav: some View {
+        let isAdding = store.addRoutineState != nil
+        let sections = isAdding ? macAddFormSections : macEditFormSections
+        let title = isAdding ? "Add Task" : "Edit Task"
+
+        return VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.headline.weight(.semibold))
+                Text("Tap a section to jump to it")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 14)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            List {
+                ForEach(Array(sections.enumerated()), id: \.element) { index, section in
+                    Button {
+                        addEditFormCoordinator.scrollTarget = section
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text("\(index + 1)")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 18, alignment: .trailing)
+                            Text(section)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .listStyle(.sidebar)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var macAddFormSections: [String] {
+        let scheduleMode = store.addRoutineState?.scheduleMode ?? .fixedInterval
+        let isStepBased = scheduleMode == .fixedInterval || scheduleMode == .oneOff
+        var sections = ["Identity", "Behavior", "Context", "Notes"]
+        if isStepBased { sections.append("Steps") }
+        sections.append("Image")
+        return sections
+    }
+
+    private var macEditFormSections: [String] {
+        guard let detail = store.routineDetailState else { return [] }
+        let scheduleMode = detail.editScheduleMode
+        var sections = ["Basic", "Tags", "Relationships", "Task Type", "Place", "Importance & Urgency"]
+        if scheduleMode != .derivedFromChecklist && scheduleMode != .oneOff {
+            sections.append("Schedule")
+        }
+        if scheduleMode == .fixedInterval || scheduleMode == .oneOff {
+            sections.append("Steps")
+        }
+        sections.append("Danger Zone")
+        return sections
     }
 
     var macSidebarHeader: some View {

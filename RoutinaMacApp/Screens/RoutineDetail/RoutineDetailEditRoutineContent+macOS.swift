@@ -18,6 +18,7 @@ struct RoutineDetailEditRoutineContent: View {
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
+    @Environment(\.addEditFormCoordinator) private var formCoordinator
 
     private var sectionHeaderFont: Font { .headline.weight(.semibold) }
 
@@ -35,6 +36,7 @@ struct RoutineDetailEditRoutineContent: View {
             context: .editSheet
         )
 
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 sectionCard(title: "Basic") {
@@ -100,6 +102,8 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
+                .id("Basic")
+
                 sectionCard(title: "Tags") {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 10) {
@@ -156,6 +160,8 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
+                .id("Tags")
+
                 sectionCard(title: "Relationships") {
                     VStack(alignment: .leading, spacing: 12) {
                         TaskRelationshipsEditor(
@@ -170,6 +176,8 @@ struct RoutineDetailEditRoutineContent: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                .id("Relationships")
 
                 sectionCard(title: "Task Type") {
                     VStack(alignment: .leading, spacing: 12) {
@@ -257,6 +265,8 @@ struct RoutineDetailEditRoutineContent: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
+                .id("Task Type")
+
                 sectionCard(title: "Place") {
                     VStack(alignment: .leading, spacing: 6) {
                         Picker(
@@ -280,6 +290,8 @@ struct RoutineDetailEditRoutineContent: View {
                     }
                 }
 
+                .id("Place")
+
                 sectionCard(title: "Importance & Urgency") {
                     VStack(alignment: .leading, spacing: 6) {
                         ImportanceUrgencyMatrixPicker(
@@ -292,6 +304,7 @@ struct RoutineDetailEditRoutineContent: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .id("Importance & Urgency")
 
                 if showsRepeatControls {
                     sectionCard(title: "Schedule") {
@@ -299,6 +312,7 @@ struct RoutineDetailEditRoutineContent: View {
                             repeatPatternContent
                         }
                     }
+                    .id("Schedule")
                 }
 
                 if isStepBasedMode {
@@ -331,6 +345,7 @@ struct RoutineDetailEditRoutineContent: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    .id("Steps")
                 }
 
                 sectionCard(title: "Danger Zone") {
@@ -361,12 +376,21 @@ struct RoutineDetailEditRoutineContent: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                .id("Danger Zone")
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 18)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .onChange(of: formCoordinator.scrollTarget) { _, target in
+            guard let target else { return }
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo(target, anchor: .top)
+            }
+            formCoordinator.scrollTarget = nil
+        }
         .frame(minWidth: 520, minHeight: 460)
+        } // ScrollViewReader
         .sheet(isPresented: $isTagManagerPresented) {
             SettingsTagManagerPresentationView(store: tagManagerStore)
         }

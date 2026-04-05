@@ -20,6 +20,9 @@ struct AddRoutineTCAView: View {
     }
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
+    #if os(macOS)
+    @Environment(\.addEditFormCoordinator) var formCoordinator
+    #endif
 
     var body: some View {
         WithPerceptionTracking {
