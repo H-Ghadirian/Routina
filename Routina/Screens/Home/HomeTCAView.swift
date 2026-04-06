@@ -63,6 +63,7 @@ struct HomeTCAView: View {
     @State var selectedFilter: RoutineListFilter = .all
     @State var iosTaskListMode: IOSTaskListMode = .routines
     @State var selectedTag: String?
+    @State var excludedTags: Set<String> = []
     @State var selectedManualPlaceFilterID: UUID?
     @State var isFilterSheetPresented = false
     @State var isCompactHeaderHidden = false
@@ -392,6 +393,12 @@ struct HomeTCAView: View {
                     }
                 }
 
+                ForEach(excludedTags.sorted(), id: \.self) { tag in
+                    compactFilterChip(title: "not #\(tag)", tintColor: .red) {
+                        excludedTags.remove(tag)
+                    }
+                }
+
                 if let selectedPlaceName {
                     compactFilterChip(title: selectedPlaceName, systemImage: "mappin.and.ellipse") {
                         selectedManualPlaceFilterID = nil
@@ -419,6 +426,7 @@ struct HomeTCAView: View {
     func compactFilterChip(
         title: String,
         systemImage: String? = nil,
+        tintColor: Color = .secondary,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -434,12 +442,12 @@ struct HomeTCAView: View {
                 Image(systemName: "xmark.circle.fill")
                     .font(.caption2)
             }
-            .foregroundStyle(Color.secondary)
+            .foregroundStyle(tintColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(Color.secondary.opacity(0.12))
+                    .fill(tintColor.opacity(0.12))
             )
         }
         .buttonStyle(.plain)
@@ -476,6 +484,7 @@ struct HomeTCAView: View {
         if selectedTag != nil {
             count += 1
         }
+        count += excludedTags.count
         if selectedManualPlaceFilterID != nil {
             count += 1
         }
@@ -504,6 +513,7 @@ struct HomeTCAView: View {
 
     func clearOptionalFilters() {
         selectedTag = nil
+        excludedTags = []
         selectedManualPlaceFilterID = nil
 
         if store.hideUnavailableRoutines {
@@ -555,6 +565,7 @@ struct HomeTCAView: View {
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
                 && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+                && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
         }
     }
 
@@ -769,6 +780,7 @@ struct HomeTCAView: View {
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
                 && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+                && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
         }
     }
 
@@ -784,6 +796,7 @@ struct HomeTCAView: View {
                     && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
                     && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+                    && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
             }
             .sorted(by: archivedTaskSort)
     }
@@ -800,6 +813,7 @@ struct HomeTCAView: View {
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
                 && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+                && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
         }
         let archivedPinned = filteredArchivedTasks(archivedRoutineDisplays).filter(\.isPinned)
 
@@ -1016,17 +1030,18 @@ struct HomeTCAView: View {
     func tagFilterButton(
         title: String,
         isSelected: Bool,
+        selectedColor: Color = .accentColor,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                .foregroundStyle(isSelected ? selectedColor : Color.secondary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
                 .background(
                     Capsule()
-                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                        .fill(isSelected ? selectedColor.opacity(0.16) : Color.secondary.opacity(0.10))
                 )
         }
         .buttonStyle(.plain)
@@ -1308,6 +1323,17 @@ struct HomeTCAView: View {
         HomeFeature.availableTags(from: allRoutineDisplays.filter(matchesCurrentTaskListMode))
     }
 
+    /// Tags available for exclusion — scoped to tasks that already match the selected include tag.
+    var availableExcludeTags: [String] {
+        let base = allRoutineDisplays.filter(matchesCurrentTaskListMode).filter { task in
+            HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+        }
+        return HomeFeature.availableTags(from: base).filter { tag in
+            // Don't offer the include tag itself as an exclude option
+            selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+        }
+    }
+
     func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {
         let delta = newOffset - oldOffset
 
@@ -1330,13 +1356,15 @@ struct HomeTCAView: View {
         awayDisplays: [HomeFeature.RoutineDisplay],
         archivedDisplays: [HomeFeature.RoutineDisplay]
     ) {
-        guard let selectedTag else { return }
-        let availableTags = HomeFeature.availableTags(
-            from: (activeDisplays + awayDisplays + archivedDisplays).filter(matchesCurrentTaskListMode)
-        )
-        if !RoutineTag.contains(selectedTag, in: availableTags) {
+        let all = (activeDisplays + awayDisplays + archivedDisplays).filter(matchesCurrentTaskListMode)
+        let allAvailableTags = HomeFeature.availableTags(from: all)
+
+        if let selectedTag, !RoutineTag.contains(selectedTag, in: allAvailableTags) {
             self.selectedTag = nil
         }
+
+        // Prune excluded tags to only those still present in the include-scoped pool
+        excludedTags = excludedTags.filter { RoutineTag.contains($0, in: availableExcludeTags) }
     }
 
     @ViewBuilder

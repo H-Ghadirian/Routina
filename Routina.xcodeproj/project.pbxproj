@@ -123,11 +123,6 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000012F30000100000001 /* iOS */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = iOS;
-			sourceTree = "<group>";
-		};
 		2A5A74BF2D7B92F600E91075 /* Routina */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -161,6 +156,11 @@
 				5F1000282E90000100000001 /* Exceptions for "RoutinaWatchExtension" folder in "RoutinaWatchExtension" target */,
 			);
 			path = RoutinaWatchExtension;
+			sourceTree = "<group>";
+		};
+		AA0000012F30000100000001 /* iOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = iOS;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */

@@ -1117,4 +1117,9 @@ extension HomeFeature {
         guard let selectedTag else { return true }
         return RoutineTag.contains(selectedTag, in: tags)
     }
+
+    static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
+        guard !excludedTags.isEmpty else { return true }
+        return !excludedTags.contains { RoutineTag.contains($0, in: tags) }
+    }
 }

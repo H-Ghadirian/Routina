@@ -166,7 +166,7 @@ extension HomeTCAView {
                 }
 
                 if !availableTags.isEmpty {
-                    Section("Tags") {
+                    Section("Include Tag") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
                                 tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
@@ -183,6 +183,41 @@ extension HomeTCAView {
                                 }
                             }
                             .padding(.vertical, 4)
+                        }
+                    }
+
+                    Section("Exclude Tags") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(availableExcludeTags, id: \.self) { tag in
+                                    let isExcluded = excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                    tagFilterButton(
+                                        title: "#\(tag)",
+                                        isSelected: isExcluded,
+                                        selectedColor: .red
+                                    ) {
+                                        if isExcluded {
+                                            excludedTags.remove(tag)
+                                        } else {
+                                            excludedTags.insert(tag)
+                                            if selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                                selectedTag = nil
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+
+                        if !excludedTags.isEmpty {
+                            Text("Hiding tasks tagged: \(excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Select tags to hide tasks that have them.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
