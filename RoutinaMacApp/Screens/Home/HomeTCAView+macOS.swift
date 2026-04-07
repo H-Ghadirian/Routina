@@ -24,13 +24,6 @@ extension HomeTCAView {
         case timelineEntry(UUID)
     }
 
-    enum MacTaskListMode: String, CaseIterable, Identifiable {
-        case routines = "Routines"
-        case todos = "Todos"
-
-        var id: Self { self }
-    }
-
     enum MacSidebarMode: String, CaseIterable, Identifiable {
         case routines = "Routines"
         case timeline = "Timeline"
@@ -179,23 +172,11 @@ extension HomeTCAView {
                     settingsStore.send(.onAppear)
                 }
             }
-            .onChange(of: macTaskListMode) { oldMode, newMode in
+            .onChange(of: store.taskListMode) { oldMode, newMode in
                 saveFilterSnapshot(for: oldMode.rawValue)
                 restoreFilterSnapshot(for: newMode.rawValue)
-                store.send(.setMacFilterDetailPresented(false))
-                if let selectedTaskID = store.selectedTaskID,
-                   let task = store.routineTasks.first(where: { $0.id == selectedTaskID }) {
-                    let shouldKeepSelection: Bool
-                    switch macTaskListMode {
-                    case .routines:
-                        shouldKeepSelection = !task.isOneOffTask
-                    case .todos:
-                        shouldKeepSelection = task.isOneOffTask
-                    }
-                    if !shouldKeepSelection {
-                        macSidebarSelection = nil
-                        store.send(.setSelectedTask(nil))
-                    }
+                if store.selectedTaskID == nil {
+                    macSidebarSelection = nil
                 }
             }
     }
@@ -204,7 +185,7 @@ extension HomeTCAView {
         if macSidebarMode == .timeline {
             return "Search dones"
         }
-        switch macTaskListMode {
+        switch store.taskListMode {
         case .routines:
             return "Search routines"
         case .todos:
@@ -272,7 +253,7 @@ extension HomeTCAView {
     }
 
     func matchesCurrentTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        switch macTaskListMode {
+        switch store.taskListMode {
         case .routines:
             return !task.isOneOffTask
         case .todos:
@@ -322,7 +303,7 @@ extension HomeTCAView {
     var macSidebarNavigationTitle: String {
         switch macSidebarMode {
         case .routines:
-            return macTaskListMode == .todos ? "Todos" : "Routines"
+            return store.taskListMode == .todos ? "Todos" : "Routines"
         case .timeline:
             return "Dones"
         case .stats:
@@ -352,7 +333,7 @@ extension HomeTCAView {
     }
 
     var macFilterDetailDescription: String {
-        switch macTaskListMode {
+        switch store.taskListMode {
         case .routines:
             return "Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately."
         case .todos:
@@ -545,7 +526,7 @@ extension HomeTCAView {
 
     private func syncMacTaskListMode(for taskID: UUID) {
         guard let task = store.routineTasks.first(where: { $0.id == taskID }) else { return }
-        macTaskListMode = task.isOneOffTask ? .todos : .routines
+        store.send(.taskListModeChanged(task.isOneOffTask ? .todos : .routines))
     }
 
     func timelineSidebarRow(_ entry: TimelineEntry, rowNumber: Int) -> some View {
@@ -743,8 +724,8 @@ extension HomeTCAView {
 
         if pinnedTasks.isEmpty && sections.isEmpty && archivedTasks.isEmpty {
             emptyStateView(
-                title: macTaskListMode == .todos ? "No matching todos" : "No matching routines",
-                message: macTaskListMode == .todos
+                title: store.taskListMode == .todos ? "No matching todos" : "No matching routines",
+                message: store.taskListMode == .todos
                     ? "Try a different place or switch back to all todos."
                     : "Try a different place or switch back to all routines.",
                 systemImage: "magnifyingglass"
@@ -1137,19 +1118,19 @@ extension HomeTCAView {
 
     private var macTaskListModeStrip: some View {
         HStack(spacing: 8) {
-            ForEach(MacTaskListMode.allCases) { mode in
+            ForEach(HomeFeature.TaskListMode.allCases) { mode in
                 Button {
-                    macTaskListMode = mode
+                    store.send(.taskListModeChanged(mode))
                 } label: {
                     Text(mode.rawValue)
                         .font(.caption.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
-                        .foregroundStyle(macTaskListMode == mode ? Color.white : Color.primary)
+                        .foregroundStyle(store.taskListMode == mode ? Color.white : Color.primary)
                         .background(
                             Capsule()
-                                .fill(macTaskListMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                                .fill(store.taskListMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
                         )
                 }
                 .buttonStyle(.plain)

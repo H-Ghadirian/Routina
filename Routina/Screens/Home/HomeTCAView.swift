@@ -6,31 +6,6 @@ import SwiftData
 import SwiftUI
 
 struct HomeTCAView: View {
-    enum IOSTaskListMode: String, CaseIterable, Identifiable {
-        case routines = "Routines"
-        case todos = "Todos"
-
-        var id: Self { self }
-
-        var systemImage: String {
-            switch self {
-            case .routines:
-                return "repeat"
-            case .todos:
-                return "checklist"
-            }
-        }
-
-        var accessibilityLabel: String {
-            switch self {
-            case .routines:
-                return "Show routines"
-            case .todos:
-                return "Show todos"
-            }
-        }
-    }
-
     struct RoutineListSection: Identifiable {
         let title: String
         var tasks: [HomeFeature.RoutineDisplay]
@@ -52,7 +27,6 @@ struct HomeTCAView: View {
     ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
     @State private var localSearchText = ""
     @State var selectedFilter: RoutineListFilter = .all
-    @State var iosTaskListMode: IOSTaskListMode = .routines
     @State var selectedTag: String?
     @State var excludedTags: Set<String> = []
     @State var selectedManualPlaceFilterID: UUID?
@@ -66,7 +40,6 @@ struct HomeTCAView: View {
 #if os(macOS)
     @State var macSidebarSelection: MacSidebarSelection?
     @State var macSidebarMode: MacSidebarMode = .routines
-    @State var macTaskListMode: MacTaskListMode = .routines
     @State var selectedSettingsSection: SettingsMacSection? = .notifications
     @State var addEditFormCoordinator = AddEditFormCoordinator()
     @State var statsSelectedRange: DoneChartRange = .week
@@ -751,11 +724,11 @@ struct HomeTCAView: View {
     }
 
     @ViewBuilder
-    func iosTaskListModeButton(_ mode: IOSTaskListMode) -> some View {
-        let isSelected = iosTaskListMode == mode
+    func iosTaskListModeButton(_ mode: HomeFeature.TaskListMode) -> some View {
+        let isSelected = store.taskListMode == mode
 
         Button {
-            iosTaskListMode = mode
+            store.send(.taskListModeChanged(mode))
         } label: {
             Image(systemName: mode.systemImage)
                 .font(.subheadline.weight(.semibold))

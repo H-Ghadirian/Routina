@@ -66,25 +66,14 @@ extension HomeTCAView {
     }
 
     func applyPlatformHomeObservers<Content: View>(to view: Content) -> some View {
-        view.onChange(of: iosTaskListMode) { oldMode, newMode in
+        view.onChange(of: store.taskListMode) { oldMode, newMode in
             saveFilterSnapshot(for: oldMode.rawValue)
             restoreFilterSnapshot(for: newMode.rawValue)
-
-            guard let selectedTaskID = store.selectedTaskID,
-                  let task = store.routineTasks.first(where: { $0.id == selectedTaskID })
-            else {
-                return
-            }
-
-            let shouldKeepSelection = newMode == .todos ? task.isOneOffTask : !task.isOneOffTask
-            if !shouldKeepSelection {
-                store.send(.setSelectedTask(nil))
-            }
         }
     }
 
     var searchPlaceholderText: String {
-        switch iosTaskListMode {
+        switch store.taskListMode {
         case .routines:
             return "Search routines"
         case .todos:
@@ -278,7 +267,7 @@ extension HomeTCAView {
     }
 
     func matchesCurrentTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        switch iosTaskListMode {
+        switch store.taskListMode {
         case .routines:
             return !task.isOneOffTask
         case .todos:
@@ -358,7 +347,7 @@ extension HomeTCAView {
             }
 
             return (
-                title: iosTaskListMode == .todos ? "No matching todos" : "No matching routines",
+                title: store.taskListMode == .todos ? "No matching todos" : "No matching routines",
                 message: "Try a different search or switch back to another filter.",
                 systemImage: "magnifyingglass"
             )

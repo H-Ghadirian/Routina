@@ -4,6 +4,27 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
+    enum TaskListMode: String, CaseIterable, Equatable, Identifiable {
+        case routines = "Routines"
+        case todos = "Todos"
+
+        var id: Self { self }
+
+        var systemImage: String {
+            switch self {
+            case .routines: return "repeat"
+            case .todos: return "checklist"
+            }
+        }
+
+        var accessibilityLabel: String {
+            switch self {
+            case .routines: return "Show routines"
+            case .todos: return "Show todos"
+            }
+        }
+    }
+
     struct SelectedTaskReloadGuard: Equatable {
         var taskID: UUID
         var completedChecklistItemIDsStorage: String
@@ -78,6 +99,7 @@ struct HomeFeature {
         var pendingDeleteTaskIDs: [UUID] = []
         var isDeleteConfirmationPresented: Bool = false
         var isMacFilterDetailPresented: Bool = false
+        var taskListMode: TaskListMode = .todos
     }
 
     enum Action: Equatable {
@@ -92,6 +114,7 @@ struct HomeFeature {
         case deleteTasksTapped([UUID])
         case setDeleteConfirmation(Bool)
         case setMacFilterDetailPresented(Bool)
+        case taskListModeChanged(TaskListMode)
         case deleteTasksConfirmed
         case deleteTasks([UUID])
         case markTaskDone(UUID)
@@ -211,6 +234,19 @@ struct HomeFeature {
                 state.isDeleteConfirmationPresented = isPresented
                 if !isPresented {
                     state.pendingDeleteTaskIDs = []
+                }
+                return .none
+
+            case let .taskListModeChanged(mode):
+                state.taskListMode = mode
+                state.isMacFilterDetailPresented = false
+                if let selectedTaskID = state.selectedTaskID,
+                   let task = state.routineTasks.first(where: { $0.id == selectedTaskID }) {
+                    let keepSelection = mode == .todos ? task.isOneOffTask : !task.isOneOffTask
+                    if !keepSelection {
+                        state.selectedTaskID = nil
+                        state.routineDetailState = nil
+                    }
                 }
                 return .none
 
