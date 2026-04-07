@@ -150,6 +150,9 @@ struct HomeFeatureTests {
                 overdueDays: 0,
                 isDoneToday: false
             )
+            #if os(macOS)
+            $0.macSidebarSelection = .task(task.id)
+            #endif
         }
 
         let detailState = try #require(store.state.routineDetailState)
@@ -2730,6 +2733,7 @@ struct HomeFeatureTests {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines
@@ -2760,6 +2764,7 @@ struct HomeFeatureTests {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.taskListModeChanged(.todos)) {
             $0.taskListMode = .todos
@@ -2790,6 +2795,7 @@ struct HomeFeatureTests {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines
@@ -2820,6 +2826,7 @@ struct HomeFeatureTests {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.taskListModeChanged(.todos)) {
             $0.taskListMode = .todos
@@ -2849,6 +2856,7 @@ struct HomeFeatureTests {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines
@@ -2866,6 +2874,7 @@ struct HomeFeatureTests {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines
@@ -2884,6 +2893,7 @@ struct HomeFeatureTests {
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines

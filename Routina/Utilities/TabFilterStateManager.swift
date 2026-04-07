@@ -4,7 +4,7 @@ import Foundation
 /// the Routines and Todos tabs doesn't wipe filters the user already set.
 struct TabFilterStateManager {
 
-    struct Snapshot {
+    struct Snapshot: Equatable {
         var selectedTag: String?
         var excludedTags: Set<String>
         var selectedFilter: RoutineListFilter

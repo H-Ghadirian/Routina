@@ -66,10 +66,7 @@ extension HomeTCAView {
     }
 
     func applyPlatformHomeObservers<Content: View>(to view: Content) -> some View {
-        view.onChange(of: store.taskListMode) { oldMode, newMode in
-            saveFilterSnapshot(for: oldMode.rawValue)
-            restoreFilterSnapshot(for: newMode.rawValue)
-        }
+        view // Filter snapshot management is handled in the reducer's taskListModeChanged case
     }
 
     var searchPlaceholderText: String {
@@ -93,7 +90,10 @@ extension HomeTCAView {
     }
 
     var filterPicker: some View {
-        Picker("Routine Filter", selection: $selectedFilter) {
+        Picker("Routine Filter", selection: Binding(
+            get: { store.selectedFilter },
+            set: { store.send(.selectedFilterChanged($0)) }
+        )) {
             ForEach(iOSAvailableFilters) { filter in
                 Text(filter.rawValue).tag(filter)
             }
@@ -149,7 +149,10 @@ extension HomeTCAView {
         NavigationStack {
             List {
                 Section("Status") {
-                    Picker("Show routines", selection: $selectedFilter) {
+                    Picker("Show routines", selection: Binding(
+                        get: { store.selectedFilter },
+                        set: { store.send(.selectedFilterChanged($0)) }
+                    )) {
                         ForEach(iOSAvailableFilters) { filter in
                             Text(filter.rawValue).tag(filter)
                         }
@@ -161,16 +164,16 @@ extension HomeTCAView {
                     Section("Include Tag") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
-                                tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
-                                    selectedTag = nil
+                                tagFilterButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                                    store.send(.selectedTagChanged(nil))
                                 }
 
                                 ForEach(availableTags, id: \.self) { tag in
                                     tagFilterButton(
                                         title: "#\(tag)",
-                                        isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                        isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
                                     ) {
-                                        selectedTag = tag
+                                        store.send(.selectedTagChanged(tag))
                                     }
                                 }
                             }
@@ -182,18 +185,20 @@ extension HomeTCAView {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
                                 ForEach(availableExcludeTags, id: \.self) { tag in
-                                    let isExcluded = excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                    let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
                                     tagFilterButton(
                                         title: "#\(tag)",
                                         isSelected: isExcluded,
                                         selectedColor: .red
                                     ) {
                                         if isExcluded {
-                                            excludedTags.remove(tag)
+                                            store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
                                         } else {
-                                            excludedTags.insert(tag)
-                                            if selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                                                selectedTag = nil
+                                            var newTags = store.excludedTags
+                                            newTags.insert(tag)
+                                            store.send(.excludedTagsChanged(newTags))
+                                            if store.selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                                store.send(.selectedTagChanged(nil))
                                             }
                                         }
                                     }
@@ -202,8 +207,8 @@ extension HomeTCAView {
                             .padding(.vertical, 4)
                         }
 
-                        if !excludedTags.isEmpty {
-                            Text("Hiding tasks tagged: \(excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
+                        if !store.excludedTags.isEmpty {
+                            Text("Hiding tasks tagged: \(store.excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         } else {
@@ -246,7 +251,7 @@ extension HomeTCAView {
                 if hasActiveOptionalFilters {
                     Section {
                         Button("Clear Filters") {
-                            clearOptionalFilters()
+                            store.send(.clearOptionalFilters)
                         }
                         .foregroundStyle(.red)
                     }
@@ -257,7 +262,7 @@ extension HomeTCAView {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
-                        isFilterSheetPresented = false
+                        store.send(.isFilterSheetPresentedChanged(false))
                     }
                 }
             }
@@ -276,7 +281,10 @@ extension HomeTCAView {
     }
 
     var platformTimelineRangePicker: some View {
-        Picker("Range", selection: $selectedTimelineRange) {
+        Picker("Range", selection: Binding(
+            get: { store.selectedTimelineRange },
+            set: { store.send(.selectedTimelineRangeChanged($0)) }
+        )) {
             ForEach(TimelineRange.allCases) { range in
                 Text(range.rawValue).tag(range)
             }
@@ -284,7 +292,10 @@ extension HomeTCAView {
     }
 
     var platformTimelineTypePicker: some View {
-        Picker("Type", selection: $selectedTimelineFilterType) {
+        Picker("Type", selection: Binding(
+            get: { store.selectedTimelineFilterType },
+            set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
+        )) {
             ForEach(TimelineFilterType.allCases) { type in
                 Text(type.rawValue).tag(type)
             }
@@ -297,16 +308,16 @@ extension HomeTCAView {
             VStack(alignment: .leading, spacing: 8) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
-                            selectedTag = nil
+                        tagFilterButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                            store.send(.selectedTagChanged(nil))
                         }
 
                         ForEach(availableTags, id: \.self) { tag in
                             tagFilterButton(
                                 title: "#\(tag)",
-                                isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
                             ) {
-                                selectedTag = tag
+                                store.send(.selectedTagChanged(tag))
                             }
                         }
                     }

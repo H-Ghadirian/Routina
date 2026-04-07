@@ -75,6 +75,23 @@ struct HomeFeature {
         var doneCount: Int
     }
 
+#if os(macOS)
+    enum MacSidebarSelection: Hashable, Equatable {
+        case task(UUID)
+        case timelineEntry(UUID)
+    }
+
+    enum MacSidebarMode: String, CaseIterable, Identifiable, Equatable {
+        case routines = "Routines"
+        case timeline = "Timeline"
+        case stats    = "Stats"
+        case settings = "Settings"
+        case addTask  = "Add Task"
+
+        var id: Self { self }
+    }
+#endif
+
     @ObservableState
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
@@ -100,6 +117,30 @@ struct HomeFeature {
         var isDeleteConfirmationPresented: Bool = false
         var isMacFilterDetailPresented: Bool = false
         var taskListMode: TaskListMode = .todos
+
+        // Filter state (moved from view @State)
+        var selectedFilter: RoutineListFilter = .all
+        var selectedTag: String? = nil
+        var excludedTags: Set<String> = []
+        var selectedManualPlaceFilterID: UUID? = nil
+        var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:]
+        var isFilterSheetPresented: Bool = false
+
+        // Timeline filter state
+        var selectedTimelineRange: TimelineRange = .all
+        var selectedTimelineFilterType: TimelineFilterType = .all
+        var selectedTimelineTag: String? = nil
+
+        // Stats filter state
+        var statsSelectedRange: DoneChartRange = .week
+        var statsSelectedTag: String? = nil
+
+#if os(macOS)
+        // macOS navigation state
+        var macSidebarMode: MacSidebarMode = .routines
+        var macSidebarSelection: MacSidebarSelection? = nil
+        var selectedSettingsSection: SettingsMacSection? = .notifications
+#endif
     }
 
     enum Action: Equatable {
@@ -122,6 +163,30 @@ struct HomeFeature {
         case resumeTask(UUID)
         case pinTask(UUID)
         case unpinTask(UUID)
+
+        // Filter actions
+        case selectedFilterChanged(RoutineListFilter)
+        case selectedTagChanged(String?)
+        case excludedTagsChanged(Set<String>)
+        case selectedManualPlaceFilterIDChanged(UUID?)
+        case isFilterSheetPresentedChanged(Bool)
+        case clearOptionalFilters
+
+        // Timeline filter actions
+        case selectedTimelineRangeChanged(TimelineRange)
+        case selectedTimelineFilterTypeChanged(TimelineFilterType)
+        case selectedTimelineTagChanged(String?)
+
+        // Stats filter actions
+        case statsSelectedRangeChanged(DoneChartRange)
+        case statsSelectedTagChanged(String?)
+
+#if os(macOS)
+        // macOS navigation actions
+        case macSidebarModeChanged(MacSidebarMode)
+        case macSidebarSelectionChanged(MacSidebarSelection?)
+        case selectedSettingsSectionChanged(SettingsMacSection?)
+#endif
 
         case addRoutineSheet(AddRoutineFeature.Action)
         case routineDetail(RoutineDetailFeature.Action)
@@ -161,6 +226,7 @@ struct HomeFeature {
                 state.doneStats = doneStats
                 refreshDisplays(&state)
                 syncSelectedRoutineDetailState(&state)
+                validateFilterState(&state)
                 let detailRefreshEffect = refreshSelectedRoutineDetailEffect(for: state)
                 guard state.addRoutineState != nil else { return detailRefreshEffect }
                 return .merge(
@@ -196,6 +262,12 @@ struct HomeFeature {
                 if taskID != nil {
                     state.isMacFilterDetailPresented = false
                 }
+#if os(macOS)
+                // Keep macSidebarSelection in sync when in routines mode
+                if state.macSidebarMode == .routines {
+                    state.macSidebarSelection = taskID.map(MacSidebarSelection.task)
+                }
+#endif
                 guard let taskID,
                       let task = state.routineTasks.first(where: { $0.id == taskID }) else {
                     state.routineDetailState = nil
@@ -238,8 +310,29 @@ struct HomeFeature {
                 return .none
 
             case let .taskListModeChanged(mode):
+                let oldMode = state.taskListMode
+                // Save current filter state for the old mode
+                state.tabFilterSnapshots[oldMode.rawValue] = TabFilterStateManager.Snapshot(
+                    selectedTag: state.selectedTag,
+                    excludedTags: state.excludedTags,
+                    selectedFilter: state.selectedFilter,
+                    selectedManualPlaceFilterID: state.selectedManualPlaceFilterID
+                )
+                // Restore filter state for the new mode
+                let savedSnapshot = state.tabFilterSnapshots[mode.rawValue]
+                let snapshot = savedSnapshot ?? .default
+                state.selectedTag = snapshot.selectedTag
+                state.excludedTags = snapshot.excludedTags
+                state.selectedFilter = snapshot.selectedFilter
+                state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
+                // First time on a mode: also clear hideUnavailableRoutines
+                if savedSnapshot == nil && state.hideUnavailableRoutines {
+                    state.hideUnavailableRoutines = false
+                    SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
+                }
                 state.taskListMode = mode
                 state.isMacFilterDetailPresented = false
+                // Clear task selection if the selected task doesn't match the new mode
                 if let selectedTaskID = state.selectedTaskID,
                    let task = state.routineTasks.first(where: { $0.id == selectedTaskID }) {
                     let keepSelection = mode == .todos ? task.isOneOffTask : !task.isOneOffTask
@@ -248,6 +341,11 @@ struct HomeFeature {
                         state.routineDetailState = nil
                     }
                 }
+#if os(macOS)
+                if state.selectedTaskID == nil {
+                    state.macSidebarSelection = nil
+                }
+#endif
                 return .none
 
             case let .setMacFilterDetailPresented(isPresented):
@@ -260,6 +358,156 @@ struct HomeFeature {
                     state.selectedTaskID = nil
                 }
                 return .none
+
+            // MARK: - Filter actions
+
+            case let .selectedFilterChanged(filter):
+                state.selectedFilter = filter
+                return .none
+
+            case let .selectedTagChanged(tag):
+                state.selectedTag = tag
+                return .none
+
+            case let .excludedTagsChanged(tags):
+                state.excludedTags = tags
+                return .none
+
+            case let .selectedManualPlaceFilterIDChanged(id):
+                state.selectedManualPlaceFilterID = id
+                return .none
+
+            case let .isFilterSheetPresentedChanged(isPresented):
+                state.isFilterSheetPresented = isPresented
+                return .none
+
+            case .clearOptionalFilters:
+                state.selectedTag = nil
+                state.excludedTags = []
+                state.selectedManualPlaceFilterID = nil
+                if state.hideUnavailableRoutines {
+                    state.hideUnavailableRoutines = false
+                    SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
+                }
+                return .none
+
+            // MARK: - Timeline filter actions
+
+            case let .selectedTimelineRangeChanged(range):
+                state.selectedTimelineRange = range
+                return .none
+
+            case let .selectedTimelineFilterTypeChanged(filterType):
+                state.selectedTimelineFilterType = filterType
+                return .none
+
+            case let .selectedTimelineTagChanged(tag):
+                state.selectedTimelineTag = tag
+                return .none
+
+            // MARK: - Stats filter actions
+
+            case let .statsSelectedRangeChanged(range):
+                state.statsSelectedRange = range
+                return .none
+
+            case let .statsSelectedTagChanged(tag):
+                state.statsSelectedTag = tag
+                return .none
+
+#if os(macOS)
+            // MARK: - macOS navigation actions
+
+            case let .macSidebarModeChanged(mode):
+                state.macSidebarMode = mode
+                state.isMacFilterDetailPresented = false
+                switch mode {
+                case .routines:
+                    // Close add sheet; selection/taskListMode sync happens via setSelectedTask
+                    if state.isAddRoutineSheetPresented {
+                        state.isAddRoutineSheetPresented = false
+                        state.addRoutineState = nil
+                    }
+                    // Restore macSidebarSelection to reflect selectedTaskID
+                    state.macSidebarSelection = state.selectedTaskID.map(MacSidebarSelection.task)
+                    // Sync taskListMode to the currently selected task (if any)
+                    if let taskID = state.selectedTaskID,
+                       let task = state.routineTasks.first(where: { $0.id == taskID }) {
+                        let newMode: TaskListMode = task.isOneOffTask ? .todos : .routines
+                        if newMode != state.taskListMode {
+                            return .send(.taskListModeChanged(newMode))
+                        }
+                    }
+                case .timeline, .stats, .settings:
+                    if state.isAddRoutineSheetPresented {
+                        state.isAddRoutineSheetPresented = false
+                        state.addRoutineState = nil
+                    }
+                    state.macSidebarSelection = nil
+                    state.selectedTaskID = nil
+                    state.routineDetailState = nil
+                    state.selectedTaskReloadGuard = nil
+                    state.pendingSelectedChecklistReloadGuardTaskID = nil
+                    if mode == .settings && state.selectedSettingsSection == nil {
+                        state.selectedSettingsSection = .notifications
+                    }
+                case .addTask:
+                    state.macSidebarSelection = nil
+                    if state.isAddRoutineSheetPresented {
+                        state.isAddRoutineSheetPresented = false
+                        state.addRoutineState = nil
+                    }
+                }
+                return .none
+
+            case let .macSidebarSelectionChanged(selection):
+                state.macSidebarSelection = selection
+                state.isAddRoutineSheetPresented = false
+                state.addRoutineState = nil
+                state.isMacFilterDetailPresented = false
+                switch selection {
+                case let .task(taskID):
+                    state.macSidebarMode = .routines
+                    // Sync taskListMode and save/restore filter snapshots inline
+                    if let task = state.routineTasks.first(where: { $0.id == taskID }) {
+                        let newMode: TaskListMode = task.isOneOffTask ? .todos : .routines
+                        if newMode != state.taskListMode {
+                            let oldMode = state.taskListMode
+                            state.tabFilterSnapshots[oldMode.rawValue] = TabFilterStateManager.Snapshot(
+                                selectedTag: state.selectedTag,
+                                excludedTags: state.excludedTags,
+                                selectedFilter: state.selectedFilter,
+                                selectedManualPlaceFilterID: state.selectedManualPlaceFilterID
+                            )
+                            let savedSnapshot = state.tabFilterSnapshots[newMode.rawValue]
+                            let snapshot = savedSnapshot ?? .default
+                            state.selectedTag = snapshot.selectedTag
+                            state.excludedTags = snapshot.excludedTags
+                            state.selectedFilter = snapshot.selectedFilter
+                            state.selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
+                            if savedSnapshot == nil && state.hideUnavailableRoutines {
+                                state.hideUnavailableRoutines = false
+                                SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
+                            }
+                            state.taskListMode = newMode
+                        }
+                    }
+                    return .send(.setSelectedTask(taskID))
+                case .timelineEntry:
+                    state.macSidebarMode = .timeline
+                    // Task resolution requires @Query data — handled by view sending .setSelectedTask
+                    return .none
+                case nil:
+                    if state.macSidebarMode == .routines {
+                        return .send(.setSelectedTask(nil))
+                    }
+                    return .none
+                }
+
+            case let .selectedSettingsSectionChanged(section):
+                state.selectedSettingsSection = section
+                return .none
+#endif
 
             case .deleteTasksConfirmed:
                 let ids = state.pendingDeleteTaskIDs
@@ -596,6 +844,29 @@ struct HomeFeature {
         }
         .ifLet(\.routineDetailState, action: \.routineDetail) {
             RoutineDetailFeature()
+        }
+    }
+
+    /// Prunes stale filter state after the task/place list is refreshed.
+    private func validateFilterState(_ state: inout State) {
+        // Validate selectedTag against all available tags
+        let allDisplays = state.routineDisplays + state.awayRoutineDisplays + state.archivedRoutineDisplays
+        let allAvailableTags = Self.availableTags(from: allDisplays)
+        if let tag = state.selectedTag, !RoutineTag.contains(tag, in: allAvailableTags) {
+            state.selectedTag = nil
+        }
+        // Prune excluded tags to those still present in the include-filtered pool
+        let includeScopedDisplays = allDisplays.filter {
+            Self.matchesSelectedTag(state.selectedTag, in: $0.tags)
+        }
+        let availableExcludeTags = Self.availableTags(from: includeScopedDisplays).filter { tag in
+            state.selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+        }
+        state.excludedTags = state.excludedTags.filter { RoutineTag.contains($0, in: availableExcludeTags) }
+        // Validate selectedManualPlaceFilterID
+        if let placeID = state.selectedManualPlaceFilterID,
+           !state.routinePlaces.contains(where: { $0.id == placeID }) {
+            state.selectedManualPlaceFilterID = nil
         }
     }
 

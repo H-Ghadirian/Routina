@@ -1,6 +1,6 @@
 import Foundation
 
-enum TimelineRange: String, CaseIterable, Identifiable, Sendable {
+enum TimelineRange: String, CaseIterable, Identifiable, Sendable, Equatable {
     case today = "Today"
     case week = "Week"
     case month = "Month"
@@ -8,7 +8,7 @@ enum TimelineRange: String, CaseIterable, Identifiable, Sendable {
     var id: Self { self }
 }
 
-enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable {
+enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable {
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"

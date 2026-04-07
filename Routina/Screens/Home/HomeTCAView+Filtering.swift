@@ -10,8 +10,8 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
-                && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
-                && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
+                && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
+                && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
         }
     }
 
@@ -23,8 +23,8 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
-                && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
-                && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
+                && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
+                && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
         }
     }
 
@@ -39,8 +39,8 @@ extension HomeTCAView {
                     && (includePinned || !task.isPinned)
                     && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
-                    && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
-                    && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
+                    && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
+                    && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
             }
             .sorted(by: archivedTaskSort)
     }
@@ -56,8 +56,8 @@ extension HomeTCAView {
                 && matchesSearch(task)
                 && matchesFilter(task)
                 && matchesManualPlaceFilter(task)
-                && HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
-                && HomeFeature.matchesExcludedTags(excludedTags, in: task.tags)
+                && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
+                && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
         }
         let archivedPinned = filteredArchivedTasks(archivedRoutineDisplays).filter(\.isPinned)
 
@@ -75,7 +75,7 @@ extension HomeTCAView {
     }
 
     func matchesFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        switch selectedFilter {
+        switch store.selectedFilter {
         case .all:
             return true
         case .due:
@@ -88,7 +88,7 @@ extension HomeTCAView {
     }
 
     func matchesManualPlaceFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        guard let selectedManualPlaceFilterID else { return true }
+        guard let selectedManualPlaceFilterID = store.selectedManualPlaceFilterID else { return true }
         return task.placeID == selectedManualPlaceFilterID
     }
 

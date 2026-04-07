@@ -19,20 +19,9 @@ extension View {
 }
 
 extension HomeTCAView {
-    enum MacSidebarSelection: Hashable {
-        case task(UUID)
-        case timelineEntry(UUID)
-    }
-
-    enum MacSidebarMode: String, CaseIterable, Identifiable {
-        case routines = "Routines"
-        case timeline = "Timeline"
-        case stats = "Stats"
-        case settings = "Settings"
-        case addTask = "Add Task"
-
-        var id: Self { self }
-    }
+    // Typealiases for brevity — the canonical definitions live in HomeFeature
+    private typealias MacSidebarMode = HomeFeature.MacSidebarMode
+    private typealias MacSidebarSelection = HomeFeature.MacSidebarSelection
 
     init(
         store: StoreOf<HomeFeature>,
@@ -65,13 +54,19 @@ extension HomeTCAView {
                 isStatsPresented: isMacStatsMode,
                 isSettingsPresented: isMacSettingsMode,
                 settingsStore: settingsStore,
-                selectedSettingsSection: currentSelectedSettingsSection,
+                selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
                 addRoutineStore: self.store.scope(
                     state: \.addRoutineState,
                     action: \.addRoutineSheet
                 ),
-                statsSelectedRange: $statsSelectedRange,
-                statsSelectedTag: $statsSelectedTag
+                statsSelectedRange: Binding(
+                    get: { store.statsSelectedRange },
+                    set: { store.send(.statsSelectedRangeChanged($0)) }
+                ),
+                statsSelectedTag: Binding(
+                    get: { store.statsSelectedTag },
+                    set: { store.send(.statsSelectedTagChanged($0)) }
+                )
             ) {
                 macActiveFiltersDetailView
             }
@@ -151,13 +146,6 @@ extension HomeTCAView {
 
     func applyPlatformHomeObservers<Content: View>(to view: Content) -> some View {
         view
-            .onChange(of: store.selectedTaskID) { _, selectedTaskID in
-                guard macSidebarMode == .routines else { return }
-                if let selectedTaskID {
-                    syncMacTaskListMode(for: selectedTaskID)
-                }
-                macSidebarSelection = selectedTaskID.map(MacSidebarSelection.task)
-            }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenRoutinesInSidebar)) { _ in
                 showRoutinesInSidebar()
             }
@@ -167,22 +155,15 @@ extension HomeTCAView {
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenStatsInSidebar)) { _ in
                 openStatsInSidebar()
             }
-            .onChange(of: macSidebarMode) { _, mode in
+            .onChange(of: store.macSidebarMode) { _, mode in
                 if mode == .settings {
                     settingsStore.send(.onAppear)
-                }
-            }
-            .onChange(of: store.taskListMode) { oldMode, newMode in
-                saveFilterSnapshot(for: oldMode.rawValue)
-                restoreFilterSnapshot(for: newMode.rawValue)
-                if store.selectedTaskID == nil {
-                    macSidebarSelection = nil
                 }
             }
     }
 
     var searchPlaceholderText: String {
-        if macSidebarMode == .timeline {
+        if store.macSidebarMode == .timeline {
             return "Search dones"
         }
         switch store.taskListMode {
@@ -198,9 +179,7 @@ extension HomeTCAView {
     }
 
     func openAddTask() {
-        macSidebarMode = .addTask
-        macSidebarSelection = nil
-        store.send(.setMacFilterDetailPresented(false))
+        store.send(.macSidebarModeChanged(.addTask))
         store.send(.setAddRoutineSheet(true))
     }
 
@@ -217,7 +196,7 @@ extension HomeTCAView {
             ) {
                 ForEach(macAvailableFilters) { filter in
                     Button {
-                        selectedFilter = filter
+                        store.send(.selectedFilterChanged(filter))
                     } label: {
                         Text(filter.rawValue)
                             .font(.caption.weight(.semibold))
@@ -225,12 +204,12 @@ extension HomeTCAView {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .foregroundStyle(
-                                selectedFilter == filter ? Color.white : Color.primary
+                                store.selectedFilter == filter ? Color.white : Color.primary
                             )
                             .background(
                                 Capsule()
                                     .fill(
-                                        selectedFilter == filter
+                                        store.selectedFilter == filter
                                             ? Color.accentColor
                                             : Color.secondary.opacity(0.10)
                                     )
@@ -294,14 +273,14 @@ extension HomeTCAView {
         }
     }
 
-    var isMacTimelineMode: Bool { macSidebarMode == .timeline }
-    var isMacStatsMode: Bool { macSidebarMode == .stats }
-    var isMacSettingsMode: Bool { macSidebarMode == .settings }
-    var isMacRoutinesMode: Bool { macSidebarMode == .routines }
-    var isMacAddTaskMode: Bool { macSidebarMode == .addTask }
+    var isMacTimelineMode: Bool { store.macSidebarMode == .timeline }
+    var isMacStatsMode: Bool    { store.macSidebarMode == .stats }
+    var isMacSettingsMode: Bool { store.macSidebarMode == .settings }
+    var isMacRoutinesMode: Bool { store.macSidebarMode == .routines }
+    var isMacAddTaskMode: Bool  { store.macSidebarMode == .addTask }
 
     var macSidebarNavigationTitle: String {
-        switch macSidebarMode {
+        switch store.macSidebarMode {
         case .routines:
             return store.taskListMode == .todos ? "Todos" : "Routines"
         case .timeline:
@@ -314,22 +293,23 @@ extension HomeTCAView {
             return "Add Task"
         }
     }
-    var currentSelectedSettingsSection: SettingsMacSection { selectedSettingsSection ?? .notifications }
+    var currentSelectedSettingsSection: SettingsMacSection { store.selectedSettingsSection ?? .notifications }
 
     var macHasCustomFiltersApplied: Bool {
-        if macSidebarMode == .timeline {
-            return selectedTimelineRange != .all
-                || selectedTimelineFilterType != .all
-                || selectedTimelineTag != nil
+        if store.macSidebarMode == .timeline {
+            return store.selectedTimelineRange != .all
+                || store.selectedTimelineFilterType != .all
+                || store.selectedTimelineTag != nil
         }
-        if macSidebarMode == .stats {
-            return false
-        }
-        return selectedFilter != .all || hasActiveOptionalFilters
+        if store.macSidebarMode == .stats { return false }
+        return store.selectedFilter != .all || hasActiveOptionalFilters
     }
 
     var macExcludeTagsForCurrentMode: Binding<Set<String>> {
-        Binding(get: { excludedTags }, set: { excludedTags = $0 })
+        Binding(
+            get: { store.excludedTags },
+            set: { store.send(.excludedTagsChanged($0)) }
+        )
     }
 
     var macFilterDetailDescription: String {
@@ -342,14 +322,13 @@ extension HomeTCAView {
     }
 
     func clearAllMacFilters() {
-        if macSidebarMode == .timeline {
-            selectedTimelineRange = .all
-            selectedTimelineFilterType = .all
-            selectedTimelineTag = nil
+        if store.macSidebarMode == .timeline {
+            store.send(.selectedTimelineRangeChanged(.all))
+            store.send(.selectedTimelineFilterTypeChanged(.all))
+            store.send(.selectedTimelineTagChanged(nil))
         } else {
-            excludedTags = []
-            selectedFilter = .all
-            clearOptionalFilters()
+            store.send(.selectedFilterChanged(.all))
+            store.send(.clearOptionalFilters)
         }
     }
 
@@ -381,7 +360,7 @@ extension HomeTCAView {
     var timelineEntries: [TimelineEntry] {
         baseTimelineEntries
             .filter { entry in
-                TimelineLogic.matchesSelectedTag(selectedTimelineTag, in: entry.tags)
+                TimelineLogic.matchesSelectedTag(store.selectedTimelineTag, in: entry.tags)
             }
             .filter(matchesTimelineSearch)
     }
@@ -390,8 +369,8 @@ extension HomeTCAView {
         TimelineLogic.filteredEntries(
             logs: timelineLogs,
             tasks: store.routineTasks,
-            range: selectedTimelineRange,
-            filterType: selectedTimelineFilterType,
+            range: store.selectedTimelineRange,
+            filterType: store.selectedTimelineFilterType,
             now: Date(),
             calendar: calendar
         )
@@ -405,128 +384,67 @@ extension HomeTCAView {
         TimelineLogic.groupedByDay(entries: timelineEntries, calendar: calendar)
     }
 
-    var macSidebarModeBinding: Binding<MacSidebarMode> {
+    private var macSidebarModeBinding: Binding<MacSidebarMode> {
         Binding(
-            get: { macSidebarMode },
+            get: { store.macSidebarMode },
             set: { mode in
                 switch mode {
-                case .routines:
-                    showRoutinesInSidebar()
-                case .timeline:
-                    openTimelineInSidebar()
-                case .stats:
-                    openStatsInSidebar()
-                case .settings:
-                    openSettingsInSidebar()
-                case .addTask:
-                    openAddTask()
+                case .routines:  showRoutinesInSidebar()
+                case .timeline:  openTimelineInSidebar()
+                case .stats:     openStatsInSidebar()
+                case .settings:  openSettingsInSidebar()
+                case .addTask:   openAddTask()
                 }
             }
         )
     }
 
-    var macSidebarSelectionBinding: Binding<MacSidebarSelection?> {
+    private var macSidebarSelectionBinding: Binding<MacSidebarSelection?> {
         Binding(
-            get: { macSidebarSelection },
+            get: { store.macSidebarSelection },
             set: { selection in
-                macSidebarSelection = selection
                 switch selection {
                 case let .task(taskID):
-                    macSidebarMode = .routines
-                    syncMacTaskListMode(for: taskID)
-                    if store.isAddRoutineSheetPresented {
-                        store.send(.setAddRoutineSheet(false))
-                    }
-                    store.send(.setSelectedTask(taskID))
+                    store.send(.macSidebarSelectionChanged(.task(taskID)))
                 case let .timelineEntry(entryID):
-                    macSidebarMode = .timeline
-                    if store.isAddRoutineSheetPresented {
-                        store.send(.setAddRoutineSheet(false))
-                    }
-                    store.send(.setMacFilterDetailPresented(false))
-                    if let taskID = timelineEntries.first(where: { $0.id == entryID })?.taskID {
-                        store.send(.setSelectedTask(taskID))
-                    } else {
-                        store.send(.setSelectedTask(nil))
-                    }
+                    // Resolve task from @Query-backed timelineEntries then send separately
+                    store.send(.macSidebarSelectionChanged(.timelineEntry(entryID)))
+                    let taskID = timelineEntries.first(where: { $0.id == entryID })?.taskID
+                    store.send(.setSelectedTask(taskID))
                 case nil:
-                    if macSidebarMode == .routines {
-                        store.send(.setSelectedTask(nil))
-                    }
+                    store.send(.macSidebarSelectionChanged(nil))
                 }
             }
         )
     }
 
     private func openTimelineEntry(_ entry: TimelineEntry) {
-        macSidebarMode = .timeline
-        macSidebarSelection = .timelineEntry(entry.id)
-        if store.isAddRoutineSheetPresented {
-            store.send(.setAddRoutineSheet(false))
-        }
-        store.send(.setMacFilterDetailPresented(false))
-        if let taskID = entry.taskID {
-            store.send(.setSelectedTask(taskID))
-        } else {
-            store.send(.setSelectedTask(nil))
-        }
+        store.send(.macSidebarSelectionChanged(.timelineEntry(entry.id)))
+        store.send(.setSelectedTask(entry.taskID))
     }
 
     private func showRoutinesInSidebar() {
-        if store.isAddRoutineSheetPresented {
-            store.send(.setAddRoutineSheet(false))
-        }
-        macSidebarMode = .routines
-        if let selectedTaskID = store.selectedTaskID {
-            syncMacTaskListMode(for: selectedTaskID)
-        }
-        macSidebarSelection = store.selectedTaskID.map(MacSidebarSelection.task)
-        store.send(.setMacFilterDetailPresented(false))
+        store.send(.macSidebarModeChanged(.routines))
     }
 
     private func openTimelineInSidebar() {
-        macSidebarMode = .timeline
+        store.send(.macSidebarModeChanged(.timeline))
         validateSelectedTimelineTag()
-        macSidebarSelection = nil
-        if store.isAddRoutineSheetPresented {
-            store.send(.setAddRoutineSheet(false))
-        }
-        store.send(.setMacFilterDetailPresented(false))
-        store.send(.setSelectedTask(nil))
     }
 
     private func openStatsInSidebar() {
-        macSidebarMode = .stats
-        macSidebarSelection = nil
-        if store.isAddRoutineSheetPresented {
-            store.send(.setAddRoutineSheet(false))
-        }
-        store.send(.setMacFilterDetailPresented(false))
-        store.send(.setSelectedTask(nil))
+        store.send(.macSidebarModeChanged(.stats))
     }
 
     private func openSettingsInSidebar() {
-        macSidebarMode = .settings
-        macSidebarSelection = nil
-        if store.isAddRoutineSheetPresented {
-            store.send(.setAddRoutineSheet(false))
-        }
-        if selectedSettingsSection == nil {
-            selectedSettingsSection = .notifications
-        }
-        store.send(.setMacFilterDetailPresented(false))
-        store.send(.setSelectedTask(nil))
+        store.send(.macSidebarModeChanged(.settings))
         settingsStore.send(.onAppear)
     }
 
     func openSettingsPlacesInSidebar() {
-        selectedSettingsSection = .places
-        openSettingsInSidebar()
-    }
-
-    private func syncMacTaskListMode(for taskID: UUID) {
-        guard let task = store.routineTasks.first(where: { $0.id == taskID }) else { return }
-        store.send(.taskListModeChanged(task.isOneOffTask ? .todos : .routines))
+        store.send(.selectedSettingsSectionChanged(.places))
+        store.send(.macSidebarModeChanged(.settings))
+        settingsStore.send(.onAppear)
     }
 
     func timelineSidebarRow(_ entry: TimelineEntry, rowNumber: Int) -> some View {
@@ -594,16 +512,16 @@ extension HomeTCAView {
     var timelineTagFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                tagFilterButton(title: "All Tags", isSelected: selectedTimelineTag == nil) {
-                    selectedTimelineTag = nil
+                tagFilterButton(title: "All Tags", isSelected: store.selectedTimelineTag == nil) {
+                    store.send(.selectedTimelineTagChanged(nil))
                 }
 
                 ForEach(availableTimelineTags, id: \.self) { tag in
                     tagFilterButton(
                         title: "#\(tag)",
-                        isSelected: selectedTimelineTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                        isSelected: store.selectedTimelineTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
                     ) {
-                        selectedTimelineTag = tag
+                        store.send(.selectedTimelineTagChanged(tag))
                     }
                 }
             }
@@ -611,14 +529,17 @@ extension HomeTCAView {
     }
 
     func validateSelectedTimelineTag() {
-        guard let selectedTimelineTag else { return }
-        if !RoutineTag.contains(selectedTimelineTag, in: availableTimelineTags) {
-            self.selectedTimelineTag = nil
+        guard let tag = store.selectedTimelineTag else { return }
+        if !RoutineTag.contains(tag, in: availableTimelineTags) {
+            store.send(.selectedTimelineTagChanged(nil))
         }
     }
 
     var platformTimelineRangePicker: some View {
-        Picker("Range", selection: $selectedTimelineRange) {
+        Picker("Range", selection: Binding(
+            get: { store.selectedTimelineRange },
+            set: { store.send(.selectedTimelineRangeChanged($0)) }
+        )) {
             ForEach(TimelineRange.allCases) { range in
                 Text(range.rawValue).tag(range)
             }
@@ -627,7 +548,10 @@ extension HomeTCAView {
     }
 
     var platformTimelineTypePicker: some View {
-        Picker("Type", selection: $selectedTimelineFilterType) {
+        Picker("Type", selection: Binding(
+            get: { store.selectedTimelineFilterType },
+            set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
+        )) {
             ForEach(TimelineFilterType.allCases) { type in
                 Text(type.rawValue).tag(type)
             }
@@ -646,16 +570,16 @@ extension HomeTCAView {
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            tagFilterButton(title: "All Tags", isSelected: selectedTag == nil) {
-                                selectedTag = nil
+                            tagFilterButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                                store.send(.selectedTagChanged(nil))
                             }
 
                             ForEach(availableTags, id: \.self) { tag in
                                 tagFilterButton(
                                     title: "#\(tag)",
-                                    isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
                                 ) {
-                                    selectedTag = tag
+                                    store.send(.selectedTagChanged(tag))
                                 }
                             }
                         }
@@ -670,18 +594,20 @@ extension HomeTCAView {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(availableExcludeTags, id: \.self) { tag in
-                                let isExcluded = excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
                                 tagFilterButton(
                                     title: "#\(tag)",
                                     isSelected: isExcluded,
                                     selectedColor: .red
                                 ) {
                                     if isExcluded {
-                                        excludedTags.remove(tag)
+                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
                                     } else {
-                                        excludedTags.insert(tag)
-                                        if selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                                            selectedTag = nil
+                                        var newTags = store.excludedTags
+                                        newTags.insert(tag)
+                                        store.send(.excludedTagsChanged(newTags))
+                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                            store.send(.selectedTagChanged(nil))
                                         }
                                     }
                                 }
@@ -689,8 +615,8 @@ extension HomeTCAView {
                         }
                     }
 
-                    if !excludedTags.isEmpty {
-                        Text("Hiding tasks tagged: \(excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
+                    if !store.excludedTags.isEmpty {
+                        Text("Hiding tasks tagged: \(store.excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
@@ -849,10 +775,7 @@ extension HomeTCAView {
     }
 
     func platformOpenTask(_ taskID: UUID) {
-        macSidebarMode = .routines
-        syncMacTaskListMode(for: taskID)
-        macSidebarSelection = .task(taskID)
-        store.send(.setSelectedTask(taskID))
+        store.send(.macSidebarSelectionChanged(.task(taskID)))
     }
 
     func platformDeleteTask(_ taskID: UUID) {
@@ -1321,17 +1244,17 @@ extension HomeTCAView {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(DoneChartRange.allCases) { range in
                             Button {
-                                statsSelectedRange = range
+                                store.send(.statsSelectedRangeChanged(range))
                             } label: {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(statsSelectedRange == range
+                                            .fill(store.statsSelectedRange == range
                                                 ? Color.accentColor
                                                 : Color.accentColor.opacity(0.10))
                                         Image(systemName: statsRangeIcon(for: range))
                                             .font(.system(size: 13, weight: .semibold))
-                                            .foregroundStyle(statsSelectedRange == range ? .white : Color.accentColor)
+                                            .foregroundStyle(store.statsSelectedRange == range ? .white : Color.accentColor)
                                     }
                                     .frame(width: 32, height: 32)
 
@@ -1346,7 +1269,7 @@ extension HomeTCAView {
 
                                     Spacer(minLength: 0)
 
-                                    if statsSelectedRange == range {
+                                    if store.statsSelectedRange == range {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 11, weight: .bold))
                                             .foregroundStyle(Color.accentColor)
@@ -1356,7 +1279,7 @@ extension HomeTCAView {
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(statsSelectedRange == range
+                                        .fill(store.statsSelectedRange == range
                                             ? Color.accentColor.opacity(0.08)
                                             : Color.secondary.opacity(0.07))
                                 )
@@ -1378,17 +1301,17 @@ extension HomeTCAView {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Button {
-                                statsSelectedTag = nil
+                                store.send(.statsSelectedTagChanged(nil))
                             } label: {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(statsSelectedTag == nil
+                                            .fill(store.statsSelectedTag == nil
                                                 ? Color.accentColor
                                                 : Color.accentColor.opacity(0.10))
                                         Image(systemName: "tag.slash.fill")
                                             .font(.system(size: 12, weight: .semibold))
-                                            .foregroundStyle(statsSelectedTag == nil ? .white : Color.accentColor)
+                                            .foregroundStyle(store.statsSelectedTag == nil ? .white : Color.accentColor)
                                     }
                                     .frame(width: 32, height: 32)
 
@@ -1398,7 +1321,7 @@ extension HomeTCAView {
 
                                     Spacer(minLength: 0)
 
-                                    if statsSelectedTag == nil {
+                                    if store.statsSelectedTag == nil {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 11, weight: .bold))
                                             .foregroundStyle(Color.accentColor)
@@ -1408,7 +1331,7 @@ extension HomeTCAView {
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(statsSelectedTag == nil
+                                        .fill(store.statsSelectedTag == nil
                                             ? Color.accentColor.opacity(0.08)
                                             : Color.secondary.opacity(0.07))
                                 )
@@ -1418,9 +1341,9 @@ extension HomeTCAView {
 
                             ForEach(statsAllTags, id: \.self) { tag in
                                 Button {
-                                    statsSelectedTag = tag
+                                    store.send(.statsSelectedTagChanged(tag))
                                 } label: {
-                                    let isSelected = statsSelectedTag == tag
+                                    let isSelected = store.statsSelectedTag == tag
                                     HStack(spacing: 12) {
                                         ZStack {
                                             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -1487,7 +1410,7 @@ extension HomeTCAView {
         List {
             ForEach(SettingsMacSection.allCases) { section in
                 Button {
-                    selectedSettingsSection = section
+                    store.send(.selectedSettingsSectionChanged(section))
                 } label: {
                     SettingsMacSidebarRow(
                         section: section,
@@ -1498,7 +1421,7 @@ extension HomeTCAView {
                 .buttonStyle(.plain)
                 .listRowBackground(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(selectedSettingsSection == section ? Color.accentColor.opacity(0.9) : Color.clear)
+                        .fill(store.selectedSettingsSection == section ? Color.accentColor.opacity(0.9) : Color.clear)
                         .padding(.vertical, 2)
                 )
             }

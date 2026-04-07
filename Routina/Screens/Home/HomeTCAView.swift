@@ -26,24 +26,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
     @State private var localSearchText = ""
-    @State var selectedFilter: RoutineListFilter = .all
-    @State var selectedTag: String?
-    @State var excludedTags: Set<String> = []
-    @State var selectedManualPlaceFilterID: UUID?
-    @State private var tabFilterManager = TabFilterStateManager()
-    @State var isFilterSheetPresented = false
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
-    @State var selectedTimelineRange: TimelineRange = .all
-    @State var selectedTimelineFilterType: TimelineFilterType = .all
-    @State var selectedTimelineTag: String?
 #if os(macOS)
-    @State var macSidebarSelection: MacSidebarSelection?
-    @State var macSidebarMode: MacSidebarMode = .routines
-    @State var selectedSettingsSection: SettingsMacSection? = .notifications
     @State var addEditFormCoordinator = AddEditFormCoordinator()
-    @State var statsSelectedRange: DoneChartRange = .week
-    @State var statsSelectedTag: String? = nil
 #endif
 
     init(
@@ -78,7 +64,7 @@ struct HomeTCAView: View {
                 )
             )
         )
-            .sheet(isPresented: $isFilterSheetPresented) {
+            .sheet(isPresented: isFilterSheetPresentedBinding) {
                 homeFiltersSheet
             }
             .onAppear {
@@ -107,36 +93,6 @@ struct HomeTCAView: View {
                     .receive(on: RunLoop.main)
             ) { _ in
                 requestRefresh()
-            }
-            .onChange(of: store.routineDisplays) { _, displays in
-                validateSelectedTag(
-                    activeDisplays: displays,
-                    awayDisplays: store.awayRoutineDisplays,
-                    archivedDisplays: store.archivedRoutineDisplays
-                )
-            }
-            .onChange(of: store.awayRoutineDisplays) { _, displays in
-                validateSelectedTag(
-                    activeDisplays: store.routineDisplays,
-                    awayDisplays: displays,
-                    archivedDisplays: store.archivedRoutineDisplays
-                )
-            }
-            .onChange(of: store.archivedRoutineDisplays) { _, displays in
-                validateSelectedTag(
-                    activeDisplays: store.routineDisplays,
-                    awayDisplays: store.awayRoutineDisplays,
-                    archivedDisplays: displays
-                )
-            }
-            .onChange(of: store.routinePlaces) { _, places in
-                guard let selectedManualPlaceFilterID else { return }
-                let placeStillExists = places.contains { place in
-                    place.id == selectedManualPlaceFilterID
-                }
-                if !placeStillExists {
-                    self.selectedManualPlaceFilterID = nil
-                }
             }
     }
 
@@ -251,7 +207,7 @@ struct HomeTCAView: View {
 
     var filterSheetButton: some View {
         Button {
-            isFilterSheetPresented = true
+            store.send(.isFilterSheetPresentedChanged(true))
         } label: {
             Image(
                 systemName: hasActiveOptionalFilters
@@ -268,21 +224,21 @@ struct HomeTCAView: View {
     var activeFilterChipBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                if let selectedTag {
+                if let selectedTag = store.selectedTag {
                     compactFilterChip(title: "#\(selectedTag)") {
-                        self.selectedTag = nil
+                        store.send(.selectedTagChanged(nil))
                     }
                 }
 
-                ForEach(excludedTags.sorted(), id: \.self) { tag in
+                ForEach(store.excludedTags.sorted(), id: \.self) { tag in
                     compactFilterChip(title: "not #\(tag)", tintColor: .red) {
-                        excludedTags.remove(tag)
+                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
                     }
                 }
 
                 if let selectedPlaceName {
                     compactFilterChip(title: selectedPlaceName, systemImage: "mappin.and.ellipse") {
-                        selectedManualPlaceFilterID = nil
+                        store.send(.selectedManualPlaceFilterIDChanged(nil))
                     }
                 }
 
@@ -294,7 +250,7 @@ struct HomeTCAView: View {
 
                 if activeOptionalFilterCount > 1 {
                     Button("Clear All") {
-                        clearOptionalFilters()
+                        store.send(.clearOptionalFilters)
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.plain)
@@ -341,10 +297,17 @@ struct HomeTCAView: View {
         )
     }
 
+    var isFilterSheetPresentedBinding: Binding<Bool> {
+        Binding(
+            get: { store.isFilterSheetPresented },
+            set: { store.send(.isFilterSheetPresentedChanged($0)) }
+        )
+    }
+
     var manualPlaceFilterBinding: Binding<UUID?> {
         Binding(
-            get: { selectedManualPlaceFilterID },
-            set: { selectedManualPlaceFilterID = $0 }
+            get: { store.selectedManualPlaceFilterID },
+            set: { store.send(.selectedManualPlaceFilterIDChanged($0)) }
         )
     }
 
@@ -355,24 +318,16 @@ struct HomeTCAView: View {
     }
 
     var selectedPlaceName: String? {
-        guard let selectedManualPlaceFilterID else { return nil }
-        return store.routinePlaces.first(where: { $0.id == selectedManualPlaceFilterID })?.displayName
+        guard let id = store.selectedManualPlaceFilterID else { return nil }
+        return store.routinePlaces.first(where: { $0.id == id })?.displayName
     }
 
     var activeOptionalFilterCount: Int {
         var count = 0
-
-        if selectedTag != nil {
-            count += 1
-        }
-        count += excludedTags.count
-        if selectedManualPlaceFilterID != nil {
-            count += 1
-        }
-        if store.hideUnavailableRoutines {
-            count += 1
-        }
-
+        if store.selectedTag != nil { count += 1 }
+        count += store.excludedTags.count
+        if store.selectedManualPlaceFilterID != nil { count += 1 }
+        if store.hideUnavailableRoutines { count += 1 }
         return count
     }
 
@@ -392,43 +347,9 @@ struct HomeTCAView: View {
         hasSavedPlaces || hasPlaceLinkedRoutines
     }
 
-    func saveFilterSnapshot(for tabKey: String) {
-        tabFilterManager.save(
-            TabFilterStateManager.Snapshot(
-                selectedTag: selectedTag,
-                excludedTags: excludedTags,
-                selectedFilter: selectedFilter,
-                selectedManualPlaceFilterID: selectedManualPlaceFilterID
-            ),
-            for: tabKey
-        )
-    }
-
-    func restoreFilterSnapshot(for tabKey: String) {
-        let snapshot = tabFilterManager.snapshot(for: tabKey)
-        selectedTag = snapshot.selectedTag
-        excludedTags = snapshot.excludedTags
-        selectedFilter = snapshot.selectedFilter
-        selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
-
-        if !tabFilterManager.hasSnapshot(for: tabKey), store.hideUnavailableRoutines {
-            store.send(.hideUnavailableRoutinesChanged(false))
-        }
-    }
-
-    func clearOptionalFilters() {
-        selectedTag = nil
-        excludedTags = []
-        selectedManualPlaceFilterID = nil
-
-        if store.hideUnavailableRoutines {
-            store.send(.hideUnavailableRoutinesChanged(false))
-        }
-    }
-
     var manualPlaceFilterDescription: String {
-        guard let selectedManualPlaceFilterID,
-              let place = store.routinePlaces.first(where: { $0.id == selectedManualPlaceFilterID })
+        guard let placeID = store.selectedManualPlaceFilterID,
+              let place = store.routinePlaces.first(where: { $0.id == placeID })
         else {
             return "Choose a saved place to show only routines linked to that place."
         }
@@ -682,11 +603,11 @@ struct HomeTCAView: View {
     /// Tags available for exclusion — scoped to tasks that already match the selected include tag.
     var availableExcludeTags: [String] {
         let base = allRoutineDisplays.filter(matchesCurrentTaskListMode).filter { task in
-            HomeFeature.matchesSelectedTag(selectedTag, in: task.tags)
+            HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
         }
         return HomeFeature.availableTags(from: base).filter { tag in
             // Don't offer the include tag itself as an exclude option
-            selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+            store.selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
         }
     }
 
@@ -705,22 +626,6 @@ struct HomeTCAView: View {
         } else if delta < -10, isCompactHeaderHidden {
             isCompactHeaderHidden = false
         }
-    }
-
-    private func validateSelectedTag(
-        activeDisplays: [HomeFeature.RoutineDisplay],
-        awayDisplays: [HomeFeature.RoutineDisplay],
-        archivedDisplays: [HomeFeature.RoutineDisplay]
-    ) {
-        let all = (activeDisplays + awayDisplays + archivedDisplays).filter(matchesCurrentTaskListMode)
-        let allAvailableTags = HomeFeature.availableTags(from: all)
-
-        if let selectedTag, !RoutineTag.contains(selectedTag, in: allAvailableTags) {
-            self.selectedTag = nil
-        }
-
-        // Prune excluded tags to only those still present in the include-scoped pool
-        excludedTags = excludedTags.filter { RoutineTag.contains($0, in: availableExcludeTags) }
     }
 
     @ViewBuilder
