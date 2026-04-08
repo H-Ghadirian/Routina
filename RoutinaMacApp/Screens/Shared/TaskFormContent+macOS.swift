@@ -1,9 +1,7 @@
 import ComposableArchitecture
 import PhotosUI
 import SwiftUI
-#if canImport(UniformTypeIdentifiers)
 import UniformTypeIdentifiers
-#endif
 
 struct TaskFormContent: View {
     let model: TaskFormModel

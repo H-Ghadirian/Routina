@@ -150,9 +150,9 @@ struct HomeFeatureTests {
                 overdueDays: 0,
                 isDoneToday: false
             )
-            #if os(macOS)
+#if os(macOS)
             $0.macSidebarSelection = .task(task.id)
-            #endif
+#endif
         }
 
         let detailState = try #require(store.state.routineDetailState)

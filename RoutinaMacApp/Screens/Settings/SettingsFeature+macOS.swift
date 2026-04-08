@@ -1,7 +1,6 @@
 import ComposableArchitecture
 import Foundation
 import SwiftData
-#if os(macOS)
 import SwiftUI
 
 enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
@@ -55,7 +54,6 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
         }
     }
 }
-#endif
 
 extension SettingsFeature {
     func handleExportRoutineDataTapped(state: inout State) -> Effect<Action> {
@@ -132,7 +130,7 @@ extension SettingsFeature {
                 let importedSummary = try replaceAllRoutineData(with: jsonData, in: context)
                 try await rescheduleNotificationsAfterImport(in: context)
 
-                await send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
+                send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                 NotificationCenter.default.postRoutineDidUpdate()
                 await send(
                     .routineDataTransferFinished(
@@ -151,4 +149,3 @@ extension SettingsFeature {
         }
     }
 }
-

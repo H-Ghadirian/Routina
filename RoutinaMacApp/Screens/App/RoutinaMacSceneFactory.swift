@@ -4,7 +4,10 @@ import SwiftUI
 enum RoutinaMacSceneFactory {
     @MainActor
     static func makeHomeRoot(persistence: PersistenceController) -> AnyView {
-        let store = RoutinaAppBootstrap.makeStore(using: persistence)
+        let store = RoutinaAppBootstrap.makeStore(
+            using: persistence,
+            platformClients: .macOSLive
+        )
 
         return AnyView(
             HomeMacView(
@@ -30,7 +33,10 @@ enum RoutinaMacSceneFactory {
 
     @MainActor
     static func makeSettingsRoot(persistence: PersistenceController) -> AnyView {
-        let store = RoutinaAppBootstrap.makeStore(using: persistence)
+        let store = RoutinaAppBootstrap.makeStore(
+            using: persistence,
+            platformClients: .macOSLive
+        )
 
         return AnyView(
             SettingsTCAView(

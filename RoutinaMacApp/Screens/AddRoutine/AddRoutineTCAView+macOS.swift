@@ -1,7 +1,5 @@
 import SwiftUI
-#if canImport(UniformTypeIdentifiers)
 import UniformTypeIdentifiers
-#endif
 
 extension View {
     func routinaAddRoutineNameAutofocus(

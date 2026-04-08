@@ -11,7 +11,10 @@ struct RoutinaIOSRootScene: Scene {
     init() {
         let persistence = RoutinaAppSceneBootstrap.preparePersistence()
         self.persistence = persistence
-        self.store = RoutinaAppBootstrap.makeStore(using: persistence)
+        self.store = RoutinaAppBootstrap.makeStore(
+            using: persistence,
+            platformClients: .iOSLive
+        )
     }
 
     var body: some Scene {
