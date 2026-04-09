@@ -22,11 +22,15 @@ struct AppView: View {
                 }
 
                 SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
-                    TimelineView()
+                    TimelineView(
+                        store: store.scope(state: \.timeline, action: \.timeline)
+                    )
                 }
 
                 SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
-                    StatsViewWrapper()
+                    StatsViewWrapper(
+                        store: store.scope(state: \.stats, action: \.stats)
+                    )
                 }
 
                 SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: Tab.settings) {

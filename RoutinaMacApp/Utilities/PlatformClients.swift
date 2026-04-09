@@ -69,6 +69,18 @@ extension NotificationClient {
             @unknown default:
                 return false
             }
+        },
+        systemNotificationsAuthorized: {
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                return true
+            case .denied, .notDetermined:
+                return false
+            @unknown default:
+                return false
+            }
         }
     )
 

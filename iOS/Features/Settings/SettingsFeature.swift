@@ -10,20 +10,18 @@ struct SettingsFeature {
     @ObservableState
     struct State: Equatable {
         var appVersion: String = ""
-        var dataModeDescription: String = AppEnvironment.dataModeLabel
-        var iCloudContainerDescription: String = AppEnvironment.cloudKitContainerIdentifier ?? "Disabled"
+        var dataModeDescription: String = ""
+        var iCloudContainerDescription: String = "Disabled"
         var cloudUsageEstimate: CloudUsageEstimate = .zero
-        var cloudDiagnosticsSummary: String = CloudKitSyncDiagnostics.snapshot().summary
-        var cloudDiagnosticsTimestamp: String = CloudKitSyncDiagnostics.snapshot().timestampText
-        var pushDiagnosticsStatus: String = CloudKitSyncDiagnostics.snapshot().pushStatus
+        var cloudDiagnosticsSummary: String = "No CloudKit event yet"
+        var cloudDiagnosticsTimestamp: String = "Never"
+        var pushDiagnosticsStatus: String = "Push not registered yet"
         var isDebugSectionVisible: Bool = false
-        var cloudSyncAvailable: Bool = AppEnvironment.isCloudSyncEnabled
-        var notificationsEnabled: Bool = SharedDefaults.app[.appSettingNotificationsEnabled]
-        var routineListSectioningMode: RoutineListSectioningMode = RoutineListSectioningMode(
-            rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
-        ) ?? .defaultValue
+        var cloudSyncAvailable: Bool = false
+        var notificationsEnabled: Bool = false
+        var routineListSectioningMode: RoutineListSectioningMode = .defaultValue
         var systemSettingsNotificationsEnabled: Bool = true
-        var notificationReminderTime: Date = NotificationPreferences.reminderTimeDate()
+        var notificationReminderTime: Date = Date()
         var isCloudSyncInProgress: Bool = false
         var isCloudDataResetInProgress: Bool = false
         var isCloudDataResetConfirmationPresented: Bool = false
@@ -32,7 +30,7 @@ struct SettingsFeature {
         var isDataTransferInProgress: Bool = false
         var dataTransferStatusMessage: String = ""
         var appIconStatusMessage: String = ""
-        var selectedAppIcon: AppIconOption = .persistedSelection
+        var selectedAppIcon: AppIconOption = .orange
         var savedPlaces: [RoutinePlaceSummary] = []
         var savedTags: [RoutineTagSummary] = []
         var placePendingDeletion: RoutinePlaceSummary?
@@ -101,19 +99,23 @@ struct SettingsFeature {
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.appIconClient) var appIconClient
     @Dependency(\.locationClient) var locationClient
+    @Dependency(\.appSettingsClient) var appSettingsClient
+    @Dependency(\.appInfoClient) var appInfoClient
+    @Dependency(\.urlOpenerClient) var urlOpenerClient
+    @Dependency(\.cloudSyncClient) var cloudSyncClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case let .routineListSectioningModeChanged(mode):
                 state.routineListSectioningMode = mode
-                SharedDefaults.app[.appSettingRoutineListSectioningMode] = mode.rawValue
+                appSettingsClient.setRoutineListSectioningMode(mode)
                 return .none
 
             case .toggleNotifications(let isOn):
                 guard isOn else {
                     state.notificationsEnabled = false
-                    SharedDefaults.app[.appSettingNotificationsEnabled] = false
+                    appSettingsClient.setNotificationsEnabled(false)
                     return .run { _ in
                         await self.notificationClient.cancelAll()
                     }
@@ -127,7 +129,7 @@ struct SettingsFeature {
             case .notificationAuthorizationFinished(let isGranted):
                 state.notificationsEnabled = isGranted
                 state.systemSettingsNotificationsEnabled = isGranted
-                SharedDefaults.app[.appSettingNotificationsEnabled] = isGranted
+                appSettingsClient.setNotificationsEnabled(isGranted)
 
                 guard isGranted else { return .none }
                 return .run { @MainActor _ in
@@ -136,7 +138,7 @@ struct SettingsFeature {
 
             case .notificationReminderTimeChanged(let reminderTime):
                 state.notificationReminderTime = reminderTime
-                NotificationPreferences.storeReminderTime(reminderTime)
+                appSettingsClient.setNotificationReminderTime(reminderTime)
 
                 guard state.notificationsEnabled else { return .none }
                 return .run { @MainActor _ in
@@ -144,21 +146,23 @@ struct SettingsFeature {
                 }
 
             case .openAppSettingsTapped:
-                if let url = PlatformSupport.notificationSettingsURL {
+                if let url = urlOpenerClient.notificationSettingsURL() {
                     return .run { @MainActor _ in
-                        PlatformSupport.open(url)
+                        self.urlOpenerClient.open(url)
                     }
                 }
                 return .none
 
             case .onAppear:
-                state.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+                state.appVersion = appInfoClient.versionString()
+                state.dataModeDescription = appInfoClient.dataModeDescription()
+                state.iCloudContainerDescription = appInfoClient.cloudContainerDescription()
+                state.cloudSyncAvailable = appInfoClient.isCloudSyncEnabled()
+                state.notificationsEnabled = appSettingsClient.notificationsEnabled()
                 state.isDebugSectionVisible = false
-                state.notificationReminderTime = NotificationPreferences.reminderTimeDate()
-                state.routineListSectioningMode = RoutineListSectioningMode(
-                    rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
-                ) ?? .defaultValue
-                state.selectedAppIcon = .persistedSelection
+                state.notificationReminderTime = appSettingsClient.notificationReminderTime()
+                state.routineListSectioningMode = appSettingsClient.routineListSectioningMode()
+                state.selectedAppIcon = appSettingsClient.selectedAppIcon()
                 state.appIconStatusMessage = ""
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
                 state.cloudDiagnosticsSummary = diagnostics.summary
@@ -166,8 +170,7 @@ struct SettingsFeature {
                 state.pushDiagnosticsStatus = diagnostics.pushStatus
                 return .run { @MainActor send in
                     let context = self.modelContext()
-                    let settings = await UNUserNotificationCenter.current().notificationSettings()
-                    let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
+                    let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
                     send(.systemNotificationPermissionChecked(systemEnabled))
                     send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                     let placeSummaries = try? self.fetchPlaceSummaries(in: context)
@@ -187,7 +190,7 @@ struct SettingsFeature {
             case .contactUsTapped:
                 if let emailURL = URL(string: "mailto:h.qadirian@gmail.com") {
                     return .run { @MainActor _ in
-                        PlatformSupport.open(emailURL)
+                        self.urlOpenerClient.open(emailURL)
                     }
                 }
                 return .none
@@ -215,8 +218,7 @@ struct SettingsFeature {
                 let notificationsEnabled = state.notificationsEnabled
                 return .run { @MainActor send in
                     let context = self.modelContext()
-                    let settings = await UNUserNotificationCenter.current().notificationSettings()
-                    let systemEnabled = self.isSystemNotificationAuthorizationEnabled(settings.authorizationStatus)
+                    let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
                     send(.systemNotificationPermissionChecked(systemEnabled))
                     send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                     let placeSummaries = try? self.fetchPlaceSummaries(in: context)
@@ -251,12 +253,7 @@ struct SettingsFeature {
                         if context.hasChanges {
                             try context.save()
                         }
-                        if let containerIdentifier = AppEnvironment.cloudKitContainerIdentifier {
-                            try await CloudKitDirectPullService.pullLatestIntoLocalStore(
-                                containerIdentifier: containerIdentifier,
-                                modelContext: context
-                            )
-                        }
+                        try await self.cloudSyncClient.pullLatestIntoLocalStore(context)
                         send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
                         NotificationCenter.default.postRoutineDidUpdate()
                         await send(
@@ -1026,26 +1023,13 @@ struct SettingsFeature {
     private func rescheduleNotificationsIfNeeded(in context: ModelContext) async throws {
         await notificationClient.cancelAll()
 
-        guard SharedDefaults.app[.appSettingNotificationsEnabled] else { return }
-
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        guard isSystemNotificationAuthorizationEnabled(settings.authorizationStatus) else { return }
+        guard appSettingsClient.notificationsEnabled() else { return }
+        guard await notificationClient.systemNotificationsAuthorized() else { return }
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         for task in tasks {
             guard !task.isPaused, !task.isOneOffTask else { continue }
             await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
-        }
-    }
-
-    private func isSystemNotificationAuthorizationEnabled(_ status: UNAuthorizationStatus) -> Bool {
-        switch status {
-        case .authorized, .provisional, .ephemeral:
-            return true
-        case .denied, .notDetermined:
-            return false
-        @unknown default:
-            return false
         }
     }
 }

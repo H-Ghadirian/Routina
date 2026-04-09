@@ -1,39 +1,43 @@
 import Charts
+import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
 struct StatsViewWrapper: View {
-    @State private var selectedRange: DoneChartRange = .week
-    @State private var selectedTag: String? = nil
+    let store: StoreOf<StatsFeature>
 
     var body: some View {
-        StatsView(selectedRange: $selectedRange, selectedTag: $selectedTag)
+        StatsView(store: store)
     }
 }
 
 struct StatsView: View {
+    let store: StoreOf<StatsFeature>
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
 
-    @Binding var selectedRange: DoneChartRange
-    @Binding var selectedTag: String?
+    private typealias Metrics = StatsFeature.Metrics
 
-    private struct Metrics {
-        let chartPoints: [DoneChartPoint]
-        let totalDoneCount: Int
-        let activeRoutineCount: Int
-        let archivedRoutineCount: Int
-        let totalCount: Int
-        let averagePerDay: Double
-        let highlightedBusiestDay: DoneChartPoint?
-        let activeDayCount: Int
-        let chartUpperBound: Double
-        let sparklinePoints: [DoneChartPoint]
-        let sparklineMaxCount: Int
-        let xAxisDates: [Date]
+    private var selectedRange: DoneChartRange {
+        store.selectedRange
+    }
+
+    private var selectedRangeBinding: Binding<DoneChartRange> {
+        Binding(
+            get: { store.selectedRange },
+            set: { store.send(.selectedRangeChanged($0)) }
+        )
+    }
+
+    private var metrics: Metrics {
+        store.metrics
+    }
+
+    private var filteredTaskCount: Int {
+        store.filteredTaskCount
     }
 
     private var surfaceGradient: LinearGradient {
@@ -138,29 +142,38 @@ struct StatsView: View {
     }
 
     var body: some View {
-        let metrics = makeMetrics()
-
-        NavigationStack {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-                    heroSection(metrics: metrics)
-                    summaryCards(metrics: metrics)
-                    chartSection(metrics: metrics)
+        WithPerceptionTracking {
+            NavigationStack {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        heroSection(metrics: metrics)
+                        summaryCards(metrics: metrics)
+                        chartSection(metrics: metrics)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, contentBottomPadding)
+                    .frame(maxWidth: statsContentMaxWidth, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .top)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, contentBottomPadding)
-                .frame(maxWidth: statsContentMaxWidth, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .top)
+                .background(pageBackground.ignoresSafeArea())
+                .navigationTitle("Stats")
             }
-            .background(pageBackground.ignoresSafeArea())
-            .navigationTitle("Stats")
+            .task {
+                store.send(.setData(tasks: tasks, logs: logs))
+            }
+            .onChange(of: tasks) { _, newValue in
+                store.send(.setData(tasks: newValue, logs: logs))
+            }
+            .onChange(of: logs) { _, newValue in
+                store.send(.setData(tasks: tasks, logs: newValue))
+            }
         }
     }
 
     @ViewBuilder
     private var rangeSection: some View {
-        Picker("Time Range", selection: $selectedRange) {
+        Picker("Time Range", selection: selectedRangeBinding) {
             ForEach(DoneChartRange.allCases) { range in
                 Text(range.rawValue).tag(range)
             }
@@ -320,7 +333,7 @@ struct StatsView: View {
     }
 
     private func activeRoutineCardCaption(metrics: Metrics) -> String {
-        if filteredTasks.isEmpty {
+        if filteredTaskCount == 0 {
             return "No routines created yet"
         }
 
@@ -340,7 +353,7 @@ struct StatsView: View {
     }
 
     private func archivedRoutineCardCaption(metrics: Metrics) -> String {
-        if filteredTasks.isEmpty {
+        if filteredTaskCount == 0 {
             return "No routines created yet"
         }
 
@@ -705,49 +718,6 @@ struct StatsView: View {
         }
 
         return "Average \(averagePerDayText(for: metrics)) per day across \(metrics.chartPoints.count) days."
-    }
-
-    private var filteredLogs: [RoutineLog] {
-        guard let tag = selectedTag else { return logs }
-        let taskIDsWithTag = Set(tasks.filter { $0.tags.contains(tag) }.map(\.id))
-        return logs.filter { taskIDsWithTag.contains($0.taskID) }
-    }
-
-    private var filteredTasks: [RoutineTask] {
-        guard let tag = selectedTag else { return tasks }
-        return tasks.filter { $0.tags.contains(tag) }
-    }
-
-    private func makeMetrics() -> Metrics {
-        let completionDates = filteredLogs.compactMap(\.timestamp)
-        let chartPoints = RoutineCompletionStats.points(
-            for: selectedRange,
-            timestamps: completionDates,
-            referenceDate: Date(),
-            calendar: calendar
-        )
-        let totalCount = RoutineCompletionStats.totalCount(in: chartPoints)
-        let averagePerDay = RoutineCompletionStats.averageCount(in: chartPoints)
-        let busiestDay = RoutineCompletionStats.busiestDay(in: chartPoints)
-        let highlightedBusiestDay = busiestDay?.count ?? 0 > 0 ? busiestDay : nil
-        let sparklinePoints = sampledSparklinePoints(from: chartPoints)
-        let sparklineMaxCount = max(sparklinePoints.map(\.count).max() ?? 0, 1)
-        let maxCount = chartPoints.map(\.count).max() ?? 0
-
-        return Metrics(
-            chartPoints: chartPoints,
-            totalDoneCount: completionDates.count,
-            activeRoutineCount: filteredTasks.filter { !$0.isPaused }.count,
-            archivedRoutineCount: filteredTasks.filter(\.isPaused).count,
-            totalCount: totalCount,
-            averagePerDay: averagePerDay,
-            highlightedBusiestDay: highlightedBusiestDay,
-            activeDayCount: chartPoints.filter { $0.count > 0 }.count,
-            chartUpperBound: Double(max(maxCount, Int(ceil(averagePerDay))) + 1),
-            sparklinePoints: sparklinePoints,
-            sparklineMaxCount: sparklineMaxCount,
-            xAxisDates: makeXAxisDates(from: chartPoints)
-        )
     }
 
     private func xAxisLabel(for date: Date) -> String {

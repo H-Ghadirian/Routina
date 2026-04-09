@@ -15,6 +15,7 @@ struct HomeTCAView: View {
 
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
+    let statsStore: StoreOf<StatsFeature>?
     @State var addEditFormCoordinator = AddEditFormCoordinator()
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
@@ -28,12 +29,13 @@ struct HomeTCAView: View {
 
     init(
         store: StoreOf<HomeFeature>,
+        settingsStore: StoreOf<SettingsFeature>,
+        statsStore: StoreOf<StatsFeature>? = nil,
         searchText: Binding<String>? = nil
     ) {
         self.store = store
-        self.settingsStore = Store(initialState: SettingsFeature.State()) {
-            SettingsFeature()
-        }
+        self.settingsStore = settingsStore
+        self.statsStore = statsStore
         self.externalSearchText = searchText
     }
 

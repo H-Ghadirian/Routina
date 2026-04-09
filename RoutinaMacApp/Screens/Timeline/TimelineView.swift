@@ -3,66 +3,73 @@ import SwiftData
 import SwiftUI
 
 struct TimelineView: View {
+    let store: StoreOf<TimelineFeature>
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
 
-    @State private var selectedRange: TimelineRange = .all
-    @State private var filterType: TimelineFilterType = .all
-    @State private var selectedTag: String?
-    @State private var isFilterSheetPresented = false
-
-    init(
-        selectedRange: TimelineRange = .all,
-        filterType: TimelineFilterType = .all
-    ) {
-        _selectedRange = State(initialValue: selectedRange)
-        _filterType = State(initialValue: filterType)
+    var body: some View {
+        WithPerceptionTracking {
+            NavigationStack {
+                content
+                    .navigationTitle("Timeline")
+                    .routinaTimelineNavigationTitleDisplayMode()
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            filterSheetButton
+                        }
+                    }
+                    .navigationDestination(for: UUID.self) { taskID in
+                        timelineDetailDestination(taskID: taskID)
+                    }
+                    .sheet(isPresented: filterSheetBinding) {
+                        timelineFiltersSheet
+                    }
+            }
+            .task {
+                store.send(.setData(tasks: tasks, logs: logs))
+            }
+            .onChange(of: tasks) { _, newValue in
+                store.send(.setData(tasks: newValue, logs: logs))
+            }
+            .onChange(of: logs) { _, newValue in
+                store.send(.setData(tasks: tasks, logs: newValue))
+            }
+        }
     }
 
-    private var baseEntries: [TimelineEntry] {
-        TimelineLogic.filteredEntries(
-            logs: logs,
-            tasks: tasks,
-            range: selectedRange,
-            filterType: filterType,
-            now: Date(),
-            calendar: calendar
+    private var filterSheetBinding: Binding<Bool> {
+        Binding(
+            get: { store.isFilterSheetPresented },
+            set: { store.send(.setFilterSheet($0)) }
         )
     }
 
-    private var entries: [TimelineEntry] {
-        baseEntries.filter { entry in
-            TimelineLogic.matchesSelectedTag(selectedTag, in: entry.tags)
-        }
+    private var selectedRangeBinding: Binding<TimelineRange> {
+        Binding(
+            get: { store.selectedRange },
+            set: { store.send(.selectedRangeChanged($0)) }
+        )
+    }
+
+    private var filterTypeBinding: Binding<TimelineFilterType> {
+        Binding(
+            get: { store.filterType },
+            set: { store.send(.filterTypeChanged($0)) }
+        )
+    }
+
+    private var groupedByDay: [TimelineFeature.TimelineSection] {
+        store.groupedEntries
     }
 
     private var availableTags: [String] {
-        TimelineLogic.availableTags(from: baseEntries)
+        store.availableTags
     }
 
-    private var groupedByDay: [(date: Date, entries: [TimelineEntry])] {
-        TimelineLogic.groupedByDay(entries: entries, calendar: calendar)
-    }
-
-    var body: some View {
-        NavigationStack {
-            content
-                .navigationTitle("Timeline")
-                .routinaTimelineNavigationTitleDisplayMode()
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        filterSheetButton
-                    }
-                }
-                .navigationDestination(for: UUID.self) { taskID in
-                    timelineDetailDestination(taskID: taskID)
-                }
-                .sheet(isPresented: $isFilterSheetPresented) {
-                    timelineFiltersSheet
-                }
-        }
+    private var hasActiveFilters: Bool {
+        store.hasActiveFilters
     }
 
     @ViewBuilder
@@ -105,7 +112,7 @@ struct TimelineView: View {
 
     private var filterSheetButton: some View {
         Button {
-            isFilterSheetPresented = true
+            store.send(.setFilterSheet(true))
         } label: {
             Image(
                 systemName: hasActiveFilters
@@ -122,7 +129,7 @@ struct TimelineView: View {
         NavigationStack {
             List {
                 Section("Range") {
-                    Picker("Range", selection: $selectedRange) {
+                    Picker("Range", selection: selectedRangeBinding) {
                         ForEach(TimelineRange.allCases) { range in
                             Text(range.rawValue).tag(range)
                         }
@@ -132,7 +139,7 @@ struct TimelineView: View {
 
                 if tasks.contains(where: { $0.isOneOffTask }) {
                     Section("Type") {
-                        Picker("Type", selection: $filterType) {
+                        Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
                                 Text(type.rawValue).tag(type)
                             }
@@ -145,16 +152,16 @@ struct TimelineView: View {
                     Section("Tag") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
-                                timelineTagButton(title: "All Tags", isSelected: selectedTag == nil) {
-                                    selectedTag = nil
+                                timelineTagButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                                    store.send(.selectedTagChanged(nil))
                                 }
 
                                 ForEach(availableTags, id: \.self) { tag in
                                     timelineTagButton(
                                         title: "#\(tag)",
-                                        isSelected: selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                        isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
                                     ) {
-                                        selectedTag = tag
+                                        store.send(.selectedTagChanged(tag))
                                     }
                                 }
                             }
@@ -166,7 +173,7 @@ struct TimelineView: View {
                 if hasActiveFilters {
                     Section {
                         Button("Clear Filters") {
-                            clearFilters()
+                            store.send(.clearFilters)
                         }
                         .foregroundStyle(.red)
                     }
@@ -176,7 +183,7 @@ struct TimelineView: View {
             .toolbar {
                 ToolbarItem {
                     Button("Done") {
-                        isFilterSheetPresented = false
+                        store.send(.setFilterSheet(false))
                     }
                 }
             }
@@ -184,21 +191,11 @@ struct TimelineView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onChange(of: availableTags) { _, newValue in
-            guard let selectedTag else { return }
+            guard let selectedTag = store.selectedTag else { return }
             if !RoutineTag.contains(selectedTag, in: newValue) {
-                self.selectedTag = nil
+                store.send(.selectedTagChanged(nil))
             }
         }
-    }
-
-    private var hasActiveFilters: Bool {
-        selectedRange != .all || filterType != .all || selectedTag != nil
-    }
-
-    private func clearFilters() {
-        selectedRange = .all
-        filterType = .all
-        selectedTag = nil
     }
 
     private func timelineRow(_ entry: TimelineEntry) -> some View {

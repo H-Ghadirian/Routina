@@ -23,6 +23,21 @@ private enum CloudSyncClientKey: DependencyKey {
     static let liveValue = CloudSyncClient.live
 }
 
+private enum AppSettingsClientKey: DependencyKey {
+    static let liveValue = AppSettingsClient.live
+    static let testValue = AppSettingsClient.noop
+}
+
+private enum AppInfoClientKey: DependencyKey {
+    static let liveValue = AppInfoClient.live
+    static let testValue = AppInfoClient.noop
+}
+
+private enum URLOpenerClientKey: DependencyKey {
+    static let liveValue = URLOpenerClient.live
+    static let testValue = URLOpenerClient.noop
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -47,5 +62,20 @@ extension DependencyValues {
     var cloudSyncClient: CloudSyncClient {
         get { self[CloudSyncClientKey.self] }
         set { self[CloudSyncClientKey.self] = newValue }
+    }
+
+    var appSettingsClient: AppSettingsClient {
+        get { self[AppSettingsClientKey.self] }
+        set { self[AppSettingsClientKey.self] = newValue }
+    }
+
+    var appInfoClient: AppInfoClient {
+        get { self[AppInfoClientKey.self] }
+        set { self[AppInfoClientKey.self] = newValue }
+    }
+
+    var urlOpenerClient: URLOpenerClient {
+        get { self[URLOpenerClientKey.self] }
+        set { self[URLOpenerClientKey.self] = newValue }
     }
 }

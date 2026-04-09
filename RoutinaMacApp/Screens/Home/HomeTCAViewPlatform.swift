@@ -23,16 +23,6 @@ extension HomeTCAView {
     private typealias MacSidebarMode = HomeFeature.MacSidebarMode
     private typealias MacSidebarSelection = HomeFeature.MacSidebarSelection
 
-    init(
-        store: StoreOf<HomeFeature>,
-        settingsStore: StoreOf<SettingsFeature>,
-        searchText: Binding<String>? = nil
-    ) {
-        self.store = store
-        self.settingsStore = settingsStore
-        self.externalSearchText = searchText
-    }
-
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
@@ -54,18 +44,11 @@ extension HomeTCAView {
                 isStatsPresented: isMacStatsMode,
                 isSettingsPresented: isMacSettingsMode,
                 settingsStore: settingsStore,
+                statsStore: statsStore,
                 selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
                 addRoutineStore: self.store.scope(
                     state: \.addRoutineState,
                     action: \.addRoutineSheet
-                ),
-                statsSelectedRange: Binding(
-                    get: { store.statsSelectedRange },
-                    set: { store.send(.statsSelectedRangeChanged($0)) }
-                ),
-                statsSelectedTag: Binding(
-                    get: { store.statsSelectedTag },
-                    set: { store.send(.statsSelectedTagChanged($0)) }
                 )
             ) {
                 macActiveFiltersDetailView
@@ -1523,10 +1506,9 @@ struct MacDetailContainerView<FilterView: View>: View {
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
     let settingsStore: StoreOf<SettingsFeature>
+    let statsStore: StoreOf<StatsFeature>?
     let selectedSettingsSection: SettingsMacSection
     let addRoutineStore: StoreOf<AddRoutineFeature>?
-    @Binding var statsSelectedRange: DoneChartRange
-    @Binding var statsSelectedTag: String?
     @ViewBuilder let filterView: () -> FilterView
 
     var body: some View {
@@ -1535,8 +1517,14 @@ struct MacDetailContainerView<FilterView: View>: View {
                 filterView()
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
+            } else if isStatsPresented, let statsStore {
+                StatsViewWrapper(store: statsStore)
             } else if isStatsPresented {
-                StatsView(selectedRange: $statsSelectedRange, selectedTag: $statsSelectedTag)
+                ContentUnavailableView(
+                    "Stats unavailable",
+                    systemImage: "chart.bar.xaxis",
+                    description: Text("The stats store is not currently connected for this view.")
+                )
             } else if isSettingsPresented {
                 EmbeddedSettingsMacDetailView(
                     store: settingsStore,

@@ -79,3 +79,55 @@ enum AppIconOption: String, CaseIterable, Equatable, Identifiable {
         }
     }
 }
+
+struct AppInfoClient: Sendable {
+    var versionString: @Sendable () -> String
+    var dataModeDescription: @Sendable () -> String
+    var cloudContainerDescription: @Sendable () -> String
+    var isCloudSyncEnabled: @Sendable () -> Bool
+}
+
+extension AppInfoClient {
+    static let live = AppInfoClient(
+        versionString: {
+            Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        },
+        dataModeDescription: {
+            AppEnvironment.dataModeLabel
+        },
+        cloudContainerDescription: {
+            AppEnvironment.cloudKitContainerIdentifier ?? "Disabled"
+        },
+        isCloudSyncEnabled: {
+            AppEnvironment.isCloudSyncEnabled
+        }
+    )
+
+    static let noop = AppInfoClient(
+        versionString: { "Unknown" },
+        dataModeDescription: { "Unknown" },
+        cloudContainerDescription: { "Disabled" },
+        isCloudSyncEnabled: { false }
+    )
+}
+
+struct URLOpenerClient: Sendable {
+    var open: @MainActor @Sendable (URL) -> Void
+    var notificationSettingsURL: @Sendable () -> URL?
+}
+
+extension URLOpenerClient {
+    static let live = URLOpenerClient(
+        open: { url in
+            PlatformSupport.open(url)
+        },
+        notificationSettingsURL: {
+            PlatformSupport.notificationSettingsURL
+        }
+    )
+
+    static let noop = URLOpenerClient(
+        open: { _ in },
+        notificationSettingsURL: { nil }
+    )
+}

@@ -61,3 +61,61 @@ public protocol UserDefaultsProtocol {
     subscript(key: UserDefaultStringValueKey) -> String? { get set }
     func register(defaults keysWithValues: [UserDefaultBoolValueKey: Bool])
 }
+
+struct AppSettingsClient: Sendable {
+    var notificationsEnabled: @Sendable () -> Bool
+    var setNotificationsEnabled: @Sendable (Bool) -> Void
+    var hideUnavailableRoutines: @Sendable () -> Bool
+    var setHideUnavailableRoutines: @Sendable (Bool) -> Void
+    var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
+    var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
+    var notificationReminderTime: @Sendable () -> Date
+    var setNotificationReminderTime: @Sendable (Date) -> Void
+    var selectedAppIcon: @Sendable () -> AppIconOption
+}
+
+extension AppSettingsClient {
+    static let live = AppSettingsClient(
+        notificationsEnabled: {
+            SharedDefaults.app[.appSettingNotificationsEnabled]
+        },
+        setNotificationsEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingNotificationsEnabled] = isEnabled
+        },
+        hideUnavailableRoutines: {
+            SharedDefaults.app[.appSettingHideUnavailableRoutines]
+        },
+        setHideUnavailableRoutines: { isHidden in
+            SharedDefaults.app[.appSettingHideUnavailableRoutines] = isHidden
+        },
+        routineListSectioningMode: {
+            RoutineListSectioningMode(
+                rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
+            ) ?? .defaultValue
+        },
+        setRoutineListSectioningMode: { mode in
+            SharedDefaults.app[.appSettingRoutineListSectioningMode] = mode.rawValue
+        },
+        notificationReminderTime: {
+            NotificationPreferences.reminderTimeDate()
+        },
+        setNotificationReminderTime: { date in
+            NotificationPreferences.storeReminderTime(date)
+        },
+        selectedAppIcon: {
+            .persistedSelection
+        }
+    )
+
+    static let noop = AppSettingsClient(
+        notificationsEnabled: { false },
+        setNotificationsEnabled: { _ in },
+        hideUnavailableRoutines: { false },
+        setHideUnavailableRoutines: { _ in },
+        routineListSectioningMode: { .defaultValue },
+        setRoutineListSectioningMode: { _ in },
+        notificationReminderTime: { Date() },
+        setNotificationReminderTime: { _ in },
+        selectedAppIcon: { .orange }
+    )
+}

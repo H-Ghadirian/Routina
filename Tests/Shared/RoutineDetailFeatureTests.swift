@@ -219,7 +219,7 @@ struct RoutineDetailFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        var calendar = makeTestCalendar()
+        let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
         let expectedWeekday = calendar.component(.weekday, from: now)
         let expectedDayOfMonth = calendar.component(.day, from: now)

@@ -201,12 +201,13 @@ struct HomeFeature {
     @Dependency(\.locationClient) var locationClient
     @Dependency(\.cloudSyncClient) var cloudSyncClient
     @Dependency(\.continuousClock) var clock
+    @Dependency(\.appSettingsClient) var appSettingsClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.hideUnavailableRoutines = SharedDefaults.app[.appSettingHideUnavailableRoutines]
+                state.hideUnavailableRoutines = appSettingsClient.hideUnavailableRoutines()
                 return .concatenate(
                     loadTasksEffect(),
                     .run { @MainActor send in
@@ -266,7 +267,7 @@ struct HomeFeature {
 
             case let .hideUnavailableRoutinesChanged(isHidden):
                 state.hideUnavailableRoutines = isHidden
-                SharedDefaults.app[.appSettingHideUnavailableRoutines] = isHidden
+                appSettingsClient.setHideUnavailableRoutines(isHidden)
                 return .none
 
             case let .setSelectedTask(taskID):
@@ -344,7 +345,7 @@ struct HomeFeature {
                 // First time on a mode: also clear hideUnavailableRoutines
                 if savedSnapshot == nil && state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
-                    SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
+                    appSettingsClient.setHideUnavailableRoutines(false)
                 }
                 state.taskListMode = mode
                 state.isMacFilterDetailPresented = false
@@ -401,7 +402,7 @@ struct HomeFeature {
                 state.selectedManualPlaceFilterID = nil
                 if state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
-                    SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
+                    appSettingsClient.setHideUnavailableRoutines(false)
                 }
                 return .none
 

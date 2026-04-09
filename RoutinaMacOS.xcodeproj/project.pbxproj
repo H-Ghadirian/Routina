@@ -81,7 +81,7 @@
 		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = "Unit Tests";
-			path = "Tests/Shared";
+			path = Tests/Shared;
 			sourceTree = "<group>";
 		};
 		6A0000012F00000100000001 /* MacApp */ = {

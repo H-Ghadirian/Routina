@@ -19,6 +19,7 @@ struct NotificationClient: Sendable {
     var cancel: @Sendable (_ identifier: String) async -> Void
     var cancelAll: @Sendable () async -> Void
     var requestAuthorizationIfNeeded: @Sendable () async -> Bool
+    var systemNotificationsAuthorized: @Sendable () async -> Bool
 }
 
 extension NotificationClient {
@@ -26,6 +27,7 @@ extension NotificationClient {
         schedule: { _ in },
         cancel: { _ in },
         cancelAll: { },
-        requestAuthorizationIfNeeded: { false }
+        requestAuthorizationIfNeeded: { false },
+        systemNotificationsAuthorized: { false }
     )
 }

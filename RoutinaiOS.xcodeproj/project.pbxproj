@@ -136,13 +136,13 @@
 		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = "Unit Tests";
-			path = "Tests/Shared";
+			path = Tests/Shared;
 			sourceTree = "<group>";
 		};
 		2A5A74DA2D7B92F900E91075 /* UI Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = "UI Tests";
-			path = "Tests/iOSUI";
+			path = Tests/iOSUI;
 			sourceTree = "<group>";
 		};
 		5F1000092E90000100000001 /* Watch App */ = {
