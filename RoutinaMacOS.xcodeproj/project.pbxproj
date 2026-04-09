@@ -51,14 +51,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2C0000092E60000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSProd" target */ = {
+		2C0000092E60000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSProd" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 2C0000012E60000100000001 /* RoutinaMacOSProd */;
 		};
-		4E0000092E80000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSDev" target */ = {
+		4E0000092E80000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -71,17 +71,17 @@
 		2A5A74BF2D7B92F600E91075 /* macOSConfig */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				2C0000092E60000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSProd" target */,
-				4E0000092E80000100000001 /* Exceptions for "Config" folder in "RoutinaMacOSDev" target */,
+				2C0000092E60000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSProd" target */,
+				4E0000092E80000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSDev" target */,
 			);
 			name = macOSConfig;
-			path = "Config/macOS";
+			path = Config/macOS;
 			sourceTree = "<group>";
 		};
 		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = "Unit Tests";
-			path = RoutinaTests;
+			path = "Tests/Shared";
 			sourceTree = "<group>";
 		};
 		6A0000012F00000100000001 /* MacApp */ = {
@@ -305,7 +305,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "RoutinaMac" */;
+			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "RoutinaMacOS" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -725,7 +725,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "RoutinaMac" */ = {
+		2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "RoutinaMacOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74DF2D7B92F900E91075 /* Debug */,

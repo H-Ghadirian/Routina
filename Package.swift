@@ -63,8 +63,7 @@ let package = Package(
                 "iOS",
                 "RoutinaWatchApp",
                 "RoutinaWatchExtension",
-                "RoutinaTests",
-                "RoutinaUITests",
+                "Tests",
                 "mac+watch+ios",
             ],
             sources: [
@@ -133,8 +132,7 @@ let package = Package(
                 "RoutinaMacApp/Utilities/PlatformSupport+AppKit.swift",
                 "RoutinaWatchApp",
                 "RoutinaWatchExtension",
-                "RoutinaTests",
-                "RoutinaUITests",
+                "Tests",
                 "mac+watch+ios",
             ],
             sources: [
@@ -148,7 +146,7 @@ let package = Package(
                 "RoutinaAppSupport",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ],
-            path: "RoutinaTests"
+            path: "Tests/Shared"
         ),
     ]
 )

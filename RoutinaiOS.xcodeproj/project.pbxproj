@@ -92,14 +92,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2AF327682E3DA5400003D53E /* Exceptions for "Config" folder in "RoutinaiOSProd" target */ = {
+		2AF327682E3DA5400003D53E /* Exceptions for "iOSConfig" folder in "RoutinaiOSProd" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */;
 		};
-		3D1000202E70000100000001 /* Exceptions for "Config" folder in "RoutinaiOSDev" target */ = {
+		3D1000202E70000100000001 /* Exceptions for "iOSConfig" folder in "RoutinaiOSDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -126,23 +126,23 @@
 		2A5A74BF2D7B92F600E91075 /* iOSConfig */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				2AF327682E3DA5400003D53E /* Exceptions for "Config" folder in "RoutinaiOSProd" target */,
-				3D1000202E70000100000001 /* Exceptions for "Config" folder in "RoutinaiOSDev" target */,
+				2AF327682E3DA5400003D53E /* Exceptions for "iOSConfig" folder in "RoutinaiOSProd" target */,
+				3D1000202E70000100000001 /* Exceptions for "iOSConfig" folder in "RoutinaiOSDev" target */,
 			);
 			name = iOSConfig;
-			path = "Config/iOS";
+			path = Config/iOS;
 			sourceTree = "<group>";
 		};
 		2A5A74D02D7B92F900E91075 /* Unit Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = "Unit Tests";
-			path = RoutinaTests;
+			path = "Tests/Shared";
 			sourceTree = "<group>";
 		};
 		2A5A74DA2D7B92F900E91075 /* UI Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = "UI Tests";
-			path = RoutinaUITests;
+			path = "Tests/iOSUI";
 			sourceTree = "<group>";
 		};
 		5F1000092E90000100000001 /* Watch App */ = {
@@ -484,7 +484,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "Routina" */;
+			buildConfigurationList = 2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "RoutinaiOS" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -1137,7 +1137,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "Routina" */ = {
+		2A5A74B82D7B92F600E91075 /* Build configuration list for PBXProject "RoutinaiOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2A5A74DF2D7B92F900E91075 /* Debug */,
