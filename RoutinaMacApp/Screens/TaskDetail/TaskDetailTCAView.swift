@@ -58,7 +58,8 @@ struct TaskDetailTCAView: View {
                         .disabled(!canSaveCurrentEdit)
                     }
                 } else {
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        toolbarActionButtons
                         Button("Edit") {
                             store.send(.setEditSheet(true))
                         }
@@ -144,7 +145,6 @@ struct TaskDetailTCAView: View {
                 if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                     calendarSection
                 }
-                todoPrimaryActionSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -162,17 +162,14 @@ struct TaskDetailTCAView: View {
 
     private var taskDetailContent: some View {
         let _ = store.taskRefreshID
-        let pauseArchivePresentation = RoutinePauseArchivePresentation.make(
-            isPaused: store.task.isPaused,
-            context: .detail
-        )
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 calendarSection
-                routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
-                routineSummarySection
+                if shouldShowRoutineSummarySection {
+                    routineSummarySection
+                }
                 routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
@@ -506,6 +503,41 @@ struct TaskDetailTCAView: View {
         }
     }
 
+    @ViewBuilder
+    private var toolbarActionButtons: some View {
+        Button {
+            store.send(completionButtonAction)
+        } label: {
+            completionButtonLabel
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(toolbarCompletionTint)
+        .disabled(isCompletionButtonDisabled)
+
+        if store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
+            Button {
+                store.send(.cancelTodo)
+            }
+            label: {
+                Label(cancelTodoButtonTitle, systemImage: "xmark.circle")
+            }
+            .buttonStyle(.bordered)
+            .tint(.orange)
+            .disabled(isCancelTodoButtonDisabled)
+        }
+
+        if !store.task.isOneOffTask {
+            Button {
+                store.send(store.task.isPaused ? .resumeTapped : .pauseTapped)
+            }
+            label: {
+                Label(toolbarPauseActionTitle, systemImage: toolbarPauseSystemImage)
+            }
+            .buttonStyle(.bordered)
+            .tint(toolbarPauseTint)
+        }
+    }
+
     private var todoPrimaryActionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             primaryActionButton
@@ -634,9 +666,16 @@ struct TaskDetailTCAView: View {
                 .font(.headline)
 
             if let imageData = store.task.imageData {
-                TaskImageView(data: imageData)
-                    .frame(maxWidth: .infinity, maxHeight: 320)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Button {
+                    openTaskImage(data: imageData)
+                } label: {
+                    TaskImageView(data: imageData)
+                        .frame(maxWidth: .infinity, maxHeight: 320)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .help("Open image in another app")
             }
             ForEach(store.taskAttachments) { item in
                 HStack(spacing: 10) {
@@ -1101,6 +1140,22 @@ struct TaskDetailTCAView: View {
 
     private var completionButtonSystemImage: String? {
         canUndoSelectedDate ? "arrow.uturn.backward" : nil
+    }
+
+    private var toolbarCompletionTint: Color {
+        canUndoSelectedDate ? .orange : .green
+    }
+
+    private var toolbarPauseActionTitle: String {
+        store.task.isPaused ? "Resume" : "Pause"
+    }
+
+    private var toolbarPauseSystemImage: String {
+        store.task.isPaused ? "play.fill" : "pause.fill"
+    }
+
+    private var toolbarPauseTint: Color {
+        store.task.isPaused ? .teal : .orange
     }
 
     private var isCompletionButtonDisabled: Bool {
@@ -1847,6 +1902,10 @@ struct TaskDetailTCAView: View {
         store.task.isPaused || store.task.isCompletedOneOff || store.task.isCanceledOneOff || isSelectedDateInFuture
     }
 
+    private var shouldShowRoutineSummarySection: Bool {
+        !isSelectedDateTerminal
+    }
+
     private func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
         guard store.task.isChecklistCompletionRoutine else { return false }
         if store.isDoneToday && !store.task.isChecklistInProgress {
@@ -1900,6 +1959,65 @@ struct TaskDetailTCAView: View {
         let fileURL = tempDir.appendingPathComponent(fileName)
         try? data.write(to: fileURL)
         platformOpenAttachment(url: fileURL)
+    }
+
+    func openTaskImage(data: Data) {
+        let fileName = taskImageFileName(for: store.task, data: data)
+        openAttachment(data: data, fileName: fileName)
+    }
+
+    func taskImageFileName(for task: RoutineTask, data: Data) -> String {
+        let baseName = sanitizedAttachmentBaseName(task.name ?? "Routine Image")
+        let fileExtension = detectedImageFileExtension(for: data)
+        return "\(baseName).\(fileExtension)"
+    }
+
+    func sanitizedAttachmentBaseName(_ rawValue: String) -> String {
+        let sanitizedScalars = rawValue.unicodeScalars.map { scalar -> String in
+            CharacterSet.alphanumerics.contains(scalar) ? String(scalar) : "-"
+        }
+        let sanitized = sanitizedScalars.joined()
+            .replacingOccurrences(of: "-+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+
+        return sanitized.isEmpty ? "attachment" : sanitized
+    }
+
+    func detectedImageFileExtension(for data: Data) -> String {
+        if data.range(of: Data("ftypheic".utf8)) != nil || data.range(of: Data("ftypheix".utf8)) != nil {
+            return "heic"
+        }
+
+        if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
+            return "png"
+        }
+
+        if data.starts(with: [0xFF, 0xD8, 0xFF]) {
+            return "jpg"
+        }
+
+        if data.starts(with: [0x47, 0x49, 0x46, 0x38]) {
+            return "gif"
+        }
+
+        if data.starts(with: [0x42, 0x4D]) {
+            return "bmp"
+        }
+
+        if data.starts(with: [0x52, 0x49, 0x46, 0x46]),
+           data.dropFirst(8).starts(with: [0x57, 0x45, 0x42, 0x50]) {
+            return "webp"
+        }
+
+        if data.starts(with: [0x00, 0x00, 0x01, 0x00]) {
+            return "ico"
+        }
+
+        if data.starts(with: [0x49, 0x49, 0x2A, 0x00]) || data.starts(with: [0x4D, 0x4D, 0x00, 0x2A]) {
+            return "tiff"
+        }
+
+        return "png"
     }
 
 }
