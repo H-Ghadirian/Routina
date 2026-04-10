@@ -71,6 +71,23 @@ struct AppFeatureTests {
     }
 
     @Test
+    func tabSelected_persistsSelectedTab() async {
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.tabSelected(.search)) {
+            $0.selectedTab = .search
+        }
+
+        #expect(persistedState.value?.selectedAppTabRawValue == Tab.search.rawValue)
+    }
+
+    @Test
     func timelineFilterChange_persistsDonesSelection() async {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let now = makeDate("2026-04-10T10:00:00Z")
@@ -105,6 +122,40 @@ struct AppFeatureTests {
         }
 
         #expect(persistedState.value?.statsExcludedTags == ["Health", "Focus"])
+    }
+
+    @Test
+    func statsClearFilters_resetsAndPersistsClearedState() async {
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+
+        let store = TestStore(
+            initialState: AppFeature.State(
+                stats: StatsFeature.State(
+                    tasks: [],
+                    logs: [],
+                    selectedRange: .year,
+                    taskTypeFilter: .todos,
+                    selectedTag: "Focus",
+                    excludedTags: ["Deep Work"]
+                )
+            )
+        ) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.stats(.clearFilters)) {
+            $0.stats.selectedRange = .week
+            $0.stats.taskTypeFilter = .all
+            $0.stats.selectedTag = nil
+            $0.stats.excludedTags = []
+        }
+
+        #expect(persistedState.value?.statsSelectedRange == .week)
+        #expect(persistedState.value?.statsTaskTypeFilterRawValue == StatsTaskTypeFilter.all.rawValue)
+        #expect(persistedState.value?.statsSelectedTag == nil)
+        #expect(persistedState.value?.statsExcludedTags == [])
     }
 
     @Test

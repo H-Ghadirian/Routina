@@ -117,6 +117,29 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func toggleNotifications_offDisablesSettingAndCancelsAllNotifications() async {
+        let didCancelAll = LockIsolated(false)
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(notificationsEnabled: true)
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setNotificationsEnabled = { persistedValue.setValue($0) }
+            $0.notificationClient.cancelAll = { didCancelAll.setValue(true) }
+        }
+
+        await store.send(.toggleNotifications(false)) {
+            $0.notificationsEnabled = false
+        }
+
+        #expect(persistedValue.value == false)
+        #expect(didCancelAll.value)
+    }
+
+    @Test
     func savePlaceTapped_persistsSelectedPlace() async throws {
         let context = makeInMemoryContext()
         let store = TestStore(

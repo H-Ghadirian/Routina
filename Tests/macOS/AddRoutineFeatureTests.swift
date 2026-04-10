@@ -65,6 +65,52 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func deadlineEnabledChanged_usesInjectedNowAndCanClearDeadline() async {
+        let now = makeDate("2026-04-10T08:30:00Z")
+        let store = TestStore(initialState: AddRoutineFeature.State()) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        } withDependencies: {
+            $0.date.now = now
+        }
+
+        await store.send(.deadlineEnabledChanged(true)) {
+            $0.deadline = now
+        }
+
+        await store.send(.deadlineEnabledChanged(false)) {
+            $0.deadline = nil
+        }
+    }
+
+    @Test
+    func availableRelationshipTasksChanged_prunesMissingRelationships() async {
+        let keptID = UUID()
+        let removedID = UUID()
+        let store = TestStore(
+            initialState: AddRoutineFeature.State(
+                relationships: [
+                    RoutineTaskRelationship(targetTaskID: keptID, kind: .dependsOn),
+                    RoutineTaskRelationship(targetTaskID: removedID, kind: .blocks)
+                ]
+            )
+        ) {
+            AddRoutineFeature(onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none }, onCancel: { .none })
+        }
+
+        let keptCandidate = RoutineTaskRelationshipCandidate(
+            id: keptID,
+            name: "Read",
+            emoji: "📚",
+            relationships: []
+        )
+
+        await store.send(.availableRelationshipTasksChanged([keptCandidate])) {
+            $0.availableRelationshipTasks = [keptCandidate]
+            $0.relationships = [RoutineTaskRelationship(targetTaskID: keptID, kind: .dependsOn)]
+        }
+    }
+
+    @Test
     func saveTapped_sendsDelegateWithFrequencyInDays() async {
         let store = TestStore(
             initialState: AddRoutineFeature.State(

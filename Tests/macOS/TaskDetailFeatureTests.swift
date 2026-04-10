@@ -114,6 +114,57 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func cancelTodo_marksOneOffTaskCanceledAndPersistsCanceledLog() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-18T10:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Buy milk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🥛",
+            scheduleMode: .oneOff
+        )
+        try context.save()
+
+        let canceledIDs = LockIsolated<[String]>([])
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { identifier in
+                canceledIDs.withValue { $0.append(identifier) }
+            }
+        }
+
+        await store.send(.cancelTodo) {
+            $0.task.canceledAt = now
+            $0.taskRefreshID = 1
+        }
+
+        var loadedLogs: [RoutineLog] = []
+        await store.receive { action in
+            guard case let .logsLoaded(logs) = action else { return false }
+            loadedLogs = logs
+            #expect(logs.count == 1)
+            #expect(logs.first?.kind == .canceled)
+            #expect(logs.first?.timestamp == now)
+            return true
+        } assert: {
+            $0.logs = loadedLogs
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let savedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(savedTask.canceledAt == now)
+        #expect(savedLogs.count == 1)
+        #expect(savedLogs.first?.kind == .canceled)
+        #expect(canceledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func pauseTapped_persistsArchivedStateAndCancelsNotification() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-14T10:00:00Z")

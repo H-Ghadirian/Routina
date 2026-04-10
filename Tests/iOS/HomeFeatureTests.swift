@@ -86,6 +86,68 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func setDeleteConfirmation_falseClearsPendingDeleteIDs() async {
+        let context = makeInMemoryContext()
+        let pendingID = UUID()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                pendingDeleteTaskIDs: [pendingID],
+                isDeleteConfirmationPresented: true
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.setDeleteConfirmation(false)) {
+            $0.isDeleteConfirmationPresented = false
+            $0.pendingDeleteTaskIDs = []
+        }
+    }
+
+    @Test
+    func clearOptionalFilters_resetsOptionalFiltersAndPersistsState() async {
+        let context = makeInMemoryContext()
+        let placeID = UUID()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let hideUnavailableUpdates = LockIsolated<[Bool]>([])
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                hideUnavailableRoutines: true,
+                selectedTag: "Errands",
+                excludedTags: ["Home"],
+                selectedManualPlaceFilterID: placeID
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.temporaryViewState = { .default }
+            $0.appSettingsClient.setHideUnavailableRoutines = { value in
+                hideUnavailableUpdates.withValue { $0.append(value) }
+            }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.clearOptionalFilters) {
+            $0.hideUnavailableRoutines = false
+            $0.selectedTag = nil
+            $0.excludedTags = []
+            $0.selectedManualPlaceFilterID = nil
+        }
+
+        #expect(hideUnavailableUpdates.value == [false])
+        #expect(persistedState.value?.homeSelectedTag == nil)
+        #expect(persistedState.value?.homeExcludedTags == [])
+        #expect(persistedState.value?.homeSelectedManualPlaceFilterID == nil)
+        #expect(persistedState.value?.hideUnavailableRoutines == false)
+    }
+
+    @Test
     func setMacFilterDetailPresented_closesAddRoutine() async {
         let context = makeInMemoryContext()
 
