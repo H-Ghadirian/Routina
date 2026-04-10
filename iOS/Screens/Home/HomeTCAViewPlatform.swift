@@ -436,11 +436,6 @@ extension HomeTCAView {
         let metadataText = rowMetadataText(for: task)
 
         return HStack(alignment: .center, spacing: 12) {
-            Text("\(rowNumber)")
-                .font(.caption2.monospacedDigit())
-                .foregroundStyle(.tertiary)
-                .frame(width: 18, alignment: .trailing)
-
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(rowIconBackgroundColor(for: task))
@@ -461,7 +456,20 @@ extension HomeTCAView {
                     .padding(2)
                 }
             }
-            .frame(width: 36, height: 36)
+            .frame(width: 40, height: 40)
+            .overlay(alignment: .topLeading) {
+                Text("\(rowNumber)")
+                    .font(.caption2.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                    .offset(x: -10, y: -8)
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(task.name)
