@@ -411,7 +411,7 @@ private struct SettingsMacNotificationsDetailView: View {
     }
 }
 
-private struct SettingsMacPlacesDetailView: View {
+struct SettingsMacPlacesDetailView: View {
     let store: StoreOf<SettingsFeature>
     @Binding var isPlacePickerPresented: Bool
 

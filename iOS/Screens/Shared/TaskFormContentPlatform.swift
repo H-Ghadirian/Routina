@@ -10,6 +10,10 @@ struct TaskFormContent: View {
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
+    @State private var isPlaceManagerPresented = false
+    @State private var placeManagerStore = Store(initialState: SettingsFeature.State()) {
+        SettingsFeature()
+    }
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isFileImporterPresented = false
 
@@ -52,6 +56,9 @@ struct TaskFormContent: View {
         }
         .sheet(isPresented: $isTagManagerPresented) {
             SettingsTagManagerPresentationView(store: tagManagerStore)
+        }
+        .sheet(isPresented: $isPlaceManagerPresented) {
+            SettingsPlaceManagerPresentationView(store: placeManagerStore)
         }
         .onChange(of: selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
@@ -520,6 +527,7 @@ struct TaskFormContent: View {
                     Text(place.name).tag(Optional(place.id))
                 }
             }
+            managePlacesButton
             Text(placeSelectionDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -586,6 +594,14 @@ struct TaskFormContent: View {
             isTagManagerPresented = true
         } label: {
             Label("Manage Tags", systemImage: "slider.horizontal.3")
+        }
+    }
+
+    private var managePlacesButton: some View {
+        Button {
+            isPlaceManagerPresented = true
+        } label: {
+            Label("Manage Places", systemImage: "map")
         }
     }
 

@@ -15,6 +15,10 @@ struct TaskFormContent: View {
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
+    @State private var isPlaceManagerPresented = false
+    @State private var placeManagerStore = Store(initialState: SettingsFeature.State()) {
+        SettingsFeature()
+    }
     @Environment(\.addEditFormCoordinator) private var formCoordinator
 
     private var sectionCardBackground: some ShapeStyle {
@@ -55,6 +59,9 @@ struct TaskFormContent: View {
         }
         .sheet(isPresented: $isTagManagerPresented) {
             SettingsTagManagerPresentationView(store: tagManagerStore)
+        }
+        .sheet(isPresented: $isPlaceManagerPresented) {
+            SettingsPlaceManagerPresentationView(store: placeManagerStore)
         }
         .onChange(of: selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
@@ -315,15 +322,26 @@ struct TaskFormContent: View {
         macSectionCard(
             title: "Places"
         ) {
-            macControlBlock(title: "Place") {
-                Picker("Place", selection: model.selectedPlaceID) {
-                    Text("Anywhere").tag(Optional<UUID>.none)
-                    ForEach(model.availablePlaces) { place in
-                        Text(place.name).tag(Optional(place.id))
+            VStack(alignment: .leading, spacing: 18) {
+                macControlBlock(title: "Place") {
+                    Picker("Place", selection: model.selectedPlaceID) {
+                        Text("Anywhere").tag(Optional<UUID>.none)
+                        ForEach(model.availablePlaces) { place in
+                            Text(place.name).tag(Optional(place.id))
+                        }
                     }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
+
+                macControlBlock(title: "") {
+                    Button {
+                        isPlaceManagerPresented = true
+                    } label: {
+                        Label("Manage Places", systemImage: "map")
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
         }
         .id("Places")

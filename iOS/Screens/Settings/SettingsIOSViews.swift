@@ -197,7 +197,7 @@ private struct SettingsNotificationsDetailView: View {
     }
 }
 
-private struct SettingsPlacesDetailView: View {
+struct SettingsPlacesDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var isPlacePickerPresented = false
 
