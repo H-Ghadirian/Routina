@@ -52,7 +52,8 @@ struct TimelineFeatureTests {
                             taskName: "Read",
                             taskEmoji: "📚",
                             tags: ["Focus"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                         TimelineEntry(
                             id: eveningLog.id,
@@ -61,7 +62,8 @@ struct TimelineFeatureTests {
                             taskName: "Stretch",
                             taskEmoji: "🤸",
                             tags: ["Home"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 )
@@ -121,7 +123,8 @@ struct TimelineFeatureTests {
                             taskName: "Water Plants",
                             taskEmoji: "🪴",
                             tags: ["Home"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),
@@ -135,7 +138,8 @@ struct TimelineFeatureTests {
                             taskName: "Deep Work",
                             taskEmoji: "🧠",
                             tags: ["Deep"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),
@@ -154,7 +158,8 @@ struct TimelineFeatureTests {
                             taskName: "Deep Work",
                             taskEmoji: "🧠",
                             tags: ["Deep"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),
@@ -180,7 +185,8 @@ struct TimelineFeatureTests {
                             taskName: "Water Plants",
                             taskEmoji: "🪴",
                             tags: ["Home"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),
@@ -192,6 +198,96 @@ struct TimelineFeatureTests {
         #expect(store.state.groupedEntries.count == 1)
         #expect(store.state.groupedEntries.first?.entries.count == 1)
         #expect(store.state.groupedEntries.first?.entries.first?.taskName == "Water Plants")
+    }
+
+    @Test
+    func excludedTags_hideMatchingEntries() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let calendar = makeTestCalendar()
+
+        let focusTask = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            tags: ["Focus"]
+        )
+        let homeTask = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🤸",
+            tags: ["Home"]
+        )
+        let focusLog = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let homeLog = makeLog(in: context, task: homeTask, timestamp: makeDate("2026-03-20T18:00:00Z"))
+
+        let store = TestStore(initialState: TimelineFeature.State()) {
+            TimelineFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.setData(tasks: [focusTask, homeTask], logs: [focusLog, homeLog])) {
+            $0.tasks = [focusTask, homeTask]
+            $0.logs = [focusLog, homeLog]
+            $0.availableTags = ["Focus", "Home"]
+            $0.groupedEntries = [
+                TimelineFeature.TimelineSection(
+                    date: calendar.startOfDay(for: now),
+                    entries: [
+                        TimelineEntry(
+                            id: focusLog.id,
+                            taskID: focusTask.id,
+                            timestamp: makeDate("2026-03-20T08:00:00Z"),
+                            taskName: "Read",
+                            taskEmoji: "📚",
+                            tags: ["Focus"],
+                            isOneOff: false,
+                            kind: .completed
+                        ),
+                        TimelineEntry(
+                            id: homeLog.id,
+                            taskID: homeTask.id,
+                            timestamp: makeDate("2026-03-20T18:00:00Z"),
+                            taskName: "Stretch",
+                            taskEmoji: "🤸",
+                            tags: ["Home"],
+                            isOneOff: false,
+                            kind: .completed
+                        ),
+                    ]
+                )
+            ]
+        }
+
+        await store.send(.excludedTagsChanged(["Focus"])) {
+            $0.excludedTags = ["Focus"]
+            $0.groupedEntries = [
+                TimelineFeature.TimelineSection(
+                    date: calendar.startOfDay(for: now),
+                    entries: [
+                        TimelineEntry(
+                            id: homeLog.id,
+                            taskID: homeTask.id,
+                            timestamp: makeDate("2026-03-20T18:00:00Z"),
+                            taskName: "Stretch",
+                            taskEmoji: "🤸",
+                            tags: ["Home"],
+                            isOneOff: false,
+                            kind: .completed
+                        ),
+                    ]
+                )
+            ]
+        }
+
+        #expect(store.state.hasActiveFilters)
+        #expect(store.state.groupedEntries.first?.entries.count == 1)
+        #expect(store.state.groupedEntries.first?.entries.first?.taskName == "Stretch")
     }
 }
 
@@ -377,6 +473,92 @@ struct StatsFeatureTests {
         #expect(store.state.metrics.activeRoutineCount == 0)
         #expect(store.state.metrics.archivedRoutineCount == 1)
         #expect(store.state.metrics.totalCount == 1)
+    }
+
+    @Test
+    func taskTypeFilter_limitsTasksLogsAndAvailableTags() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let calendar = makeTestCalendar()
+
+        let routineTask = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            tags: ["Focus"]
+        )
+        let todoTask = makeTask(
+            in: context,
+            name: "Buy milk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🥛",
+            tags: ["Errands"],
+            scheduleMode: .oneOff
+        )
+        let routineLog = makeLog(in: context, task: routineTask, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let todoLog = makeLog(in: context, task: todoTask, timestamp: makeDate("2026-03-20T09:00:00Z"))
+
+        let store = TestStore(initialState: StatsFeature.State()) {
+            StatsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.setData(tasks: [routineTask, todoTask], logs: [routineLog, todoLog])) {
+            $0.tasks = [routineTask, todoTask]
+            $0.logs = [routineLog, todoLog]
+            $0.availableTags = ["Errands", "Focus"]
+            $0.filteredTaskCount = 2
+            $0.metrics.totalDoneCount = 2
+            $0.metrics.activeRoutineCount = 2
+            $0.metrics.totalCount = 2
+        }
+
+        await store.send(.taskTypeFilterChanged(.todos)) {
+            $0.taskTypeFilter = .todos
+            $0.availableTags = ["Errands"]
+            $0.filteredTaskCount = 1
+            $0.metrics.totalDoneCount = 1
+            $0.metrics.activeRoutineCount = 1
+            $0.metrics.totalCount = 1
+        }
+
+        await store.send(.selectedTagChanged("Errands")) {
+            $0.selectedTag = "Errands"
+        }
+
+        await store.send(.taskTypeFilterChanged(.routines)) {
+            $0.taskTypeFilter = .routines
+            $0.selectedTag = nil
+            $0.availableTags = ["Focus"]
+            $0.filteredTaskCount = 1
+            $0.metrics.totalDoneCount = 1
+            $0.metrics.activeRoutineCount = 1
+            $0.metrics.totalCount = 1
+        }
+
+        await store.send(.excludedTagsChanged(["Focus"])) {
+            $0.excludedTags = ["Focus"]
+            $0.filteredTaskCount = 0
+            $0.metrics.totalDoneCount = 0
+            $0.metrics.activeRoutineCount = 0
+            $0.metrics.totalCount = 0
+        }
+
+        await store.send(.clearFilters) {
+            $0.selectedRange = .week
+            $0.taskTypeFilter = .all
+            $0.selectedTag = nil
+            $0.excludedTags = []
+            $0.availableTags = ["Errands", "Focus"]
+            $0.filteredTaskCount = 2
+            $0.metrics.totalDoneCount = 2
+            $0.metrics.activeRoutineCount = 2
+            $0.metrics.totalCount = 2
+        }
     }
 }
 

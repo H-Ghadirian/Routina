@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import ConcurrencyExtras
 import Foundation
 import SwiftData
 import Testing
@@ -531,19 +532,19 @@ struct SettingsFeatureTests {
     @Test
     func resetTemporaryViewStateTapped_clearsSavedTemporaryViewPreferences() async {
         let context = makeInMemoryContext()
-        var resetCallCount = 0
+        let resetCallCount = LockIsolated(0)
 
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()
         } withDependencies: {
             $0.modelContext = { context }
-            $0.appSettingsClient.resetTemporaryViewState = { resetCallCount += 1 }
+            $0.appSettingsClient.resetTemporaryViewState = { resetCallCount.withValue { $0 += 1 } }
         }
 
         await store.send(.resetTemporaryViewStateTapped) {
             $0.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
         }
 
-        #expect(resetCallCount == 1)
+        #expect(resetCallCount.value == 1)
     }
 }

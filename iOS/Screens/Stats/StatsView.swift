@@ -46,8 +46,66 @@ struct StatsView: View {
         )
     }
 
+    private var filterSheetBinding: Binding<Bool> {
+        Binding(
+            get: { store.isFilterSheetPresented },
+            set: { store.send(.setFilterSheet($0)) }
+        )
+    }
+
+    private var taskTypeFilterBinding: Binding<StatsTaskTypeFilter> {
+        Binding(
+            get: { store.taskTypeFilter },
+            set: { store.send(.taskTypeFilterChanged($0)) }
+        )
+    }
+
     private var metrics: Metrics {
         Metrics(store.metrics)
+    }
+
+    private var availableTags: [String] {
+        store.availableTags
+    }
+
+    private var selectedTaskTypeFilter: StatsTaskTypeFilter {
+        store.taskTypeFilter
+    }
+
+    private var availableExcludeTags: [String] {
+        let baseTasks = store.tasks.filter { task in
+            switch selectedTaskTypeFilter {
+            case .all:
+                return true
+            case .routines:
+                return !task.isOneOffTask
+            case .todos:
+                return task.isOneOffTask
+            }
+        }.filter { task in
+            guard let selectedTag = store.selectedTag else { return true }
+            return RoutineTag.contains(selectedTag, in: task.tags)
+        }
+
+        return RoutineTag.allTags(from: baseTasks.map(\.tags)).filter { tag in
+            store.selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+        }
+    }
+
+    private var hasActiveFilters: Bool {
+        store.hasActiveFilters
+    }
+
+    private var hasActiveSheetFilters: Bool {
+        selectedTaskTypeFilter != .all || store.selectedTag != nil || !store.excludedTags.isEmpty
+    }
+
+    private var activeSheetFilterCount: Int {
+        var count = 0
+        if selectedTaskTypeFilter != .all { count += 1 }
+        if store.selectedTag != nil { count += 1 }
+        count += store.excludedTags.count
+        return count
     }
 
     private var filteredTaskCount: Int {
@@ -165,6 +223,9 @@ struct StatsView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
                         rangeSection
+                        if hasActiveSheetFilters {
+                            activeFilterChipBar
+                        }
                         heroSection(metrics: metrics)
                         summaryCards(metrics: metrics)
                         chartSection(metrics: metrics)
@@ -178,6 +239,14 @@ struct StatsView: View {
                 .background(pageBackground.ignoresSafeArea())
                 .navigationTitle("Stats")
                 .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        filterSheetButton
+                    }
+                }
+                .sheet(isPresented: filterSheetBinding) {
+                    statsFiltersSheet
+                }
             }
             .task {
                 store.send(.setData(tasks: tasks, logs: logs))
@@ -187,6 +256,293 @@ struct StatsView: View {
             }
             .onChange(of: logs) { _, newValue in
                 store.send(.setData(tasks: tasks, logs: newValue))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var activeFilterChipBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Button("Clear All") {
+                    store.send(.clearFilters)
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+
+                if selectedTaskTypeFilter != .all {
+                    compactFilterChip(
+                        title: selectedTaskTypeFilter.rawValue,
+                        systemImage: statsTaskTypeIcon(for: selectedTaskTypeFilter)
+                    ) {
+                        store.send(.taskTypeFilterChanged(.all))
+                    }
+                }
+
+                if let selectedTag = store.selectedTag {
+                    compactFilterChip(title: "#\(selectedTag)") {
+                        store.send(.selectedTagChanged(nil))
+                    }
+                }
+
+                ForEach(store.excludedTags.sorted(), id: \.self) { tag in
+                    compactFilterChip(title: "not #\(tag)", tintColor: .red) {
+                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
+                    }
+                }
+            }
+        }
+    }
+
+    private func compactFilterChip(
+        title: String,
+        systemImage: String? = nil,
+        tintColor: Color = .secondary,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption2)
+                }
+
+                Text(title)
+                    .font(.caption.weight(.medium))
+
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption2)
+            }
+            .foregroundStyle(tintColor)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(tintColor.opacity(0.12))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var filterSheetButton: some View {
+        Button {
+            store.send(.setFilterSheet(true))
+        } label: {
+            Image(
+                systemName: hasActiveFilters
+                    ? "line.3.horizontal.decrease.circle.fill"
+                    : "line.3.horizontal.decrease.circle"
+            )
+            .foregroundStyle(hasActiveFilters ? Color.accentColor : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Filters")
+    }
+
+    private var statsFiltersSheet: some View {
+        NavigationStack {
+            List {
+                if tasks.contains(where: \.isOneOffTask) {
+                    Section("Type") {
+                        Picker("Type", selection: taskTypeFilterBinding) {
+                            ForEach(StatsTaskTypeFilter.allCases) { filter in
+                                Label(filter.rawValue, systemImage: statsTaskTypeIcon(for: filter))
+                                    .tag(filter)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                    }
+                }
+
+                if !availableTags.isEmpty {
+                    Section("Include Tag") {
+                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                            statsTagButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                                store.send(.selectedTagChanged(nil))
+                            }
+
+                            ForEach(availableTags, id: \.self) { tag in
+                                statsTagButton(
+                                    title: "#\(tag)",
+                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                ) {
+                                    store.send(.selectedTagChanged(tag))
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                if !availableExcludeTags.isEmpty {
+                    Section("Exclude Tags") {
+                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                            ForEach(availableExcludeTags, id: \.self) { tag in
+                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                statsTagButton(
+                                    title: "#\(tag)",
+                                    isSelected: isExcluded,
+                                    selectedColor: .red
+                                ) {
+                                    if isExcluded {
+                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
+                                    } else {
+                                        var newTags = store.excludedTags
+                                        newTags.insert(tag)
+                                        store.send(.excludedTagsChanged(newTags))
+                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                            store.send(.selectedTagChanged(nil))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+
+                        if !store.excludedTags.isEmpty {
+                            Text("Hiding tasks tagged: \(store.excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Select tags to hide tasks that have them.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                if hasActiveFilters {
+                    Section {
+                        Button("Clear Filters") {
+                            store.send(.clearFilters)
+                        }
+                        .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("Filters")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        store.send(.setFilterSheet(false))
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .onChange(of: availableTags) { _, newValue in
+            guard let selectedTag = store.selectedTag else { return }
+            if !RoutineTag.contains(selectedTag, in: newValue) {
+                store.send(.selectedTagChanged(nil))
+            }
+        }
+    }
+
+    private func statsTagButton(
+        title: String,
+        isSelected: Bool,
+        selectedColor: Color = .accentColor,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .lineLimit(1)
+                .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(isSelected ? selectedColor : Color.secondary.opacity(0.12))
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func statsTaskTypeIcon(for filter: StatsTaskTypeFilter) -> String {
+        switch filter {
+        case .all:
+            return "square.grid.2x2"
+        case .routines:
+            return "repeat"
+        case .todos:
+            return "checklist"
+        }
+    }
+
+    private struct WrappingHStack: Layout {
+        let horizontalSpacing: CGFloat
+        let verticalSpacing: CGFloat
+
+        init(horizontalSpacing: CGFloat = 8, verticalSpacing: CGFloat = 8) {
+            self.horizontalSpacing = horizontalSpacing
+            self.verticalSpacing = verticalSpacing
+        }
+
+        func sizeThatFits(
+            proposal: ProposedViewSize,
+            subviews: Subviews,
+            cache: inout ()
+        ) -> CGSize {
+            let maxWidth = proposal.width ?? .infinity
+            var currentRowWidth: CGFloat = 0
+            var currentRowHeight: CGFloat = 0
+            var totalHeight: CGFloat = 0
+            var maxRowWidth: CGFloat = 0
+
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+                let spacing = currentRowWidth == 0 ? 0 : horizontalSpacing
+
+                if currentRowWidth + spacing + size.width > maxWidth, currentRowWidth > 0 {
+                    totalHeight += currentRowHeight + verticalSpacing
+                    maxRowWidth = max(maxRowWidth, currentRowWidth)
+                    currentRowWidth = size.width
+                    currentRowHeight = size.height
+                } else {
+                    currentRowWidth += spacing + size.width
+                    currentRowHeight = max(currentRowHeight, size.height)
+                }
+            }
+
+            maxRowWidth = max(maxRowWidth, currentRowWidth)
+            totalHeight += currentRowHeight
+
+            return CGSize(width: maxRowWidth, height: totalHeight)
+        }
+
+        func placeSubviews(
+            in bounds: CGRect,
+            proposal: ProposedViewSize,
+            subviews: Subviews,
+            cache: inout ()
+        ) {
+            var x = bounds.minX
+            var y = bounds.minY
+            var rowHeight: CGFloat = 0
+
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+                let proposedX = x == bounds.minX ? x : x + horizontalSpacing
+
+                if proposedX + size.width > bounds.maxX, x > bounds.minX {
+                    x = bounds.minX
+                    y += rowHeight + verticalSpacing
+                    rowHeight = 0
+                } else if x > bounds.minX {
+                    x += horizontalSpacing
+                }
+
+                subview.place(
+                    at: CGPoint(x: x, y: y),
+                    proposal: ProposedViewSize(width: size.width, height: size.height)
+                )
+
+                x += size.width
+                rowHeight = max(rowHeight, size.height)
             }
         }
     }

@@ -215,6 +215,13 @@ struct HomeTCAView: View {
     var activeFilterChipBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
+                Button("Clear All") {
+                    store.send(.clearOptionalFilters)
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+
                 if let selectedTag = store.selectedTag {
                     compactFilterChip(title: "#\(selectedTag)") {
                         store.send(.selectedTagChanged(nil))
@@ -237,15 +244,6 @@ struct HomeTCAView: View {
                     compactFilterChip(title: "Away hidden", systemImage: "location.slash") {
                         store.send(.hideUnavailableRoutinesChanged(false))
                     }
-                }
-
-                if activeOptionalFilterCount > 1 {
-                    Button("Clear All") {
-                        store.send(.clearOptionalFilters)
-                    }
-                    .font(.caption.weight(.semibold))
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.accentColor)
                 }
             }
         }

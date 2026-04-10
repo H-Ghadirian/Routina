@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import ConcurrencyExtras
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
@@ -69,23 +70,35 @@ struct AppFeatureTests {
 
     @Test
     func timelineFilterChange_persistsDonesSelection() async {
-        var persistedState: TemporaryViewState?
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let now = makeDate("2026-04-10T10:00:00Z")
+        let calendar = makeTestCalendar()
 
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
-            $0.appSettingsClient.setTemporaryViewState = { persistedState = $0 }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
 
         await store.send(.timeline(.selectedRangeChanged(.week))) {
             $0.timeline.selectedRange = .week
         }
 
-        #expect(persistedState?.timelineSelectedRange == .week)
+        #expect(persistedState.value?.timelineSelectedRange == .week)
     }
 
     @Test
     func resetTemporaryViewState_clearsLiveDonesFiltersImmediately() async {
+        let now = makeDate("2026-04-10T10:00:00Z")
+        let calendar = makeTestCalendar()
+        let expectedChartPoints = RoutineCompletionStats.points(
+            for: .week,
+            timestamps: [],
+            referenceDate: now,
+            calendar: calendar
+        )
+
         let store = TestStore(
             initialState: AppFeature.State(
                 selectedTab: .settings,
@@ -109,9 +122,12 @@ struct AppFeatureTests {
             )
         ) {
             AppFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
 
         await store.send(.settings(.resetTemporaryViewStateTapped)) {
+            $0.home.taskListMode = .routines
             $0.timeline.selectedRange = .all
             $0.timeline.filterType = .all
             $0.timeline.selectedTag = nil
@@ -124,6 +140,22 @@ struct AppFeatureTests {
             $0.settings.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
         }
         await store.receive(.timeline(.setData(tasks: [], logs: [])))
-        await store.receive(.stats(.setData(tasks: [], logs: [])))
+        await store.receive(.stats(.setData(tasks: [], logs: []))) {
+            $0.stats.metrics = StatsFeature.Metrics(
+                chartPoints: expectedChartPoints,
+                totalDoneCount: 0,
+                totalCanceledCount: 0,
+                activeRoutineCount: 0,
+                archivedRoutineCount: 0,
+                totalCount: 0,
+                averagePerDay: 0,
+                highlightedBusiestDay: nil,
+                activeDayCount: 0,
+                chartUpperBound: 1,
+                sparklinePoints: expectedChartPoints,
+                sparklineMaxCount: 1,
+                xAxisDates: expectedChartPoints.map(\.date)
+            )
+        }
     }
 }

@@ -1,6 +1,14 @@
 import ComposableArchitecture
 import Foundation
 
+enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatable, Codable {
+    case all = "All"
+    case routines = "Routines"
+    case todos = "Todos"
+
+    var id: Self { self }
+}
+
 @Reducer
 struct AppFeature {
 
@@ -61,9 +69,13 @@ struct AppFeature {
             case .timeline(.selectedRangeChanged),
                  .timeline(.filterTypeChanged),
                  .timeline(.selectedTagChanged),
+                 .timeline(.excludedTagsChanged),
                  .timeline(.clearFilters),
                  .stats(.selectedRangeChanged),
-                 .stats(.selectedTagChanged):
+                 .stats(.taskTypeFilterChanged),
+                 .stats(.selectedTagChanged),
+                 .stats(.excludedTagsChanged),
+                 .stats(.clearFilters):
                 persistTemporaryViewState(state)
                 return .none
             default:
@@ -83,6 +95,11 @@ struct AppFeature {
         state.timeline.selectedTag = persistedState.timelineSelectedTag
         state.stats.selectedRange = persistedState.statsSelectedRange
         state.stats.selectedTag = persistedState.statsSelectedTag
+        if let rawValue = persistedState.statsTaskTypeFilterRawValue,
+           let filter = StatsTaskTypeFilter(rawValue: rawValue) {
+            state.stats.taskTypeFilter = filter
+        }
+        state.stats.excludedTags = []
     }
 
     private func resetTemporaryViewState(_ state: inout State) {
@@ -103,12 +120,16 @@ struct AppFeature {
         state.timeline.selectedRange = .all
         state.timeline.filterType = .all
         state.timeline.selectedTag = nil
+        state.timeline.excludedTags = []
         state.timeline.isFilterSheetPresented = false
         state.timeline.availableTags = []
         state.timeline.groupedEntries = []
 
         state.stats.selectedRange = .week
+        state.stats.isFilterSheetPresented = false
         state.stats.selectedTag = nil
+        state.stats.excludedTags = []
+        state.stats.taskTypeFilter = .all
     }
 
     private func persistTemporaryViewState(_ state: State) {
@@ -133,7 +154,7 @@ struct AppFeature {
                 timelineSelectedTag: state.timeline.selectedTag,
                 statsSelectedRange: state.stats.selectedRange,
                 statsSelectedTag: state.stats.selectedTag,
-                statsTaskTypeFilterRawValue: existing.statsTaskTypeFilterRawValue
+                statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue
             )
         )
     }
@@ -155,12 +176,13 @@ struct TimelineFeature {
         var selectedRange: TimelineRange = .all
         var filterType: TimelineFilterType = .all
         var selectedTag: String?
+        var excludedTags: Set<String> = []
         var isFilterSheetPresented: Bool = false
         var availableTags: [String] = []
         var groupedEntries: [TimelineSection] = []
 
         var hasActiveFilters: Bool {
-            selectedRange != .all || filterType != .all || selectedTag != nil
+            selectedRange != .all || filterType != .all || selectedTag != nil || !excludedTags.isEmpty
         }
     }
 
@@ -169,6 +191,7 @@ struct TimelineFeature {
         case selectedRangeChanged(TimelineRange)
         case filterTypeChanged(TimelineFilterType)
         case selectedTagChanged(String?)
+        case excludedTagsChanged(Set<String>)
         case setFilterSheet(Bool)
         case clearFilters
     }
@@ -200,6 +223,11 @@ struct TimelineFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .excludedTagsChanged(tags):
+                state.excludedTags = tags
+                refreshDerivedState(&state)
+                return .none
+
             case let .setFilterSheet(isPresented):
                 state.isFilterSheetPresented = isPresented
                 return .none
@@ -208,6 +236,7 @@ struct TimelineFeature {
                 state.selectedRange = .all
                 state.filterType = .all
                 state.selectedTag = nil
+                state.excludedTags = []
                 refreshDerivedState(&state)
                 return .none
             }
@@ -228,9 +257,11 @@ struct TimelineFeature {
            !RoutineTag.contains(selectedTag, in: state.availableTags) {
             state.selectedTag = nil
         }
+        state.excludedTags = state.excludedTags.filter { RoutineTag.contains($0, in: state.availableTags) }
 
         let entries = baseEntries.filter { entry in
             TimelineLogic.matchesSelectedTag(state.selectedTag, in: entry.tags)
+                && !state.excludedTags.contains { RoutineTag.contains($0, in: entry.tags) }
         }
         state.groupedEntries = TimelineLogic.groupedByDay(entries: entries, calendar: calendar)
             .map { TimelineSection(date: $0.date, entries: $0.entries) }
@@ -260,16 +291,27 @@ struct StatsFeature {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
         var selectedRange: DoneChartRange = .week
+        var taskTypeFilter: StatsTaskTypeFilter = .all
+        var isFilterSheetPresented: Bool = false
         var selectedTag: String?
+        var excludedTags: Set<String> = []
         var availableTags: [String] = []
         var filteredTaskCount: Int = 0
         var metrics = Metrics()
+
+        var hasActiveFilters: Bool {
+            selectedRange != .week || taskTypeFilter != .all || selectedTag != nil || !excludedTags.isEmpty
+        }
     }
 
     enum Action: Equatable {
         case setData(tasks: [RoutineTask], logs: [RoutineLog])
         case selectedRangeChanged(DoneChartRange)
+        case taskTypeFilterChanged(StatsTaskTypeFilter)
         case selectedTagChanged(String?)
+        case excludedTagsChanged(Set<String>)
+        case setFilterSheet(Bool)
+        case clearFilters
     }
 
     @Dependency(\.calendar) var calendar
@@ -289,8 +331,30 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .taskTypeFilterChanged(filter):
+                state.taskTypeFilter = filter
+                refreshDerivedState(&state)
+                return .none
+
             case let .selectedTagChanged(tag):
                 state.selectedTag = tag
+                refreshDerivedState(&state)
+                return .none
+
+            case let .excludedTagsChanged(tags):
+                state.excludedTags = tags
+                refreshDerivedState(&state)
+                return .none
+
+            case let .setFilterSheet(isPresented):
+                state.isFilterSheetPresented = isPresented
+                return .none
+
+            case .clearFilters:
+                state.selectedRange = .week
+                state.taskTypeFilter = .all
+                state.selectedTag = nil
+                state.excludedTags = []
                 refreshDerivedState(&state)
                 return .none
             }
@@ -298,22 +362,35 @@ struct StatsFeature {
     }
 
     private func refreshDerivedState(_ state: inout State) {
-        state.availableTags = RoutineTag.allTags(from: state.tasks.map(\.tags))
+        let tasksMatchingTypeFilter = state.tasks.filter { task in
+            switch state.taskTypeFilter {
+            case .all:
+                return true
+            case .routines:
+                return !task.isOneOffTask
+            case .todos:
+                return task.isOneOffTask
+            }
+        }
+
+        state.availableTags = RoutineTag.allTags(from: tasksMatchingTypeFilter.map(\.tags))
         if let selectedTag = state.selectedTag,
            !RoutineTag.contains(selectedTag, in: state.availableTags) {
             state.selectedTag = nil
         }
+        state.excludedTags = state.excludedTags.filter { RoutineTag.contains($0, in: state.availableTags) }
 
         let filteredTasks: [RoutineTask]
         let filteredLogs: [RoutineLog]
-        if let tag = state.selectedTag {
-            let taskIDsWithTag = Set(state.tasks.filter { $0.tags.contains(tag) }.map(\.id))
-            filteredTasks = state.tasks.filter { $0.tags.contains(tag) }
-            filteredLogs = state.logs.filter { taskIDsWithTag.contains($0.taskID) }
-        } else {
-            filteredTasks = state.tasks
-            filteredLogs = state.logs
+        let includeFilteredTasks = tasksMatchingTypeFilter.filter { task in
+            guard let tag = state.selectedTag else { return true }
+            return RoutineTag.contains(tag, in: task.tags)
         }
+        filteredTasks = includeFilteredTasks.filter { task in
+            !state.excludedTags.contains { RoutineTag.contains($0, in: task.tags) }
+        }
+        let filteredTaskIDs = Set(filteredTasks.map(\.id))
+        filteredLogs = state.logs.filter { filteredTaskIDs.contains($0.taskID) }
 
         let completionDates = filteredLogs
             .filter { $0.kind == .completed }

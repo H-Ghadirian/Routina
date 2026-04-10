@@ -52,7 +52,8 @@ struct TimelineFeatureTests {
                             taskName: "Read",
                             taskEmoji: "📚",
                             tags: ["Focus"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                         TimelineEntry(
                             id: eveningLog.id,
@@ -61,7 +62,8 @@ struct TimelineFeatureTests {
                             taskName: "Stretch",
                             taskEmoji: "🤸",
                             tags: ["Home"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 )
@@ -121,7 +123,8 @@ struct TimelineFeatureTests {
                             taskName: "Water Plants",
                             taskEmoji: "🪴",
                             tags: ["Home"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),
@@ -135,7 +138,8 @@ struct TimelineFeatureTests {
                             taskName: "Deep Work",
                             taskEmoji: "🧠",
                             tags: ["Deep"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),
@@ -154,7 +158,8 @@ struct TimelineFeatureTests {
                             taskName: "Deep Work",
                             taskEmoji: "🧠",
                             tags: ["Deep"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),
@@ -180,7 +185,8 @@ struct TimelineFeatureTests {
                             taskName: "Water Plants",
                             taskEmoji: "🪴",
                             tags: ["Home"],
-                            isOneOff: false
+                            isOneOff: false,
+                            kind: .completed
                         ),
                     ]
                 ),

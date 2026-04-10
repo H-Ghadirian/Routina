@@ -1,5 +1,6 @@
 import CloudKit
 import ComposableArchitecture
+import ConcurrencyExtras
 import Foundation
 import SwiftData
 import Testing
@@ -159,9 +160,11 @@ struct HomeFeatureTests {
         await store.send(.onAppear) {
             $0.hideUnavailableRoutines = true
             $0.taskListMode = .routines
+            $0.macSidebarMode = .stats
             $0.selectedFilter = .due
             $0.selectedTag = "Home"
             $0.excludedTags = ["Work"]
+            $0.selectedSettingsSection = .notifications
             $0.tabFilterSnapshots = persistedState.homeTabFilterSnapshots
             $0.selectedTimelineRange = .month
             $0.selectedTimelineFilterType = .todos
@@ -170,7 +173,10 @@ struct HomeFeatureTests {
             $0.statsSelectedTag = "Focus"
         }
 
-        await store.receive(.tasksLoadedSuccessfully([], [], [], HomeFeature.DoneStats()))
+        await store.receive(.tasksLoadedSuccessfully([], [], [], HomeFeature.DoneStats())) {
+            $0.selectedTag = nil
+            $0.excludedTags = []
+        }
         await store.receive(.locationSnapshotUpdated(locationSnapshot)) {
             $0.locationSnapshot = locationSnapshot
         }
@@ -179,7 +185,7 @@ struct HomeFeatureTests {
     @Test
     func selectedFilterChanged_persistsTemporaryViewState() async {
         let context = makeInMemoryContext()
-        var persistedState: TemporaryViewState?
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
 
         let store = TestStore(
             initialState: HomeFeature.State(
@@ -197,23 +203,53 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.modelContext = { context }
-            $0.appSettingsClient.setTemporaryViewState = { persistedState = $0 }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
         }
 
         await store.send(.selectedFilterChanged(.doneToday)) {
             $0.selectedFilter = .doneToday
         }
 
-        #expect(persistedState?.homeTaskListModeRawValue == HomeFeature.TaskListMode.todos.rawValue)
-        #expect(persistedState?.homeSelectedFilter == .doneToday)
-        #expect(persistedState?.homeSelectedTag == "Errands")
-        #expect(persistedState?.homeExcludedTags == ["Home"])
-        #expect(persistedState?.hideUnavailableRoutines == true)
-        #expect(persistedState?.homeSelectedTimelineRange == .week)
-        #expect(persistedState?.homeSelectedTimelineFilterType == .routines)
-        #expect(persistedState?.homeSelectedTimelineTag == "Chores")
-        #expect(persistedState?.statsSelectedRange == .week)
-        #expect(persistedState?.statsSelectedTag == nil)
+        #expect(persistedState.value?.homeTaskListModeRawValue == HomeFeature.TaskListMode.todos.rawValue)
+        #expect(persistedState.value?.homeSelectedFilter == .doneToday)
+        #expect(persistedState.value?.homeSelectedTag == "Errands")
+        #expect(persistedState.value?.homeExcludedTags == ["Home"])
+        #expect(persistedState.value?.hideUnavailableRoutines == true)
+        #expect(persistedState.value?.homeSelectedTimelineRange == .week)
+        #expect(persistedState.value?.homeSelectedTimelineFilterType == .routines)
+        #expect(persistedState.value?.homeSelectedTimelineTag == "Chores")
+        #expect(persistedState.value?.statsSelectedRange == .week)
+        #expect(persistedState.value?.statsSelectedTag == nil)
+    }
+
+    @Test
+    func macSidebarModeChanged_persistsDesktopSectionSelection() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                macSidebarMode: .routines,
+                selectedSettingsSection: .notifications
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.macSidebarModeChanged(.stats)) {
+            $0.macSidebarMode = .stats
+            $0.selectedTaskID = nil
+            $0.taskDetailState = nil
+            $0.selectedTaskReloadGuard = nil
+            $0.pendingSelectedChecklistReloadGuardTaskID = nil
+            $0.macSidebarSelection = nil
+        }
+
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
+        #expect(persistedState.value?.macSelectedSettingsSectionRawValue == SettingsMacSection.notifications.rawValue)
     }
 
     @Test

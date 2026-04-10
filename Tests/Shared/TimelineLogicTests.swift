@@ -289,15 +289,15 @@ struct TimelineLogicTests {
         let calendar = makeTestCalendar()
         let entry1 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T08:00:00Z"),
-            taskName: "A", taskEmoji: "🔧", tags: [], isOneOff: false
+            taskName: "A", taskEmoji: "🔧", tags: [], isOneOff: false, kind: .completed
         )
         let entry2 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T14:00:00Z"),
-            taskName: "B", taskEmoji: "🔧", tags: [], isOneOff: false
+            taskName: "B", taskEmoji: "🔧", tags: [], isOneOff: false, kind: .completed
         )
         let entry3 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-19T10:00:00Z"),
-            taskName: "C", taskEmoji: "🔧", tags: [], isOneOff: false
+            taskName: "C", taskEmoji: "🔧", tags: [], isOneOff: false, kind: .completed
         )
 
         let groups = TimelineLogic.groupedByDay(
@@ -318,11 +318,11 @@ struct TimelineLogicTests {
         let calendar = makeTestCalendar()
         let march18 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-18T10:00:00Z"),
-            taskName: "Old", taskEmoji: "🔧", tags: [], isOneOff: false
+            taskName: "Old", taskEmoji: "🔧", tags: [], isOneOff: false, kind: .completed
         )
         let march20 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-20T10:00:00Z"),
-            taskName: "New", taskEmoji: "🔧", tags: [], isOneOff: false
+            taskName: "New", taskEmoji: "🔧", tags: [], isOneOff: false, kind: .completed
         )
 
         let groups = TimelineLogic.groupedByDay(
@@ -474,7 +474,8 @@ struct TimelineLogicTests {
                 taskName: "A",
                 taskEmoji: "🔧",
                 tags: ["Focus", "Morning"],
-                isOneOff: false
+                isOneOff: false,
+                kind: .completed
             ),
             TimelineEntry(
                 id: UUID(),
@@ -483,7 +484,8 @@ struct TimelineLogicTests {
                 taskName: "B",
                 taskEmoji: "📝",
                 tags: ["focus", "Health"],
-                isOneOff: true
+                isOneOff: true,
+                kind: .completed
             )
         ]
 

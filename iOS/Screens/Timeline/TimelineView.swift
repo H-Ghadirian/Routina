@@ -2,6 +2,80 @@ import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
+private struct WrappingHStack: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    init(horizontalSpacing: CGFloat = 8, verticalSpacing: CGFloat = 8) {
+        self.horizontalSpacing = horizontalSpacing
+        self.verticalSpacing = verticalSpacing
+    }
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var currentRowWidth: CGFloat = 0
+        var currentRowHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var maxRowWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let spacing = currentRowWidth == 0 ? 0 : horizontalSpacing
+
+            if currentRowWidth + spacing + size.width > maxWidth, currentRowWidth > 0 {
+                totalHeight += currentRowHeight + verticalSpacing
+                maxRowWidth = max(maxRowWidth, currentRowWidth)
+                currentRowWidth = size.width
+                currentRowHeight = size.height
+            } else {
+                currentRowWidth += spacing + size.width
+                currentRowHeight = max(currentRowHeight, size.height)
+            }
+        }
+
+        maxRowWidth = max(maxRowWidth, currentRowWidth)
+        totalHeight += currentRowHeight
+
+        return CGSize(width: maxRowWidth, height: totalHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let proposedX = x == bounds.minX ? x : x + horizontalSpacing
+
+            if proposedX + size.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + verticalSpacing
+                rowHeight = 0
+            } else if x > bounds.minX {
+                x += horizontalSpacing
+            }
+
+            subview.place(
+                at: CGPoint(x: x, y: y),
+                proposal: ProposedViewSize(width: size.width, height: size.height)
+            )
+
+            x += size.width
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
 struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
     @Environment(\.calendar) private var calendar
@@ -68,6 +142,23 @@ struct TimelineView: View {
         store.availableTags
     }
 
+    private var availableExcludeTags: [String] {
+        let includeScopedEntries = TimelineLogic.filteredEntries(
+            logs: store.logs,
+            tasks: store.tasks,
+            range: store.selectedRange,
+            filterType: store.filterType,
+            now: Date(),
+            calendar: calendar
+        ).filter { entry in
+            TimelineLogic.matchesSelectedTag(store.selectedTag, in: entry.tags)
+        }
+
+        return TimelineLogic.availableTags(from: includeScopedEntries).filter { tag in
+            store.selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+        }
+    }
+
     private var hasActiveFilters: Bool {
         store.hasActiveFilters
     }
@@ -82,6 +173,12 @@ struct TimelineView: View {
             )
         } else {
             VStack(spacing: 0) {
+                if hasActiveFilters {
+                    activeFilterChipBar
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                }
+
                 if groupedByDay.isEmpty {
                     ContentUnavailableView(
                         "No matches",
@@ -93,6 +190,67 @@ struct TimelineView: View {
                 }
             }
         }
+    }
+
+    private var activeFilterChipBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Button("Clear All") {
+                    store.send(.clearFilters)
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+
+                if store.selectedRange != .all {
+                    compactFilterChip(title: store.selectedRange.rawValue) {
+                        store.send(.selectedRangeChanged(.all))
+                    }
+                }
+
+                if store.filterType != .all {
+                    compactFilterChip(title: store.filterType.rawValue) {
+                        store.send(.filterTypeChanged(.all))
+                    }
+                }
+
+                if let selectedTag = store.selectedTag {
+                    compactFilterChip(title: "#\(selectedTag)") {
+                        store.send(.selectedTagChanged(nil))
+                    }
+                }
+
+                ForEach(store.excludedTags.sorted(), id: \.self) { tag in
+                    compactFilterChip(title: "not #\(tag)", tintColor: .red) {
+                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
+                    }
+                }
+            }
+        }
+    }
+
+    private func compactFilterChip(
+        title: String,
+        tintColor: Color = .secondary,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.caption.weight(.medium))
+
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption2)
+            }
+            .foregroundStyle(tintColor)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(tintColor.opacity(0.12))
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var timelineList: some View {
@@ -149,23 +307,58 @@ struct TimelineView: View {
                 }
 
                 if !availableTags.isEmpty {
-                    Section("Tag") {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                timelineTagButton(title: "All Tags", isSelected: store.selectedTag == nil) {
-                                    store.send(.selectedTagChanged(nil))
-                                }
+                    Section("Include Tag") {
+                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                            timelineTagButton(title: "All Tags", isSelected: store.selectedTag == nil) {
+                                store.send(.selectedTagChanged(nil))
+                            }
 
-                                ForEach(availableTags, id: \.self) { tag in
-                                    timelineTagButton(
-                                        title: "#\(tag)",
-                                        isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
-                                    ) {
-                                        store.send(.selectedTagChanged(tag))
+                            ForEach(availableTags, id: \.self) { tag in
+                                timelineTagButton(
+                                    title: "#\(tag)",
+                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
+                                ) {
+                                    store.send(.selectedTagChanged(tag))
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                if !availableExcludeTags.isEmpty {
+                    Section("Exclude Tags") {
+                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                            ForEach(availableExcludeTags, id: \.self) { tag in
+                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                timelineTagButton(
+                                    title: "#\(tag)",
+                                    isSelected: isExcluded,
+                                    selectedColor: .red
+                                ) {
+                                    if isExcluded {
+                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
+                                    } else {
+                                        var newTags = store.excludedTags
+                                        newTags.insert(tag)
+                                        store.send(.excludedTagsChanged(newTags))
+                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                                            store.send(.selectedTagChanged(nil))
+                                        }
                                     }
                                 }
                             }
-                            .padding(.vertical, 4)
+                        }
+                        .padding(.vertical, 4)
+
+                        if !store.excludedTags.isEmpty {
+                            Text("Hiding items tagged: \(store.excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Select tags to hide done items that have them.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -287,6 +480,7 @@ struct TimelineView: View {
     private func timelineTagButton(
         title: String,
         isSelected: Bool,
+        selectedColor: Color = .accentColor,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -296,9 +490,9 @@ struct TimelineView: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.12))
+                        .fill(isSelected ? selectedColor.opacity(0.16) : Color.secondary.opacity(0.12))
                 )
-                .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                .foregroundStyle(isSelected ? selectedColor : .primary)
         }
         .buttonStyle(.plain)
     }
