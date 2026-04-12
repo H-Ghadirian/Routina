@@ -2981,6 +2981,10 @@ struct HomeFeatureTests {
             $0.taskListMode = .routines
         }
 
+        await store.send(.taskListModeChanged(.all)) {
+            $0.taskListMode = .all
+        }
+
         await store.send(.taskListModeChanged(.todos)) {
             $0.taskListMode = .todos
         }
@@ -3121,6 +3125,97 @@ struct HomeFeatureTests {
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines
             // no selection to clear — everything else stays the same
+        }
+    }
+
+    @Test
+    func taskListModeChanged_toAll_keepsCurrentSelection() async {
+        let context = makeInMemoryContext()
+        let todo = makeTask(
+            in: context,
+            name: "Buy milk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🛒",
+            scheduleMode: .oneOff
+        )
+        let todoID = todo.id
+
+        let initialState = HomeFeature.State(
+            routineTasks: [todo],
+            routineDisplays: [
+                makeDisplay(
+                    taskID: todoID,
+                    name: "Buy milk",
+                    emoji: "🛒",
+                    interval: 1,
+                    scheduleMode: .oneOff,
+                    lastDone: nil,
+                    isOneOffTask: true,
+                    isDoneToday: false
+                )
+            ],
+            selectedTaskID: todoID,
+            taskListMode: .todos
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskListModeChanged(.all)) {
+            $0.taskListMode = .all
+        }
+
+        #expect(store.state.selectedTaskID == todoID)
+    }
+
+    @Test
+    func taskListModeChanged_toAll_restoresSavedSnapshot() async {
+        let context = makeInMemoryContext()
+        let todoPlaceID = UUID()
+        let allPlaceID = UUID()
+
+        let initialState = HomeFeature.State(
+            taskListMode: .todos,
+            selectedFilter: .due,
+            selectedTag: "Errands",
+            excludedTags: ["Home"],
+            selectedManualPlaceFilterID: todoPlaceID,
+            tabFilterSnapshots: [
+                HomeFeature.TaskListMode.all.rawValue: TabFilterStateManager.Snapshot(
+                    selectedTag: "Focus",
+                    excludedTags: ["Work"],
+                    selectedFilter: .doneToday,
+                    selectedManualPlaceFilterID: allPlaceID
+                )
+            ]
+        )
+
+        let store = TestStore(initialState: initialState) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskListModeChanged(.all)) {
+            $0.taskListMode = .all
+            $0.selectedFilter = .doneToday
+            $0.selectedTag = "Focus"
+            $0.excludedTags = ["Work"]
+            $0.selectedManualPlaceFilterID = allPlaceID
+            $0.tabFilterSnapshots[HomeFeature.TaskListMode.todos.rawValue] = TabFilterStateManager.Snapshot(
+                selectedTag: "Errands",
+                excludedTags: ["Home"],
+                selectedFilter: .due,
+                selectedManualPlaceFilterID: todoPlaceID
+            )
         }
     }
 

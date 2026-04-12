@@ -225,6 +225,8 @@ extension HomeTCAView {
             return "Search dones"
         }
         switch store.taskListMode {
+        case .all:
+            return "Search routines and todos"
         case .routines:
             return "Search routines"
         case .todos:
@@ -291,6 +293,8 @@ extension HomeTCAView {
 
     func matchesCurrentTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
         switch store.taskListMode {
+        case .all:
+            return true
         case .routines:
             return !task.isOneOffTask
         case .todos:
@@ -340,7 +344,14 @@ extension HomeTCAView {
     var macSidebarNavigationTitle: String {
         switch store.macSidebarMode {
         case .routines:
-            return store.taskListMode == .todos ? "Todos" : "Routines"
+            switch store.taskListMode {
+            case .all:
+                return "All"
+            case .routines:
+                return "Routines"
+            case .todos:
+                return "Todos"
+            }
         case .timeline:
             return "Dones"
         case .stats:
@@ -373,6 +384,8 @@ extension HomeTCAView {
 
     var macFilterDetailDescription: String {
         switch store.taskListMode {
+        case .all:
+            return "Refine the combined list by status, tag, and place. Changes apply to the sidebar immediately."
         case .routines:
             return "Refine the routine list by status, tag, and place. Changes apply to the sidebar immediately."
         case .todos:
@@ -703,10 +716,8 @@ extension HomeTCAView {
 
         if pinnedTasks.isEmpty && sections.isEmpty && archivedTasks.isEmpty {
             emptyStateView(
-                title: store.taskListMode == .todos ? "No matching todos" : "No matching routines",
-                message: store.taskListMode == .todos
-                    ? "Try a different place or switch back to all todos."
-                    : "Try a different place or switch back to all routines.",
+                title: emptyTaskListTitle,
+                message: emptyTaskListMessage,
                 systemImage: "magnifyingglass"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1117,6 +1128,28 @@ extension HomeTCAView {
         case .stats: return "chart.bar.xaxis"
         case .settings: return "gearshape"
         case .addTask: return "plus"
+        }
+    }
+
+    private var emptyTaskListTitle: String {
+        switch store.taskListMode {
+        case .all:
+            return "No matching tasks"
+        case .routines:
+            return "No matching routines"
+        case .todos:
+            return "No matching todos"
+        }
+    }
+
+    private var emptyTaskListMessage: String {
+        switch store.taskListMode {
+        case .all:
+            return "Try a different place or clear a few filters."
+        case .routines:
+            return "Try a different place or switch back to all routines."
+        case .todos:
+            return "Try a different place or switch back to all todos."
         }
     }
 

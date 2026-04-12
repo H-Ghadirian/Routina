@@ -473,23 +473,32 @@ struct HomeTCAView: View {
         platformDeleteMenuItem(for: task)
     }
 
+    @ViewBuilder
     func statusBadge(for task: HomeFeature.RoutineDisplay) -> some View {
-        let style = badgeStyle(for: task)
+        if store.taskListMode == .todos,
+           task.isOneOffTask,
+           !task.isCompletedOneOff,
+           !task.isCanceledOneOff,
+           !task.isInProgress {
+            EmptyView()
+        } else {
+            let style = badgeStyle(for: task)
 
-        return HStack(spacing: 4) {
-            Image(systemName: style.systemImage)
-                .imageScale(.small)
+            HStack(spacing: 4) {
+                Image(systemName: style.systemImage)
+                    .imageScale(.small)
 
-            Text(style.title)
-                .lineLimit(1)
+                Text(style.title)
+                    .lineLimit(1)
+            }
+            .font(.subheadline.weight(.semibold))
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
+            .foregroundStyle(style.foregroundColor)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(style.backgroundColor, in: Capsule())
         }
-        .font(.subheadline.weight(.semibold))
-        .fixedSize(horizontal: true, vertical: false)
-        .layoutPriority(2)
-        .foregroundStyle(style.foregroundColor)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(style.backgroundColor, in: Capsule())
     }
 
     func tagFilterButton(

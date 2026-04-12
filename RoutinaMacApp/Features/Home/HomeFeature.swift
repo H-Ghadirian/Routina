@@ -5,6 +5,7 @@ import SwiftData
 @Reducer
 struct HomeFeature {
     enum TaskListMode: String, CaseIterable, Equatable, Identifiable {
+        case all = "All"
         case routines = "Routines"
         case todos = "Todos"
 
@@ -12,6 +13,7 @@ struct HomeFeature {
 
         var systemImage: String {
             switch self {
+            case .all: return "square.grid.2x2"
             case .routines: return "repeat"
             case .todos: return "checklist"
             }
@@ -19,6 +21,7 @@ struct HomeFeature {
 
         var accessibilityLabel: String {
             switch self {
+            case .all: return "Show all tasks"
             case .routines: return "Show routines"
             case .todos: return "Show todos"
             }
@@ -360,7 +363,15 @@ struct HomeFeature {
                 // Clear task selection if the selected task doesn't match the new mode
                 if let selectedTaskID = state.selectedTaskID,
                    let task = state.routineTasks.first(where: { $0.id == selectedTaskID }) {
-                    let keepSelection = mode == .todos ? task.isOneOffTask : !task.isOneOffTask
+                    let keepSelection: Bool
+                    switch mode {
+                    case .all:
+                        keepSelection = true
+                    case .routines:
+                        keepSelection = !task.isOneOffTask
+                    case .todos:
+                        keepSelection = task.isOneOffTask
+                    }
                     if !keepSelection {
                         state.selectedTaskID = nil
                         state.taskDetailState = nil
