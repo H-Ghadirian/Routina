@@ -109,16 +109,62 @@ struct AppFeatureTests {
 
     @Test
     func statsExcludedTagsChange_persistsSelection() async {
+        let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let now = makeDate("2026-04-10T10:00:00Z")
+        let calendar = makeTestCalendar()
+        let healthTask = makeTask(
+            in: context,
+            name: "Run",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🏃",
+            tags: ["Health"]
+        )
+        let focusTask = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            tags: ["Focus"]
+        )
+        let expectedChartPoints = RoutineCompletionStats.points(
+            for: .week,
+            timestamps: [],
+            referenceDate: now,
+            calendar: calendar
+        )
 
-        let store = TestStore(initialState: AppFeature.State()) {
+        let store = TestStore(
+            initialState: AppFeature.State(
+                stats: StatsFeature.State(tasks: [healthTask, focusTask], logs: [])
+            )
+        ) {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
 
         await store.send(.stats(.excludedTagsChanged(["Health", "Focus"]))) {
             $0.stats.excludedTags = ["Health", "Focus"]
+            $0.stats.availableTags = ["Focus", "Health"]
+            $0.stats.metrics = StatsFeature.Metrics(
+                chartPoints: expectedChartPoints,
+                totalDoneCount: 0,
+                totalCanceledCount: 0,
+                activeRoutineCount: 0,
+                archivedRoutineCount: 0,
+                totalCount: 0,
+                averagePerDay: 0,
+                highlightedBusiestDay: nil,
+                activeDayCount: 0,
+                chartUpperBound: 1,
+                sparklinePoints: expectedChartPoints,
+                sparklineMaxCount: 1,
+                xAxisDates: expectedChartPoints.map(\.date)
+            )
         }
 
         #expect(persistedState.value?.statsExcludedTags == ["Health", "Focus"])
@@ -127,6 +173,14 @@ struct AppFeatureTests {
     @Test
     func statsClearFilters_resetsAndPersistsClearedState() async {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let now = makeDate("2026-04-10T10:00:00Z")
+        let calendar = makeTestCalendar()
+        let expectedChartPoints = RoutineCompletionStats.points(
+            for: .week,
+            timestamps: [],
+            referenceDate: now,
+            calendar: calendar
+        )
 
         let store = TestStore(
             initialState: AppFeature.State(
@@ -143,6 +197,7 @@ struct AppFeatureTests {
             AppFeature()
         } withDependencies: {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
 
         await store.send(.stats(.clearFilters)) {
@@ -150,6 +205,21 @@ struct AppFeatureTests {
             $0.stats.taskTypeFilter = .all
             $0.stats.selectedTag = nil
             $0.stats.excludedTags = []
+            $0.stats.metrics = StatsFeature.Metrics(
+                chartPoints: expectedChartPoints,
+                totalDoneCount: 0,
+                totalCanceledCount: 0,
+                activeRoutineCount: 0,
+                archivedRoutineCount: 0,
+                totalCount: 0,
+                averagePerDay: 0,
+                highlightedBusiestDay: nil,
+                activeDayCount: 0,
+                chartUpperBound: 1,
+                sparklinePoints: expectedChartPoints,
+                sparklineMaxCount: 1,
+                xAxisDates: expectedChartPoints.map(\.date)
+            )
         }
 
         #expect(persistedState.value?.statsSelectedRange == .week)

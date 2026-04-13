@@ -4,6 +4,11 @@ import SwiftUI
 @Observable
 final class AddEditFormCoordinator {
     var scrollTarget: String?
+    var nameFocusRequestID: Int = 0
+
+    func requestNameFocus() {
+        nameFocusRequestID += 1
+    }
 }
 
 private struct AddEditFormCoordinatorKey: EnvironmentKey {

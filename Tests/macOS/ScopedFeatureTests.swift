@@ -390,6 +390,22 @@ struct StatsFeatureTests {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-20T10:00:00Z")
         let calendar = makeTestCalendar()
+        let allChartPoints = RoutineCompletionStats.points(
+            for: .week,
+            timestamps: [
+                makeDate("2026-03-19T08:00:00Z"),
+                makeDate("2026-03-20T08:00:00Z"),
+                makeDate("2026-03-20T09:00:00Z")
+            ],
+            referenceDate: now,
+            calendar: calendar
+        )
+        let focusOnlyChartPoints = RoutineCompletionStats.points(
+            for: .week,
+            timestamps: [makeDate("2026-03-19T08:00:00Z")],
+            referenceDate: now,
+            calendar: calendar
+        )
 
         let focusTask = makeTask(
             in: context,
@@ -431,17 +447,41 @@ struct StatsFeatureTests {
             $0.logs = [focusLog, healthLog, hybridLog]
             $0.availableTags = ["Focus", "Health"]
             $0.filteredTaskCount = 3
-            $0.metrics.totalDoneCount = 3
-            $0.metrics.activeRoutineCount = 3
-            $0.metrics.totalCount = 3
+            $0.metrics = StatsFeature.Metrics(
+                chartPoints: allChartPoints,
+                totalDoneCount: 3,
+                totalCanceledCount: 0,
+                activeRoutineCount: 3,
+                archivedRoutineCount: 0,
+                totalCount: 3,
+                averagePerDay: 3.0 / 7.0,
+                highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 2),
+                activeDayCount: 2,
+                chartUpperBound: 3,
+                sparklinePoints: allChartPoints,
+                sparklineMaxCount: 2,
+                xAxisDates: allChartPoints.map(\.date)
+            )
         }
 
         await store.send(.excludedTagsChanged(["Health"])) {
             $0.excludedTags = ["Health"]
             $0.filteredTaskCount = 1
-            $0.metrics.totalDoneCount = 1
-            $0.metrics.activeRoutineCount = 1
-            $0.metrics.totalCount = 1
+            $0.metrics = StatsFeature.Metrics(
+                chartPoints: focusOnlyChartPoints,
+                totalDoneCount: 1,
+                totalCanceledCount: 0,
+                activeRoutineCount: 1,
+                archivedRoutineCount: 0,
+                totalCount: 1,
+                averagePerDay: 1.0 / 7.0,
+                highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-19T00:00:00Z"), count: 1),
+                activeDayCount: 1,
+                chartUpperBound: 2,
+                sparklinePoints: focusOnlyChartPoints,
+                sparklineMaxCount: 1,
+                xAxisDates: focusOnlyChartPoints.map(\.date)
+            )
         }
 
         await store.send(.selectedTagChanged("Focus")) {
@@ -454,9 +494,21 @@ struct StatsFeatureTests {
             $0.excludedTags = []
             $0.availableTags = ["Focus"]
             $0.filteredTaskCount = 1
-            $0.metrics.totalDoneCount = 1
-            $0.metrics.activeRoutineCount = 1
-            $0.metrics.totalCount = 1
+            $0.metrics = StatsFeature.Metrics(
+                chartPoints: focusOnlyChartPoints,
+                totalDoneCount: 1,
+                totalCanceledCount: 0,
+                activeRoutineCount: 1,
+                archivedRoutineCount: 0,
+                totalCount: 1,
+                averagePerDay: 1.0 / 7.0,
+                highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-19T00:00:00Z"), count: 1),
+                activeDayCount: 1,
+                chartUpperBound: 2,
+                sparklinePoints: focusOnlyChartPoints,
+                sparklineMaxCount: 1,
+                xAxisDates: focusOnlyChartPoints.map(\.date)
+            )
         }
 
         #expect(store.state.selectedTag == "Focus")

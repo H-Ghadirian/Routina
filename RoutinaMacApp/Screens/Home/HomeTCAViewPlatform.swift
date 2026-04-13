@@ -244,6 +244,16 @@ extension HomeTCAView {
     func openAddTask() {
         store.send(.macSidebarModeChanged(.addTask))
         store.send(.setAddRoutineSheet(true))
+        scheduleAddTaskNameFocus()
+    }
+
+    private func scheduleAddTaskNameFocus() {
+        let delays: [TimeInterval] = [0, 0.05, 0.15, 0.3, 0.6, 1.0, 1.5]
+        for delay in delays {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                addEditFormCoordinator.requestNameFocus()
+            }
+        }
     }
 
     var filterPicker: some View {

@@ -361,7 +361,7 @@ struct HomeFeatureTests {
         #expect(persistedState.value?.homeSelectedTimelineFilterType == .routines)
         #expect(persistedState.value?.homeSelectedTimelineTag == "Chores")
         #expect(persistedState.value?.selectedAppTabRawValue == Tab.stats.rawValue)
-        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.routines.rawValue)
         #expect(persistedState.value?.timelineSelectedRange == .month)
         #expect(persistedState.value?.timelineFilterType == .todos)
         #expect(persistedState.value?.timelineSelectedTag == "Deep")

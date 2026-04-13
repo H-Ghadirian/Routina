@@ -87,6 +87,10 @@ struct TaskFormModel {
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
 
+    // MARK: Focus
+    var nameFocus: FocusState<Bool>.Binding? = nil
+    var nameFocusRequestID: Int = 0
+
     // MARK: Extras
     var autofocusName: Bool = false
     var onDelete: (() -> Void)? = nil

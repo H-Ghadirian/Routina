@@ -75,7 +75,8 @@ struct AppFeature {
                  .stats(.taskTypeFilterChanged),
                  .stats(.selectedTagChanged),
                  .stats(.selectedImportanceUrgencyFilterChanged),
-                 .stats(.excludedTagsChanged):
+                 .stats(.excludedTagsChanged),
+                 .stats(.clearFilters):
                 persistTemporaryViewState(state)
                 return .none
             default:
@@ -321,6 +322,7 @@ struct StatsFeature {
         case selectedTagChanged(String?)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case excludedTagsChanged(Set<String>)
+        case clearFilters
     }
 
     @Dependency(\.calendar) var calendar
@@ -357,6 +359,15 @@ struct StatsFeature {
 
             case let .excludedTagsChanged(tags):
                 state.excludedTags = tags
+                refreshDerivedState(&state)
+                return .none
+
+            case .clearFilters:
+                state.selectedRange = .week
+                state.taskTypeFilter = .all
+                state.selectedTag = nil
+                state.excludedTags = []
+                state.selectedImportanceUrgencyFilter = nil
                 refreshDerivedState(&state)
                 return .none
             }

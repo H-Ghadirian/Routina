@@ -89,7 +89,7 @@ struct AddRoutineFeatureTests {
         let store = TestStore(
             initialState: AddRoutineFeature.State(
                 relationships: [
-                    RoutineTaskRelationship(targetTaskID: keptID, kind: .dependsOn),
+                    RoutineTaskRelationship(targetTaskID: keptID, kind: .blockedBy),
                     RoutineTaskRelationship(targetTaskID: removedID, kind: .blocks)
                 ]
             )
@@ -106,7 +106,7 @@ struct AddRoutineFeatureTests {
 
         await store.send(.availableRelationshipTasksChanged([keptCandidate])) {
             $0.availableRelationshipTasks = [keptCandidate]
-            $0.relationships = [RoutineTaskRelationship(targetTaskID: keptID, kind: .dependsOn)]
+            $0.relationships = [RoutineTaskRelationship(targetTaskID: keptID, kind: .blockedBy)]
         }
     }
 

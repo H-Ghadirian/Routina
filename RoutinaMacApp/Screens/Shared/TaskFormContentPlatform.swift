@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import AppKit
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
@@ -6,6 +7,7 @@ import UniformTypeIdentifiers
 struct TaskFormContent: View {
     let model: TaskFormModel
 
+    @FocusState private var fallbackNameFocused: Bool
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isImageFileImporterPresented = false
     @State private var isFileImporterPresented = false
@@ -27,6 +29,10 @@ struct TaskFormContent: View {
 
     private var sectionCardStroke: Color {
         Color.gray.opacity(0.18)
+    }
+
+    private var nameFocusBinding: FocusState<Bool>.Binding {
+        model.nameFocus ?? $fallbackNameFocused
     }
 
     var body: some View {
@@ -66,6 +72,12 @@ struct TaskFormContent: View {
         .onChange(of: selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
             loadPickedImage(from: newItem)
+        }
+        .onAppear {
+            guard model.autofocusName else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                nameFocusBinding.wrappedValue = true
+            }
         }
     }
 
@@ -110,8 +122,7 @@ struct TaskFormContent: View {
                             .background(Circle().fill(Color.accentColor.opacity(0.16)))
 
                         VStack(alignment: .leading, spacing: 10) {
-                            TextField("Task name", text: model.name)
-                                .textFieldStyle(.roundedBorder)
+                            taskNameField
 
                             if let msg = model.nameValidationMessage {
                                 Text(msg)
@@ -135,8 +146,7 @@ struct TaskFormContent: View {
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 6) {
-                        TextField("Task name", text: model.name)
-                            .textFieldStyle(.roundedBorder)
+                        taskNameField
 
                         if let msg = model.nameValidationMessage {
                             Text(msg)
@@ -179,6 +189,16 @@ struct TaskFormContent: View {
             }
         }
         .id("Identity")
+    }
+
+    private var taskNameField: some View {
+        MacFocusableTextField(
+            placeholder: "Task name",
+            text: model.name,
+            isFocusRequested: model.autofocusName,
+            focusRequestID: model.nameFocusRequestID
+        )
+        .frame(height: 28)
     }
 
     // MARK: Behavior
@@ -1127,6 +1147,75 @@ struct TaskFormContent: View {
         defer { url.stopAccessingSecurityScopedResource() }
         guard let data = try? Data(contentsOf: url), data.count <= maxSize else { return }
         model.onAttachmentPicked(data, url.lastPathComponent)
+    }
+}
+
+private struct MacFocusableTextField: NSViewRepresentable {
+    let placeholder: String
+    let text: Binding<String>
+    let isFocusRequested: Bool
+    let focusRequestID: Int
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        var parent: MacFocusableTextField
+        var lastAppliedFocusRequestID: Int?
+
+        init(parent: MacFocusableTextField) {
+            self.parent = parent
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            guard let textField = notification.object as? NSTextField else { return }
+            if parent.text.wrappedValue != textField.stringValue {
+                parent.text.wrappedValue = textField.stringValue
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeNSView(context: Context) -> NSTextField {
+        let textField = NSTextField(string: text.wrappedValue)
+        textField.placeholderString = placeholder
+        textField.isBordered = true
+        textField.isBezeled = true
+        textField.bezelStyle = .roundedBezel
+        textField.focusRingType = .default
+        textField.delegate = context.coordinator
+        return textField
+    }
+
+    func updateNSView(_ nsView: NSTextField, context: Context) {
+        context.coordinator.parent = self
+
+        if nsView.stringValue != text.wrappedValue {
+            nsView.stringValue = text.wrappedValue
+        }
+
+        guard isFocusRequested else {
+            context.coordinator.lastAppliedFocusRequestID = nil
+            return
+        }
+
+        guard context.coordinator.lastAppliedFocusRequestID != focusRequestID else {
+            return
+        }
+
+        context.coordinator.lastAppliedFocusRequestID = focusRequestID
+        let delays: [TimeInterval] = [0, 0.05, 0.15, 0.3, 0.6, 1.0, 1.5]
+        for delay in delays {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                focus(nsView)
+            }
+        }
+    }
+
+    private func focus(_ textField: NSTextField) {
+        guard let window = textField.window else { return }
+        window.makeFirstResponder(textField)
+        textField.currentEditor()?.selectedRange = NSRange(location: textField.stringValue.count, length: 0)
     }
 }
 
