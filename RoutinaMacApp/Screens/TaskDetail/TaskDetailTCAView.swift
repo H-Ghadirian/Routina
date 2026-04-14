@@ -210,6 +210,7 @@ struct TaskDetailTCAView: View {
             priority: store.editPriority,
             importance: store.editImportance,
             urgency: store.editUrgency,
+            color: store.editColor,
             imageData: store.editImageData,
             editAttachments: store.editAttachments,
             taskAttachments: store.taskAttachments,
@@ -1813,6 +1814,7 @@ struct TaskDetailTCAView: View {
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
+        color: RoutineTaskColor,
         imageData: Data?,
         editAttachments: [AttachmentItem],
         taskAttachments: [AttachmentItem],
@@ -1884,6 +1886,7 @@ struct TaskDetailTCAView: View {
             || priority != currentPriority
             || importance != currentImportance
             || urgency != currentUrgency
+            || color != task.color
             || imageData != currentImageData
             || editAttachments != taskAttachments
             || selectedPlaceID != task.placeID

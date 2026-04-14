@@ -255,10 +255,46 @@ struct TaskFormContent: View {
                         .buttonStyle(.plain)
                         .help(color.displayName)
                     }
+
+                    // Custom colour picker
+                    ZStack {
+                        ColorPicker(
+                            "",
+                            selection: customColorPickerBinding,
+                            supportsOpacity: false
+                        )
+                        .labelsHidden()
+                        .frame(width: 26, height: 26)
+                        .clipShape(Circle())
+
+                        if case .custom = model.color.wrappedValue {
+                            Circle()
+                                .strokeBorder(Color.primary, lineWidth: 2)
+                                .frame(width: 32, height: 32)
+                        }
+                    }
+                    .frame(width: 32, height: 32)
+                    .help("Custom color")
                 }
                 .padding(.vertical, 4)
             }
         }
+    }
+
+    private var customColorPickerBinding: Binding<Color> {
+        Binding(
+            get: {
+                if case .custom(let hex) = model.color.wrappedValue {
+                    return Color(hex: hex)
+                }
+                return .white
+            },
+            set: { color in
+                if let hex = color.hexString {
+                    model.color.wrappedValue = .custom(hex: hex)
+                }
+            }
+        )
     }
 
     // MARK: Behavior

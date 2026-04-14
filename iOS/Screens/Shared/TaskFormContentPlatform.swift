@@ -312,12 +312,48 @@ struct TaskFormContent: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(color.displayName)
                     }
+
+                    // Custom colour picker
+                    ZStack {
+                        ColorPicker(
+                            "",
+                            selection: customColorPickerBinding,
+                            supportsOpacity: false
+                        )
+                        .labelsHidden()
+                        .frame(width: 30, height: 30)
+                        .clipShape(Circle())
+
+                        if case .custom = model.color.wrappedValue {
+                            Circle()
+                                .strokeBorder(Color.primary, lineWidth: 2.5)
+                                .frame(width: 36, height: 36)
+                        }
+                    }
+                    .frame(width: 36, height: 36)
+                    .accessibilityLabel("Custom color")
                 }
                 .padding(.vertical, 6)
             }
             Text("Sets a tint on the task row and detail screen background.")
                 .font(.caption).foregroundStyle(.secondary)
         }
+    }
+
+    private var customColorPickerBinding: Binding<Color> {
+        Binding(
+            get: {
+                if case .custom(let hex) = model.color.wrappedValue {
+                    return Color(hex: hex)
+                }
+                return .white
+            },
+            set: { color in
+                if let hex = color.hexString {
+                    model.color.wrappedValue = .custom(hex: hex)
+                }
+            }
+        )
     }
 
     private var notesSection: some View {
