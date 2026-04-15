@@ -2,80 +2,6 @@ import ComposableArchitecture
 import MapKit
 import SwiftUI
 
-private struct WrappingHStack: Layout {
-    let horizontalSpacing: CGFloat
-    let verticalSpacing: CGFloat
-
-    init(horizontalSpacing: CGFloat = 8, verticalSpacing: CGFloat = 8) {
-        self.horizontalSpacing = horizontalSpacing
-        self.verticalSpacing = verticalSpacing
-    }
-
-    func sizeThatFits(
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var currentRowWidth: CGFloat = 0
-        var currentRowHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-        var maxRowWidth: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            let spacing = currentRowWidth == 0 ? 0 : horizontalSpacing
-
-            if currentRowWidth + spacing + size.width > maxWidth, currentRowWidth > 0 {
-                totalHeight += currentRowHeight + verticalSpacing
-                maxRowWidth = max(maxRowWidth, currentRowWidth)
-                currentRowWidth = size.width
-                currentRowHeight = size.height
-            } else {
-                currentRowWidth += spacing + size.width
-                currentRowHeight = max(currentRowHeight, size.height)
-            }
-        }
-
-        maxRowWidth = max(maxRowWidth, currentRowWidth)
-        totalHeight += currentRowHeight
-
-        return CGSize(width: maxRowWidth, height: totalHeight)
-    }
-
-    func placeSubviews(
-        in bounds: CGRect,
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            let proposedX = x == bounds.minX ? x : x + horizontalSpacing
-
-            if proposedX + size.width > bounds.maxX, x > bounds.minX {
-                x = bounds.minX
-                y += rowHeight + verticalSpacing
-                rowHeight = 0
-            } else if x > bounds.minX {
-                x += horizontalSpacing
-            }
-
-            subview.place(
-                at: CGPoint(x: x, y: y),
-                proposal: ProposedViewSize(width: size.width, height: size.height)
-            )
-
-            x += size.width
-            rowHeight = max(rowHeight, size.height)
-        }
-    }
-}
-
 private enum HomeSidebarSizing {
     static let minWidth: CGFloat = 320
     static let idealWidth: CGFloat = 380
@@ -256,44 +182,6 @@ extension HomeTCAView {
         }
     }
 
-    var filterPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Show")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(macAvailableFilters) { filter in
-                    Button {
-                        store.send(.selectedFilterChanged(filter))
-                    } label: {
-                        Text(filter.rawValue)
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(
-                                store.selectedFilter == filter ? Color.white : Color.primary
-                            )
-                            .background(
-                                Capsule()
-                                    .fill(
-                                        store.selectedFilter == filter
-                                            ? Color.accentColor
-                                            : Color.secondary.opacity(0.10)
-                                    )
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
     @ViewBuilder
     var locationFilterPanel: some View {
         EmptyView()
@@ -418,31 +306,6 @@ extension HomeTCAView {
             store.send(.selectedFilterChanged(.all))
             store.send(.clearOptionalFilters)
         }
-    }
-
-    func macSidebarSectionCard<Content: View>(
-        title: String? = nil,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let title {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-
-            content()
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.quaternary.opacity(0.32))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(.white.opacity(0.06), lineWidth: 1)
-        )
     }
 
     var timelineEntries: [TimelineEntry] {
@@ -1018,134 +881,12 @@ extension HomeTCAView {
     private var macFormSectionNav: some View {
         let isAdding = isMacAddTaskMode
         let available = isAdding ? macAddFormSections : macEditFormSections
-        let sections = addEditFormCoordinator.orderedSections(available: available)
-
-        return VStack(alignment: .leading, spacing: 0) {
+        return HomeMacFormSectionNavView(
+            availableSections: available,
+            coordinator: addEditFormCoordinator,
+            draggedSection: $draggedSection
+        ) {
             macSidebarHeader
-
-            Divider()
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(sections, id: \.self) { section in
-                        let isMovable = section != "Identity"
-                        Button {
-                            addEditFormCoordinator.scrollTarget = section
-                        } label: {
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(Color.accentColor.opacity(0.12))
-                                    Image(systemName: formSectionIcon(for: section))
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Color.accentColor)
-                                }
-                                .frame(width: 32, height: 32)
-
-                                Text(section)
-                                    .font(.body.weight(.medium))
-                                    .foregroundStyle(.primary)
-
-                                Spacer(minLength: 0)
-
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.secondary.opacity(0.6))
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 11)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(Color.secondary.opacity(0.07))
-                            )
-                            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .opacity(draggedSection == section ? 0.4 : 1)
-                        .if(isMovable) { view in
-                            view
-                                .draggable(section) {
-                                    formSectionDragPreview(for: section)
-                                }
-                                .contextMenu {
-                                    formSectionContextMenu(for: section, available: available)
-                                }
-                        }
-                        .if(isMovable) { view in
-                            view.onDrop(of: [.text], delegate: SectionDropDelegate(
-                                item: section,
-                                coordinator: addEditFormCoordinator,
-                                draggedSection: $draggedSection,
-                                available: available
-                            ))
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 12)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func formSectionDragPreview(for section: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: formSectionIcon(for: section))
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-            Text(section)
-                .font(.body.weight(.medium))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(.ultraThickMaterial)
-        )
-        .onAppear { draggedSection = section }
-    }
-
-    @ViewBuilder
-    private func formSectionContextMenu(for section: String, available: [String]) -> some View {
-        let ordered = addEditFormCoordinator.orderedSections(available: available)
-        let movableOrdered = ordered.filter { $0 != "Identity" }
-        let isFirst = movableOrdered.first == section
-        let isLast = movableOrdered.last == section
-
-        Button {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                addEditFormCoordinator.moveUp(section)
-            }
-        } label: {
-            Label("Move Up", systemImage: "arrow.up")
-        }
-        .disabled(isFirst)
-
-        Button {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                addEditFormCoordinator.moveDown(section)
-            }
-        } label: {
-            Label("Move Down", systemImage: "arrow.down")
-        }
-        .disabled(isLast)
-    }
-
-    private func formSectionIcon(for section: String) -> String {
-        switch section {
-        case "Identity":           return "person.fill"
-        case "Behavior":           return "repeat"
-        case "Places":             return "mappin.and.ellipse"
-        case "Importance & Urgency": return "flag.fill"
-        case "Tags":               return "tag.fill"
-        case "Linked tasks":       return "link"
-        case "Link URL":           return "globe"
-        case "Notes":              return "note.text"
-        case "Steps":              return "list.number"
-        case "Image":              return "photo.fill"
-        case "Attachment":         return "paperclip"
-        case "Danger Zone":        return "exclamationmark.triangle.fill"
-        default:                   return "circle.fill"
         }
     }
 
@@ -1240,45 +981,34 @@ extension HomeTCAView {
             showsClearButton: macHasCustomFiltersApplied,
             onClear: { clearAllMacFilters() }
         ) {
-                macSidebarSectionCard {
-                    filterPicker
-                }
-
-                macSidebarSectionCard(title: "Importance & Urgency") {
-                    macImportanceUrgencyMatrix
-                }
-
-                if !availableTags.isEmpty {
-                    macSidebarSectionCard {
-                        tagFilterBar
-                    }
-                }
-
-                if hasPlaceAwareContent {
-                    macSidebarSectionCard {
-                        MacPlaceFilterPanel(
-                            options: macPlaceFilterOptions,
-                            selectedPlaceID: manualPlaceFilterBinding,
-                            hideUnavailableRoutines: hideUnavailableRoutinesBinding,
-                            showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
-                            currentLocation: store.locationSnapshot.coordinate,
-                            manualPlaceFilterDescription: manualPlaceFilterDescription,
-                            locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
-                            onManagePlaces: { openSettingsPlacesInSidebar() }
-                        )
-                    }
-                }
+            HomeMacRoutineFiltersDetailView(
+                availableFilters: macAvailableFilters,
+                selectedFilter: Binding(
+                    get: { store.selectedFilter },
+                    set: { store.send(.selectedFilterChanged($0)) }
+                ),
+                selectedImportanceUrgencyFilter: Binding(
+                    get: { store.selectedImportanceUrgencyFilter },
+                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                ),
+                importanceUrgencySummary: importanceUrgencyFilterSummary,
+                showsTagSection: !availableTags.isEmpty,
+                showsPlaceSection: hasPlaceAwareContent
+            ) {
+                tagFilterBar
+            } placeSectionContent: {
+                MacPlaceFilterPanel(
+                    options: macPlaceFilterOptions,
+                    selectedPlaceID: manualPlaceFilterBinding,
+                    hideUnavailableRoutines: hideUnavailableRoutinesBinding,
+                    showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
+                    currentLocation: store.locationSnapshot.coordinate,
+                    manualPlaceFilterDescription: manualPlaceFilterDescription,
+                    locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
+                    onManagePlaces: { openSettingsPlacesInSidebar() }
+                )
+            }
         }
-    }
-
-    private var macImportanceUrgencyMatrix: some View {
-        HomeMacImportanceUrgencyMatrixView(
-            selectedFilter: Binding(
-                get: { store.selectedImportanceUrgencyFilter },
-                set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-            ),
-            summaryText: importanceUrgencyFilterSummary
-        )
     }
 
     private var macTimelineFiltersDetailView: some View {
@@ -1288,246 +1018,92 @@ extension HomeTCAView {
             onAvailableTagsChange: { validateSelectedTimelineTag() },
             availableTags: availableTimelineTags
         ) {
-                macSidebarSectionCard(title: "Range") {
-                    timelineRangePicker
-                }
-
-                if store.routineTasks.contains(where: \.isOneOffTask) {
-                    macSidebarSectionCard(title: "Type") {
-                        timelineTypePicker
-                    }
-                }
-
-                macSidebarSectionCard(title: "Importance & Urgency") {
-                    HomeMacImportanceUrgencyMatrixView(
-                        selectedFilter: Binding(
-                            get: { store.selectedTimelineImportanceUrgencyFilter },
-                            set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
-                        ),
-                        summaryText: timelineImportanceUrgencySummary
-                    )
-                }
-
-                if !availableTimelineTags.isEmpty {
-                    macSidebarSectionCard(title: "Tags") {
-                        VStack(alignment: .leading, spacing: 20) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Include Tag")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 4)
-
-                                Text(timelineTagSelectionSummary)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 4)
-
-                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                    statsTagChip(
-                                        title: "All Tags",
-                                        count: filteredTimelineEntriesForTagging.count,
-                                        systemImage: "tag.slash.fill",
-                                        isSelected: store.selectedTimelineTag == nil
-                                    ) {
-                                        store.send(.selectedTimelineTagChanged(nil))
-                                    }
-
-                                    ForEach(availableTimelineTags, id: \.self) { tag in
-                                        statsTagChip(
-                                            title: "#\(tag)",
-                                            count: timelineTagCount(for: tag),
-                                            systemImage: "tag.fill",
-                                            isSelected: store.selectedTimelineTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
-                                        ) {
-                                            store.send(.selectedTimelineTagChanged(tag))
-                                        }
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-
-                            if !availableTimelineExcludeTags.isEmpty {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Exclude Tags")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.secondary)
-                                        .padding(.horizontal, 4)
-
-                                    Text(timelineExcludedTagSummary)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .padding(.horizontal, 4)
-
-                                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                        ForEach(availableTimelineExcludeTags, id: \.self) { tag in
-                                            let isExcluded = store.selectedTimelineExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                                            statsTagChip(
-                                                title: "#\(tag)",
-                                                count: timelineTagCount(for: tag),
-                                                systemImage: "tag.slash.fill",
-                                                isSelected: isExcluded,
-                                                selectedColor: .red
-                                            ) {
-                                                if isExcluded {
-                                                    store.send(.selectedTimelineExcludedTagsChanged(store.selectedTimelineExcludedTags.filter { $0 != tag }))
-                                                } else {
-                                                    var newTags = store.selectedTimelineExcludedTags
-                                                    newTags.insert(tag)
-                                                    store.send(.selectedTimelineExcludedTagsChanged(newTags))
-                                                    if store.selectedTimelineTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                                                        store.send(.selectedTimelineTagChanged(nil))
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }
+            HomeMacTimelineFiltersDetailView(
+                selectedRange: Binding(
+                    get: { store.selectedTimelineRange },
+                    set: { store.send(.selectedTimelineRangeChanged($0)) }
+                ),
+                selectedType: Binding(
+                    get: { store.selectedTimelineFilterType },
+                    set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
+                ),
+                selectedImportanceUrgencyFilter: Binding(
+                    get: { store.selectedTimelineImportanceUrgencyFilter },
+                    set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
+                ),
+                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask),
+                importanceUrgencySummary: timelineImportanceUrgencySummary,
+                allTagsCount: filteredTimelineEntriesForTagging.count,
+                availableTags: availableTimelineTags,
+                availableExcludeTags: availableTimelineExcludeTags,
+                selectedTag: store.selectedTimelineTag,
+                selectedExcludedTags: store.selectedTimelineExcludedTags,
+                tagSelectionSummary: timelineTagSelectionSummary,
+                excludedTagSummary: timelineExcludedTagSummary,
+                tagCount: { tag in
+                    timelineTagCount(for: tag)
+                },
+                onSelectTag: { tag in
+                    store.send(.selectedTimelineTagChanged(tag))
+                },
+                onToggleExcludedTag: { tag in
+                    if store.selectedTimelineExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+                        store.send(.selectedTimelineExcludedTagsChanged(store.selectedTimelineExcludedTags.filter { $0 != tag }))
+                    } else {
+                        var newTags = store.selectedTimelineExcludedTags
+                        newTags.insert(tag)
+                        store.send(.selectedTimelineExcludedTagsChanged(newTags))
+                        if store.selectedTimelineTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                            store.send(.selectedTimelineTagChanged(nil))
                         }
                     }
                 }
+            )
         }
     }
 
     var macStatsSidebarView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Show")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
-
-                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                        ForEach(StatsTaskTypeFilter.allCases) { filter in
-                            statsTaskTypeChip(filter)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Time Range")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
-
-                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                        ForEach(DoneChartRange.allCases) { range in
-                            statsRangeChip(range)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Importance & Urgency")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
-
-                    Button(statsStore?.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
-                        statsStore?.send(.selectedImportanceUrgencyFilterChanged(nil))
-                    }
-                    .buttonStyle(.plain)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(statsStore?.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
-                    .padding(.horizontal, 4)
-
-                    ImportanceUrgencyMatrixPicker(
-                        selectedFilter: Binding(
-                            get: { statsStore?.selectedImportanceUrgencyFilter },
-                            set: { statsStore?.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                        )
-                    )
-                    .frame(maxWidth: 420, alignment: .leading)
-                    .padding(.horizontal, 4)
-
-                    Text(statsImportanceUrgencySummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
-                }
-
-                if !statsAllTags.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Filter by Tag")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 4)
-
-                        Text(statsTagSelectionSummary)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 4)
-
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            statsTagChip(
-                                title: "All Tags",
-                                count: statsTaskCountForSelectedTypeFilter,
-                                systemImage: "tag.slash.fill",
-                                isSelected: selectedStatsTag == nil
-                            ) {
-                                statsStore?.send(.selectedTagChanged(nil))
-                            }
-
-                            ForEach(statsTagSummaries) { summary in
-                                statsTagChip(
-                                    title: "#\(summary.name)",
-                                    count: summary.linkedRoutineCount,
-                                    systemImage: "tag.fill",
-                                    isSelected: selectedStatsTag == summary.name
-                                ) {
-                                    statsStore?.send(.selectedTagChanged(summary.name))
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Exclude Tags")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 4)
-
-                        Text(statsExcludedTagSummary)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 4)
-
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            ForEach(statsAvailableExcludeTags, id: \.self) { tag in
-                                let isExcluded = selectedStatsExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                                statsTagChip(
-                                    title: "#\(tag)",
-                                    count: statsTagCount(for: tag),
-                                    systemImage: "tag.slash.fill",
-                                    isSelected: isExcluded,
-                                    selectedColor: .red
-                                ) {
-                                    if isExcluded {
-                                        statsStore?.send(.excludedTagsChanged(selectedStatsExcludedTags.filter { $0 != tag }))
-                                    } else {
-                                        var newTags = selectedStatsExcludedTags
-                                        newTags.insert(tag)
-                                        statsStore?.send(.excludedTagsChanged(newTags))
-                                        if selectedStatsTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                                            statsStore?.send(.selectedTagChanged(nil))
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+        HomeMacStatsSidebarView(
+            selectedTaskTypeFilter: statsStore?.taskTypeFilter ?? .all,
+            onSelectTaskTypeFilter: { filter in
+                statsStore?.send(.taskTypeFilterChanged(filter))
+            },
+            selectedRange: statsStore?.selectedRange ?? .week,
+            onSelectRange: { range in
+                statsStore?.send(.selectedRangeChanged(range))
+            },
+            selectedImportanceUrgencyFilter: Binding(
+                get: { statsStore?.selectedImportanceUrgencyFilter },
+                set: { statsStore?.send(.selectedImportanceUrgencyFilterChanged($0)) }
+            ),
+            importanceUrgencySummary: statsImportanceUrgencySummary,
+            allTags: statsAllTags,
+            tagSummaries: statsTagSummaries,
+            taskCountForSelectedTypeFilter: statsTaskCountForSelectedTypeFilter,
+            selectedTag: selectedStatsTag,
+            onSelectTag: { tag in
+                statsStore?.send(.selectedTagChanged(tag))
+            },
+            selectedExcludedTags: selectedStatsExcludedTags,
+            availableExcludeTags: statsAvailableExcludeTags,
+            excludedTagSummary: statsExcludedTagSummary,
+            tagSelectionSummary: statsTagSelectionSummary,
+            tagCount: { tag in
+                statsTagCount(for: tag)
+            },
+            onToggleExcludedTag: { tag in
+                if selectedStatsExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+                    statsStore?.send(.excludedTagsChanged(selectedStatsExcludedTags.filter { $0 != tag }))
+                } else {
+                    var newTags = selectedStatsExcludedTags
+                    newTags.insert(tag)
+                    statsStore?.send(.excludedTagsChanged(newTags))
+                    if selectedStatsTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
+                        statsStore?.send(.selectedTagChanged(nil))
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        )
     }
 
     private var statsAllTags: [String] {
@@ -1570,10 +1146,6 @@ extension HomeTCAView {
         return RoutineTag.summaries(from: store.routineTasks)
     }
 
-    private var selectedStatsTaskTypeFilter: StatsTaskTypeFilter {
-        statsStore?.taskTypeFilter ?? .all
-    }
-
     private var statsTaskCountForSelectedTypeFilter: Int {
         if let statsStore {
             return statsStore.tasks.filter { task in
@@ -1595,10 +1167,6 @@ extension HomeTCAView {
         }
 
         return store.routineTasks.count
-    }
-
-    private var selectedStatsRange: DoneChartRange {
-        statsStore?.selectedRange ?? .week
     }
 
     private var selectedStatsTag: String? {
@@ -1675,141 +1243,14 @@ extension HomeTCAView {
         }.count
     }
 
-    @ViewBuilder
-    private func statsTaskTypeChip(_ filter: StatsTaskTypeFilter) -> some View {
-        Button {
-            statsStore?.send(.taskTypeFilterChanged(filter))
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: statsTaskTypeIcon(for: filter))
-                    .font(.caption.weight(.semibold))
-
-                Text(filter.rawValue)
-                    .font(.caption.weight(.semibold))
-            }
-            .foregroundStyle(selectedStatsTaskTypeFilter == filter ? Color.white : Color.primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(selectedStatsTaskTypeFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(selectedStatsTaskTypeFilter == filter ? Color.accentColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
-            )
-            .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func statsTaskTypeIcon(for filter: StatsTaskTypeFilter) -> String {
-        switch filter {
-        case .all: return "square.grid.2x2"
-        case .routines: return "repeat"
-        case .todos: return "checklist"
-        }
-    }
-
-    @ViewBuilder
-    private func statsRangeChip(_ range: DoneChartRange) -> some View {
-        Button {
-            statsStore?.send(.selectedRangeChanged(range))
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: statsRangeIcon(for: range))
-                    .font(.caption.weight(.semibold))
-
-                Text(range.rawValue)
-                    .font(.caption.weight(.semibold))
-            }
-            .foregroundStyle(selectedStatsRange == range ? Color.white : Color.primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(selectedStatsRange == range ? Color.accentColor : Color.secondary.opacity(0.10))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(selectedStatsRange == range ? Color.accentColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
-            )
-            .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func statsRangeIcon(for range: DoneChartRange) -> String {
-        switch range {
-        case .week: return "calendar.badge.clock"
-        case .month: return "calendar"
-        case .year: return "calendar.badge.plus"
-        }
-    }
-
-    @ViewBuilder
-    private func statsTagChip(
-        title: String,
-        count: Int,
-        systemImage: String,
-        isSelected: Bool,
-        selectedColor: Color = .accentColor,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage)
-                    .font(.caption.weight(.semibold))
-
-                Text(title)
-                    .font(.caption.weight(.semibold))
-
-                Text(count.formatted())
-                    .font(.caption2.weight(.bold))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(isSelected ? Color.white.opacity(0.18) : Color.primary.opacity(0.08))
-                    )
-            }
-            .foregroundStyle(isSelected ? Color.white : Color.primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(isSelected ? selectedColor : Color.secondary.opacity(0.10))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(isSelected ? selectedColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
-            )
-            .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
     var macSettingsSidebarView: some View {
-        List {
-            ForEach(SettingsMacSection.allCases) { section in
-                Button {
-                    store.send(.selectedSettingsSectionChanged(section))
-                } label: {
-                    SettingsMacSidebarRow(
-                        section: section,
-                        store: settingsStore
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(store.selectedSettingsSection == section ? Color.accentColor.opacity(0.9) : Color.clear)
-                        .padding(.vertical, 2)
-                )
+        HomeMacSettingsSidebarView(
+            store: settingsStore,
+            selectedSection: currentSelectedSettingsSection,
+            onSelectSection: { section in
+                store.send(.selectedSettingsSectionChanged(section))
             }
-        }
-        .listStyle(.sidebar)
+        )
     }
 
     var macTimelineSidebarView: some View {
@@ -1889,41 +1330,5 @@ struct HomeMacView: View {
         ) { _ in
             settingsStore.send(.cloudDiagnosticsUpdated)
         }
-    }
-}
-
-// MARK: - Drag-and-drop delegate for sidebar section reordering
-
-private struct SectionDropDelegate: DropDelegate {
-    let item: String
-    let coordinator: AddEditFormCoordinator
-    @Binding var draggedSection: String?
-    let available: [String]
-
-    func performDrop(info: DropInfo) -> Bool {
-        draggedSection = nil
-        return true
-    }
-
-    func dropEntered(info: DropInfo) {
-        guard let dragged = draggedSection, dragged != item else { return }
-        // Work within the movable order (excludes Identity)
-        let order = coordinator.sectionOrder
-        guard let fromIndex = order.firstIndex(of: dragged),
-              let toIndex = order.firstIndex(of: item) else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            coordinator.sectionOrder.move(
-                fromOffsets: IndexSet(integer: fromIndex),
-                toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex
-            )
-        }
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func validateDrop(info: DropInfo) -> Bool {
-        draggedSection != nil
     }
 }
