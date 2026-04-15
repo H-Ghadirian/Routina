@@ -318,210 +318,167 @@ struct TaskDetailTCAView: View {
     }
 
     private var todoHeaderSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(store.task.name ?? "Task")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if let statusContextMessage {
-                    Text(statusContextMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            HStack(alignment: .top, spacing: 8) {
-                taskHeaderBadge(
-                    title: "Status",
-                    value: store.summaryStatusTitle,
-                    tint: summaryStatusColor
-                )
-
-                taskHeaderBadge(
-                    title: "Selected",
-                    value: store.selectedDateMetadataText,
-                    tint: .accentColor
-                )
-            }
-
-            HStack(alignment: .top, spacing: 8) {
-                if let priorityLabel = store.task.priority.metadataLabel {
-                    taskHeaderBadge(
-                        title: "Priority",
-                        value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
-                        systemImage: "flag.fill",
-                        tint: .secondary
-                    )
-                }
-
-                if let linkedPlace = store.linkedPlaceSummary {
-                    taskHeaderBadge(
-                        title: "Location",
-                        value: linkedPlace.name,
-                        tint: .blue
-                    )
-                }
-            }
-
-            if let dueDateMetadataText = store.dueDateMetadataText {
-                taskHeaderBadge(
-                    title: "Due",
-                    value: dueDateMetadataText,
-                    tint: .orange
-                )
-            }
-
-            if !store.task.tags.isEmpty {
-                taskHeaderTagSection(tags: store.task.tags)
-            }
+        TaskDetailHeaderSectionView(
+            title: store.task.name ?? "Task",
+            statusContextMessage: statusContextMessage,
+            badgeRows: todoHeaderBadgeRows,
+            tags: store.task.tags
+        ) { tag in
+            statusTagChip(tag)
         }
-        .padding(16)
-        .detailCardStyle(cornerRadius: 16)
     }
 
     private var routineHeaderSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(store.task.name ?? "Routine")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
+        TaskDetailHeaderSectionView(
+            title: store.task.name ?? "Routine",
+            statusContextMessage: statusContextMessage,
+            badgeRows: routineHeaderBadgeRows,
+            tags: store.task.tags
+        ) { tag in
+            statusTagChip(tag)
+        }
+    }
 
-                if let statusContextMessage {
-                    Text(statusContextMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            HStack(alignment: .top, spacing: 8) {
-                taskHeaderBadge(
+    private var todoHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {
+        var rows: [[TaskDetailHeaderBadgeItem]] = [
+            [
+                TaskDetailHeaderBadgeItem(
                     title: "Status",
                     value: store.summaryStatusTitle,
+                    systemImage: nil,
                     tint: summaryStatusColor
+                ),
+                TaskDetailHeaderBadgeItem(
+                    title: "Selected",
+                    value: store.selectedDateMetadataText,
+                    systemImage: nil,
+                    tint: .accentColor
                 )
+            ]
+        ]
 
-                taskHeaderBadge(
+        var secondRow: [TaskDetailHeaderBadgeItem] = []
+        if let priorityLabel = store.task.priority.metadataLabel {
+            secondRow.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Priority",
+                    value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
+                    systemImage: "flag.fill",
+                    tint: .secondary
+                )
+            )
+        }
+        if let linkedPlace = store.linkedPlaceSummary {
+            secondRow.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Location",
+                    value: linkedPlace.name,
+                    systemImage: nil,
+                    tint: .blue
+                )
+            )
+        }
+        if !secondRow.isEmpty {
+            rows.append(secondRow)
+        }
+
+        if let dueDateMetadataText = store.dueDateMetadataText {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Due",
+                    value: dueDateMetadataText,
+                    systemImage: nil,
+                    tint: .orange
+                )
+            ])
+        }
+
+        return rows
+    }
+
+    private var routineHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {
+        var rows: [[TaskDetailHeaderBadgeItem]] = [
+            [
+                TaskDetailHeaderBadgeItem(
+                    title: "Status",
+                    value: store.summaryStatusTitle,
+                    systemImage: nil,
+                    tint: summaryStatusColor
+                ),
+                TaskDetailHeaderBadgeItem(
                     title: "Frequency",
                     value: store.frequencyText,
+                    systemImage: nil,
                     tint: .mint
                 )
-            }
+            ]
+        ]
 
-            HStack(alignment: .top, spacing: 8) {
-                taskHeaderBadge(
-                    title: "Completed",
-                    value: store.completedLogCountText,
-                    tint: .green
+        var secondRow: [TaskDetailHeaderBadgeItem] = [
+            TaskDetailHeaderBadgeItem(
+                title: "Completed",
+                value: store.completedLogCountText,
+                systemImage: nil,
+                tint: .green
+            )
+        ]
+        if store.canceledLogCount > 0 {
+            secondRow.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Canceled",
+                    value: store.canceledLogCountText,
+                    systemImage: nil,
+                    tint: .orange
                 )
-
-                if store.canceledLogCount > 0 {
-                    taskHeaderBadge(
-                        title: "Canceled",
-                        value: store.canceledLogCountText,
-                        tint: .orange
-                    )
-                }
-
-                if let dueDateMetadataText = store.dueDateMetadataText {
-                    taskHeaderBadge(
-                        title: "Due",
-                        value: dueDateMetadataText,
-                        tint: .orange
-                    )
-                } else if let linkedPlace = store.linkedPlaceSummary {
-                    taskHeaderBadge(
-                        title: "Location",
-                        value: linkedPlace.name,
-                        tint: .blue
-                    )
-                }
-            }
-
-            HStack(alignment: .top, spacing: 8) {
-                if let priorityLabel = store.task.priority.metadataLabel {
-                    taskHeaderBadge(
-                        title: "Priority",
-                        value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
-                        systemImage: "flag.fill",
-                        tint: .secondary
-                    )
-                }
-
-                if let linkedPlace = store.linkedPlaceSummary, store.dueDateMetadataText != nil {
-                    taskHeaderBadge(
-                        title: "Location",
-                        value: linkedPlace.name,
-                        tint: .blue
-                    )
-                }
-            }
-
-            if !store.task.tags.isEmpty {
-                taskHeaderTagSection(tags: store.task.tags)
-            }
+            )
         }
-        .padding(16)
-        .detailCardStyle(cornerRadius: 16)
-    }
-
-    private func taskHeaderBadge(
-        title: String,
-        value: String,
-        systemImage: String? = nil,
-        tint: Color
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased())
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(tint)
-                }
-
-                Text(value)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        if let dueDateMetadataText = store.dueDateMetadataText {
+            secondRow.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Due",
+                    value: dueDateMetadataText,
+                    systemImage: nil,
+                    tint: .orange
+                )
+            )
+        } else if let linkedPlace = store.linkedPlaceSummary {
+            secondRow.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Location",
+                    value: linkedPlace.name,
+                    systemImage: nil,
+                    tint: .blue
+                )
+            )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(tint.opacity(0.12))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(tint.opacity(0.24), lineWidth: 1)
-        )
-    }
+        rows.append(secondRow)
 
-    private func taskHeaderTagSection(tags: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("TAGS")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(tags, id: \.self) { tag in
-                    statusTagChip(tag)
-                }
-            }
+        var thirdRow: [TaskDetailHeaderBadgeItem] = []
+        if let priorityLabel = store.task.priority.metadataLabel {
+            thirdRow.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Priority",
+                    value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
+                    systemImage: "flag.fill",
+                    tint: .secondary
+                )
+            )
         }
+        if let linkedPlace = store.linkedPlaceSummary, store.dueDateMetadataText != nil {
+            thirdRow.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Location",
+                    value: linkedPlace.name,
+                    systemImage: nil,
+                    tint: .blue
+                )
+            )
+        }
+        if !thirdRow.isEmpty {
+            rows.append(thirdRow)
+        }
+
+        return rows
     }
 
     private var todoPrimaryActionSection: some View {
@@ -1595,7 +1552,7 @@ private extension Calendar {
     }
 }
 
-private extension View {
+extension View {
     func detailCardStyle(cornerRadius: CGFloat = 12) -> some View {
         background(TaskDetailPlatformStyle.summaryCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
@@ -1630,4 +1587,3 @@ struct TaskDetailOverviewHeightsPreferenceKey: PreferenceKey {
         value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
-
