@@ -75,6 +75,7 @@ let package = Package(
                 "mac+watch+ios",
             ],
             sources: [
+                "SharedCore/App/AppEnvironment.swift",
                 "SharedCore/Models",
                 "SharedCore/Dependencies/AppIconClient.swift",
                 "SharedCore/Dependencies/DependencyValues+.swift",
@@ -87,6 +88,7 @@ let package = Package(
                 "SharedCore/Domain/RoutineCompletionStats.swift",
                 "SharedCore/Domain/RoutineDateMath.swift",
                 "SharedCore/Domain/RoutineListFilter.swift",
+                "SharedCore/Domain/RoutineListSectioningMode.swift",
                 "SharedCore/Domain/RoutineLogHistory.swift",
                 "SharedCore/Domain/RoutineTag.swift",
                 "SharedCore/Domain/Tab.swift",
@@ -127,6 +129,21 @@ let package = Package(
             sources: [
                 "Commands",
                 "Utilities/MacMenuCleanup.swift",
+            ]
+        ),
+        .testTarget(
+            name: "RoutinaAppSupportTests",
+            dependencies: [
+                "RoutinaAppSupport",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
+            ],
+            path: "Tests/Shared",
+            exclude: [
+                // Tests app-level `HomeFeature.matches...` helpers that live
+                // outside `RoutinaAppSupport`. Kept in the iOS/Mac app test
+                // targets only until those helpers move into SharedCore.
+                "ExcludeTagsTests.swift",
             ]
         ),
     ]

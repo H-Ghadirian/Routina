@@ -117,6 +117,15 @@ struct URLOpenerClient: Sendable {
 }
 
 extension URLOpenerClient {
+    #if SWIFT_PACKAGE
+    // The package can't see the per-app `PlatformSupport` extensions (UIKit/AppKit),
+    // so the package-level `.live` falls back to the no-op. Apps compile the full
+    // implementation below via their Xcode targets.
+    static let live = URLOpenerClient(
+        open: { _ in },
+        notificationSettingsURL: { nil }
+    )
+    #else
     static let live = URLOpenerClient(
         open: { url in
             PlatformSupport.open(url)
@@ -125,6 +134,7 @@ extension URLOpenerClient {
             PlatformSupport.notificationSettingsURL
         }
     )
+    #endif
 
     static let noop = URLOpenerClient(
         open: { _ in },

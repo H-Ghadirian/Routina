@@ -2,7 +2,9 @@ import ComposableArchitecture
 import Foundation
 import SwiftData
 import Testing
-#if os(macOS)
+#if SWIFT_PACKAGE
+@testable @preconcurrency import RoutinaAppSupport
+#elseif os(macOS)
 @testable @preconcurrency import RoutinaMacOSDev
 #else
 @testable @preconcurrency import Routina
