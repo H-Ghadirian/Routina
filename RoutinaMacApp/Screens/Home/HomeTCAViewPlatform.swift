@@ -1282,30 +1282,12 @@ extension HomeTCAView {
     }
 
     private var macTimelineFiltersDetailView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Done Filters")
-                            .font(.largeTitle.weight(.semibold))
-
-                        Text("Refine the done history in the sidebar by date range and type. Search applies to done entries while Timeline is open.")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    if macHasCustomFiltersApplied {
-                        Button("Clear Filters") {
-                            clearAllMacFilters()
-                        }
-                        .buttonStyle(.plain)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                    }
-                }
-
+        HomeMacTimelineFilterDetailContainerView(
+            showsClearButton: macHasCustomFiltersApplied,
+            onClear: { clearAllMacFilters() },
+            onAvailableTagsChange: { validateSelectedTimelineTag() },
+            availableTags: availableTimelineTags
+        ) {
                 macSidebarSectionCard(title: "Range") {
                     timelineRangePicker
                 }
@@ -1317,24 +1299,13 @@ extension HomeTCAView {
                 }
 
                 macSidebarSectionCard(title: "Importance & Urgency") {
-                    Button(store.selectedTimelineImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
-                        store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
-                    }
-                    .buttonStyle(.plain)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(store.selectedTimelineImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
-
-                    ImportanceUrgencyMatrixPicker(
+                    HomeMacImportanceUrgencyMatrixView(
                         selectedFilter: Binding(
                             get: { store.selectedTimelineImportanceUrgencyFilter },
                             set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
-                        )
+                        ),
+                        summaryText: timelineImportanceUrgencySummary
                     )
-                    .frame(maxWidth: 420, alignment: .leading)
-
-                    Text(timelineImportanceUrgencySummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 if !availableTimelineTags.isEmpty {
@@ -1416,15 +1387,7 @@ extension HomeTCAView {
                         }
                     }
                 }
-            }
-            .onChange(of: availableTimelineTags) { _, _ in
-                validateSelectedTimelineTag()
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     var macStatsSidebarView: some View {
