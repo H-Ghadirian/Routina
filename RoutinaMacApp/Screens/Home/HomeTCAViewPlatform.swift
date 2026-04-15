@@ -1173,39 +1173,16 @@ extension HomeTCAView {
     }
 
     var macSidebarHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacSidebarModeStripView(selectedMode: macSidebarModeBinding)
-            if isMacRoutinesMode {
-                macTaskListModeStrip
+        HomeMacSidebarHeaderView(
+            selectedSidebarMode: macSidebarModeBinding,
+            selectedTaskListMode: store.taskListMode,
+            isRoutinesMode: isMacRoutinesMode,
+            isTimelineMode: isMacTimelineMode,
+            onSelectTaskListMode: { mode in
+                store.send(.taskListModeChanged(mode))
             }
-            if isMacRoutinesMode || isMacTimelineMode {
-                macSearchPanel
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
-    }
-
-    private var macTaskListModeStrip: some View {
-        HStack(spacing: 8) {
-            ForEach(HomeFeature.TaskListMode.allCases) { mode in
-                Button {
-                    store.send(.taskListModeChanged(mode))
-                } label: {
-                    Text(mode.rawValue)
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(store.taskListMode == mode ? Color.white : Color.primary)
-                        .background(
-                            Capsule()
-                                .fill(store.taskListMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+        ) {
+            macSearchPanel
         }
     }
 
@@ -1232,46 +1209,17 @@ extension HomeTCAView {
     }
 
     private var macSearchPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 10) {
-                platformSearchField(searchText: searchTextBinding)
-
-                Button {
-                    store.send(.setMacFilterDetailPresented(!store.isMacFilterDetailPresented))
-                } label: {
-                    Image(
-                        systemName: macHasCustomFiltersApplied
-                            ? "line.3.horizontal.decrease.circle.fill"
-                            : "line.3.horizontal.decrease.circle"
-                    )
-                    .font(.title3)
-                    .foregroundStyle(
-                        store.isMacFilterDetailPresented || macHasCustomFiltersApplied
-                            ? Color.accentColor
-                            : Color.secondary
-                    )
-                    .frame(width: 38, height: 38)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(
-                                store.isMacFilterDetailPresented
-                                    ? Color.accentColor.opacity(0.14)
-                                    : Color.secondary.opacity(0.07)
-                            )
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Show filters")
+        HomeMacSearchPanelView(
+            hasCustomFiltersApplied: macHasCustomFiltersApplied,
+            isFilterDetailPresented: store.isMacFilterDetailPresented,
+            onToggleFilters: {
+                store.send(.setMacFilterDetailPresented(!store.isMacFilterDetailPresented))
+            },
+            onClearFilters: {
+                clearAllMacFilters()
             }
-
-            if macHasCustomFiltersApplied {
-                Button("Clear All Filters") {
-                    clearAllMacFilters()
-                }
-                .font(.caption.weight(.semibold))
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-            }
+        ) {
+            platformSearchField(searchText: searchTextBinding)
         }
     }
 
@@ -1285,30 +1233,13 @@ extension HomeTCAView {
     }
 
     private var macFiltersDetailView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Filters")
-                            .font(.largeTitle.weight(.semibold))
-
-                        Text(macFilterDetailDescription)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    if macHasCustomFiltersApplied {
-                        Button("Clear All Filters") {
-                            clearAllMacFilters()
-                        }
-                        .buttonStyle(.plain)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                    }
-                }
-
+        HomeMacFilterDetailContainerView(
+            title: "Filters",
+            description: macFilterDetailDescription,
+            clearButtonTitle: "Clear All Filters",
+            showsClearButton: macHasCustomFiltersApplied,
+            onClear: { clearAllMacFilters() }
+        ) {
                 macSidebarSectionCard {
                     filterPicker
                 }
@@ -1337,35 +1268,17 @@ extension HomeTCAView {
                         )
                     }
                 }
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private var macImportanceUrgencyMatrix: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button(store.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
-                store.send(.selectedImportanceUrgencyFilterChanged(nil))
-            }
-            .buttonStyle(.plain)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(store.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
-
-            ImportanceUrgencyMatrixPicker(
-                selectedFilter: Binding(
-                    get: { store.selectedImportanceUrgencyFilter },
-                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                )
-            )
-            .frame(maxWidth: 420, alignment: .leading)
-
-            Text(importanceUrgencyFilterSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
+        HomeMacImportanceUrgencyMatrixView(
+            selectedFilter: Binding(
+                get: { store.selectedImportanceUrgencyFilter },
+                set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+            ),
+            summaryText: importanceUrgencyFilterSummary
+        )
     }
 
     private var macTimelineFiltersDetailView: some View {
@@ -1937,34 +1850,15 @@ extension HomeTCAView {
     }
 
     var macTimelineSidebarView: some View {
-        Group {
-            if store.timelineLogs.isEmpty {
-                emptyStateView(
-                    title: "No completions yet",
-                    message: "Completed routines and todos will appear here in chronological order.",
-                    systemImage: "clock.arrow.circlepath"
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if groupedTimelineEntries.isEmpty {
-                emptyStateView(
-                    title: "No matching dones",
-                    message: "Try a different search, time range, or done type.",
-                    systemImage: "line.3.horizontal.decrease.circle"
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List(selection: macSidebarSelectionBinding) {
-                    ForEach(Array(groupedTimelineEntries.enumerated()), id: \.element.date) { sectionIndex, section in
-                        let sectionStart = groupedTimelineEntries.prefix(sectionIndex).reduce(0) { $0 + $1.entries.count }
-                        Section(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar)) {
-                            ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
-                                timelineSidebarRow(entry, rowNumber: sectionStart + index + 1)
-                            }
-                        }
-                    }
-                }
-                .listStyle(.sidebar)
+        HomeMacTimelineSidebarView(
+            timelineLogCount: store.timelineLogs.count,
+            groupedEntries: groupedTimelineEntries,
+            selection: macSidebarSelectionBinding,
+            sectionTitle: { date in
+                TimelineLogic.daySectionTitle(for: date, calendar: calendar)
             }
+        ) { entry, rowNumber in
+            timelineSidebarRow(entry, rowNumber: rowNumber)
         }
     }
 
