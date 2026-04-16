@@ -1,11 +1,5 @@
 import Testing
-#if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
-#elseif os(macOS)
 @testable @preconcurrency import RoutinaMacOSDev
-#else
-@testable @preconcurrency import Routina
-#endif
 
 // MARK: - HomeFeature.matchesExcludedTags
 

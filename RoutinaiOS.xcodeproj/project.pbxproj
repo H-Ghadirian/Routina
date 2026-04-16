@@ -348,7 +348,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				1F1000032F30000100000001 /* iOS Tests */,
-				2A5A74D02D7B92F900E91075 /* Shared Tests */,
 			);
 			name = RoutinaiOSTests;
 			packageProductDependencies = (

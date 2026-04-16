@@ -245,7 +245,6 @@
 				6B1000162F10000100000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2A5A74D02D7B92F900E91075 /* Shared Tests */,
 				6C0000012F30000100000001 /* macOS Tests */,
 			);
 			name = RoutinaMacOSTests;

@@ -73,6 +73,31 @@ let package = Package(
                 "RoutinaWatchExtension",
                 "Tests",
                 "mac+watch+ios",
+                // Files that live in SharedCore but cannot yet be compiled as
+                // part of the RoutinaAppSupport package target. Each needs a
+                // dedicated migration step before it can move in.
+                //
+                // Blocked on AppFeature (top-level TCA reducer still lives in
+                // the per-app Xcode targets):
+                "SharedCore/App/RoutinaAppBootstrap.swift",
+                "SharedCore/App/RoutinaAppSceneBootstrap.swift",
+                // TODO(styling-injection): These reference TaskDetailPlatformStyle,
+                // a per-app enum of UI constants (fonts/colors/padding). The two
+                // per-app copies share an API but no implementation, so a naive
+                // `#if canImport(UIKit/AppKit)` merge is copy-paste dressed up as
+                // sharing and inverts layering (SharedCore picking platform UI
+                // tokens). Design a proper injection path — e.g. a
+                // `TaskDetailStyling` protocol with per-app conforming values
+                // injected via TCA dependency or SwiftUI environment — then move
+                // these files in and drop the per-app TaskDetailPlatformStyle.swift
+                // copies under iOS/ and RoutinaMacApp/.
+                "SharedCore/Screens/TaskDetail/TaskDetailPresentation.swift",
+                "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphNodeCard.swift",
+                // Blocked on per-app view modifiers (routinaInlineTitleDisplayMode,
+                // routinaGraphSheetFrame) plus TaskDetailPlatformStyle above:
+                "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphSheet.swift",
+                // Not yet audited:
+                "SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift",
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
@@ -105,6 +130,8 @@ let package = Package(
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Presentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+StateDerivation.swift",
                 "SharedCore/Persistence/PersistenceController.swift",
+                "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",
+                "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphLayout.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
                 "SharedCore/Sync/CloudDataResetService.swift",
                 "SharedCore/Sync/CloudKitDirectPullService.swift",
@@ -127,6 +154,7 @@ let package = Package(
                 "Utilities/PlatformSupport+AppKit.swift",
                 "Utilities/PlatformSupportBase.swift",
                 "Utilities/RemoteNotificationMacDelegate.swift",
+                "Utilities/RoutinaMacGlobalHotKey.swift",
             ],
             sources: [
                 "Commands",
@@ -140,13 +168,7 @@ let package = Package(
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
             ],
-            path: "Tests/Shared",
-            exclude: [
-                // Tests app-level `HomeFeature.matches...` helpers that live
-                // outside `RoutinaAppSupport`. Kept in the iOS/Mac app test
-                // targets only until those helpers move into SharedCore.
-                "ExcludeTagsTests.swift",
-            ]
+            path: "Tests/Shared"
         ),
     ]
 )
