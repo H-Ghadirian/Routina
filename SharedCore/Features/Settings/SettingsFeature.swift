@@ -69,24 +69,32 @@ struct SettingsFeature {
         Reduce { state, action in
             switch action {
             case let .routineListSectioningModeChanged(mode):
-                state.appearance.routineListSectioningMode = mode
+                SettingsAppearanceEditor.updateRoutineListSectioningMode(
+                    mode,
+                    state: &state.appearance
+                )
                 appSettingsClient.setRoutineListSectioningMode(mode)
                 return .none
 
             case let .tagCounterDisplayModeChanged(mode):
-                state.appearance.tagCounterDisplayMode = mode
+                SettingsAppearanceEditor.updateTagCounterDisplayMode(
+                    mode,
+                    state: &state.appearance
+                )
                 appSettingsClient.setTagCounterDisplayMode(mode)
                 return .none
 
             case .resetTemporaryViewStateTapped:
                 appSettingsClient.resetTemporaryViewState()
-                state.appearance.hasTemporaryViewStateToReset = false
-                state.appearance.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
+                SettingsAppearanceEditor.resetTemporaryViewState(state: &state.appearance)
                 return .none
 
             case .toggleNotifications(let isOn):
                 guard isOn else {
-                    state.notifications.notificationsEnabled = false
+                    SettingsNotificationsEditor.setNotificationsEnabled(
+                        false,
+                        state: &state.notifications
+                    )
                     appSettingsClient.setNotificationsEnabled(false)
                     return .run { _ in
                         await self.notificationClient.cancelAll()
@@ -99,8 +107,10 @@ struct SettingsFeature {
                 }
 
             case .notificationAuthorizationFinished(let isGranted):
-                state.notifications.notificationsEnabled = isGranted
-                state.notifications.systemSettingsNotificationsEnabled = isGranted
+                SettingsNotificationsEditor.applyAuthorizationResult(
+                    isGranted,
+                    state: &state.notifications
+                )
                 appSettingsClient.setNotificationsEnabled(isGranted)
 
                 guard isGranted else { return .none }
@@ -109,7 +119,10 @@ struct SettingsFeature {
                 }
 
             case .notificationReminderTimeChanged(let reminderTime):
-                state.notifications.notificationReminderTime = reminderTime
+                SettingsNotificationsEditor.updateReminderTime(
+                    reminderTime,
+                    state: &state.notifications
+                )
                 appSettingsClient.setNotificationReminderTime(reminderTime)
 
                 guard state.notifications.notificationsEnabled else { return .none }
@@ -130,15 +143,25 @@ struct SettingsFeature {
                 state.diagnostics.dataModeDescription = appInfoClient.dataModeDescription()
                 state.diagnostics.iCloudContainerDescription = appInfoClient.cloudContainerDescription()
                 state.cloud.cloudSyncAvailable = appInfoClient.isCloudSyncEnabled()
-                state.notifications.notificationsEnabled = appSettingsClient.notificationsEnabled()
                 state.diagnostics.isDebugSectionVisible = false
-                state.notifications.notificationReminderTime = appSettingsClient.notificationReminderTime()
-                state.appearance.routineListSectioningMode = appSettingsClient.routineListSectioningMode()
-                state.appearance.tagCounterDisplayMode = appSettingsClient.tagCounterDisplayMode()
-                state.appearance.selectedAppIcon = appSettingsClient.selectedAppIcon()
-                state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
-                state.appearance.appIconStatusMessage = ""
-                state.appearance.temporaryViewStateStatusMessage = ""
+                SettingsNotificationsEditor.refreshFromSettings(
+                    notificationsEnabled: appSettingsClient.notificationsEnabled(),
+                    reminderTime: appSettingsClient.notificationReminderTime(),
+                    state: &state.notifications
+                )
+                SettingsAppearanceEditor.updateRoutineListSectioningMode(
+                    appSettingsClient.routineListSectioningMode(),
+                    state: &state.appearance
+                )
+                SettingsAppearanceEditor.updateTagCounterDisplayMode(
+                    appSettingsClient.tagCounterDisplayMode(),
+                    state: &state.appearance
+                )
+                SettingsAppearanceEditor.refreshFromSettings(
+                    selectedAppIcon: appSettingsClient.selectedAppIcon(),
+                    hasTemporaryViewStateToReset: hasTemporaryViewStateToReset(),
+                    state: &state.appearance
+                )
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
                 state.diagnostics.cloudDiagnosticsSummary = diagnostics.summary
                 state.diagnostics.cloudDiagnosticsTimestamp = diagnostics.timestampText
@@ -175,7 +198,10 @@ struct SettingsFeature {
                 return .none
 
             case let .systemNotificationPermissionChecked(value):
-                state.notifications.systemSettingsNotificationsEnabled = value
+                SettingsNotificationsEditor.updateSystemPermission(
+                    value,
+                    state: &state.notifications
+                )
                 return .none
 
             case .cloudDiagnosticsUpdated:
@@ -213,16 +239,9 @@ struct SettingsFeature {
                 }
 
             case .syncNowTapped:
-                guard !state.cloud.isCloudDataResetInProgress else {
+                guard SettingsCloudEditor.beginSync(state: &state.cloud) else {
                     return .none
                 }
-                guard state.cloud.cloudSyncAvailable else {
-                    state.cloud.cloudStatusMessage = "iCloud sync is disabled in this build."
-                    return .none
-                }
-
-                state.cloud.isCloudSyncInProgress = true
-                state.cloud.cloudStatusMessage = "Syncing with iCloud..."
                 return .run { @MainActor send in
                     do {
                         let context = modelContext()
@@ -249,27 +268,19 @@ struct SettingsFeature {
                 }
 
             case let .setCloudDataResetConfirmation(isPresented):
-                state.cloud.isCloudDataResetConfirmationPresented = isPresented
+                SettingsCloudEditor.setDataResetConfirmation(isPresented, state: &state.cloud)
                 return .none
 
             case .resetCloudDataConfirmed:
-                state.cloud.isCloudDataResetConfirmationPresented = false
-
-                guard !state.cloud.isCloudSyncInProgress,
-                      !state.cloud.isCloudDataResetInProgress
+                let hasCloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier != nil
+                guard SettingsCloudEditor.prepareDataReset(
+                    hasCloudContainerIdentifier: hasCloudContainerIdentifier,
+                    state: &state.cloud
+                ),
+                let cloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier
                 else {
                     return .none
                 }
-
-                guard state.cloud.cloudSyncAvailable,
-                      let cloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier
-                else {
-                    state.cloud.cloudStatusMessage = "iCloud sync is disabled in this build."
-                    return .none
-                }
-
-                state.cloud.isCloudDataResetInProgress = true
-                state.cloud.cloudStatusMessage = "Deleting iCloud data..."
                 return .run { @MainActor send in
                     do {
                         try await CloudDataResetService.resetAllUserData(
@@ -554,34 +565,33 @@ struct SettingsFeature {
                 return handleImportRoutineDataTapped(state: &state)
 
             case let .appIconSelected(option):
-                state.appearance.appIconStatusMessage = ""
+                SettingsAppearanceEditor.beginAppIconChange(state: &state.appearance)
                 return .run { send in
                     let errorMessage = await self.appIconClient.requestChange(option)
                     await send(.appIconChangeFinished(requestedOption: option, errorMessage: errorMessage))
                 }
 
             case let .appIconChangeFinished(option, errorMessage):
-                if let errorMessage {
-                    state.appearance.appIconStatusMessage = "App icon update failed: \(errorMessage)"
-                } else {
-                    state.appearance.selectedAppIcon = option
-                    AppIconOption.persist(option)
-                }
+                SettingsAppearanceEditor.finishAppIconChange(
+                    requestedOption: option,
+                    errorMessage: errorMessage,
+                    state: &state.appearance
+                )
                 return .none
 
             case let .routineDataTransferFinished(_, message):
-                state.dataTransfer.isDataTransferInProgress = false
-                state.dataTransfer.dataTransferStatusMessage = message
+                SettingsRoutineDataTransferEditor.finish(
+                    message: message,
+                    state: &state.dataTransfer
+                )
                 return .none
 
             case let .cloudSyncFinished(_, message):
-                state.cloud.isCloudSyncInProgress = false
-                state.cloud.cloudStatusMessage = message
+                SettingsCloudEditor.finishSync(message: message, state: &state.cloud)
                 return .none
 
             case let .cloudDataResetFinished(_, message):
-                state.cloud.isCloudDataResetInProgress = false
-                state.cloud.cloudStatusMessage = message
+                SettingsCloudEditor.finishDataReset(message: message, state: &state.cloud)
                 return .none
             }
         }
@@ -605,12 +615,10 @@ struct SettingsFeature {
     }
 
     private func handleExportRoutineDataTapped(state: inout State) -> Effect<Action> {
-        guard !state.dataTransfer.isDataTransferInProgress else {
+        guard SettingsRoutineDataTransferEditor.begin(.export, state: &state.dataTransfer) else {
             return .none
         }
 
-        state.dataTransfer.isDataTransferInProgress = true
-        state.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
         return .run { @MainActor send in
             do {
                 guard let destinationURL = await self.routineDataTransferClient.selectExportURL(
@@ -653,12 +661,10 @@ struct SettingsFeature {
     }
 
     private func handleImportRoutineDataTapped(state: inout State) -> Effect<Action> {
-        guard !state.dataTransfer.isDataTransferInProgress else {
+        guard SettingsRoutineDataTransferEditor.begin(.import, state: &state.dataTransfer) else {
             return .none
         }
 
-        state.dataTransfer.isDataTransferInProgress = true
-        state.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
         return .run { @MainActor send in
             do {
                 guard let sourceURL = await self.routineDataTransferClient.selectImportURL() else {
