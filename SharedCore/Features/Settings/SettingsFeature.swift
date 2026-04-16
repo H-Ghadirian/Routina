@@ -296,109 +296,60 @@ struct SettingsFeature {
                 }
 
             case let .setDeletePlaceConfirmation(isPresented):
-                state.places.isDeletePlaceConfirmationPresented = isPresented
-                if !isPresented {
-                    state.places.placePendingDeletion = nil
-                }
+                SettingsPlaceEditor.setDeleteConfirmation(isPresented, state: &state.places)
                 return .none
 
             case let .setDeleteTagConfirmation(isPresented):
-                state.tags.isDeleteTagConfirmationPresented = isPresented
-                if !isPresented {
-                    state.tags.tagPendingDeletion = nil
-                }
+                SettingsTagEditor.setDeleteConfirmation(isPresented, state: &state.tags)
                 return .none
 
             case let .setTagRenameSheet(isPresented):
-                state.tags.isTagRenameSheetPresented = isPresented
-                if !isPresented {
-                    state.tags.tagPendingRename = nil
-                    state.tags.tagRenameDraft = ""
-                }
+                SettingsTagEditor.setRenameSheet(isPresented, state: &state.tags)
                 return .none
 
             case let .placesLoaded(places):
-                state.places.savedPlaces = places
-                if let pendingPlace = state.places.placePendingDeletion,
-                   let updatedPlace = places.first(where: { $0.id == pendingPlace.id }) {
-                    state.places.placePendingDeletion = updatedPlace
-                }
+                SettingsPlaceEditor.loadedPlaces(places, state: &state.places)
                 return .none
 
             case let .tagsLoaded(tags):
-                state.tags.savedTags = tags
-                if let pendingTag = state.tags.tagPendingDeletion,
-                   let updatedTag = self.tagSummary(named: pendingTag.name, in: tags) {
-                    state.tags.tagPendingDeletion = updatedTag
-                }
-                if let pendingTag = state.tags.tagPendingRename,
-                   let updatedTag = self.tagSummary(named: pendingTag.name, in: tags) {
-                    state.tags.tagPendingRename = updatedTag
-                }
+                SettingsTagEditor.loadedTags(tags, state: &state.tags)
                 return .none
 
             case let .locationSnapshotUpdated(snapshot):
-                state.places.locationAuthorizationStatus = snapshot.authorizationStatus
-                if let coordinate = snapshot.coordinate {
-                    state.places.lastKnownLocationCoordinate = coordinate
-                }
+                SettingsPlaceEditor.applyLocationSnapshot(snapshot, state: &state.places)
                 return .none
 
             case let .placeDraftNameChanged(name):
-                state.places.placeDraftName = name
-                state.places.placeStatusMessage = ""
+                SettingsPlaceEditor.updateDraftName(name, state: &state.places)
                 return .none
 
             case let .tagRenameDraftChanged(name):
-                state.tags.tagRenameDraft = name
-                state.tags.tagStatusMessage = ""
+                SettingsTagEditor.updateRenameDraft(name, state: &state.tags)
                 return .none
 
             case let .placeDraftCoordinateChanged(coordinate):
-                state.places.placeDraftCoordinate = coordinate
-                state.places.placeStatusMessage = ""
+                SettingsPlaceEditor.updateDraftCoordinate(coordinate, state: &state.places)
                 return .none
 
             case let .placeDraftRadiusChanged(radius):
-                state.places.placeDraftRadiusMeters = min(max(radius, 25), 2_000)
-                state.places.placeStatusMessage = ""
+                SettingsPlaceEditor.updateDraftRadius(radius, state: &state.places)
                 return .none
 
             case let .renameTagTapped(tagName):
-                guard !state.tags.isTagOperationInProgress,
-                      let tag = self.tagSummary(named: tagName, in: state.tags.savedTags)
-                else {
+                guard SettingsTagEditor.beginRename(tagName: tagName, state: &state.tags) else {
                     return .none
                 }
-
-                state.tags.tagPendingRename = tag
-                state.tags.tagRenameDraft = tag.name
-                state.tags.tagStatusMessage = ""
-                state.tags.isTagRenameSheetPresented = true
                 return .none
 
             case .savePlaceTapped:
-                let cleanedName = RoutinePlace.cleanedName(state.places.placeDraftName)
-                guard let cleanedName else {
-                    state.places.placeStatusMessage = "Enter a place name first."
+                guard let request = SettingsPlaceEditor.prepareSave(state: &state.places) else {
                     return .none
                 }
-                guard let coordinate = state.places.placeDraftCoordinate else {
-                    state.places.placeStatusMessage = "Choose a location on the map first."
-                    return .none
-                }
-                guard !state.places.isPlaceOperationInProgress else {
-                    return .none
-                }
-
-                state.places.isPlaceOperationInProgress = true
-                state.places.placeStatusMessage = ""
-                let radiusMeters = state.places.placeDraftRadiusMeters
 
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
-                        if try self.hasDuplicatePlaceName(cleanedName, in: context) {
+                        if try self.hasDuplicatePlaceName(request.cleanedName, in: context) {
                             send(
                                 .placeOperationFinished(
                                     success: false,
@@ -410,10 +361,10 @@ struct SettingsFeature {
 
                         context.insert(
                             RoutinePlace(
-                                name: cleanedName,
-                                latitude: coordinate.latitude,
-                                longitude: coordinate.longitude,
-                                radiusMeters: radiusMeters
+                                name: request.cleanedName,
+                                latitude: request.coordinate.latitude,
+                                longitude: request.coordinate.longitude,
+                                radiusMeters: request.radiusMeters
                             )
                         )
                         try context.save()
@@ -424,7 +375,7 @@ struct SettingsFeature {
                         send(
                             .placeOperationFinished(
                                 success: true,
-                                message: "Saved \(cleanedName)."
+                                message: "Saved \(request.cleanedName)."
                             )
                         )
                     } catch {
@@ -438,23 +389,9 @@ struct SettingsFeature {
                 }
 
             case .saveTagRenameTapped:
-                guard !state.tags.isTagOperationInProgress else {
+                guard let request = SettingsTagEditor.prepareRename(state: &state.tags) else {
                     return .none
                 }
-                guard let pendingTag = state.tags.tagPendingRename else {
-                    return .none
-                }
-                guard let cleanedName = RoutineTag.cleaned(state.tags.tagRenameDraft) else {
-                    state.tags.tagStatusMessage = "Enter a tag name first."
-                    return .none
-                }
-
-                state.tags.isTagRenameSheetPresented = false
-                state.tags.tagPendingRename = nil
-                state.tags.tagRenameDraft = ""
-                state.tags.isTagOperationInProgress = true
-                state.tags.tagStatusMessage = ""
-                let originalTagName = pendingTag.name
 
                 return .run { @MainActor send in
                     do {
@@ -462,10 +399,10 @@ struct SettingsFeature {
                         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                         var updatedRoutineCount = 0
 
-                        for task in tasks where RoutineTag.contains(originalTagName, in: task.tags) {
+                        for task in tasks where RoutineTag.contains(request.originalTagName, in: task.tags) {
                             let updatedTags = RoutineTag.replacing(
-                                originalTagName,
-                                with: cleanedName,
+                                request.originalTagName,
+                                with: request.cleanedName,
                                 in: task.tags
                             )
                             if updatedTags != task.tags {
@@ -476,7 +413,10 @@ struct SettingsFeature {
 
                         try context.save()
                         NotificationCenter.default.postRoutineDidUpdate()
-                        NotificationCenter.default.postRoutineTagDidRename(from: originalTagName, to: cleanedName)
+                        NotificationCenter.default.postRoutineTagDidRename(
+                            from: request.originalTagName,
+                            to: request.cleanedName
+                        )
                         let summaries = try self.fetchTagSummaries(in: context)
                         send(.tagsLoaded(summaries))
                         send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
@@ -484,7 +424,7 @@ struct SettingsFeature {
                             .tagOperationFinished(
                                 success: true,
                                 message: self.renameTagSuccessMessage(
-                                    updatedTagName: cleanedName,
+                                    updatedTagName: request.cleanedName,
                                     updatedRoutineCount: updatedRoutineCount
                                 )
                             )
@@ -500,43 +440,22 @@ struct SettingsFeature {
                 }
 
             case let .deletePlaceTapped(placeID):
-                guard !state.places.isPlaceOperationInProgress else {
+                guard SettingsPlaceEditor.beginDelete(placeID: placeID, state: &state.places) else {
                     return .none
                 }
-
-                guard let place = state.places.savedPlaces.first(where: { $0.id == placeID }) else {
-                    return .none
-                }
-
-                state.places.placePendingDeletion = place
-                state.places.isDeletePlaceConfirmationPresented = true
                 return .none
 
             case let .deleteTagTapped(tagName):
-                guard !state.tags.isTagOperationInProgress,
-                      let tag = self.tagSummary(named: tagName, in: state.tags.savedTags)
-                else {
+                guard SettingsTagEditor.beginDelete(tagName: tagName, state: &state.tags) else {
                     return .none
                 }
-
-                state.tags.tagPendingDeletion = tag
-                state.tags.tagStatusMessage = ""
-                state.tags.isDeleteTagConfirmationPresented = true
                 return .none
 
             case .deletePlaceConfirmed:
-                guard !state.places.isPlaceOperationInProgress else {
+                guard let request = SettingsPlaceEditor.prepareDeleteConfirmation(state: &state.places) else {
                     return .none
                 }
-                guard let pendingPlace = state.places.placePendingDeletion else {
-                    return .none
-                }
-
-                state.places.isDeletePlaceConfirmationPresented = false
-                state.places.placePendingDeletion = nil
-                state.places.isPlaceOperationInProgress = true
-                state.places.placeStatusMessage = ""
-                let placeID = pendingPlace.id
+                let placeID = request.placeID
 
                 return .run { @MainActor send in
                     do {
@@ -573,18 +492,9 @@ struct SettingsFeature {
                 }
 
             case .deleteTagConfirmed:
-                guard !state.tags.isTagOperationInProgress else {
+                guard let request = SettingsTagEditor.prepareDeleteConfirmation(state: &state.tags) else {
                     return .none
                 }
-                guard let pendingTag = state.tags.tagPendingDeletion else {
-                    return .none
-                }
-
-                state.tags.isDeleteTagConfirmationPresented = false
-                state.tags.tagPendingDeletion = nil
-                state.tags.isTagOperationInProgress = true
-                state.tags.tagStatusMessage = ""
-                let tagName = pendingTag.name
 
                 return .run { @MainActor send in
                     do {
@@ -592,8 +502,8 @@ struct SettingsFeature {
                         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                         var updatedRoutineCount = 0
 
-                        for task in tasks where RoutineTag.contains(tagName, in: task.tags) {
-                            let updatedTags = RoutineTag.removing(tagName, from: task.tags)
+                        for task in tasks where RoutineTag.contains(request.tagName, in: task.tags) {
+                            let updatedTags = RoutineTag.removing(request.tagName, from: task.tags)
                             if updatedTags != task.tags {
                                 task.tags = updatedTags
                                 updatedRoutineCount += 1
@@ -602,7 +512,7 @@ struct SettingsFeature {
 
                         try context.save()
                         NotificationCenter.default.postRoutineDidUpdate()
-                        NotificationCenter.default.postRoutineTagDidDelete(tagName)
+                        NotificationCenter.default.postRoutineTagDidDelete(request.tagName)
                         let summaries = try self.fetchTagSummaries(in: context)
                         send(.tagsLoaded(summaries))
                         send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
@@ -610,7 +520,7 @@ struct SettingsFeature {
                             .tagOperationFinished(
                                 success: true,
                                 message: self.deleteTagSuccessMessage(
-                                    deletedTagName: tagName,
+                                    deletedTagName: request.tagName,
                                     updatedRoutineCount: updatedRoutineCount
                                 )
                             )
@@ -626,17 +536,15 @@ struct SettingsFeature {
                 }
 
             case let .placeOperationFinished(success, message):
-                state.places.isPlaceOperationInProgress = false
-                state.places.placeStatusMessage = message
-                if success {
-                    state.places.placeDraftName = ""
-                    state.places.placeDraftCoordinate = nil
-                }
+                SettingsPlaceEditor.finishOperation(
+                    success: success,
+                    message: message,
+                    state: &state.places
+                )
                 return .none
 
             case let .tagOperationFinished(_, message):
-                state.tags.isTagOperationInProgress = false
-                state.tags.tagStatusMessage = message
+                SettingsTagEditor.finishOperation(message: message, state: &state.tags)
                 return .none
 
             case .exportRoutineDataTapped:
@@ -813,11 +721,6 @@ struct SettingsFeature {
         return places.contains { place in
             RoutinePlace.normalizedName(place.name) == normalizedName
         }
-    }
-
-    private func tagSummary(named name: String, in tags: [RoutineTagSummary]) -> RoutineTagSummary? {
-        guard let normalizedTagName = RoutineTag.normalized(name) else { return nil }
-        return tags.first { RoutineTag.normalized($0.name) == normalizedTagName }
     }
 
     private func renameTagSuccessMessage(updatedTagName: String, updatedRoutineCount: Int) -> String {

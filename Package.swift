@@ -134,6 +134,8 @@ let package = Package(
                 "SharedCore/Features/AddRoutine/AddRoutineValidationSupport.swift",
                 "SharedCore/Features/Settings/SettingsFeature.swift",
                 "SharedCore/Features/Settings/SettingsFeatureState.swift",
+                "SharedCore/Features/Settings/SettingsPlaceSupport.swift",
+                "SharedCore/Features/Settings/SettingsTagSupport.swift",
                 "SharedCore/Features/Settings/SettingsViewSupport.swift",
                 "SharedCore/Features/TaskDetail/RoutinePauseArchivePresentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature.swift",
