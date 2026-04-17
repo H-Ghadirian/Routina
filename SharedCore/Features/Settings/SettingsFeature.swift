@@ -115,7 +115,11 @@ struct SettingsFeature {
 
                 guard isGranted else { return .none }
                 return .run { @MainActor _ in
-                    try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
+                    try? await SettingsExecutionSupport.rescheduleNotificationsIfNeeded(
+                        in: self.modelContext(),
+                        appSettingsClient: self.appSettingsClient,
+                        notificationClient: self.notificationClient
+                    )
                 }
 
             case .notificationReminderTimeChanged(let reminderTime):
@@ -127,7 +131,11 @@ struct SettingsFeature {
 
                 guard state.notifications.notificationsEnabled else { return .none }
                 return .run { @MainActor _ in
-                    try? await self.rescheduleNotificationsIfNeeded(in: self.modelContext())
+                    try? await SettingsExecutionSupport.rescheduleNotificationsIfNeeded(
+                        in: self.modelContext(),
+                        appSettingsClient: self.appSettingsClient,
+                        notificationClient: self.notificationClient
+                    )
                 }
 
             case .openAppSettingsTapped:
@@ -139,49 +147,34 @@ struct SettingsFeature {
                 return .none
 
             case .onAppear:
-                state.diagnostics.appVersion = appInfoClient.versionString()
-                state.diagnostics.dataModeDescription = appInfoClient.dataModeDescription()
-                state.diagnostics.iCloudContainerDescription = appInfoClient.cloudContainerDescription()
-                state.cloud.cloudSyncAvailable = appInfoClient.isCloudSyncEnabled()
-                state.diagnostics.isDebugSectionVisible = false
-                SettingsNotificationsEditor.refreshFromSettings(
-                    notificationsEnabled: appSettingsClient.notificationsEnabled(),
-                    reminderTime: appSettingsClient.notificationReminderTime(),
-                    state: &state.notifications
-                )
-                SettingsAppearanceEditor.updateRoutineListSectioningMode(
-                    appSettingsClient.routineListSectioningMode(),
-                    state: &state.appearance
-                )
-                SettingsAppearanceEditor.updateTagCounterDisplayMode(
-                    appSettingsClient.tagCounterDisplayMode(),
-                    state: &state.appearance
-                )
-                SettingsAppearanceEditor.refreshFromSettings(
-                    selectedAppIcon: appSettingsClient.selectedAppIcon(),
-                    hasTemporaryViewStateToReset: hasTemporaryViewStateToReset(),
-                    state: &state.appearance
-                )
                 let diagnostics = CloudKitSyncDiagnostics.snapshot()
-                state.diagnostics.cloudDiagnosticsSummary = diagnostics.summary
-                state.diagnostics.cloudDiagnosticsTimestamp = diagnostics.timestampText
-                state.diagnostics.pushDiagnosticsStatus = diagnostics.pushStatus
-                return .run { @MainActor send in
-                    let context = self.modelContext()
-                    let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
-                    send(.systemNotificationPermissionChecked(systemEnabled))
-                    send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                    let placeSummaries = try? self.fetchPlaceSummaries(in: context)
-                    send(.placesLoaded(placeSummaries ?? []))
-                    let tagSummaries = try? self.fetchTagSummaries(in: context)
-                    send(.tagsLoaded(tagSummaries ?? []))
-                    let locationSnapshot = await self.locationClient.snapshot(false)
-                    send(.locationSnapshotUpdated(locationSnapshot))
-                }
+                SettingsRefreshEditor.hydrateOnAppear(
+                    SettingsOnAppearSnapshot(
+                        appVersion: appInfoClient.versionString(),
+                        dataModeDescription: appInfoClient.dataModeDescription(),
+                        iCloudContainerDescription: appInfoClient.cloudContainerDescription(),
+                        cloudSyncAvailable: appInfoClient.isCloudSyncEnabled(),
+                        notificationsEnabled: appSettingsClient.notificationsEnabled(),
+                        notificationReminderTime: appSettingsClient.notificationReminderTime(),
+                        routineListSectioningMode: appSettingsClient.routineListSectioningMode(),
+                        tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
+                        selectedAppIcon: appSettingsClient.selectedAppIcon(),
+                        hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(
+                            appSettingsClient: appSettingsClient
+                        ),
+                        cloudDiagnosticsSummary: diagnostics.summary,
+                        cloudDiagnosticsTimestamp: diagnostics.timestampText,
+                        pushDiagnosticsStatus: diagnostics.pushStatus
+                    ),
+                    state: &state
+                )
+                return refreshSettingsContext(
+                    reconcileNotificationsIfEnabled: false
+                )
 
             case .tagManagerAppeared:
                 return .run { @MainActor send in
-                    let tagSummaries = try? self.fetchTagSummaries(in: self.modelContext())
+                    let tagSummaries = try? SettingsDataQueries.fetchTagSummaries(in: self.modelContext())
                     send(.tagsLoaded(tagSummaries ?? []))
                 }
 
@@ -217,55 +210,21 @@ struct SettingsFeature {
 
             case .onAppBecameActive:
                 let notificationsEnabled = state.notifications.notificationsEnabled
-                state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset()
-                return .run { @MainActor send in
-                    let context = self.modelContext()
-                    let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
-                    send(.systemNotificationPermissionChecked(systemEnabled))
-                    send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                    let placeSummaries = try? self.fetchPlaceSummaries(in: context)
-                    send(.placesLoaded(placeSummaries ?? []))
-                    let tagSummaries = try? self.fetchTagSummaries(in: context)
-                    send(.tagsLoaded(tagSummaries ?? []))
-                    let locationSnapshot = await self.locationClient.snapshot(false)
-                    send(.locationSnapshotUpdated(locationSnapshot))
-                    if notificationsEnabled {
-                        if systemEnabled {
-                            try? await self.rescheduleNotificationsIfNeeded(in: context)
-                        } else {
-                            await self.notificationClient.cancelAll()
-                        }
-                    }
-                }
+                SettingsRefreshEditor.refreshOnAppBecameActive(
+                    hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(
+                        appSettingsClient: appSettingsClient
+                    ),
+                    state: &state
+                )
+                return refreshSettingsContext(
+                    reconcileNotificationsIfEnabled: notificationsEnabled
+                )
 
             case .syncNowTapped:
                 guard SettingsCloudEditor.beginSync(state: &state.cloud) else {
                     return .none
                 }
-                return .run { @MainActor send in
-                    do {
-                        let context = modelContext()
-                        if context.hasChanges {
-                            try context.save()
-                        }
-                        try await self.cloudSyncClient.pullLatestIntoLocalStore(context)
-                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                        NotificationCenter.default.postRoutineDidUpdate()
-                        await send(
-                            .cloudSyncFinished(
-                                success: true,
-                                message: "Sync completed."
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .cloudSyncFinished(
-                                success: false,
-                                message: "Sync failed: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
+                return handleSyncNow()
 
             case let .setCloudDataResetConfirmation(isPresented):
                 SettingsCloudEditor.setDataResetConfirmation(isPresented, state: &state.cloud)
@@ -281,30 +240,9 @@ struct SettingsFeature {
                 else {
                     return .none
                 }
-                return .run { @MainActor send in
-                    do {
-                        try await CloudDataResetService.resetAllUserData(
-                            cloudKitContainerIdentifier: cloudContainerIdentifier,
-                            modelContext: modelContext()
-                        )
-                        let refreshedContext = modelContext()
-                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: refreshedContext)))
-                        NotificationCenter.default.postRoutineDidUpdate()
-                        await send(
-                            .cloudDataResetFinished(
-                                success: true,
-                                message: "All Routina data was deleted from iCloud and this device."
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .cloudDataResetFinished(
-                                success: false,
-                                message: cloudDataResetErrorMessage(for: error)
-                            )
-                        )
-                    }
-                }
+                return handleResetCloudData(
+                    cloudContainerIdentifier: cloudContainerIdentifier
+                )
 
             case let .setDeletePlaceConfirmation(isPresented):
                 SettingsPlaceEditor.setDeleteConfirmation(isPresented, state: &state.places)
@@ -357,98 +295,14 @@ struct SettingsFeature {
                     return .none
                 }
 
-                return .run { @MainActor send in
-                    do {
-                        let context = self.modelContext()
-                        if try self.hasDuplicatePlaceName(request.cleanedName, in: context) {
-                            send(
-                                .placeOperationFinished(
-                                    success: false,
-                                    message: "A place with this name already exists."
-                                )
-                            )
-                            return
-                        }
-
-                        context.insert(
-                            RoutinePlace(
-                                name: request.cleanedName,
-                                latitude: request.coordinate.latitude,
-                                longitude: request.coordinate.longitude,
-                                radiusMeters: request.radiusMeters
-                            )
-                        )
-                        try context.save()
-                        NotificationCenter.default.postRoutineDidUpdate()
-                        let summaries = try self.fetchPlaceSummaries(in: context)
-                        send(.placesLoaded(summaries))
-                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                        send(
-                            .placeOperationFinished(
-                                success: true,
-                                message: "Saved \(request.cleanedName)."
-                            )
-                        )
-                    } catch {
-                        send(
-                            .placeOperationFinished(
-                                success: false,
-                                message: "Saving place failed: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
+                return handleSavePlace(request)
 
             case .saveTagRenameTapped:
                 guard let request = SettingsTagEditor.prepareRename(state: &state.tags) else {
                     return .none
                 }
 
-                return .run { @MainActor send in
-                    do {
-                        let context = self.modelContext()
-                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                        var updatedRoutineCount = 0
-
-                        for task in tasks where RoutineTag.contains(request.originalTagName, in: task.tags) {
-                            let updatedTags = RoutineTag.replacing(
-                                request.originalTagName,
-                                with: request.cleanedName,
-                                in: task.tags
-                            )
-                            if updatedTags != task.tags {
-                                task.tags = updatedTags
-                                updatedRoutineCount += 1
-                            }
-                        }
-
-                        try context.save()
-                        NotificationCenter.default.postRoutineDidUpdate()
-                        NotificationCenter.default.postRoutineTagDidRename(
-                            from: request.originalTagName,
-                            to: request.cleanedName
-                        )
-                        let summaries = try self.fetchTagSummaries(in: context)
-                        send(.tagsLoaded(summaries))
-                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                        send(
-                            .tagOperationFinished(
-                                success: true,
-                                message: self.renameTagSuccessMessage(
-                                    updatedTagName: request.cleanedName,
-                                    updatedRoutineCount: updatedRoutineCount
-                                )
-                            )
-                        )
-                    } catch {
-                        send(
-                            .tagOperationFinished(
-                                success: false,
-                                message: "Updating tag failed: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
+                return handleSaveTagRename(request)
 
             case let .deletePlaceTapped(placeID):
                 guard SettingsPlaceEditor.beginDelete(placeID: placeID, state: &state.places) else {
@@ -466,85 +320,14 @@ struct SettingsFeature {
                 guard let request = SettingsPlaceEditor.prepareDeleteConfirmation(state: &state.places) else {
                     return .none
                 }
-                let placeID = request.placeID
-
-                return .run { @MainActor send in
-                    do {
-                        let context = self.modelContext()
-                        let placeDescriptor = FetchDescriptor<RoutinePlace>(
-                            predicate: #Predicate { place in
-                                place.id == placeID
-                            }
-                        )
-
-                        if let place = try context.fetch(placeDescriptor).first {
-                            context.delete(place)
-                        }
-
-                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                        for task in tasks where task.placeID == placeID {
-                            task.placeID = nil
-                        }
-
-                        try context.save()
-                        NotificationCenter.default.postRoutineDidUpdate()
-                        let summaries = try self.fetchPlaceSummaries(in: context)
-                        send(.placesLoaded(summaries))
-                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                        send(.placeOperationFinished(success: true, message: "Place deleted."))
-                    } catch {
-                        send(
-                            .placeOperationFinished(
-                                success: false,
-                                message: "Deleting place failed: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
+                return handleDeletePlace(request)
 
             case .deleteTagConfirmed:
                 guard let request = SettingsTagEditor.prepareDeleteConfirmation(state: &state.tags) else {
                     return .none
                 }
 
-                return .run { @MainActor send in
-                    do {
-                        let context = self.modelContext()
-                        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                        var updatedRoutineCount = 0
-
-                        for task in tasks where RoutineTag.contains(request.tagName, in: task.tags) {
-                            let updatedTags = RoutineTag.removing(request.tagName, from: task.tags)
-                            if updatedTags != task.tags {
-                                task.tags = updatedTags
-                                updatedRoutineCount += 1
-                            }
-                        }
-
-                        try context.save()
-                        NotificationCenter.default.postRoutineDidUpdate()
-                        NotificationCenter.default.postRoutineTagDidDelete(request.tagName)
-                        let summaries = try self.fetchTagSummaries(in: context)
-                        send(.tagsLoaded(summaries))
-                        send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
-                        send(
-                            .tagOperationFinished(
-                                success: true,
-                                message: self.deleteTagSuccessMessage(
-                                    deletedTagName: request.tagName,
-                                    updatedRoutineCount: updatedRoutineCount
-                                )
-                            )
-                        )
-                    } catch {
-                        send(
-                            .tagOperationFinished(
-                                success: false,
-                                message: "Deleting tag failed: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
+                return handleDeleteTag(request)
 
             case let .placeOperationFinished(success, message):
                 SettingsPlaceEditor.finishOperation(
@@ -597,20 +380,152 @@ struct SettingsFeature {
         }
     }
 
-    private func cloudDataResetErrorMessage(for error: Error) -> String {
-        guard let cloudError = error as? CKError else {
-            return "Data reset failed: \(error.localizedDescription)"
-        }
+    private func refreshSettingsContext(
+        reconcileNotificationsIfEnabled notificationsEnabled: Bool
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            let context = self.modelContext()
+            let systemEnabled = await self.notificationClient.systemNotificationsAuthorized()
+            send(.systemNotificationPermissionChecked(systemEnabled))
+            send(.cloudUsageEstimateLoaded(SettingsDataQueries.loadCloudUsageEstimate(in: context)))
+            let placeSummaries = try? SettingsDataQueries.fetchPlaceSummaries(in: context)
+            send(.placesLoaded(placeSummaries ?? []))
+            let tagSummaries = try? SettingsDataQueries.fetchTagSummaries(in: context)
+            send(.tagsLoaded(tagSummaries ?? []))
+            let locationSnapshot = await self.locationClient.snapshot(false)
+            send(.locationSnapshotUpdated(locationSnapshot))
 
-        switch cloudError.code {
-        case .notAuthenticated:
-            return "Please sign in to iCloud and try again."
-        case .networkUnavailable, .networkFailure:
-            return "Network issue while deleting iCloud data. Please try again."
-        case .serviceUnavailable, .requestRateLimited:
-            return "iCloud is temporarily unavailable. Please try again shortly."
-        default:
-            return "Data reset failed: \(cloudError.localizedDescription)"
+            guard notificationsEnabled else { return }
+            if systemEnabled {
+                try? await SettingsExecutionSupport.rescheduleNotificationsIfNeeded(
+                    in: context,
+                    appSettingsClient: self.appSettingsClient,
+                    notificationClient: self.notificationClient
+                )
+            } else {
+                await self.notificationClient.cancelAll()
+            }
+        }
+    }
+
+    private func handleSavePlace(
+        _ request: SettingsPlaceSaveRequest
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = self.modelContext()
+                let result = try SettingsPlacePersistence.save(request, in: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+                send(.placesLoaded(result.placeSummaries))
+                send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+                send(
+                    .placeOperationFinished(
+                        success: true,
+                        message: "Saved \(request.cleanedName)."
+                    )
+                )
+            } catch let error as SettingsPlacePersistenceError {
+                send(
+                    .placeOperationFinished(
+                        success: false,
+                        message: error.localizedDescription
+                    )
+                )
+            } catch {
+                send(
+                    .placeOperationFinished(
+                        success: false,
+                        message: "Saving place failed: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    private func handleDeletePlace(
+        _ request: SettingsPlaceDeletionRequest
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = self.modelContext()
+                let result = try SettingsPlacePersistence.delete(request, in: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+                send(.placesLoaded(result.placeSummaries))
+                send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+                send(.placeOperationFinished(success: true, message: "Place deleted."))
+            } catch {
+                send(
+                    .placeOperationFinished(
+                        success: false,
+                        message: "Deleting place failed: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    private func handleSaveTagRename(
+        _ request: SettingsTagRenameRequest
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = self.modelContext()
+                let result = try SettingsTagPersistence.rename(request, in: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+                NotificationCenter.default.postRoutineTagDidRename(
+                    from: request.originalTagName,
+                    to: request.cleanedName
+                )
+                send(.tagsLoaded(result.tagSummaries))
+                send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+                send(
+                    .tagOperationFinished(
+                        success: true,
+                        message: SettingsFeedbackSupport.renameTagSuccessMessage(
+                            updatedTagName: request.cleanedName,
+                            updatedRoutineCount: result.updatedRoutineCount
+                        )
+                    )
+                )
+            } catch {
+                send(
+                    .tagOperationFinished(
+                        success: false,
+                        message: "Updating tag failed: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    private func handleDeleteTag(
+        _ request: SettingsTagDeletionRequest
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = self.modelContext()
+                let result = try SettingsTagPersistence.delete(request, in: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+                NotificationCenter.default.postRoutineTagDidDelete(request.tagName)
+                send(.tagsLoaded(result.tagSummaries))
+                send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+                send(
+                    .tagOperationFinished(
+                        success: true,
+                        message: SettingsFeedbackSupport.deleteTagSuccessMessage(
+                            deletedTagName: request.tagName,
+                            updatedRoutineCount: result.updatedRoutineCount
+                        )
+                    )
+                )
+            } catch {
+                send(
+                    .tagOperationFinished(
+                        success: false,
+                        message: "Deleting tag failed: \(error.localizedDescription)"
+                    )
+                )
+            }
         }
     }
 
@@ -619,10 +534,78 @@ struct SettingsFeature {
             return .none
         }
 
-        return .run { @MainActor send in
+        return executeExportRoutineDataTransfer()
+    }
+
+    private func handleSyncNow() -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                if context.hasChanges {
+                    try context.save()
+                }
+                try await self.cloudSyncClient.pullLatestIntoLocalStore(context)
+                send(.cloudUsageEstimateLoaded(SettingsDataQueries.loadCloudUsageEstimate(in: context)))
+                NotificationCenter.default.postRoutineDidUpdate()
+                await send(
+                    .cloudSyncFinished(
+                        success: true,
+                        message: "Sync completed."
+                    )
+                )
+            } catch {
+                await send(
+                    .cloudSyncFinished(
+                        success: false,
+                        message: "Sync failed: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    private func handleResetCloudData(
+        cloudContainerIdentifier: String
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                try await CloudDataResetService.resetAllUserData(
+                    cloudKitContainerIdentifier: cloudContainerIdentifier,
+                    modelContext: modelContext()
+                )
+                let refreshedContext = modelContext()
+                send(.cloudUsageEstimateLoaded(SettingsDataQueries.loadCloudUsageEstimate(in: refreshedContext)))
+                NotificationCenter.default.postRoutineDidUpdate()
+                await send(
+                    .cloudDataResetFinished(
+                        success: true,
+                        message: "All Routina data was deleted from iCloud and this device."
+                    )
+                )
+            } catch {
+                await send(
+                    .cloudDataResetFinished(
+                        success: false,
+                        message: SettingsFeedbackSupport.cloudDataResetErrorMessage(for: error)
+                    )
+                )
+            }
+        }
+    }
+
+    private func handleImportRoutineDataTapped(state: inout State) -> Effect<Action> {
+        guard SettingsRoutineDataTransferEditor.begin(.import, state: &state.dataTransfer) else {
+            return .none
+        }
+
+        return executeImportRoutineDataTransfer()
+    }
+
+    private func executeExportRoutineDataTransfer() -> Effect<Action> {
+        .run { @MainActor send in
             do {
                 guard let destinationURL = await self.routineDataTransferClient.selectExportURL(
-                    self.defaultRoutineDataBackupFileName()
+                    SettingsRoutineDataPersistence.defaultBackupFileName()
                 ) else {
                     await send(
                         .routineDataTransferFinished(
@@ -638,8 +621,8 @@ struct SettingsFeature {
                     try context.save()
                 }
 
-                let backupData = try self.buildRoutineDataBackupJSON(from: context)
-                try self.withSecurityScopedAccess(to: destinationURL) {
+                let backupData = try SettingsRoutineDataPersistence.buildBackupJSON(from: context)
+                try SettingsExecutionSupport.withSecurityScopedAccess(to: destinationURL) {
                     try backupData.write(to: destinationURL, options: .atomic)
                 }
 
@@ -660,11 +643,7 @@ struct SettingsFeature {
         }
     }
 
-    private func handleImportRoutineDataTapped(state: inout State) -> Effect<Action> {
-        guard SettingsRoutineDataTransferEditor.begin(.import, state: &state.dataTransfer) else {
-            return .none
-        }
-
+    private func executeImportRoutineDataTransfer() -> Effect<Action> {
         return .run { @MainActor send in
             do {
                 guard let sourceURL = await self.routineDataTransferClient.selectImportURL() else {
@@ -677,14 +656,21 @@ struct SettingsFeature {
                     return
                 }
 
-                let jsonData = try self.withSecurityScopedAccess(to: sourceURL) {
+                let jsonData = try SettingsExecutionSupport.withSecurityScopedAccess(to: sourceURL) {
                     try Data(contentsOf: sourceURL)
                 }
                 let context = self.modelContext()
-                let importedSummary = try self.replaceAllRoutineData(with: jsonData, in: context)
-                try await self.rescheduleNotificationsAfterImport(in: context)
+                let importedSummary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+                    with: jsonData,
+                    in: context
+                )
+                try await SettingsExecutionSupport.rescheduleNotificationsAfterImport(
+                    in: context,
+                    appSettingsClient: self.appSettingsClient,
+                    notificationClient: self.notificationClient
+                )
 
-                send(.cloudUsageEstimateLoaded(self.loadCloudUsageEstimate(in: context)))
+                send(.cloudUsageEstimateLoaded(SettingsDataQueries.loadCloudUsageEstimate(in: context)))
                 NotificationCenter.default.postRoutineDidUpdate()
                 await send(
                     .routineDataTransferFinished(
@@ -703,322 +689,4 @@ struct SettingsFeature {
         }
     }
 
-    @MainActor
-    private func fetchPlaceSummaries(in context: ModelContext) throws -> [RoutinePlaceSummary] {
-        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        return RoutinePlace.summaries(from: places, linkedTo: tasks)
-    }
-
-    @MainActor
-    func loadCloudUsageEstimate(in context: ModelContext) -> CloudUsageEstimate {
-        (try? CloudUsageEstimate.estimate(in: context)) ?? .zero
-    }
-
-    @MainActor
-    private func fetchTagSummaries(in context: ModelContext) throws -> [RoutineTagSummary] {
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        return RoutineTag.summaries(from: tasks)
-    }
-
-    private func hasDuplicatePlaceName(_ name: String, in context: ModelContext) throws -> Bool {
-        guard let normalizedName = RoutinePlace.normalizedName(name) else { return false }
-        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-        return places.contains { place in
-            RoutinePlace.normalizedName(place.name) == normalizedName
-        }
-    }
-
-    private func renameTagSuccessMessage(updatedTagName: String, updatedRoutineCount: Int) -> String {
-        switch updatedRoutineCount {
-        case ..<1:
-            return "Updated tag to \(updatedTagName)."
-        case 1:
-            return "Updated tag to \(updatedTagName) in 1 routine."
-        default:
-            return "Updated tag to \(updatedTagName) in \(updatedRoutineCount) routines."
-        }
-    }
-
-    private func deleteTagSuccessMessage(deletedTagName: String, updatedRoutineCount: Int) -> String {
-        switch updatedRoutineCount {
-        case ..<1:
-            return "Deleted \(deletedTagName)."
-        case 1:
-            return "Deleted \(deletedTagName) from 1 routine."
-        default:
-            return "Deleted \(deletedTagName) from \(updatedRoutineCount) routines."
-        }
-    }
-
-    private struct RoutineDataBackup: Codable {
-        var schemaVersion: Int
-        var exportedAt: Date
-        var places: [Place]?
-        var tasks: [Task]
-        var logs: [Log]
-
-        struct Place: Codable {
-            var id: UUID
-            var name: String
-            var latitude: Double
-            var longitude: Double
-            var radiusMeters: Double
-            var createdAt: Date?
-        }
-
-        struct Task: Codable {
-            var id: UUID
-            var name: String?
-            var emoji: String?
-            var notes: String?
-            var link: String?
-            var deadline: Date?
-            var imageData: Data?
-            var placeID: UUID?
-            var tags: [String]?
-            var steps: [RoutineStep]?
-            var checklistItems: [RoutineChecklistItem]?
-            var scheduleMode: RoutineScheduleMode?
-            var interval: Int
-            var recurrenceRule: RoutineRecurrenceRule?
-            var lastDone: Date?
-            var canceledAt: Date?
-            var scheduleAnchor: Date?
-            var pausedAt: Date?
-            var pinnedAt: Date?
-            var completedStepCount: Int?
-            var sequenceStartedAt: Date?
-        }
-
-        struct Log: Codable {
-            var id: UUID
-            var timestamp: Date?
-            var taskID: UUID
-            var kind: RoutineLogKind?
-        }
-    }
-
-    struct ImportSummary {
-        var places: Int
-        var tasks: Int
-        var logs: Int
-    }
-
-    private enum RoutineDataTransferError: LocalizedError {
-        case unsupportedSchema(Int)
-
-        var errorDescription: String? {
-            switch self {
-            case let .unsupportedSchema(version):
-                return "Unsupported backup format version: \(version)."
-            }
-        }
-    }
-
-    func defaultRoutineDataBackupFileName() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-        return "routina-backup-\(formatter.string(from: Date())).json"
-    }
-
-    @MainActor
-    func buildRoutineDataBackupJSON(from context: ModelContext) throws -> Data {
-        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-
-        let backup = RoutineDataBackup(
-            schemaVersion: 10,
-            exportedAt: Date(),
-            places: places.map {
-                .init(
-                    id: $0.id,
-                    name: $0.displayName,
-                    latitude: $0.latitude,
-                    longitude: $0.longitude,
-                    radiusMeters: $0.radiusMeters,
-                    createdAt: $0.createdAt
-                )
-            },
-            tasks: tasks.map {
-                .init(
-                    id: $0.id,
-                    name: $0.name,
-                    emoji: $0.emoji,
-                    notes: $0.notes,
-                    link: $0.link,
-                    deadline: $0.deadline,
-                    imageData: $0.imageData,
-                    placeID: $0.placeID,
-                    tags: $0.tags,
-                    steps: $0.steps,
-                    checklistItems: $0.checklistItems,
-                    scheduleMode: $0.scheduleMode,
-                    interval: max(Int($0.interval), 1),
-                    recurrenceRule: $0.recurrenceRule,
-                    lastDone: $0.lastDone,
-                    canceledAt: $0.canceledAt,
-                    scheduleAnchor: $0.scheduleAnchor,
-                    pausedAt: $0.pausedAt,
-                    pinnedAt: $0.pinnedAt,
-                    completedStepCount: $0.completedSteps,
-                    sequenceStartedAt: $0.sequenceStartedAt
-                )
-            },
-            logs: logs.map {
-                .init(
-                    id: $0.id,
-                    timestamp: $0.timestamp,
-                    taskID: $0.taskID,
-                    kind: $0.kind
-                )
-            }
-        )
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(backup)
-    }
-
-    @MainActor
-    func replaceAllRoutineData(
-        with jsonData: Data,
-        in context: ModelContext
-    ) throws -> ImportSummary {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let backup = try decoder.decode(RoutineDataBackup.self, from: jsonData)
-
-        guard (1...10).contains(backup.schemaVersion) else {
-            throw RoutineDataTransferError.unsupportedSchema(backup.schemaVersion)
-        }
-
-        do {
-            let existingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
-            for log in existingLogs {
-                context.delete(log)
-            }
-
-            let existingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
-            for task in existingTasks {
-                context.delete(task)
-            }
-
-            let existingPlaces = try context.fetch(FetchDescriptor<RoutinePlace>())
-            for place in existingPlaces {
-                context.delete(place)
-            }
-
-            var importedPlaceIDs = Set<UUID>()
-            var importedPlaceCount = 0
-            for place in backup.places ?? [] {
-                guard importedPlaceIDs.insert(place.id).inserted else { continue }
-
-                let importedPlace = RoutinePlace(
-                    id: place.id,
-                    name: place.name,
-                    latitude: place.latitude,
-                    longitude: place.longitude,
-                    radiusMeters: place.radiusMeters,
-                    createdAt: place.createdAt ?? Date()
-                )
-                context.insert(importedPlace)
-                importedPlaceCount += 1
-            }
-
-            var importedTaskIDs = Set<UUID>()
-            var importedTaskCount = 0
-            for task in backup.tasks {
-                guard importedTaskIDs.insert(task.id).inserted else { continue }
-
-                let clampedInterval = min(max(task.interval, 1), Int(Int16.max))
-                let importedTask = RoutineTask(
-                    id: task.id,
-                    name: task.name,
-                    emoji: task.emoji,
-                    notes: task.notes,
-                    link: task.link,
-                    deadline: task.deadline,
-                    imageData: task.imageData,
-                    placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
-                    tags: task.tags ?? [],
-                    steps: task.steps ?? [],
-                    checklistItems: task.checklistItems ?? [],
-                    scheduleMode: task.scheduleMode,
-                    interval: Int16(clampedInterval),
-                    recurrenceRule: task.recurrenceRule,
-                    lastDone: task.lastDone,
-                    canceledAt: task.canceledAt,
-                    scheduleAnchor: task.scheduleAnchor,
-                    pausedAt: task.pausedAt,
-                    pinnedAt: task.pinnedAt,
-                    completedStepCount: Int16(clamping: task.completedStepCount ?? 0),
-                    sequenceStartedAt: task.sequenceStartedAt
-                )
-                context.insert(importedTask)
-                importedTaskCount += 1
-            }
-
-            var importedLogIDs = Set<UUID>()
-            var importedLogCount = 0
-            for log in backup.logs {
-                guard importedTaskIDs.contains(log.taskID) else { continue }
-                guard importedLogIDs.insert(log.id).inserted else { continue }
-
-                let importedLog = RoutineLog(
-                    id: log.id,
-                    timestamp: log.timestamp,
-                    taskID: log.taskID,
-                    kind: log.kind ?? .completed
-                )
-                context.insert(importedLog)
-                importedLogCount += 1
-            }
-
-            try context.save()
-            return ImportSummary(places: importedPlaceCount, tasks: importedTaskCount, logs: importedLogCount)
-        } catch {
-            context.rollback()
-            throw error
-        }
-    }
-
-    @MainActor
-    func rescheduleNotificationsAfterImport(in context: ModelContext) async throws {
-        try await rescheduleNotificationsIfNeeded(in: context)
-    }
-
-    func withSecurityScopedAccess<T>(
-        to url: URL,
-        _ operation: () throws -> T
-    ) throws -> T {
-        let didStartAccessing = url.startAccessingSecurityScopedResource()
-        defer {
-            if didStartAccessing {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-        return try operation()
-    }
-
-    @MainActor
-    private func rescheduleNotificationsIfNeeded(in context: ModelContext) async throws {
-        await notificationClient.cancelAll()
-
-        guard appSettingsClient.notificationsEnabled() else { return }
-        guard await notificationClient.systemNotificationsAuthorized() else { return }
-
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        for task in tasks {
-            guard !task.isPaused, !task.isOneOffTask else { continue }
-            await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
-        }
-    }
-
-    private func hasTemporaryViewStateToReset() -> Bool {
-        appSettingsClient.hideUnavailableRoutines()
-        || appSettingsClient.temporaryViewState() != nil
-    }
 }

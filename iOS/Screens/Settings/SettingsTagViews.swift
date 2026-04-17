@@ -31,12 +31,12 @@ struct SettingsTagRenameSheet: View {
                 TextField("Tag name", text: tagRenameDraftBinding)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit {
-                        guard !store.isSaveTagRenameDisabled else { return }
+                        guard !store.tags.isSaveRenameDisabled else { return }
                         store.send(.saveTagRenameTapped)
                     }
 
                 if let pendingTag = store.tags.tagPendingRename {
-                    Text(settingsTagSubtitle(for: pendingTag))
+                    Text(pendingTag.settingsSubtitle)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -52,7 +52,7 @@ struct SettingsTagRenameSheet: View {
                         store.send(.saveTagRenameTapped)
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(store.isSaveTagRenameDisabled)
+                    .disabled(store.tags.isSaveRenameDisabled)
                 }
             }
             .padding(20)

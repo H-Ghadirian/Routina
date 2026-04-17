@@ -44,7 +44,7 @@ struct SettingsPlaceManagerPresentationView: View {
                 store.send(.setDeletePlaceConfirmation(false))
             }
         } message: {
-            Text(store.deletePlaceConfirmationMessage)
+            Text(store.places.deleteConfirmationMessage)
         }
         .onAppear {
             store.send(.onAppear)

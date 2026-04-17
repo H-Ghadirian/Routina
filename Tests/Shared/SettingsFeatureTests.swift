@@ -288,9 +288,9 @@ struct SettingsFeatureTests {
             )
         )
 
-        #expect(state.hasDuplicatePlaceDraftName)
-        #expect(state.isSavePlaceDisabled)
-        #expect(state.savePlaceValidationMessage == "A place with this name already exists.")
+        #expect(state.places.hasDuplicateDraftName)
+        #expect(state.places.isSaveDisabled)
+        #expect(state.places.saveValidationMessage == "A place with this name already exists.")
     }
 
     @Test

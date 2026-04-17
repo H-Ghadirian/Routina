@@ -70,7 +70,7 @@ struct SettingsMacView: View {
                     store.send(.setDeletePlaceConfirmation(false))
                 }
             } message: {
-                Text(store.deletePlaceConfirmationMessage)
+                Text(store.places.deleteConfirmationMessage)
             }
             .sheet(isPresented: $isPlacePickerPresented) {
                 PlaceLocationPickerSheet(
@@ -137,28 +137,28 @@ struct SettingsMacSidebarRow: View {
     private var subtitle: String {
         switch section {
         case .notifications:
-            return store.notificationsOverviewSubtitle
+            return store.notifications.overviewSubtitle
 
         case .places:
-            return store.placesOverviewSubtitle
+            return store.places.overviewSubtitle
 
         case .tags:
-            return store.tagsOverviewSubtitle
+            return store.tags.overviewSubtitle
 
         case .appearance:
-            return store.appearanceOverviewSubtitle
+            return store.appearance.overviewSubtitle
 
         case .iCloud:
-            return store.cloudOverviewSubtitle
+            return store.cloud.overviewSubtitle
 
         case .backup:
-            return store.backupOverviewSubtitle
+            return store.dataTransfer.overviewSubtitle
 
         case .support:
             return "Contact us by email"
 
         case .about:
-            return store.aboutOverviewSubtitle
+            return store.diagnostics.aboutOverviewSubtitle
         }
     }
 
@@ -284,7 +284,7 @@ struct EmbeddedSettingsMacDetailView: View {
                     store.send(.setDeletePlaceConfirmation(false))
                 }
             } message: {
-                Text(store.deletePlaceConfirmationMessage)
+                Text(store.places.deleteConfirmationMessage)
             }
             .sheet(isPresented: $isPlacePickerPresented) {
                 PlaceLocationPickerSheet(
@@ -387,7 +387,7 @@ struct SettingsMacPlacesDetailView: View {
                     TextField("Place name", text: placeDraftNameBinding)
                         .textFieldStyle(.roundedBorder)
 
-                    if let validationMessage = store.savePlaceValidationMessage {
+                    if let validationMessage = store.places.saveValidationMessage {
                         Text(validationMessage)
                             .font(.footnote)
                             .foregroundStyle(.red)
@@ -397,7 +397,7 @@ struct SettingsMacPlacesDetailView: View {
                         Button {
                             isPlacePickerPresented = true
                         } label: {
-                            Label(store.placeSelectionButtonTitle, systemImage: "map")
+                            Label(store.places.selectionButtonTitle, systemImage: "map")
                         }
                         .buttonStyle(.bordered)
 
@@ -411,7 +411,7 @@ struct SettingsMacPlacesDetailView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(store.isSavePlaceDisabled)
+                        .disabled(store.places.isSaveDisabled)
 
                         if store.places.locationAuthorizationStatus.needsSettingsChange {
                             Button("Open System Settings") {
@@ -421,13 +421,13 @@ struct SettingsMacPlacesDetailView: View {
                         }
                     }
 
-                    Text(store.placeDraftSelectionSummary)
+                    Text(store.places.draftSelectionSummary)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
 
                 SettingsMacDetailCard(title: "Location") {
-                    Text(store.placeLocationHelpText)
+                    Text(store.places.locationHelpText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
@@ -449,7 +449,7 @@ struct SettingsMacPlacesDetailView: View {
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(place.name)
-                                        Text(settingsPlaceSubtitle(for: place))
+                                        Text(place.settingsSubtitle)
                                             .font(.footnote)
                                             .foregroundStyle(.secondary)
                                     }
@@ -505,7 +505,7 @@ struct SettingsMacTagsDetailView: View {
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(tag.name)
-                                        Text(settingsTagSubtitle(for: tag))
+                                        Text(tag.settingsSubtitle)
                                             .font(.footnote)
                                             .foregroundStyle(.secondary)
                                     }
@@ -557,7 +557,7 @@ struct SettingsMacTagsDetailView: View {
                     store.send(.setDeleteTagConfirmation(false))
                 }
             } message: {
-                Text(store.deleteTagConfirmationMessage)
+                Text(store.tags.deleteConfirmationMessage)
             }
             .sheet(isPresented: renameTagSheetBinding) {
                 SettingsTagRenameSheet(store: store)
@@ -601,7 +601,7 @@ private struct SettingsMacAppearanceDetailView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    Text(store.routineListSectioningSubtitle)
+                    Text(store.appearance.routineListSectioningSubtitle)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -739,22 +739,22 @@ private struct SettingsMacCloudDetailView: View {
                 }
 
                 SettingsMacDetailCard(title: "Status") {
-                    Text(store.syncStatusText)
+                    Text(store.cloud.syncStatusText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
 
                 SettingsMacDetailCard(title: "Estimated Usage") {
-                    settingsInfoRow(title: "Estimated iCloud Data", value: store.cloudUsageTotalText)
-                    settingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
-                    settingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
-                    settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
-                    settingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
+                    settingsInfoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
+                    settingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
+                    settingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
+                    settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
+                    settingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
 
-                    Text(store.cloudUsageSummaryText)
+                    Text(store.cloud.usageSummaryText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Text(store.cloudUsageFootnoteText)
+                    Text(store.cloud.usageFootnoteText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -802,7 +802,7 @@ private struct SettingsMacBackupDetailView: View {
                         }
                     }
 
-                    Text(store.dataTransferStatusText)
+                    Text(store.dataTransfer.statusText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

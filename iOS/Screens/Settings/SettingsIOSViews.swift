@@ -15,7 +15,7 @@ struct SettingsIOSRootView: View {
                             icon: "bell.badge.fill",
                             tint: .red,
                             title: "Notifications",
-                            subtitle: store.notificationsOverviewSubtitle,
+                            subtitle: store.notifications.overviewSubtitle,
                             value: store.notifications.notificationsEnabled ? "On" : "Off"
                         )
                     }
@@ -27,7 +27,7 @@ struct SettingsIOSRootView: View {
                             icon: "mappin.and.ellipse",
                             tint: .blue,
                             title: "Places",
-                            subtitle: store.placesOverviewSubtitle
+                            subtitle: store.places.overviewSubtitle
                         )
                     }
 
@@ -38,7 +38,7 @@ struct SettingsIOSRootView: View {
                             icon: "tag.fill",
                             tint: .pink,
                             title: "Tags",
-                            subtitle: store.tagsOverviewSubtitle
+                            subtitle: store.tags.overviewSubtitle
                         )
                     }
 
@@ -49,7 +49,7 @@ struct SettingsIOSRootView: View {
                             icon: "app.badge.fill",
                             tint: .orange,
                             title: "Appearance",
-                            subtitle: store.appearanceOverviewSubtitle
+                            subtitle: store.appearance.overviewSubtitle
                         )
                     }
 
@@ -60,7 +60,7 @@ struct SettingsIOSRootView: View {
                             icon: "icloud.fill",
                             tint: .cyan,
                             title: "iCloud",
-                            subtitle: store.cloudOverviewSubtitle,
+                            subtitle: store.cloud.overviewSubtitle,
                             value: store.cloud.cloudSyncAvailable ? nil : "Off"
                         )
                     }
@@ -85,7 +85,7 @@ struct SettingsIOSRootView: View {
                             icon: "info.circle.fill",
                             tint: .gray,
                             title: "About",
-                            subtitle: store.aboutOverviewSubtitle
+                            subtitle: store.diagnostics.aboutOverviewSubtitle
                         )
                     }
                 }
@@ -159,7 +159,7 @@ struct SettingsPlacesDetailView: View {
                 Section("Add Place") {
                     TextField("Place name", text: placeDraftNameBinding)
 
-                    if let validationMessage = store.savePlaceValidationMessage {
+                    if let validationMessage = store.places.saveValidationMessage {
                         Text(validationMessage)
                             .font(.footnote)
                             .foregroundStyle(.red)
@@ -168,10 +168,10 @@ struct SettingsPlacesDetailView: View {
                     Button {
                         isPlacePickerPresented = true
                     } label: {
-                        Label(store.placeSelectionButtonTitle, systemImage: "map")
+                        Label(store.places.selectionButtonTitle, systemImage: "map")
                     }
 
-                    Text(store.placeDraftSelectionSummary)
+                    Text(store.places.draftSelectionSummary)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
@@ -188,11 +188,11 @@ struct SettingsPlacesDetailView: View {
                             Text("Save Place")
                         }
                     }
-                    .disabled(store.isSavePlaceDisabled)
+                    .disabled(store.places.isSaveDisabled)
                 }
 
                 Section("Location") {
-                    Text(store.placeLocationHelpText)
+                    Text(store.places.locationHelpText)
                         .foregroundStyle(.secondary)
 
                     if store.places.locationAuthorizationStatus.needsSettingsChange {
@@ -217,7 +217,7 @@ struct SettingsPlacesDetailView: View {
                         ForEach(store.places.savedPlaces) { place in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(place.name)
-                                Text(settingsPlaceSubtitle(for: place))
+                                Text(place.settingsSubtitle)
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
@@ -247,7 +247,7 @@ struct SettingsPlacesDetailView: View {
                     store.send(.setDeletePlaceConfirmation(false))
                 }
             } message: {
-                Text(store.deletePlaceConfirmationMessage)
+                Text(store.places.deleteConfirmationMessage)
             }
             .sheet(isPresented: $isPlacePickerPresented) {
                 PlaceLocationPickerSheet(
@@ -300,7 +300,7 @@ struct SettingsTagsDetailView: View {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(tag.name)
-                                    Text(settingsTagSubtitle(for: tag))
+                                    Text(tag.settingsSubtitle)
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                 }
@@ -365,7 +365,7 @@ struct SettingsTagsDetailView: View {
                     store.send(.setDeleteTagConfirmation(false))
                 }
             } message: {
-                Text(store.deleteTagConfirmationMessage)
+                Text(store.tags.deleteConfirmationMessage)
             }
             .sheet(isPresented: renameTagSheetBinding) {
                 SettingsTagRenameSheet(store: store)
@@ -408,7 +408,7 @@ private struct SettingsAppearanceDetailView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    Text(store.routineListSectioningSubtitle)
+                    Text(store.appearance.routineListSectioningSubtitle)
                         .foregroundStyle(.secondary)
                 }
 
@@ -543,25 +543,25 @@ private struct SettingsCloudDetailView: View {
                     if store.cloud.isCloudSyncInProgress || store.cloud.isCloudDataResetInProgress {
                         HStack(spacing: 10) {
                             ProgressView()
-                            Text(store.syncStatusText)
+                            Text(store.cloud.syncStatusText)
                                 .foregroundStyle(.secondary)
                         }
                     } else {
-                        Text(store.syncStatusText)
+                        Text(store.cloud.syncStatusText)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 Section("Estimated Usage") {
-                    infoRow(title: "Estimated iCloud Data", value: store.cloudUsageTotalText)
-                    infoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloudUsageTaskPayloadText)")
-                    infoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloudUsageLogPayloadText)")
-                    infoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloudUsagePlacePayloadText)")
-                    infoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloudUsageImagePayloadText)")
+                    infoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
+                    infoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
+                    infoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
+                    infoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
+                    infoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
 
-                    Text(store.cloudUsageSummaryText)
+                    Text(store.cloud.usageSummaryText)
                         .foregroundStyle(.secondary)
-                    Text(store.cloudUsageFootnoteText)
+                    Text(store.cloud.usageFootnoteText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

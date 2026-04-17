@@ -1,0 +1,59 @@
+import Foundation
+
+struct SettingsOnAppearSnapshot: Equatable {
+    var appVersion: String
+    var dataModeDescription: String
+    var iCloudContainerDescription: String
+    var cloudSyncAvailable: Bool
+    var notificationsEnabled: Bool
+    var notificationReminderTime: Date
+    var routineListSectioningMode: RoutineListSectioningMode
+    var tagCounterDisplayMode: TagCounterDisplayMode
+    var selectedAppIcon: AppIconOption
+    var hasTemporaryViewStateToReset: Bool
+    var cloudDiagnosticsSummary: String
+    var cloudDiagnosticsTimestamp: String
+    var pushDiagnosticsStatus: String
+}
+
+enum SettingsRefreshEditor {
+    static func hydrateOnAppear(
+        _ snapshot: SettingsOnAppearSnapshot,
+        state: inout SettingsFeatureState
+    ) {
+        state.diagnostics.appVersion = snapshot.appVersion
+        state.diagnostics.dataModeDescription = snapshot.dataModeDescription
+        state.diagnostics.iCloudContainerDescription = snapshot.iCloudContainerDescription
+        state.diagnostics.isDebugSectionVisible = false
+        state.diagnostics.cloudDiagnosticsSummary = snapshot.cloudDiagnosticsSummary
+        state.diagnostics.cloudDiagnosticsTimestamp = snapshot.cloudDiagnosticsTimestamp
+        state.diagnostics.pushDiagnosticsStatus = snapshot.pushDiagnosticsStatus
+        state.cloud.cloudSyncAvailable = snapshot.cloudSyncAvailable
+
+        SettingsNotificationsEditor.refreshFromSettings(
+            notificationsEnabled: snapshot.notificationsEnabled,
+            reminderTime: snapshot.notificationReminderTime,
+            state: &state.notifications
+        )
+        SettingsAppearanceEditor.updateRoutineListSectioningMode(
+            snapshot.routineListSectioningMode,
+            state: &state.appearance
+        )
+        SettingsAppearanceEditor.updateTagCounterDisplayMode(
+            snapshot.tagCounterDisplayMode,
+            state: &state.appearance
+        )
+        SettingsAppearanceEditor.refreshFromSettings(
+            selectedAppIcon: snapshot.selectedAppIcon,
+            hasTemporaryViewStateToReset: snapshot.hasTemporaryViewStateToReset,
+            state: &state.appearance
+        )
+    }
+
+    static func refreshOnAppBecameActive(
+        hasTemporaryViewStateToReset: Bool,
+        state: inout SettingsFeatureState
+    ) {
+        state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
+    }
+}
