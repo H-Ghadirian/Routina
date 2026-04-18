@@ -272,11 +272,7 @@ extension HomeTCAView {
                     } else if isMacSettingsMode {
                         macSettingsSidebarView
                     } else if isMacBoardMode {
-                        listOfSortedTasksView(
-                            routineDisplays: store.routineDisplays.filter(\.isOneOffTask),
-                            awayRoutineDisplays: store.awayRoutineDisplays.filter(\.isOneOffTask),
-                            archivedRoutineDisplays: []
-                        )
+                        macBoardSidebarView
                     } else {
                         listOfSortedTasksView(
                             routineDisplays: store.routineDisplays,

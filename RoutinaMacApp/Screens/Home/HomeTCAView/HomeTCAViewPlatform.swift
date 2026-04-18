@@ -26,10 +26,17 @@ extension HomeTCAView {
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            macDoneCountToolbarItem
-            macCanceledCountToolbarItem
-            macRoutineCountToolbarItem
-            macTodoCountToolbarItem
+            if isMacBoardMode {
+                macBoardOpenCountToolbarItem
+                macBoardInProgressCountToolbarItem
+                macBoardBlockedCountToolbarItem
+                macBoardDoneCountToolbarItem
+            } else {
+                macDoneCountToolbarItem
+                macCanceledCountToolbarItem
+                macRoutineCountToolbarItem
+                macTodoCountToolbarItem
+            }
         }
     }
 
@@ -400,6 +407,42 @@ extension HomeTCAView {
             tintColor: .secondaryLabelColor
         )
         .help("Total todos")
+    }
+
+    var macBoardOpenCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(boardOpenTodoCount) open",
+            systemImage: "square.grid.3x3.topleft.filled",
+            tintColor: .secondaryLabelColor
+        )
+        .help("Open todos in the current board view")
+    }
+
+    var macBoardInProgressCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(boardInProgressTodoCount) in progress",
+            systemImage: "arrow.clockwise.circle.fill",
+            tintColor: .systemBlue
+        )
+        .help("In-progress todos in the current board view")
+    }
+
+    var macBoardBlockedCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(boardBlockedTodoCount) blocked",
+            systemImage: "exclamationmark.circle.fill",
+            tintColor: .systemRed
+        )
+        .help("Blocked todos in the current board view")
+    }
+
+    var macBoardDoneCountToolbarItem: some View {
+        MacToolbarStatusBadge(
+            title: "\(boardDoneTodoCount) done",
+            systemImage: "checkmark.circle.fill",
+            tintColor: .systemGreen
+        )
+        .help("Done todos in the current board view")
     }
 }
 

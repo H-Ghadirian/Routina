@@ -20,6 +20,8 @@ struct HomeMacTodoBoardView: View {
 
     @State private var draggedTaskID: UUID?
     @State private var highlightedColumnState: TodoState?
+    @State private var hoverTargetTaskID: UUID?
+    @State private var trailingDropColumnState: TodoState?
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -62,7 +64,8 @@ struct HomeMacTodoBoardView: View {
                             orderedTaskIDs: column.tasks.map(\.id),
                             isSelected: selectedTaskID == task.id,
                             canMoveUp: index > 0,
-                            canMoveDown: index < column.tasks.count - 1
+                            canMoveDown: index < column.tasks.count - 1,
+                            showsInsertionIndicator: hoverTargetTaskID == task.id
                         )
                         .onDrop(
                             of: [.text],
@@ -72,12 +75,17 @@ struct HomeMacTodoBoardView: View {
                                 orderedTaskIDs: column.tasks.map(\.id),
                                 draggedTaskID: $draggedTaskID,
                                 highlightedColumnState: $highlightedColumnState,
+                                hoverTargetTaskID: $hoverTargetTaskID,
+                                trailingDropColumnState: $trailingDropColumnState,
                                 onDropTask: onDropTask
                             )
                         )
                     }
 
-                    boardColumnDropSpacer(column)
+                    boardColumnDropSpacer(
+                        column,
+                        isHighlighted: trailingDropColumnState == column.state
+                    )
                 }
                 .padding(.bottom, 4)
             }
@@ -88,6 +96,8 @@ struct HomeMacTodoBoardView: View {
                     orderedTaskIDs: column.tasks.map(\.id),
                     draggedTaskID: $draggedTaskID,
                     highlightedColumnState: $highlightedColumnState,
+                    hoverTargetTaskID: $hoverTargetTaskID,
+                    trailingDropColumnState: $trailingDropColumnState,
                     onDropTask: onDropTask
                 )
             )
@@ -111,9 +121,14 @@ struct HomeMacTodoBoardView: View {
         orderedTaskIDs: [UUID],
         isSelected: Bool,
         canMoveUp: Bool,
-        canMoveDown: Bool
+        canMoveDown: Bool,
+        showsInsertionIndicator: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
+            if showsInsertionIndicator {
+                insertionIndicator
+            }
+
             HStack(alignment: .top, spacing: 10) {
                 Text(task.emoji)
                     .font(.title3)
@@ -262,23 +277,29 @@ struct HomeMacTodoBoardView: View {
     }
 
     @ViewBuilder
-    private func boardColumnDropSpacer(_ column: Column) -> some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(
-                highlightedColumnState == column.state
-                    ? column.tint.opacity(0.14)
-                    : Color.clear
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(
-                        highlightedColumnState == column.state
-                            ? column.tint.opacity(0.45)
-                            : Color.primary.opacity(0.06),
-                        style: StrokeStyle(lineWidth: 1, dash: [6, 6])
-                    )
-            )
-            .frame(maxWidth: .infinity, minHeight: column.tasks.isEmpty ? 160 : 72)
+    private func boardColumnDropSpacer(_ column: Column, isHighlighted: Bool) -> some View {
+        VStack(spacing: 8) {
+            if isHighlighted {
+                insertionIndicator
+            }
+
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(
+                    isHighlighted
+                        ? column.tint.opacity(0.14)
+                        : Color.clear
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(
+                            isHighlighted
+                                ? column.tint.opacity(0.45)
+                                : Color.primary.opacity(0.06),
+                            style: StrokeStyle(lineWidth: isHighlighted ? 1.5 : 1, dash: [6, 6])
+                        )
+                )
+                .frame(maxWidth: .infinity, minHeight: column.tasks.isEmpty ? 160 : 72)
+        }
     }
 
     private func backgroundFill(for state: TodoState) -> Color {
@@ -294,6 +315,21 @@ struct HomeMacTodoBoardView: View {
         }
         return Color.primary.opacity(0.06)
     }
+
+    private var insertionIndicator: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color.accentColor)
+                .frame(width: 8, height: 8)
+
+            Rectangle()
+                .fill(Color.accentColor)
+                .frame(height: 3)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 4)
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+    }
 }
 
 private struct BoardCardDropDelegate: DropDelegate {
@@ -302,6 +338,8 @@ private struct BoardCardDropDelegate: DropDelegate {
     let orderedTaskIDs: [UUID]
     @Binding var draggedTaskID: UUID?
     @Binding var highlightedColumnState: TodoState?
+    @Binding var hoverTargetTaskID: UUID?
+    @Binding var trailingDropColumnState: TodoState?
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
@@ -310,18 +348,22 @@ private struct BoardCardDropDelegate: DropDelegate {
 
     func dropEntered(info: DropInfo) {
         highlightedColumnState = columnState
+        hoverTargetTaskID = destinationTaskID
+        trailingDropColumnState = nil
     }
 
     func dropExited(info: DropInfo) {
         if highlightedColumnState == columnState {
             highlightedColumnState = nil
         }
+        if hoverTargetTaskID == destinationTaskID {
+            hoverTargetTaskID = nil
+        }
     }
 
     func performDrop(info: DropInfo) -> Bool {
         defer {
-            highlightedColumnState = nil
-            draggedTaskID = nil
+            clearDragState()
         }
 
         guard let draggedTaskID,
@@ -349,6 +391,13 @@ private struct BoardCardDropDelegate: DropDelegate {
         result.insert(draggedTaskID, at: boundedIndex)
         return result
     }
+
+    private func clearDragState() {
+        highlightedColumnState = nil
+        hoverTargetTaskID = nil
+        trailingDropColumnState = nil
+        draggedTaskID = nil
+    }
 }
 
 private struct BoardColumnDropDelegate: DropDelegate {
@@ -356,6 +405,8 @@ private struct BoardColumnDropDelegate: DropDelegate {
     let orderedTaskIDs: [UUID]
     @Binding var draggedTaskID: UUID?
     @Binding var highlightedColumnState: TodoState?
+    @Binding var hoverTargetTaskID: UUID?
+    @Binding var trailingDropColumnState: TodoState?
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
@@ -364,18 +415,22 @@ private struct BoardColumnDropDelegate: DropDelegate {
 
     func dropEntered(info: DropInfo) {
         highlightedColumnState = columnState
+        hoverTargetTaskID = nil
+        trailingDropColumnState = columnState
     }
 
     func dropExited(info: DropInfo) {
         if highlightedColumnState == columnState {
             highlightedColumnState = nil
         }
+        if trailingDropColumnState == columnState {
+            trailingDropColumnState = nil
+        }
     }
 
     func performDrop(info: DropInfo) -> Bool {
         defer {
-            highlightedColumnState = nil
-            draggedTaskID = nil
+            clearDragState()
         }
 
         guard let draggedTaskID else { return false }
@@ -383,5 +438,12 @@ private struct BoardColumnDropDelegate: DropDelegate {
         reorderedIDs.append(draggedTaskID)
         onDropTask(draggedTaskID, columnState, reorderedIDs)
         return true
+    }
+
+    private func clearDragState() {
+        highlightedColumnState = nil
+        hoverTargetTaskID = nil
+        trailingDropColumnState = nil
+        draggedTaskID = nil
     }
 }

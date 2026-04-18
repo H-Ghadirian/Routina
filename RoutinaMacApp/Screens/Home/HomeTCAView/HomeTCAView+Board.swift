@@ -19,6 +19,30 @@ extension HomeTCAView {
             }
     }
 
+    var boardOpenTodoCount: Int {
+        boardFilteredTodoDisplays.count { display in
+            display.todoState != .done
+        }
+    }
+
+    var boardDoneTodoCount: Int {
+        boardFilteredTodoDisplays.count { display in
+            display.todoState == .done
+        }
+    }
+
+    var boardBlockedTodoCount: Int {
+        boardFilteredTodoDisplays.count { display in
+            display.todoState == .blocked
+        }
+    }
+
+    var boardInProgressTodoCount: Int {
+        boardFilteredTodoDisplays.count { display in
+            display.todoState == .inProgress
+        }
+    }
+
     var macTodoBoardColumns: [HomeMacTodoBoardView.Column] {
         [
             HomeMacTodoBoardView.Column(
@@ -46,6 +70,93 @@ extension HomeTCAView {
                 tasks: boardTasks(for: .done)
             )
         ]
+    }
+
+    var boardSelectedTodoDisplay: HomeFeature.RoutineDisplay? {
+        guard let selectedTaskID = store.selectedTaskID else { return nil }
+        return boardFilteredTodoDisplays.first(where: { $0.id == selectedTaskID })
+    }
+
+    var macBoardSidebarView: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 12) {
+                HomeMacSidebarSectionCard(title: "Board") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        boardSidebarStatRow(
+                            title: "Ready / Paused",
+                            value: boardTasks(for: .ready).count,
+                            tint: .orange
+                        )
+                        boardSidebarStatRow(
+                            title: "In Progress",
+                            value: boardInProgressTodoCount,
+                            tint: .blue
+                        )
+                        boardSidebarStatRow(
+                            title: "Blocked",
+                            value: boardBlockedTodoCount,
+                            tint: .red
+                        )
+                        boardSidebarStatRow(
+                            title: "Done",
+                            value: boardDoneTodoCount,
+                            tint: .green
+                        )
+                    }
+                }
+
+                HomeMacSidebarSectionCard(title: "Visible") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("\(boardFilteredTodoDisplays.count) cards in view")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+
+                        Text("Search and filters shape these counts.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HomeMacSidebarSectionCard(title: "Selected") {
+                    if let selected = boardSelectedTodoDisplay {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .center, spacing: 8) {
+                                Text(selected.emoji)
+                                    .font(.headline)
+
+                                Text(selected.name)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
+                            }
+
+                            if let notes = selected.notes, !notes.isEmpty {
+                                Text(notes)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(3)
+                            }
+
+                            HStack(spacing: 8) {
+                                boardStatePill(for: selected.todoState ?? .ready)
+
+                                if let dueDate = selected.dueDate {
+                                    Text(dueDate, style: .date)
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    } else {
+                        Text("Select a card on the board to inspect it here.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+            .padding(12)
+        }
     }
 
     @ViewBuilder
@@ -127,6 +238,49 @@ extension HomeTCAView {
             }
 
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+
+    private func boardSidebarStatRow(title: String, value: Int, tint: Color) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(tint)
+                .frame(width: 8, height: 8)
+
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
+
+            Text("\(value)")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.primary)
+        }
+    }
+
+    private func boardStatePill(for state: TodoState) -> some View {
+        Text(state == .paused ? "Paused" : state.displayTitle)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(boardTint(for: state))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(boardTint(for: state).opacity(0.12))
+            )
+    }
+
+    private func boardTint(for state: TodoState) -> Color {
+        switch state {
+        case .ready, .paused:
+            return .orange
+        case .inProgress:
+            return .blue
+        case .blocked:
+            return .red
+        case .done:
+            return .green
         }
     }
 }
