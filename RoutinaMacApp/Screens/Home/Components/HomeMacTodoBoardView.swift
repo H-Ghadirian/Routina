@@ -13,8 +13,11 @@ struct HomeMacTodoBoardView: View {
     let columns: [Column]
     let selectedTaskID: UUID?
     let isCompactLayout: Bool
+    let availableSprints: [BoardSprint]
+    let activeSprint: BoardSprint?
     let onSelectTask: (UUID) -> Void
     let onMoveTask: (UUID, TodoState) -> Void
+    let onAssignTaskToSprint: (UUID, UUID?) -> Void
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
     let onMoveUp: (UUID, TodoState, [UUID]) -> Void
     let onMoveDown: (UUID, TodoState, [UUID]) -> Void
@@ -24,15 +27,25 @@ struct HomeMacTodoBoardView: View {
     @State private var hoverTargetTaskID: UUID?
     @State private var trailingDropColumnState: TodoState?
 
+    private var isBoardEmpty: Bool {
+        columns.allSatisfy { $0.tasks.isEmpty }
+    }
+
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 16) {
-                ForEach(columns) { column in
-                    boardColumn(column)
-                        .frame(width: isCompactLayout ? 248 : 280)
+        Group {
+            if isBoardEmpty {
+                boardEmptyState
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 16) {
+                        ForEach(columns) { column in
+                            boardColumn(column)
+                                .frame(width: isCompactLayout ? 248 : 280)
+                        }
+                    }
+                    .padding(20)
                 }
             }
-            .padding(20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -178,6 +191,12 @@ struct HomeMacTodoBoardView: View {
                 }
             }
 
+            if let assignedSprintTitle = task.assignedSprintTitle {
+                HStack(spacing: 6) {
+                    statusBadge(title: assignedSprintTitle, tint: .purple)
+                }
+            }
+
             HStack(spacing: 8) {
                 Image(systemName: "line.3.horizontal")
                     .font(.caption.weight(.semibold))
@@ -261,6 +280,29 @@ struct HomeMacTodoBoardView: View {
                 onMoveTask(task.id, .done)
             }
         }
+
+        Divider()
+
+        Button(task.assignedSprintID == nil ? "Move to Backlog" : "Remove from Sprint") {
+            onAssignTaskToSprint(task.id, nil)
+        }
+
+        if let activeSprint, task.assignedSprintID != activeSprint.id {
+            Button("Assign to \(activeSprint.title)") {
+                onAssignTaskToSprint(task.id, activeSprint.id)
+            }
+        }
+
+        if !availableSprints.isEmpty {
+            Menu("Assign to Sprint") {
+                ForEach(availableSprints) { sprint in
+                    Button(sprint.title) {
+                        onAssignTaskToSprint(task.id, sprint.id)
+                    }
+                    .disabled(task.assignedSprintID == sprint.id)
+                }
+            }
+        }
     }
 
     private func statusBadge(title: String, tint: Color) -> some View {
@@ -336,6 +378,27 @@ struct HomeMacTodoBoardView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 4)
         .transition(.opacity.combined(with: .scale(scale: 0.98)))
+    }
+
+    private var boardEmptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "square.grid.3x3.topleft.filled")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 6) {
+                Text("Nothing on this board yet")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                Text("Try another scope, change filters, or move a todo into this board.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(32)
     }
 }
 

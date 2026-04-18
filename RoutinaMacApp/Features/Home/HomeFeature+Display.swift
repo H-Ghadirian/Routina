@@ -7,7 +7,8 @@ extension HomeFeature {
         _ task: RoutineTask,
         placesByID: [UUID: RoutinePlace],
         locationSnapshot: LocationSnapshot,
-        doneStats: DoneStats
+        doneStats: DoneStats,
+        sprintBoardData: SprintBoardData
     ) -> RoutineDisplay {
         let doneTodayFromLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
         let linkedPlace = task.placeID.flatMap { placesByID[$0] }
@@ -49,6 +50,7 @@ extension HomeFeature {
             : (task.isCompletedOneOff || task.isCanceledOneOff)
                 ? Int.max
                 : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
+        let assignedSprint = sprintBoardData.sprint(for: task.id)
 
         return RoutineDisplay(
             taskID: task.id,
@@ -93,7 +95,9 @@ extension HomeFeature {
             doneCount: doneStats.countsByTaskID[task.id, default: 0],
             manualSectionOrders: task.manualSectionOrders,
             color: task.color,
-            todoState: task.todoState
+            todoState: task.todoState,
+            assignedSprintID: assignedSprint?.id,
+            assignedSprintTitle: assignedSprint?.title
         )
     }
 
@@ -109,7 +113,8 @@ extension HomeFeature {
                 task,
                 placesByID: placesByID,
                 locationSnapshot: state.locationSnapshot,
-                doneStats: state.doneStats
+                doneStats: state.doneStats,
+                sprintBoardData: state.sprintBoardData
             )
 
             if task.isOneOffTask {

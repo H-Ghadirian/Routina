@@ -226,4 +226,193 @@ struct HomeBoardPrototypeTests {
 
         #expect(blockedTasks.map(\.id) == [moving.id, firstBlocked.id])
     }
+
+    @Test
+    func assignTodoToSprint_updatesBoardDisplayAssignment() async {
+        let todo = RoutineTask(
+            name: "Plan next release",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let sprint = BoardSprint(
+            id: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!,
+            title: "Sprint 7",
+            createdAt: makeDate("2026-04-01T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(
+            .tasksLoadedSuccessfully([todo], [], [], HomeFeature.DoneStats())
+        )
+
+        await store.send(.sprintBoardLoaded(SprintBoardData(sprints: [sprint], assignments: []))) {
+            $0.sprintBoardData = SprintBoardData(sprints: [sprint], assignments: [])
+        }
+
+        await store.send(.assignTodoToSprint(taskID: todo.id, sprintID: sprint.id)) {
+            $0.sprintBoardData.assignments = [SprintAssignment(todoID: todo.id, sprintID: sprint.id)]
+        }
+
+        let display = try #require(store.state.boardTodoDisplays.first(where: { $0.id == todo.id }))
+        #expect(display.assignedSprintID == sprint.id)
+        #expect(display.assignedSprintTitle == "Sprint 7")
+    }
+
+    @Test
+    func startSprintTapped_makesOnlySelectedSprintActive() async {
+        let now = makeDate("2026-04-19T10:00:00Z")
+        let previouslyActive = BoardSprint(
+            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+            title: "Sprint 1",
+            status: .active,
+            createdAt: makeDate("2026-04-01T09:00:00Z"),
+            startedAt: makeDate("2026-04-10T09:00:00Z")
+        )
+        let planned = BoardSprint(
+            id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
+            title: "Sprint 2",
+            status: .planned,
+            createdAt: makeDate("2026-04-15T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.date.now = now
+        }
+
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(sprints: [previouslyActive, planned], assignments: [])
+            )
+        ) {
+            $0.sprintBoardData = SprintBoardData(sprints: [previouslyActive, planned], assignments: [])
+        }
+
+        await store.send(.startSprintTapped(planned.id)) {
+            $0.sprintBoardData.sprints[0].status = .planned
+            $0.sprintBoardData.sprints[0].startedAt = nil
+            $0.sprintBoardData.sprints[1].status = .active
+            $0.sprintBoardData.sprints[1].startedAt = now
+            $0.sprintBoardData.sprints[1].finishedAt = nil
+            $0.selectedBoardScope = .currentSprint
+        }
+
+        #expect(store.state.sprintBoardData.activeSprint?.id == planned.id)
+        #expect(store.state.sprintBoardData.sprints.filter { $0.status == .active }.count == 1)
+    }
+
+    @Test
+    func finishSprintTapped_marksSprintFinishedAndReturnsBoardToBacklog() async {
+        let now = makeDate("2026-04-19T10:00:00Z")
+        let activeSprint = BoardSprint(
+            id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
+            title: "Sprint 3",
+            status: .active,
+            createdAt: makeDate("2026-04-01T09:00:00Z"),
+            startedAt: makeDate("2026-04-12T09:00:00Z")
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(selectedBoardScope: .currentSprint)
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.date.now = now
+        }
+
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(sprints: [activeSprint], assignments: [])
+            )
+        ) {
+            $0.sprintBoardData = SprintBoardData(sprints: [activeSprint], assignments: [])
+        }
+
+        await store.send(.finishSprintTapped(activeSprint.id)) {
+            $0.sprintBoardData.sprints[0].status = .finished
+            $0.sprintBoardData.sprints[0].finishedAt = now
+            $0.selectedBoardScope = .backlog
+        }
+
+        #expect(store.state.sprintBoardData.sprints[0].status == .finished)
+        #expect(store.state.selectedBoardScope == .backlog)
+    }
+
+    @Test
+    func boardSprintActiveDayCount_countsInclusiveCalendarDays() {
+        let sprint = BoardSprint(
+            title: "Release Sprint",
+            status: .active,
+            createdAt: makeDate("2026-04-01T09:00:00Z"),
+            startedAt: makeDate("2026-04-17T16:00:00Z")
+        )
+        let calendar = Calendar(identifier: .gregorian)
+
+        let activeDays = sprint.activeDayCount(
+            relativeTo: makeDate("2026-04-19T08:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(activeDays == 3)
+    }
+
+    @Test
+    func currentSprintScope_withoutActiveSprintDoesNotShowBacklogItems() async {
+        let backlogTodo = RoutineTask(
+            name: "Backlog item",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let sprintTodo = RoutineTask(
+            name: "Sprint item",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let plannedSprint = BoardSprint(
+            id: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
+            title: "Planned Sprint",
+            status: .planned,
+            createdAt: makeDate("2026-04-18T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(
+            .tasksLoadedSuccessfully([backlogTodo, sprintTodo], [], [], HomeFeature.DoneStats())
+        )
+
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(
+                    sprints: [plannedSprint],
+                    assignments: [SprintAssignment(todoID: sprintTodo.id, sprintID: plannedSprint.id)]
+                )
+            )
+        ) {
+            $0.sprintBoardData = SprintBoardData(
+                sprints: [plannedSprint],
+                assignments: [SprintAssignment(todoID: sprintTodo.id, sprintID: plannedSprint.id)]
+            )
+        }
+
+        await store.send(.selectedBoardScopeChanged(.currentSprint)) {
+            $0.selectedBoardScope = .currentSprint
+        }
+
+        #expect(store.state.selectedBoardScope == .currentSprint)
+        #expect(store.state.boardTodoDisplays.contains(where: { $0.id == backlogTodo.id && $0.assignedSprintID == nil }))
+        #expect(store.state.boardTodoDisplays.contains(where: { $0.id == sprintTodo.id && $0.assignedSprintID == plannedSprint.id }))
+    }
 }

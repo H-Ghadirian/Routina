@@ -43,6 +43,11 @@ private enum RoutineDataTransferClientKey: DependencyKey {
     static let testValue = RoutineDataTransferClient.noop
 }
 
+private enum SprintBoardClientKey: DependencyKey {
+    static let liveValue = SprintBoardClient.live
+    static let testValue = SprintBoardClient.noop
+}
+
 extension DependencyValues {
     var modelContext: @MainActor @Sendable () -> ModelContext {
         get { self[ModelContextProviderKey.self] }
@@ -87,5 +92,10 @@ extension DependencyValues {
     var routineDataTransferClient: RoutineDataTransferClient {
         get { self[RoutineDataTransferClientKey.self] }
         set { self[RoutineDataTransferClientKey.self] = newValue }
+    }
+
+    var sprintBoardClient: SprintBoardClient {
+        get { self[SprintBoardClientKey.self] }
+        set { self[SprintBoardClientKey.self] = newValue }
     }
 }

@@ -45,7 +45,7 @@ extension HomeTCAView {
                 return "Todos"
             }
         case .board:
-            return "Board"
+            return boardScopeTitle
         case .timeline:
             return "Dones"
         case .stats:

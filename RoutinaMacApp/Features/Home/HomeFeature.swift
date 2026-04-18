@@ -92,6 +92,8 @@ struct HomeFeature {
         var manualSectionOrders: [String: Int] = [:]
         var color: RoutineTaskColor = .none
         var todoState: TodoState? = nil
+        var assignedSprintID: UUID? = nil
+        var assignedSprintTitle: String? = nil
     }
 
     enum MacSidebarSelection: Hashable, Equatable {
@@ -110,6 +112,12 @@ struct HomeFeature {
         var id: Self { self }
     }
 
+    enum BoardScope: Equatable, Sendable {
+        case backlog
+        case currentSprint
+        case sprint(UUID)
+    }
+
     @ObservableState
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
@@ -119,6 +127,7 @@ struct HomeFeature {
         var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
         var boardTodoDisplays: [RoutineDisplay] = []
+        var sprintBoardData: SprintBoardData = SprintBoardData()
         var doneStats: DoneStats = DoneStats()
         var selectedTaskID: UUID?
         var isAddRoutineSheetPresented: Bool = false
@@ -163,12 +172,14 @@ struct HomeFeature {
         var macSidebarMode: MacSidebarMode = .routines
         var macSidebarSelection: MacSidebarSelection? = nil
         var selectedSettingsSection: SettingsMacSection? = .notifications
+        var selectedBoardScope: BoardScope = .backlog
     }
 
     enum Action: Equatable {
         case onAppear
         case manualRefreshRequested
         case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineLog], DoneStats)
+        case sprintBoardLoaded(SprintBoardData)
         case tasksLoadFailed
         case locationSnapshotUpdated(LocationSnapshot)
         case hideUnavailableRoutinesChanged(Bool)
@@ -184,6 +195,11 @@ struct HomeFeature {
         case markTaskDone(UUID)
         case moveTodoToState(UUID, TodoState)
         case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
+        case selectedBoardScopeChanged(BoardScope)
+        case createSprintTapped
+        case startSprintTapped(UUID)
+        case finishSprintTapped(UUID)
+        case assignTodoToSprint(taskID: UUID, sprintID: UUID?)
         case notTodayTask(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
@@ -236,6 +252,7 @@ struct HomeFeature {
     @Dependency(\.cloudSyncClient) var cloudSyncClient
     @Dependency(\.continuousClock) var clock
     @Dependency(\.appSettingsClient) var appSettingsClient
+    @Dependency(\.sprintBoardClient) var sprintBoardClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -244,6 +261,7 @@ struct HomeFeature {
                 applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
                 return .concatenate(
                     loadTasksEffect(),
+                    loadSprintBoardEffect(),
                     .run { @MainActor send in
                         let snapshot = await self.locationClient.snapshot(false)
                         send(.locationSnapshotUpdated(snapshot))
@@ -295,6 +313,18 @@ struct HomeFeature {
                     .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: detachedPlaces, linkedTo: reconciledTasks)))),
                     .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(reconciledTasks))))
                 )
+
+            case let .sprintBoardLoaded(sprintBoardData):
+                state.sprintBoardData = sprintBoardData
+                if case .currentSprint = state.selectedBoardScope,
+                   sprintBoardData.activeSprint == nil {
+                    state.selectedBoardScope = .backlog
+                } else if case let .sprint(sprintID) = state.selectedBoardScope,
+                          !sprintBoardData.sprints.contains(where: { $0.id == sprintID }) {
+                    state.selectedBoardScope = .backlog
+                }
+                refreshDisplays(&state)
+                return .none
 
             case .tasksLoadFailed:
                 print("Failed to load tasks.")
@@ -855,6 +885,65 @@ struct HomeFeature {
                 )
                 return .merge(moveEffect, reorderEffect)
 
+            case let .selectedBoardScopeChanged(scope):
+                state.selectedBoardScope = scope
+                return .none
+
+            case .createSprintTapped:
+                let nextIndex = state.sprintBoardData.sprints.count + 1
+                state.sprintBoardData.sprints.insert(
+                    BoardSprint(title: "Sprint \(nextIndex)", createdAt: now),
+                    at: 0
+                )
+                if case .backlog = state.selectedBoardScope {
+                    if let createdSprintID = state.sprintBoardData.sprints.first?.id {
+                        state.selectedBoardScope = .sprint(createdSprintID)
+                    }
+                }
+                refreshDisplays(&state)
+                return saveSprintBoardEffect(state.sprintBoardData)
+
+            case let .startSprintTapped(sprintID):
+                guard let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == sprintID }) else {
+                    return .none
+                }
+
+                for sprintIndex in state.sprintBoardData.sprints.indices {
+                    if state.sprintBoardData.sprints[sprintIndex].status == .active {
+                        state.sprintBoardData.sprints[sprintIndex].status = .planned
+                        state.sprintBoardData.sprints[sprintIndex].startedAt = nil
+                    }
+                }
+
+                state.sprintBoardData.sprints[index].status = .active
+                state.sprintBoardData.sprints[index].startedAt = now
+                state.sprintBoardData.sprints[index].finishedAt = nil
+                state.selectedBoardScope = .currentSprint
+                refreshDisplays(&state)
+                return saveSprintBoardEffect(state.sprintBoardData)
+
+            case let .finishSprintTapped(sprintID):
+                guard let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == sprintID }) else {
+                    return .none
+                }
+                state.sprintBoardData.sprints[index].status = .finished
+                state.sprintBoardData.sprints[index].finishedAt = now
+                if case .currentSprint = state.selectedBoardScope {
+                    state.selectedBoardScope = .backlog
+                }
+                refreshDisplays(&state)
+                return saveSprintBoardEffect(state.sprintBoardData)
+
+            case let .assignTodoToSprint(taskID, sprintID):
+                state.sprintBoardData.assignments.removeAll(where: { $0.todoID == taskID })
+                if let sprintID {
+                    state.sprintBoardData.assignments.append(
+                        SprintAssignment(todoID: taskID, sprintID: sprintID)
+                    )
+                }
+                refreshDisplays(&state)
+                return saveSprintBoardEffect(state.sprintBoardData)
+
             case let .pauseTask(id):
                 let pauseDate = now
                 guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
@@ -1195,12 +1284,15 @@ struct HomeFeature {
             state.doneStats.countsByTaskID.removeValue(forKey: id)
             state.doneStats.canceledCountsByTaskID.removeValue(forKey: id)
         }
+        state.sprintBoardData.assignments.removeAll { assignment in
+            idSet.contains(assignment.todoID)
+        }
         state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
         state.doneStats.canceledTotalCount = max(state.doneStats.canceledTotalCount - removedCanceledCount, 0)
         refreshDisplays(&state)
         syncSelectedTaskDetailState(&state)
 
-        let deleteEffect: Effect<Action> = .run { @MainActor [uniqueIDs] _ in
+        let deleteEffect: Effect<Action> = .run { @MainActor [uniqueIDs, sprintBoardData = state.sprintBoardData] _ in
             let context = self.modelContext()
             let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
             RoutineTask.removeRelationships(targeting: idSet, from: allTasks)
@@ -1220,6 +1312,7 @@ struct HomeFeature {
                 await self.notificationClient.cancel(id.uuidString)
             }
             try? context.save()
+            try? await self.sprintBoardClient.save(sprintBoardData)
             NotificationCenter.default.postRoutineDidUpdate()
         }
         guard state.addRoutineState != nil else { return deleteEffect }
@@ -1373,6 +1466,28 @@ struct HomeFeature {
     private func nextManualOrder(in sectionKey: String, tasks: [RoutineTask]) -> Int {
         let maxOrder = tasks.compactMap { $0.manualSectionOrders[sectionKey] }.max() ?? -1
         return maxOrder + 1
+    }
+
+    private func loadSprintBoardEffect() -> Effect<Action> {
+        .run { send in
+            do {
+                let sprintBoardData = try await sprintBoardClient.load()
+                await send(.sprintBoardLoaded(sprintBoardData))
+            } catch {
+                print("Failed to load sprint board data: \(error)")
+                await send(.sprintBoardLoaded(SprintBoardData()))
+            }
+        }
+    }
+
+    private func saveSprintBoardEffect(_ sprintBoardData: SprintBoardData) -> Effect<Action> {
+        .run { _ in
+            do {
+                try await sprintBoardClient.save(sprintBoardData)
+            } catch {
+                print("Failed to save sprint board data: \(error)")
+            }
+        }
     }
 
     private func loadTasksEffect() -> Effect<Action> {

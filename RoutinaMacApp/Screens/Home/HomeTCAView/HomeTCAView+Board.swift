@@ -2,10 +2,37 @@ import ComposableArchitecture
 import SwiftUI
 
 extension HomeTCAView {
+    var boardSprints: [BoardSprint] {
+        store.sprintBoardData.sprints.sorted { lhs, rhs in
+            if lhs.status == rhs.status {
+                return lhs.createdAt > rhs.createdAt
+            }
+
+            let sortOrder: [SprintStatus: Int] = [.active: 0, .planned: 1, .finished: 2]
+            return (sortOrder[lhs.status] ?? 99) < (sortOrder[rhs.status] ?? 99)
+        }
+    }
+
+    var boardActiveSprint: BoardSprint? {
+        store.sprintBoardData.activeSprint
+    }
+
+    var boardScopeTitle: String {
+        switch store.selectedBoardScope {
+        case .backlog:
+            return "Backlog"
+        case .currentSprint:
+            return boardActiveSprint?.title ?? "Current Sprint"
+        case let .sprint(sprintID):
+            return boardSprints.first(where: { $0.id == sprintID })?.title ?? "Sprint"
+        }
+    }
+
     var boardFilteredTodoDisplays: [HomeFeature.RoutineDisplay] {
         store.boardTodoDisplays
             .filter { task in
                 task.isOneOffTask
+                    && matchesBoardScope(task)
                     && matchesSearch(task)
                     && matchesFilter(task)
                     && matchesManualPlaceFilter(task)
@@ -80,6 +107,93 @@ extension HomeTCAView {
     var macBoardSidebarView: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 12) {
+                HomeMacSidebarSectionCard(title: "Sprint Scope") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        boardScopeButton(title: "Backlog", scope: .backlog)
+                        boardScopeButton(title: "Current Sprint", scope: .currentSprint)
+
+                        ForEach(boardSprints) { sprint in
+                            Button {
+                                store.send(.selectedBoardScopeChanged(.sprint(sprint.id)))
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Circle()
+                                        .fill(boardSprintTint(for: sprint.status))
+                                        .frame(width: 8, height: 8)
+
+                                    Text(sprint.title)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.primary)
+
+                                    Spacer(minLength: 0)
+
+                                    Text(sprint.status.displayTitle)
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(isSelectedBoardScope(.sprint(sprint.id)) ? Color.accentColor.opacity(0.14) : Color.clear)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                HomeMacSidebarSectionCard(title: "Sprints") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button {
+                            store.send(.createSprintTapped)
+                        } label: {
+                            Label("Create sprint", systemImage: "plus")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .buttonStyle(.borderless)
+
+                        if let activeSprint = boardActiveSprint {
+                            HStack(spacing: 8) {
+                                Text(activeSprint.title)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+
+                                Text("Active")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.green)
+                            }
+
+                            if let activeDayCount = activeSprint.activeDayCount(relativeTo: Date()) {
+                                Text(activeDayCount == 1 ? "Day 1" : "Day \(activeDayCount)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Button("Finish active sprint") {
+                                store.send(.finishSprintTapped(activeSprint.id))
+                            }
+                            .buttonStyle(.borderless)
+                            .font(.caption.weight(.semibold))
+                        } else if let nextSprint = boardSprints.first(where: { $0.status == .planned }) {
+                            Text("No active sprint")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Button("Start \(nextSprint.title)") {
+                                store.send(.startSprintTapped(nextSprint.id))
+                            }
+                            .buttonStyle(.borderless)
+                            .font(.caption.weight(.semibold))
+                        } else {
+                            Text("Create a sprint to start planning work beyond the backlog.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 HomeMacSidebarSectionCard(title: "Board") {
                     VStack(alignment: .leading, spacing: 12) {
                         boardSidebarStatRow(
@@ -107,7 +221,7 @@ extension HomeTCAView {
 
                 HomeMacSidebarSectionCard(title: "Visible") {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("\(boardFilteredTodoDisplays.count) cards in view")
+                        Text("\(boardFilteredTodoDisplays.count) cards in \(boardScopeTitle)")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.primary)
 
@@ -155,6 +269,18 @@ extension HomeTCAView {
                             HStack(spacing: 8) {
                                 boardStatePill(for: selected.todoState ?? .ready)
 
+                                if let assignedSprintTitle = selected.assignedSprintTitle {
+                                    Text(assignedSprintTitle)
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.purple)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 3)
+                                        .background(
+                                            Capsule(style: .continuous)
+                                                .fill(Color.purple.opacity(0.12))
+                                        )
+                                }
+
                                 if let dueDate = selected.dueDate {
                                     Text(dueDate, style: .date)
                                         .font(.caption2.weight(.semibold))
@@ -180,11 +306,16 @@ extension HomeTCAView {
             columns: macTodoBoardColumns,
             selectedTaskID: store.selectedTaskID,
             isCompactLayout: isMacTodoBoardCompactCards,
+            availableSprints: boardSprints,
+            activeSprint: boardActiveSprint,
             onSelectTask: { taskID in
                 store.send(.setSelectedTask(taskID))
             },
             onMoveTask: { taskID, state in
                 store.send(.moveTodoToState(taskID, state))
+            },
+            onAssignTaskToSprint: { taskID, sprintID in
+                store.send(.assignTodoToSprint(taskID: taskID, sprintID: sprintID))
             },
             onDropTask: { taskID, state, orderedTaskIDs in
                 store.send(
@@ -257,6 +388,18 @@ extension HomeTCAView {
         }
     }
 
+    private func matchesBoardScope(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        switch store.selectedBoardScope {
+        case .backlog:
+            return task.assignedSprintID == nil
+        case .currentSprint:
+            guard let activeSprintID = boardActiveSprint?.id else { return false }
+            return task.assignedSprintID == activeSprintID
+        case let .sprint(sprintID):
+            return task.assignedSprintID == sprintID
+        }
+    }
+
     private func boardSidebarStatRow(title: String, value: Int, tint: Color) -> some View {
         HStack(spacing: 10) {
             Circle()
@@ -272,6 +415,45 @@ extension HomeTCAView {
             Text("\(value)")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.primary)
+        }
+    }
+
+    private func boardScopeButton(title: String, scope: HomeFeature.BoardScope) -> some View {
+        Button {
+            store.send(.selectedBoardScopeChanged(scope))
+        } label: {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isSelectedBoardScope(scope) ? Color.accentColor.opacity(0.14) : Color.clear)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func isSelectedBoardScope(_ scope: HomeFeature.BoardScope) -> Bool {
+        switch (store.selectedBoardScope, scope) {
+        case (.backlog, .backlog), (.currentSprint, .currentSprint):
+            return true
+        case let (.sprint(lhs), .sprint(rhs)):
+            return lhs == rhs
+        default:
+            return false
+        }
+    }
+
+    private func boardSprintTint(for status: SprintStatus) -> Color {
+        switch status {
+        case .planned:
+            return .orange
+        case .active:
+            return .green
+        case .finished:
+            return .secondary
         }
     }
 
