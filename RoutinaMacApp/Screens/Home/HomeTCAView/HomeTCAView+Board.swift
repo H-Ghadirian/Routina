@@ -117,6 +117,21 @@ extension HomeTCAView {
                     }
                 }
 
+                HomeMacSidebarSectionCard(title: "Layout") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Toggle("Compact cards", isOn: $isMacTodoBoardCompactCards)
+                            .toggleStyle(.switch)
+
+                        Text(
+                            isMacTodoBoardCompactCards
+                                ? "Shows a denser board for longer columns."
+                                : "Shows fuller cards with a little more breathing room."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+
                 HomeMacSidebarSectionCard(title: "Selected") {
                     if let selected = boardSelectedTodoDisplay {
                         VStack(alignment: .leading, spacing: 8) {
@@ -164,6 +179,7 @@ extension HomeTCAView {
         HomeMacTodoBoardView(
             columns: macTodoBoardColumns,
             selectedTaskID: store.selectedTaskID,
+            isCompactLayout: isMacTodoBoardCompactCards,
             onSelectTask: { taskID in
                 store.send(.setSelectedTask(taskID))
             },

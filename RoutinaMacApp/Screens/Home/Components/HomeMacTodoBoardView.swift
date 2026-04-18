@@ -12,6 +12,7 @@ struct HomeMacTodoBoardView: View {
 
     let columns: [Column]
     let selectedTaskID: UUID?
+    let isCompactLayout: Bool
     let onSelectTask: (UUID) -> Void
     let onMoveTask: (UUID, TodoState) -> Void
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
@@ -28,13 +29,14 @@ struct HomeMacTodoBoardView: View {
             HStack(alignment: .top, spacing: 16) {
                 ForEach(columns) { column in
                     boardColumn(column)
-                        .frame(width: 280)
+                        .frame(width: isCompactLayout ? 248 : 280)
                 }
             }
             .padding(20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
+        .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isCompactLayout)
     }
 
     @ViewBuilder
@@ -56,7 +58,7 @@ struct HomeMacTodoBoardView: View {
             }
 
             ScrollView(.vertical, showsIndicators: true) {
-                LazyVStack(spacing: 10) {
+                LazyVStack(spacing: isCompactLayout ? 8 : 10) {
                     ForEach(Array(column.tasks.enumerated()), id: \.element.id) { index, task in
                         boardCard(
                             task,
@@ -112,6 +114,8 @@ struct HomeMacTodoBoardView: View {
                 .stroke(borderColor(for: column.state), lineWidth: highlightedColumnState == column.state ? 1.5 : 1)
         )
         .animation(.easeInOut(duration: 0.12), value: highlightedColumnState)
+        .animation(.spring(response: 0.22, dampingFraction: 0.86), value: hoverTargetTaskID)
+        .animation(.spring(response: 0.22, dampingFraction: 0.86), value: trailingDropColumnState)
     }
 
     @ViewBuilder
@@ -124,26 +128,26 @@ struct HomeMacTodoBoardView: View {
         canMoveDown: Bool,
         showsInsertionIndicator: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: isCompactLayout ? 8 : 10) {
             if showsInsertionIndicator {
                 insertionIndicator
             }
 
             HStack(alignment: .top, spacing: 10) {
                 Text(task.emoji)
-                    .font(.title3)
+                    .font(isCompactLayout ? .headline : .title3)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(task.name)
-                        .font(.subheadline.weight(.semibold))
+                        .font((isCompactLayout ? Font.caption : Font.subheadline).weight(.semibold))
                         .foregroundStyle(.primary)
-                        .lineLimit(2)
+                        .lineLimit(isCompactLayout ? 1 : 2)
 
                     if let notes = task.notes, !notes.isEmpty {
                         Text(notes)
-                            .font(.caption)
+                            .font(isCompactLayout ? .caption2 : .caption)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                            .lineLimit(isCompactLayout ? 1 : 2)
                     }
                 }
 
@@ -205,7 +209,7 @@ struct HomeMacTodoBoardView: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
         }
-        .padding(12)
+        .padding(isCompactLayout ? 10 : 12)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(isSelected ? Color.accentColor.opacity(0.14) : Color(nsColor: .controlBackgroundColor))
@@ -226,6 +230,8 @@ struct HomeMacTodoBoardView: View {
         .contextMenu {
             moveMenuItems(for: task)
         }
+        .scaleEffect(showsInsertionIndicator ? 0.985 : 1)
+        .animation(.spring(response: 0.2, dampingFraction: 0.86), value: showsInsertionIndicator)
     }
 
     @ViewBuilder
@@ -259,10 +265,10 @@ struct HomeMacTodoBoardView: View {
 
     private func statusBadge(title: String, tint: Color) -> some View {
         Text(title)
-            .font(.caption2.weight(.semibold))
+            .font((isCompactLayout ? Font.system(size: 10) : Font.caption2).weight(.semibold))
             .foregroundStyle(tint)
             .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+            .padding(.vertical, isCompactLayout ? 2 : 3)
             .background(
                 Capsule(style: .continuous)
                     .fill(tint.opacity(0.12))
@@ -298,8 +304,9 @@ struct HomeMacTodoBoardView: View {
                             style: StrokeStyle(lineWidth: isHighlighted ? 1.5 : 1, dash: [6, 6])
                         )
                 )
-                .frame(maxWidth: .infinity, minHeight: column.tasks.isEmpty ? 160 : 72)
+                .frame(maxWidth: .infinity, minHeight: column.tasks.isEmpty ? 160 : (isCompactLayout ? 56 : 72))
         }
+        .animation(.spring(response: 0.2, dampingFraction: 0.86), value: isHighlighted)
     }
 
     private func backgroundFill(for state: TodoState) -> Color {

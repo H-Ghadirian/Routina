@@ -28,6 +28,8 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
     ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
+    @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
+    var isMacTodoBoardCompactCards = false
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
