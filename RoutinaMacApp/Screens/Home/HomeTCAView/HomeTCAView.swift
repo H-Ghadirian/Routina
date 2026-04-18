@@ -139,6 +139,8 @@ struct HomeTCAView: View {
         )
     }
 
+    var sidebarRowNumberMinWidth: CGFloat { 28 }
+
     @ViewBuilder
     var addRoutineSheetContent: some View {
         if let addRoutineStore = self.store.scope(

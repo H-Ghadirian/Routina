@@ -70,7 +70,9 @@ extension HomeTCAView {
                 Text("\(rowNumber)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.tertiary)
-                    .frame(width: 18, alignment: .trailing)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(minWidth: sidebarRowNumberMinWidth, alignment: .trailing)
 
                 Text(entry.taskEmoji)
                     .font(.title2)
@@ -185,7 +187,7 @@ extension HomeTCAView {
         }
 
         let summary = summarizedFilterLabels(from: labels, maxVisibleCount: 4)
-        return summary.isEmpty ? nil : summary
+        return summaryWithResultCount(summary, resultCount: timelineEntries.count)
     }
 
     private func timelineTagCount(for tag: String) -> Int {

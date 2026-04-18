@@ -100,7 +100,9 @@ extension HomeTCAView {
             Text("\(rowNumber)")
                 .font(.caption2.monospacedDigit())
                 .foregroundStyle(.tertiary)
-                .frame(width: 18, alignment: .trailing)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(minWidth: sidebarRowNumberMinWidth, alignment: .trailing)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

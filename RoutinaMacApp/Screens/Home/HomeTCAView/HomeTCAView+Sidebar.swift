@@ -77,7 +77,7 @@ extension HomeTCAView {
 
     var macActiveTaskFiltersSummary: String? {
         let summary = summarizedFilterLabels(from: taskFilterLabels, maxVisibleCount: 4)
-        return summary.isEmpty ? nil : summary
+        return summaryWithResultCount(summary, resultCount: macVisibleTaskResultCount)
     }
 
     var macSidebarSearchFiltersSummary: String? {
@@ -122,6 +122,22 @@ extension HomeTCAView {
         return labels
     }
 
+    var macVisibleTaskResultCount: Int {
+        let pinnedTasks = filteredPinnedTasks(
+            activeRoutineDisplays: store.routineDisplays,
+            awayRoutineDisplays: store.awayRoutineDisplays,
+            archivedRoutineDisplays: store.archivedRoutineDisplays
+        )
+        let sections = groupedRoutineSections(
+            from: (store.routineDisplays + store.awayRoutineDisplays).filter { !$0.isPinned }
+        )
+        let archivedTasks = filteredArchivedTasks(store.archivedRoutineDisplays, includePinned: false)
+
+        return pinnedTasks.count
+            + sections.reduce(0) { $0 + $1.tasks.count }
+            + archivedTasks.count
+    }
+
     func summarizedFilterLabels(from labels: [String], maxVisibleCount: Int) -> String {
         guard !labels.isEmpty else { return "" }
         let visibleLabels = Array(labels.prefix(maxVisibleCount))
@@ -129,6 +145,12 @@ extension HomeTCAView {
         let baseSummary = visibleLabels.joined(separator: " • ")
         guard remainderCount > 0 else { return baseSummary }
         return "\(baseSummary) +\(remainderCount)"
+    }
+
+    func summaryWithResultCount(_ summary: String, resultCount: Int) -> String? {
+        guard !summary.isEmpty else { return nil }
+        let resultLabel = resultCount == 1 ? "1 result" : "\(resultCount) results"
+        return "\(summary) • \(resultLabel)"
     }
 
     func clearAllMacFilters() {
