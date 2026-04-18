@@ -311,6 +311,10 @@ extension HomeTCAView {
             onSelectTask: { taskID in
                 store.send(.setSelectedTask(taskID))
             },
+            onOpenTask: { taskID in
+                store.send(.setSelectedTask(taskID))
+                isBoardTaskDetailSheetPresented = true
+            },
             onMoveTask: { taskID, state in
                 store.send(.moveTodoToState(taskID, state))
             },
@@ -348,6 +352,22 @@ extension HomeTCAView {
             }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $isBoardTaskDetailSheetPresented) {
+            if let detailStore = store.scope(
+                state: \.taskDetailState,
+                action: \.taskDetail
+            ) {
+                TaskDetailTCAView(store: detailStore)
+                    .frame(minWidth: 720, minHeight: 640)
+            } else {
+                ContentUnavailableView(
+                    "Task unavailable",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text("Select a task on the board to open its details.")
+                )
+                .frame(minWidth: 520, minHeight: 420)
+            }
+        }
     }
 
     private func boardTasks(for columnState: TodoState) -> [HomeFeature.RoutineDisplay] {

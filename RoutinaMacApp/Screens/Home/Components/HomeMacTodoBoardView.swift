@@ -16,6 +16,7 @@ struct HomeMacTodoBoardView: View {
     let availableSprints: [BoardSprint]
     let activeSprint: BoardSprint?
     let onSelectTask: (UUID) -> Void
+    let onOpenTask: (UUID) -> Void
     let onMoveTask: (UUID, TodoState) -> Void
     let onAssignTaskToSprint: (UUID, UUID?) -> Void
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
@@ -238,6 +239,9 @@ struct HomeMacTodoBoardView: View {
                 .stroke(isSelected ? Color.accentColor.opacity(0.65) : Color.primary.opacity(0.08), lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .onTapGesture(count: 2) {
+            onOpenTask(task.id)
+        }
         .onTapGesture {
             onSelectTask(task.id)
         }

@@ -34,6 +34,7 @@ struct HomeTCAView: View {
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
     @State var draggedSection: String?
+    @State var isBoardTaskDetailSheetPresented = false
 
     init(
         store: StoreOf<HomeFeature>,
