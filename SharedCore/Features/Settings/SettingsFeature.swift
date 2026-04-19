@@ -210,27 +210,21 @@ struct SettingsFeature {
                 )
 
             case .syncNowTapped:
-                guard SettingsCloudEditor.beginSync(state: &state.cloud) else {
-                    return .none
-                }
-                return handleSyncNow()
+                return SettingsCloudActionExecution.beginSync(
+                    state: &state.cloud,
+                    modelContext: self.modelContext,
+                    cloudSyncClient: self.cloudSyncClient
+                )
 
             case let .setCloudDataResetConfirmation(isPresented):
                 SettingsCloudEditor.setDataResetConfirmation(isPresented, state: &state.cloud)
                 return .none
 
             case .resetCloudDataConfirmed:
-                let hasCloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier != nil
-                guard SettingsCloudEditor.prepareDataReset(
-                    hasCloudContainerIdentifier: hasCloudContainerIdentifier,
-                    state: &state.cloud
-                ),
-                let cloudContainerIdentifier = AppEnvironment.cloudKitContainerIdentifier
-                else {
-                    return .none
-                }
-                return handleResetCloudData(
-                    cloudContainerIdentifier: cloudContainerIdentifier
+                return SettingsCloudActionExecution.beginDataReset(
+                    cloudContainerIdentifier: AppEnvironment.cloudKitContainerIdentifier,
+                    state: &state.cloud,
+                    modelContext: self.modelContext
                 )
 
             case let .setDeletePlaceConfirmation(isPresented):
@@ -343,10 +337,20 @@ struct SettingsFeature {
                 return .none
 
             case .exportRoutineDataTapped:
-                return handleExportRoutineDataTapped(state: &state)
+                return SettingsRoutineDataTransferActionExecution.beginExport(
+                    state: &state.dataTransfer,
+                    routineDataTransferClient: self.routineDataTransferClient,
+                    modelContext: self.modelContext
+                )
 
             case .importRoutineDataTapped:
-                return handleImportRoutineDataTapped(state: &state)
+                return SettingsRoutineDataTransferActionExecution.beginImport(
+                    state: &state.dataTransfer,
+                    routineDataTransferClient: self.routineDataTransferClient,
+                    modelContext: self.modelContext,
+                    appSettingsClient: { self.appSettingsClient },
+                    notificationClient: { self.notificationClient }
+                )
 
             case let .appIconSelected(option):
                 SettingsAppearanceEditor.beginAppIconChange(state: &state.appearance)
@@ -406,146 +410,6 @@ struct SettingsFeature {
                 appSettingsClient: self.appSettingsClient,
                 notificationClient: self.notificationClient
             )
-        }
-    }
-
-    private func handleExportRoutineDataTapped(state: inout State) -> Effect<Action> {
-        guard SettingsRoutineDataTransferEditor.begin(.export, state: &state.dataTransfer) else {
-            return .none
-        }
-
-        return executeExportRoutineDataTransfer()
-    }
-
-    private func handleSyncNow() -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                let estimate = try await SettingsCloudExecution.syncNow(
-                    modelContext: self.modelContext,
-                    cloudSyncClient: self.cloudSyncClient
-                )
-                send(.cloudUsageEstimateLoaded(estimate))
-                NotificationCenter.default.postRoutineDidUpdate()
-                await send(
-                    .cloudSyncFinished(
-                        success: true,
-                        message: "Sync completed."
-                    )
-                )
-            } catch {
-                await send(
-                    .cloudSyncFinished(
-                        success: false,
-                        message: "Sync failed: \(error.localizedDescription)"
-                    )
-                )
-            }
-        }
-    }
-
-    private func handleResetCloudData(
-        cloudContainerIdentifier: String
-    ) -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                let estimate = try await SettingsCloudExecution.resetCloudData(
-                    cloudContainerIdentifier: cloudContainerIdentifier,
-                    modelContext: self.modelContext
-                )
-                send(.cloudUsageEstimateLoaded(estimate))
-                NotificationCenter.default.postRoutineDidUpdate()
-                await send(
-                    .cloudDataResetFinished(
-                        success: true,
-                        message: "All Routina data was deleted from iCloud and this device."
-                    )
-                )
-            } catch {
-                await send(
-                    .cloudDataResetFinished(
-                        success: false,
-                        message: SettingsFeedbackSupport.cloudDataResetErrorMessage(for: error)
-                    )
-                )
-            }
-        }
-    }
-
-    private func handleImportRoutineDataTapped(state: inout State) -> Effect<Action> {
-        guard SettingsRoutineDataTransferEditor.begin(.import, state: &state.dataTransfer) else {
-            return .none
-        }
-
-        return executeImportRoutineDataTransfer()
-    }
-
-    private func executeExportRoutineDataTransfer() -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                guard let result = try await SettingsRoutineDataTransferExecution.exportData(
-                    routineDataTransferClient: self.routineDataTransferClient,
-                    modelContext: self.modelContext
-                ) else {
-                    await send(
-                        .routineDataTransferFinished(
-                            success: false,
-                            message: "Save canceled."
-                        )
-                    )
-                    return
-                }
-
-                await send(
-                    .routineDataTransferFinished(
-                        success: true,
-                        message: "Saved to \(result.destinationFileName)."
-                    )
-                )
-            } catch {
-                await send(
-                    .routineDataTransferFinished(
-                        success: false,
-                        message: "Save failed: \(error.localizedDescription)"
-                    )
-                )
-            }
-        }
-    }
-
-    private func executeImportRoutineDataTransfer() -> Effect<Action> {
-        return .run { @MainActor send in
-            do {
-                guard let result = try await SettingsRoutineDataTransferExecution.importData(
-                    routineDataTransferClient: self.routineDataTransferClient,
-                    modelContext: self.modelContext,
-                    appSettingsClient: { self.appSettingsClient },
-                    notificationClient: { self.notificationClient }
-                ) else {
-                    await send(
-                        .routineDataTransferFinished(
-                            success: false,
-                            message: "Load canceled."
-                        )
-                    )
-                    return
-                }
-
-                send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
-                NotificationCenter.default.postRoutineDidUpdate()
-                await send(
-                    .routineDataTransferFinished(
-                        success: true,
-                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.places) places, and \(result.importedSummary.logs) logs."
-                    )
-                )
-            } catch {
-                await send(
-                    .routineDataTransferFinished(
-                        success: false,
-                        message: "Load failed: \(error.localizedDescription)"
-                    )
-                )
-            }
         }
     }
 
