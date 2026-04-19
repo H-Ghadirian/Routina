@@ -583,6 +583,9 @@ struct SettingsMacTagsDetailView: View {
 private struct SettingsMacAppearanceDetailView: View {
     let store: StoreOf<SettingsFeature>
 
+    @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
+    private var isMacTodoBoardCompactCards = false
+
     private let columns = [
         GridItem(.adaptive(minimum: 124), spacing: 12)
     ]
@@ -604,6 +607,19 @@ private struct SettingsMacAppearanceDetailView: View {
                     Text(store.appearance.routineListSectioningSubtitle)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
+
+                SettingsMacDetailCard(title: "Todo Board") {
+                    Toggle("Compact cards", isOn: $isMacTodoBoardCompactCards)
+                        .toggleStyle(.switch)
+
+                    Text(
+                        isMacTodoBoardCompactCards
+                            ? "Shows a denser board for longer columns."
+                            : "Shows fuller cards with a little more breathing room."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                 }
 
                 SettingsMacDetailCard(title: "Tag Counters") {
