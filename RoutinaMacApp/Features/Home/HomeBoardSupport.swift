@@ -1,0 +1,181 @@
+import ComposableArchitecture
+import Foundation
+
+extension HomeFeature {
+    func handleMoveTodoToState(
+        _ id: UUID,
+        newState: TodoState,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { return .none }
+        guard state.routineTasks[index].isOneOffTask else { return .none }
+
+        if newState == .done {
+            guard !state.routineTasks[index].isCompletedOneOff,
+                  !state.routineTasks[index].isCanceledOneOff else { return .none }
+            return reduce(into: &state, action: .markTaskDone(id))
+        }
+
+        guard !state.routineTasks[index].isCompletedOneOff,
+              !state.routineTasks[index].isCanceledOneOff else { return .none }
+
+        let targetSectionKey = Self.boardSectionKey(for: newState)
+        let nextOrder = nextManualOrder(in: targetSectionKey, tasks: state.routineTasks)
+
+        switch newState {
+        case .paused:
+            let pauseDate = now
+            state.routineTasks[index].pausedAt = pauseDate
+            state.routineTasks[index].snoozedUntil = nil
+            state.routineTasks[index].todoStateRawValue = nil
+            state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
+            refreshDisplays(&state)
+            syncSelectedTaskDetailState(&state)
+
+            return .run { @MainActor [id, pauseDate, targetSectionKey, nextOrder] _ in
+                do {
+                    let context = self.modelContext()
+                    guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                    task.pausedAt = pauseDate
+                    task.snoozedUntil = nil
+                    task.todoStateRawValue = nil
+                    task.setManualSectionOrder(nextOrder, for: targetSectionKey)
+                    try context.save()
+                    NotificationCenter.default.postRoutineDidUpdate()
+                } catch {
+                    print("Failed to move todo to paused from board: \(error)")
+                }
+            }
+
+        case .ready, .inProgress, .blocked:
+            state.routineTasks[index].pausedAt = nil
+            state.routineTasks[index].snoozedUntil = nil
+            state.routineTasks[index].todoStateRawValue = newState.rawValue
+            state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
+            refreshDisplays(&state)
+            syncSelectedTaskDetailState(&state)
+
+            return .run { @MainActor [id, rawValue = newState.rawValue, targetSectionKey, nextOrder] _ in
+                do {
+                    let context = self.modelContext()
+                    guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                    task.pausedAt = nil
+                    task.snoozedUntil = nil
+                    task.todoStateRawValue = rawValue
+                    task.setManualSectionOrder(nextOrder, for: targetSectionKey)
+                    try context.save()
+                    NotificationCenter.default.postRoutineDidUpdate()
+                } catch {
+                    print("Failed to move todo to \(rawValue) from board: \(error)")
+                }
+            }
+
+        case .done:
+            return .none
+        }
+    }
+
+    func handleMoveTodoOnBoard(
+        taskID: UUID,
+        targetState: TodoState,
+        orderedTaskIDs: [UUID],
+        state: inout State
+    ) -> Effect<Action> {
+        guard let index = state.routineTasks.firstIndex(where: { $0.id == taskID }) else { return .none }
+        guard state.routineTasks[index].isOneOffTask else { return .none }
+
+        let currentState = state.routineTasks[index].todoState ?? .ready
+        let targetSectionKey = Self.boardSectionKey(for: targetState)
+
+        if currentState == targetState {
+            return reduce(
+                into: &state,
+                action: .setTaskOrderInSection(
+                    sectionKey: targetSectionKey,
+                    orderedTaskIDs: orderedTaskIDs
+                )
+            )
+        }
+
+        if currentState == .done && targetState != .done {
+            return .none
+        }
+
+        let moveEffect = reduce(into: &state, action: .moveTodoToState(taskID, targetState))
+        let reorderEffect: Effect<Action> = .send(
+            .setTaskOrderInSection(
+                sectionKey: targetSectionKey,
+                orderedTaskIDs: orderedTaskIDs
+            )
+        )
+        return .merge(moveEffect, reorderEffect)
+    }
+
+    func handleCreateSprint(state: inout State) -> Effect<Action> {
+        let nextIndex = state.sprintBoardData.sprints.count + 1
+        state.sprintBoardData.sprints.insert(
+            BoardSprint(title: "Sprint \(nextIndex)", createdAt: now),
+            at: 0
+        )
+        if case .backlog = state.selectedBoardScope,
+           let createdSprintID = state.sprintBoardData.sprints.first?.id {
+            state.selectedBoardScope = .sprint(createdSprintID)
+        }
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleStartSprint(
+        _ sprintID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == sprintID }) else {
+            return .none
+        }
+
+        for sprintIndex in state.sprintBoardData.sprints.indices {
+            if state.sprintBoardData.sprints[sprintIndex].status == .active {
+                state.sprintBoardData.sprints[sprintIndex].status = .planned
+                state.sprintBoardData.sprints[sprintIndex].startedAt = nil
+            }
+        }
+
+        state.sprintBoardData.sprints[index].status = .active
+        state.sprintBoardData.sprints[index].startedAt = now
+        state.sprintBoardData.sprints[index].finishedAt = nil
+        state.selectedBoardScope = .currentSprint
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleFinishSprint(
+        _ sprintID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == sprintID }) else {
+            return .none
+        }
+        state.sprintBoardData.sprints[index].status = .finished
+        state.sprintBoardData.sprints[index].finishedAt = now
+        if case .currentSprint = state.selectedBoardScope {
+            state.selectedBoardScope = .backlog
+        }
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleAssignTodoToSprint(
+        taskID: UUID,
+        sprintID: UUID?,
+        state: inout State
+    ) -> Effect<Action> {
+        state.sprintBoardData.assignments.removeAll(where: { $0.todoID == taskID })
+        if let sprintID {
+            state.sprintBoardData.assignments.append(
+                SprintAssignment(todoID: taskID, sprintID: sprintID)
+            )
+        }
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+}

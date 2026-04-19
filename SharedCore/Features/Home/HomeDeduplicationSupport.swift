@@ -1,9 +1,8 @@
-import ComposableArchitecture
 import Foundation
 import SwiftData
 
-extension HomeFeature {
-    func hasDuplicateRoutineName(
+enum HomeDeduplicationSupport {
+    static func hasDuplicateRoutineName(
         _ name: String,
         in context: ModelContext,
         excludingID: UUID? = nil
@@ -18,7 +17,7 @@ extension HomeFeature {
         }
     }
 
-    func enforceUniqueRoutineNames(in context: ModelContext) throws {
+    static func enforceUniqueRoutineNames(in context: ModelContext) throws {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         var tasksByNormalizedName: [String: [RoutineTask]] = [:]
         var removedAny = false
@@ -33,7 +32,7 @@ extension HomeFeature {
 
             let keeper = preferredTaskToKeep(from: sameNamedTasks)
             for task in sameNamedTasks where task.id != keeper.id {
-                let logs = try context.fetch(logsDescriptor(for: task.id))
+                let logs = try context.fetch(HomeTaskSupport.logsDescriptor(for: task.id))
                 for log in logs {
                     context.delete(log)
                 }
@@ -48,7 +47,7 @@ extension HomeFeature {
         }
     }
 
-    func enforceUniquePlaceNames(in context: ModelContext) throws {
+    static func enforceUniquePlaceNames(in context: ModelContext) throws {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
@@ -83,11 +82,11 @@ extension HomeFeature {
         }
     }
 
-    func preferredTaskToKeep(from tasks: [RoutineTask]) -> RoutineTask {
+    private static func preferredTaskToKeep(from tasks: [RoutineTask]) -> RoutineTask {
         tasks.min { taskSelectionKey($0) < taskSelectionKey($1) } ?? tasks[0]
     }
 
-    func preferredPlaceToKeep(
+    private static func preferredPlaceToKeep(
         from places: [RoutinePlace],
         linkedCounts: [UUID: Int]
     ) -> RoutinePlace {
@@ -96,7 +95,7 @@ extension HomeFeature {
         } ?? places[0]
     }
 
-    func taskSelectionKey(_ task: RoutineTask) -> (Int, String, String) {
+    private static func taskSelectionKey(_ task: RoutineTask) -> (Int, String, String) {
         let rawName = task.name ?? ""
         let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
         let whitespacePenalty = rawName == trimmedName ? 0 : 1
@@ -104,7 +103,7 @@ extension HomeFeature {
         return (whitespacePenalty, foldedName, task.id.uuidString.lowercased())
     }
 
-    func placeSelectionKey(
+    private static func placeSelectionKey(
         _ place: RoutinePlace,
         linkedCounts: [UUID: Int]
     ) -> (Int, Int, Date, String, String) {

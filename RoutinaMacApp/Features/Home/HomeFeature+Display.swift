@@ -139,55 +139,22 @@ extension HomeFeature {
     }
 
     func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {
-        let detailTask = task.detachedCopy()
-        let defaultSelectedDate = (detailTask.isCompletedOneOff || detailTask.isCanceledOneOff)
-            ? calendar.startOfDay(for: detailTask.lastDone ?? detailTask.canceledAt ?? now)
-            : calendar.startOfDay(for: now)
-        return TaskDetailFeature.State(
-            task: detailTask,
-            logs: [],
-            selectedDate: defaultSelectedDate,
-            daysSinceLastRoutine: RoutineDateMath.elapsedDaysSinceLastDone(
-                from: detailTask.lastDone,
-                referenceDate: now
-            ),
-            overdueDays: detailTask.isArchived(referenceDate: now, calendar: calendar)
-                ? 0
-                : RoutineDateMath.overdueDays(for: detailTask, referenceDate: now, calendar: calendar),
-            isDoneToday: detailTask.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
-        )
+        HomeTaskSupport.makeTaskDetailState(for: task, now: now, calendar: calendar)
     }
 
     func availableTags(from tasks: [RoutineTask]) -> [String] {
-        RoutineTag.allTags(from: tasks.map(\.tags))
+        HomeTaskSupport.availableTags(from: tasks)
     }
 
     func uniqueTaskIDs(_ ids: [UUID]) -> [UUID] {
-        var seen: Set<UUID> = []
-        return ids.filter { seen.insert($0).inserted }
+        HomeTaskSupport.uniqueTaskIDs(ids)
     }
 
     func existingRoutineNames(from tasks: [RoutineTask]) -> [String] {
-        tasks.compactMap(\.name)
+        HomeTaskSupport.existingRoutineNames(from: tasks)
     }
 
     func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {
-        let taskIDs = Set(tasks.map(\.id))
-        let countsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
-            guard taskIDs.contains(log.taskID) else { return }
-            guard log.kind == .completed else { return }
-            partialResult[log.taskID, default: 0] += 1
-        }
-        let canceledCountsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
-            guard taskIDs.contains(log.taskID) else { return }
-            guard log.kind == .canceled else { return }
-            partialResult[log.taskID, default: 0] += 1
-        }
-        return DoneStats(
-            totalCount: countsByTaskID.values.reduce(0, +),
-            countsByTaskID: countsByTaskID,
-            canceledTotalCount: canceledCountsByTaskID.values.reduce(0, +),
-            canceledCountsByTaskID: canceledCountsByTaskID
-        )
+        HomeTaskSupport.makeDoneStats(tasks: tasks, logs: logs)
     }
 }
