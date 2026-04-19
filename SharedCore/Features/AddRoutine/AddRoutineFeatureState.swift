@@ -34,6 +34,7 @@ struct AddRoutineScheduleState: Equatable {
     var frequency: AddRoutineFeature.Frequency = .day
     var frequencyValue: Int = 1
     var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
+    var recurrenceHasExplicitTime: Bool = false
     var recurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
     var recurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
     var recurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())

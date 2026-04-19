@@ -38,9 +38,15 @@ extension TaskDetailFeature {
         case .dailyTime:
             return .daily(at: state.editRecurrenceTimeOfDay)
         case .weekly:
-            return .weekly(on: state.editRecurrenceWeekday)
+            return .weekly(
+                on: state.editRecurrenceWeekday,
+                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil
+            )
         case .monthlyDay:
-            return .monthly(on: state.editRecurrenceDayOfMonth)
+            return .monthly(
+                on: state.editRecurrenceDayOfMonth,
+                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil
+            )
         }
     }
 

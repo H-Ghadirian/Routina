@@ -83,6 +83,7 @@ struct TaskFormModel {
 
     // MARK: Recurrence
     var recurrenceKind: Binding<RoutineRecurrenceRule.Kind>
+    var recurrenceHasExplicitTime: Binding<Bool>
     var recurrenceTimeOfDay: Binding<Date>
     var recurrenceWeekday: Binding<Int>
     var recurrenceDayOfMonth: Binding<Int>

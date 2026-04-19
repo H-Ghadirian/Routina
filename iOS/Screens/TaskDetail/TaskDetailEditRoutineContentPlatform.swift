@@ -96,6 +96,7 @@ struct TaskDetailEditRoutineContent: View {
                 set: { store.send(.editSelectedPlaceChanged($0)) }
             ),
             recurrenceKind: recurrenceKindBinding,
+            recurrenceHasExplicitTime: recurrenceHasExplicitTimeBinding,
             recurrenceTimeOfDay: recurrenceTimeBinding,
             recurrenceWeekday: recurrenceWeekdayBinding,
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
@@ -175,6 +176,13 @@ struct TaskDetailEditRoutineContent: View {
         Binding(
             get: { store.editRecurrenceTimeOfDay.date(on: Date()) },
             set: { store.send(.editRecurrenceTimeOfDayChanged(RoutineTimeOfDay.from($0))) }
+        )
+    }
+
+    private var recurrenceHasExplicitTimeBinding: Binding<Bool> {
+        Binding(
+            get: { store.editRecurrenceHasExplicitTime },
+            set: { store.send(.editRecurrenceHasExplicitTimeChanged($0)) }
         )
     }
 

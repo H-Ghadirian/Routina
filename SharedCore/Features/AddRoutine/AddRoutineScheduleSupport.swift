@@ -26,7 +26,23 @@ enum AddRoutineScheduleEditor {
         _ kind: RoutineRecurrenceRule.Kind,
         schedule: inout AddRoutineScheduleState
     ) {
+        let previousHasExplicitTime = schedule.recurrenceHasExplicitTime
         schedule.recurrenceKind = kind
+        switch kind {
+        case .intervalDays:
+            schedule.recurrenceHasExplicitTime = false
+        case .dailyTime:
+            schedule.recurrenceHasExplicitTime = true
+        case .weekly, .monthlyDay:
+            schedule.recurrenceHasExplicitTime = previousHasExplicitTime
+        }
+    }
+
+    static func setRecurrenceHasExplicitTime(
+        _ hasExplicitTime: Bool,
+        schedule: inout AddRoutineScheduleState
+    ) {
+        schedule.recurrenceHasExplicitTime = hasExplicitTime
     }
 
     static func setRecurrenceTimeOfDay(

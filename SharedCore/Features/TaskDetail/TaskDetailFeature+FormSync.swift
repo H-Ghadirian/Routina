@@ -33,6 +33,7 @@ extension TaskDetailFeature {
 
         let recurrenceRule = state.task.recurrenceRule
         state.editRecurrenceKind = recurrenceRule.kind
+        state.editRecurrenceHasExplicitTime = recurrenceRule.usesExplicitTimeOfDay
         state.editRecurrenceTimeOfDay = recurrenceRule.timeOfDay ?? .defaultValue
         state.editRecurrenceWeekday = recurrenceRule.weekday ?? Calendar.current.component(.weekday, from: now)
         state.editRecurrenceDayOfMonth = recurrenceRule.dayOfMonth ?? Calendar.current.component(.day, from: now)

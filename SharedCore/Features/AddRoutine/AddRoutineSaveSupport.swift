@@ -146,9 +146,15 @@ struct AddRoutineSaveRequest {
         case .dailyTime:
             return .daily(at: schedule.recurrenceTimeOfDay)
         case .weekly:
-            return .weekly(on: schedule.recurrenceWeekday)
+            return .weekly(
+                on: schedule.recurrenceWeekday,
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+            )
         case .monthlyDay:
-            return .monthly(on: schedule.recurrenceDayOfMonth)
+            return .monthly(
+                on: schedule.recurrenceDayOfMonth,
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+            )
         }
     }
 }

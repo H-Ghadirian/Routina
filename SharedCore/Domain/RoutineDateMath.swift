@@ -76,12 +76,15 @@ enum RoutineDateMath {
         case .weekly:
             let reference = recurrenceReference(for: task, referenceDate: referenceDate)
             let base: Date
-            if task.lastDone == nil {
-                // For new tasks, search from start of week so the current week's
-                // occurrence is found even if the scheduled weekday has passed.
-                base = calendar.date(
-                    from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: reference.base)
-                ) ?? reference.base
+            if task.lastDone == nil,
+               isWeeklyOccurrenceDay(
+                reference.base,
+                weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
+                calendar: calendar
+               ) {
+                // If a routine is created on its scheduled weekday, keep that day as
+                // the first occurrence even when the creation time is later.
+                base = calendar.startOfDay(for: reference.base)
             } else {
                 base = reference.base
             }
@@ -96,12 +99,15 @@ enum RoutineDateMath {
         case .monthlyDay:
             let reference = recurrenceReference(for: task, referenceDate: referenceDate)
             let base: Date
-            if task.lastDone == nil {
-                // For new tasks, search from start of month so the current month's
-                // occurrence is found even if the scheduled day has passed.
-                base = calendar.date(
-                    from: calendar.dateComponents([.year, .month], from: reference.base)
-                ) ?? reference.base
+            if task.lastDone == nil,
+               isMonthlyOccurrenceDay(
+                reference.base,
+                dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
+                calendar: calendar
+               ) {
+                // If a routine is created on its scheduled day-of-month, keep that day
+                // as the first occurrence even when the creation time is later.
+                base = calendar.startOfDay(for: reference.base)
             } else {
                 base = reference.base
             }
@@ -281,5 +287,23 @@ enum RoutineDateMath {
 
             currentMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
         }
+    }
+
+    private static func isWeeklyOccurrenceDay(
+        _ date: Date,
+        weekday: Int,
+        calendar: Calendar
+    ) -> Bool {
+        calendar.component(.weekday, from: date) == min(max(weekday, 1), 7)
+    }
+
+    private static func isMonthlyOccurrenceDay(
+        _ date: Date,
+        dayOfMonth: Int,
+        calendar: Calendar
+    ) -> Bool {
+        let dayCount = calendar.range(of: .day, in: .month, for: date)?.count ?? 31
+        let safeDay = min(max(dayOfMonth, 1), dayCount)
+        return calendar.component(.day, from: date) == safeDay
     }
 }

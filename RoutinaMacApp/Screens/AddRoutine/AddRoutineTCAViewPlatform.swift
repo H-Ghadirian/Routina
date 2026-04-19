@@ -152,6 +152,7 @@ extension AddRoutineTCAView {
             availablePlaces: store.organization.availablePlaces,
             selectedPlaceID: selectedPlaceBinding,
             recurrenceKind: recurrenceKindBinding,
+            recurrenceHasExplicitTime: recurrenceHasExplicitTimeBinding,
             recurrenceTimeOfDay: recurrenceTimeBinding,
             recurrenceWeekday: recurrenceWeekdayBinding,
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
@@ -172,6 +173,13 @@ extension AddRoutineTCAView {
         Binding(
             get: { TaskFormFrequencyUnit(rawValue: store.schedule.frequency.rawValue) ?? .day },
             set: { store.send(.frequencyChanged(AddRoutineFeature.Frequency(rawValue: $0.rawValue) ?? .day)) }
+        )
+    }
+
+    private var recurrenceHasExplicitTimeBinding: Binding<Bool> {
+        Binding(
+            get: { store.schedule.recurrenceHasExplicitTime },
+            set: { store.send(.recurrenceHasExplicitTimeChanged($0)) }
         )
     }
 }

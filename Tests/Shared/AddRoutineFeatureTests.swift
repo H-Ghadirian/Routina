@@ -776,6 +776,70 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveTapped_weeklyAndMonthlySchedules_withExactTime_sendTimedCalendarRecurrenceRules() async {
+        let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
+        let exactTime = RoutineTimeOfDay(hour: 18, minute: 45)
+
+        let weeklyStore = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Review Week"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    recurrenceKind: .weekly,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime,
+                    recurrenceWeekday: 6
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                    capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        let monthlyStore = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Pay Bills"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    recurrenceKind: .monthlyDay,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime,
+                    recurrenceDayOfMonth: 21
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                    capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await weeklyStore.send(.saveTapped)
+        await monthlyStore.send(.saveTapped)
+
+        #expect(
+            capturedRecurrenceRules.value == [
+                .weekly(on: 6, at: exactTime),
+                .monthly(on: 21, at: exactTime)
+            ]
+        )
+    }
+
+    @Test
     func saveTapped_forTodoIncludesNotesAndDeadline() async {
         let deadline = makeDate("2026-03-21T09:00:00Z")
         let capturedNotes = LockIsolated<String?>(nil)

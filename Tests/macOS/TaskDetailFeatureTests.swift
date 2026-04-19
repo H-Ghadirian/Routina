@@ -794,6 +794,69 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func editSaveTapped_persistsWeeklyExactTimeRecurrence() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = makeTask(
+            in: context,
+            name: "Review Week",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🗂️",
+            recurrenceRule: .weekly(on: 6),
+            scheduleAnchor: makeDate("2026-03-16T10:00:00Z")
+        )
+
+        let exactTime = RoutineTimeOfDay(hour: 18, minute: 45)
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Review Week",
+                editRoutineEmoji: "🗂️",
+                editRecurrenceKind: .weekly,
+                editRecurrenceHasExplicitTime: true,
+                editRecurrenceTimeOfDay: exactTime,
+                editRecurrenceWeekday: 6
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+        await store.receive(.availablePlacesLoaded([]))
+        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableRelationshipTasksLoaded([]))
+        await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
+
+        let persistedTask = try #require(
+            context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == task.id
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.recurrenceRule == .weekly(on: 6, at: exactTime))
+    }
+
+    @Test
     func editSaveTapped_switchesFromFixedToChecklistAndClearsSteps() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-16T10:00:00Z")

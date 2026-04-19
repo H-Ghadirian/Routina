@@ -67,6 +67,7 @@ struct TaskDetailFeature: Reducer {
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
         var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
+        var editRecurrenceHasExplicitTime: Bool = false
         var editRecurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
         var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
@@ -128,6 +129,7 @@ struct TaskDetailFeature: Reducer {
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
+        case editRecurrenceHasExplicitTimeChanged(Bool)
         case editRecurrenceTimeOfDayChanged(RoutineTimeOfDay)
         case editRecurrenceWeekdayChanged(Int)
         case editRecurrenceDayOfMonthChanged(Int)
@@ -600,7 +602,20 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editRecurrenceKindChanged(kind):
+            let previousHasExplicitTime = state.editRecurrenceHasExplicitTime
             state.editRecurrenceKind = kind
+            switch kind {
+            case .intervalDays:
+                state.editRecurrenceHasExplicitTime = false
+            case .dailyTime:
+                state.editRecurrenceHasExplicitTime = true
+            case .weekly, .monthlyDay:
+                state.editRecurrenceHasExplicitTime = previousHasExplicitTime
+            }
+            return .none
+
+        case let .editRecurrenceHasExplicitTimeChanged(hasExplicitTime):
+            state.editRecurrenceHasExplicitTime = hasExplicitTime
             return .none
 
         case let .editRecurrenceTimeOfDayChanged(timeOfDay):

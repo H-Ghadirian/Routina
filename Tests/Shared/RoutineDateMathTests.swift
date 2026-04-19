@@ -134,6 +134,25 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func dueDate_weeklySchedule_withExactTime_usesConfiguredWeekdayAndTime() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .weekly(on: 6, at: RoutineTimeOfDay(hour: 18, minute: 45)),
+            scheduleAnchor: makeDate("2026-03-17T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-03-17T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-03-20T18:45:00Z"))
+    }
+
+    @Test
     func dueDate_monthlySchedule_clampsToLastDayOfShortMonth() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
@@ -150,6 +169,25 @@ struct RoutineDateMathTests {
         )
 
         #expect(dueDate == makeDate("2026-04-30T00:00:00Z"))
+    }
+
+    @Test
+    func dueDate_monthlySchedule_withExactTime_clampsAndUsesConfiguredTime() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .monthly(on: 31, at: RoutineTimeOfDay(hour: 18, minute: 45)),
+            scheduleAnchor: makeDate("2026-04-01T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-04-01T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-04-30T18:45:00Z"))
     }
 
     // Regression: monthly routine created mid-day on the scheduled day of month
@@ -195,6 +233,27 @@ struct RoutineDateMathTests {
         )
 
         #expect(dueDate == makeDate("2026-03-20T00:00:00Z"))
+    }
+
+    @Test
+    func dueDate_weeklySchedule_createdAfterScheduledWeekday_returnsNextWeekOccurrence() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        // April 19, 2026 is a Sunday. A new "every Monday at 17:00" routine should
+        // first be due on April 20, not the previous Monday in the same week.
+        let task = RoutineTask(
+            recurrenceRule: .weekly(on: 2, at: RoutineTimeOfDay(hour: 17, minute: 0)),
+            scheduleAnchor: makeDate("2026-04-19T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-04-19T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-04-20T17:00:00Z"))
     }
 
     @Test
@@ -319,13 +378,12 @@ struct RoutineDateMathTests {
     }
 
     @Test
-    func canMarkDone_monthlySchedule_returnsTrueWhenScheduledDayAlreadyPassedThisMonth() {
+    func canMarkDone_monthlySchedule_returnsFalseWhenScheduledDayAlreadyPassedAtCreation() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        // Task created on March 29; rule is "every 26th". Today is March 29.
-        // The March 26 occurrence already passed, but a new task should still
-        // be markable — its first due date is March 26 (overdue).
+        // Task created on March 29; rule is "every 26th". A new task should not
+        // immediately become overdue for March 26, so it is not markable yet.
         let task = RoutineTask(
             recurrenceRule: .monthly(on: 26),
             scheduleAnchor: makeDate("2026-03-29T09:00:00Z")
@@ -337,16 +395,16 @@ struct RoutineDateMathTests {
             calendar: calendar
         )
 
-        #expect(canDone == true)
+        #expect(canDone == false)
     }
 
     @Test
-    func dueDate_monthlySchedule_returnsCurrentMonthOccurrenceForNewTask() {
+    func dueDate_monthlySchedule_createdAfterScheduledDay_returnsNextMonthOccurrence() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
-        // Created on March 29; day-of-month = 26. Due date should be March 26
-        // (the current month's occurrence), not April 26.
+        // Created on March 29; day-of-month = 26. The first due date should be the
+        // next valid occurrence after creation, not the already-passed March 26.
         let task = RoutineTask(
             recurrenceRule: .monthly(on: 26),
             scheduleAnchor: makeDate("2026-03-29T09:00:00Z")
@@ -358,7 +416,7 @@ struct RoutineDateMathTests {
             calendar: calendar
         )
 
-        let expected = makeDate("2026-03-26T00:00:00Z")
+        let expected = makeDate("2026-04-26T00:00:00Z")
         #expect(due == expected)
     }
 }

@@ -197,6 +197,23 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_weeklyAndMonthlyRecurrencePreserveExplicitScheduleRule() {
+        let weeklyTask = RoutineTask(
+            name: "Review",
+            recurrenceRule: .weekly(on: 6, at: RoutineTimeOfDay(hour: 18, minute: 45)),
+            scheduleAnchor: makeDate("2026-03-18T10:00:00Z")
+        )
+        let monthlyTask = RoutineTask(
+            name: "Bills",
+            recurrenceRule: .monthly(on: 21, at: RoutineTimeOfDay(hour: 18, minute: 45)),
+            scheduleAnchor: makeDate("2026-03-18T10:00:00Z")
+        )
+
+        #expect(weeklyTask.recurrenceRule == .weekly(on: 6, at: RoutineTimeOfDay(hour: 18, minute: 45)))
+        #expect(monthlyTask.recurrenceRule == .monthly(on: 21, at: RoutineTimeOfDay(hour: 18, minute: 45)))
+    }
+
+    @Test
     func routineTask_sanitizesNotesAndKeepsDeadlineOnlyForTodos() {
         let todoDeadline = makeDate("2026-03-21T09:00:00Z")
         let todo = RoutineTask(

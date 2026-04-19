@@ -273,6 +273,7 @@ struct TaskDetailTCAView: View {
             frequency: store.editFrequency,
             frequencyValue: store.editFrequencyValue,
             recurrenceKind: store.editRecurrenceKind,
+            recurrenceHasExplicitTime: store.editRecurrenceHasExplicitTime,
             recurrenceTimeOfDay: store.editRecurrenceTimeOfDay,
             recurrenceWeekday: store.editRecurrenceWeekday,
             recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
@@ -1498,6 +1499,7 @@ struct TaskDetailTCAView: View {
         frequency: TaskDetailFeature.EditFrequency,
         frequencyValue: Int,
         recurrenceKind: RoutineRecurrenceRule.Kind,
+        recurrenceHasExplicitTime: Bool,
         recurrenceTimeOfDay: RoutineTimeOfDay,
         recurrenceWeekday: Int,
         recurrenceDayOfMonth: Int,
@@ -1535,9 +1537,15 @@ struct TaskDetailTCAView: View {
         case .dailyTime:
             newRecurrenceRule = .daily(at: recurrenceTimeOfDay)
         case .weekly:
-            newRecurrenceRule = .weekly(on: recurrenceWeekday)
+            newRecurrenceRule = .weekly(
+                on: recurrenceWeekday,
+                at: recurrenceHasExplicitTime ? recurrenceTimeOfDay : nil
+            )
         case .monthlyDay:
-            newRecurrenceRule = .monthly(on: recurrenceDayOfMonth)
+            newRecurrenceRule = .monthly(
+                on: recurrenceDayOfMonth,
+                at: recurrenceHasExplicitTime ? recurrenceTimeOfDay : nil
+            )
         }
         let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
 

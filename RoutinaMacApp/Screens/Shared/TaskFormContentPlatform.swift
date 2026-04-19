@@ -404,6 +404,23 @@ struct TaskFormContent: View {
                             .pickerStyle(.menu)
                         }
 
+                        macControlBlock(title: "Time") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
+                                if model.recurrenceHasExplicitTime.wrappedValue {
+                                    DatePicker(
+                                        "Time",
+                                        selection: model.recurrenceTimeOfDay,
+                                        displayedComponents: .hourAndMinute
+                                    )
+                                    .labelsHidden()
+                                }
+                                Text(weeklyRecurrenceTimeHelpText)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
                     case .monthlyDay:
                         macControlBlock(title: "Month day") {
                             Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
@@ -411,6 +428,23 @@ struct TaskFormContent: View {
                                     .frame(minWidth: 40, alignment: .leading)
                             }
                             .fixedSize()
+                        }
+
+                        macControlBlock(title: "Time") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
+                                if model.recurrenceHasExplicitTime.wrappedValue {
+                                    DatePicker(
+                                        "Time",
+                                        selection: model.recurrenceTimeOfDay,
+                                        displayedComponents: .hourAndMinute
+                                    )
+                                    .labelsHidden()
+                                }
+                                Text(monthlyRecurrenceTimeHelpText)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
@@ -1088,8 +1122,8 @@ struct TaskFormContent: View {
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays: return "Repeat after a fixed number of days, weeks, or months."
         case .dailyTime: return "Repeat every day at a specific time."
-        case .weekly: return "Repeat on the same weekday each week."
-        case .monthlyDay: return "Repeat on the same calendar day each month."
+        case .weekly: return "Repeat on the same weekday each week, with an optional exact time."
+        case .monthlyDay: return "Repeat on the same calendar day each month, with an optional exact time."
         }
     }
 
@@ -1167,8 +1201,14 @@ struct TaskFormContent: View {
         case .dailyTime:
             return "Daily at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
         case .weekly:
+            if model.recurrenceHasExplicitTime.wrappedValue {
+                return "Every \(weekdayName(for: model.recurrenceWeekday.wrappedValue)) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
+            }
             return "Every \(weekdayName(for: model.recurrenceWeekday.wrappedValue))"
         case .monthlyDay:
+            if model.recurrenceHasExplicitTime.wrappedValue {
+                return "Monthly on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
+            }
             return "Monthly on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue))"
         }
     }
@@ -1191,6 +1231,20 @@ struct TaskFormContent: View {
 
     private func checklistIntervalLabel(for intervalDays: Int) -> String {
         intervalDays == 1 ? "Runs out in 1 day" : "Runs out in \(intervalDays) days"
+    }
+
+    private var weeklyRecurrenceTimeHelpText: String {
+        if model.recurrenceHasExplicitTime.wrappedValue {
+            return "Due every \(weekdayName(for: model.recurrenceWeekday.wrappedValue)) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))."
+        }
+        return "Optional. Leave this off to keep the routine due any time on \(weekdayName(for: model.recurrenceWeekday.wrappedValue))."
+    }
+
+    private var monthlyRecurrenceTimeHelpText: String {
+        if model.recurrenceHasExplicitTime.wrappedValue {
+            return "Due on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) of each month at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))."
+        }
+        return "Optional. Leave this off to keep the routine due any time on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) of each month."
     }
 
     private var weekdayOptions: [(id: Int, name: String)] {

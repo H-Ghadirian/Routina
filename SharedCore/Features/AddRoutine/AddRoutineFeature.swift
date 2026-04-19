@@ -71,6 +71,7 @@ struct AddRoutineFeature: Reducer {
         case frequencyChanged(Frequency)
         case frequencyValueChanged(Int)
         case recurrenceKindChanged(RoutineRecurrenceRule.Kind)
+        case recurrenceHasExplicitTimeChanged(Bool)
         case recurrenceTimeOfDayChanged(RoutineTimeOfDay)
         case recurrenceWeekdayChanged(Int)
         case recurrenceDayOfMonthChanged(Int)
@@ -362,6 +363,13 @@ struct AddRoutineFeature: Reducer {
         case let .recurrenceKindChanged(kind):
             AddRoutineScheduleEditor.setRecurrenceKind(
                 kind,
+                schedule: &state.schedule
+            )
+            return .none
+
+        case let .recurrenceHasExplicitTimeChanged(hasExplicitTime):
+            AddRoutineScheduleEditor.setRecurrenceHasExplicitTime(
+                hasExplicitTime,
                 schedule: &state.schedule
             )
             return .none
