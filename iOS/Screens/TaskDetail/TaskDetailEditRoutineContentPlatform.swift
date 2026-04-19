@@ -105,6 +105,11 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editFrequencyValue },
                 set: { store.send(.editFrequencyValueChanged($0)) }
             ),
+            autoAssumeDailyDone: Binding(
+                get: { store.editAutoAssumeDailyDone },
+                set: { store.send(.editAutoAssumeDailyDoneChanged($0)) }
+            ),
+            canAutoAssumeDailyDone: store.canAutoAssumeDailyDone,
             color: Binding(
                 get: { store.editColor },
                 set: { store.send(.editColorChanged($0)) }

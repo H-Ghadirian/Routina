@@ -84,6 +84,7 @@ struct AddRoutineSaveRequest {
     let checklistItems: [RoutineChecklistItem]
     let attachments: [AttachmentItem]
     let color: RoutineTaskColor
+    let autoAssumeDailyDone: Bool
 
     init?(state: AddRoutineFeature.State) {
         guard !state.isSaveDisabled else { return nil }
@@ -126,6 +127,13 @@ struct AddRoutineSaveRequest {
             : RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
         self.attachments = basics.attachments
         self.color = basics.routineColor
+        self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
+            && RoutineAssumedCompletion.isEligible(
+                scheduleMode: self.scheduleMode,
+                recurrenceRule: self.recurrenceRule,
+                hasSequentialSteps: !self.steps.isEmpty,
+                hasChecklistItems: !self.checklistItems.isEmpty
+            )
     }
 
     private static func selectedRecurrenceRule(

@@ -31,6 +31,7 @@ struct SwiftDataModelTests {
         #expect(task.urgency == .level2)
         #expect(task.completedStepCount == 0)
         #expect(task.sequenceStartedAt == nil)
+        #expect(task.autoAssumeDailyDone == false)
     }
 
     @Test

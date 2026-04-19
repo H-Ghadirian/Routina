@@ -75,6 +75,7 @@ struct AddRoutineFeature: Reducer {
         case recurrenceTimeOfDayChanged(RoutineTimeOfDay)
         case recurrenceWeekdayChanged(Int)
         case recurrenceDayOfMonthChanged(Int)
+        case autoAssumeDailyDoneChanged(Bool)
         case existingRoutineNamesChanged([String])
         case availablePlacesChanged([RoutinePlaceSummary])
         case selectedPlaceChanged(UUID?)
@@ -85,13 +86,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor)
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool)
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -198,6 +199,9 @@ struct AddRoutineFeature: Reducer {
             )
             state.basics = basics
             state.schedule = schedule
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .availableTagsChanged(tags):
@@ -280,6 +284,9 @@ struct AddRoutineFeature: Reducer {
                 mode,
                 schedule: &state.schedule
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .stepDraftChanged(value):
@@ -293,6 +300,9 @@ struct AddRoutineFeature: Reducer {
             AddRoutineChecklistEditor.addStep(
                 checklist: &state.checklist
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .removeStep(stepID):
@@ -300,6 +310,9 @@ struct AddRoutineFeature: Reducer {
                 stepID,
                 checklist: &state.checklist
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .moveStepUp(stepID):
@@ -337,6 +350,9 @@ struct AddRoutineFeature: Reducer {
                 createdAt: now,
                 checklist: &state.checklist
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .removeChecklistItem(itemID):
@@ -344,6 +360,9 @@ struct AddRoutineFeature: Reducer {
                 itemID,
                 checklist: &state.checklist
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .frequencyChanged(freq):
@@ -351,6 +370,9 @@ struct AddRoutineFeature: Reducer {
                 freq,
                 schedule: &state.schedule
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .frequencyValueChanged(value):
@@ -358,6 +380,9 @@ struct AddRoutineFeature: Reducer {
                 value,
                 schedule: &state.schedule
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .recurrenceKindChanged(kind):
@@ -365,6 +390,9 @@ struct AddRoutineFeature: Reducer {
                 kind,
                 schedule: &state.schedule
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .recurrenceHasExplicitTimeChanged(hasExplicitTime):
@@ -372,6 +400,9 @@ struct AddRoutineFeature: Reducer {
                 hasExplicitTime,
                 schedule: &state.schedule
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .recurrenceTimeOfDayChanged(timeOfDay):
@@ -379,6 +410,9 @@ struct AddRoutineFeature: Reducer {
                 timeOfDay,
                 schedule: &state.schedule
             )
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .recurrenceWeekdayChanged(weekday):
@@ -393,6 +427,10 @@ struct AddRoutineFeature: Reducer {
                 dayOfMonth,
                 schedule: &state.schedule
             )
+            return .none
+
+        case let .autoAssumeDailyDoneChanged(isEnabled):
+            state.schedule.autoAssumeDailyDone = isEnabled && state.canAutoAssumeDailyDone
             return .none
 
         case let .existingRoutineNamesChanged(names):
@@ -451,7 +489,8 @@ struct AddRoutineFeature: Reducer {
                 request.scheduleMode,
                 request.checklistItems,
                 request.attachments,
-                request.color
+                request.color,
+                request.autoAssumeDailyDone
             )
 
         case .cancelTapped:

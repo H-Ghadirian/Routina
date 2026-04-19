@@ -11,6 +11,12 @@ extension HomeFeature {
         sprintBoardData: SprintBoardData
     ) -> RoutineDisplay {
         let doneTodayFromLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
+        let assumedDoneToday = !doneTodayFromLastDone && RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: now,
+            referenceDate: now,
+            calendar: calendar
+        )
         let linkedPlace = task.placeID.flatMap { placesByID[$0] }
         let locationAvailability: RoutineLocationAvailability
 
@@ -80,7 +86,8 @@ extension HomeFeature {
             isOneOffTask: task.isOneOffTask,
             isCompletedOneOff: task.isCompletedOneOff,
             isCanceledOneOff: task.isCanceledOneOff,
-            isDoneToday: doneTodayFromLastDone,
+            isDoneToday: doneTodayFromLastDone || assumedDoneToday,
+            isAssumedDoneToday: assumedDoneToday,
             isPaused: isArchived,
             isSnoozed: isSnoozed,
             isPinned: task.isPinned,

@@ -147,7 +147,8 @@ extension TaskDetailFeature {
         checklistItems: [RoutineChecklistItem],
         scheduleMode: RoutineScheduleMode,
         recurrenceRule: RoutineRecurrenceRule,
-        color: RoutineTaskColor
+        color: RoutineTaskColor,
+        autoAssumeDailyDone: Bool
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -186,6 +187,13 @@ extension TaskDetailFeature {
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
+                task.autoAssumeDailyDone = autoAssumeDailyDone
+                    && RoutineAssumedCompletion.isEligible(
+                        scheduleMode: scheduleMode,
+                        recurrenceRule: recurrenceRule,
+                        hasSequentialSteps: !steps.isEmpty,
+                        hasChecklistItems: !checklistItems.isEmpty
+                    )
                 if scheduleMode == .oneOff {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1
@@ -209,6 +217,44 @@ extension TaskDetailFeature {
                 send(.onAppear)
             } catch {
                 print("Error saving routine edits: \(error)")
+            }
+        }
+    }
+
+    func handleConfirmAssumedPastDays(
+        taskID: UUID,
+        days: [Date]
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let updatedTask = try RoutineLogHistory.confirmTaskCompletions(
+                    taskID: taskID,
+                    on: days,
+                    context: context,
+                    referenceDate: now,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+
+                if updatedTask.isArchived() || updatedTask.isOneOffTask {
+                    await notificationClient.cancel(updatedTask.id.uuidString)
+                } else {
+                    await notificationClient.schedule(
+                        NotificationCoordinator.notificationPayload(
+                            for: updatedTask,
+                            referenceDate: now,
+                            calendar: calendar
+                        )
+                    )
+                }
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error confirming assumed routine days: \(error)")
             }
         }
     }

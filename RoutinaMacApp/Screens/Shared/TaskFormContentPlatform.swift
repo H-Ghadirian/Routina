@@ -447,6 +447,16 @@ struct TaskFormContent: View {
                             }
                         }
                     }
+
+                    macControlBlock(
+                        title: "Assumed done",
+                        caption: model.canAutoAssumeDailyDone
+                            ? "Show this simple daily routine as assumed done by default. You can still confirm it or mark it not done later."
+                            : "Available only for simple daily routines without steps or checklist items."
+                    ) {
+                        Toggle("Assume done automatically", isOn: model.autoAssumeDailyDone)
+                            .disabled(!model.canAutoAssumeDailyDone)
+                    }
                 }
 
                 if model.taskType.wrappedValue == .todo {

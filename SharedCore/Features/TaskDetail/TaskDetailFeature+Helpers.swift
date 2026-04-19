@@ -50,6 +50,10 @@ extension TaskDetailFeature {
         }
     }
 
+    func canAutoAssumeDailyDone(for state: State) -> Bool {
+        state.canAutoAssumeDailyDone
+    }
+
     func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {
         guard let index = state.editRoutineSteps.firstIndex(where: { $0.id == stepID }) else { return }
         let targetIndex = index + offset

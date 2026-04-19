@@ -102,6 +102,9 @@ extension HomeTCAView {
         if task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0 {
             return "Checklist \(task.completedChecklistItemCount) of \(max(task.checklistItemCount, 1))"
         }
+        if task.isAssumedDoneToday {
+            return "Assumed today"
+        }
         if task.isInProgress {
             let totalSteps = max(task.steps.count, 1)
             return "Step \(task.completedStepCount + 1) of \(totalSteps)"
@@ -180,6 +183,10 @@ extension HomeTCAView {
                 .orange,
                 Color.orange.opacity(0.16)
             )
+        }
+
+        if task.isAssumedDoneToday {
+            return ("Assumed", "checkmark.circle", .mint, Color.mint.opacity(0.18))
         }
 
         if task.isDoneToday {

@@ -173,6 +173,7 @@ final class RoutineTask {
     var colorRawValue: String = RoutineTaskColor.none.rawValue
     var createdAt: Date? = nil
     var todoStateRawValue: String? = nil
+    var autoAssumeDailyDone: Bool = false
 
     var isPaused: Bool {
         pausedAt != nil
@@ -460,7 +461,8 @@ final class RoutineTask {
         sequenceStartedAt: Date? = nil,
         color: RoutineTaskColor = .none,
         createdAt: Date? = Date(),
-        todoStateRawValue: String? = nil
+        todoStateRawValue: String? = nil,
+        autoAssumeDailyDone: Bool = false
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
@@ -497,6 +499,7 @@ final class RoutineTask {
         self.colorRawValue = color.rawValue
         self.createdAt = createdAt
         self.todoStateRawValue = todoStateRawValue
+        self.autoAssumeDailyDone = autoAssumeDailyDone
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
             resetStepProgress()
         }
@@ -854,7 +857,8 @@ final class RoutineTask {
             sequenceStartedAt: sequenceStartedAt,
             color: color,
             createdAt: createdAt,
-            todoStateRawValue: todoStateRawValue
+            todoStateRawValue: todoStateRawValue,
+            autoAssumeDailyDone: autoAssumeDailyDone
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage

@@ -45,7 +45,12 @@ enum HomeTaskSupport {
             overdueDays: detailTask.isArchived(referenceDate: now, calendar: calendar)
                 ? 0
                 : RoutineDateMath.overdueDays(for: detailTask, referenceDate: now, calendar: calendar),
-            isDoneToday: detailTask.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
+            isDoneToday: detailTask.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false,
+            isAssumedDoneToday: RoutineAssumedCompletion.isAssumedDone(
+                for: detailTask,
+                on: now,
+                logs: []
+            )
         )
     }
 

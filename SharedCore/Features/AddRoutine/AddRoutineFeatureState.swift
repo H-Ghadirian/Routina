@@ -38,6 +38,7 @@ struct AddRoutineScheduleState: Equatable {
     var recurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
     var recurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
     var recurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
+    var autoAssumeDailyDone: Bool = false
 }
 
 struct AddRoutineChecklistState: Equatable {
@@ -96,5 +97,45 @@ struct AddRoutineFeatureState: Equatable {
 
     var requiresChecklistItems: Bool {
         schedule.scheduleMode == .fixedIntervalChecklist || schedule.scheduleMode == .derivedFromChecklist
+    }
+
+    var candidateRecurrenceRule: RoutineRecurrenceRule {
+        let fallbackInterval = schedule.scheduleMode == .oneOff
+            ? 1
+            : schedule.frequencyValue * schedule.frequency.daysMultiplier
+
+        guard schedule.scheduleMode != .oneOff else {
+            return .interval(days: 1)
+        }
+
+        guard schedule.scheduleMode != .derivedFromChecklist else {
+            return .interval(days: max(fallbackInterval, 1))
+        }
+
+        switch schedule.recurrenceKind {
+        case .intervalDays:
+            return .interval(days: max(fallbackInterval, 1))
+        case .dailyTime:
+            return .daily(at: schedule.recurrenceTimeOfDay)
+        case .weekly:
+            return .weekly(
+                on: schedule.recurrenceWeekday,
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+            )
+        case .monthlyDay:
+            return .monthly(
+                on: schedule.recurrenceDayOfMonth,
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+            )
+        }
+    }
+
+    var canAutoAssumeDailyDone: Bool {
+        RoutineAssumedCompletion.isEligible(
+            scheduleMode: schedule.scheduleMode,
+            recurrenceRule: candidateRecurrenceRule,
+            hasSequentialSteps: !checklist.routineSteps.isEmpty,
+            hasChecklistItems: !checklist.routineChecklistItems.isEmpty
+        )
     }
 }

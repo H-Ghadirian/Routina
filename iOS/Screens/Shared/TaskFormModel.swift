@@ -89,6 +89,8 @@ struct TaskFormModel {
     var recurrenceDayOfMonth: Binding<Int>
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
+    var autoAssumeDailyDone: Binding<Bool> = .constant(false)
+    var canAutoAssumeDailyDone: Bool = false
 
     // MARK: Color
     var color: Binding<RoutineTaskColor>

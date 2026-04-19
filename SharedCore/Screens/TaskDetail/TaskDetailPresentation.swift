@@ -68,6 +68,7 @@ enum TaskDetailPresentation {
     static func summaryTitleColor(
         pausedAt: Date?,
         isDoneToday: Bool,
+        isAssumedDoneToday: Bool,
         overdueDays: Int,
         task: RoutineTask,
         referenceDate: Date = Date()
@@ -100,6 +101,7 @@ enum TaskDetailPresentation {
         }
         if task.isInProgress { return .orange }
         if isDoneToday { return .green }
+        if isAssumedDoneToday { return .mint }
         if overdueDays > 0 { return .red }
         if daysUntilDueIfActive(task, referenceDate: referenceDate) == 0 {
             return TaskDetailPlatformStyle.dueTodayTitleColor

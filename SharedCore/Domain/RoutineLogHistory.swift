@@ -111,6 +111,65 @@ enum RoutineLogHistory {
     }
 
     @MainActor
+    static func confirmTaskCompletions(
+        taskID: UUID,
+        on days: [Date],
+        context: ModelContext,
+        referenceDate: Date = .now,
+        calendar: Calendar = .current
+    ) throws -> RoutineTask? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let orderedDays = Array(
+            Set(days.map { calendar.startOfDay(for: $0) })
+        ).sorted()
+        guard !orderedDays.isEmpty else { return task }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        var didChange = false
+
+        for day in orderedDays {
+            let alreadyCompleted = existingLogs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: day)
+            }
+            if alreadyCompleted {
+                continue
+            }
+
+            let completionDate = RoutineAssumedCompletion.completionTimestamp(
+                for: day,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            let result = task.advance(completedAt: completionDate, calendar: calendar)
+            switch result {
+            case .completedRoutine:
+                context.insert(RoutineLog(timestamp: completionDate, taskID: taskID, kind: .completed))
+                didChange = true
+            case .advancedStep, .advancedChecklist:
+                didChange = true
+            case .ignoredPaused, .ignoredAlreadyCompletedToday:
+                continue
+            }
+        }
+
+        if didChange {
+            try context.save()
+        }
+
+        return task
+    }
+
+    @MainActor
     static func advanceChecklistItem(
         taskID: UUID,
         itemID: UUID,

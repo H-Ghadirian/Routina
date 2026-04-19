@@ -1610,6 +1610,95 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func confirmAssumedPastDays_backfillsLogsAndUpdatesTask() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T08:00:00Z")
+        let task = RoutineTask(
+            name: "Brush teeth",
+            emoji: "🪥",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            createdAt: makeDate("2026-02-23T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        context.insert(task)
+        try context.save()
+
+        let calendar = makeTestCalendar()
+        let scheduledIDs = LockIsolated<[String]>([])
+        let initialState = TaskDetailFeature.State(
+            task: task,
+            logs: [],
+            selectedDate: calendar.startOfDay(for: now),
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: false,
+            isAssumedDoneToday: false
+        )
+
+        let store = TestStore(initialState: initialState) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.confirmAssumedPastDays) {
+            $0.taskRefreshID = 1
+            $0.task.lastDone = makeDate("2026-02-24T12:00:00Z")
+            $0.task.scheduleAnchor = nil
+            $0.logs = [
+                RoutineLog(timestamp: makeDate("2026-02-24T12:00:00Z"), taskID: task.id, kind: .completed),
+                RoutineLog(timestamp: makeDate("2026-02-23T12:00:00Z"), taskID: task.id, kind: .completed),
+            ]
+            $0.daysSinceLastRoutine = 1
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+            $0.isAssumedDoneToday = false
+        }
+
+        let taskID = task.id
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            return false
+        } assert: {
+            let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+            $0.logs = logs
+            #expect(logs.count == 2)
+            #expect(logs.map(\.kind) == [.completed, .completed])
+            #expect(logs.compactMap(\.timestamp) == [
+                makeDate("2026-02-24T12:00:00Z"),
+                makeDate("2026-02-23T12:00:00Z"),
+            ])
+            $0.daysSinceLastRoutine = 1
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+            $0.isAssumedDoneToday = false
+        }
+
+        let persistedTaskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
+                )
+            ).first
+        )
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.lastDone == makeDate("2026-02-24T12:00:00Z"))
+        #expect(persistedTask.scheduleAnchor == nil)
+        #expect(persistedLogs.count == 2)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func undoSelectedDateCompletion_forToday_removesCompletionAndReschedules() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T10:00:00Z")

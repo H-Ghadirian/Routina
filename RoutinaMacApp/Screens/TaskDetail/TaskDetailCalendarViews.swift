@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TaskDetailCalendarCardView<CalendarContent: View>: View {
     let header: TaskDetailCalendarHeaderView
+    let showsAssumedLegend: Bool
     let showsPausedLegend: Bool
     let calendarContent: CalendarContent
 
@@ -9,6 +10,7 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
         displayedMonthStart: Date,
         onPreviousMonth: @escaping () -> Void,
         onNextMonth: @escaping () -> Void,
+        showsAssumedLegend: Bool,
         showsPausedLegend: Bool,
         @ViewBuilder calendarContent: () -> CalendarContent
     ) {
@@ -17,6 +19,7 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
             onPreviousMonth: onPreviousMonth,
             onNextMonth: onNextMonth
         )
+        self.showsAssumedLegend = showsAssumedLegend
         self.showsPausedLegend = showsPausedLegend
         self.calendarContent = calendarContent()
     }
@@ -34,7 +37,10 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
             Divider()
                 .padding(.bottom, 12)
 
-            TaskDetailCalendarLegendView(showsPausedLegend: showsPausedLegend)
+            TaskDetailCalendarLegendView(
+                showsAssumedLegend: showsAssumedLegend,
+                showsPausedLegend: showsPausedLegend
+            )
         }
         .padding(12)
         .routinaPlatformCalendarCardStyle()
@@ -67,11 +73,15 @@ struct TaskDetailCalendarHeaderView: View {
 }
 
 struct TaskDetailCalendarLegendView: View {
+    let showsAssumedLegend: Bool
     let showsPausedLegend: Bool
 
     var body: some View {
         HStack(spacing: 12) {
             TaskDetailCalendarLegendItemView(color: .green, label: "Done")
+            if showsAssumedLegend {
+                TaskDetailCalendarLegendItemView(color: .mint, label: "Assumed")
+            }
             TaskDetailCalendarLegendItemView(color: .red, label: "Overdue")
             if showsPausedLegend {
                 TaskDetailCalendarLegendItemView(color: .teal, label: "Paused")

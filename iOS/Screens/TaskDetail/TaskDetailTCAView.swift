@@ -238,6 +238,7 @@ struct TaskDetailTCAView: View {
             recurrenceTimeOfDay: store.editRecurrenceTimeOfDay,
             recurrenceWeekday: store.editRecurrenceWeekday,
             recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
+            autoAssumeDailyDone: store.editAutoAssumeDailyDone,
             task: store.task
         )
     }
@@ -267,6 +268,7 @@ struct TaskDetailTCAView: View {
 
             calendarGrid(
                 doneDates: doneDates(from: store.logs, task: store.task),
+                assumedDates: assumedDates(from: store.logs, task: store.task),
                 dueDate: store.resolvedDueDate,
                 pausedAt: store.task.pausedAt,
                 isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
@@ -597,6 +599,16 @@ struct TaskDetailTCAView: View {
             }
 
             primaryActionButton
+
+            if store.shouldShowBulkConfirmAssumedDays {
+                Button(store.bulkConfirmAssumedDaysTitle) {
+                    store.send(.confirmAssumedPastDays)
+                }
+                .buttonStyle(.bordered)
+                .tint(.mint)
+                .routinaPlatformSecondaryActionControlSize()
+                .frame(maxWidth: .infinity)
+            }
 
             Button(pauseArchivePresentation.actionTitle) {
                 store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
@@ -990,6 +1002,12 @@ struct TaskDetailTCAView: View {
             }
             return nil
         }
+        if store.isSelectedDateAssumedDone {
+            if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
+                return "Today is assumed done. Confirm it to count it in your history, or use Not Today if plans changed."
+            }
+            return "This day is assumed done. Confirm it to count it in stats and history."
+        }
         if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
             return "Today is selected. Pick another date to review its history."
         }
@@ -1209,6 +1227,7 @@ struct TaskDetailTCAView: View {
         TaskDetailPresentation.summaryTitleColor(
             pausedAt: store.task.pausedAt,
             isDoneToday: store.isDoneToday,
+            isAssumedDoneToday: store.isAssumedDoneToday,
             overdueDays: store.overdueDays,
             task: store.task
         )
@@ -1249,6 +1268,9 @@ struct TaskDetailTCAView: View {
     private var calendarLegend: some View {
         HStack(spacing: 12) {
             legendItem(color: .green, label: "Done")
+            if store.task.autoAssumeDailyDone {
+                legendItem(color: .mint, label: "Assumed")
+            }
             legendItem(color: .red, label: "Overdue")
             if store.task.pausedAt != nil {
                 legendItem(color: .teal, label: "Paused")
@@ -1283,6 +1305,7 @@ struct TaskDetailTCAView: View {
 
     private func calendarGrid(
         doneDates: Set<Date>,
+        assumedDates: Set<Date>,
         dueDate: Date?,
         pausedAt: Date?,
         isOrangeUrgencyToday: Bool,
@@ -1310,6 +1333,7 @@ struct TaskDetailTCAView: View {
                         calendarDayCell(
                             day: day,
                             doneDates: doneDates,
+                            assumedDates: assumedDates,
                             dueDate: dueDate,
                             pausedAt: pausedAt,
                             isOrangeUrgencyToday: isOrangeUrgencyToday,
@@ -1328,6 +1352,7 @@ struct TaskDetailTCAView: View {
     private func calendarDayCell(
         day: Date,
         doneDates: Set<Date>,
+        assumedDates: Set<Date>,
         dueDate: Date?,
         pausedAt: Date?,
         isOrangeUrgencyToday: Bool,
@@ -1337,12 +1362,14 @@ struct TaskDetailTCAView: View {
         let calendar = Calendar.current
         let isDueDate = dueDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
         let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
+        let isAssumedDate = !isDoneDate && assumedDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isToday = calendar.isDateInToday(day)
         let isDueToTodayRangeDate = isInDueToTodayRange(day: day, dueDate: dueDate)
         let isPausedDate = isInPausedRange(day: day, pausedAt: pausedAt)
 
         let backgroundColor: Color = {
             if isDoneDate { return .green }
+            if isAssumedDate { return .mint }
             if isPausedDate { return .teal }
             if isDueToTodayRangeDate || isDueDate { return .red }
             if isToday && isOrangeUrgencyToday { return .orange }
@@ -1350,7 +1377,7 @@ struct TaskDetailTCAView: View {
             return .clear
         }()
 
-        let foregroundColor: Color = (isDueDate || isDoneDate || isDueToTodayRangeDate || isPausedDate || isToday) ? .white : .primary
+        let foregroundColor: Color = (isDueDate || isDoneDate || isAssumedDate || isDueToTodayRangeDate || isPausedDate || isToday) ? .white : .primary
 
         return Button {
             onSelectDate(day)
@@ -1367,7 +1394,7 @@ struct TaskDetailTCAView: View {
                             TaskDetailPresentation.selectionStrokeColor(
                                 isSelected: isSelected,
                                 isToday: isToday,
-                                isHighlightedDay: isDoneDate || isDueToTodayRangeDate || isDueDate || isPausedDate
+                                isHighlightedDay: isDoneDate || isAssumedDate || isDueToTodayRangeDate || isDueDate || isPausedDate
                             ),
                             lineWidth: isSelected ? 3 : 2
                         )
@@ -1383,6 +1410,14 @@ struct TaskDetailTCAView: View {
             dates.insert(calendar.startOfDay(for: lastDone))
         }
         return dates
+    }
+
+    private func assumedDates(from logs: [RoutineLog], task: RoutineTask) -> Set<Date> {
+        let calendar = Calendar.current
+        return Set(
+            RoutineAssumedCompletion.assumedDates(for: task, logs: logs)
+                .map { calendar.startOfDay(for: $0) }
+        )
     }
 
     private func isInDueToTodayRange(day: Date, dueDate: Date?) -> Bool {
@@ -1531,6 +1566,7 @@ struct TaskDetailTCAView: View {
         recurrenceTimeOfDay: RoutineTimeOfDay,
         recurrenceWeekday: Int,
         recurrenceDayOfMonth: Int,
+        autoAssumeDailyDone: Bool,
         task: RoutineTask
     ) -> Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1599,6 +1635,7 @@ struct TaskDetailTCAView: View {
             || RoutineStep.sanitized(candidateSteps) != currentSteps
             || sanitizedCandidateChecklistItems != currentChecklistItems
             || newRecurrenceRule != currentRecurrenceRule
+            || autoAssumeDailyDone != task.autoAssumeDailyDone
     }
 
     private func canToggleChecklistItem(_ item: RoutineChecklistItem) -> Bool {

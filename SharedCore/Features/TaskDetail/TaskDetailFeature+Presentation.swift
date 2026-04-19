@@ -34,6 +34,27 @@ extension TaskDetailFeature.State {
         isSelectedDateDone || isSelectedDateCanceled
     }
 
+    var isSelectedDateAssumedDone: Bool {
+        !isSelectedDateTerminal && RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: resolvedSelectedDate,
+            logs: logs
+        )
+    }
+
+    var pastAssumedDates: [Date] {
+        RoutineAssumedCompletion.pastAssumedDates(for: task, logs: logs)
+    }
+
+    var shouldShowBulkConfirmAssumedDays: Bool {
+        !task.isArchived() && !pastAssumedDates.isEmpty
+    }
+
+    var bulkConfirmAssumedDaysTitle: String {
+        let count = pastAssumedDates.count
+        return count == 1 ? "Confirm 1 assumed day" : "Confirm \(count) assumed days"
+    }
+
     var completedLogCount: Int {
         logs.filter { $0.kind == .completed }.count
     }
@@ -294,6 +315,9 @@ extension TaskDetailFeature.State {
         if isDoneToday {
             return "Done today"
         }
+        if isAssumedDoneToday {
+            return "Assumed done today"
+        }
         if overdueDays > 0 {
             return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"
         }
@@ -328,6 +352,12 @@ extension TaskDetailFeature.State {
         }
         if isPaused {
             return "Resume the routine to mark dates done"
+        }
+        if isSelectedDateAssumedDone {
+            if Calendar.current.isDateInToday(selectedDate) {
+                return "Confirm done"
+            }
+            return "Confirm for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
         }
         if task.isOneOffTask {
             if Calendar.current.isDateInToday(selectedDate) {

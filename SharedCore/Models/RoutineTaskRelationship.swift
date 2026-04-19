@@ -109,6 +109,14 @@ enum RoutineTaskRelationshipStatus: Equatable, Hashable, Sendable {
         if let lastDone = task.lastDone, calendar.isDate(lastDone, inSameDayAs: referenceDate) {
             return .doneToday
         }
+        if RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: referenceDate,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) {
+            return .doneToday
+        }
         if task.isOneOffTask { return .pendingTodo }
         let days = RoutineDateMath.daysUntilDue(for: task, referenceDate: referenceDate, calendar: calendar)
         if days < 0 { return .overdue(days: -days) }

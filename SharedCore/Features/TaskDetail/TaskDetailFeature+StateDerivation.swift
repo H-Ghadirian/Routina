@@ -18,6 +18,13 @@ extension TaskDetailFeature {
             return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: now)
         }
         state.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
+        state.isAssumedDoneToday = !state.isDoneToday && RoutineAssumedCompletion.isAssumedDone(
+            for: state.task,
+            on: now,
+            referenceDate: now,
+            logs: state.logs,
+            calendar: calendar
+        )
 
         if state.task.isArchived(referenceDate: now, calendar: calendar) {
             state.overdueDays = 0

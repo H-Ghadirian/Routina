@@ -215,6 +215,7 @@ enum CloudKitDirectPullService {
         var sequenceStartedAt: Date?
         var createdAt: Date?
         var todoStateRawValue: String?
+        var autoAssumeDailyDone: Bool?
     }
 
     private struct PlacePayload {
@@ -349,6 +350,16 @@ enum CloudKitDirectPullService {
             in: record,
             keys: ["todoStateRawValue", "TODOSTATERAWVALUE", "ztodostaterawvalue", "ZTODOSTATERAWVALUE", "cd_todostaterawvalue"]
         )
+        let autoAssumeDailyDoneValue = boolValue(
+            in: record,
+            keys: [
+                "autoAssumeDailyDone",
+                "AUTOASSUMEDAILYDONE",
+                "zautoassumedailydone",
+                "ZAUTOASSUMEDAILYDONE",
+                "cd_autoassumedailydone"
+            ]
+        )
 
         guard
             intervalValue != nil
@@ -372,6 +383,7 @@ enum CloudKitDirectPullService {
                 || pinnedAtValue != nil
                 || completedStepCountValue != nil
                 || sequenceStartedAtValue != nil
+                || autoAssumeDailyDoneValue != nil
         else {
             return nil
         }
@@ -416,7 +428,8 @@ enum CloudKitDirectPullService {
             completedStepCount: Int16(clamping: completedStepCountValue ?? 0),
             sequenceStartedAt: sequenceStartedAtValue,
             createdAt: createdAtValue,
-            todoStateRawValue: todoStateRawValueValue
+            todoStateRawValue: todoStateRawValueValue,
+            autoAssumeDailyDone: autoAssumeDailyDoneValue
         )
     }
 
@@ -538,6 +551,9 @@ enum CloudKitDirectPullService {
                 if let todoStateRawValue = payload.todoStateRawValue {
                     taskWithSameName.todoStateRawValue = todoStateRawValue
                 }
+                if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
+                    taskWithSameName.autoAssumeDailyDone = autoAssumeDailyDone
+                }
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -580,6 +596,9 @@ enum CloudKitDirectPullService {
             if let todoStateRawValue = payload.todoStateRawValue {
                 existing.todoStateRawValue = todoStateRawValue
             }
+            if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
+                existing.autoAssumeDailyDone = autoAssumeDailyDone
+            }
             return existing.id
         } else {
             if let normalizedIncomingName,
@@ -621,6 +640,9 @@ enum CloudKitDirectPullService {
                 if let todoStateRawValue = payload.todoStateRawValue {
                     taskWithSameName.todoStateRawValue = todoStateRawValue
                 }
+                if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
+                    taskWithSameName.autoAssumeDailyDone = autoAssumeDailyDone
+                }
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -650,7 +672,8 @@ enum CloudKitDirectPullService {
                     completedStepCount: payload.completedStepCount,
                     sequenceStartedAt: payload.sequenceStartedAt,
                     createdAt: payload.createdAt,
-                    todoStateRawValue: payload.todoStateRawValue
+                    todoStateRawValue: payload.todoStateRawValue,
+                    autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false
                 )
             )
             return payload.id
@@ -900,6 +923,26 @@ enum CloudKitDirectPullService {
             if let matchedKey = lowerLookup[key.lowercased()],
                let number = record[matchedKey] as? NSNumber {
                 return number.intValue
+            }
+        }
+        return nil
+    }
+
+    private static func boolValue(in record: CKRecord, keys: [String]) -> Bool? {
+        for key in keys {
+            if let value = record[key] as? NSNumber {
+                return value.boolValue
+            }
+            if let value = record[key] as? Bool {
+                return value
+            }
+        }
+
+        let lowerLookup = Dictionary(uniqueKeysWithValues: record.allKeys().map { ($0.lowercased(), $0) })
+        for key in keys {
+            if let matchedKey = lowerLookup[key.lowercased()],
+               let number = record[matchedKey] as? NSNumber {
+                return number.boolValue
             }
         }
         return nil

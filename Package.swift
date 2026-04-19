@@ -111,6 +111,7 @@ let package = Package(
                 "SharedCore/Domain/EmojiCatalog.swift",
                 "SharedCore/Domain/NotificationPreferences.swift",
                 "SharedCore/Domain/RoutineCompletionStats.swift",
+                "SharedCore/Domain/RoutineAssumedCompletion.swift",
                 "SharedCore/Domain/RoutineDateMath.swift",
                 "SharedCore/Domain/RoutineListFilter.swift",
                 "SharedCore/Domain/RoutineListSectioningMode.swift",

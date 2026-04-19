@@ -166,6 +166,13 @@ struct TaskFormContent: View {
         }
     }
 
+    private var autoAssumeDailyDoneHelpText: String {
+        if model.canAutoAssumeDailyDone {
+            return "Show this simple daily routine as assumed done by default. You can still confirm it or mark it not done later."
+        }
+        return "Available only for simple daily routines without steps or checklist items."
+    }
+
     private var weekdayOptions: [(id: Int, name: String)] {
         Calendar.current.weekdaySymbols.enumerated().map { (id: $0.offset + 1, name: $0.element) }
     }
@@ -700,6 +707,16 @@ struct TaskFormContent: View {
                 }
                 Text(monthlyRecurrenceTimeHelpText)
                     .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+
+        if model.taskType.wrappedValue == .routine {
+            Section(header: Text("Assumed Done")) {
+                Toggle("Assume done automatically", isOn: model.autoAssumeDailyDone)
+                    .disabled(!model.canAutoAssumeDailyDone)
+                Text(autoAssumeDailyDoneHelpText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }

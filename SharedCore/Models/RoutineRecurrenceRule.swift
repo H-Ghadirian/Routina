@@ -106,6 +106,17 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         timeOfDay != nil
     }
 
+    var isDaily: Bool {
+        switch kind {
+        case .intervalDays:
+            return max(interval, 1) == 1
+        case .dailyTime:
+            return true
+        case .weekly, .monthlyDay:
+            return false
+        }
+    }
+
     func displayText(calendar: Calendar = .current) -> String {
         switch kind {
         case .intervalDays:

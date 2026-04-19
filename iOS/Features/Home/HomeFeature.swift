@@ -67,6 +67,7 @@ struct HomeFeature {
         var isCompletedOneOff: Bool
         var isCanceledOneOff: Bool
         var isDoneToday: Bool
+        var isAssumedDoneToday: Bool = false
         var isPaused: Bool
         var isSnoozed: Bool
         var isPinned: Bool
@@ -920,7 +921,7 @@ struct HomeFeature {
                 state.presentation.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -954,7 +955,8 @@ struct HomeFeature {
                             recurrenceRule: recurrenceRule,
                             lastDone: nil,
                             scheduleAnchor: scheduleMode == .oneOff ? nil : self.now,
-                            color: color
+                            color: color,
+                            autoAssumeDailyDone: autoAssumeDailyDone
                         )
                         context.insert(newRoutine)
                         for item in attachments {
@@ -1060,8 +1062,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color)))
+                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
@@ -1251,6 +1253,11 @@ struct HomeFeature {
                 ? 0
                 : RoutineDateMath.overdueDays(for: detailState.task, referenceDate: now, calendar: calendar)
             detailState.isDoneToday = detailState.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
+            detailState.isAssumedDoneToday = RoutineAssumedCompletion.isAssumedDone(
+                for: detailState.task,
+                on: now,
+                logs: detailState.logs
+            )
             state.selection.taskDetailState = detailState
         } else {
             state.selection.taskDetailState = makeTaskDetailState(for: task)

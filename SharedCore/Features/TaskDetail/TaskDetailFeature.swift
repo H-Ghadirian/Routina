@@ -39,6 +39,7 @@ struct TaskDetailFeature: Reducer {
         var daysSinceLastRoutine: Int = 0
         var overdueDays: Int = 0
         var isDoneToday: Bool = false
+        var isAssumedDoneToday: Bool = false
         var isEditSheetPresented: Bool = false
         var editRoutineName: String = ""
         var editRoutineEmoji: String = "✨"
@@ -71,11 +72,52 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
         var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
+        var editAutoAssumeDailyDone: Bool = false
         var isDeleteConfirmationPresented: Bool = false
         var shouldDismissAfterDelete: Bool = false
         var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
         var editColor: RoutineTaskColor = .none
         var isBlockedStateConfirmationPresented: Bool = false
+
+        var candidateRecurrenceRule: RoutineRecurrenceRule {
+            let fallbackInterval = editScheduleMode == .oneOff
+                ? 1
+                : editFrequencyValue * editFrequency.daysMultiplier
+
+            guard editScheduleMode != .oneOff else {
+                return .interval(days: 1)
+            }
+
+            guard editScheduleMode != .derivedFromChecklist else {
+                return .interval(days: max(fallbackInterval, 1))
+            }
+
+            switch editRecurrenceKind {
+            case .intervalDays:
+                return .interval(days: max(fallbackInterval, 1))
+            case .dailyTime:
+                return .daily(at: editRecurrenceTimeOfDay)
+            case .weekly:
+                return .weekly(
+                    on: editRecurrenceWeekday,
+                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
+                )
+            case .monthlyDay:
+                return .monthly(
+                    on: editRecurrenceDayOfMonth,
+                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
+                )
+            }
+        }
+
+        var canAutoAssumeDailyDone: Bool {
+            RoutineAssumedCompletion.isEligible(
+                scheduleMode: editScheduleMode,
+                recurrenceRule: candidateRecurrenceRule,
+                hasSequentialSteps: !editRoutineSteps.isEmpty,
+                hasChecklistItems: !editRoutineChecklistItems.isEmpty
+            )
+        }
     }
 
     enum Action: Equatable {
@@ -133,7 +175,9 @@ struct TaskDetailFeature: Reducer {
         case editRecurrenceTimeOfDayChanged(RoutineTimeOfDay)
         case editRecurrenceWeekdayChanged(Int)
         case editRecurrenceDayOfMonthChanged(Int)
+        case editAutoAssumeDailyDoneChanged(Bool)
         case editSaveTapped
+        case confirmAssumedPastDays
         case setDeleteConfirmation(Bool)
         case deleteRoutineConfirmed
         case routineDeleted
@@ -513,6 +557,9 @@ struct TaskDetailFeature: Reducer {
             if mode != .oneOff {
                 state.editDeadline = nil
             }
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editStepDraftChanged(value):
@@ -522,10 +569,16 @@ struct TaskDetailFeature: Reducer {
         case .editAddStepTapped:
             state.editRoutineSteps = appendStep(from: state.editStepDraft, to: state.editRoutineSteps)
             state.editStepDraft = ""
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editRemoveStep(stepID):
             state.editRoutineSteps.removeAll { $0.id == stepID }
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editMoveStepUp(stepID):
@@ -553,10 +606,16 @@ struct TaskDetailFeature: Reducer {
             )
             state.editChecklistItemDraftTitle = ""
             state.editChecklistItemDraftInterval = 3
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editRemoveChecklistItem(itemID):
             state.editRoutineChecklistItems.removeAll { $0.id == itemID }
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .availablePlacesLoaded(places):
@@ -595,10 +654,16 @@ struct TaskDetailFeature: Reducer {
 
         case let .editFrequencyChanged(frequency):
             state.editFrequency = frequency
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editFrequencyValueChanged(value):
             state.editFrequencyValue = value
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editRecurrenceKindChanged(kind):
@@ -612,6 +677,9 @@ struct TaskDetailFeature: Reducer {
             case .weekly, .monthlyDay:
                 state.editRecurrenceHasExplicitTime = previousHasExplicitTime
             }
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editRecurrenceHasExplicitTimeChanged(hasExplicitTime):
@@ -620,6 +688,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .editRecurrenceTimeOfDayChanged(timeOfDay):
             state.editRecurrenceTimeOfDay = timeOfDay
+            if !canAutoAssumeDailyDone(for: state) {
+                state.editAutoAssumeDailyDone = false
+            }
             return .none
 
         case let .editRecurrenceWeekdayChanged(weekday):
@@ -628,6 +699,10 @@ struct TaskDetailFeature: Reducer {
 
         case let .editRecurrenceDayOfMonthChanged(dayOfMonth):
             state.editRecurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+            return .none
+
+        case let .editAutoAssumeDailyDoneChanged(isEnabled):
+            state.editAutoAssumeDailyDone = isEnabled && canAutoAssumeDailyDone(for: state)
             return .none
 
         case .editSaveTapped:
@@ -682,8 +757,31 @@ struct TaskDetailFeature: Reducer {
                     : state.editRoutineChecklistItems,
                 scheduleMode: state.editScheduleMode,
                 recurrenceRule: recurrenceRule,
-                color: state.editColor
+                color: state.editColor,
+                autoAssumeDailyDone: state.editAutoAssumeDailyDone
             )
+
+        case .confirmAssumedPastDays:
+            let assumedDays = RoutineAssumedCompletion.pastAssumedDates(
+                for: state.task,
+                referenceDate: now,
+                logs: state.logs,
+                calendar: calendar
+            )
+            guard !assumedDays.isEmpty else { return .none }
+
+            for day in assumedDays {
+                let completionDate = RoutineAssumedCompletion.completionTimestamp(
+                    for: day,
+                    referenceDate: now,
+                    calendar: calendar
+                )
+                _ = state.task.advance(completedAt: completionDate, calendar: calendar)
+                upsertLocalLog(at: completionDate, in: &state)
+            }
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleConfirmAssumedPastDays(taskID: state.task.id, days: assumedDays)
 
         case let .setDeleteConfirmation(isPresented):
             state.isDeleteConfirmationPresented = isPresented

@@ -108,6 +108,11 @@ extension AddRoutineTCAView {
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
             frequencyUnit: frequencyUnitBinding,
             frequencyValue: frequencyValueBinding,
+            autoAssumeDailyDone: Binding(
+                get: { store.schedule.autoAssumeDailyDone },
+                set: { store.send(.autoAssumeDailyDoneChanged($0)) }
+            ),
+            canAutoAssumeDailyDone: store.canAutoAssumeDailyDone,
             color: Binding(
                 get: { store.basics.routineColor },
                 set: { store.send(.routineColorChanged($0)) }
