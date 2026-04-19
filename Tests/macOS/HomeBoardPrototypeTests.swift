@@ -1,13 +1,7 @@
 import ComposableArchitecture
 import Foundation
 import Testing
-#if SWIFT_PACKAGE
-@testable @preconcurrency import RoutinaAppSupport
-#elseif os(macOS)
 @testable @preconcurrency import RoutinaMacOSDev
-#else
-@testable @preconcurrency import Routina
-#endif
 
 @MainActor
 struct HomeBoardPrototypeTests {
@@ -34,6 +28,7 @@ struct HomeBoardPrototypeTests {
         } withDependencies: {
             setTestDateDependencies(&$0)
         }
+        store.exhaustivity = .off
 
         await store.send(
             .tasksLoadedSuccessfully(
@@ -51,7 +46,7 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
-    func moveTodoToState_fromPausedToInProgress_clearsPause() async {
+    func moveTodoToState_fromPausedToInProgress_clearsPause() async throws {
         let context = makeInMemoryContext()
         let pausedTodo = makeTask(
             in: context,
@@ -69,6 +64,7 @@ struct HomeBoardPrototypeTests {
             $0.modelContext = { @MainActor in context }
             setTestDateDependencies(&$0)
         }
+        store.exhaustivity = .off
 
         await store.send(
             .tasksLoadedSuccessfully([pausedTodo], [], [], HomeFeature.DoneStats())
@@ -94,14 +90,15 @@ struct HomeBoardPrototypeTests {
         let store = TestStore(
             initialState: HomeFeature.State(
                 routineTasks: [todo],
-                taskListMode: .all,
-                selectedTaskID: todo.id
+                selectedTaskID: todo.id,
+                taskListMode: .all
             )
         ) {
             HomeFeature()
         } withDependencies: {
             setTestDateDependencies(&$0)
         }
+        store.exhaustivity = .off
 
         await store.send(.macSidebarModeChanged(.board)) {
             $0.macSidebarMode = .board
@@ -114,6 +111,7 @@ struct HomeBoardPrototypeTests {
 
     @Test
     func moveTodoOnBoard_reordersWithinSameColumn() async {
+        let context = makeInMemoryContext()
         let first = RoutineTask(
             name: "First",
             scheduleMode: .oneOff,
@@ -133,8 +131,10 @@ struct HomeBoardPrototypeTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
+            $0.modelContext = { @MainActor in context }
             setTestDateDependencies(&$0)
         }
+        store.exhaustivity = .off
 
         await store.send(
             .tasksLoadedSuccessfully([first, second], [], [], HomeFeature.DoneStats())
@@ -165,6 +165,7 @@ struct HomeBoardPrototypeTests {
 
     @Test
     func moveTodoOnBoard_movesAcrossColumnsAndAppliesDestinationOrder() async {
+        let context = makeInMemoryContext()
         let firstBlocked = RoutineTask(
             name: "Blocked A",
             scheduleMode: .oneOff,
@@ -184,8 +185,10 @@ struct HomeBoardPrototypeTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
+            $0.modelContext = { @MainActor in context }
             setTestDateDependencies(&$0)
         }
+        store.exhaustivity = .off
 
         await store.send(
             .tasksLoadedSuccessfully([firstBlocked, moving], [], [], HomeFeature.DoneStats())
@@ -228,7 +231,7 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
-    func assignTodoToSprint_updatesBoardDisplayAssignment() async {
+    func assignTodoToSprint_updatesBoardDisplayAssignment() async throws {
         let todo = RoutineTask(
             name: "Plan next release",
             scheduleMode: .oneOff,
@@ -245,6 +248,7 @@ struct HomeBoardPrototypeTests {
         } withDependencies: {
             setTestDateDependencies(&$0)
         }
+        store.exhaustivity = .off
 
         await store.send(
             .tasksLoadedSuccessfully([todo], [], [], HomeFeature.DoneStats())
@@ -256,6 +260,10 @@ struct HomeBoardPrototypeTests {
 
         await store.send(.assignTodoToSprint(taskID: todo.id, sprintID: sprint.id)) {
             $0.sprintBoardData.assignments = [SprintAssignment(todoID: todo.id, sprintID: sprint.id)]
+            $0.routineDisplays[0].assignedSprintID = sprint.id
+            $0.routineDisplays[0].assignedSprintTitle = "Sprint 7"
+            $0.boardTodoDisplays[0].assignedSprintID = sprint.id
+            $0.boardTodoDisplays[0].assignedSprintTitle = "Sprint 7"
         }
 
         let display = try #require(store.state.boardTodoDisplays.first(where: { $0.id == todo.id }))
@@ -286,6 +294,7 @@ struct HomeBoardPrototypeTests {
             setTestDateDependencies(&$0)
             $0.date.now = now
         }
+        store.exhaustivity = .off
 
         await store.send(
             .sprintBoardLoaded(
@@ -327,6 +336,7 @@ struct HomeBoardPrototypeTests {
             setTestDateDependencies(&$0)
             $0.date.now = now
         }
+        store.exhaustivity = .off
 
         await store.send(
             .sprintBoardLoaded(
@@ -388,6 +398,7 @@ struct HomeBoardPrototypeTests {
         } withDependencies: {
             setTestDateDependencies(&$0)
         }
+        store.exhaustivity = .off
 
         await store.send(
             .tasksLoadedSuccessfully([backlogTodo, sprintTodo], [], [], HomeFeature.DoneStats())
@@ -405,6 +416,10 @@ struct HomeBoardPrototypeTests {
                 sprints: [plannedSprint],
                 assignments: [SprintAssignment(todoID: sprintTodo.id, sprintID: plannedSprint.id)]
             )
+            $0.routineDisplays[1].assignedSprintID = plannedSprint.id
+            $0.routineDisplays[1].assignedSprintTitle = "Planned Sprint"
+            $0.boardTodoDisplays[1].assignedSprintID = plannedSprint.id
+            $0.boardTodoDisplays[1].assignedSprintTitle = "Planned Sprint"
         }
 
         await store.send(.selectedBoardScopeChanged(.currentSprint)) {

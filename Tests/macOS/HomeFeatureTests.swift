@@ -413,6 +413,7 @@ struct HomeFeatureTests {
             $0.selectedTag = nil
             $0.excludedTags = []
         }
+        await store.receive(.sprintBoardLoaded(SprintBoardData()))
         await store.receive(.locationSnapshotUpdated(locationSnapshot)) {
             $0.locationSnapshot = locationSnapshot
         }
@@ -2791,6 +2792,22 @@ struct HomeFeatureTests {
             $0.routineTasks[0].scheduleAnchor = now
             $0.routineDisplays = []
             $0.archivedRoutineDisplays = []
+            $0.boardTodoDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Buy milk",
+                    emoji: "🥛",
+                    interval: 1,
+                    scheduleMode: .oneOff,
+                    lastDone: now,
+                    daysUntilDue: .max,
+                    isOneOffTask: true,
+                    isCompletedOneOff: true,
+                    isDoneToday: true,
+                    doneCount: 1
+                )
+            ]
+            $0.boardTodoDisplays[0].todoState = .done
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
         }
 
@@ -2958,6 +2975,7 @@ struct HomeFeatureTests {
                 makeDisplay(taskID: first.id, name: "Routine A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false)
             ]
         }
+        await store.receive(.sprintBoardLoaded(SprintBoardData()))
         await store.receive(.locationSnapshotUpdated(
             LocationSnapshot(
                 authorizationStatus: .notDetermined,
@@ -3051,6 +3069,7 @@ struct HomeFeatureTests {
                 )
             ]
         }
+        await store.receive(.sprintBoardLoaded(SprintBoardData()))
         await store.receive(.locationSnapshotUpdated(
             LocationSnapshot(
                 authorizationStatus: .notDetermined,
@@ -3119,6 +3138,7 @@ struct HomeFeatureTests {
                 makeDisplay(taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: true, doneCount: 1)
             ]
         }
+        await store.receive(.sprintBoardLoaded(SprintBoardData()))
         await store.receive(.locationSnapshotUpdated(
             LocationSnapshot(
                 authorizationStatus: .notDetermined,
