@@ -1,13 +1,16 @@
 import AppKit
 import SwiftUI
+import WidgetKit
 
 struct RoutinaMacRootScene: Scene {
     private let homeRoot: AnyView
     private let settingsRoot: AnyView
+    private let persistence: PersistenceController
 
     @MainActor
     init() {
         let persistence = RoutinaAppSceneBootstrap.preparePersistence()
+        self.persistence = persistence
         self.homeRoot = RoutinaMacSceneFactory.makeHomeRoot(persistence: persistence)
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
     }
@@ -21,6 +24,12 @@ struct RoutinaMacRootScene: Scene {
                     DispatchQueue.main.async {
                         MacMenuCleanup.removeUnneededMenus()
                     }
+                    WidgetStatsService.refresh(using: persistence.container)
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                    WidgetStatsService.refresh(using: persistence.container)
+                    WidgetCenter.shared.reloadAllTimelines()
                 }
         }
         .defaultSize(
