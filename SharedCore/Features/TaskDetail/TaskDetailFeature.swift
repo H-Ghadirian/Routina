@@ -782,10 +782,11 @@ struct TaskDetailFeature: Reducer {
             )
 
         case .confirmAssumedPastDays:
-            let assumedDays = RoutineAssumedCompletion.pastAssumedDates(
+            let assumedDays = RoutineAssumedCompletion.assumedDates(
                 for: state.task,
-                referenceDate: now,
+                through: now,
                 logs: state.logs,
+                includeToday: true,
                 calendar: calendar
             )
             guard !assumedDays.isEmpty else { return .none }

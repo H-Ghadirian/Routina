@@ -14,6 +14,101 @@ import Testing
 @MainActor
 struct TaskDetailFeatureCompletionTests {
     @Test
+    func confirmAssumedPastDays_includesTodayWhenTodayIsAssumedDone() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-02-25T21:30:00Z")
+        let task = RoutineTask(
+            name: "Brush teeth",
+            emoji: "🪥",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            createdAt: makeDate("2026-02-24T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        context.insert(task)
+        try context.save()
+
+        let calendar = makeTestCalendar()
+        let scheduledIDs = LockIsolated<[String]>([])
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [],
+                selectedDate: calendar.startOfDay(for: now)
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.confirmAssumedPastDays) {
+                $0.task.lastDone = now
+                $0.taskRefreshID = 1
+                $0.isDoneToday = true
+            }
+        }
+
+        await store.receive { action in
+            guard case let .logsLoaded(logs) = action else { return false }
+            return logs.count == 2
+        } assert: {
+            let logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
+            $0.logs = logs
+            #expect(logs.compactMap(\.timestamp) == [
+                now,
+                makeDate("2026-02-24T12:00:00Z"),
+            ])
+            $0.isDoneToday = true
+        }
+
+        let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedLogs.count == 2)
+        #expect(persistedLogs.compactMap(\.timestamp).sorted(by: >) == [
+            now,
+            makeDate("2026-02-24T12:00:00Z"),
+        ])
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func completionButton_usesBulkConfirmWhenTodayAndPastDaysAreAssumed() {
+        let calendar = Calendar.current
+        let now = Date()
+        let today = calendar.startOfDay(for: now)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+
+        let task = RoutineTask(
+            name: "Walk",
+            emoji: "🚶",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            createdAt: yesterday,
+            autoAssumeDailyDone: true
+        )
+        let state = TaskDetailFeature.State(
+            task: task,
+            logs: [],
+            selectedDate: today
+        )
+
+        #expect(state.shouldUseBulkConfirmAsPrimaryAction)
+        #expect(state.completionButtonAction == .confirmAssumedPastDays)
+        #expect(state.completionButtonTitle == "Confirm 2 assumed days")
+        #expect(!state.shouldShowBulkConfirmAssumedDays)
+    }
+
+    @Test
     func markAsDone_forPastWeeklyExactTimeDate_usesScheduledTimestamp() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-04-21T10:00:00Z")

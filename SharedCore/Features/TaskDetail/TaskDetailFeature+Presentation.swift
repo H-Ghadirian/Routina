@@ -46,12 +46,23 @@ extension TaskDetailFeature.State {
         RoutineAssumedCompletion.pastAssumedDates(for: task, logs: logs)
     }
 
+    var confirmableAssumedDates: [Date] {
+        RoutineAssumedCompletion.assumedDates(for: task, logs: logs)
+    }
+
+    var shouldUseBulkConfirmAsPrimaryAction: Bool {
+        !task.isArchived()
+            && Calendar.current.isDateInToday(resolvedSelectedDate)
+            && isSelectedDateAssumedDone
+            && !pastAssumedDates.isEmpty
+    }
+
     var shouldShowBulkConfirmAssumedDays: Bool {
-        !task.isArchived() && !pastAssumedDates.isEmpty
+        !task.isArchived() && !pastAssumedDates.isEmpty && !shouldUseBulkConfirmAsPrimaryAction
     }
 
     var bulkConfirmAssumedDaysTitle: String {
-        let count = pastAssumedDates.count
+        let count = confirmableAssumedDates.count
         return count == 1 ? "Confirm 1 assumed day" : "Confirm \(count) assumed days"
     }
 
@@ -130,7 +141,13 @@ extension TaskDetailFeature.State {
     }
 
     var completionButtonAction: TaskDetailFeature.Action {
-        canUndoSelectedDate ? .undoSelectedDateCompletion : .markAsDone
+        if canUndoSelectedDate {
+            return .undoSelectedDateCompletion
+        }
+        if shouldUseBulkConfirmAsPrimaryAction {
+            return .confirmAssumedPastDays
+        }
+        return .markAsDone
     }
 
     var completionButtonSystemImage: String? {
@@ -352,6 +369,9 @@ extension TaskDetailFeature.State {
         }
         if isPaused {
             return "Resume the routine to mark dates done"
+        }
+        if shouldUseBulkConfirmAsPrimaryAction {
+            return bulkConfirmAssumedDaysTitle
         }
         if isSelectedDateAssumedDone {
             if Calendar.current.isDateInToday(selectedDate) {
