@@ -37,13 +37,20 @@ extension TaskDetailFeature {
         state.taskRefreshID &+= 1
     }
 
-    func resolvedCompletionDate(for selectedDate: Date?) -> Date {
+    func resolvedCompletionDate(
+        for selectedDate: Date?,
+        task: RoutineTask
+    ) -> Date {
         let baseDate = selectedDate ?? now
         if calendar.isDate(baseDate, inSameDayAs: now) {
             return now
         }
 
         let startOfDay = calendar.startOfDay(for: baseDate)
+        if let timeOfDay = task.recurrenceRule.timeOfDay,
+           !task.isOneOffTask {
+            return timeOfDay.date(on: startOfDay, calendar: calendar)
+        }
         return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: startOfDay) ?? startOfDay
     }
 

@@ -10,9 +10,6 @@
 		2A5DD63E2F965A91009F0331 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
 		2A5DD6402F965A91009F0331 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
 		2A5DD64B2F965A93009F0331 /* RoutinaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A5DD63C2F965A91009F0331 /* RoutinaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
-		AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
-		AA000103PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2C0000102E60000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
 		2C0000112E60000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		2C0000122E60000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
@@ -31,6 +28,9 @@
 		6B1000042F10000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001062E5F000100000001 /* Perception */; };
 		6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
 		6B1000062F10000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001102E5F000100000001 /* PerceptionCore */; };
+		AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
+		AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
+		AA000103PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,19 +41,19 @@
 			remoteGlobalIDString = 2A5DD63B2F965A91009F0331;
 			remoteInfo = RoutinaWidgetExtension;
 		};
-		AA000003PLUGINKIT00000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = AA000108PLUGINKIT00000001;
-			remoteInfo = RoutinaWidgetDevExtension;
-		};
 		6B1000102F10000100000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 4E0000012E80000100000001;
 			remoteInfo = RoutinaMacOSDev;
+		};
+		AA000003PLUGINKIT00000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA000108PLUGINKIT00000001;
+			remoteInfo = RoutinaWidgetDevExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -90,13 +90,13 @@
 		2A5DD63D2F965A91009F0331 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		2A5DD63F2F965A91009F0331 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		2A5DD6582F9661DB009F0331 /* RoutinaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoutinaWidgetExtension.entitlements; sourceTree = "<group>"; };
-		AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWidgetDevExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C0000022E60000100000001 /* Routinam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Routinam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D1000102E70000100000001 /* RoutinaiOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaiOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E0000022E80000100000001 /* RoutinaMacOSDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaMacOSDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F1000072E90000100000001 /* RoutinaWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutinaWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F1000082E90000100000001 /* RoutinaWatchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWatchExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoutinaMacOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutinaWidgetDevExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -172,15 +172,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AA000107PLUGINKIT00000001 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */,
-				AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		2C0000032E60000100000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -217,6 +208,15 @@
 				6B1000042F10000100000001 /* Perception in Frameworks */,
 				6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */,
 				6B1000062F10000100000001 /* PerceptionCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA000107PLUGINKIT00000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */,
+				AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,28 +289,6 @@
 			);
 			productName = RoutinaWidgetExtension;
 			productReference = 2A5DD63C2F965A91009F0331 /* RoutinaWidgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		AA000108PLUGINKIT00000001 /* RoutinaWidgetDevExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = AA000111PLUGINKIT00000001 /* Build configuration list for PBXNativeTarget "RoutinaWidgetDevExtension" */;
-			buildPhases = (
-				AA000109PLUGINKIT00000001 /* Sources */,
-				AA000107PLUGINKIT00000001 /* Frameworks */,
-				AA000110PLUGINKIT00000001 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				2A5DD6412F965A91009F0331 /* RoutinaWidget */,
-			);
-			name = RoutinaWidgetDevExtension;
-			packageProductDependencies = (
-			);
-			productName = RoutinaWidgetDevExtension;
-			productReference = AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		2C0000012E60000100000001 /* RoutinaMacOSProd */ = {
@@ -410,6 +388,28 @@
 			productReference = 6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		AA000108PLUGINKIT00000001 /* RoutinaWidgetDevExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA000111PLUGINKIT00000001 /* Build configuration list for PBXNativeTarget "RoutinaWidgetDevExtension" */;
+			buildPhases = (
+				AA000109PLUGINKIT00000001 /* Sources */,
+				AA000107PLUGINKIT00000001 /* Frameworks */,
+				AA000110PLUGINKIT00000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				2A5DD6412F965A91009F0331 /* RoutinaWidget */,
+			);
+			name = RoutinaWidgetDevExtension;
+			packageProductDependencies = (
+			);
+			productName = RoutinaWidgetDevExtension;
+			productReference = AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -423,9 +423,6 @@
 					2A5DD63B2F965A91009F0331 = {
 						CreatedOnToolsVersion = 26.4;
 					};
-					AA000108PLUGINKIT00000001 = {
-						CreatedOnToolsVersion = 26.4;
-					};
 					2C0000012E60000100000001 = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -435,6 +432,9 @@
 					6B1000132F10000100000001 = {
 						CreatedOnToolsVersion = 16.2;
 						TestTargetID = 4E0000012E80000100000001;
+					};
+					AA000108PLUGINKIT00000001 = {
+						CreatedOnToolsVersion = 26.4;
 					};
 				};
 			};
@@ -491,14 +491,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AA000110PLUGINKIT00000001 /* Resources */ = {
+		6B1000142F10000100000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6B1000142F10000100000001 /* Resources */ = {
+		AA000110PLUGINKIT00000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -568,14 +568,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AA000109PLUGINKIT00000001 /* Sources */ = {
+		6B1000152F10000100000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6B1000152F10000100000001 /* Sources */ = {
+		AA000109PLUGINKIT00000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -590,15 +590,15 @@
 			target = 2A5DD63B2F965A91009F0331 /* RoutinaWidgetExtension */;
 			targetProxy = 2A5DD6492F965A93009F0331 /* PBXContainerItemProxy */;
 		};
-		AA000006PLUGINKIT00000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = AA000108PLUGINKIT00000001 /* RoutinaWidgetDevExtension */;
-			targetProxy = AA000003PLUGINKIT00000001 /* PBXContainerItemProxy */;
-		};
 		6B1000162F10000100000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4E0000012E80000100000001 /* RoutinaMacOSDev */;
 			targetProxy = 6B1000102F10000100000001 /* PBXContainerItemProxy */;
+		};
+		AA000006PLUGINKIT00000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA000108PLUGINKIT00000001 /* RoutinaWidgetDevExtension */;
+			targetProxy = AA000003PLUGINKIT00000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -789,80 +789,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.RoutinaWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		AA000112PLUGINKIT00000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = RoutinaWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WV7G3G5SGX;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RoutinaWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RoutinaWidgetDev;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev.RoutinaWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		AA000113PLUGINKIT00000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = RoutinaWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WV7G3G5SGX;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RoutinaWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RoutinaWidgetDev;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev.RoutinaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
@@ -1109,6 +1035,80 @@
 			};
 			name = Release;
 		};
+		AA000112PLUGINKIT00000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = RoutinaWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RoutinaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RoutinaWidgetDev;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev.RoutinaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AA000113PLUGINKIT00000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = RoutinaWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WV7G3G5SGX;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RoutinaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RoutinaWidgetDev;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev.RoutinaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1126,15 +1126,6 @@
 			buildConfigurations = (
 				2A5DD64E2F965A93009F0331 /* Debug */,
 				2A5DD64F2F965A93009F0331 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		AA000111PLUGINKIT00000001 /* Build configuration list for PBXNativeTarget "RoutinaWidgetDevExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AA000112PLUGINKIT00000001 /* Debug */,
-				AA000113PLUGINKIT00000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1162,6 +1153,15 @@
 			buildConfigurations = (
 				6B1000172F10000100000001 /* Debug */,
 				6B1000182F10000100000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA000111PLUGINKIT00000001 /* Build configuration list for PBXNativeTarget "RoutinaWidgetDevExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000112PLUGINKIT00000001 /* Debug */,
+				AA000113PLUGINKIT00000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

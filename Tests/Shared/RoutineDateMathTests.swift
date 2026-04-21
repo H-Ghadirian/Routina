@@ -337,6 +337,25 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func canMarkDone_weeklySchedule_withExactTime_returnsTrueAfterScheduledTime() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .weekly(on: 2, at: RoutineTimeOfDay(hour: 17, minute: 0)),
+            scheduleAnchor: makeDate("2026-04-19T10:00:00Z")
+        )
+
+        let canDone = RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-04-20T18:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(canDone == true)
+    }
+
+    @Test
     func canMarkDone_monthlySchedule_returnsTrueForPastOccurrenceBeforeScheduleAnchor() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

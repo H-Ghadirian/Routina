@@ -242,7 +242,10 @@ struct TaskDetailFeature: Reducer {
             if state.task.isChecklistCompletionRoutine {
                 return .none
             }
-            let completionDate = resolvedCompletionDate(for: state.selectedDate)
+            let completionDate = resolvedCompletionDate(
+                for: state.selectedDate,
+                task: state.task
+            )
             guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
                 return .none
             }
@@ -263,7 +266,10 @@ struct TaskDetailFeature: Reducer {
             guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
             guard !state.task.isCompletedOneOff else { return .none }
             guard !state.task.isCanceledOneOff else { return .none }
-            let canceledAt = resolvedCompletionDate(for: state.selectedDate)
+            let canceledAt = resolvedCompletionDate(
+                for: state.selectedDate,
+                task: state.task
+            )
             guard state.task.cancelOneOff(at: canceledAt) else { return .none }
             refreshTaskView(&state)
             upsertLocalLog(at: canceledAt, kind: .canceled, in: &state)
