@@ -1072,7 +1072,7 @@ struct HomeFeature {
                 state.presentation.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone))):
+            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
@@ -1107,7 +1107,9 @@ struct HomeFeature {
                             lastDone: nil,
                             scheduleAnchor: scheduleMode == .oneOff ? nil : self.now,
                             color: color,
-                            autoAssumeDailyDone: autoAssumeDailyDone
+                            autoAssumeDailyDone: autoAssumeDailyDone,
+                            estimatedDurationMinutes: estimatedDurationMinutes,
+                            storyPoints: storyPoints
                         )
                         context.insert(newRoutine)
                         for item in attachments {
@@ -1213,8 +1215,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone)))
+                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints in
+                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )

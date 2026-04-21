@@ -73,6 +73,8 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var editAutoAssumeDailyDone: Bool = false
+        var editEstimatedDurationMinutes: Int?
+        var editStoryPoints: Int?
         var isDeleteConfirmationPresented: Bool = false
         var shouldDismissAfterDelete: Bool = false
         var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
@@ -168,6 +170,8 @@ struct TaskDetailFeature: Reducer {
         case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
         case editSelectedPlaceChanged(UUID?)
         case editToggleTagSelection(String)
+        case editEstimatedDurationChanged(Int?)
+        case editStoryPointsChanged(Int?)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
@@ -652,6 +656,14 @@ struct TaskDetailFeature: Reducer {
             }
             return .none
 
+        case let .editEstimatedDurationChanged(estimatedDurationMinutes):
+            state.editEstimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+            return .none
+
+        case let .editStoryPointsChanged(storyPoints):
+            state.editStoryPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+            return .none
+
         case let .editFrequencyChanged(frequency):
             state.editFrequency = frequency
             if !canAutoAssumeDailyDone(for: state) {
@@ -758,7 +770,9 @@ struct TaskDetailFeature: Reducer {
                 scheduleMode: state.editScheduleMode,
                 recurrenceRule: recurrenceRule,
                 color: state.editColor,
-                autoAssumeDailyDone: state.editAutoAssumeDailyDone
+                autoAssumeDailyDone: state.editAutoAssumeDailyDone,
+                estimatedDurationMinutes: state.editEstimatedDurationMinutes,
+                storyPoints: state.editStoryPoints
             )
 
         case .confirmAssumedPastDays:

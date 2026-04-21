@@ -14,6 +14,8 @@ struct AddRoutineBasicsState: Equatable {
     var attachments: [AttachmentItem] = []
     var selectedPlaceID: UUID?
     var routineColor: RoutineTaskColor = .none
+    var estimatedDurationMinutes: Int?
+    var storyPoints: Int?
 }
 
 struct AddRoutineOrganizationState: Equatable {

@@ -69,6 +69,14 @@ extension AddRoutineTCAView {
             deadline: deadlineBinding,
             importance: importanceBinding,
             urgency: urgencyBinding,
+            estimatedDurationMinutes: Binding(
+                get: { store.basics.estimatedDurationMinutes },
+                set: { store.send(.estimatedDurationChanged($0)) }
+            ),
+            storyPoints: Binding(
+                get: { store.basics.storyPoints },
+                set: { store.send(.storyPointsChanged($0)) }
+            ),
             imageData: store.basics.imageData,
             onImagePicked: { store.send(.imagePicked($0)) },
             onRemoveImage: { store.send(.removeImageTapped) },

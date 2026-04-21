@@ -80,19 +80,21 @@ struct AddRoutineFeature: Reducer {
         case availablePlacesChanged([RoutinePlaceSummary])
         case selectedPlaceChanged(UUID?)
         case routineColorChanged(RoutineTaskColor)
+        case estimatedDurationChanged(Int?)
+        case storyPointsChanged(Int?)
         case saveTapped
         case cancelTapped
         case delegate(Delegate)
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool)
+            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool, Int?, Int?)
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool) -> Effect<Action>
+    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool, Int?, Int?) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -466,6 +468,20 @@ struct AddRoutineFeature: Reducer {
             )
             return .none
 
+        case let .estimatedDurationChanged(estimatedDurationMinutes):
+            AddRoutineBasicsEditor.setEstimatedDurationMinutes(
+                estimatedDurationMinutes,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .storyPointsChanged(storyPoints):
+            AddRoutineBasicsEditor.setStoryPoints(
+                storyPoints,
+                basics: &state.basics
+            )
+            return .none
+
         case .saveTapped:
             AddRoutineDraftFinalizer(now: now).apply(to: &state)
             AddRoutineValidationEditor.refreshNameValidation(state: &state)
@@ -490,7 +506,9 @@ struct AddRoutineFeature: Reducer {
                 request.checklistItems,
                 request.attachments,
                 request.color,
-                request.autoAssumeDailyDone
+                request.autoAssumeDailyDone,
+                request.estimatedDurationMinutes,
+                request.storyPoints
             )
 
         case .cancelTapped:

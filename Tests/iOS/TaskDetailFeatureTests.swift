@@ -623,6 +623,55 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func editSaveTapped_persistsEstimationValues() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-16T10:00:00Z")
+        let task = makeTask(in: context, name: "Read", interval: 7, lastDone: nil, emoji: "📚")
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [],
+                isEditSheetPresented: true,
+                editRoutineName: "Read",
+                editRoutineEmoji: "📚",
+                editFrequency: .week,
+                editFrequencyValue: 1,
+                editEstimatedDurationMinutes: 95,
+                editStoryPoints: 3
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            setTestDateDependencies(&$0, now: now)
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        await store.receive(.onAppear)
+        await store.receive(.availablePlacesLoaded([]))
+        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableRelationshipTasksLoaded([]))
+        await store.receive(.logsLoaded([]))
+        await store.receive(.attachmentsLoaded([]))
+
+        let persistedTaskID = task.id
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate<RoutineTask> { task in
+                task.id == persistedTaskID
+            }
+        )
+        let persistedTask = try #require(context.fetch(descriptor).first)
+        #expect(persistedTask.estimatedDurationMinutes == 95)
+        #expect(persistedTask.storyPoints == 3)
+    }
+
+    @Test
     func editSaveTapped_normalizesAndPersistsLink() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-16T10:00:00Z")

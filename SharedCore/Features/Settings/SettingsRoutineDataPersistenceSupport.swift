@@ -44,6 +44,8 @@ enum SettingsRoutineDataPersistence {
             var createdAt: Date?
             var todoStateRawValue: String?
             var autoAssumeDailyDone: Bool?
+            var estimatedDurationMinutes: Int?
+            var storyPoints: Int?
         }
 
         struct Log: Codable {
@@ -87,7 +89,7 @@ enum SettingsRoutineDataPersistence {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
         let backup = Backup(
-            schemaVersion: 11,
+            schemaVersion: 12,
             exportedAt: exportedAt,
             places: places.map {
                 .init(
@@ -125,7 +127,9 @@ enum SettingsRoutineDataPersistence {
                     sequenceStartedAt: $0.sequenceStartedAt,
                     createdAt: $0.createdAt,
                     todoStateRawValue: $0.todoStateRawValue,
-                    autoAssumeDailyDone: $0.autoAssumeDailyDone
+                    autoAssumeDailyDone: $0.autoAssumeDailyDone,
+                    estimatedDurationMinutes: $0.estimatedDurationMinutes,
+                    storyPoints: $0.storyPoints
                 )
             },
             logs: logs.map {
@@ -154,7 +158,7 @@ enum SettingsRoutineDataPersistence {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(Backup.self, from: jsonData)
 
-        guard (1...11).contains(backup.schemaVersion) else {
+        guard (1...12).contains(backup.schemaVersion) else {
             throw Error.unsupportedSchema(backup.schemaVersion)
         }
 
@@ -222,7 +226,9 @@ enum SettingsRoutineDataPersistence {
                     sequenceStartedAt: task.sequenceStartedAt,
                     createdAt: task.createdAt,
                     todoStateRawValue: task.todoStateRawValue,
-                    autoAssumeDailyDone: task.autoAssumeDailyDone ?? false
+                    autoAssumeDailyDone: task.autoAssumeDailyDone ?? false,
+                    estimatedDurationMinutes: task.estimatedDurationMinutes,
+                    storyPoints: task.storyPoints
                 )
                 context.insert(importedTask)
                 importedTaskCount += 1

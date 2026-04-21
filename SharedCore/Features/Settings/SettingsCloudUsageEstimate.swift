@@ -97,6 +97,8 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var pinnedAt: Date?
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
+        var estimatedDurationMinutes: Int?
+        var storyPoints: Int?
 
         init(task: RoutineTask) {
             id = task.id
@@ -125,6 +127,8 @@ struct CloudUsageEstimate: Equatable, Sendable {
             pinnedAt = task.pinnedAt
             completedStepCount = task.completedStepCount
             sequenceStartedAt = task.sequenceStartedAt
+            estimatedDurationMinutes = task.estimatedDurationMinutes
+            storyPoints = task.storyPoints
         }
     }
 

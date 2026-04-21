@@ -85,6 +85,8 @@ struct AddRoutineSaveRequest {
     let attachments: [AttachmentItem]
     let color: RoutineTaskColor
     let autoAssumeDailyDone: Bool
+    let estimatedDurationMinutes: Int?
+    let storyPoints: Int?
 
     init?(state: AddRoutineFeature.State) {
         guard !state.isSaveDisabled else { return nil }
@@ -127,6 +129,8 @@ struct AddRoutineSaveRequest {
             : RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
         self.attachments = basics.attachments
         self.color = basics.routineColor
+        self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)
+        self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
         self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
             && RoutineAssumedCompletion.isEligible(
                 scheduleMode: self.scheduleMode,

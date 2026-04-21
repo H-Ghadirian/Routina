@@ -84,7 +84,7 @@ struct TaskFormContent: View {
 
     /// All sections that are available given the current form state (excluding Identity).
     private var availableSections: [String] {
-        var sections = ["Color", "Behavior", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
+        var sections = ["Color", "Behavior", "Estimation", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if isStepBasedMode { sections.append("Steps") }
         sections.append("Image")
         sections.append("Attachment")
@@ -109,6 +109,7 @@ struct TaskFormContent: View {
         switch section {
         case "Color":                 colorCard
         case "Behavior":              behaviorCard
+        case "Estimation":            estimationCard
         case "Places":                placesCard
         case "Importance & Urgency":  importanceCard
         case "Tags":                  tagsCard
@@ -475,6 +476,46 @@ struct TaskFormContent: View {
             }
         }
         .id("Behavior")
+    }
+
+    // MARK: Places
+
+    private var estimationCard: some View {
+        macSectionCard(
+            title: "Estimation"
+        ) {
+            VStack(alignment: .leading, spacing: 18) {
+                macControlBlock(
+                    title: "Duration",
+                    caption: "Use either field when it helps. Leave both off when you do not want to estimate."
+                ) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
+                        if estimatedDurationEnabledBinding.wrappedValue {
+                            Stepper(value: estimatedDurationStepperBinding, in: 5...10_080, step: 5) {
+                                Text(estimatedDurationLabel(for: estimatedDurationStepperBinding.wrappedValue))
+                                    .frame(minWidth: 160, alignment: .leading)
+                            }
+                            .fixedSize()
+                        }
+                    }
+                }
+
+                macControlBlock(title: "Story points") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Toggle("Set story points", isOn: storyPointsEnabledBinding)
+                        if storyPointsEnabledBinding.wrappedValue {
+                            Stepper(value: storyPointsStepperBinding, in: 1...100) {
+                                Text(storyPointsLabel(for: storyPointsStepperBinding.wrappedValue))
+                                    .frame(minWidth: 160, alignment: .leading)
+                            }
+                            .fixedSize()
+                        }
+                    }
+                }
+            }
+        }
+        .id("Estimation")
     }
 
     // MARK: Places
@@ -1149,6 +1190,62 @@ struct TaskFormContent: View {
         let imp = model.importance.wrappedValue
         let urg = model.urgency.wrappedValue
         return "\(imp.title) importance and \(urg.title.lowercased()) urgency."
+    }
+
+    private func estimatedDurationLabel(for minutes: Int) -> String {
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+
+        switch (hours, remainingMinutes) {
+        case (0, let remainingMinutes):
+            return remainingMinutes == 1 ? "1 minute" : "\(remainingMinutes) minutes"
+        case (let hours, 0):
+            return hours == 1 ? "1 hour" : "\(hours) hours"
+        default:
+            let hourText = hours == 1 ? "1 hour" : "\(hours) hours"
+            let minuteText = remainingMinutes == 1 ? "1 minute" : "\(remainingMinutes) minutes"
+            return "\(hourText) \(minuteText)"
+        }
+    }
+
+    private func storyPointsLabel(for points: Int) -> String {
+        points == 1 ? "1 story point" : "\(points) story points"
+    }
+
+    private var estimatedDurationEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { model.estimatedDurationMinutes.wrappedValue != nil },
+            set: { isEnabled in
+                model.estimatedDurationMinutes.wrappedValue = isEnabled
+                    ? (model.estimatedDurationMinutes.wrappedValue ?? 30)
+                    : nil
+            }
+        )
+    }
+
+    private var estimatedDurationStepperBinding: Binding<Int> {
+        Binding(
+            get: { max(model.estimatedDurationMinutes.wrappedValue ?? 30, 5) },
+            set: { model.estimatedDurationMinutes.wrappedValue = RoutineTask.sanitizedEstimatedDurationMinutes(max($0, 5)) }
+        )
+    }
+
+    private var storyPointsEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { model.storyPoints.wrappedValue != nil },
+            set: { isEnabled in
+                model.storyPoints.wrappedValue = isEnabled
+                    ? (model.storyPoints.wrappedValue ?? 1)
+                    : nil
+            }
+        )
+    }
+
+    private var storyPointsStepperBinding: Binding<Int> {
+        Binding(
+            get: { max(model.storyPoints.wrappedValue ?? 1, 1) },
+            set: { model.storyPoints.wrappedValue = RoutineTask.sanitizedStoryPoints(max($0, 1)) }
+        )
     }
 
     private var stepsSectionDescription: String {

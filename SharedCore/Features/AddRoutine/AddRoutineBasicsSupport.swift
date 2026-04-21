@@ -92,4 +92,18 @@ enum AddRoutineBasicsEditor {
     ) {
         basics.routineColor = color
     }
+
+    static func setEstimatedDurationMinutes(
+        _ estimatedDurationMinutes: Int?,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+    }
+
+    static func setStoryPoints(
+        _ storyPoints: Int?,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+    }
 }

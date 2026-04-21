@@ -33,6 +33,10 @@ struct TaskFormModel {
     var importance: Binding<RoutineTaskImportance>
     var urgency: Binding<RoutineTaskUrgency>
 
+    // MARK: Estimation
+    var estimatedDurationMinutes: Binding<Int?>
+    var storyPoints: Binding<Int?>
+
     // MARK: Image
     var imageData: Data?
     var onImagePicked: (Data?) -> Void

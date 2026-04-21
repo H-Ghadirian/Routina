@@ -50,6 +50,14 @@ struct TaskDetailEditRoutineContent: View {
             deadline: editDeadlineBinding,
             importance: editImportanceBinding,
             urgency: editUrgencyBinding,
+            estimatedDurationMinutes: Binding(
+                get: { store.editEstimatedDurationMinutes },
+                set: { store.send(.editEstimatedDurationChanged($0)) }
+            ),
+            storyPoints: Binding(
+                get: { store.editStoryPoints },
+                set: { store.send(.editStoryPointsChanged($0)) }
+            ),
             imageData: store.editImageData,
             onImagePicked: { store.send(.editImagePicked($0)) },
             onRemoveImage: { store.send(.editRemoveImageTapped) },

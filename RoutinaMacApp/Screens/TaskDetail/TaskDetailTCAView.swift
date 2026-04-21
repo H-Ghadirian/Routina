@@ -252,6 +252,8 @@ struct TaskDetailTCAView: View {
             emoji: store.editRoutineEmoji,
             notes: store.editRoutineNotes,
             link: store.editRoutineLink,
+            estimatedDurationMinutes: store.editEstimatedDurationMinutes,
+            storyPoints: store.editStoryPoints,
             deadline: store.editDeadline,
             priority: store.editPriority,
             importance: store.editImportance,
@@ -444,6 +446,10 @@ struct TaskDetailTCAView: View {
             ])
         }
 
+        if !estimationHeaderBadges.isEmpty {
+            rows.append(estimationHeaderBadges)
+        }
+
         return rows
     }
 
@@ -540,7 +546,59 @@ struct TaskDetailTCAView: View {
             ])
         }
 
+        if !estimationHeaderBadges.isEmpty {
+            rows.append(estimationHeaderBadges)
+        }
+
         return rows
+    }
+
+    private var estimationHeaderBadges: [TaskDetailHeaderBadgeItem] {
+        var badges: [TaskDetailHeaderBadgeItem] = []
+
+        if let estimatedDurationMinutes = store.task.estimatedDurationMinutes {
+            badges.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Estimate",
+                    value: estimatedDurationBadgeValue(for: estimatedDurationMinutes),
+                    systemImage: nil,
+                    tint: .teal
+                )
+            )
+        }
+
+        if let storyPoints = store.task.storyPoints {
+            badges.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Points",
+                    value: storyPointsBadgeValue(for: storyPoints),
+                    systemImage: nil,
+                    tint: .purple
+                )
+            )
+        }
+
+        return badges
+    }
+
+    private func estimatedDurationBadgeValue(for minutes: Int) -> String {
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+
+        switch (hours, remainingMinutes) {
+        case (0, let minutes):
+            return minutes == 1 ? "1 minute" : "\(minutes) minutes"
+        case (let hours, 0):
+            return hours == 1 ? "1 hour" : "\(hours) hours"
+        case (let hours, let minutes):
+            let hourText = hours == 1 ? "1 hour" : "\(hours) hours"
+            let minuteText = minutes == 1 ? "1 minute" : "\(minutes) minutes"
+            return "\(hourText) \(minuteText)"
+        }
+    }
+
+    private func storyPointsBadgeValue(for points: Int) -> String {
+        points == 1 ? "1 story point" : "\(points) story points"
     }
 
     @ViewBuilder
@@ -1515,6 +1573,8 @@ struct TaskDetailTCAView: View {
         emoji: String,
         notes: String,
         link: String,
+        estimatedDurationMinutes: Int?,
+        storyPoints: Int?,
         deadline: Date?,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
@@ -1595,6 +1655,8 @@ struct TaskDetailTCAView: View {
             || emoji != currentEmoji
             || notes != currentNotes
             || link != currentLink
+            || estimatedDurationMinutes != task.estimatedDurationMinutes
+            || storyPoints != task.storyPoints
             || deadline != currentDeadline
             || priority != currentPriority
             || importance != currentImportance

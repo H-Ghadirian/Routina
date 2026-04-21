@@ -32,7 +32,9 @@ struct AddRoutineFeatureTests {
         [RoutineChecklistItem],
         [AttachmentItem],
         RoutineTaskColor,
-        Bool
+        Bool,
+        Int?,
+        Int?
     ) -> Effect<AddRoutineFeature.Action>
 
     private func makeState(
@@ -50,7 +52,7 @@ struct AddRoutineFeatureTests {
     }
 
     private func makeFeature(
-        onSave: @escaping SaveHandler = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none },
+        onSave: @escaping SaveHandler = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in .none },
         onCancel: @escaping () -> Effect<AddRoutineFeature.Action> = { .none }
     ) -> AddRoutineFeature {
         AddRoutineFeature(onSave: onSave, onCancel: onCancel)
@@ -58,8 +60,8 @@ struct AddRoutineFeatureTests {
 
     private func makeDelegateEchoFeature() -> AddRoutineFeature {
         makeFeature(
-            onSave: { name, frequencyInDays, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone in
-                .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone)))
+            onSave: { name, frequencyInDays, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints in
+                .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints)))
             }
         )
     }
@@ -211,7 +213,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 21, .interval(days: 21), "📚", nil, nil, nil, .medium, .level2, .level2, nil, nil, [], [], [], .fixedInterval, [], [], .none, false)))
+        await store.receive(.delegate(.didSave("Read", 21, .interval(days: 21), "📚", nil, nil, nil, .medium, .level2, .level2, nil, nil, [], [], [], .fixedInterval, [], [], .none, false, nil, nil)))
     }
 
     @Test
@@ -239,7 +241,29 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Laundry", 1, .interval(days: 1), "✨", nil, nil, nil, .medium, .level2, .level2, nil, placeID, [], [], [], .fixedInterval, [], [], .none, false)))
+        await store.receive(.delegate(.didSave("Laundry", 1, .interval(days: 1), "✨", nil, nil, nil, .medium, .level2, .level2, nil, placeID, [], [], [], .fixedInterval, [], [], .none, false, nil, nil)))
+    }
+
+    @Test
+    func saveTapped_includesEstimationValuesWhenPresent() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Implement Apple Sign In",
+                    estimatedDurationMinutes: 180,
+                    storyPoints: 5
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(.delegate(.didSave("Implement Apple Sign In", 1, .interval(days: 1), "✨", nil, nil, nil, .medium, .level2, .level2, nil, nil, [], [], [], .oneOff, [], [], .none, false, 180, 5)))
     }
 
     @Test
@@ -321,7 +345,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     Issue.record("Save effect should not run for duplicate routine names")
                     return .none
                 },
@@ -363,8 +387,8 @@ struct AddRoutineFeatureTests {
             )
         ) {
             makeFeature(
-                onSave: { name, frequencyInDays, recurrenceRule, emoji, _, _, _, priority, importance, urgency, _, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone in
-                    .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, nil, nil, nil, priority, importance, urgency, nil, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone)))
+                onSave: { name, frequencyInDays, recurrenceRule, emoji, _, _, _, priority, importance, urgency, _, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints in
+                    .send(.delegate(.didSave(name, frequencyInDays, recurrenceRule, emoji, nil, nil, nil, priority, importance, urgency, nil, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints)))
                 }
             )
         } withDependencies: {
@@ -372,7 +396,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave("Read", 5, .interval(days: 5), "📚", nil, nil, nil, .medium, .level2, .level2, nil, nil, [], [], [], .fixedInterval, [], [], .none, false)))
+        await store.receive(.delegate(.didSave("Read", 5, .interval(days: 5), "📚", nil, nil, nil, .medium, .level2, .level2, nil, nil, [], [], [], .fixedInterval, [], [], .none, false, nil, nil)))
     }
 
     @Test
@@ -395,7 +419,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, frequencyInDays, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, steps, scheduleMode, checklistItems, _, _, _ in
+                onSave: { _, frequencyInDays, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, steps, scheduleMode, checklistItems, _, _, _, _, _ in
                     capturedFrequencyInDays.withValue { $0 = frequencyInDays }
                     capturedRecurrenceRules.withValue { $0 = [recurrenceRule] }
                     capturedScheduleModes.withValue { $0 = [scheduleMode] }
@@ -573,7 +597,7 @@ struct AddRoutineFeatureTests {
             $0.organization.routineTags = ["Mindset", "night", "focus"]
             $0.organization.tagDraft = ""
         }
-        await store.receive(.delegate(.didSave("Read", 1, .interval(days: 1), "📚", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Mindset", "night", "focus"], [], [], .fixedInterval, [], [], .none, false)))
+        await store.receive(.delegate(.didSave("Read", 1, .interval(days: 1), "📚", nil, nil, nil, .medium, .level2, .level2, nil, nil, ["Mindset", "night", "focus"], [], [], .fixedInterval, [], [], .none, false, nil, nil)))
     }
 
     @Test
@@ -603,7 +627,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { name, frequencyInDays, _, emoji, _, _, _, _, _, _, _, placeID, tags, _, steps, _, checklistItems, _, _, _ in
+                onSave: { name, frequencyInDays, _, emoji, _, _, _, _, _, _, _, placeID, tags, _, steps, _, checklistItems, _, _, _, _, _ in
                     capturedNames.withValue { $0 = [name, "\(frequencyInDays)", emoji] + tags }
                     #expect(placeID == nil)
                     capturedSteps.withValue { $0 = steps }
@@ -643,7 +667,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, steps, scheduleMode, checklistItems, _, _, _ in
+                onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, steps, scheduleMode, checklistItems, _, _, _, _, _ in
                     #expect(steps.isEmpty)
                     capturedScheduleModes.withValue { $0 = [scheduleMode] }
                     capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
@@ -687,7 +711,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, steps, scheduleMode, checklistItems, _, _, _ in
+                onSave: { _, _, _, _, _, _, _, _, _, _, _, _, _, _, steps, scheduleMode, checklistItems, _, _, _, _, _ in
                     #expect(steps.isEmpty)
                     capturedScheduleModes.withValue { $0 = [scheduleMode] }
                     capturedChecklistTitles.withValue { $0 = checklistItems.map(\.title) }
@@ -726,7 +750,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     capturedRecurrenceRules.withValue { $0 = [recurrenceRule] }
                     return .none
                 },
@@ -756,7 +780,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
                     return .none
                 },
@@ -778,7 +802,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
                     return .none
                 },
@@ -813,7 +837,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
                     return .none
                 },
@@ -837,7 +861,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, recurrenceRule, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     capturedRecurrenceRules.withValue { $0.append(recurrenceRule) }
                     return .none
                 },
@@ -876,7 +900,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, notes, _, savedDeadline, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, _, _, notes, _, savedDeadline, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     capturedNotes.withValue { $0 = notes }
                     capturedDeadline.withValue { $0 = savedDeadline }
                     return .none
@@ -907,7 +931,7 @@ struct AddRoutineFeatureTests {
             )
         ) {
             AddRoutineFeature(
-                onSave: { _, _, _, _, _, link, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
+                onSave: { _, _, _, _, _, link, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ in
                     capturedLink.withValue { $0 = link }
                     return .none
                 },

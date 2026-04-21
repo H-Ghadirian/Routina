@@ -216,6 +216,8 @@ enum CloudKitDirectPullService {
         var createdAt: Date?
         var todoStateRawValue: String?
         var autoAssumeDailyDone: Bool?
+        var estimatedDurationMinutes: Int?
+        var storyPoints: Int?
     }
 
     private struct PlacePayload {
@@ -360,6 +362,26 @@ enum CloudKitDirectPullService {
                 "cd_autoassumedailydone"
             ]
         )
+        let estimatedDurationMinutesValue = intValue(
+            in: record,
+            keys: [
+                "estimatedDurationMinutes",
+                "ESTIMATEDDURATIONMINUTES",
+                "zestimateddurationminutes",
+                "ZESTIMATEDDURATIONMINUTES",
+                "cd_estimateddurationminutes"
+            ]
+        )
+        let storyPointsValue = intValue(
+            in: record,
+            keys: [
+                "storyPoints",
+                "STORYPOINTS",
+                "zstorypoints",
+                "ZSTORYPOINTS",
+                "cd_storypoints"
+            ]
+        )
 
         guard
             intervalValue != nil
@@ -383,6 +405,8 @@ enum CloudKitDirectPullService {
                 || pinnedAtValue != nil
                 || completedStepCountValue != nil
                 || sequenceStartedAtValue != nil
+                || estimatedDurationMinutesValue != nil
+                || storyPointsValue != nil
                 || autoAssumeDailyDoneValue != nil
         else {
             return nil
@@ -429,7 +453,9 @@ enum CloudKitDirectPullService {
             sequenceStartedAt: sequenceStartedAtValue,
             createdAt: createdAtValue,
             todoStateRawValue: todoStateRawValueValue,
-            autoAssumeDailyDone: autoAssumeDailyDoneValue
+            autoAssumeDailyDone: autoAssumeDailyDoneValue,
+            estimatedDurationMinutes: estimatedDurationMinutesValue,
+            storyPoints: storyPointsValue
         )
     }
 
@@ -554,6 +580,12 @@ enum CloudKitDirectPullService {
                 if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
                     taskWithSameName.autoAssumeDailyDone = autoAssumeDailyDone
                 }
+                if let estimatedDurationMinutes = payload.estimatedDurationMinutes {
+                    taskWithSameName.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+                }
+                if let storyPoints = payload.storyPoints {
+                    taskWithSameName.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+                }
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -599,6 +631,12 @@ enum CloudKitDirectPullService {
             if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
                 existing.autoAssumeDailyDone = autoAssumeDailyDone
             }
+            if let estimatedDurationMinutes = payload.estimatedDurationMinutes {
+                existing.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+            }
+            if let storyPoints = payload.storyPoints {
+                existing.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+            }
             return existing.id
         } else {
             if let normalizedIncomingName,
@@ -643,6 +681,12 @@ enum CloudKitDirectPullService {
                 if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
                     taskWithSameName.autoAssumeDailyDone = autoAssumeDailyDone
                 }
+                if let estimatedDurationMinutes = payload.estimatedDurationMinutes {
+                    taskWithSameName.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+                }
+                if let storyPoints = payload.storyPoints {
+                    taskWithSameName.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+                }
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -673,7 +717,9 @@ enum CloudKitDirectPullService {
                     sequenceStartedAt: payload.sequenceStartedAt,
                     createdAt: payload.createdAt,
                     todoStateRawValue: payload.todoStateRawValue,
-                    autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false
+                    autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false,
+                    estimatedDurationMinutes: payload.estimatedDurationMinutes,
+                    storyPoints: payload.storyPoints
                 )
             )
             return payload.id

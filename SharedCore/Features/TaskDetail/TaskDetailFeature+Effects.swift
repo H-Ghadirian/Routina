@@ -148,7 +148,9 @@ extension TaskDetailFeature {
         scheduleMode: RoutineScheduleMode,
         recurrenceRule: RoutineRecurrenceRule,
         color: RoutineTaskColor,
-        autoAssumeDailyDone: Bool
+        autoAssumeDailyDone: Bool,
+        estimatedDurationMinutes: Int?,
+        storyPoints: Int?
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -194,6 +196,8 @@ extension TaskDetailFeature {
                         hasSequentialSteps: !steps.isEmpty,
                         hasChecklistItems: !checklistItems.isEmpty
                     )
+                task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+                task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 if scheduleMode == .oneOff {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1

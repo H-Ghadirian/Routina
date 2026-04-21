@@ -174,6 +174,8 @@ final class RoutineTask {
     var createdAt: Date? = nil
     var todoStateRawValue: String? = nil
     var autoAssumeDailyDone: Bool = false
+    var estimatedDurationMinutes: Int?
+    var storyPoints: Int?
 
     var isPaused: Bool {
         pausedAt != nil
@@ -462,7 +464,9 @@ final class RoutineTask {
         color: RoutineTaskColor = .none,
         createdAt: Date? = Date(),
         todoStateRawValue: String? = nil,
-        autoAssumeDailyDone: Bool = false
+        autoAssumeDailyDone: Bool = false,
+        estimatedDurationMinutes: Int? = nil,
+        storyPoints: Int? = nil
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
@@ -500,6 +504,8 @@ final class RoutineTask {
         self.createdAt = createdAt
         self.todoStateRawValue = todoStateRawValue
         self.autoAssumeDailyDone = autoAssumeDailyDone
+        self.estimatedDurationMinutes = Self.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+        self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
             resetStepProgress()
         }
@@ -858,12 +864,24 @@ final class RoutineTask {
             color: color,
             createdAt: createdAt,
             todoStateRawValue: todoStateRawValue,
-            autoAssumeDailyDone: autoAssumeDailyDone
+            autoAssumeDailyDone: autoAssumeDailyDone,
+            estimatedDurationMinutes: estimatedDurationMinutes,
+            storyPoints: storyPoints
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage
         copy.scheduleAnchor = scheduleAnchor
         return copy
+    }
+
+    static func sanitizedEstimatedDurationMinutes(_ value: Int?) -> Int? {
+        guard let value, value > 0 else { return nil }
+        return value
+    }
+
+    static func sanitizedStoryPoints(_ value: Int?) -> Int? {
+        guard let value, value > 0 else { return nil }
+        return value
     }
 }
 
