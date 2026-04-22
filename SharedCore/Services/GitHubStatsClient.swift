@@ -6,6 +6,7 @@ struct GitHubStatsClient: Sendable {
     var saveConnection: @Sendable (GitHubStatsConfiguration, String?) async throws -> GitHubConnectionStatus
     var clearConnection: @Sendable () throws -> Void
     var fetchStats: @Sendable (DoneChartRange) async throws -> GitHubStatsSnapshot
+    var fetchContributionYear: @Sendable () async throws -> GitHubWidgetData
 }
 
 extension GitHubStatsClient {
@@ -99,6 +100,21 @@ extension GitHubStatsClient {
                     )
                 )
             }
+        },
+        fetchContributionYear: {
+            guard let configuration = loadStoredConfiguration() else {
+                throw GitHubStatsError.notConfigured
+            }
+            guard configuration.scope == .profile else {
+                throw GitHubStatsError.notConfigured
+            }
+            guard let accessToken = storedAccessToken(), !accessToken.isEmpty else {
+                throw GitHubStatsError.profileTokenRequired
+            }
+            return try await fetchWidgetContributions(
+                accessToken: accessToken,
+                fallbackLogin: configuration.viewerLogin
+            )
         }
     )
 
@@ -109,6 +125,9 @@ extension GitHubStatsClient {
         },
         clearConnection: { },
         fetchStats: { _ in
+            throw GitHubStatsError.notConfigured
+        },
+        fetchContributionYear: {
             throw GitHubStatsError.notConfigured
         }
     )
@@ -762,4 +781,66 @@ private func makeContributionPoints(
 
         return DoneChartPoint(date: date, count: countsByDay[date] ?? 0)
     }
+}
+
+private func fetchWidgetContributions(
+    accessToken: String,
+    fallbackLogin: String?
+) async throws -> GitHubWidgetData {
+    let calendar = Calendar.current
+    let now = Date()
+    let from = calendar.date(byAdding: .day, value: -364, to: calendar.startOfDay(for: now)) ?? now
+
+    let variables = [
+        "from": makeGitHubDateTimeString(from),
+        "to": makeGitHubDateTimeString(now)
+    ]
+
+    let query = """
+    query ViewerContributions($from: DateTime!, $to: DateTime!) {
+      viewer {
+        login
+        contributionsCollection(from: $from, to: $to) {
+          contributionCalendar {
+            totalContributions
+            weeks {
+              contributionDays {
+                contributionCount
+                date
+              }
+            }
+          }
+          totalCommitContributions
+          totalIssueContributions
+          totalPullRequestContributions
+          totalPullRequestReviewContributions
+          totalRepositoriesWithContributedCommits
+          restrictedContributionsCount
+        }
+      }
+    }
+    """
+
+    let payload: GitHubViewerContributionsPayload = try await decodeGitHubGraphQLResponse(
+        query: query,
+        variables: variables,
+        accessToken: accessToken
+    )
+
+    let calendarPayload = payload.viewer.contributionsCollection.contributionCalendar
+    let weeks = calendarPayload.weeks.map { week in
+        GitHubWidgetData.Week(
+            days: week.contributionDays.map { day in
+                GitHubWidgetData.Week.Day(date: day.date, count: day.contributionCount)
+            }
+        )
+    }
+
+    let login = payload.viewer.login.isEmpty ? (fallbackLogin ?? "viewer") : payload.viewer.login
+    return GitHubWidgetData(
+        login: login,
+        weeks: weeks,
+        totalContributions: calendarPayload.totalContributions,
+        fetchedAt: now
+    )
 }

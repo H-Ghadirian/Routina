@@ -12,5 +12,6 @@ import SwiftUI
 struct RoutinaWidgetBundle: WidgetBundle {
     var body: some Widget {
         RoutinaStatsWidget()
+        GitHubActivityWidget()
     }
 }

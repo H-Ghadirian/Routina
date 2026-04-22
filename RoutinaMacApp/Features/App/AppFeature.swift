@@ -421,6 +421,7 @@ struct StatsFeature {
         state.isGitHubStatsLoading = true
         state.gitHubStatsErrorMessage = nil
         let range = state.selectedRange
+        let isProfile = state.gitHubConnection.scope == .profile
 
         return .run { send in
             do {
@@ -428,6 +429,11 @@ struct StatsFeature {
                 await send(.gitHubStatsLoaded(stats))
             } catch {
                 await send(.gitHubStatsFailed(error.localizedDescription))
+            }
+            if isProfile {
+                if let data = try? await self.gitHubStatsClient.fetchContributionYear() {
+                    GitHubWidgetService.writeAndReload(data)
+                }
             }
         }
     }
