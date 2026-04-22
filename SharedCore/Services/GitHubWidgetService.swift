@@ -15,11 +15,19 @@ enum GitHubWidgetService {
     }
 
     static func write(_ data: GitHubWidgetData) {
-        guard let url = fileURL else { return }
+        guard let url = fileURL else {
+            NSLog("GitHubWidgetService: app group container unavailable (check entitlement \(appGroupID))")
+            return
+        }
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        guard let json = try? encoder.encode(data) else { return }
-        try? json.write(to: url, options: .atomic)
+        do {
+            let json = try encoder.encode(data)
+            try json.write(to: url, options: .atomic)
+            NSLog("GitHubWidgetService: wrote \(json.count) bytes for @\(data.login) to \(url.path)")
+        } catch {
+            NSLog("GitHubWidgetService: write failed — \(error.localizedDescription)")
+        }
     }
 
     static func reload() {

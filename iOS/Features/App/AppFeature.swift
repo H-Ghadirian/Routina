@@ -454,9 +454,14 @@ struct StatsFeature {
                 await send(.gitHubStatsFailed(error.localizedDescription))
             }
             if isProfile {
-                if let data = try? await self.gitHubStatsClient.fetchContributionYear() {
+                do {
+                    let data = try await self.gitHubStatsClient.fetchContributionYear()
                     GitHubWidgetService.writeAndReload(data)
+                } catch {
+                    NSLog("GitHubWidgetService: fetchContributionYear failed — \(error.localizedDescription)")
                 }
+            } else {
+                NSLog("GitHubWidgetService: skipping widget fetch — scope is not profile")
             }
         }
     }
