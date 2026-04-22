@@ -111,15 +111,45 @@ extension HomeFeature {
         return .merge(moveEffect, reorderEffect)
     }
 
-    func handleCreateSprint(state: inout State) -> Effect<Action> {
-        let nextIndex = state.sprintBoardData.sprints.count + 1
+    func handleCreateSprintConfirmed(title: String, state: inout State) -> Effect<Action> {
+        let finalTitle = title.trimmingCharacters(in: .whitespaces)
+        state.creatingSprintTitle = nil
+        guard !finalTitle.isEmpty else { return .none }
         state.sprintBoardData.sprints.insert(
-            BoardSprint(title: "Sprint \(nextIndex)", createdAt: now),
+            BoardSprint(title: finalTitle, createdAt: now),
             at: 0
         )
         if case .backlog = state.selectedBoardScope,
            let createdSprintID = state.sprintBoardData.sprints.first?.id {
             state.selectedBoardScope = .sprint(createdSprintID)
+        }
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleRenameSprint(id: UUID, title: String, state: inout State) -> Effect<Action> {
+        let finalTitle = title.trimmingCharacters(in: .whitespaces)
+        state.renamingSprintID = nil
+        state.renamingSprintTitle = ""
+        guard !finalTitle.isEmpty,
+              let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == id }) else {
+            return .none
+        }
+        state.sprintBoardData.sprints[index].title = finalTitle
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleDeleteSprint(id: UUID, state: inout State) -> Effect<Action> {
+        state.deletingSprintID = nil
+        state.sprintBoardData.assignments.removeAll(where: { $0.sprintID == id })
+        state.sprintBoardData.sprints.removeAll(where: { $0.id == id })
+        if case .sprint(let selectedID) = state.selectedBoardScope, selectedID == id {
+            state.selectedBoardScope = .backlog
+        }
+        if case .currentSprint = state.selectedBoardScope,
+           state.sprintBoardData.activeSprint == nil {
+            state.selectedBoardScope = .backlog
         }
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)

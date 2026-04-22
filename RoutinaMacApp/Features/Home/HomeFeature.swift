@@ -386,6 +386,26 @@ struct HomeFeature {
             get { board.selectedScope }
             set { board.selectedScope = newValue }
         }
+
+        var creatingSprintTitle: String? {
+            get { board.creatingSprintTitle }
+            set { board.creatingSprintTitle = newValue }
+        }
+
+        var renamingSprintID: UUID? {
+            get { board.renamingSprintID }
+            set { board.renamingSprintID = newValue }
+        }
+
+        var renamingSprintTitle: String {
+            get { board.renamingSprintTitle }
+            set { board.renamingSprintTitle = newValue }
+        }
+
+        var deletingSprintID: UUID? {
+            get { board.deletingSprintID }
+            set { board.deletingSprintID = newValue }
+        }
     }
 
     enum Action: Equatable {
@@ -410,9 +430,19 @@ struct HomeFeature {
         case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
         case selectedBoardScopeChanged(BoardScope)
         case createSprintTapped
+        case createSprintTitleChanged(String)
+        case createSprintConfirmed
+        case createSprintCanceled
         case startSprintTapped(UUID)
         case finishSprintTapped(UUID)
         case assignTodoToSprint(taskID: UUID, sprintID: UUID?)
+        case renameSprintTapped(UUID)
+        case renamingSprintTitleChanged(String)
+        case renameSprintConfirmed
+        case renameSprintCanceled
+        case deleteSprintTapped(UUID)
+        case deleteSprintConfirmed(UUID)
+        case deleteSprintCanceled
         case notTodayTask(UUID)
         case pauseTask(UUID)
         case resumeTask(UUID)
@@ -937,7 +967,20 @@ struct HomeFeature {
                 return .none
 
             case .createSprintTapped:
-                return handleCreateSprint(state: &state)
+                state.creatingSprintTitle = ""
+                return .none
+
+            case let .createSprintTitleChanged(title):
+                state.creatingSprintTitle = title
+                return .none
+
+            case .createSprintConfirmed:
+                let title = state.creatingSprintTitle ?? ""
+                return handleCreateSprintConfirmed(title: title, state: &state)
+
+            case .createSprintCanceled:
+                state.creatingSprintTitle = nil
+                return .none
 
             case let .startSprintTapped(sprintID):
                 return handleStartSprint(
@@ -957,6 +1000,36 @@ struct HomeFeature {
                     sprintID: sprintID,
                     state: &state
                 )
+
+            case let .renameSprintTapped(id):
+                let currentTitle = state.sprintBoardData.sprints.first(where: { $0.id == id })?.title ?? ""
+                state.renamingSprintID = id
+                state.renamingSprintTitle = currentTitle
+                return .none
+
+            case let .renamingSprintTitleChanged(title):
+                state.renamingSprintTitle = title
+                return .none
+
+            case .renameSprintConfirmed:
+                guard let id = state.renamingSprintID else { return .none }
+                return handleRenameSprint(id: id, title: state.renamingSprintTitle, state: &state)
+
+            case .renameSprintCanceled:
+                state.renamingSprintID = nil
+                state.renamingSprintTitle = ""
+                return .none
+
+            case let .deleteSprintTapped(id):
+                state.deletingSprintID = id
+                return .none
+
+            case let .deleteSprintConfirmed(id):
+                return handleDeleteSprint(id: id, state: &state)
+
+            case .deleteSprintCanceled:
+                state.deletingSprintID = nil
+                return .none
 
             case let .pauseTask(id):
                 guard let update = HomeTaskLifecycleSupport.pauseTask(

@@ -110,49 +110,57 @@ extension HomeTCAView {
                 HomeMacSidebarSectionCard(title: "Sprint Scope") {
                     VStack(alignment: .leading, spacing: 8) {
                         boardScopeButton(title: "Backlog", scope: .backlog)
-                        boardScopeButton(title: "Current Sprint", scope: .currentSprint)
 
                         ForEach(boardSprints) { sprint in
-                            Button {
-                                store.send(.selectedBoardScopeChanged(.sprint(sprint.id)))
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Circle()
-                                        .fill(boardSprintTint(for: sprint.status))
-                                        .frame(width: 8, height: 8)
-
-                                    Text(sprint.title)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.primary)
-
-                                    Spacer(minLength: 0)
-
-                                    Text(sprint.status.displayTitle)
-                                        .font(.caption2.weight(.semibold))
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(isSelectedBoardScope(.sprint(sprint.id)) ? Color.accentColor.opacity(0.14) : Color.clear)
-                                )
-                            }
-                            .buttonStyle(.plain)
+                            sprintScopeRow(sprint)
                         }
                     }
                 }
 
                 HomeMacSidebarSectionCard(title: "Sprints") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Button {
-                            store.send(.createSprintTapped)
-                        } label: {
-                            Label("Create sprint", systemImage: "plus")
+                        if let creatingTitle = store.creatingSprintTitle {
+                            HStack(spacing: 6) {
+                                TextField("Sprint name…", text: Binding(
+                                    get: { creatingTitle },
+                                    set: { store.send(.createSprintTitleChanged($0)) }
+                                ))
+                                .textFieldStyle(.plain)
                                 .font(.caption.weight(.semibold))
+                                .focused($isSprintCreationFieldFocused)
+                                .onSubmit { store.send(.createSprintConfirmed) }
+                                .onAppear { isSprintCreationFieldFocused = true }
+
+                                Button(action: { store.send(.createSprintConfirmed) }) {
+                                    Image(systemName: "checkmark")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.green)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(creatingTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                                Button(action: { store.send(.createSprintCanceled) }) {
+                                    Image(systemName: "xmark")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(Color.secondary.opacity(0.1))
+                            )
+                        } else {
+                            Button {
+                                store.send(.createSprintTapped)
+                            } label: {
+                                Label("Create sprint", systemImage: "plus")
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .buttonStyle(.borderless)
                         }
-                        .buttonStyle(.borderless)
 
                         if let activeSprint = boardActiveSprint {
                             HStack(spacing: 8) {
@@ -186,7 +194,7 @@ extension HomeTCAView {
                             }
                             .buttonStyle(.borderless)
                             .font(.caption.weight(.semibold))
-                        } else {
+                        } else if store.creatingSprintTitle == nil {
                             Text("Create a sprint to start planning work beyond the backlog.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -282,6 +290,27 @@ extension HomeTCAView {
                 }
             }
             .padding(12)
+        }
+        .alert(
+            "Delete Sprint",
+            isPresented: Binding(
+                get: { store.deletingSprintID != nil },
+                set: { if !$0 { store.send(.deleteSprintCanceled) } }
+            ),
+            presenting: store.deletingSprintID
+        ) { sprintID in
+            Button("Delete", role: .destructive) {
+                store.send(.deleteSprintConfirmed(sprintID))
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { sprintID in
+            let title = boardSprints.first(where: { $0.id == sprintID })?.title ?? "this sprint"
+            let hasAssignments = store.sprintBoardData.assignments.contains(where: { $0.sprintID == sprintID })
+            if hasAssignments {
+                Text("\"\(title)\" will be deleted and all its tasks will be moved to the backlog.")
+            } else {
+                Text("\"\(title)\" will be deleted.")
+            }
         }
     }
 
@@ -405,6 +434,92 @@ extension HomeTCAView {
         }
     }
 
+    @ViewBuilder
+    private func sprintScopeRow(_ sprint: BoardSprint) -> some View {
+        let isRenaming = store.renamingSprintID == sprint.id
+
+        if isRenaming {
+            HStack(spacing: 6) {
+                TextField("Sprint name…", text: Binding(
+                    get: { store.renamingSprintTitle },
+                    set: { store.send(.renamingSprintTitleChanged($0)) }
+                ))
+                .textFieldStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .focused($isSprintRenameFieldFocused)
+                .onSubmit { store.send(.renameSprintConfirmed) }
+                .onAppear { isSprintRenameFieldFocused = true }
+
+                Button(action: { store.send(.renameSprintConfirmed) }) {
+                    Image(systemName: "checkmark")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.green)
+                }
+                .buttonStyle(.plain)
+                .disabled(store.renamingSprintTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                Button(action: { store.send(.renameSprintCanceled) }) {
+                    Image(systemName: "xmark")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.1))
+            )
+        } else {
+            Button {
+                store.send(.selectedBoardScopeChanged(.sprint(sprint.id)))
+            } label: {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(boardSprintTint(for: sprint.status))
+                        .frame(width: 8, height: 8)
+
+                    Text(sprint.title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+
+                    Spacer(minLength: 0)
+
+                    Text(sprint.status.displayTitle)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isSelectedBoardScope(.sprint(sprint.id)) ? Color.accentColor.opacity(0.14) : Color.clear)
+                )
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button("Rename") {
+                    store.send(.renameSprintTapped(sprint.id))
+                }
+
+                if sprint.status != .active {
+                    Button("Set as Active") {
+                        store.send(.startSprintTapped(sprint.id))
+                    }
+                }
+
+                Divider()
+
+                Button("Delete", role: .destructive) {
+                    store.send(.deleteSprintTapped(sprint.id))
+                }
+                .disabled(sprint.status == .active)
+            }
+        }
+    }
+
     private func boardSidebarStatRow(title: String, value: Int, tint: Color) -> some View {
         HStack(spacing: 10) {
             Circle()
@@ -442,10 +557,12 @@ extension HomeTCAView {
 
     private func isSelectedBoardScope(_ scope: HomeFeature.BoardScope) -> Bool {
         switch (store.selectedBoardScope, scope) {
-        case (.backlog, .backlog), (.currentSprint, .currentSprint):
+        case (.backlog, .backlog):
             return true
         case let (.sprint(lhs), .sprint(rhs)):
             return lhs == rhs
+        case (.currentSprint, .sprint(let id)):
+            return boardActiveSprint?.id == id
         default:
             return false
         }

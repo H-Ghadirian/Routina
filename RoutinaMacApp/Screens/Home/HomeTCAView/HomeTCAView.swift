@@ -35,6 +35,8 @@ struct HomeTCAView: View {
     @State private var isRefreshScheduled = false
     @State var draggedSection: String?
     @State var isBoardTaskDetailSheetPresented = false
+    @FocusState var isSprintCreationFieldFocused: Bool
+    @FocusState var isSprintRenameFieldFocused: Bool
 
     init(
         store: StoreOf<HomeFeature>,
