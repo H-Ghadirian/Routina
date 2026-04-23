@@ -1,0 +1,152 @@
+import SwiftUI
+import WidgetKit
+
+struct GitLabActivityWidgetView: View {
+    let entry: GitLabActivityEntry
+
+    @Environment(\.widgetFamily) private var family
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var displayedWeeks: [GitLabWidgetData.Week] {
+        guard let weeks = entry.widgetData?.weeks else { return [] }
+        return weeks
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            headerView
+            gridView
+                .layoutPriority(1)
+            footerView
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    // MARK: - Header
+
+    @ViewBuilder
+    private var headerView: some View {
+        if let data = entry.widgetData {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("@\(data.username)")
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer(minLength: 0)
+                Text("\(data.totalContributions) contributions")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("GitLab Activity")
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    // MARK: - Grid
+
+    @ViewBuilder
+    private var gridView: some View {
+        if let weeks = entry.widgetData?.weeks {
+            Canvas { context, size in
+                let weekCount = max(weeks.count, 1)
+                let cellW = (size.width - CGFloat(weekCount - 1) * gap) / CGFloat(weekCount)
+                let cellH = (size.height - 6 * gap) / 7
+                let cell = min(cellW, cellH)
+                let radius = max(1, cell * 0.25)
+                let gridWidth = CGFloat(weekCount) * cell + CGFloat(weekCount - 1) * gap
+                let gridHeight = 7 * cell + 6 * gap
+                let offsetX = (size.width - gridWidth) / 2
+                let offsetY = (size.height - gridHeight) / 2
+
+                for (weekIndex, week) in weeks.enumerated() {
+                    for (dayIndex, day) in week.days.enumerated() {
+                        let x = offsetX + CGFloat(weekIndex) * (cell + gap)
+                        let y = offsetY + CGFloat(dayIndex) * (cell + gap)
+                        let rect = CGRect(x: x, y: y, width: cell, height: cell)
+                        let path = Path(roundedRect: rect, cornerRadius: radius)
+                        context.fill(path, with: .color(cellColor(count: day.count)))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            Text("Open Routina to load\nyour GitLab contribution graph.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    // MARK: - Footer
+
+    @ViewBuilder
+    private var footerView: some View {
+        if entry.widgetData != nil {
+            HStack(spacing: 6) {
+                Text("Less")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                ForEach(0..<5, id: \.self) { level in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(cellColor(count: sampleCount(for: level)))
+                        .frame(width: 9, height: 9)
+                }
+                Text("More")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private var gap: CGFloat { 2 }
+
+    private func sampleCount(for level: Int) -> Int {
+        switch level {
+        case 0: return 0
+        case 1: return 2
+        case 2: return 5
+        case 3: return 8
+        default: return 12
+        }
+    }
+
+    // MARK: - Color
+
+    // GitLab-flavored orange ramp.
+    private func cellColor(count: Int) -> Color {
+        switch count {
+        case 0:
+            return colorScheme == .dark ? Color(white: 0.20) : Color(white: 0.90)
+        case 1...3:
+            return Color(red: 0.99, green: 0.82, blue: 0.55)
+        case 4...6:
+            return Color(red: 0.98, green: 0.63, blue: 0.30)
+        case 7...9:
+            return Color(red: 0.90, green: 0.42, blue: 0.13)
+        default:
+            return Color(red: 0.69, green: 0.27, blue: 0.08)
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview(as: .systemMedium) {
+    GitLabActivityWidget()
+} timeline: {
+    GitLabActivityEntry(date: .now, widgetData: nil)
+}
+
+#Preview(as: .systemLarge) {
+    GitLabActivityWidget()
+} timeline: {
+    GitLabActivityEntry(date: .now, widgetData: nil)
+}

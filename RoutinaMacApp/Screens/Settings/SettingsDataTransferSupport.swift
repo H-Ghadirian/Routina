@@ -7,6 +7,7 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
     case appearance
     case iCloud
     case github
+    case gitlab
     case backup
     case support
     case about
@@ -21,6 +22,7 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
         case .appearance:    return "Appearance"
         case .iCloud:        return "iCloud"
         case .github:        return "GitHub"
+        case .gitlab:        return "GitLab"
         case .backup:        return "Data Backup"
         case .support:       return "Support"
         case .about:         return "About"
@@ -35,6 +37,7 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
         case .appearance:    return "app.badge.fill"
         case .iCloud:        return "icloud.fill"
         case .github:        return "point.3.connected.trianglepath.dotted"
+        case .gitlab:        return "arrow.triangle.branch"
         case .backup:        return "externaldrive.fill"
         case .support:       return "envelope.fill"
         case .about:         return "info.circle.fill"
@@ -49,6 +52,7 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
         case .appearance:    return .orange
         case .iCloud:        return .cyan
         case .github:        return .indigo
+        case .gitlab:        return .orange
         case .backup:        return .indigo
         case .support:       return .green
         case .about:         return .gray

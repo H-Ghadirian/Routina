@@ -152,6 +152,8 @@ struct SettingsMacSidebarRow: View {
             return store.cloud.overviewSubtitle
         case .github:
             return store.github.overviewSubtitle
+        case .gitlab:
+            return store.gitlab.overviewSubtitle
 
         case .backup:
             return store.dataTransfer.overviewSubtitle
@@ -172,6 +174,8 @@ struct SettingsMacSidebarRow: View {
             return store.cloud.cloudSyncAvailable ? nil : "Off"
         case .github:
             return store.github.connectedRepository == nil ? nil : "Live"
+        case .gitlab:
+            return store.gitlab.isConnected ? "Live" : nil
         default:
             return nil
         }
@@ -244,6 +248,8 @@ struct SettingsMacDetailView: View {
             SettingsMacCloudDetailView(store: store)
         case .github:
             SettingsMacGitHubDetailView(store: store)
+        case .gitlab:
+            SettingsMacGitLabDetailView(store: store)
         case .backup:
             SettingsMacBackupDetailView(store: store)
         case .support:
@@ -506,6 +512,83 @@ private struct SettingsMacGitHubDetailView: View {
         Binding(
             get: { store.github.accessTokenDraft },
             set: { store.send(.gitHubTokenChanged($0)) }
+        )
+    }
+}
+
+private struct SettingsMacGitLabDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            SettingsMacDetailShell(
+                title: "GitLab",
+                subtitle: store.gitlab.detailSubtitle
+            ) {
+                SettingsMacDetailCard(title: "Profile") {
+                    Text(store.gitlab.profileSummaryText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    if let validationMessage = store.gitlab.saveValidationMessage {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                SettingsMacDetailCard(title: "Access Token") {
+                    SecureField("Personal access token", text: accessTokenBinding)
+                        .textFieldStyle(.roundedBorder)
+
+                    Text(store.gitlab.tokenStatusText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                SettingsMacDetailCard(title: "Actions") {
+                    HStack(spacing: 12) {
+                        Button {
+                            store.send(.saveGitLabConnectionTapped)
+                        } label: {
+                            if store.gitlab.isOperationInProgress {
+                                ProgressView()
+                            } else {
+                                Label(store.gitlab.saveButtonTitle, systemImage: "link.badge.plus")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(store.gitlab.isSaveDisabled)
+
+                        Button(role: .destructive) {
+                            store.send(.clearGitLabConnectionTapped)
+                        } label: {
+                            Label("Remove Connection", systemImage: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(store.gitlab.removeButtonDisabled)
+                    }
+
+                    Text(store.gitlab.infoText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !store.gitlab.statusMessage.isEmpty {
+                    SettingsMacDetailCard(title: "Status") {
+                        Text(store.gitlab.statusMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private var accessTokenBinding: Binding<String> {
+        Binding(
+            get: { store.gitlab.accessTokenDraft },
+            set: { store.send(.gitLabTokenChanged($0)) }
         )
     }
 }

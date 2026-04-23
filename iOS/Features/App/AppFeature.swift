@@ -355,6 +355,7 @@ struct StatsFeature {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
+    @Dependency(\.gitLabStatsClient) var gitLabStatsClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -367,11 +368,10 @@ struct StatsFeature {
 
             case .onAppear:
                 state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
-                guard state.gitHubConnection.isConnected else {
+                if !state.gitHubConnection.isConnected {
                     state.isGitHubStatsLoading = false
                     state.gitHubStats = nil
                     state.gitHubStatsErrorMessage = nil
-                    return .none
                 }
                 return refreshGitHubStatsEffect(state: &state)
 
@@ -381,7 +381,7 @@ struct StatsFeature {
                 guard state.gitHubConnection.isConnected else {
                     return .none
                 }
-                return refreshGitHubStatsEffect(state: &state)
+                return refreshGitHubStatsEffect(state: &state, skipGitLab: true)
 
             case let .taskTypeFilterChanged(filter):
                 state.taskTypeFilter = filter
@@ -409,11 +409,10 @@ struct StatsFeature {
 
             case .gitHubStatsRefreshRequested:
                 state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
-                guard state.gitHubConnection.isConnected else {
+                if !state.gitHubConnection.isConnected {
                     state.gitHubStats = nil
                     state.gitHubStatsErrorMessage = nil
                     state.isGitHubStatsLoading = false
-                    return .none
                 }
                 return refreshGitHubStatsEffect(state: &state)
 
@@ -440,28 +439,47 @@ struct StatsFeature {
         }
     }
 
-    private func refreshGitHubStatsEffect(state: inout State) -> Effect<Action> {
-        state.isGitHubStatsLoading = true
-        state.gitHubStatsErrorMessage = nil
+    private func refreshGitHubStatsEffect(
+        state: inout State,
+        skipGitLab: Bool = false
+    ) -> Effect<Action> {
+        let isGitHubConnected = state.gitHubConnection.isConnected
+        if isGitHubConnected {
+            state.isGitHubStatsLoading = true
+            state.gitHubStatsErrorMessage = nil
+        }
         let range = state.selectedRange
         let isProfile = state.gitHubConnection.scope == .profile
 
         return .run { send in
-            do {
-                let stats = try await self.gitHubStatsClient.fetchStats(range)
-                await send(.gitHubStatsLoaded(stats))
-            } catch {
-                await send(.gitHubStatsFailed(error.localizedDescription))
+            if isGitHubConnected {
+                do {
+                    let stats = try await self.gitHubStatsClient.fetchStats(range)
+                    await send(.gitHubStatsLoaded(stats))
+                } catch {
+                    await send(.gitHubStatsFailed(error.localizedDescription))
+                }
             }
-            if isProfile {
+            if isGitHubConnected, isProfile {
                 do {
                     let data = try await self.gitHubStatsClient.fetchContributionYear()
                     GitHubWidgetService.writeAndReload(data)
                 } catch {
                     NSLog("GitHubWidgetService: fetchContributionYear failed — \(error.localizedDescription)")
                 }
-            } else {
+            } else if isGitHubConnected {
                 NSLog("GitHubWidgetService: skipping widget fetch — scope is not profile")
+            }
+
+            if !skipGitLab, self.gitLabStatsClient.loadConnectionStatus().isConnected {
+                do {
+                    let data = try await self.gitLabStatsClient.fetchContributionYear()
+                    GitLabWidgetService.writeAndReload(data)
+                } catch {
+                    NSLog("GitLabWidgetService: fetchContributionYear failed — \(error.localizedDescription)")
+                }
+            } else if !skipGitLab {
+                NSLog("GitLabWidgetService: skipping widget fetch — not connected")
             }
         }
     }

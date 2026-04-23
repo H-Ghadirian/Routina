@@ -62,6 +62,18 @@ struct SettingsGitHubState: Equatable {
     }
 }
 
+struct SettingsGitLabState: Equatable {
+    var accessTokenDraft: String = ""
+    var connectedUsername: String?
+    var hasSavedAccessToken: Bool = false
+    var isOperationInProgress: Bool = false
+    var statusMessage: String = ""
+
+    var isConnected: Bool {
+        hasSavedAccessToken && (connectedUsername?.isEmpty == false)
+    }
+}
+
 struct SettingsPlacesState: Equatable {
     var savedPlaces: [RoutinePlaceSummary] = []
     var placePendingDeletion: RoutinePlaceSummary?
@@ -94,6 +106,7 @@ struct SettingsFeatureState: Equatable {
     var cloud = SettingsCloudState()
     var dataTransfer = SettingsDataTransferState()
     var github = SettingsGitHubState()
+    var gitlab = SettingsGitLabState()
     var places = SettingsPlacesState()
     var tags = SettingsTagsState()
 }

@@ -5,7 +5,8 @@ enum SettingsDiagnosticsLoader {
         appInfoClient: AppInfoClient,
         appSettingsClient: AppSettingsClient,
         deviceAuthenticationClient: DeviceAuthenticationClient,
-        gitHubConnection: GitHubConnectionStatus
+        gitHubConnection: GitHubConnectionStatus,
+        gitLabConnection: GitLabConnectionStatus
     ) -> SettingsOnAppearSnapshot {
         let diagnostics = CloudKitSyncDiagnostics.snapshot()
         return SettingsOnAppearSnapshot(
@@ -14,6 +15,7 @@ enum SettingsDiagnosticsLoader {
             iCloudContainerDescription: appInfoClient.cloudContainerDescription(),
             cloudSyncAvailable: appInfoClient.isCloudSyncEnabled(),
             gitHubConnection: gitHubConnection,
+            gitLabConnection: gitLabConnection,
             notificationsEnabled: appSettingsClient.notificationsEnabled(),
             notificationReminderTime: appSettingsClient.notificationReminderTime(),
             routineListSectioningMode: appSettingsClient.routineListSectioningMode(),

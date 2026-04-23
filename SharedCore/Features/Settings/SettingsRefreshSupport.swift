@@ -6,6 +6,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var iCloudContainerDescription: String
     var cloudSyncAvailable: Bool
     var gitHubConnection: GitHubConnectionStatus
+    var gitLabConnection: GitLabConnectionStatus
     var notificationsEnabled: Bool
     var notificationReminderTime: Date
     var routineListSectioningMode: RoutineListSectioningMode
@@ -42,6 +43,11 @@ enum SettingsRefreshEditor {
         state.github.accessTokenDraft = ""
         state.github.isOperationInProgress = false
         state.github.statusMessage = ""
+        state.gitlab.connectedUsername = snapshot.gitLabConnection.username
+        state.gitlab.hasSavedAccessToken = snapshot.gitLabConnection.hasAccessToken
+        state.gitlab.accessTokenDraft = ""
+        state.gitlab.isOperationInProgress = false
+        state.gitlab.statusMessage = ""
 
         SettingsNotificationsEditor.refreshFromSettings(
             notificationsEnabled: snapshot.notificationsEnabled,

@@ -76,6 +76,18 @@ struct SettingsIOSRootView: View {
                             value: store.github.connectedRepository == nil ? nil : "Live"
                         )
                     }
+
+                    NavigationLink {
+                        SettingsGitLabDetailView(store: store)
+                    } label: {
+                        SettingsNavigationRow(
+                            icon: "arrow.triangle.branch",
+                            tint: .orange,
+                            title: "GitLab",
+                            subtitle: store.gitlab.overviewSubtitle,
+                            value: store.gitlab.isConnected ? "Live" : nil
+                        )
+                    }
                 }
 
                 Section {
@@ -236,6 +248,81 @@ private struct SettingsGitHubDetailView: View {
         Binding(
             get: { store.github.accessTokenDraft },
             set: { store.send(.gitHubTokenChanged($0)) }
+        )
+    }
+}
+
+private struct SettingsGitLabDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            List {
+                Section("Profile") {
+                    Text(store.gitlab.profileSummaryText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    if let validationMessage = store.gitlab.saveValidationMessage {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Section("Access Token") {
+                    SecureField("Personal access token", text: accessTokenBinding)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    Text(store.gitlab.tokenStatusText)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Actions") {
+                    Button {
+                        store.send(.saveGitLabConnectionTapped)
+                    } label: {
+                        HStack {
+                            if store.gitlab.isOperationInProgress {
+                                ProgressView()
+                            } else {
+                                Label(store.gitlab.saveButtonTitle, systemImage: "link.badge.plus")
+                            }
+                        }
+                    }
+                    .disabled(store.gitlab.isSaveDisabled)
+
+                    Button(role: .destructive) {
+                        store.send(.clearGitLabConnectionTapped)
+                    } label: {
+                        Label("Remove Connection", systemImage: "trash")
+                    }
+                    .disabled(store.gitlab.removeButtonDisabled)
+                }
+
+                Section("Info") {
+                    Text(store.gitlab.infoText)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !store.gitlab.statusMessage.isEmpty {
+                    Section("Status") {
+                        Text(store.gitlab.statusMessage)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("GitLab")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var accessTokenBinding: Binding<String> {
+        Binding(
+            get: { store.gitlab.accessTokenDraft },
+            set: { store.send(.gitLabTokenChanged($0)) }
         )
     }
 }

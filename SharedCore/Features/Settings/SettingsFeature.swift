@@ -24,6 +24,10 @@ struct SettingsFeature {
         case saveGitHubConnectionTapped
         case clearGitHubConnectionTapped
         case gitHubConnectionUpdateFinished(connection: GitHubConnectionStatus, success: Bool, message: String)
+        case gitLabTokenChanged(String)
+        case saveGitLabConnectionTapped
+        case clearGitLabConnectionTapped
+        case gitLabConnectionUpdateFinished(connection: GitLabConnectionStatus, success: Bool, message: String)
         case onAppear
         case tagManagerAppeared
         case onAppBecameActive
@@ -75,6 +79,7 @@ struct SettingsFeature {
     @Dependency(\.cloudSyncClient) var cloudSyncClient
     @Dependency(\.routineDataTransferClient) var routineDataTransferClient
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
+    @Dependency(\.gitLabStatsClient) var gitLabStatsClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -227,7 +232,8 @@ struct SettingsFeature {
                         appInfoClient: appInfoClient,
                         appSettingsClient: appSettingsClient,
                         deviceAuthenticationClient: deviceAuthenticationClient,
-                        gitHubConnection: gitHubStatsClient.loadConnectionStatus()
+                        gitHubConnection: gitHubStatsClient.loadConnectionStatus(),
+                        gitLabConnection: gitLabStatsClient.loadConnectionStatus()
                     ),
                     state: &state
                 )
@@ -342,6 +348,77 @@ struct SettingsFeature {
                 state.github.accessTokenDraft = ""
                 state.github.repositoryOwner = connection.repository?.owner ?? ""
                 state.github.repositoryName = connection.repository?.name ?? ""
+                return .none
+
+            case let .gitLabTokenChanged(token):
+                state.gitlab.accessTokenDraft = token
+                return .none
+
+            case .saveGitLabConnectionTapped:
+                guard !state.gitlab.isSaveDisabled else {
+                    if let validationMessage = state.gitlab.saveValidationMessage {
+                        state.gitlab.statusMessage = validationMessage
+                    }
+                    return .none
+                }
+
+                state.gitlab.isOperationInProgress = true
+                state.gitlab.statusMessage = ""
+                let accessToken = state.gitlab.accessTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                return .run { send in
+                    do {
+                        let connection = try await self.gitLabStatsClient.saveConnection(accessToken)
+                        let message = "Connected to @\(connection.username ?? "viewer") GitLab profile."
+                        await send(
+                            .gitLabConnectionUpdateFinished(
+                                connection: connection,
+                                success: true,
+                                message: message
+                            )
+                        )
+                    } catch {
+                        await send(
+                            .gitLabConnectionUpdateFinished(
+                                connection: self.gitLabStatsClient.loadConnectionStatus(),
+                                success: false,
+                                message: error.localizedDescription
+                            )
+                        )
+                    }
+                }
+
+            case .clearGitLabConnectionTapped:
+                state.gitlab.isOperationInProgress = true
+                state.gitlab.statusMessage = ""
+
+                return .run { send in
+                    do {
+                        try self.gitLabStatsClient.clearConnection()
+                        await send(
+                            .gitLabConnectionUpdateFinished(
+                                connection: .disconnected,
+                                success: true,
+                                message: "GitLab connection removed."
+                            )
+                        )
+                    } catch {
+                        await send(
+                            .gitLabConnectionUpdateFinished(
+                                connection: self.gitLabStatsClient.loadConnectionStatus(),
+                                success: false,
+                                message: error.localizedDescription
+                            )
+                        )
+                    }
+                }
+
+            case let .gitLabConnectionUpdateFinished(connection, _, message):
+                state.gitlab.isOperationInProgress = false
+                state.gitlab.connectedUsername = connection.username
+                state.gitlab.hasSavedAccessToken = connection.hasAccessToken
+                state.gitlab.statusMessage = message
+                state.gitlab.accessTokenDraft = ""
                 return .none
 
             case .tagManagerAppeared:
