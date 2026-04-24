@@ -258,6 +258,24 @@ extension HomeTCAView {
     var homeFiltersSheet: some View {
         NavigationStack {
             List {
+                Section("View Mode") {
+                    Picker("List view", selection: Binding(
+                        get: { store.taskListViewMode },
+                        set: { store.send(.taskListViewModeChanged($0)) }
+                    )) {
+                        ForEach(HomeTaskListViewMode.allCases) { mode in
+                            Label(mode.title, systemImage: mode.systemImage).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(store.taskListViewMode == .actionable
+                        ? "Showing tasks without unfinished blockers."
+                        : "Showing every task that matches your filters.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Status") {
                     Picker("Show \(placeFilterPluralNoun)", selection: Binding(
                         get: { store.selectedFilter },

@@ -96,6 +96,10 @@ extension HomeTCAView {
             labels.append(store.selectedFilter.rawValue)
         }
 
+        if store.taskListViewMode != .all {
+            labels.append(store.taskListViewMode.title)
+        }
+
         if let todoState = store.selectedTodoStateFilter {
             labels.append(todoState.displayTitle)
         }
@@ -394,6 +398,10 @@ extension HomeTCAView {
                 selectedFilter: Binding(
                     get: { store.selectedFilter },
                     set: { store.send(.selectedFilterChanged($0)) }
+                ),
+                taskListViewMode: Binding(
+                    get: { store.taskListViewMode },
+                    set: { store.send(.taskListViewModeChanged($0)) }
                 ),
                 selectedImportanceUrgencyFilter: Binding(
                     get: { store.selectedImportanceUrgencyFilter },

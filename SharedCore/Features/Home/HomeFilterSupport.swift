@@ -31,6 +31,7 @@ enum HomeFilterEditor {
         taskFilters.selectedManualPlaceFilterID = nil
         taskFilters.selectedImportanceUrgencyFilter = nil
         taskFilters.selectedTodoStateFilter = nil
+        taskFilters.taskListViewMode = .all
 
         if hideUnavailableRoutines {
             hideUnavailableRoutines = false

@@ -43,6 +43,7 @@ extension HomeTCAView {
             matchesCurrentTaskListMode(task)
                 && matchesSearch(task)
                 && matchesFilter(task)
+                && matchesTaskListViewMode(task)
                 && matchesManualPlaceFilter(task)
                 && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
@@ -58,6 +59,7 @@ extension HomeTCAView {
             matchesCurrentTaskListMode(task)
                 && matchesSearch(task)
                 && matchesFilter(task)
+                && matchesTaskListViewMode(task)
                 && matchesManualPlaceFilter(task)
                 && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
@@ -76,6 +78,7 @@ extension HomeTCAView {
                     && !task.isCompletedOneOff
                     && !task.isCanceledOneOff
                     && (includePinned || !task.isPinned)
+                    && matchesTaskListViewMode(task)
                     && matchesSearch(task)
                     && matchesManualPlaceFilter(task)
                     && matchesTodoStateFilter(task)
@@ -96,6 +99,7 @@ extension HomeTCAView {
                 && matchesCurrentTaskListMode(task)
                 && matchesSearch(task)
                 && matchesFilter(task)
+                && matchesTaskListViewMode(task)
                 && matchesManualPlaceFilter(task)
                 && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
@@ -137,6 +141,20 @@ extension HomeTCAView {
 
     func matchesTodoStateFilter(_ task: HomeFeature.RoutineDisplay) -> Bool {
         HomeFeature.matchesTodoStateFilter(store.selectedTodoStateFilter, task: task)
+    }
+
+    func matchesTaskListViewMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
+        switch store.taskListViewMode {
+        case .all:
+            return true
+        case .actionable:
+            return !HomeDisplayFilterSupport.hasActiveRelationshipBlocker(
+                taskID: task.taskID,
+                tasks: store.routineTasks,
+                referenceDate: Date(),
+                calendar: calendar
+            )
+        }
     }
 
     func groupedRoutineSections(

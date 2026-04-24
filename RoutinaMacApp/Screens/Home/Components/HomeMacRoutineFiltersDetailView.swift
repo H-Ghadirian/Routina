@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: View {
     let availableFilters: [RoutineListFilter]
     @Binding var selectedFilter: RoutineListFilter
+    @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let importanceUrgencySummary: String
     let showsTagSection: Bool
@@ -12,6 +13,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     var body: some View {
         Group {
+            HomeMacSidebarSectionCard {
+                viewModePicker
+            }
+
             HomeMacSidebarSectionCard {
                 filterPicker
             }
@@ -34,6 +39,44 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     placeSectionContent()
                 }
             }
+        }
+    }
+
+    private var viewModePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("View Mode")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 112), spacing: 8, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(HomeTaskListViewMode.allCases) { mode in
+                    Button {
+                        taskListViewMode = mode
+                    } label: {
+                        Label(mode.title, systemImage: mode.systemImage)
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(taskListViewMode == mode ? Color.white : Color.primary)
+                            .background(
+                                Capsule()
+                                    .fill(taskListViewMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Text(taskListViewMode == .actionable
+                ? "Showing tasks without unfinished blockers."
+                : "Showing every task that matches your filters.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

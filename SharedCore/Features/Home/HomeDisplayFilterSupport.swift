@@ -56,6 +56,39 @@ enum HomeDisplayFilterSupport {
         return todoState == filter
     }
 
+    static func hasActiveRelationshipBlocker(
+        taskID: UUID,
+        tasks: [RoutineTask],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard let task = tasks.first(where: { $0.id == taskID }) else { return false }
+
+        var blockerIDs = Set(
+            task.relationships
+                .filter { $0.kind == .blockedBy }
+                .map(\.targetTaskID)
+        )
+
+        for candidate in tasks where candidate.id != taskID {
+            if candidate.relationships.contains(where: { $0.targetTaskID == taskID && $0.kind == .blocks }) {
+                blockerIDs.insert(candidate.id)
+            }
+        }
+
+        return tasks.contains { candidate in
+            guard blockerIDs.contains(candidate.id) else { return false }
+            let status = RoutineTaskRelationshipStatus.resolved(
+                for: candidate,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            return status != .doneToday
+                && status != .completedOneOff
+                && status != .canceledOneOff
+        }
+    }
+
     static func validateTaskFilters<T>(
         taskFilters: inout HomeTaskFiltersState,
         routineDisplays: [T],

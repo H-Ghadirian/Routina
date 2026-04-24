@@ -171,6 +171,7 @@ struct HomeFeature {
             selectedManualPlaceFilterID: UUID? = nil,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
+            taskListViewMode: HomeTaskListViewMode = .all,
             tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:],
             isFilterSheetPresented: Bool = false,
             selectedTimelineRange: TimelineRange = .all,
@@ -220,6 +221,7 @@ struct HomeFeature {
                 selectedManualPlaceFilterID: selectedManualPlaceFilterID,
                 selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: selectedTodoStateFilter,
+                taskListViewMode: taskListViewMode,
                 tabFilterSnapshots: tabFilterSnapshots,
                 isFilterSheetPresented: isFilterSheetPresented
             )
@@ -324,6 +326,11 @@ struct HomeFeature {
         var selectedTodoStateFilter: TodoState? {
             get { taskFilters.selectedTodoStateFilter }
             set { taskFilters.selectedTodoStateFilter = newValue }
+        }
+
+        var taskListViewMode: HomeTaskListViewMode {
+            get { taskFilters.taskListViewMode }
+            set { taskFilters.taskListViewMode = newValue }
         }
 
         var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] {
@@ -462,6 +469,7 @@ struct HomeFeature {
         case selectedManualPlaceFilterIDChanged(UUID?)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case selectedTodoStateFilterChanged(TodoState?)
+        case taskListViewModeChanged(HomeTaskListViewMode)
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
 
@@ -728,6 +736,11 @@ struct HomeFeature {
 
             case let .selectedTodoStateFilterChanged(filter):
                 state.selectedTodoStateFilter = filter
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .taskListViewModeChanged(mode):
+                state.taskListViewMode = mode
                 persistTemporaryViewState(state)
                 return .none
 

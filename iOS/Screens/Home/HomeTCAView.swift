@@ -227,6 +227,12 @@ struct HomeTCAView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.accentColor)
 
+                if store.taskListViewMode != .all {
+                    compactFilterChip(title: "View: \(store.taskListViewMode.title)", systemImage: store.taskListViewMode.systemImage) {
+                        store.send(.taskListViewModeChanged(.all))
+                    }
+                }
+
                 if let selectedTag = store.selectedTag {
                     compactFilterChip(title: "#\(selectedTag)") {
                         store.send(.selectedTagChanged(nil))
@@ -329,6 +335,7 @@ struct HomeTCAView: View {
         if store.selectedManualPlaceFilterID != nil { count += 1 }
         if store.selectedImportanceUrgencyFilter != nil { count += 1 }
         if store.selectedTodoStateFilter != nil { count += 1 }
+        if store.taskListViewMode != .all { count += 1 }
         if store.hideUnavailableRoutines { count += 1 }
         return count
     }

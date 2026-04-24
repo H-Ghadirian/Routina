@@ -235,6 +235,19 @@ struct HomeTCAView: View {
     var activeFilterChipBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
+                Button("Clear All") {
+                    store.send(.clearOptionalFilters)
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+
+                if store.taskListViewMode != .all {
+                    compactFilterChip(title: "View: \(store.taskListViewMode.title)", systemImage: store.taskListViewMode.systemImage) {
+                        store.send(.taskListViewModeChanged(.all))
+                    }
+                }
+
                 if let selectedTag = store.selectedTag {
                     compactFilterChip(title: "#\(selectedTag)") {
                         store.send(.selectedTagChanged(nil))
@@ -263,15 +276,6 @@ struct HomeTCAView: View {
                     compactFilterChip(title: "Away hidden", systemImage: "location.slash") {
                         store.send(.hideUnavailableRoutinesChanged(false))
                     }
-                }
-
-                if activeOptionalFilterCount > 1 {
-                    Button("Clear All") {
-                        store.send(.clearOptionalFilters)
-                    }
-                    .font(.caption.weight(.semibold))
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.accentColor)
                 }
             }
         }
@@ -346,6 +350,7 @@ struct HomeTCAView: View {
         if store.selectedManualPlaceFilterID != nil { count += 1 }
         if store.selectedImportanceUrgencyFilter != nil { count += 1 }
         if store.selectedTodoStateFilter != nil { count += 1 }
+        if store.taskListViewMode != .all { count += 1 }
         if store.hideUnavailableRoutines { count += 1 }
         return count
     }
