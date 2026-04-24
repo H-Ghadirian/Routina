@@ -8,7 +8,7 @@ struct HomeMacSettingsSidebarView: View {
 
     var body: some View {
         List {
-            ForEach(SettingsMacSection.allCases) { section in
+            ForEach(SettingsMacSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
                 Button {
                     onSelectSection(section)
                 } label: {

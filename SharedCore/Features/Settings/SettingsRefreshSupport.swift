@@ -12,6 +12,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var routineListSectioningMode: RoutineListSectioningMode
     var tagCounterDisplayMode: TagCounterDisplayMode
     var appLockEnabled: Bool
+    var gitFeaturesEnabled: Bool
     var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
     var hasTemporaryViewStateToReset: Bool
@@ -64,6 +65,7 @@ enum SettingsRefreshEditor {
         )
         SettingsAppearanceEditor.refreshFromSettings(
             appLockEnabled: snapshot.appLockEnabled,
+            gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
             deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,
             selectedAppIcon: snapshot.selectedAppIcon,
             hasTemporaryViewStateToReset: snapshot.hasTemporaryViewStateToReset,
@@ -74,11 +76,13 @@ enum SettingsRefreshEditor {
     static func refreshOnAppBecameActive(
         hasTemporaryViewStateToReset: Bool,
         appLockEnabled: Bool,
+        gitFeaturesEnabled: Bool,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         state: inout SettingsFeatureState
     ) {
         state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
         state.appearance.isAppLockEnabled = appLockEnabled
+        state.appearance.isGitFeaturesEnabled = gitFeaturesEnabled
         state.appearance.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appearance.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
     }

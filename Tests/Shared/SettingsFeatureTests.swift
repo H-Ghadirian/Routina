@@ -200,6 +200,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func gitFeaturesToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setGitFeaturesEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.gitFeaturesToggled(true)) {
+            $0.appearance.isGitFeaturesEnabled = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func appLockToggled_onAuthenticatesThenPersistsSetting() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

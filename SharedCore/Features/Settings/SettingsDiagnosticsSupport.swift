@@ -21,6 +21,7 @@ enum SettingsDiagnosticsLoader {
             routineListSectioningMode: appSettingsClient.routineListSectioningMode(),
             tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
             appLockEnabled: appSettingsClient.appLockEnabled(),
+            gitFeaturesEnabled: appSettingsClient.gitFeaturesEnabled(),
             deviceAuthenticationStatus: deviceAuthenticationClient.status(),
             selectedAppIcon: appSettingsClient.selectedAppIcon(),
             hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(

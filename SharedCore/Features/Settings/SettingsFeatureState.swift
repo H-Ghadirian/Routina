@@ -25,6 +25,7 @@ struct SettingsAppearanceState: Equatable {
     var appLockMethodDescription: String = DeviceAuthenticationClient.defaultMethodDescription
     var appLockUnavailableReason: String?
     var appLockStatusMessage: String = ""
+    var isGitFeaturesEnabled: Bool = false
     var appIconStatusMessage: String = ""
     var selectedAppIcon: AppIconOption = .orange
     var hasTemporaryViewStateToReset: Bool = false

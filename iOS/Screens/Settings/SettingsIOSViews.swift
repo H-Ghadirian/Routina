@@ -65,22 +65,24 @@ struct SettingsIOSRootView: View {
                         )
                     }
 
-                    NavigationLink {
-                        SettingsGitDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "arrow.triangle.branch",
-                            tint: .indigo,
-                            title: "Git",
-                            subtitle: {
-                                let ghConnected = store.github.connectedRepository != nil
-                                let glConnected = store.gitlab.isConnected
-                                if ghConnected && glConnected { return "GitHub & GitLab connected" }
-                                if glConnected { return store.gitlab.overviewSubtitle }
-                                return store.github.overviewSubtitle
-                            }(),
-                            value: (store.github.connectedRepository != nil || store.gitlab.isConnected) ? "Live" : nil
-                        )
+                    if store.appearance.isGitFeaturesEnabled {
+                        NavigationLink {
+                            SettingsGitDetailView(store: store)
+                        } label: {
+                            SettingsNavigationRow(
+                                icon: "arrow.triangle.branch",
+                                tint: .indigo,
+                                title: "Git",
+                                subtitle: {
+                                    let ghConnected = store.github.connectedRepository != nil
+                                    let glConnected = store.gitlab.isConnected
+                                    if ghConnected && glConnected { return "GitHub & GitLab connected" }
+                                    if glConnected { return store.gitlab.overviewSubtitle }
+                                    return store.github.overviewSubtitle
+                                }(),
+                                value: (store.github.connectedRepository != nil || store.gitlab.isConnected) ? "Live" : nil
+                            )
+                        }
                     }
                 }
 
@@ -678,6 +680,13 @@ private struct SettingsAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("Advanced") {
+                    Toggle("Enable Git features", isOn: gitFeaturesBinding)
+
+                    Text("Shows GitHub and GitLab connection settings and contribution activity in Stats.")
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Temporary View State") {
                     Button {
                         guard store.appearance.hasTemporaryViewStateToReset else { return }
@@ -750,6 +759,13 @@ private struct SettingsAppearanceDetailView: View {
         Binding(
             get: { store.appearance.isAppLockEnabled },
             set: { store.send(.appLockToggled($0)) }
+        )
+    }
+
+    private var gitFeaturesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isGitFeaturesEnabled },
+            set: { store.send(.gitFeaturesToggled($0)) }
         )
     }
 

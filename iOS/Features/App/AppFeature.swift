@@ -331,6 +331,7 @@ struct StatsFeature {
         var gitHubStats: GitHubStatsSnapshot?
         var isGitHubStatsLoading: Bool = false
         var gitHubStatsErrorMessage: String?
+        var isGitFeaturesEnabled: Bool = false
 
         var hasActiveFilters: Bool {
             selectedRange != .week || taskTypeFilter != .all || selectedTag != nil || !excludedTags.isEmpty || selectedImportanceUrgencyFilter != nil
@@ -356,6 +357,7 @@ struct StatsFeature {
     @Dependency(\.date.now) var now
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
     @Dependency(\.gitLabStatsClient) var gitLabStatsClient
+    @Dependency(\.appSettingsClient) var appSettingsClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -367,6 +369,14 @@ struct StatsFeature {
                 return .none
 
             case .onAppear:
+                state.isGitFeaturesEnabled = appSettingsClient.gitFeaturesEnabled()
+                guard state.isGitFeaturesEnabled else {
+                    state.gitHubConnection = .disconnected
+                    state.isGitHubStatsLoading = false
+                    state.gitHubStats = nil
+                    state.gitHubStatsErrorMessage = nil
+                    return .none
+                }
                 state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
                 if !state.gitHubConnection.isConnected {
                     state.isGitHubStatsLoading = false
@@ -378,7 +388,7 @@ struct StatsFeature {
             case let .selectedRangeChanged(range):
                 state.selectedRange = range
                 refreshDerivedState(&state)
-                guard state.gitHubConnection.isConnected else {
+                guard state.isGitFeaturesEnabled, state.gitHubConnection.isConnected else {
                     return .none
                 }
                 return refreshGitHubStatsEffect(state: &state, skipGitLab: true)
@@ -408,6 +418,14 @@ struct StatsFeature {
                 return .none
 
             case .gitHubStatsRefreshRequested:
+                state.isGitFeaturesEnabled = appSettingsClient.gitFeaturesEnabled()
+                guard state.isGitFeaturesEnabled else {
+                    state.gitHubConnection = .disconnected
+                    state.gitHubStats = nil
+                    state.gitHubStatsErrorMessage = nil
+                    state.isGitHubStatsLoading = false
+                    return .none
+                }
                 state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
                 if !state.gitHubConnection.isConnected {
                     state.gitHubStats = nil
@@ -444,6 +462,11 @@ struct StatsFeature {
         skipGitLab: Bool = false
     ) -> Effect<Action> {
         let isGitHubConnected = state.gitHubConnection.isConnected
+        guard state.isGitFeaturesEnabled else {
+            state.isGitHubStatsLoading = false
+            state.gitHubStatsErrorMessage = nil
+            return .none
+        }
         if isGitHubConnected {
             state.isGitHubStatsLoading = true
             state.gitHubStatsErrorMessage = nil

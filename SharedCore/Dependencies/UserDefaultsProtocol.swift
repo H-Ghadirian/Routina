@@ -49,6 +49,7 @@ public enum UserDefaultBoolValueKey: String {
     case appSettingNotificationsEnabled
     case appSettingHideUnavailableRoutines
     case appSettingAppLockEnabled
+    case appSettingGitFeaturesEnabled
     case requestNotificationPermission
 }
 
@@ -74,6 +75,8 @@ struct AppSettingsClient: Sendable {
     var setHideUnavailableRoutines: @Sendable (Bool) -> Void
     var appLockEnabled: @Sendable () -> Bool
     var setAppLockEnabled: @Sendable (Bool) -> Void
+    var gitFeaturesEnabled: @Sendable () -> Bool
+    var setGitFeaturesEnabled: @Sendable (Bool) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
     var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
     var tagCounterDisplayMode: @Sendable () -> TagCounterDisplayMode
@@ -107,6 +110,12 @@ extension AppSettingsClient {
         },
         setAppLockEnabled: { isEnabled in
             SharedDefaults.app[.appSettingAppLockEnabled] = isEnabled
+        },
+        gitFeaturesEnabled: {
+            SharedDefaults.app[.appSettingGitFeaturesEnabled]
+        },
+        setGitFeaturesEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingGitFeaturesEnabled] = isEnabled
         },
         routineListSectioningMode: {
             RoutineListSectioningMode(
@@ -191,6 +200,8 @@ extension AppSettingsClient {
         setHideUnavailableRoutines: { _ in },
         appLockEnabled: { false },
         setAppLockEnabled: { _ in },
+        gitFeaturesEnabled: { false },
+        setGitFeaturesEnabled: { _ in },
         routineListSectioningMode: { .defaultValue },
         setRoutineListSectioningMode: { _ in },
         tagCounterDisplayMode: { .defaultValue },

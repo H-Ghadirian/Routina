@@ -13,6 +13,12 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
+    static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsMacSection] {
+        allCases.filter { section in
+            section != .git || isGitFeaturesEnabled
+        }
+    }
+
     var title: String {
         switch self {
         case .notifications: return "Notifications"

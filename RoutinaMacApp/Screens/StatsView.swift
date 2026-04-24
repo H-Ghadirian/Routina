@@ -161,7 +161,9 @@ struct StatsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         heroSection(metrics: metrics)
                         summaryCards(metrics: metrics)
-                        gitHubSection
+                        if store.isGitFeaturesEnabled {
+                            gitHubSection
+                        }
                         chartSection(metrics: metrics)
                     }
                     .padding(.horizontal, 20)

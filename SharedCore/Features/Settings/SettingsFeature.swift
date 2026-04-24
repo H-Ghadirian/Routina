@@ -14,6 +14,7 @@ struct SettingsFeature {
         case tagCounterDisplayModeChanged(TagCounterDisplayMode)
         case appLockToggled(Bool)
         case appLockEnableFinished(DeviceAuthenticationResult)
+        case gitFeaturesToggled(Bool)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -159,6 +160,11 @@ struct SettingsFeature {
                         state: &state.appearance
                     )
                 }
+                return .none
+
+            case let .gitFeaturesToggled(isEnabled):
+                state.appearance.isGitFeaturesEnabled = isEnabled
+                appSettingsClient.setGitFeaturesEnabled(isEnabled)
                 return .none
 
             case .resetTemporaryViewStateTapped:
@@ -465,6 +471,7 @@ struct SettingsFeature {
                         appSettingsClient: appSettingsClient
                     ),
                     appLockEnabled: appSettingsClient.appLockEnabled(),
+                    gitFeaturesEnabled: appSettingsClient.gitFeaturesEnabled(),
                     deviceAuthenticationStatus: deviceAuthenticationClient.status(),
                     state: &state
                 )

@@ -17,12 +17,14 @@ enum SettingsAppearanceEditor {
 
     static func refreshFromSettings(
         appLockEnabled: Bool,
+        gitFeaturesEnabled: Bool,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         selectedAppIcon: AppIconOption,
         hasTemporaryViewStateToReset: Bool,
         state: inout SettingsAppearanceState
     ) {
         state.isAppLockEnabled = appLockEnabled
+        state.isGitFeaturesEnabled = gitFeaturesEnabled
         state.isAppLockToggleInProgress = false
         state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason

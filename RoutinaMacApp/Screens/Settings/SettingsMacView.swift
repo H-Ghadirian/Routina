@@ -17,7 +17,7 @@ struct SettingsMacView: View {
         WithPerceptionTracking {
             NavigationSplitView {
                 List(selection: $selectedSection) {
-                    ForEach(SettingsMacSection.allCases) { section in
+                    ForEach(SettingsMacSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
                         SettingsMacSidebarRow(
                             section: section,
                             store: store
@@ -40,12 +40,17 @@ struct SettingsMacView: View {
                 )
             } detail: {
                 SettingsMacDetailView(
-                    section: selectedSection ?? .notifications,
+                    section: selectedDetailSection,
                     store: store,
                     isPlacePickerPresented: $isPlacePickerPresented
                 )
             }
             .navigationSplitViewStyle(.balanced)
+            .onChange(of: store.appearance.isGitFeaturesEnabled) { _, isEnabled in
+                if !isEnabled, selectedSection == .git {
+                    selectedSection = .appearance
+                }
+            }
             .alert(
                 "Delete iCloud Data?",
                 isPresented: cloudDataResetConfirmationBinding
@@ -93,6 +98,14 @@ struct SettingsMacView: View {
             get: { store.cloud.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
         )
+    }
+
+    private var selectedDetailSection: SettingsMacSection {
+        let fallback = selectedSection ?? .notifications
+        if fallback == .git, !store.appearance.isGitFeaturesEnabled {
+            return .appearance
+        }
+        return fallback
     }
 
     private var deletePlaceConfirmationBinding: Binding<Bool> {
@@ -266,7 +279,7 @@ struct EmbeddedSettingsMacDetailView: View {
     var body: some View {
         WithPerceptionTracking {
             SettingsMacDetailView(
-                section: section,
+                section: section == .git && !store.appearance.isGitFeaturesEnabled ? .appearance : section,
                 store: store,
                 isPlacePickerPresented: $isPlacePickerPresented
             )
@@ -887,6 +900,15 @@ private struct SettingsMacAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                SettingsMacDetailCard(title: "Advanced") {
+                    Toggle("Enable Git features", isOn: gitFeaturesBinding)
+                        .toggleStyle(.switch)
+
+                    Text("Shows GitHub and GitLab connection settings and contribution activity in Stats.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "Temporary View State") {
                     Button {
                         guard store.appearance.hasTemporaryViewStateToReset else { return }
@@ -958,6 +980,13 @@ private struct SettingsMacAppearanceDetailView: View {
         Binding(
             get: { store.appearance.isAppLockEnabled },
             set: { store.send(.appLockToggled($0)) }
+        )
+    }
+
+    private var gitFeaturesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isGitFeaturesEnabled },
+            set: { store.send(.gitFeaturesToggled($0)) }
         )
     }
 
