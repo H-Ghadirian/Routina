@@ -556,19 +556,34 @@ struct TaskFormContent: View {
     private var tagsSection: some View {
         Section(header: Text("Tags")) {
             HStack(spacing: 10) {
-                TextField("health, focus, morning", text: model.tagDraft)
-                    .onSubmit { model.onAddTag() }
+                ZStack(alignment: .trailing) {
+                    TextField("health, focus, morning", text: model.tagDraft)
+                        .onSubmit { model.onAddTag() }
+                        .padding(.trailing, model.tagAutocompleteSuggestion == nil ? 0 : 88)
+
+                    if let suggestion = model.tagAutocompleteSuggestion {
+                        Button {
+                            model.acceptTagAutocompleteSuggestion()
+                        } label: {
+                            Text("#\(suggestion)")
+                                .font(.caption.weight(.medium))
+                                .lineLimit(1)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.thinMaterial, in: Capsule())
+                                .overlay {
+                                    Capsule()
+                                        .stroke(Color.secondary.opacity(0.22), lineWidth: 1)
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        .keyboardShortcut(.tab, modifiers: [])
+                    }
+                }
+
                 Button("Add") { model.onAddTag() }
                     .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
-            }
-            if let suggestion = model.tagAutocompleteSuggestion {
-                Button {
-                    model.acceptTagAutocompleteSuggestion()
-                } label: {
-                    Label("Complete #\(suggestion)", systemImage: "arrow.right.to.line.compact")
-                }
-                .font(.caption)
-                .keyboardShortcut(.tab, modifiers: [])
             }
             relatedTagSuggestionsContent
             availableTagSuggestionsContent

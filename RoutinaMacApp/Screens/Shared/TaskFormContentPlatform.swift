@@ -823,8 +823,8 @@ struct TaskFormContent: View {
 
     @ViewBuilder
     private var tagComposer: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
+        HStack(spacing: 10) {
+            ZStack(alignment: .trailing) {
                 MacTagAutocompleteTextField(
                     placeholder: "health, focus, morning",
                     text: model.tagDraft,
@@ -834,22 +834,38 @@ struct TaskFormContent: View {
                 )
                 .frame(height: 28)
 
-                Button("Add") { model.onAddTag() }
-                    .buttonStyle(.bordered)
-                    .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
+                if let suggestion = model.tagAutocompleteSuggestion {
+                    Button {
+                        model.acceptTagAutocompleteSuggestion()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("#\(suggestion)")
+                            Text("Tab")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(.quaternary, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        }
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .foregroundStyle(.secondary)
+                        .background(.regularMaterial, in: Capsule())
+                        .overlay {
+                            Capsule()
+                                .stroke(Color.secondary.opacity(0.22), lineWidth: 1)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 5)
+                    .help("Press Tab to complete #\(suggestion)")
+                }
             }
 
-            if let suggestion = model.tagAutocompleteSuggestion {
-                Button {
-                    model.acceptTagAutocompleteSuggestion()
-                } label: {
-                    Label("Complete #\(suggestion)", systemImage: "arrow.right.to.line.compact")
-                }
-                .buttonStyle(.plain)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .help("Press Tab to complete")
-            }
+            Button("Add") { model.onAddTag() }
+                .buttonStyle(.bordered)
+                .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
         }
     }
 
