@@ -6,6 +6,8 @@ struct HomeMacFormSectionNavView<Header: View>: View {
     @Binding var draggedSection: String?
     @ViewBuilder let header: () -> Header
 
+    @State private var hoveredSection: String?
+
     var body: some View {
         let sections = coordinator.orderedSections(available: availableSections)
 
@@ -17,57 +19,7 @@ struct HomeMacFormSectionNavView<Header: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(sections, id: \.self) { section in
-                        let isMovable = section != "Identity"
-
-                        Button {
-                            coordinator.scrollTarget = section
-                        } label: {
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(Color.accentColor.opacity(0.12))
-                                    Image(systemName: formSectionIcon(for: section))
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Color.accentColor)
-                                }
-                                .frame(width: 32, height: 32)
-
-                                Text(section)
-                                    .font(.body.weight(.medium))
-                                    .foregroundStyle(.primary)
-
-                                Spacer(minLength: 0)
-
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.secondary.opacity(0.6))
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 11)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(Color.secondary.opacity(0.07))
-                            )
-                            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .opacity(draggedSection == section ? 0.4 : 1)
-                        .if(isMovable) { view in
-                            view
-                                .draggable(section) {
-                                    formSectionDragPreview(for: section)
-                                }
-                                .contextMenu {
-                                    formSectionContextMenu(for: section)
-                                }
-                        }
-                        .if(isMovable) { view in
-                            view.onDrop(of: [.text], delegate: HomeMacSectionDropDelegate(
-                                item: section,
-                                coordinator: coordinator,
-                                draggedSection: $draggedSection
-                            ))
-                        }
+                        sectionRow(section: section, isMovable: section != "Identity")
                     }
                 }
                 .padding(.horizontal, 12)
@@ -75,6 +27,81 @@ struct HomeMacFormSectionNavView<Header: View>: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder
+    private func sectionRow(section: String, isMovable: Bool) -> some View {
+        let isHovered = hoveredSection == section
+        let isDragging = draggedSection == section
+
+        let row = Button {
+            coordinator.scrollTarget = section
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.12))
+                    Image(systemName: formSectionIcon(for: section))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
+                .frame(width: 32, height: 32)
+
+                Text(section)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.secondary.opacity(0.6))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.secondary.opacity(isHovered ? 0.11 : 0.07))
+                    .animation(.easeInOut(duration: 0.12), value: isHovered)
+            )
+            .overlay(alignment: .top) {
+                // Grip handle — visual cue that the row is draggable.
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(
+                        isMovable
+                        ? Color.secondary.opacity(isHovered ? 0.7 : 0.3)
+                        : Color.clear
+                    )
+                    .padding(.top, 3)
+                    .animation(.easeInOut(duration: 0.15), value: isHovered)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .opacity(isDragging ? 0.35 : 1)
+        .onHover { hoveredSection = $0 ? section : nil }
+
+        if isMovable {
+            row
+                .onDrag({
+                    // Synchronous — fires on every drag start, so state
+                    // never goes stale after a cancelled drag.
+                    draggedSection = section
+                    return NSItemProvider(object: section as NSString)
+                }, preview: {
+                    formSectionDragPreview(for: section)
+                })
+                .contextMenu { formSectionContextMenu(for: section) }
+                .onDrop(of: [.text], delegate: HomeMacSectionDropDelegate(
+                    item: section,
+                    coordinator: coordinator,
+                    draggedSection: $draggedSection
+                ))
+        } else {
+            row
+        }
     }
 
     private func formSectionDragPreview(for section: String) -> some View {
@@ -91,7 +118,6 @@ struct HomeMacFormSectionNavView<Header: View>: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(.ultraThickMaterial)
         )
-        .onAppear { draggedSection = section }
     }
 
     @ViewBuilder
@@ -123,7 +149,9 @@ struct HomeMacFormSectionNavView<Header: View>: View {
     private func formSectionIcon(for section: String) -> String {
         switch section {
         case "Identity": return "person.fill"
+        case "Color": return "paintpalette.fill"
         case "Behavior": return "repeat"
+        case "Estimation": return "clock.fill"
         case "Places": return "mappin.and.ellipse"
         case "Importance & Urgency": return "flag.fill"
         case "Tags": return "tag.fill"
@@ -135,7 +163,7 @@ struct HomeMacFormSectionNavView<Header: View>: View {
         case "Attachment": return "paperclip"
         case "Danger Zone": return "exclamationmark.triangle.fill"
         default: return "circle.fill"
-        }
+    }
     }
 }
 
@@ -151,6 +179,16 @@ private struct HomeMacSectionDropDelegate: DropDelegate {
 
     func dropEntered(info: DropInfo) {
         guard let dragged = draggedSection, dragged != item else { return }
+
+        // Defensive: ensure both sections are in the persisted order before
+        // attempting a move. A newly introduced section may not be there yet.
+        if !coordinator.sectionOrder.contains(dragged) {
+            coordinator.sectionOrder.append(dragged)
+        }
+        if !coordinator.sectionOrder.contains(item) {
+            coordinator.sectionOrder.append(item)
+        }
+
         let order = coordinator.sectionOrder
         guard let fromIndex = order.firstIndex(of: dragged),
               let toIndex = order.firstIndex(of: item) else { return }
