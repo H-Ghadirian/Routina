@@ -62,6 +62,30 @@ struct ExcludeTagsTests {
         #expect(!HomeFeature.matchesExcludedTags(["Morning", "Focus"], in: ["Morning", "Focus"]))
     }
 
+    @Test
+    func matchesSelectedTags_allModeRequiresEverySelectedTag() {
+        #expect(HomeFeature.matchesSelectedTags(["Focus", "Morning"], mode: .all, in: ["Focus", "Morning", "Deep Work"]))
+        #expect(!HomeFeature.matchesSelectedTags(["Focus", "Morning"], mode: .all, in: ["Focus", "Deep Work"]))
+    }
+
+    @Test
+    func matchesSelectedTags_anyModeRequiresOneSelectedTag() {
+        #expect(HomeFeature.matchesSelectedTags(["Focus", "Morning"], mode: .any, in: ["Focus", "Deep Work"]))
+        #expect(!HomeFeature.matchesSelectedTags(["Focus", "Morning"], mode: .any, in: ["Health", "Deep Work"]))
+    }
+
+    @Test
+    func matchesExcludedTags_allModeOnlyBlocksTasksWithEveryExcludedTag() {
+        #expect(!HomeFeature.matchesExcludedTags(["Focus", "Morning"], mode: .all, in: ["Focus", "Morning", "Deep Work"]))
+        #expect(HomeFeature.matchesExcludedTags(["Focus", "Morning"], mode: .all, in: ["Focus", "Deep Work"]))
+    }
+
+    @Test
+    func matchesExcludedTags_anyModeBlocksTasksWithOneExcludedTag() {
+        #expect(!HomeFeature.matchesExcludedTags(["Focus", "Morning"], mode: .any, in: ["Focus", "Deep Work"]))
+        #expect(HomeFeature.matchesExcludedTags(["Focus", "Morning"], mode: .any, in: ["Health", "Deep Work"]))
+    }
+
     // MARK: - matchesExcludedTags: interaction with include (matchesSelectedTag)
 
     @Test

@@ -9,10 +9,16 @@ struct HomeMacStatsSidebarView: View {
     let importanceUrgencySummary: String
     let allTags: [String]
     let tagSummaries: [RoutineTagSummary]
+    let suggestedRelatedTags: [String]
     let taskCountForSelectedTypeFilter: Int
-    let selectedTag: String?
-    let onSelectTag: (String?) -> Void
+    let selectedTags: Set<String>
+    let includeTagMatchMode: RoutineTagMatchMode
+    let onSelectTags: (Set<String>) -> Void
+    let onIncludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
+    let onSelectSuggestedTag: (String) -> Void
     let selectedExcludedTags: Set<String>
+    let excludeTagMatchMode: RoutineTagMatchMode
+    let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let availableExcludeTags: [String]
     let excludedTagSummary: String
     let tagSelectionSummary: String
@@ -28,6 +34,7 @@ struct HomeMacStatsSidebarView: View {
 
                 if !allTags.isEmpty {
                     statsTagSection
+                    statsSuggestedRelatedTagSection
                     statsExcludedTagSection
                 }
             }
@@ -86,7 +93,7 @@ struct HomeMacStatsSidebarView: View {
 
     private var statsTagSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Filter by Tag")
+            Text("Show stats with")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -96,24 +103,61 @@ struct HomeMacStatsSidebarView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
 
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                HomeMacTagChipView(
-                    title: "All Tags",
-                    count: taskCountForSelectedTypeFilter,
-                    systemImage: "tag.slash.fill",
-                    isSelected: selectedTag == nil
-                ) {
-                    onSelectTag(nil)
+            Picker("Show stats with", selection: Binding(
+                get: { includeTagMatchMode },
+                set: { newValue in onIncludeTagMatchModeChange(newValue) }
+            )) {
+                ForEach(RoutineTagMatchMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
+            }
+            .pickerStyle(.segmented)
 
-                ForEach(tagSummaries) { summary in
+            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                if selectedTags.isEmpty {
+                    HomeMacTagChipView(
+                        title: "All Tags",
+                        count: taskCountForSelectedTypeFilter,
+                        systemImage: "tag.slash.fill",
+                        isSelected: true
+                    ) {
+                        onSelectTags([])
+                    }
+                } else {
+                    ForEach(selectedTags.sorted(), id: \.self) { tag in
+                        HomeMacTagChipView(
+                            title: "#\(tag)",
+                            count: tagCount(tag),
+                            systemImage: "tag.fill",
+                            isSelected: true
+                        ) {
+                            var newSelection = selectedTags
+                            newSelection = newSelection.filter { !RoutineTag.contains($0, in: [tag]) }
+                            onSelectTags(newSelection)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("Add more")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+
+            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(tagSummaries.filter { summary in
+                    !selectedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
+                }) { summary in
                     HomeMacTagChipView(
                         title: "#\(summary.name)",
                         count: summary.linkedRoutineCount,
                         systemImage: "tag.fill",
-                        isSelected: selectedTag == summary.name
+                        isSelected: false
                     ) {
-                        onSelectTag(summary.name)
+                        var newSelection = selectedTags
+                        newSelection.insert(summary.name)
+                        onSelectTags(newSelection)
                     }
                 }
             }
@@ -121,9 +165,35 @@ struct HomeMacStatsSidebarView: View {
         }
     }
 
+    @ViewBuilder
+    private var statsSuggestedRelatedTagSection: some View {
+        if !suggestedRelatedTags.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Suggested Related Tags")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+
+                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                    ForEach(suggestedRelatedTags, id: \.self) { tag in
+                        HomeMacTagChipView(
+                            title: "#\(tag)",
+                            count: tagCount(tag),
+                            systemImage: "tag.fill",
+                            isSelected: false
+                        ) {
+                            onSelectSuggestedTag(tag)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
     private var statsExcludedTagSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Exclude Tags")
+            Text("Hide stats with")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -133,14 +203,51 @@ struct HomeMacStatsSidebarView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
 
+            Picker("Hide stats with", selection: Binding(
+                get: { excludeTagMatchMode },
+                set: { newValue in onExcludeTagMatchModeChange(newValue) }
+            )) {
+                ForEach(RoutineTagMatchMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
             WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(availableExcludeTags, id: \.self) { tag in
-                    let isExcluded = selectedExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                if selectedExcludedTags.isEmpty {
+                    Text("No hidden tags")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(selectedExcludedTags.sorted(), id: \.self) { tag in
+                        HomeMacTagChipView(
+                            title: "#\(tag)",
+                            count: tagCount(tag),
+                            systemImage: "tag.slash.fill",
+                            isSelected: true,
+                            selectedColor: .red
+                        ) {
+                            onToggleExcludedTag(tag)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("Add tags to hide")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+
+            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(availableExcludeTags.filter { tag in
+                    !selectedExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                }, id: \.self) { tag in
                     HomeMacTagChipView(
                         title: "#\(tag)",
                         count: tagCount(tag),
                         systemImage: "tag.slash.fill",
-                        isSelected: isExcluded,
+                        isSelected: false,
                         selectedColor: .red
                     ) {
                         onToggleExcludedTag(tag)

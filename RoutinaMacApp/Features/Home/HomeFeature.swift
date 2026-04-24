@@ -139,6 +139,7 @@ struct HomeFeature {
         var timelineFilters = HomeTimelineFiltersState()
         var statsFilters = HomeStatsFiltersState()
         var navigation = HomeMacNavigationState()
+        var relatedTagRules: [RoutineRelatedTagRule] = []
 
         init(
             routineTasks: [RoutineTask] = [],
@@ -169,7 +170,10 @@ struct HomeFeature {
             taskListMode: TaskListMode = .todos,
             selectedFilter: RoutineListFilter = .all,
             selectedTag: String? = nil,
+            selectedTags: Set<String> = [],
+            includeTagMatchMode: RoutineTagMatchMode = .all,
             excludedTags: Set<String> = [],
+            excludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedManualPlaceFilterID: UUID? = nil,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
@@ -179,14 +183,20 @@ struct HomeFeature {
             selectedTimelineRange: TimelineRange = .all,
             selectedTimelineFilterType: TimelineFilterType = .all,
             selectedTimelineTag: String? = nil,
+            selectedTimelineTags: Set<String> = [],
+            selectedTimelineIncludeTagMatchMode: RoutineTagMatchMode = .all,
             selectedTimelineExcludedTags: Set<String> = [],
+            selectedTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             statsSelectedRange: DoneChartRange = .week,
             statsSelectedTag: String? = nil,
+            statsSelectedTags: Set<String> = [],
+            statsIncludeTagMatchMode: RoutineTagMatchMode = .all,
             macSidebarMode: MacSidebarMode = .routines,
             macSidebarSelection: MacSidebarSelection? = nil,
             selectedSettingsSection: SettingsMacSection? = .notifications,
-            selectedBoardScope: BoardScope = .backlog
+            selectedBoardScope: BoardScope = .backlog,
+            relatedTagRules: [RoutineRelatedTagRule] = []
         ) {
             self.routineTasks = routineTasks
             self.routinePlaces = routinePlaces
@@ -219,7 +229,10 @@ struct HomeFeature {
             self.taskFilters = HomeTaskFiltersState(
                 selectedFilter: selectedFilter,
                 selectedTag: selectedTag,
+                selectedTags: selectedTags.isEmpty ? selectedTag.map { [$0] } ?? [] : selectedTags,
+                includeTagMatchMode: includeTagMatchMode,
                 excludedTags: excludedTags,
+                excludeTagMatchMode: excludeTagMatchMode,
                 selectedManualPlaceFilterID: selectedManualPlaceFilterID,
                 selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: selectedTodoStateFilter,
@@ -231,18 +244,24 @@ struct HomeFeature {
                 selectedRange: selectedTimelineRange,
                 selectedFilterType: selectedTimelineFilterType,
                 selectedTag: selectedTimelineTag,
+                selectedTags: selectedTimelineTags.isEmpty ? selectedTimelineTag.map { [$0] } ?? [] : selectedTimelineTags,
+                includeTagMatchMode: selectedTimelineIncludeTagMatchMode,
                 selectedExcludedTags: selectedTimelineExcludedTags,
+                excludeTagMatchMode: selectedTimelineExcludeTagMatchMode,
                 selectedImportanceUrgencyFilter: selectedTimelineImportanceUrgencyFilter
             )
             self.statsFilters = HomeStatsFiltersState(
                 selectedRange: statsSelectedRange,
-                selectedTag: statsSelectedTag
+                selectedTag: statsSelectedTag,
+                selectedTags: statsSelectedTags.isEmpty ? statsSelectedTag.map { [$0] } ?? [] : statsSelectedTags,
+                includeTagMatchMode: statsIncludeTagMatchMode
             )
             self.navigation = HomeMacNavigationState(
                 sidebarMode: macSidebarMode,
                 sidebarSelection: macSidebarSelection,
                 selectedSettingsSection: selectedSettingsSection
             )
+            self.relatedTagRules = relatedTagRules
         }
 
         var selectedTaskID: UUID? {
@@ -307,12 +326,27 @@ struct HomeFeature {
 
         var selectedTag: String? {
             get { taskFilters.selectedTag }
-            set { taskFilters.selectedTag = newValue }
+            set { taskFilters.setSelectedTag(newValue) }
+        }
+
+        var selectedTags: Set<String> {
+            get { taskFilters.effectiveSelectedTags }
+            set { taskFilters.setSelectedTags(newValue) }
+        }
+
+        var includeTagMatchMode: RoutineTagMatchMode {
+            get { taskFilters.includeTagMatchMode }
+            set { taskFilters.includeTagMatchMode = newValue }
         }
 
         var excludedTags: Set<String> {
             get { taskFilters.excludedTags }
             set { taskFilters.excludedTags = newValue }
+        }
+
+        var excludeTagMatchMode: RoutineTagMatchMode {
+            get { taskFilters.excludeTagMatchMode }
+            set { taskFilters.excludeTagMatchMode = newValue }
         }
 
         var selectedManualPlaceFilterID: UUID? {
@@ -357,12 +391,27 @@ struct HomeFeature {
 
         var selectedTimelineTag: String? {
             get { timelineFilters.selectedTag }
-            set { timelineFilters.selectedTag = newValue }
+            set { timelineFilters.setSelectedTag(newValue) }
+        }
+
+        var selectedTimelineTags: Set<String> {
+            get { timelineFilters.effectiveSelectedTags }
+            set { timelineFilters.setSelectedTags(newValue) }
+        }
+
+        var selectedTimelineIncludeTagMatchMode: RoutineTagMatchMode {
+            get { timelineFilters.includeTagMatchMode }
+            set { timelineFilters.includeTagMatchMode = newValue }
         }
 
         var selectedTimelineExcludedTags: Set<String> {
             get { timelineFilters.selectedExcludedTags }
             set { timelineFilters.selectedExcludedTags = newValue }
+        }
+
+        var selectedTimelineExcludeTagMatchMode: RoutineTagMatchMode {
+            get { timelineFilters.excludeTagMatchMode }
+            set { timelineFilters.excludeTagMatchMode = newValue }
         }
 
         var selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? {
@@ -377,7 +426,17 @@ struct HomeFeature {
 
         var statsSelectedTag: String? {
             get { statsFilters.selectedTag }
-            set { statsFilters.selectedTag = newValue }
+            set { statsFilters.setSelectedTag(newValue) }
+        }
+
+        var statsSelectedTags: Set<String> {
+            get { statsFilters.effectiveSelectedTags }
+            set { statsFilters.setSelectedTags(newValue) }
+        }
+
+        var statsIncludeTagMatchMode: RoutineTagMatchMode {
+            get { statsFilters.includeTagMatchMode }
+            set { statsFilters.includeTagMatchMode = newValue }
         }
 
         var macSidebarMode: MacSidebarMode {
@@ -467,7 +526,10 @@ struct HomeFeature {
         // Filter actions
         case selectedFilterChanged(RoutineListFilter)
         case selectedTagChanged(String?)
+        case selectedTagsChanged(Set<String>)
+        case includeTagMatchModeChanged(RoutineTagMatchMode)
         case excludedTagsChanged(Set<String>)
+        case excludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedManualPlaceFilterIDChanged(UUID?)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case selectedTodoStateFilterChanged(TodoState?)
@@ -479,12 +541,17 @@ struct HomeFeature {
         case selectedTimelineRangeChanged(TimelineRange)
         case selectedTimelineFilterTypeChanged(TimelineFilterType)
         case selectedTimelineTagChanged(String?)
+        case selectedTimelineTagsChanged(Set<String>)
+        case selectedTimelineIncludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedTimelineExcludedTagsChanged(Set<String>)
+        case selectedTimelineExcludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedTimelineImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
 
         // Stats filter actions
         case statsSelectedRangeChanged(DoneChartRange)
         case statsSelectedTagChanged(String?)
+        case statsSelectedTagsChanged(Set<String>)
+        case statsIncludeTagMatchModeChanged(RoutineTagMatchMode)
 
         // macOS navigation actions
         case macSidebarModeChanged(MacSidebarMode)
@@ -550,6 +617,10 @@ struct HomeFeature {
                     selectedTaskReloadGuard: state.selection.selectedTaskReloadGuard
                 )
                 let reconciledTasks = reconciliation.tasks
+                state.relatedTagRules = RoutineTagRelations.sanitized(
+                    appSettingsClient.relatedTagRules()
+                    + RoutineTagRelations.learnedRules(from: reconciledTasks.map(\.tags))
+                )
                 state.selection.selectedTaskReloadGuard = reconciliation.selectedTaskReloadGuard
                 state.routineTasks = reconciledTasks
                 state.routinePlaces = detachedPlaces
@@ -721,8 +792,23 @@ struct HomeFeature {
                 persistTemporaryViewState(state)
                 return .none
 
+            case let .selectedTagsChanged(tags):
+                state.selectedTags = tags
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .includeTagMatchModeChanged(mode):
+                state.includeTagMatchMode = mode
+                persistTemporaryViewState(state)
+                return .none
+
             case let .excludedTagsChanged(tags):
                 state.excludedTags = tags
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .excludeTagMatchModeChanged(mode):
+                state.excludeTagMatchMode = mode
                 persistTemporaryViewState(state)
                 return .none
 
@@ -782,8 +868,23 @@ struct HomeFeature {
                 persistTemporaryViewState(state)
                 return .none
 
+            case let .selectedTimelineTagsChanged(tags):
+                state.selectedTimelineTags = tags
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .selectedTimelineIncludeTagMatchModeChanged(mode):
+                state.selectedTimelineIncludeTagMatchMode = mode
+                persistTemporaryViewState(state)
+                return .none
+
             case let .selectedTimelineExcludedTagsChanged(tags):
                 state.selectedTimelineExcludedTags = tags
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .selectedTimelineExcludeTagMatchModeChanged(mode):
+                state.selectedTimelineExcludeTagMatchMode = mode
                 persistTemporaryViewState(state)
                 return .none
 
@@ -801,6 +902,16 @@ struct HomeFeature {
 
             case let .statsSelectedTagChanged(tag):
                 state.statsSelectedTag = tag
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .statsSelectedTagsChanged(tags):
+                state.statsSelectedTags = tags
+                persistTemporaryViewState(state)
+                return .none
+
+            case let .statsIncludeTagMatchModeChanged(mode):
+                state.statsIncludeTagMatchMode = mode
                 persistTemporaryViewState(state)
                 return .none
 
@@ -1698,8 +1809,24 @@ extension HomeFeature {
         HomeDisplayFilterSupport.matchesSelectedTag(selectedTag, in: tags)
     }
 
+    static func matchesSelectedTags(
+        _ selectedTags: Set<String>,
+        mode: RoutineTagMatchMode,
+        in tags: [String]
+    ) -> Bool {
+        HomeDisplayFilterSupport.matchesSelectedTags(selectedTags, mode: mode, in: tags)
+    }
+
     static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
         HomeDisplayFilterSupport.matchesExcludedTags(excludedTags, in: tags)
+    }
+
+    static func matchesExcludedTags(
+        _ excludedTags: Set<String>,
+        mode: RoutineTagMatchMode,
+        in tags: [String]
+    ) -> Bool {
+        HomeDisplayFilterSupport.matchesExcludedTags(excludedTags, mode: mode, in: tags)
     }
 
     static func matchesImportanceUrgencyFilter(

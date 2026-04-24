@@ -18,6 +18,7 @@ struct StatsView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
+    @State private var relatedFilterTagSuggestionAnchor: String?
 
     fileprivate struct Metrics {
         let chartPoints: [DoneChartPoint]
@@ -68,6 +69,17 @@ struct StatsView: View {
         store.availableTags
     }
 
+    private var suggestedRelatedFilterTags: [String] {
+        let selectedTags = store.effectiveSelectedTags
+        guard !selectedTags.isEmpty else { return [] }
+        let suggestionSource = relatedFilterTagSuggestionAnchor.map { [$0] } ?? Array(selectedTags)
+        return RoutineTagRelations.relatedTags(
+            for: suggestionSource,
+            rules: store.relatedTagRules,
+            availableTags: availableTags
+        )
+    }
+
     private var selectedTaskTypeFilter: StatsTaskTypeFilter {
         store.taskTypeFilter
     }
@@ -89,12 +101,15 @@ struct StatsView: View {
                 urgency: task.urgency
             )
         }.filter { task in
-            guard let selectedTag = store.selectedTag else { return true }
-            return RoutineTag.contains(selectedTag, in: task.tags)
+            HomeFeature.matchesSelectedTags(
+                store.effectiveSelectedTags,
+                mode: store.includeTagMatchMode,
+                in: task.tags
+            )
         }
 
         return RoutineTag.allTags(from: baseTasks.map(\.tags)).filter { tag in
-            store.selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+            !store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
         }
     }
 
@@ -103,16 +118,54 @@ struct StatsView: View {
     }
 
     private var hasActiveSheetFilters: Bool {
-        selectedTaskTypeFilter != .all || store.selectedTag != nil || !store.excludedTags.isEmpty || store.selectedImportanceUrgencyFilter != nil
+        selectedTaskTypeFilter != .all || !store.effectiveSelectedTags.isEmpty || !store.excludedTags.isEmpty || store.selectedImportanceUrgencyFilter != nil
     }
 
     private var activeSheetFilterCount: Int {
         var count = 0
         if selectedTaskTypeFilter != .all { count += 1 }
-        if store.selectedTag != nil { count += 1 }
+        if !store.effectiveSelectedTags.isEmpty { count += 1 }
         count += store.excludedTags.count
         if store.selectedImportanceUrgencyFilter != nil { count += 1 }
         return count
+    }
+
+    private func isIncludedTagSelected(_ tag: String) -> Bool {
+        store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+    }
+
+    private func toggleIncludedTag(_ tag: String) {
+        var selected = store.effectiveSelectedTags
+        if selected.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+        } else {
+            selected.insert(tag)
+            relatedFilterTagSuggestionAnchor = tag
+        }
+        store.send(.selectedTagsChanged(selected))
+        if selected.isEmpty {
+            relatedFilterTagSuggestionAnchor = nil
+        }
+    }
+
+    private func addIncludedTag(_ tag: String) {
+        guard !isIncludedTagSelected(tag) else { return }
+        var selected = store.effectiveSelectedTags
+        selected.insert(tag)
+        store.send(.selectedTagsChanged(selected))
+    }
+
+    private func toggleExcludedTag(_ tag: String) {
+        var excluded = store.excludedTags
+        if excluded.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            excluded = excluded.filter { !RoutineTag.contains($0, in: [tag]) }
+        } else {
+            excluded.insert(tag)
+            var selected = store.effectiveSelectedTags
+            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+            store.send(.selectedTagsChanged(selected))
+        }
+        store.send(.excludedTagsChanged(excluded))
     }
 
     private var filteredTaskCount: Int {
@@ -307,9 +360,11 @@ struct StatsView: View {
                     }
                 }
 
-                if let selectedTag = store.selectedTag {
-                    compactFilterChip(title: "#\(selectedTag)") {
-                        store.send(.selectedTagChanged(nil))
+                ForEach(store.effectiveSelectedTags.sorted(), id: \.self) { tag in
+                    compactFilterChip(title: "#\(tag)") {
+                        var selected = store.effectiveSelectedTags
+                        selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+                        store.send(.selectedTagsChanged(selected))
                     }
                 }
 
@@ -409,59 +464,114 @@ struct StatsView: View {
                 }
 
                 if !availableTags.isEmpty {
-                    Section("Include Tag") {
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            statsTagButton(title: "All Tags", isSelected: store.selectedTag == nil) {
-                                store.send(.selectedTagChanged(nil))
+                    Section("Tag Rules") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Show stats with")
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Picker("Show stats with", selection: Binding(
+                                    get: { store.includeTagMatchMode },
+                                    set: { store.send(.includeTagMatchModeChanged($0)) }
+                                )) {
+                                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                                        Text(mode.rawValue).tag(mode)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 180)
                             }
 
-                            ForEach(availableTags, id: \.self) { tag in
-                                statsTagButton(
-                                    title: "#\(tag)",
-                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
-                                ) {
-                                    store.send(.selectedTagChanged(tag))
+                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                if store.effectiveSelectedTags.isEmpty {
+                                    statsTagButton(title: "All Tags", isSelected: true) {
+                                        relatedFilterTagSuggestionAnchor = nil
+                                        store.send(.selectedTagsChanged([]))
+                                    }
+                                } else {
+                                    ForEach(store.effectiveSelectedTags.sorted(), id: \.self) { tag in
+                                        statsTagButton(title: "#\(tag)", isSelected: true) {
+                                            toggleIncludedTag(tag)
+                                        }
+                                    }
                                 }
                             }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
 
-                if !availableExcludeTags.isEmpty {
-                    Section("Exclude Tags") {
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            ForEach(availableExcludeTags, id: \.self) { tag in
-                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                                statsTagButton(
-                                    title: "#\(tag)",
-                                    isSelected: isExcluded,
-                                    selectedColor: .red
-                                ) {
-                                    if isExcluded {
-                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
-                                    } else {
-                                        var newTags = store.excludedTags
-                                        newTags.insert(tag)
-                                        store.send(.excludedTagsChanged(newTags))
-                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                                            store.send(.selectedTagChanged(nil))
+                            if !suggestedRelatedFilterTags.isEmpty {
+                                Text("Suggested")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                    ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
+                                        statsTagButton(title: "#\(tag)", isSelected: false) {
+                                            addIncludedTag(tag)
                                         }
+                                    }
+                                }
+                            }
+
+                            Text("Add more")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                ForEach(availableTags.filter { !isIncludedTagSelected($0) }, id: \.self) { tag in
+                                    statsTagButton(title: "#\(tag)", isSelected: false) {
+                                        toggleIncludedTag(tag)
                                     }
                                 }
                             }
                         }
                         .padding(.vertical, 4)
 
-                        if !store.excludedTags.isEmpty {
-                            Text("Hiding tasks tagged: \(store.excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Select tags to hide tasks that have them.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Hide stats with")
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Picker("Hide stats with", selection: Binding(
+                                    get: { store.excludeTagMatchMode },
+                                    set: { store.send(.excludeTagMatchModeChanged($0)) }
+                                )) {
+                                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                                        Text(mode.rawValue).tag(mode)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 180)
+                            }
+
+                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                if store.excludedTags.isEmpty {
+                                    Text("No hidden tags")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    ForEach(store.excludedTags.sorted(), id: \.self) { tag in
+                                        statsTagButton(title: "#\(tag)", isSelected: true, selectedColor: .red) {
+                                            toggleExcludedTag(tag)
+                                        }
+                                    }
+                                }
+                            }
+
+                            if !availableExcludeTags.isEmpty {
+                                Text("Add tags to hide")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                    ForEach(availableExcludeTags.filter { tag in
+                                        !store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                    }, id: \.self) { tag in
+                                        statsTagButton(title: "#\(tag)", isSelected: false, selectedColor: .red) {
+                                            toggleExcludedTag(tag)
+                                        }
+                                    }
+                                }
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
                 }
 
@@ -487,10 +597,8 @@ struct StatsView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onChange(of: availableTags) { _, newValue in
-            guard let selectedTag = store.selectedTag else { return }
-            if !RoutineTag.contains(selectedTag, in: newValue) {
-                store.send(.selectedTagChanged(nil))
-            }
+            let selected = store.effectiveSelectedTags.filter { RoutineTag.contains($0, in: newValue) }
+            store.send(.selectedTagsChanged(selected))
         }
     }
 

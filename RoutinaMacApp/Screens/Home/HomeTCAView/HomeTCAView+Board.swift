@@ -41,8 +41,8 @@ extension HomeTCAView {
                         importance: task.importance,
                         urgency: task.urgency
                     )
-                    && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
-                    && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
+                    && HomeFeature.matchesSelectedTags(store.selectedTags, mode: store.includeTagMatchMode, in: task.tags)
+                    && HomeFeature.matchesExcludedTags(store.excludedTags, mode: store.excludeTagMatchMode, in: task.tags)
             }
     }
 

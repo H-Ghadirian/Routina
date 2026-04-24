@@ -3,7 +3,10 @@ import Foundation
 struct HomeTaskFiltersState: Equatable {
     var selectedFilter: RoutineListFilter = .all
     var selectedTag: String? = nil
+    var selectedTags: Set<String> = []
+    var includeTagMatchMode: RoutineTagMatchMode = .all
     var excludedTags: Set<String> = []
+    var excludeTagMatchMode: RoutineTagMatchMode = .any
     var selectedManualPlaceFilterID: UUID? = nil
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var selectedTodoStateFilter: TodoState? = nil
@@ -14,7 +17,10 @@ struct HomeTaskFiltersState: Equatable {
     var currentSnapshot: TabFilterStateManager.Snapshot {
         TabFilterStateManager.Snapshot(
             selectedTag: selectedTag,
+            selectedTags: effectiveSelectedTags,
+            includeTagMatchMode: includeTagMatchMode,
             excludedTags: excludedTags,
+            excludeTagMatchMode: excludeTagMatchMode,
             selectedFilter: selectedFilter,
             selectedManualPlaceFilterID: selectedManualPlaceFilterID,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
@@ -23,9 +29,27 @@ struct HomeTaskFiltersState: Equatable {
         )
     }
 
+    var effectiveSelectedTags: Set<String> {
+        if !selectedTags.isEmpty { return selectedTags }
+        return selectedTag.map { [$0] } ?? []
+    }
+
+    mutating func setSelectedTag(_ tag: String?) {
+        selectedTag = tag
+        selectedTags = tag.map { [$0] } ?? []
+    }
+
+    mutating func setSelectedTags(_ tags: Set<String>) {
+        selectedTags = tags
+        selectedTag = tags.sorted().first
+    }
+
     mutating func apply(snapshot: TabFilterStateManager.Snapshot) {
         selectedTag = snapshot.selectedTag
+        selectedTags = snapshot.selectedTags
+        includeTagMatchMode = snapshot.includeTagMatchMode
         excludedTags = snapshot.excludedTags
+        excludeTagMatchMode = snapshot.excludeTagMatchMode
         selectedFilter = snapshot.selectedFilter
         selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
         selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
@@ -38,13 +62,48 @@ struct HomeTimelineFiltersState: Equatable {
     var selectedRange: TimelineRange = .all
     var selectedFilterType: TimelineFilterType = .all
     var selectedTag: String? = nil
+    var selectedTags: Set<String> = []
+    var includeTagMatchMode: RoutineTagMatchMode = .all
     var selectedExcludedTags: Set<String> = []
+    var excludeTagMatchMode: RoutineTagMatchMode = .any
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+
+    var effectiveSelectedTags: Set<String> {
+        if !selectedTags.isEmpty { return selectedTags }
+        return selectedTag.map { [$0] } ?? []
+    }
+
+    mutating func setSelectedTag(_ tag: String?) {
+        selectedTag = tag
+        selectedTags = tag.map { [$0] } ?? []
+    }
+
+    mutating func setSelectedTags(_ tags: Set<String>) {
+        selectedTags = tags
+        selectedTag = tags.sorted().first
+    }
 }
 
 struct HomeStatsFiltersState: Equatable {
     var selectedRange: DoneChartRange = .week
     var selectedTag: String? = nil
+    var selectedTags: Set<String> = []
+    var includeTagMatchMode: RoutineTagMatchMode = .all
+
+    var effectiveSelectedTags: Set<String> {
+        if !selectedTags.isEmpty { return selectedTags }
+        return selectedTag.map { [$0] } ?? []
+    }
+
+    mutating func setSelectedTag(_ tag: String?) {
+        selectedTag = tag
+        selectedTags = tag.map { [$0] } ?? []
+    }
+
+    mutating func setSelectedTags(_ tags: Set<String>) {
+        selectedTags = tags
+        selectedTag = tags.sorted().first
+    }
 }
 
 struct HomeTemporaryViewStateValues: Equatable {
@@ -66,7 +125,10 @@ enum HomeTemporaryViewStateMapper {
         var taskFilters = HomeTaskFiltersState(
             selectedFilter: persistedState.homeSelectedFilter,
             selectedTag: persistedState.homeSelectedTag,
+            selectedTags: persistedState.homeSelectedTags,
+            includeTagMatchMode: persistedState.homeIncludeTagMatchMode,
             excludedTags: persistedState.homeExcludedTags,
+            excludeTagMatchMode: persistedState.homeExcludeTagMatchMode,
             selectedManualPlaceFilterID: persistedState.homeSelectedManualPlaceFilterID,
             selectedImportanceUrgencyFilter: persistedState.homeSelectedImportanceUrgencyFilter,
             selectedTodoStateFilter: persistedState.homeSelectedTodoStateFilter,
@@ -88,12 +150,17 @@ enum HomeTemporaryViewStateMapper {
                 selectedRange: persistedState.homeSelectedTimelineRange,
                 selectedFilterType: persistedState.homeSelectedTimelineFilterType,
                 selectedTag: persistedState.homeSelectedTimelineTag,
+                selectedTags: persistedState.homeSelectedTimelineTags,
+                includeTagMatchMode: persistedState.homeTimelineIncludeTagMatchMode,
                 selectedExcludedTags: persistedState.homeSelectedTimelineExcludedTags,
+                excludeTagMatchMode: persistedState.homeTimelineExcludeTagMatchMode,
                 selectedImportanceUrgencyFilter: persistedState.homeSelectedTimelineImportanceUrgencyFilter
             ),
             statsFilters: HomeStatsFiltersState(
                 selectedRange: persistedState.statsSelectedRange,
-                selectedTag: persistedState.statsSelectedTag
+                selectedTag: persistedState.statsSelectedTag,
+                selectedTags: persistedState.statsSelectedTags,
+                includeTagMatchMode: persistedState.statsIncludeTagMatchMode
             ),
             macSidebarModeRawValue: persistedState.macHomeSidebarModeRawValue,
             macSelectedSettingsSectionRawValue: persistedState.macSelectedSettingsSectionRawValue
@@ -116,7 +183,10 @@ enum HomeTemporaryViewStateMapper {
             homeTaskListModeRawValue: values.taskListModeRawValue,
             homeSelectedFilter: taskFilters.selectedFilter,
             homeSelectedTag: taskFilters.selectedTag,
+            homeSelectedTags: taskFilters.effectiveSelectedTags,
+            homeIncludeTagMatchMode: taskFilters.includeTagMatchMode,
             homeExcludedTags: taskFilters.excludedTags,
+            homeExcludeTagMatchMode: taskFilters.excludeTagMatchMode,
             homeSelectedManualPlaceFilterID: taskFilters.selectedManualPlaceFilterID,
             homeSelectedImportanceUrgencyFilter: taskFilters.selectedImportanceUrgencyFilter,
             homeSelectedTodoStateFilter: taskFilters.selectedTodoStateFilter,
@@ -126,17 +196,27 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedTimelineRange: values.timelineFilters.selectedRange,
             homeSelectedTimelineFilterType: values.timelineFilters.selectedFilterType,
             homeSelectedTimelineTag: values.timelineFilters.selectedTag,
+            homeSelectedTimelineTags: values.timelineFilters.effectiveSelectedTags,
+            homeTimelineIncludeTagMatchMode: values.timelineFilters.includeTagMatchMode,
             homeSelectedTimelineExcludedTags: values.timelineFilters.selectedExcludedTags,
+            homeTimelineExcludeTagMatchMode: values.timelineFilters.excludeTagMatchMode,
             homeSelectedTimelineImportanceUrgencyFilter: values.timelineFilters.selectedImportanceUrgencyFilter,
             macHomeSidebarModeRawValue: values.macSidebarModeRawValue ?? existing.macHomeSidebarModeRawValue,
             macSelectedSettingsSectionRawValue: values.macSelectedSettingsSectionRawValue ?? existing.macSelectedSettingsSectionRawValue,
             timelineSelectedRange: existing.timelineSelectedRange,
             timelineFilterType: existing.timelineFilterType,
             timelineSelectedTag: existing.timelineSelectedTag,
+            timelineSelectedTags: existing.timelineSelectedTags,
+            timelineIncludeTagMatchMode: existing.timelineIncludeTagMatchMode,
+            timelineExcludedTags: existing.timelineExcludedTags,
+            timelineExcludeTagMatchMode: existing.timelineExcludeTagMatchMode,
             timelineSelectedImportanceUrgencyFilter: existing.timelineSelectedImportanceUrgencyFilter,
             statsSelectedRange: existing.statsSelectedRange,
             statsSelectedTag: existing.statsSelectedTag,
+            statsSelectedTags: existing.statsSelectedTags,
+            statsIncludeTagMatchMode: existing.statsIncludeTagMatchMode,
             statsExcludedTags: existing.statsExcludedTags,
+            statsExcludeTagMatchMode: existing.statsExcludeTagMatchMode,
             statsSelectedImportanceUrgencyFilter: existing.statsSelectedImportanceUrgencyFilter,
             statsTaskTypeFilterRawValue: existing.statsTaskTypeFilterRawValue
         )

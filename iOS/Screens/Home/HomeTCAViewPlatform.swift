@@ -315,57 +315,121 @@ extension HomeTCAView {
                 }
 
                 if !availableTags.isEmpty {
-                    Section("Include Tag") {
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: store.selectedTag == nil) {
-                                store.send(.selectedTagChanged(nil))
+                    Section("Tag Rules") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Show tasks with")
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Picker("Show tasks with", selection: Binding(
+                                    get: { store.includeTagMatchMode },
+                                    set: { store.send(.includeTagMatchModeChanged($0)) }
+                                )) {
+                                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                                        Text(mode.rawValue).tag(mode)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 180)
                             }
 
-                            ForEach(tagSummaries) { summary in
-                                tagFilterButton(
-                                    title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                                    isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [summary.name]) } ?? false
-                                ) {
-                                    store.send(.selectedTagChanged(summary.name))
+                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                if store.selectedTags.isEmpty {
+                                    tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: true) {
+                                        relatedFilterTagSuggestionAnchor = nil
+                                        store.send(.selectedTagsChanged([]))
+                                    }
+                                } else {
+                                    ForEach(store.selectedTags.sorted(), id: \.self) { tag in
+                                        tagFilterButton(title: "#\(tag)", isSelected: true) {
+                                            toggleIncludedTag(tag)
+                                        }
+                                    }
                                 }
                             }
-                        }
-                        .padding(.vertical, 4)
-                    }
 
-                    Section("Exclude Tags") {
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            ForEach(availableExcludeTagSummaries) { summary in
-                                let isExcluded = store.excludedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
-                                tagFilterButton(
-                                    title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                                    isSelected: isExcluded,
-                                    selectedColor: .red
-                                ) {
-                                    if isExcluded {
-                                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != summary.name }))
-                                    } else {
-                                        var newTags = store.excludedTags
-                                        newTags.insert(summary.name)
-                                        store.send(.excludedTagsChanged(newTags))
-                                        if store.selectedTag.map({ RoutineTag.contains($0, in: [summary.name]) }) == true {
-                                            store.send(.selectedTagChanged(nil))
+                            if !suggestedRelatedFilterTags.isEmpty {
+                                Text("Suggested")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                    ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
+                                        tagFilterButton(title: "#\(tag)", isSelected: false) {
+                                            addIncludedTag(tag)
                                         }
+                                    }
+                                }
+                            }
+
+                            Text("Add more")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                ForEach(tagSummaries.filter { !isIncludedTagSelected($0.name) }) { summary in
+                                    tagFilterButton(
+                                        title: "#\(summary.name) \(summary.linkedRoutineCount)",
+                                        isSelected: false
+                                    ) {
+                                        toggleIncludedTag(summary.name)
                                     }
                                 }
                             }
                         }
                         .padding(.vertical, 4)
 
-                        if !store.excludedTags.isEmpty {
-                            Text("Hiding tasks tagged: \(store.excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Select tags to hide tasks that have them.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Hide tasks with")
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Picker("Hide tasks with", selection: Binding(
+                                    get: { store.excludeTagMatchMode },
+                                    set: { store.send(.excludeTagMatchModeChanged($0)) }
+                                )) {
+                                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                                        Text(mode.rawValue).tag(mode)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 180)
+                            }
+
+                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                if store.excludedTags.isEmpty {
+                                    Text("No hidden tags")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    ForEach(store.excludedTags.sorted(), id: \.self) { tag in
+                                        tagFilterButton(title: "#\(tag)", isSelected: true, selectedColor: .red) {
+                                            toggleExcludedTag(tag)
+                                        }
+                                    }
+                                }
+                            }
+
+                            if !availableExcludeTagSummaries.isEmpty {
+                                Text("Add tags to hide")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                                    ForEach(availableExcludeTagSummaries.filter { summary in
+                                        !store.excludedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
+                                    }) { summary in
+                                        tagFilterButton(
+                                            title: "#\(summary.name) \(summary.linkedRoutineCount)",
+                                            isSelected: false,
+                                            selectedColor: .red
+                                        ) {
+                                            toggleExcludedTag(summary.name)
+                                        }
+                                    }
+                                }
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
                 }
 
@@ -460,20 +524,38 @@ extension HomeTCAView {
             VStack(alignment: .leading, spacing: 8) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: store.selectedTag == nil) {
-                            store.send(.selectedTagChanged(nil))
+                        tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: store.selectedTags.isEmpty) {
+                            relatedFilterTagSuggestionAnchor = nil
+                            store.send(.selectedTagsChanged([]))
                         }
 
                         ForEach(tagSummaries) { summary in
                             tagFilterButton(
                                 title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                                isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [summary.name]) } ?? false
+                                isSelected: isIncludedTagSelected(summary.name)
                             ) {
-                                store.send(.selectedTagChanged(summary.name))
+                                toggleIncludedTag(summary.name)
                             }
                         }
                     }
                     .padding(.horizontal)
+                }
+
+                if !suggestedRelatedFilterTags.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            Text("Suggested")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+
+                            ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
+                                tagFilterButton(title: "#\(tag)", isSelected: false) {
+                                    addIncludedTag(tag)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
                 }
             }
             .padding(.top, -2)

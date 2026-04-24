@@ -28,6 +28,7 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
+    @State var relatedFilterTagSuggestionAnchor: String?
 
     init(
         store: StoreOf<HomeFeature>,
@@ -233,9 +234,11 @@ struct HomeTCAView: View {
                     }
                 }
 
-                if let selectedTag = store.selectedTag {
-                    compactFilterChip(title: "#\(selectedTag)") {
-                        store.send(.selectedTagChanged(nil))
+                ForEach(store.selectedTags.sorted(), id: \.self) { tag in
+                    compactFilterChip(title: "#\(tag)") {
+                        var selected = store.selectedTags
+                        selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+                        store.send(.selectedTagsChanged(selected))
                     }
                 }
 
@@ -330,7 +333,7 @@ struct HomeTCAView: View {
 
     var activeOptionalFilterCount: Int {
         var count = 0
-        if store.selectedTag != nil { count += 1 }
+        if !store.selectedTags.isEmpty { count += 1 }
         count += store.excludedTags.count
         if store.selectedManualPlaceFilterID != nil { count += 1 }
         if store.selectedImportanceUrgencyFilter != nil { count += 1 }
@@ -728,12 +731,65 @@ struct HomeTCAView: View {
 
     var availableExcludeTagSummaries: [RoutineTagSummary] {
         let base = allRoutineDisplays.filter(matchesCurrentTaskListMode).filter { task in
-            HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
+            HomeFeature.matchesSelectedTags(
+                store.selectedTags,
+                mode: store.includeTagMatchMode,
+                in: task.tags
+            )
         }
         return HomeFeature.tagSummaries(from: base).filter { summary in
             // Don't offer the include tag itself as an exclude option
-            store.selectedTag.map { !RoutineTag.contains($0, in: [summary.name]) } ?? true
+            !store.selectedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
         }
+    }
+
+    var suggestedRelatedFilterTags: [String] {
+        let selectedTags = store.selectedTags
+        guard !selectedTags.isEmpty else { return [] }
+        let suggestionSource = relatedFilterTagSuggestionAnchor.map { [$0] } ?? Array(selectedTags)
+        return RoutineTagRelations.relatedTags(
+            for: suggestionSource,
+            rules: store.relatedTagRules,
+            availableTags: availableTags
+        )
+    }
+
+    func isIncludedTagSelected(_ tag: String) -> Bool {
+        store.selectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+    }
+
+    func toggleIncludedTag(_ tag: String) {
+        var selected = store.selectedTags
+        if selected.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+        } else {
+            selected.insert(tag)
+            relatedFilterTagSuggestionAnchor = tag
+        }
+        store.send(.selectedTagsChanged(selected))
+        if selected.isEmpty {
+            relatedFilterTagSuggestionAnchor = nil
+        }
+    }
+
+    func addIncludedTag(_ tag: String) {
+        guard !isIncludedTagSelected(tag) else { return }
+        var selected = store.selectedTags
+        selected.insert(tag)
+        store.send(.selectedTagsChanged(selected))
+    }
+
+    func toggleExcludedTag(_ tag: String) {
+        var excluded = store.excludedTags
+        if excluded.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            excluded = excluded.filter { !RoutineTag.contains($0, in: [tag]) }
+        } else {
+            excluded.insert(tag)
+            var selected = store.selectedTags
+            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+            store.send(.selectedTagsChanged(selected))
+        }
+        store.send(.excludedTagsChanged(excluded))
     }
 
     func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {

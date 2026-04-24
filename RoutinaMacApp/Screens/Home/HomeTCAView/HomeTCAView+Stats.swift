@@ -18,12 +18,27 @@ extension HomeTCAView {
             importanceUrgencySummary: statsImportanceUrgencySummary,
             allTags: statsAllTags,
             tagSummaries: statsTagSummaries,
+            suggestedRelatedTags: suggestedRelatedStatsTags,
             taskCountForSelectedTypeFilter: statsTaskCountForSelectedTypeFilter,
-            selectedTag: selectedStatsTag,
-            onSelectTag: { tag in
-                statsStore?.send(.selectedTagChanged(tag))
+            selectedTags: selectedStatsTags,
+            includeTagMatchMode: statsStore?.includeTagMatchMode ?? .all,
+            onSelectTags: { tags in
+                relatedStatsTagSuggestionAnchor = tags.sorted().last
+                statsStore?.send(.selectedTagsChanged(tags))
+            },
+            onIncludeTagMatchModeChange: { mode in
+                statsStore?.send(.includeTagMatchModeChanged(mode))
+            },
+            onSelectSuggestedTag: { tag in
+                var selected = selectedStatsTags
+                selected.insert(tag)
+                statsStore?.send(.selectedTagsChanged(selected))
             },
             selectedExcludedTags: selectedStatsExcludedTags,
+            excludeTagMatchMode: statsStore?.excludeTagMatchMode ?? .any,
+            onExcludeTagMatchModeChange: { mode in
+                statsStore?.send(.excludeTagMatchModeChanged(mode))
+            },
             availableExcludeTags: statsAvailableExcludeTags,
             excludedTagSummary: statsExcludedTagSummary,
             tagSelectionSummary: statsTagSelectionSummary,
@@ -37,9 +52,7 @@ extension HomeTCAView {
                     var newTags = selectedStatsExcludedTags
                     newTags.insert(tag)
                     statsStore?.send(.excludedTagsChanged(newTags))
-                    if selectedStatsTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                        statsStore?.send(.selectedTagChanged(nil))
-                    }
+                    statsStore?.send(.selectedTagsChanged(selectedStatsTags.filter { !RoutineTag.contains($0, in: [tag]) }))
                 }
             }
         )
@@ -59,6 +72,16 @@ extension HomeTCAView {
             }
         }
         return result.sorted()
+    }
+
+    private var suggestedRelatedStatsTags: [String] {
+        guard !selectedStatsTags.isEmpty else { return [] }
+        let suggestionSource = relatedStatsTagSuggestionAnchor.map { [$0] } ?? Array(selectedStatsTags)
+        return RoutineTagRelations.relatedTags(
+            for: suggestionSource,
+            rules: store.relatedTagRules,
+            availableTags: statsAllTags
+        )
     }
 
     private var statsTagSummaries: [RoutineTagSummary] {
@@ -112,14 +135,17 @@ extension HomeTCAView {
         statsStore?.selectedTag
     }
 
+    private var selectedStatsTags: Set<String> {
+        statsStore?.effectiveSelectedTags ?? []
+    }
+
     private var selectedStatsExcludedTags: Set<String> {
         statsStore?.excludedTags ?? []
     }
 
     private var statsTagSelectionSummary: String {
-        if let selectedStatsTag {
-            let matchingCount = statsTagSummaries.first(where: { $0.name == selectedStatsTag })?.linkedRoutineCount ?? 0
-            return "#\(selectedStatsTag) across \(matchingCount) \(matchingCount == 1 ? "routine" : "routines")"
+        if !selectedStatsTags.isEmpty {
+            return "\((statsStore?.includeTagMatchMode ?? .all).rawValue) of \(selectedStatsTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
         }
 
         let tagCount = statsTagSummaries.count
@@ -128,7 +154,7 @@ extension HomeTCAView {
 
     private var statsAvailableExcludeTags: [String] {
         statsAllTags.filter { tag in
-            selectedStatsTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+            !selectedStatsTags.contains { RoutineTag.contains($0, in: [tag]) }
         }
     }
 

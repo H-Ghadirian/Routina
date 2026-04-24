@@ -8,6 +8,7 @@ struct TimelineView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
+    @State private var relatedFilterTagSuggestionAnchor: String?
 
     var body: some View {
         WithPerceptionTracking {
@@ -66,6 +67,57 @@ struct TimelineView: View {
 
     private var availableTags: [String] {
         store.availableTags
+    }
+
+    private var suggestedRelatedFilterTags: [String] {
+        let selectedTags = store.effectiveSelectedTags
+        guard !selectedTags.isEmpty else { return [] }
+        let suggestionSource = relatedFilterTagSuggestionAnchor.map { [$0] } ?? Array(selectedTags)
+        return RoutineTagRelations.relatedTags(
+            for: suggestionSource,
+            rules: store.relatedTagRules,
+            availableTags: availableTags
+        )
+    }
+
+    private var availableExcludeTags: [String] {
+        availableTags.filter { tag in
+            !store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+        }
+    }
+
+    private func isIncludedTagSelected(_ tag: String) -> Bool {
+        store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+    }
+
+    private func toggleIncludedTag(_ tag: String) {
+        var selected = store.effectiveSelectedTags
+        if selected.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+        } else {
+            selected.insert(tag)
+            relatedFilterTagSuggestionAnchor = tag
+        }
+        store.send(.selectedTagsChanged(selected))
+        if selected.isEmpty { relatedFilterTagSuggestionAnchor = nil }
+    }
+
+    private func addIncludedTag(_ tag: String) {
+        var selected = store.effectiveSelectedTags
+        selected.insert(tag)
+        store.send(.selectedTagsChanged(selected))
+    }
+
+    private func toggleExcludedTag(_ tag: String) {
+        var excluded = store.excludedTags
+        if excluded.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+            excluded = excluded.filter { !RoutineTag.contains($0, in: [tag]) }
+        } else {
+            excluded.insert(tag)
+            let selected = store.effectiveSelectedTags.filter { !RoutineTag.contains($0, in: [tag]) }
+            store.send(.selectedTagsChanged(selected))
+        }
+        store.send(.excludedTagsChanged(excluded))
     }
 
     private var hasActiveFilters: Bool {
@@ -149,23 +201,126 @@ struct TimelineView: View {
                 }
 
                 if !availableTags.isEmpty {
-                    Section("Tag") {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                timelineTagButton(title: "All Tags", isSelected: store.selectedTag == nil) {
-                                    store.send(.selectedTagChanged(nil))
-                                }
-
-                                ForEach(availableTags, id: \.self) { tag in
-                                    timelineTagButton(
-                                        title: "#\(tag)",
-                                        isSelected: store.selectedTag.map { RoutineTag.contains($0, in: [tag]) } ?? false
-                                    ) {
-                                        store.send(.selectedTagChanged(tag))
+                    Section("Tag Rules") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Show items with")
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Picker("Show items with", selection: Binding(
+                                    get: { store.includeTagMatchMode },
+                                    set: { store.send(.includeTagMatchModeChanged($0)) }
+                                )) {
+                                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                                        Text(mode.rawValue).tag(mode)
                                     }
                                 }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 180)
                             }
-                            .padding(.vertical, 4)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    if store.effectiveSelectedTags.isEmpty {
+                                        timelineTagButton(title: "All Tags", isSelected: true) {
+                                            relatedFilterTagSuggestionAnchor = nil
+                                            store.send(.selectedTagsChanged([]))
+                                        }
+                                    } else {
+                                        ForEach(store.effectiveSelectedTags.sorted(), id: \.self) { tag in
+                                            timelineTagButton(title: "#\(tag)", isSelected: true) {
+                                                toggleIncludedTag(tag)
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+
+                            if !suggestedRelatedFilterTags.isEmpty {
+                                Text("Suggested")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
+                                            timelineTagButton(title: "#\(tag)", isSelected: false) {
+                                                addIncludedTag(tag)
+                                            }
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                            }
+
+                            Text("Add more")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(availableTags.filter { !isIncludedTagSelected($0) }, id: \.self) { tag in
+                                        timelineTagButton(title: "#\(tag)", isSelected: false) {
+                                            toggleIncludedTag(tag)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Hide items with")
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Picker("Hide items with", selection: Binding(
+                                    get: { store.excludeTagMatchMode },
+                                    set: { store.send(.excludeTagMatchModeChanged($0)) }
+                                )) {
+                                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                                        Text(mode.rawValue).tag(mode)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 180)
+                            }
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    if store.excludedTags.isEmpty {
+                                        Text("No hidden tags")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    } else {
+                                        ForEach(store.excludedTags.sorted(), id: \.self) { tag in
+                                            timelineTagButton(title: "#\(tag)", isSelected: true, selectedColor: .red) {
+                                                toggleExcludedTag(tag)
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+
+                            if !availableExcludeTags.isEmpty {
+                                Text("Add tags to hide")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(availableExcludeTags.filter { tag in
+                                            !store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
+                                        }, id: \.self) { tag in
+                                            timelineTagButton(title: "#\(tag)", isSelected: false, selectedColor: .red) {
+                                                toggleExcludedTag(tag)
+                                            }
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                            }
                         }
                     }
                 }
@@ -191,10 +346,7 @@ struct TimelineView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onChange(of: availableTags) { _, newValue in
-            guard let selectedTag = store.selectedTag else { return }
-            if !RoutineTag.contains(selectedTag, in: newValue) {
-                store.send(.selectedTagChanged(nil))
-            }
+            store.send(.selectedTagsChanged(store.effectiveSelectedTags.filter { RoutineTag.contains($0, in: newValue) }))
         }
     }
 
@@ -286,6 +438,7 @@ struct TimelineView: View {
     private func timelineTagButton(
         title: String,
         isSelected: Bool,
+        selectedColor: Color = .accentColor,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -295,9 +448,9 @@ struct TimelineView: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.12))
+                        .fill(isSelected ? selectedColor.opacity(0.16) : Color.secondary.opacity(0.12))
                 )
-                .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                .foregroundStyle(isSelected ? selectedColor : .primary)
         }
         .buttonStyle(.plain)
     }

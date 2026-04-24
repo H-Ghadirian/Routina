@@ -32,9 +32,41 @@ enum HomeDisplayFilterSupport {
         return RoutineTag.contains(selectedTag, in: tags)
     }
 
+    static func matchesSelectedTags(
+        _ selectedTags: Set<String>,
+        mode: RoutineTagMatchMode,
+        in tags: [String]
+    ) -> Bool {
+        guard !selectedTags.isEmpty else { return true }
+
+        switch mode {
+        case .all:
+            return selectedTags.allSatisfy { RoutineTag.contains($0, in: tags) }
+        case .any:
+            return selectedTags.contains { RoutineTag.contains($0, in: tags) }
+        }
+    }
+
     static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
         guard !excludedTags.isEmpty else { return true }
         return !excludedTags.contains { RoutineTag.contains($0, in: tags) }
+    }
+
+    static func matchesExcludedTags(
+        _ excludedTags: Set<String>,
+        mode: RoutineTagMatchMode,
+        in tags: [String]
+    ) -> Bool {
+        guard !excludedTags.isEmpty else { return true }
+
+        let shouldExclude: Bool
+        switch mode {
+        case .all:
+            shouldExclude = excludedTags.allSatisfy { RoutineTag.contains($0, in: tags) }
+        case .any:
+            shouldExclude = excludedTags.contains { RoutineTag.contains($0, in: tags) }
+        }
+        return !shouldExclude
     }
 
     static func matchesImportanceUrgencyFilter(
@@ -99,17 +131,20 @@ enum HomeDisplayFilterSupport {
     ) {
         let allDisplays = routineDisplays + awayRoutineDisplays + archivedRoutineDisplays
         let allAvailableTags = tagSummaries(from: allDisplays, tags: tags).map(\.name)
-        if let tag = taskFilters.selectedTag, !RoutineTag.contains(tag, in: allAvailableTags) {
-            taskFilters.selectedTag = nil
-        }
+        let availableSelectedTags = taskFilters.effectiveSelectedTags.filter { RoutineTag.contains($0, in: allAvailableTags) }
+        taskFilters.setSelectedTags(availableSelectedTags)
 
         let includeScopedDisplays = allDisplays.filter {
-            matchesSelectedTag(taskFilters.selectedTag, in: tags($0))
+            matchesSelectedTags(
+                taskFilters.effectiveSelectedTags,
+                mode: taskFilters.includeTagMatchMode,
+                in: tags($0)
+            )
         }
         let availableExcludeTags = tagSummaries(from: includeScopedDisplays, tags: tags)
             .map(\.name)
             .filter { tag in
-                taskFilters.selectedTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+                !taskFilters.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
             }
         taskFilters.excludedTags = taskFilters.excludedTags.filter {
             RoutineTag.contains($0, in: availableExcludeTags)

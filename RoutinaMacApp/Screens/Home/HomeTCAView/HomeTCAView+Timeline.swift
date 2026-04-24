@@ -9,8 +9,16 @@ extension HomeTCAView {
                     importance: entry.importance,
                     urgency: entry.urgency
                 )
-                    && TimelineLogic.matchesSelectedTag(store.selectedTimelineTag, in: entry.tags)
-                    && !store.selectedTimelineExcludedTags.contains { RoutineTag.contains($0, in: entry.tags) }
+                    && HomeFeature.matchesSelectedTags(
+                        store.selectedTimelineTags,
+                        mode: store.selectedTimelineIncludeTagMatchMode,
+                        in: entry.tags
+                    )
+                    && HomeFeature.matchesExcludedTags(
+                        store.selectedTimelineExcludedTags,
+                        mode: store.selectedTimelineExcludeTagMatchMode,
+                        in: entry.tags
+                    )
             }
             .filter(matchesTimelineSearch)
     }
@@ -44,8 +52,19 @@ extension HomeTCAView {
 
     var availableTimelineExcludeTags: [String] {
         availableTimelineTags.filter { tag in
-            store.selectedTimelineTag.map { !RoutineTag.contains($0, in: [tag]) } ?? true
+            !store.selectedTimelineTags.contains { RoutineTag.contains($0, in: [tag]) }
         }
+    }
+
+    var suggestedRelatedTimelineTags: [String] {
+        let selectedTags = store.selectedTimelineTags
+        guard !selectedTags.isEmpty else { return [] }
+        let suggestionSource = relatedTimelineTagSuggestionAnchor.map { [$0] } ?? Array(selectedTags)
+        return RoutineTagRelations.relatedTags(
+            for: suggestionSource,
+            rules: store.relatedTagRules,
+            availableTags: availableTimelineTags
+        )
     }
 
     var groupedTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
@@ -123,10 +142,8 @@ extension HomeTCAView {
     }
 
     func validateSelectedTimelineTag() {
-        guard let tag = store.selectedTimelineTag else { return }
-        if !RoutineTag.contains(tag, in: availableTimelineTags) {
-            store.send(.selectedTimelineTagChanged(nil))
-        }
+        let selected = store.selectedTimelineTags.filter { RoutineTag.contains($0, in: availableTimelineTags) }
+        store.send(.selectedTimelineTagsChanged(selected))
         store.send(
             .selectedTimelineExcludedTagsChanged(
                 store.selectedTimelineExcludedTags.filter { RoutineTag.contains($0, in: availableTimelineExcludeTags) }
@@ -142,9 +159,8 @@ extension HomeTCAView {
     }
 
     var timelineTagSelectionSummary: String {
-        if let selectedTimelineTag = store.selectedTimelineTag {
-            let matchingCount = timelineTagCount(for: selectedTimelineTag)
-            return "#\(selectedTimelineTag) across \(matchingCount) \(matchingCount == 1 ? "item" : "items")"
+        if !store.selectedTimelineTags.isEmpty {
+            return "\(store.selectedTimelineIncludeTagMatchMode.rawValue) of \(store.selectedTimelineTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
         }
 
         let tagCount = availableTimelineTags.count
@@ -174,8 +190,8 @@ extension HomeTCAView {
             labels.append("\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+")
         }
 
-        if let selectedTag = store.selectedTimelineTag {
-            labels.append("#\(selectedTag)")
+        if !store.selectedTimelineTags.isEmpty {
+            labels.append("\(store.selectedTimelineIncludeTagMatchMode.rawValue) \(store.selectedTimelineTags.count) tags")
         }
 
         if !store.selectedTimelineExcludedTags.isEmpty {
@@ -218,16 +234,31 @@ extension HomeTCAView {
                 importanceUrgencySummary: timelineImportanceUrgencySummary,
                 allTagsCount: filteredTimelineEntriesForTagging.count,
                 availableTags: availableTimelineTags,
+                suggestedRelatedTags: suggestedRelatedTimelineTags,
                 availableExcludeTags: availableTimelineExcludeTags,
-                selectedTag: store.selectedTimelineTag,
+                selectedTags: store.selectedTimelineTags,
+                includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
+                excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
                 selectedExcludedTags: store.selectedTimelineExcludedTags,
                 tagSelectionSummary: timelineTagSelectionSummary,
                 excludedTagSummary: timelineExcludedTagSummary,
                 tagCount: { tag in
                     timelineTagCount(for: tag)
                 },
-                onSelectTag: { tag in
-                    store.send(.selectedTimelineTagChanged(tag))
+                onSelectTags: { tags in
+                    relatedTimelineTagSuggestionAnchor = tags.sorted().last
+                    store.send(.selectedTimelineTagsChanged(tags))
+                },
+                onIncludeTagMatchModeChange: { mode in
+                    store.send(.selectedTimelineIncludeTagMatchModeChanged(mode))
+                },
+                onSelectSuggestedTag: { tag in
+                    var selected = store.selectedTimelineTags
+                    selected.insert(tag)
+                    store.send(.selectedTimelineTagsChanged(selected))
+                },
+                onExcludeTagMatchModeChange: { mode in
+                    store.send(.selectedTimelineExcludeTagMatchModeChanged(mode))
                 },
                 onToggleExcludedTag: { tag in
                     if store.selectedTimelineExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
@@ -236,9 +267,7 @@ extension HomeTCAView {
                         var newTags = store.selectedTimelineExcludedTags
                         newTags.insert(tag)
                         store.send(.selectedTimelineExcludedTagsChanged(newTags))
-                        if store.selectedTimelineTag.map({ RoutineTag.contains($0, in: [tag]) }) == true {
-                            store.send(.selectedTimelineTagChanged(nil))
-                        }
+                        store.send(.selectedTimelineTagsChanged(store.selectedTimelineTags.filter { !RoutineTag.contains($0, in: [tag]) }))
                     }
                 }
             )

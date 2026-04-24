@@ -47,8 +47,8 @@ extension HomeTCAView {
                 && matchesManualPlaceFilter(task)
                 && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
-                && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
-                && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
+                && HomeFeature.matchesSelectedTags(store.selectedTags, mode: store.includeTagMatchMode, in: task.tags)
+                && HomeFeature.matchesExcludedTags(store.excludedTags, mode: store.excludeTagMatchMode, in: task.tags)
         }
     }
 
@@ -63,8 +63,8 @@ extension HomeTCAView {
                 && matchesManualPlaceFilter(task)
                 && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
-                && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
-                && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
+                && HomeFeature.matchesSelectedTags(store.selectedTags, mode: store.includeTagMatchMode, in: task.tags)
+                && HomeFeature.matchesExcludedTags(store.excludedTags, mode: store.excludeTagMatchMode, in: task.tags)
         }
     }
 
@@ -83,8 +83,8 @@ extension HomeTCAView {
                     && matchesManualPlaceFilter(task)
                     && matchesTodoStateFilter(task)
                     && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
-                    && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
-                    && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
+                    && HomeFeature.matchesSelectedTags(store.selectedTags, mode: store.includeTagMatchMode, in: task.tags)
+                    && HomeFeature.matchesExcludedTags(store.excludedTags, mode: store.excludeTagMatchMode, in: task.tags)
             }
             .sorted(by: archivedTaskSort)
     }
@@ -103,8 +103,8 @@ extension HomeTCAView {
                 && matchesManualPlaceFilter(task)
                 && matchesTodoStateFilter(task)
                 && HomeFeature.matchesImportanceUrgencyFilter(store.selectedImportanceUrgencyFilter, importance: task.importance, urgency: task.urgency)
-                && HomeFeature.matchesSelectedTag(store.selectedTag, in: task.tags)
-                && HomeFeature.matchesExcludedTags(store.excludedTags, in: task.tags)
+                && HomeFeature.matchesSelectedTags(store.selectedTags, mode: store.includeTagMatchMode, in: task.tags)
+                && HomeFeature.matchesExcludedTags(store.excludedTags, mode: store.excludeTagMatchMode, in: task.tags)
         }
         let archivedPinned = filteredArchivedTasks(archivedRoutineDisplays).filter(\.isPinned)
 

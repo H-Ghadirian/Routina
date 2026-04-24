@@ -65,7 +65,7 @@ extension HomeTCAView {
         if store.macSidebarMode == .timeline {
             return store.selectedTimelineRange != .all
                 || store.selectedTimelineFilterType != .all
-                || store.selectedTimelineTag != nil
+                || !store.selectedTimelineTags.isEmpty
                 || store.selectedTimelineImportanceUrgencyFilter != nil
                 || !store.selectedTimelineExcludedTags.isEmpty
         }
@@ -104,8 +104,8 @@ extension HomeTCAView {
             labels.append(todoState.displayTitle)
         }
 
-        if let selectedTag = store.selectedTag {
-            labels.append("#\(selectedTag)")
+        if !store.selectedTags.isEmpty {
+            labels.append("\(store.includeTagMatchMode.rawValue) \(store.selectedTags.count) tags")
         }
 
         if !store.excludedTags.isEmpty {
@@ -166,9 +166,11 @@ extension HomeTCAView {
         if store.macSidebarMode == .timeline {
             store.send(.selectedTimelineRangeChanged(.all))
             store.send(.selectedTimelineFilterTypeChanged(.all))
-            store.send(.selectedTimelineTagChanged(nil))
+            store.send(.selectedTimelineTagsChanged([]))
+            store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
             store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
             store.send(.selectedTimelineExcludedTagsChanged([]))
+            store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         } else {
             store.send(.selectedFilterChanged(.all))
             store.send(.clearOptionalFilters)

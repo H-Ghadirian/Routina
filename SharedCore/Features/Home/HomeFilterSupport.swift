@@ -26,8 +26,10 @@ enum HomeFilterEditor {
         taskFilters: inout HomeTaskFiltersState,
         hideUnavailableRoutines: inout Bool
     ) -> Bool {
-        taskFilters.selectedTag = nil
+        taskFilters.setSelectedTag(nil)
+        taskFilters.includeTagMatchMode = .all
         taskFilters.excludedTags = []
+        taskFilters.excludeTagMatchMode = .any
         taskFilters.selectedManualPlaceFilterID = nil
         taskFilters.selectedImportanceUrgencyFilter = nil
         taskFilters.selectedTodoStateFilter = nil
