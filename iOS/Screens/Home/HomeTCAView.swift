@@ -537,6 +537,20 @@ struct HomeTCAView: View {
                         taskID: task.taskID,
                         sectionKey: moveContext.sectionKey,
                         orderedTaskIDs: moveContext.orderedTaskIDs,
+                        direction: .top
+                    )
+                )
+            } label: {
+                Label("Move to Top", systemImage: "arrow.up.to.line")
+            }
+            .disabled(currentIndex == 0)
+
+            Button {
+                store.send(
+                    .moveTaskInSection(
+                        taskID: task.taskID,
+                        sectionKey: moveContext.sectionKey,
+                        orderedTaskIDs: moveContext.orderedTaskIDs,
                         direction: .up
                     )
                 )
@@ -556,6 +570,20 @@ struct HomeTCAView: View {
                 )
             } label: {
                 Label("Move Down", systemImage: "arrow.down")
+            }
+            .disabled(currentIndex == moveContext.orderedTaskIDs.count - 1)
+
+            Button {
+                store.send(
+                    .moveTaskInSection(
+                        taskID: task.taskID,
+                        sectionKey: moveContext.sectionKey,
+                        orderedTaskIDs: moveContext.orderedTaskIDs,
+                        direction: .bottom
+                    )
+                )
+            } label: {
+                Label("Move to Bottom", systemImage: "arrow.down.to.line")
             }
             .disabled(currentIndex == moveContext.orderedTaskIDs.count - 1)
         }

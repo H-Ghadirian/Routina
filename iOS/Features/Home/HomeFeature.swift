@@ -5,8 +5,10 @@ import SwiftData
 @Reducer
 struct HomeFeature {
     enum MoveDirection: String, Equatable {
+        case top
         case up
         case down
+        case bottom
     }
 
     enum TaskListMode: String, CaseIterable, Equatable, Identifiable {
@@ -1079,14 +1081,20 @@ struct HomeFeature {
 
         let targetIndex: Int
         switch direction {
+        case .top:
+            targetIndex = 0
         case .up:
             targetIndex = currentIndex - 1
         case .down:
             targetIndex = currentIndex + 1
+        case .bottom:
+            targetIndex = normalizedIDs.count - 1
         }
-        guard normalizedIDs.indices.contains(targetIndex) else { return .none }
+        guard normalizedIDs.indices.contains(targetIndex),
+              targetIndex != currentIndex else { return .none }
 
-        normalizedIDs.swapAt(currentIndex, targetIndex)
+        let movedID = normalizedIDs.remove(at: currentIndex)
+        normalizedIDs.insert(movedID, at: targetIndex)
 
         for (order, id) in normalizedIDs.enumerated() {
             guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { continue }
