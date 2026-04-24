@@ -134,7 +134,9 @@ struct SettingsFeatureDependencyTests {
             return true
         } assert: {
             $0.tags.savedTags = loadedTags
+            $0.tags.relatedTagDrafts = ["focus": ""]
         }
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.locationSnapshotUpdated(snapshot)) {
             $0.places.locationAuthorizationStatus = .authorizedAlways
             $0.places.lastKnownLocationCoordinate = snapshot.coordinate

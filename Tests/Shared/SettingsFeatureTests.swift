@@ -593,6 +593,10 @@ struct SettingsFeatureTests {
             $0.tags.isTagOperationInProgress = true
             $0.tags.isTagRenameSheetPresented = false
             $0.tags.tagStatusMessage = ""
+            $0.tags.relatedTagDrafts = [
+                "fitness": "",
+                "morning": ""
+            ]
         }
         await store.receive { action in
             guard case let .tagsLoaded(tags) = action else { return false }
@@ -602,6 +606,10 @@ struct SettingsFeatureTests {
             return true
         } assert: {
             $0.tags.savedTags = loadedTags
+            $0.tags.relatedTagDrafts = [
+                "health": "",
+                "morning": ""
+            ]
         }
         await store.receive { action in
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
@@ -680,6 +688,11 @@ struct SettingsFeatureTests {
             $0.tags.isDeleteTagConfirmationPresented = false
             $0.tags.isTagOperationInProgress = true
             $0.tags.tagStatusMessage = ""
+            $0.tags.relatedTagDrafts = [
+                "evening": "",
+                "health": "",
+                "morning": ""
+            ]
         }
         await store.receive { action in
             guard case let .tagsLoaded(tags) = action else { return false }
@@ -689,6 +702,10 @@ struct SettingsFeatureTests {
             return true
         } assert: {
             $0.tags.savedTags = loadedTags
+            $0.tags.relatedTagDrafts = [
+                "evening": "",
+                "health": ""
+            ]
         }
         await store.receive { action in
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
