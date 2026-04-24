@@ -150,10 +150,12 @@ struct SettingsMacSidebarRow: View {
 
         case .iCloud:
             return store.cloud.overviewSubtitle
-        case .github:
+        case .git:
+            let ghConnected = store.github.connectedRepository != nil
+            let glConnected = store.gitlab.isConnected
+            if ghConnected && glConnected { return "GitHub & GitLab connected" }
+            if glConnected { return store.gitlab.overviewSubtitle }
             return store.github.overviewSubtitle
-        case .gitlab:
-            return store.gitlab.overviewSubtitle
 
         case .backup:
             return store.dataTransfer.overviewSubtitle
@@ -172,10 +174,8 @@ struct SettingsMacSidebarRow: View {
             return store.notifications.notificationsEnabled ? "On" : "Off"
         case .iCloud:
             return store.cloud.cloudSyncAvailable ? nil : "Off"
-        case .github:
-            return store.github.connectedRepository == nil ? nil : "Live"
-        case .gitlab:
-            return store.gitlab.isConnected ? "Live" : nil
+        case .git:
+            return (store.github.connectedRepository != nil || store.gitlab.isConnected) ? "Live" : nil
         default:
             return nil
         }
@@ -246,10 +246,8 @@ struct SettingsMacDetailView: View {
             SettingsMacAppearanceDetailView(store: store)
         case .iCloud:
             SettingsMacCloudDetailView(store: store)
-        case .github:
-            SettingsMacGitHubDetailView(store: store)
-        case .gitlab:
-            SettingsMacGitLabDetailView(store: store)
+        case .git:
+            SettingsMacGitDetailView(store: store)
         case .backup:
             SettingsMacBackupDetailView(store: store)
         case .support:
@@ -385,15 +383,18 @@ private struct SettingsMacNotificationsDetailView: View {
     }
 }
 
-private struct SettingsMacGitHubDetailView: View {
+private struct SettingsMacGitDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
         WithPerceptionTracking {
             SettingsMacDetailShell(
-                title: "GitHub",
-                subtitle: store.github.detailSubtitle
+                title: "Git",
+                subtitle: "Connect GitHub or GitLab to display contribution activity on your dashboard."
             ) {
+                Text("GitHub")
+                    .font(.title2.weight(.semibold))
+
                 SettingsMacDetailCard(title: "Mode") {
                     Picker("Source", selection: scopeBinding) {
                         ForEach(GitHubStatsScope.allCases) { scope in
@@ -440,7 +441,7 @@ private struct SettingsMacGitHubDetailView: View {
                 }
 
                 SettingsMacDetailCard(title: "Access Token") {
-                    SecureField("Personal access token", text: accessTokenBinding)
+                    SecureField("Personal access token", text: gitHubAccessTokenBinding)
                         .textFieldStyle(.roundedBorder)
 
                     Text(store.github.tokenStatusText)
@@ -483,48 +484,11 @@ private struct SettingsMacGitHubDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-            }
-        }
-    }
 
-    private var scopeBinding: Binding<GitHubStatsScope> {
-        Binding(
-            get: { store.github.scope },
-            set: { store.send(.gitHubScopeChanged($0)) }
-        )
-    }
+                Text("GitLab")
+                    .font(.title2.weight(.semibold))
+                    .padding(.top, 8)
 
-    private var repositoryOwnerBinding: Binding<String> {
-        Binding(
-            get: { store.github.repositoryOwner },
-            set: { store.send(.gitHubOwnerChanged($0)) }
-        )
-    }
-
-    private var repositoryNameBinding: Binding<String> {
-        Binding(
-            get: { store.github.repositoryName },
-            set: { store.send(.gitHubRepositoryChanged($0)) }
-        )
-    }
-
-    private var accessTokenBinding: Binding<String> {
-        Binding(
-            get: { store.github.accessTokenDraft },
-            set: { store.send(.gitHubTokenChanged($0)) }
-        )
-    }
-}
-
-private struct SettingsMacGitLabDetailView: View {
-    let store: StoreOf<SettingsFeature>
-
-    var body: some View {
-        WithPerceptionTracking {
-            SettingsMacDetailShell(
-                title: "GitLab",
-                subtitle: store.gitlab.detailSubtitle
-            ) {
                 SettingsMacDetailCard(title: "Profile") {
                     Text(store.gitlab.profileSummaryText)
                         .font(.footnote)
@@ -538,7 +502,7 @@ private struct SettingsMacGitLabDetailView: View {
                 }
 
                 SettingsMacDetailCard(title: "Access Token") {
-                    SecureField("Personal access token", text: accessTokenBinding)
+                    SecureField("Personal access token", text: gitLabAccessTokenBinding)
                         .textFieldStyle(.roundedBorder)
 
                     Text(store.gitlab.tokenStatusText)
@@ -585,7 +549,35 @@ private struct SettingsMacGitLabDetailView: View {
         }
     }
 
-    private var accessTokenBinding: Binding<String> {
+    private var scopeBinding: Binding<GitHubStatsScope> {
+        Binding(
+            get: { store.github.scope },
+            set: { store.send(.gitHubScopeChanged($0)) }
+        )
+    }
+
+    private var repositoryOwnerBinding: Binding<String> {
+        Binding(
+            get: { store.github.repositoryOwner },
+            set: { store.send(.gitHubOwnerChanged($0)) }
+        )
+    }
+
+    private var repositoryNameBinding: Binding<String> {
+        Binding(
+            get: { store.github.repositoryName },
+            set: { store.send(.gitHubRepositoryChanged($0)) }
+        )
+    }
+
+    private var gitHubAccessTokenBinding: Binding<String> {
+        Binding(
+            get: { store.github.accessTokenDraft },
+            set: { store.send(.gitHubTokenChanged($0)) }
+        )
+    }
+
+    private var gitLabAccessTokenBinding: Binding<String> {
         Binding(
             get: { store.gitlab.accessTokenDraft },
             set: { store.send(.gitLabTokenChanged($0)) }
