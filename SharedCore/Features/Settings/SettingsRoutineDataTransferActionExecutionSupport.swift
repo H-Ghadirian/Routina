@@ -101,7 +101,7 @@ enum SettingsRoutineDataTransferActionExecution {
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.places) places, and \(result.importedSummary.logs) logs."
+                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.places) places, \(result.importedSummary.logs) logs, and \(result.importedSummary.attachments) attachments."
                     )
                 )
             } catch {

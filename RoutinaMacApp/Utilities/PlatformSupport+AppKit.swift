@@ -27,7 +27,7 @@ extension PlatformSupport {
         panel.prompt = "Save"
         panel.nameFieldStringValue = suggestedFileName
         panel.canCreateDirectories = true
-        panel.allowedContentTypes = [.json]
+        panel.allowedContentTypes = [.routinaBackupPackage]
         panel.isExtensionHidden = false
 
         return await presentDataTransferPanel(panel)
@@ -39,9 +39,9 @@ extension PlatformSupport {
         panel.title = "Load Routine Data"
         panel.prompt = "Load"
         panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = true
         panel.canChooseFiles = true
-        panel.allowedContentTypes = [.json]
+        panel.allowedContentTypes = [.routinaBackupPackage, .json]
 
         return await presentDataTransferPanel(panel)
     }
@@ -99,6 +99,12 @@ extension PlatformSupport {
         configuration.activates = true
         NSWorkspace.shared.open([url], withApplicationAt: mailAppURL, configuration: configuration)
         return true
+    }
+}
+
+private extension UTType {
+    static var routinaBackupPackage: UTType {
+        UTType(filenameExtension: SettingsRoutineDataPersistence.backupPackageExtension) ?? .package
     }
 }
 

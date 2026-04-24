@@ -27,9 +27,11 @@ enum SettingsRoutineDataTransferExecution {
             try context.save()
         }
 
-        let backupData = try SettingsRoutineDataPersistence.buildBackupJSON(from: context)
         try SettingsExecutionSupport.withSecurityScopedAccess(to: destinationURL) {
-            try backupData.write(to: destinationURL, options: .atomic)
+            try SettingsRoutineDataPersistence.writeBackupPackage(
+                to: destinationURL,
+                from: context
+            )
         }
 
         return SettingsRoutineDataTransferExportResult(
@@ -48,14 +50,23 @@ enum SettingsRoutineDataTransferExecution {
             return nil
         }
 
-        let jsonData = try SettingsExecutionSupport.withSecurityScopedAccess(to: sourceURL) {
-            try Data(contentsOf: sourceURL)
-        }
         let context = modelContext()
-        let importedSummary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
-            with: jsonData,
-            in: context
-        )
+        let importedSummary = try SettingsExecutionSupport.withSecurityScopedAccess(to: sourceURL) {
+            var isDirectory: ObjCBool = false
+            if FileManager.default.fileExists(atPath: sourceURL.path, isDirectory: &isDirectory),
+               isDirectory.boolValue {
+                return try SettingsRoutineDataPersistence.replaceAllRoutineData(
+                    withBackupPackageAt: sourceURL,
+                    in: context
+                )
+            }
+
+            let jsonData = try Data(contentsOf: sourceURL)
+            return try SettingsRoutineDataPersistence.replaceAllRoutineData(
+                with: jsonData,
+                in: context
+            )
+        }
         try await SettingsExecutionSupport.rescheduleNotificationsAfterImport(
             in: context,
             appSettingsClient: appSettingsClient(),
