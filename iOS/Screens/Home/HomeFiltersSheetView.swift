@@ -1,94 +1,48 @@
 import SwiftUI
 
 struct HomeFiltersSheetView: View {
-    let taskListMode: HomeFeature.TaskListMode
-    let availableFilters: [RoutineListFilter]
-    @Binding var taskListViewMode: HomeTaskListViewMode
-    @Binding var selectedFilter: RoutineListFilter
-    @Binding var selectedTodoStateFilter: TodoState?
-    @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
-    @Binding var includeTagMatchMode: RoutineTagMatchMode
-    @Binding var excludeTagMatchMode: RoutineTagMatchMode
-    let selectedTags: Set<String>
-    let excludedTags: Set<String>
-    let tagSummaries: [RoutineTagSummary]
-    let allTagTaskCount: Int
-    let suggestedRelatedTags: [String]
-    let availableExcludeTagSummaries: [RoutineTagSummary]
-    let sortedRoutinePlaces: [RoutinePlace]
-    let hasSavedPlaces: Bool
-    let hasPlaceLinkedRoutines: Bool
-    let isLocationAuthorized: Bool
-    @Binding var selectedPlaceID: UUID?
-    @Binding var hideUnavailableRoutines: Bool
-    let placeFilterPluralNoun: String
-    let placeFilterAllTitle: String
-    let placeFilterSectionDescription: String
-    let locationStatusText: String
-    let importanceUrgencySummary: String
-    let hasActiveOptionalFilters: Bool
-    let onResetIncludedTags: () -> Void
-    let onToggleIncludedTag: (String) -> Void
-    let onAddIncludedTag: (String) -> Void
-    let onToggleExcludedTag: (String) -> Void
-    let isIncludedTagSelected: (String) -> Bool
-    let onClearOptionalFilters: () -> Void
-    let onDismiss: () -> Void
+    let configuration: HomeFiltersSheetConfiguration
+    let bindings: HomeFilterBindings
+    let tagData: HomeTagFilterData
+    let actions: HomeFiltersSheetActions
 
     var body: some View {
         NavigationStack {
             List {
-                HomeFiltersViewModeSection(taskListViewMode: $taskListViewMode)
+                HomeFiltersViewModeSection(taskListViewMode: bindings.taskListViewMode)
                 HomeFiltersStatusSection(
-                    placeFilterPluralNoun: placeFilterPluralNoun,
-                    availableFilters: availableFilters,
-                    selectedFilter: $selectedFilter
+                    placeFilterPluralNoun: configuration.place.placeFilterPluralNoun,
+                    availableFilters: configuration.availableFilters,
+                    selectedFilter: bindings.selectedFilter
                 )
                 HomeFiltersTodoStateSection(
-                    taskListMode: taskListMode,
-                    selectedTodoStateFilter: $selectedTodoStateFilter
+                    taskListMode: configuration.taskListMode,
+                    selectedTodoStateFilter: bindings.selectedTodoStateFilter
                 )
                 HomeFiltersImportanceUrgencySection(
-                    selectedImportanceUrgencyFilter: $selectedImportanceUrgencyFilter,
-                    summary: importanceUrgencySummary
+                    selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
+                    summary: configuration.importanceUrgencySummary
                 )
                 HomeFiltersTagRulesSection(
-                    includeTagMatchMode: $includeTagMatchMode,
-                    excludeTagMatchMode: $excludeTagMatchMode,
-                    selectedTags: selectedTags,
-                    excludedTags: excludedTags,
-                    tagSummaries: tagSummaries,
-                    allTagTaskCount: allTagTaskCount,
-                    suggestedRelatedTags: suggestedRelatedTags,
-                    availableExcludeTagSummaries: availableExcludeTagSummaries,
-                    onResetIncludedTags: onResetIncludedTags,
-                    onToggleIncludedTag: onToggleIncludedTag,
-                    onAddIncludedTag: onAddIncludedTag,
-                    onToggleExcludedTag: onToggleExcludedTag,
-                    isIncludedTagSelected: isIncludedTagSelected
+                    bindings: bindings.tagRules,
+                    data: tagData,
+                    actions: actions.tagActions
                 )
                 HomeFiltersPlaceSection(
-                    sortedRoutinePlaces: sortedRoutinePlaces,
-                    hasSavedPlaces: hasSavedPlaces,
-                    hasPlaceLinkedRoutines: hasPlaceLinkedRoutines,
-                    isLocationAuthorized: isLocationAuthorized,
-                    selectedPlaceID: $selectedPlaceID,
-                    hideUnavailableRoutines: $hideUnavailableRoutines,
-                    placeFilterPluralNoun: placeFilterPluralNoun,
-                    placeFilterAllTitle: placeFilterAllTitle,
-                    placeFilterSectionDescription: placeFilterSectionDescription,
-                    locationStatusText: locationStatusText
+                    configuration: configuration.place,
+                    selectedPlaceID: bindings.selectedPlaceID,
+                    hideUnavailableRoutines: bindings.hideUnavailableRoutines
                 )
                 HomeFiltersClearSection(
-                    hasActiveOptionalFilters: hasActiveOptionalFilters,
-                    onClearOptionalFilters: onClearOptionalFilters
+                    hasActiveOptionalFilters: configuration.hasActiveOptionalFilters,
+                    onClearOptionalFilters: actions.onClearOptionalFilters
                 )
             }
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done", action: onDismiss)
+                    Button("Done", action: actions.onDismiss)
                 }
             }
         }

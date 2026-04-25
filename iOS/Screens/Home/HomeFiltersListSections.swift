@@ -79,23 +79,16 @@ struct HomeFiltersImportanceUrgencySection: View {
 }
 
 struct HomeFiltersPlaceSection: View {
-    let sortedRoutinePlaces: [RoutinePlace]
-    let hasSavedPlaces: Bool
-    let hasPlaceLinkedRoutines: Bool
-    let isLocationAuthorized: Bool
+    let configuration: HomeFiltersPlaceConfiguration
     @Binding var selectedPlaceID: UUID?
     @Binding var hideUnavailableRoutines: Bool
-    let placeFilterPluralNoun: String
-    let placeFilterAllTitle: String
-    let placeFilterSectionDescription: String
-    let locationStatusText: String
 
     var body: some View {
         Section("Place") {
-            if hasSavedPlaces {
-                Picker("Show \(placeFilterPluralNoun)", selection: $selectedPlaceID) {
-                    Text(placeFilterAllTitle).tag(Optional<UUID>.none)
-                    ForEach(sortedRoutinePlaces) { place in
+            if configuration.hasSavedPlaces {
+                Picker("Show \(configuration.placeFilterPluralNoun)", selection: $selectedPlaceID) {
+                    Text(configuration.placeFilterAllTitle).tag(Optional<UUID>.none)
+                    ForEach(configuration.sortedRoutinePlaces) { place in
                         Text(place.displayName).tag(Optional(place.id))
                     }
                 }
@@ -105,16 +98,16 @@ struct HomeFiltersPlaceSection: View {
                     .foregroundStyle(.secondary)
             }
 
-            if hasPlaceLinkedRoutines && isLocationAuthorized {
-                Toggle("Hide unavailable \(placeFilterPluralNoun)", isOn: $hideUnavailableRoutines)
+            if configuration.hasPlaceLinkedRoutines && configuration.isLocationAuthorized {
+                Toggle("Hide unavailable \(configuration.placeFilterPluralNoun)", isOn: $hideUnavailableRoutines)
             }
 
-            Text(placeFilterSectionDescription)
+            Text(configuration.placeFilterSectionDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            if hasPlaceLinkedRoutines {
-                Text(locationStatusText)
+            if configuration.hasPlaceLinkedRoutines {
+                Text(configuration.locationStatusText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -225,6 +225,7 @@ let package = Package(
                 "SharedCore/Sync/CloudKitSyncDiagnostics.swift",
                 "SharedCore/Sync/CloudSyncClient.swift",
                 "SharedCore/Views/HomeActiveFilterChipBar.swift",
+                "SharedCore/Views/HomeFilterControlModels.swift",
                 "SharedCore/Views/HomeFilterChipButton.swift",
                 "SharedCore/Views/HomeFilterFlowLayout.swift",
                 "SharedCore/Views/HomeTodoStateFilterChips.swift",

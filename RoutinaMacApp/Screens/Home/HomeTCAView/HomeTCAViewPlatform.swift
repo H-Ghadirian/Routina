@@ -291,27 +291,9 @@ extension HomeTCAView {
     var platformTagFilterBar: some View {
         if !availableTags.isEmpty {
             HomeMacRoutineTagFiltersView(
-                includeTagMatchMode: Binding(
-                    get: { store.includeTagMatchMode },
-                    set: { store.send(.includeTagMatchModeChanged($0)) }
-                ),
-                excludeTagMatchMode: Binding(
-                    get: { store.excludeTagMatchMode },
-                    set: { store.send(.excludeTagMatchModeChanged($0)) }
-                ),
-                selectedTags: store.selectedTags,
-                excludedTags: store.excludedTags,
-                tagSummaries: tagSummaries,
-                allTagTaskCount: allTagTaskCount,
-                suggestedRelatedTags: suggestedRelatedFilterTags,
-                availableExcludeTagSummaries: availableExcludeTagSummaries,
-                onShowAllTags: {
-                    relatedFilterTagSuggestionAnchor = nil
-                    store.send(.selectedTagsChanged([]))
-                },
-                onToggleIncludedTag: toggleIncludedTag,
-                onAddIncludedTag: addIncludedTag,
-                onToggleExcludedTag: toggleExcludedTag
+                bindings: homeFilterBindings.tagRules,
+                data: homeTagFilterData,
+                actions: homeTagFilterActions
             )
         }
     }

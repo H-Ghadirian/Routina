@@ -305,6 +305,37 @@ struct HomeTCAView: View {
         )
     }
 
+    var homeFilterBindings: HomeFilterBindings {
+        HomeFilterBindings(
+            taskListViewMode: Binding(
+                get: { store.taskListViewMode },
+                set: { store.send(.taskListViewModeChanged($0)) }
+            ),
+            selectedFilter: Binding(
+                get: { store.selectedFilter },
+                set: { store.send(.selectedFilterChanged($0)) }
+            ),
+            selectedTodoStateFilter: Binding(
+                get: { store.selectedTodoStateFilter },
+                set: { store.send(.selectedTodoStateFilterChanged($0)) }
+            ),
+            selectedImportanceUrgencyFilter: Binding(
+                get: { store.selectedImportanceUrgencyFilter },
+                set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+            ),
+            includeTagMatchMode: Binding(
+                get: { store.includeTagMatchMode },
+                set: { store.send(.includeTagMatchModeChanged($0)) }
+            ),
+            excludeTagMatchMode: Binding(
+                get: { store.excludeTagMatchMode },
+                set: { store.send(.excludeTagMatchModeChanged($0)) }
+            ),
+            selectedPlaceID: manualPlaceFilterBinding,
+            hideUnavailableRoutines: hideUnavailableRoutinesBinding
+        )
+    }
+
     var sortedRoutinePlaces: [RoutinePlace] {
         store.routinePlaces.sorted { lhs, rhs in
             lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
@@ -648,6 +679,29 @@ struct HomeTCAView: View {
         }
     }
 
+    var homeTagFilterData: HomeTagFilterData {
+        HomeTagFilterData(
+            selectedTags: store.selectedTags,
+            excludedTags: store.excludedTags,
+            tagSummaries: tagSummaries,
+            allTagTaskCount: allTagTaskCount,
+            suggestedRelatedTags: suggestedRelatedFilterTags,
+            availableExcludeTagSummaries: availableExcludeTagSummaries
+        )
+    }
+
+    var homeTagFilterActions: HomeTagFilterActions {
+        HomeTagFilterActions(
+            onShowAllTags: {
+                relatedFilterTagSuggestionAnchor = nil
+                store.send(.selectedTagsChanged([]))
+            },
+            onToggleIncludedTag: toggleIncludedTag,
+            onAddIncludedTag: addIncludedTag,
+            onToggleExcludedTag: toggleExcludedTag
+        )
+    }
+
     var suggestedRelatedFilterTags: [String] {
         let selectedTags = store.selectedTags
         guard !selectedTags.isEmpty else { return [] }
@@ -657,10 +711,6 @@ struct HomeTCAView: View {
             rules: store.relatedTagRules,
             availableTags: availableTags
         )
-    }
-
-    func isIncludedTagSelected(_ tag: String) -> Bool {
-        store.selectedTags.contains { RoutineTag.contains($0, in: [tag]) }
     }
 
     func toggleIncludedTag(_ tag: String) {
@@ -678,7 +728,7 @@ struct HomeTCAView: View {
     }
 
     func addIncludedTag(_ tag: String) {
-        guard !isIncludedTagSelected(tag) else { return }
+        guard !homeTagFilterData.isIncludedTagSelected(tag) else { return }
         var selected = store.selectedTags
         selected.insert(tag)
         store.send(.selectedTagsChanged(selected))

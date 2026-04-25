@@ -347,18 +347,9 @@ extension HomeTCAView {
         ) {
             HomeMacRoutineFiltersDetailView(
                 availableFilters: macAvailableFilters,
-                selectedFilter: Binding(
-                    get: { store.selectedFilter },
-                    set: { store.send(.selectedFilterChanged($0)) }
-                ),
-                taskListViewMode: Binding(
-                    get: { store.taskListViewMode },
-                    set: { store.send(.taskListViewModeChanged($0)) }
-                ),
-                selectedImportanceUrgencyFilter: Binding(
-                    get: { store.selectedImportanceUrgencyFilter },
-                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                ),
+                selectedFilter: homeFilterBindings.selectedFilter,
+                taskListViewMode: homeFilterBindings.taskListViewMode,
+                selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 importanceUrgencySummary: importanceUrgencyFilterSummary,
                 showsTagSection: !availableTags.isEmpty,
                 showsPlaceSection: hasPlaceAwareContent
@@ -367,8 +358,8 @@ extension HomeTCAView {
             } placeSectionContent: {
                 MacPlaceFilterPanel(
                     options: macPlaceFilterOptions,
-                    selectedPlaceID: manualPlaceFilterBinding,
-                    hideUnavailableRoutines: hideUnavailableRoutinesBinding,
+                    selectedPlaceID: homeFilterBindings.selectedPlaceID,
+                    hideUnavailableRoutines: homeFilterBindings.hideUnavailableRoutines,
                     showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
                     currentLocation: store.locationSnapshot.coordinate,
                     taskListMode: store.taskListMode,
@@ -388,10 +379,7 @@ extension HomeTCAView {
 
     private var macTodoStateFilterSection: some View {
         HomeTodoStateFilterChips(
-            selectedTodoStateFilter: Binding(
-                get: { store.selectedTodoStateFilter },
-                set: { store.send(.selectedTodoStateFilterChanged($0)) }
-            ),
+            selectedTodoStateFilter: homeFilterBindings.selectedTodoStateFilter,
             layoutStyle: .adaptiveGrid(minimumWidth: 80, spacing: 8),
             selectedForegroundColor: .white,
             unselectedForegroundColor: .primary,

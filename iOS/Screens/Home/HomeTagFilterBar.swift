@@ -1,52 +1,43 @@
 import SwiftUI
 
 struct HomeTagFilterBar: View {
-    let allTagTaskCount: Int
-    let tagSummaries: [RoutineTagSummary]
-    let selectedTags: Set<String>
-    let suggestedRelatedTags: [String]
-    let onShowAllTags: () -> Void
-    let onToggleIncludedTag: (String) -> Void
-    let onAddIncludedTag: (String) -> Void
+    let data: HomeTagFilterData
+    let actions: HomeTagFilterActions
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             tagScroll {
                 HomeFilterChipButton(
-                    title: "All Tags \(allTagTaskCount)",
-                    isSelected: selectedTags.isEmpty,
-                    action: onShowAllTags
+                    title: "All Tags \(data.allTagTaskCount)",
+                    isSelected: data.selectedTags.isEmpty,
+                    action: actions.onShowAllTags
                 )
 
-                ForEach(tagSummaries) { summary in
+                ForEach(data.tagSummaries) { summary in
                     HomeFilterChipButton(
                         title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                        isSelected: isIncludedTagSelected(summary.name)
+                        isSelected: data.isIncludedTagSelected(summary.name)
                     ) {
-                        onToggleIncludedTag(summary.name)
+                        actions.onToggleIncludedTag(summary.name)
                     }
                 }
             }
 
-            if !suggestedRelatedTags.isEmpty {
+            if !data.suggestedRelatedTags.isEmpty {
                 tagScroll {
                     Text("Suggested")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    ForEach(suggestedRelatedTags, id: \.self) { tag in
+                    ForEach(data.suggestedRelatedTags, id: \.self) { tag in
                         HomeFilterChipButton(title: "#\(tag)", isSelected: false) {
-                            onAddIncludedTag(tag)
+                            actions.onAddIncludedTag(tag)
                         }
                     }
                 }
             }
         }
         .padding(.top, -2)
-    }
-
-    private func isIncludedTagSelected(_ tag: String) -> Bool {
-        selectedTags.contains { RoutineTag.contains($0, in: [tag]) }
     }
 
     private func tagScroll<Content: View>(

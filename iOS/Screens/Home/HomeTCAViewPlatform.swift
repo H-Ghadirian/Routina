@@ -235,58 +235,35 @@ extension HomeTCAView {
 
     var homeFiltersSheet: some View {
         HomeFiltersSheetView(
+            configuration: homeFiltersSheetConfiguration,
+            bindings: homeFilterBindings,
+            tagData: homeTagFilterData,
+            actions: homeFiltersSheetActions
+        )
+    }
+
+    var homeFiltersSheetConfiguration: HomeFiltersSheetConfiguration {
+        HomeFiltersSheetConfiguration(
             taskListMode: store.taskListMode,
             availableFilters: iOSAvailableFilters,
-            taskListViewMode: Binding(
-                get: { store.taskListViewMode },
-                set: { store.send(.taskListViewModeChanged($0)) }
+            place: HomeFiltersPlaceConfiguration(
+                sortedRoutinePlaces: sortedRoutinePlaces,
+                hasSavedPlaces: hasSavedPlaces,
+                hasPlaceLinkedRoutines: hasPlaceLinkedRoutines,
+                isLocationAuthorized: store.locationSnapshot.authorizationStatus.isAuthorized,
+                placeFilterPluralNoun: placeFilterPluralNoun,
+                placeFilterAllTitle: placeFilterAllTitle,
+                placeFilterSectionDescription: placeFilterSectionDescription,
+                locationStatusText: locationStatusText
             ),
-            selectedFilter: Binding(
-                get: { store.selectedFilter },
-                set: { store.send(.selectedFilterChanged($0)) }
-            ),
-            selectedTodoStateFilter: Binding(
-                get: { store.selectedTodoStateFilter },
-                set: { store.send(.selectedTodoStateFilterChanged($0)) }
-            ),
-            selectedImportanceUrgencyFilter: Binding(
-                get: { store.selectedImportanceUrgencyFilter },
-                set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-            ),
-            includeTagMatchMode: Binding(
-                get: { store.includeTagMatchMode },
-                set: { store.send(.includeTagMatchModeChanged($0)) }
-            ),
-            excludeTagMatchMode: Binding(
-                get: { store.excludeTagMatchMode },
-                set: { store.send(.excludeTagMatchModeChanged($0)) }
-            ),
-            selectedTags: store.selectedTags,
-            excludedTags: store.excludedTags,
-            tagSummaries: tagSummaries,
-            allTagTaskCount: allTagTaskCount,
-            suggestedRelatedTags: suggestedRelatedFilterTags,
-            availableExcludeTagSummaries: availableExcludeTagSummaries,
-            sortedRoutinePlaces: sortedRoutinePlaces,
-            hasSavedPlaces: hasSavedPlaces,
-            hasPlaceLinkedRoutines: hasPlaceLinkedRoutines,
-            isLocationAuthorized: store.locationSnapshot.authorizationStatus.isAuthorized,
-            selectedPlaceID: manualPlaceFilterBinding,
-            hideUnavailableRoutines: hideUnavailableRoutinesBinding,
-            placeFilterPluralNoun: placeFilterPluralNoun,
-            placeFilterAllTitle: placeFilterAllTitle,
-            placeFilterSectionDescription: placeFilterSectionDescription,
-            locationStatusText: locationStatusText,
             importanceUrgencySummary: importanceUrgencyFilterSummary,
-            hasActiveOptionalFilters: hasActiveOptionalFilters,
-            onResetIncludedTags: {
-                relatedFilterTagSuggestionAnchor = nil
-                store.send(.selectedTagsChanged([]))
-            },
-            onToggleIncludedTag: toggleIncludedTag,
-            onAddIncludedTag: addIncludedTag,
-            onToggleExcludedTag: toggleExcludedTag,
-            isIncludedTagSelected: isIncludedTagSelected,
+            hasActiveOptionalFilters: hasActiveOptionalFilters
+        )
+    }
+
+    var homeFiltersSheetActions: HomeFiltersSheetActions {
+        HomeFiltersSheetActions(
+            tagActions: homeTagFilterActions,
             onClearOptionalFilters: {
                 store.send(.clearOptionalFilters)
             },
@@ -333,16 +310,8 @@ extension HomeTCAView {
     var platformTagFilterBar: some View {
         if !availableTags.isEmpty {
             HomeTagFilterBar(
-                allTagTaskCount: allTagTaskCount,
-                tagSummaries: tagSummaries,
-                selectedTags: store.selectedTags,
-                suggestedRelatedTags: suggestedRelatedFilterTags,
-                onShowAllTags: {
-                    relatedFilterTagSuggestionAnchor = nil
-                    store.send(.selectedTagsChanged([]))
-                },
-                onToggleIncludedTag: toggleIncludedTag,
-                onAddIncludedTag: addIncludedTag
+                data: homeTagFilterData,
+                actions: homeTagFilterActions
             )
         }
     }
