@@ -233,256 +233,67 @@ extension HomeTCAView {
         }
     }
 
-    private var importanceUrgencyMatrixSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button(store.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
-                store.send(.selectedImportanceUrgencyFilterChanged(nil))
-            }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(store.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
-
-            ImportanceUrgencyMatrixPicker(
-                selectedFilter: Binding(
-                    get: { store.selectedImportanceUrgencyFilter },
-                    set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                )
-            )
-            .frame(maxWidth: 420, alignment: .leading)
-
-            Text(importanceUrgencyFilterSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
     var homeFiltersSheet: some View {
-        NavigationStack {
-            List {
-                Section("View Mode") {
-                    Picker("List view", selection: Binding(
-                        get: { store.taskListViewMode },
-                        set: { store.send(.taskListViewModeChanged($0)) }
-                    )) {
-                        ForEach(HomeTaskListViewMode.allCases) { mode in
-                            Label(mode.title, systemImage: mode.systemImage).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Text(store.taskListViewMode == .actionable
-                        ? "Showing tasks without unfinished blockers."
-                        : "Showing every task that matches your filters.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Status") {
-                    Picker("Show \(placeFilterPluralNoun)", selection: Binding(
-                        get: { store.selectedFilter },
-                        set: { store.send(.selectedFilterChanged($0)) }
-                    )) {
-                        ForEach(iOSAvailableFilters) { filter in
-                            Text(filter.rawValue).tag(filter)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                }
-
-                if store.taskListMode == .todos || store.taskListMode == .all {
-                    Section("Todo State") {
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            tagFilterButton(title: "Any State", isSelected: store.selectedTodoStateFilter == nil) {
-                                store.send(.selectedTodoStateFilterChanged(nil))
-                            }
-                            ForEach(TodoState.filterableCases) { state in
-                                tagFilterButton(
-                                    title: state.displayTitle,
-                                    isSelected: store.selectedTodoStateFilter == state
-                                ) {
-                                    store.send(.selectedTodoStateFilterChanged(
-                                        store.selectedTodoStateFilter == state ? nil : state
-                                    ))
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                Section("Importance & Urgency") {
-                    importanceUrgencyMatrixSection
-                        .padding(.vertical, 4)
-                }
-
-                if !availableTags.isEmpty {
-                    Section("Tag Rules") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("Show tasks with")
-                                    .font(.subheadline.weight(.semibold))
-                                Spacer()
-                                Picker("Show tasks with", selection: Binding(
-                                    get: { store.includeTagMatchMode },
-                                    set: { store.send(.includeTagMatchModeChanged($0)) }
-                                )) {
-                                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                                        Text(mode.rawValue).tag(mode)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(maxWidth: 180)
-                            }
-
-                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                if store.selectedTags.isEmpty {
-                                    tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: true) {
-                                        relatedFilterTagSuggestionAnchor = nil
-                                        store.send(.selectedTagsChanged([]))
-                                    }
-                                } else {
-                                    ForEach(store.selectedTags.sorted(), id: \.self) { tag in
-                                        tagFilterButton(title: "#\(tag)", isSelected: true) {
-                                            toggleIncludedTag(tag)
-                                        }
-                                    }
-                                }
-                            }
-
-                            if !suggestedRelatedFilterTags.isEmpty {
-                                Text("Suggested")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                    ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
-                                        tagFilterButton(title: "#\(tag)", isSelected: false) {
-                                            addIncludedTag(tag)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Text("Add more")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                ForEach(tagSummaries.filter { !isIncludedTagSelected($0.name) }) { summary in
-                                    tagFilterButton(
-                                        title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                                        isSelected: false
-                                    ) {
-                                        toggleIncludedTag(summary.name)
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("Hide tasks with")
-                                    .font(.subheadline.weight(.semibold))
-                                Spacer()
-                                Picker("Hide tasks with", selection: Binding(
-                                    get: { store.excludeTagMatchMode },
-                                    set: { store.send(.excludeTagMatchModeChanged($0)) }
-                                )) {
-                                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                                        Text(mode.rawValue).tag(mode)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(maxWidth: 180)
-                            }
-
-                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                if store.excludedTags.isEmpty {
-                                    Text("No hidden tags")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    ForEach(store.excludedTags.sorted(), id: \.self) { tag in
-                                        tagFilterButton(title: "#\(tag)", isSelected: true, selectedColor: .red) {
-                                            toggleExcludedTag(tag)
-                                        }
-                                    }
-                                }
-                            }
-
-                            if !availableExcludeTagSummaries.isEmpty {
-                                Text("Add tags to hide")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                    ForEach(availableExcludeTagSummaries.filter { summary in
-                                        !store.excludedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
-                                    }) { summary in
-                                        tagFilterButton(
-                                            title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                                            isSelected: false,
-                                            selectedColor: .red
-                                        ) {
-                                            toggleExcludedTag(summary.name)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                Section("Place") {
-                    if hasSavedPlaces {
-                        Picker("Show \(placeFilterPluralNoun)", selection: manualPlaceFilterBinding) {
-                            Text(placeFilterAllTitle).tag(Optional<UUID>.none)
-                            ForEach(sortedRoutinePlaces) { place in
-                                Text(place.displayName).tag(Optional(place.id))
-                            }
-                        }
-                        .pickerStyle(.menu)
-                    } else {
-                        Text("No saved places yet")
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized {
-                        Toggle("Hide unavailable \(placeFilterPluralNoun)", isOn: hideUnavailableRoutinesBinding)
-                    }
-
-                    Text(placeFilterSectionDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if hasPlaceLinkedRoutines {
-                        Text(locationStatusText)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if hasActiveOptionalFilters {
-                    Section {
-                        Button("Clear Filters") {
-                            store.send(.clearOptionalFilters)
-                        }
-                        .foregroundStyle(.red)
-                    }
-                }
+        HomeFiltersSheetView(
+            taskListMode: store.taskListMode,
+            availableFilters: iOSAvailableFilters,
+            taskListViewMode: Binding(
+                get: { store.taskListViewMode },
+                set: { store.send(.taskListViewModeChanged($0)) }
+            ),
+            selectedFilter: Binding(
+                get: { store.selectedFilter },
+                set: { store.send(.selectedFilterChanged($0)) }
+            ),
+            selectedTodoStateFilter: Binding(
+                get: { store.selectedTodoStateFilter },
+                set: { store.send(.selectedTodoStateFilterChanged($0)) }
+            ),
+            selectedImportanceUrgencyFilter: Binding(
+                get: { store.selectedImportanceUrgencyFilter },
+                set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+            ),
+            includeTagMatchMode: Binding(
+                get: { store.includeTagMatchMode },
+                set: { store.send(.includeTagMatchModeChanged($0)) }
+            ),
+            excludeTagMatchMode: Binding(
+                get: { store.excludeTagMatchMode },
+                set: { store.send(.excludeTagMatchModeChanged($0)) }
+            ),
+            selectedTags: store.selectedTags,
+            excludedTags: store.excludedTags,
+            tagSummaries: tagSummaries,
+            allTagTaskCount: allTagTaskCount,
+            suggestedRelatedTags: suggestedRelatedFilterTags,
+            availableExcludeTagSummaries: availableExcludeTagSummaries,
+            sortedRoutinePlaces: sortedRoutinePlaces,
+            hasSavedPlaces: hasSavedPlaces,
+            hasPlaceLinkedRoutines: hasPlaceLinkedRoutines,
+            isLocationAuthorized: store.locationSnapshot.authorizationStatus.isAuthorized,
+            selectedPlaceID: manualPlaceFilterBinding,
+            hideUnavailableRoutines: hideUnavailableRoutinesBinding,
+            placeFilterPluralNoun: placeFilterPluralNoun,
+            placeFilterAllTitle: placeFilterAllTitle,
+            placeFilterSectionDescription: placeFilterSectionDescription,
+            locationStatusText: locationStatusText,
+            importanceUrgencySummary: importanceUrgencyFilterSummary,
+            hasActiveOptionalFilters: hasActiveOptionalFilters,
+            onResetIncludedTags: {
+                relatedFilterTagSuggestionAnchor = nil
+                store.send(.selectedTagsChanged([]))
+            },
+            onToggleIncludedTag: toggleIncludedTag,
+            onAddIncludedTag: addIncludedTag,
+            onToggleExcludedTag: toggleExcludedTag,
+            isIncludedTagSelected: isIncludedTagSelected,
+            onClearOptionalFilters: {
+                store.send(.clearOptionalFilters)
+            },
+            onDismiss: {
+                store.send(.isFilterSheetPresentedChanged(false))
             }
-            .navigationTitle("Filters")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        store.send(.isFilterSheetPresentedChanged(false))
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        )
     }
 
     func matchesCurrentTaskListMode(_ task: HomeFeature.RoutineDisplay) -> Bool {

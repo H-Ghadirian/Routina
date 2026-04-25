@@ -437,47 +437,18 @@ extension HomeTCAView {
     }
 
     private var macTodoStateFilterSection: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 80), spacing: 8, alignment: .leading)],
-            alignment: .leading,
-            spacing: 8
-        ) {
-            Button {
-                store.send(.selectedTodoStateFilterChanged(nil))
-            } label: {
-                Text("Any State")
-                    .font(.caption.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .foregroundStyle(store.selectedTodoStateFilter == nil ? Color.white : Color.primary)
-                    .background(
-                        Capsule()
-                            .fill(store.selectedTodoStateFilter == nil ? Color.accentColor : Color.secondary.opacity(0.10))
-                    )
-            }
-            .buttonStyle(.plain)
-
-            ForEach(TodoState.filterableCases) { todoState in
-                Button {
-                    store.send(.selectedTodoStateFilterChanged(
-                        store.selectedTodoStateFilter == todoState ? nil : todoState
-                    ))
-                } label: {
-                    Text(todoState.displayTitle)
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(store.selectedTodoStateFilter == todoState ? Color.white : Color.primary)
-                        .background(
-                            Capsule()
-                                .fill(store.selectedTodoStateFilter == todoState ? Color.accentColor : Color.secondary.opacity(0.10))
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-        }
+        HomeTodoStateFilterChips(
+            selectedTodoStateFilter: Binding(
+                get: { store.selectedTodoStateFilter },
+                set: { store.send(.selectedTodoStateFilterChanged($0)) }
+            ),
+            layoutStyle: .adaptiveGrid(minimumWidth: 80, spacing: 8),
+            selectedForegroundColor: .white,
+            unselectedForegroundColor: .primary,
+            selectedBackgroundOpacity: 1,
+            fillsAvailableWidth: true,
+            verticalPadding: 8
+        )
     }
 
     var macSettingsSidebarView: some View {

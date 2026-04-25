@@ -236,84 +236,33 @@ struct HomeTCAView: View {
 
     @ViewBuilder
     var activeFilterChipBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Button("Clear All") {
-                    store.send(.clearOptionalFilters)
-                }
-                .font(.caption.weight(.semibold))
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-
-                if store.taskListViewMode != .all {
-                    compactFilterChip(title: "View: \(store.taskListViewMode.title)", systemImage: store.taskListViewMode.systemImage) {
-                        store.send(.taskListViewModeChanged(.all))
-                    }
-                }
-
-                ForEach(store.selectedTags.sorted(), id: \.self) { tag in
-                    compactFilterChip(title: "#\(tag)") {
-                        var selected = store.selectedTags
-                        selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-                        store.send(.selectedTagsChanged(selected))
-                    }
-                }
-
-                ForEach(store.excludedTags.sorted(), id: \.self) { tag in
-                    compactFilterChip(title: "not #\(tag)", tintColor: .red) {
-                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
-                    }
-                }
-
-                if let selectedPlaceName {
-                    compactFilterChip(title: selectedPlaceName, systemImage: "mappin.and.ellipse") {
-                        store.send(.selectedManualPlaceFilterIDChanged(nil))
-                    }
-                }
-
-                if let selectedImportanceUrgencyFilterLabel {
-                    compactFilterChip(title: selectedImportanceUrgencyFilterLabel, systemImage: "square.grid.3x3.topleft.filled") {
-                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
-                    }
-                }
-
-                if store.hideUnavailableRoutines {
-                    compactFilterChip(title: "Away hidden", systemImage: "location.slash") {
-                        store.send(.hideUnavailableRoutinesChanged(false))
-                    }
-                }
+        HomeActiveFilterChipBar(
+            taskListViewMode: store.taskListViewMode,
+            selectedTags: store.selectedTags,
+            excludedTags: store.excludedTags,
+            selectedPlaceName: selectedPlaceName,
+            selectedImportanceUrgencyFilterLabel: selectedImportanceUrgencyFilterLabel,
+            hideUnavailableRoutines: store.hideUnavailableRoutines,
+            onClearAll: { store.send(.clearOptionalFilters) },
+            onClearTaskListViewMode: { store.send(.taskListViewModeChanged(.all)) },
+            onRemoveIncludedTag: { tag in
+                var selected = store.selectedTags
+                selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+                store.send(.selectedTagsChanged(selected))
+            },
+            onRemoveExcludedTag: { tag in
+                store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
+            },
+            onClearPlace: {
+                store.send(.selectedManualPlaceFilterIDChanged(nil))
+            },
+            onClearImportanceUrgency: {
+                store.send(.selectedImportanceUrgencyFilterChanged(nil))
+            },
+            onShowUnavailableRoutines: {
+                store.send(.hideUnavailableRoutinesChanged(false))
             }
-        }
-    }
-
-    func compactFilterChip(
-        title: String,
-        systemImage: String? = nil,
-        tintColor: Color = .secondary,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .font(.caption2)
-                }
-
-                Text(title)
-                    .font(.caption.weight(.medium))
-
-                Image(systemName: "xmark.circle.fill")
-                    .font(.caption2)
-            }
-            .foregroundStyle(tintColor)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(tintColor.opacity(0.12))
-            )
-        }
-        .buttonStyle(.plain)
+        )
     }
 
     var hideUnavailableRoutinesBinding: Binding<Bool> {
@@ -635,18 +584,12 @@ struct HomeTCAView: View {
         selectedColor: Color = .accentColor,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(isSelected ? selectedColor : Color.secondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? selectedColor.opacity(0.16) : Color.secondary.opacity(0.10))
-                )
-        }
-        .buttonStyle(.plain)
+        HomeFilterChipButton(
+            title: title,
+            isSelected: isSelected,
+            selectedColor: selectedColor,
+            action: action
+        )
     }
 
     @ViewBuilder

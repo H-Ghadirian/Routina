@@ -290,152 +290,29 @@ extension HomeTCAView {
     @ViewBuilder
     var platformTagFilterBar: some View {
         if !availableTags.isEmpty {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Show tasks with")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    Picker("Show tasks with", selection: Binding(
-                        get: { store.includeTagMatchMode },
-                        set: { store.send(.includeTagMatchModeChanged($0)) }
-                    )) {
-                        ForEach(RoutineTagMatchMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                        if store.selectedTags.isEmpty {
-                            HomeMacTagChipView(
-                                title: "All Tags",
-                                count: allTagTaskCount,
-                                systemImage: "tag.slash.fill",
-                                isSelected: true
-                            ) {
-                                relatedFilterTagSuggestionAnchor = nil
-                                store.send(.selectedTagsChanged([]))
-                            }
-                        } else {
-                            ForEach(store.selectedTags.sorted(), id: \.self) { tag in
-                                HomeMacTagChipView(
-                                    title: "#\(tag)",
-                                    count: tagSummaries.first(where: { RoutineTag.contains($0.name, in: [tag]) })?.linkedRoutineCount ?? 0,
-                                    systemImage: "tag.fill",
-                                    isSelected: true
-                                ) {
-                                    toggleIncludedTag(tag)
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                if !suggestedRelatedFilterTags.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Suggested Related Tags")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
-                                HomeMacTagChipView(
-                                    title: "#\(tag)",
-                                    count: tagSummaries.first(where: {
-                                        RoutineTag.contains($0.name, in: [tag])
-                                    })?.linkedRoutineCount ?? 0,
-                                    systemImage: "tag.fill",
-                                    isSelected: false
-                                ) {
-                                    addIncludedTag(tag)
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Add more")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                        ForEach(tagSummaries.filter { !isIncludedTagSelected($0.name) }) { summary in
-                            HomeMacTagChipView(
-                                title: "#\(summary.name)",
-                                count: summary.linkedRoutineCount,
-                                systemImage: "tag.fill",
-                                isSelected: false
-                            ) {
-                                toggleIncludedTag(summary.name)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Hide tasks with")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    Picker("Hide tasks with", selection: Binding(
-                        get: { store.excludeTagMatchMode },
-                        set: { store.send(.excludeTagMatchModeChanged($0)) }
-                    )) {
-                        ForEach(RoutineTagMatchMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                        if store.excludedTags.isEmpty {
-                            Text("No hidden tags")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(store.excludedTags.sorted(), id: \.self) { tag in
-                                HomeMacTagChipView(
-                                    title: "#\(tag)",
-                                    count: tagSummaries.first(where: { RoutineTag.contains($0.name, in: [tag]) })?.linkedRoutineCount ?? 0,
-                                    systemImage: "tag.slash.fill",
-                                    isSelected: true,
-                                    selectedColor: .red
-                                ) {
-                                    toggleExcludedTag(tag)
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    if !availableExcludeTagSummaries.isEmpty {
-                        Text("Add tags to hide")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                            ForEach(availableExcludeTagSummaries.filter { summary in
-                                !store.excludedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
-                            }) { summary in
-                                HomeMacTagChipView(
-                                    title: "#\(summary.name)",
-                                    count: summary.linkedRoutineCount,
-                                    systemImage: "tag.slash.fill",
-                                    isSelected: false,
-                                    selectedColor: .red
-                                ) {
-                                    toggleExcludedTag(summary.name)
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-            }
+            HomeMacRoutineTagFiltersView(
+                includeTagMatchMode: Binding(
+                    get: { store.includeTagMatchMode },
+                    set: { store.send(.includeTagMatchModeChanged($0)) }
+                ),
+                excludeTagMatchMode: Binding(
+                    get: { store.excludeTagMatchMode },
+                    set: { store.send(.excludeTagMatchModeChanged($0)) }
+                ),
+                selectedTags: store.selectedTags,
+                excludedTags: store.excludedTags,
+                tagSummaries: tagSummaries,
+                allTagTaskCount: allTagTaskCount,
+                suggestedRelatedTags: suggestedRelatedFilterTags,
+                availableExcludeTagSummaries: availableExcludeTagSummaries,
+                onShowAllTags: {
+                    relatedFilterTagSuggestionAnchor = nil
+                    store.send(.selectedTagsChanged([]))
+                },
+                onToggleIncludedTag: toggleIncludedTag,
+                onAddIncludedTag: addIncludedTag,
+                onToggleExcludedTag: toggleExcludedTag
+            )
         }
     }
 
