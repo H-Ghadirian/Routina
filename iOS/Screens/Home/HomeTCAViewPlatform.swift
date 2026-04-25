@@ -332,44 +332,18 @@ extension HomeTCAView {
     @ViewBuilder
     var platformTagFilterBar: some View {
         if !availableTags.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        tagFilterButton(title: "All Tags \(allTagTaskCount)", isSelected: store.selectedTags.isEmpty) {
-                            relatedFilterTagSuggestionAnchor = nil
-                            store.send(.selectedTagsChanged([]))
-                        }
-
-                        ForEach(tagSummaries) { summary in
-                            tagFilterButton(
-                                title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                                isSelected: isIncludedTagSelected(summary.name)
-                            ) {
-                                toggleIncludedTag(summary.name)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-
-                if !suggestedRelatedFilterTags.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            Text("Suggested")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-
-                            ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
-                                tagFilterButton(title: "#\(tag)", isSelected: false) {
-                                    addIncludedTag(tag)
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
-            }
-            .padding(.top, -2)
+            HomeTagFilterBar(
+                allTagTaskCount: allTagTaskCount,
+                tagSummaries: tagSummaries,
+                selectedTags: store.selectedTags,
+                suggestedRelatedTags: suggestedRelatedFilterTags,
+                onShowAllTags: {
+                    relatedFilterTagSuggestionAnchor = nil
+                    store.send(.selectedTagsChanged([]))
+                },
+                onToggleIncludedTag: toggleIncludedTag,
+                onAddIncludedTag: addIncludedTag
+            )
         }
     }
 

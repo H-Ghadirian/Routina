@@ -81,54 +81,11 @@ extension HomeTCAView {
     }
 
     var macActiveTaskFiltersSummary: String? {
-        let summary = summarizedFilterLabels(from: taskFilterLabels, maxVisibleCount: 4)
-        return summaryWithResultCount(summary, resultCount: macVisibleTaskResultCount)
+        homeFilterPresentation.activeTaskFiltersSummary(resultCount: macVisibleTaskResultCount, maxVisibleCount: 4)
     }
 
     var macSidebarSearchFiltersSummary: String? {
         isMacTimelineMode ? macActiveTimelineFiltersSummary : macActiveTaskFiltersSummary
-    }
-
-    private var taskFilterLabels: [String] {
-        var labels: [String] = []
-
-        if store.selectedFilter != .all {
-            labels.append(store.selectedFilter.rawValue)
-        }
-
-        if store.taskListViewMode != .all {
-            labels.append(store.taskListViewMode.title)
-        }
-
-        if let todoState = store.selectedTodoStateFilter {
-            labels.append(todoState.displayTitle)
-        }
-
-        if !store.selectedTags.isEmpty {
-            labels.append("\(store.includeTagMatchMode.rawValue) \(store.selectedTags.count) tags")
-        }
-
-        if !store.excludedTags.isEmpty {
-            if store.excludedTags.count == 1, let tag = store.excludedTags.first {
-                labels.append("not #\(tag)")
-            } else {
-                labels.append("not \(store.excludedTags.count) tags")
-            }
-        }
-
-        if let selectedPlaceName {
-            labels.append(selectedPlaceName)
-        }
-
-        if let selectedImportanceUrgencyFilterLabel {
-            labels.append(selectedImportanceUrgencyFilterLabel)
-        }
-
-        if store.hideUnavailableRoutines {
-            labels.append("Away hidden")
-        }
-
-        return labels
     }
 
     var macVisibleTaskResultCount: Int {
@@ -148,18 +105,11 @@ extension HomeTCAView {
     }
 
     func summarizedFilterLabels(from labels: [String], maxVisibleCount: Int) -> String {
-        guard !labels.isEmpty else { return "" }
-        let visibleLabels = Array(labels.prefix(maxVisibleCount))
-        let remainderCount = labels.count - visibleLabels.count
-        let baseSummary = visibleLabels.joined(separator: " • ")
-        guard remainderCount > 0 else { return baseSummary }
-        return "\(baseSummary) +\(remainderCount)"
+        HomeFilterPresentation.summarizedFilterLabels(from: labels, maxVisibleCount: maxVisibleCount)
     }
 
     func summaryWithResultCount(_ summary: String, resultCount: Int) -> String? {
-        guard !summary.isEmpty else { return nil }
-        let resultLabel = resultCount == 1 ? "1 result" : "\(resultCount) results"
-        return "\(summary) • \(resultLabel)"
+        HomeFilterPresentation.summaryWithResultCount(summary, resultCount: resultCount)
     }
 
     func clearAllMacFilters() {

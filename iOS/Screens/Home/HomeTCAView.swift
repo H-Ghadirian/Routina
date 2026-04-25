@@ -224,7 +224,7 @@ struct HomeTCAView: View {
             selectedTags: store.selectedTags,
             excludedTags: store.excludedTags,
             selectedPlaceName: selectedPlaceName,
-            selectedImportanceUrgencyFilterLabel: selectedImportanceUrgencyFilterLabel,
+            selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             onClearAll: { store.send(.clearOptionalFilters) },
             onClearTaskListViewMode: { store.send(.taskListViewModeChanged(.all)) },
@@ -245,6 +245,25 @@ struct HomeTCAView: View {
             onShowUnavailableRoutines: {
                 store.send(.hideUnavailableRoutinesChanged(false))
             }
+        )
+    }
+
+    var homeFilterPresentation: HomeFilterPresentation {
+        HomeFilterPresentation(
+            taskListKind: store.taskListMode.filterTaskListKind,
+            selectedFilter: store.selectedFilter,
+            taskListViewMode: store.taskListViewMode,
+            selectedTodoStateFilter: store.selectedTodoStateFilter,
+            selectedTags: store.selectedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            excludedTags: store.excludedTags,
+            selectedPlaceName: selectedPlaceName,
+            hasSelectedPlaceFilter: store.selectedManualPlaceFilterID != nil,
+            selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            hideUnavailableRoutines: store.hideUnavailableRoutines,
+            hasSavedPlaces: hasSavedPlaces,
+            awayRoutineCount: store.awayRoutineDisplays.count,
+            locationAuthorizationStatus: store.locationSnapshot.authorizationStatus
         )
     }
 
@@ -281,19 +300,11 @@ struct HomeTCAView: View {
     }
 
     var activeOptionalFilterCount: Int {
-        var count = 0
-        if !store.selectedTags.isEmpty { count += 1 }
-        count += store.excludedTags.count
-        if store.selectedManualPlaceFilterID != nil { count += 1 }
-        if store.selectedImportanceUrgencyFilter != nil { count += 1 }
-        if store.selectedTodoStateFilter != nil { count += 1 }
-        if store.taskListViewMode != .all { count += 1 }
-        if store.hideUnavailableRoutines { count += 1 }
-        return count
+        homeFilterPresentation.activeOptionalFilterCount
     }
 
     var hasActiveOptionalFilters: Bool {
-        activeOptionalFilterCount > 0
+        homeFilterPresentation.hasActiveOptionalFilters
     }
 
     var hasSavedPlaces: Bool {
@@ -309,72 +320,31 @@ struct HomeTCAView: View {
     }
 
     var manualPlaceFilterDescription: String {
-        guard let placeID = store.selectedManualPlaceFilterID,
-              let place = store.routinePlaces.first(where: { $0.id == placeID })
-        else {
-            return "Choose a saved place to show only \(placeFilterPluralNoun) linked to that place."
-        }
-        return "Showing only \(placeFilterPluralNoun) linked to \(place.displayName)."
+        homeFilterPresentation.manualPlaceFilterDescription
     }
 
     var placeFilterSectionDescription: String {
-        if hasSavedPlaces {
-            return manualPlaceFilterDescription
-        }
-        return "Save a place in Settings, then link it to a task to filter by place here."
+        homeFilterPresentation.placeFilterSectionDescription
     }
 
     var placeFilterPluralNoun: String {
-        switch store.taskListMode {
-        case .all:
-            return "tasks"
-        case .routines:
-            return "routines"
-        case .todos:
-            return "todos"
-        }
+        homeFilterPresentation.placeFilterPluralNoun
     }
 
     var placeFilterAllTitle: String {
-        switch store.taskListMode {
-        case .all:
-            return "All tasks"
-        case .routines:
-            return "All routines"
-        case .todos:
-            return "All todos"
-        }
+        homeFilterPresentation.placeFilterAllTitle
     }
 
     var selectedImportanceUrgencyFilterLabel: String? {
-        guard let filter = store.selectedImportanceUrgencyFilter else { return nil }
-        return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
+        homeFilterPresentation.selectedImportanceUrgencyFilterLabel
     }
 
     var importanceUrgencyFilterSummary: String {
-        guard let filter = store.selectedImportanceUrgencyFilter else {
-            return "Choose a cell to show tasks that meet or exceed that importance and urgency."
-        }
-        return "Showing tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
+        homeFilterPresentation.importanceUrgencyFilterSummary
     }
 
     var locationStatusText: String {
-        switch store.locationSnapshot.authorizationStatus {
-        case .authorizedAlways, .authorizedWhenInUse:
-            if store.awayRoutineDisplays.isEmpty {
-                return "All place-linked routines are currently available."
-            }
-            if store.hideUnavailableRoutines {
-                return "\(store.awayRoutineDisplays.count) routines are hidden because you are away from their saved place."
-            }
-            return "\(store.awayRoutineDisplays.count) routines are away from their saved place and shown below."
-        case .notDetermined:
-            return "Allow location access to automatically separate place-based routines. Until then they stay visible."
-        case .disabled:
-            return "Location services are disabled on this device, so place-based routines stay visible."
-        case .restricted, .denied:
-            return "Location access is off, so place-based routines stay visible."
-        }
+        homeFilterPresentation.locationStatusText
     }
 
     func routineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
@@ -579,20 +549,6 @@ struct HomeTCAView: View {
             .background(tint.opacity(0.12), in: Capsule())
     }
 
-    func tagFilterButton(
-        title: String,
-        isSelected: Bool,
-        selectedColor: Color = .accentColor,
-        action: @escaping () -> Void
-    ) -> some View {
-        HomeFilterChipButton(
-            title: title,
-            isSelected: isSelected,
-            selectedColor: selectedColor,
-            action: action
-        )
-    }
-
     @ViewBuilder
     func emptyStateView(
         title: String,
@@ -781,6 +737,19 @@ struct HomeTCAView: View {
             defer { isRefreshScheduled = false }
             await Task.yield()
             store.send(.onAppear)
+        }
+    }
+}
+
+private extension HomeFeature.TaskListMode {
+    var filterTaskListKind: HomeFilterTaskListKind {
+        switch self {
+        case .all:
+            return .all
+        case .routines:
+            return .routines
+        case .todos:
+            return .todos
         }
     }
 }
