@@ -865,34 +865,13 @@ struct HomeFeature {
                 return .none
 
             case let .addRoutineSheet(.delegate(.didSave(request))):
-                return .run { @MainActor send in
-                    do {
-                        let context = self.modelContext()
-                        guard let trimmedName = RoutineTask.trimmedName(request.name), !trimmedName.isEmpty else {
-                            send(.routineSaveFailed)
-                            return
-                        }
-
-                        if try HomeDeduplicationSupport.hasDuplicateRoutineName(trimmedName, in: context) {
-                            send(.routineSaveFailed)
-                            return
-                        }
-
-                        let newRoutine = HomeAddRoutineSupport.makeRoutine(
-                            from: request,
-                            name: trimmedName,
-                            scheduleAnchor: self.now
-                        )
-                        context.insert(newRoutine)
-                        for attachment in HomeAddRoutineSupport.makeAttachments(from: request, taskID: newRoutine.id) {
-                            context.insert(attachment)
-                        }
-                        try context.save()
-                        send(.routineSavedSuccessfully(newRoutine))
-                    } catch {
-                        send(.routineSaveFailed)
-                    }
-                }
+                return HomeAddRoutineSupport.saveRoutine(
+                    from: request,
+                    scheduleAnchor: { self.now },
+                    modelContext: { self.modelContext() },
+                    savedAction: { .routineSavedSuccessfully($0) },
+                    failedAction: { .routineSaveFailed }
+                )
 
             case let .routineSavedSuccessfully(task):
                 state.routineTasks.append(task.detachedCopy())

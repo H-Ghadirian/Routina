@@ -1,4 +1,6 @@
+import ComposableArchitecture
 import Foundation
+import SwiftData
 
 enum HomeAddRoutineSupport {
     static func makeAddRoutineState(
@@ -77,6 +79,43 @@ enum HomeAddRoutineSupport {
                 fileName: item.fileName,
                 data: item.data
             )
+        }
+    }
+
+    static func saveRoutine<Action>(
+        from request: AddRoutineSaveRequest,
+        scheduleAnchor: @escaping @MainActor @Sendable () -> Date,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        savedAction: @escaping @Sendable (RoutineTask) -> Action,
+        failedAction: @escaping @Sendable () -> Action
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                guard let trimmedName = RoutineTask.trimmedName(request.name), !trimmedName.isEmpty else {
+                    send(failedAction())
+                    return
+                }
+
+                if try HomeDeduplicationSupport.hasDuplicateRoutineName(trimmedName, in: context) {
+                    send(failedAction())
+                    return
+                }
+
+                let newRoutine = makeRoutine(
+                    from: request,
+                    name: trimmedName,
+                    scheduleAnchor: scheduleAnchor()
+                )
+                context.insert(newRoutine)
+                for attachment in makeAttachments(from: request, taskID: newRoutine.id) {
+                    context.insert(attachment)
+                }
+                try context.save()
+                send(savedAction(newRoutine))
+            } catch {
+                send(failedAction())
+            }
         }
     }
 }
