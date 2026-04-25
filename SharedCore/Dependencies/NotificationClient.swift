@@ -7,8 +7,11 @@ struct NotificationPayload: Sendable {
     let emoji: String?
     let interval: Int
     let lastDone: Date?
+    let dueDate: Date?
     let triggerDate: Date?
+    let isOneOffTask: Bool
     let isArchived: Bool
+    let usesExactTime: Bool
     let isChecklistDriven: Bool
     let isChecklistCompletionRoutine: Bool
     let nextDueChecklistItemTitle: String?

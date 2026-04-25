@@ -164,6 +164,7 @@ struct TaskDetailTCAView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
+                notificationDisabledWarningSection
                 importanceUrgencyMatrixCard
                 if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                     calendarSection
@@ -192,6 +193,7 @@ struct TaskDetailTCAView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
+                notificationDisabledWarningSection
                 importanceUrgencyMatrixCard
                 calendarSection
                 routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
@@ -363,6 +365,46 @@ struct TaskDetailTCAView: View {
         }
         .padding(16)
         .detailCardStyle()
+    }
+
+    @ViewBuilder
+    private var notificationDisabledWarningSection: some View {
+        if let warningText = store.notificationDisabledWarningText,
+           let actionTitle = store.notificationDisabledWarningActionTitle {
+            Button {
+                store.send(.notificationDisabledWarningTapped)
+            } label: {
+                HStack(alignment: .center, spacing: 10) {
+                    Image(systemName: "bell.slash.fill")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+                        .frame(width: 22)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("No notification will fire")
+                            .font(.subheadline.weight(.semibold))
+                        Text(warningText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(actionTitle)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.orange.opacity(0.8))
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(.orange.opacity(0.25), lineWidth: 1)
+            )
+        }
     }
 
     private var todoHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {

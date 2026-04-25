@@ -14,6 +14,169 @@ import Testing
 @MainActor
 struct TaskDetailFeatureCompletionTests {
     @Test
+    func dueDateMetadataText_includesTimeForTodoDeadline() {
+        let deadline = makeDate("2026-04-25T13:00:00Z")
+        let task = RoutineTask(
+            name: "Submit report",
+            deadline: deadline,
+            scheduleMode: .oneOff
+        )
+
+        let state = TaskDetailFeature.State(task: task)
+
+        #expect(state.dueDateMetadataText != nil)
+        #expect(state.dueDateMetadataText != deadline.formatted(date: .abbreviated, time: .omitted))
+    }
+
+    @Test
+    func dueDateMetadataText_includesTimeForExactWeeklyRoutine() throws {
+        let task = RoutineTask(
+            name: "Planning",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: 2,
+                at: RoutineTimeOfDay(hour: 13, minute: 0)
+            ),
+            scheduleAnchor: makeDate("2026-04-25T09:00:00Z")
+        )
+
+        let state = TaskDetailFeature.State(task: task)
+        let dueDate = try #require(state.resolvedDueDate)
+
+        #expect(state.dueDateMetadataText != nil)
+        #expect(state.dueDateMetadataText != dueDate.formatted(date: .abbreviated, time: .omitted))
+    }
+
+    @Test
+    func notificationDisabledWarningText_showsWhenAppNotificationsAreOffForTodoDeadline() {
+        let task = RoutineTask(
+            name: "Submit report",
+            deadline: Date().addingTimeInterval(3_600),
+            scheduleMode: .oneOff
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.hasLoadedNotificationStatus = true
+        state.appNotificationsEnabled = false
+        state.systemNotificationsAuthorized = true
+
+        #expect(state.notificationDisabledWarningText?.contains("Notifications are off in Routina") == true)
+        #expect(state.notificationDisabledWarningActionTitle == "Turn On Notifications")
+    }
+
+    @Test
+    func notificationDisabledWarningText_showsWhenSystemNotificationsAreDisabledForExactRoutine() {
+        let task = RoutineTask(
+            name: "Planning",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: 2,
+                at: RoutineTimeOfDay(hour: 13, minute: 0)
+            ),
+            scheduleAnchor: Date()
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.hasLoadedNotificationStatus = true
+        state.appNotificationsEnabled = true
+        state.systemNotificationsAuthorized = false
+
+        #expect(state.notificationDisabledWarningText?.contains("system settings") == true)
+        #expect(state.notificationDisabledWarningActionTitle == "Open System Settings")
+    }
+
+    @Test
+    func notificationDisabledWarningText_hidesForUntimedRoutine() {
+        let task = RoutineTask(
+            name: "Water plants",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 3),
+            scheduleAnchor: Date()
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.hasLoadedNotificationStatus = true
+        state.appNotificationsEnabled = false
+        state.systemNotificationsAuthorized = false
+
+        #expect(state.notificationDisabledWarningText == nil)
+    }
+
+    @Test
+    func notificationDisabledWarningTapped_enablesAppNotificationsAndSchedulesTaskWhenAuthorized() async {
+        let now = makeDate("2026-04-25T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Submit report",
+            deadline: makeDate("2026-04-25T13:00:00Z"),
+            scheduleMode: .oneOff
+        )
+        let enabledPreference = LockIsolated<Bool?>(nil)
+        let scheduledIDs = LockIsolated<[String]>([])
+        var initialState = TaskDetailFeature.State(task: task)
+        initialState.hasLoadedNotificationStatus = true
+        initialState.appNotificationsEnabled = false
+        initialState.systemNotificationsAuthorized = true
+        let store = TestStore(
+            initialState: initialState
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.date.now = now
+            $0.calendar = calendar
+            $0.appSettingsClient.setNotificationsEnabled = { value in
+                enabledPreference.setValue(value)
+            }
+            $0.notificationClient.requestAuthorizationIfNeeded = { true }
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.notificationDisabledWarningTapped)
+        await store.receive(.notificationStatusLoaded(appEnabled: true, systemAuthorized: true)) {
+            $0.hasLoadedNotificationStatus = true
+            $0.appNotificationsEnabled = true
+            $0.systemNotificationsAuthorized = true
+        }
+
+        #expect(enabledPreference.value == true)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func notificationDisabledWarningTapped_opensSystemSettingsWhenSystemNotificationsAreDisabled() async {
+        let settingsURL = URL(string: "app-settings:notifications")!
+        let openedURL = LockIsolated<URL?>(nil)
+        let task = RoutineTask(
+            name: "Planning",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: 2,
+                at: RoutineTimeOfDay(hour: 13, minute: 0)
+            ),
+            scheduleAnchor: Date()
+        )
+        var initialState = TaskDetailFeature.State(task: task)
+        initialState.hasLoadedNotificationStatus = true
+        initialState.appNotificationsEnabled = true
+        initialState.systemNotificationsAuthorized = false
+        let store = TestStore(
+            initialState: initialState
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.urlOpenerClient.notificationSettingsURL = { settingsURL }
+            $0.urlOpenerClient.open = { url in
+                openedURL.setValue(url)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.notificationDisabledWarningTapped)
+
+        #expect(openedURL.value == settingsURL)
+    }
+
+    @Test
     func confirmAssumedPastDays_includesTodayWhenTodayIsAssumedDone() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T21:30:00Z")

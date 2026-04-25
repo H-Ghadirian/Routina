@@ -40,8 +40,8 @@ extension NotificationClient {
 
             let request = UNNotificationRequest(
                 identifier: payload.identifier,
-                content: createNotificationContent(for: payload),
-                trigger: createNotificationTrigger(for: payload)
+                content: NotificationCoordinator.createNotificationContent(for: payload),
+                trigger: NotificationCoordinator.createNotificationTrigger(for: payload)
             )
             try? await UNUserNotificationCenter.current().add(request)
         },
@@ -65,7 +65,7 @@ extension NotificationClient {
             case .denied:
                 return false
             case .notDetermined:
-                return (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+                return (try? await center.requestAuthorization(options: notificationAuthorizationOptions())) ?? false
             @unknown default:
                 return false
             }
@@ -84,49 +84,11 @@ extension NotificationClient {
         }
     )
 
-    private static func createNotificationTrigger(for payload: NotificationPayload) -> UNCalendarNotificationTrigger {
-        let calendar = Calendar.current
-        let now = Date()
-
-        let targetDate: Date
-        if let triggerDate = payload.triggerDate {
-            targetDate = triggerDate
-        } else {
-            let dueDate = calendar.date(
-                byAdding: .day,
-                value: payload.interval,
-                to: payload.lastDone ?? now
-            ) ?? now
-            let preferredReminderDate = NotificationPreferences.reminderDate(on: dueDate, calendar: calendar)
-            targetDate = preferredReminderDate > now
-                ? preferredReminderDate
-                : NotificationPreferences.nextReminderDate(after: now, calendar: calendar)
+    private static func notificationAuthorizationOptions() -> UNAuthorizationOptions {
+        var options: UNAuthorizationOptions = [.alert, .sound, .badge]
+        if #available(iOS 15.0, *) {
+            options.insert(.timeSensitive)
         }
-
-        let safeDate = targetDate > now ? targetDate : now.addingTimeInterval(60)
-        let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: safeDate)
-        return UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-    }
-
-    private static func createNotificationContent(for payload: NotificationPayload) -> UNMutableNotificationContent {
-        let content = UNMutableNotificationContent()
-        let trimmedName = payload.name?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let titleName = (trimmedName?.isEmpty == false ? trimmedName : nil) ?? "Your routine"
-        let trimmedEmoji = payload.emoji?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let emojiPrefix = (trimmedEmoji?.isEmpty == false ? trimmedEmoji : nil).map { "\($0) " } ?? ""
-
-        content.title = "\(emojiPrefix)\(titleName) is due"
-        if payload.isChecklistDriven, let nextDueChecklistItemTitle = payload.nextDueChecklistItemTitle {
-            content.body = "\(nextDueChecklistItemTitle) is due today. Tap Done to buy due items or Snooze until tomorrow."
-        } else if payload.isChecklistDriven {
-            content.body = "Checklist items are due today. Tap Done to buy due items or Snooze until tomorrow."
-        } else if payload.isChecklistCompletionRoutine {
-            content.body = "Due today. Open the app to complete each checklist item."
-        } else {
-            content.body = "Due today. Tap Done to reset the timer or Snooze until tomorrow."
-        }
-        content.sound = .default
-        content.categoryIdentifier = NotificationCoordinator.categoryIdentifier
-        return content
+        return options
     }
 }

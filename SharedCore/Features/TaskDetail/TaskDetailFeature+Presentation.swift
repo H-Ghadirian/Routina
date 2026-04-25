@@ -228,10 +228,39 @@ extension TaskDetailFeature.State {
     }
 
     var dueDateMetadataText: String? {
-        guard let dueDate = resolvedDueDate, !Calendar.current.isDateInToday(dueDate) else {
+        guard let dueDate = resolvedDueDate else {
             return nil
         }
+        if task.isOneOffTask || task.recurrenceRule.usesExplicitTimeOfDay {
+            return dueDate.formatted(date: .abbreviated, time: .shortened)
+        }
+        guard !Calendar.current.isDateInToday(dueDate) else { return nil }
         return dueDate.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    var notificationDisabledWarningText: String? {
+        guard hasLoadedNotificationStatus else { return nil }
+        guard expectsClockTimeNotification else { return nil }
+        if !appNotificationsEnabled {
+            return "Notifications are off in Routina. You won't be notified for this scheduled time."
+        }
+        if !systemNotificationsAuthorized {
+            return "Notifications are disabled in system settings. You won't be notified for this scheduled time."
+        }
+        return nil
+    }
+
+    var notificationDisabledWarningActionTitle: String? {
+        guard notificationDisabledWarningText != nil else { return nil }
+        return appNotificationsEnabled ? "Open System Settings" : "Turn On Notifications"
+    }
+
+    var expectsClockTimeNotification: Bool {
+        if task.isOneOffTask {
+            return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
+        }
+        guard task.recurrenceRule.usesExplicitTimeOfDay else { return false }
+        return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
     }
 
     var shouldShowSelectedDateMetadata: Bool {

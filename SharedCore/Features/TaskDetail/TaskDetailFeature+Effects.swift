@@ -15,6 +15,14 @@ extension TaskDetailFeature {
                     .sorted { $0.createdAt < $1.createdAt }
                     .map { AttachmentItem(id: $0.id, fileName: $0.fileName, data: $0.data) }
                 send(.attachmentsLoaded(items))
+                let appNotificationsEnabled = appSettingsClient.notificationsEnabled()
+                let systemNotificationsAuthorized = await notificationClient.systemNotificationsAuthorized()
+                send(
+                    .notificationStatusLoaded(
+                        appEnabled: appNotificationsEnabled,
+                        systemAuthorized: systemNotificationsAuthorized
+                    )
+                )
             } catch {
                 print("Error loading logs: \(error)")
             }

@@ -82,6 +82,9 @@ struct TaskDetailFeature: Reducer {
         var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
         var editColor: RoutineTaskColor = .none
         var isBlockedStateConfirmationPresented: Bool = false
+        var hasLoadedNotificationStatus: Bool = false
+        var appNotificationsEnabled: Bool = true
+        var systemNotificationsAuthorized: Bool = true
 
         var candidateRecurrenceRule: RoutineRecurrenceRule {
             let fallbackInterval = editScheduleMode == .oneOff
@@ -206,6 +209,8 @@ struct TaskDetailFeature: Reducer {
         case pressureChanged(RoutineTaskPressure)
         case setBlockedStateConfirmation(Bool)
         case confirmBlockedStateCompletion
+        case notificationDisabledWarningTapped
+        case notificationStatusLoaded(appEnabled: Bool, systemAuthorized: Bool)
         case onAppear
     }
 
@@ -214,6 +219,7 @@ struct TaskDetailFeature: Reducer {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     @Dependency(\.appSettingsClient) var appSettingsClient
+    @Dependency(\.urlOpenerClient) var urlOpenerClient
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
@@ -929,6 +935,42 @@ struct TaskDetailFeature: Reducer {
         case .confirmBlockedStateCompletion:
             state.isBlockedStateConfirmationPresented = false
             return reduce(into: &state, action: .markAsDone)
+
+        case .notificationDisabledWarningTapped:
+            if !state.appNotificationsEnabled {
+                let notificationPayload = NotificationCoordinator.shouldScheduleNotification(
+                    for: state.task,
+                    referenceDate: now,
+                    calendar: calendar
+                )
+                    ? NotificationCoordinator.notificationPayload(
+                        for: state.task,
+                        referenceDate: now,
+                        calendar: calendar
+                    )
+                    : nil
+                return .run { @MainActor send in
+                    let granted = await notificationClient.requestAuthorizationIfNeeded()
+                    appSettingsClient.setNotificationsEnabled(granted)
+                    if granted, let notificationPayload {
+                        await notificationClient.schedule(notificationPayload)
+                    } else if let url = urlOpenerClient.notificationSettingsURL() {
+                        urlOpenerClient.open(url)
+                    }
+                    await send(.notificationStatusLoaded(appEnabled: granted, systemAuthorized: granted))
+                }
+            }
+            guard !state.systemNotificationsAuthorized else { return .none }
+            return .run { @MainActor _ in
+                guard let url = urlOpenerClient.notificationSettingsURL() else { return }
+                urlOpenerClient.open(url)
+            }
+
+        case let .notificationStatusLoaded(appEnabled, systemAuthorized):
+            state.hasLoadedNotificationStatus = true
+            state.appNotificationsEnabled = appEnabled
+            state.systemNotificationsAuthorized = systemAuthorized
+            return .none
 
         case .onAppear:
             if state.selectedDate == nil {
