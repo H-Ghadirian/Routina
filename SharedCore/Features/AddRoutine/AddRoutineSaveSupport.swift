@@ -64,7 +64,7 @@ struct AddRoutineDraftFinalizer {
     }
 }
 
-struct AddRoutineSaveRequest {
+struct AddRoutineSaveRequest: Equatable {
     let name: String
     let frequencyInDays: Int
     let recurrenceRule: RoutineRecurrenceRule
@@ -87,6 +87,54 @@ struct AddRoutineSaveRequest {
     let autoAssumeDailyDone: Bool
     let estimatedDurationMinutes: Int?
     let storyPoints: Int?
+
+    init(
+        name: String,
+        frequencyInDays: Int,
+        recurrenceRule: RoutineRecurrenceRule,
+        emoji: String,
+        notes: String? = nil,
+        link: String? = nil,
+        deadline: Date? = nil,
+        priority: RoutineTaskPriority,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        imageData: Data? = nil,
+        selectedPlaceID: UUID? = nil,
+        tags: [String] = [],
+        relationships: [RoutineTaskRelationship] = [],
+        steps: [RoutineStep] = [],
+        scheduleMode: RoutineScheduleMode,
+        checklistItems: [RoutineChecklistItem] = [],
+        attachments: [AttachmentItem] = [],
+        color: RoutineTaskColor,
+        autoAssumeDailyDone: Bool = false,
+        estimatedDurationMinutes: Int? = nil,
+        storyPoints: Int? = nil
+    ) {
+        self.name = name
+        self.frequencyInDays = frequencyInDays
+        self.recurrenceRule = recurrenceRule
+        self.emoji = emoji
+        self.notes = notes
+        self.link = link
+        self.deadline = deadline
+        self.priority = priority
+        self.importance = importance
+        self.urgency = urgency
+        self.imageData = imageData
+        self.selectedPlaceID = selectedPlaceID
+        self.tags = tags
+        self.relationships = relationships
+        self.steps = steps
+        self.scheduleMode = scheduleMode
+        self.checklistItems = checklistItems
+        self.attachments = attachments
+        self.color = color
+        self.autoAssumeDailyDone = autoAssumeDailyDone
+        self.estimatedDurationMinutes = estimatedDurationMinutes
+        self.storyPoints = storyPoints
+    }
 
     init?(state: AddRoutineFeature.State) {
         guard !state.isSaveDisabled else { return nil }

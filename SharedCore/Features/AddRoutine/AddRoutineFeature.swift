@@ -89,13 +89,13 @@ struct AddRoutineFeature: Reducer {
 
         enum Delegate: Equatable {
             case didCancel
-            case didSave(String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool, Int?, Int?)
+            case didSave(AddRoutineSaveRequest)
         }
     }
 
     @Dependency(\.date.now) var now
 
-    var onSave: (String, Int, RoutineRecurrenceRule, String, String?, String?, Date?, RoutineTaskPriority, RoutineTaskImportance, RoutineTaskUrgency, Data?, UUID?, [String], [RoutineTaskRelationship], [RoutineStep], RoutineScheduleMode, [RoutineChecklistItem], [AttachmentItem], RoutineTaskColor, Bool, Int?, Int?) -> Effect<Action>
+    var onSave: (AddRoutineSaveRequest) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -494,30 +494,7 @@ struct AddRoutineFeature: Reducer {
             AddRoutineDraftFinalizer(now: now).apply(to: &state)
             AddRoutineValidationEditor.refreshNameValidation(state: &state)
             guard let request = AddRoutineSaveRequest(state: state) else { return .none }
-            return onSave(
-                request.name,
-                request.frequencyInDays,
-                request.recurrenceRule,
-                request.emoji,
-                request.notes,
-                request.link,
-                request.deadline,
-                request.priority,
-                request.importance,
-                request.urgency,
-                request.imageData,
-                request.selectedPlaceID,
-                request.tags,
-                request.relationships,
-                request.steps,
-                request.scheduleMode,
-                request.checklistItems,
-                request.attachments,
-                request.color,
-                request.autoAssumeDailyDone,
-                request.estimatedDurationMinutes,
-                request.storyPoints
-            )
+            return onSave(request)
 
         case .cancelTapped:
             return onCancel()

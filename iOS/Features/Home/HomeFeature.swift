@@ -625,137 +625,80 @@ struct HomeFeature {
             // MARK: - Filter actions
 
             case let .selectedFilterChanged(filter):
-                state.selectedFilter = filter
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.selectedFilter(filter), state: &state)
 
             case let .selectedTagChanged(tag):
-                state.selectedTag = tag
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.selectedTag(tag), state: &state)
 
             case let .selectedTagsChanged(tags):
-                state.selectedTags = tags
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.selectedTags(tags), state: &state)
 
             case let .includeTagMatchModeChanged(mode):
-                state.includeTagMatchMode = mode
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
 
             case let .excludedTagsChanged(tags):
-                state.excludedTags = tags
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.excludedTags(tags), state: &state)
 
             case let .excludeTagMatchModeChanged(mode):
-                state.excludeTagMatchMode = mode
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.excludeTagMatchMode(mode), state: &state)
 
             case let .selectedManualPlaceFilterIDChanged(id):
-                state.selectedManualPlaceFilterID = id
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.selectedManualPlaceFilterID(id), state: &state)
 
             case let .selectedImportanceUrgencyFilterChanged(filter):
-                state.selectedImportanceUrgencyFilter = filter
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
 
             case let .selectedTodoStateFilterChanged(filter):
-                state.selectedTodoStateFilter = filter
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
 
             case let .taskListViewModeChanged(mode):
-                state.taskListViewMode = mode
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
 
             case let .isFilterSheetPresentedChanged(isPresented):
-                state.isFilterSheetPresented = isPresented
-                return .none
+                return applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)
 
             case .clearOptionalFilters:
-                var taskFilters = state.taskFilters
-                var hideUnavailableRoutines = state.hideUnavailableRoutines
-                let didResetHideUnavailableRoutines = HomeFilterEditor.clearOptionalFilters(
-                    taskFilters: &taskFilters,
-                    hideUnavailableRoutines: &hideUnavailableRoutines
-                )
-                state.taskFilters = taskFilters
-                state.hideUnavailableRoutines = hideUnavailableRoutines
-                if didResetHideUnavailableRoutines {
-                    appSettingsClient.setHideUnavailableRoutines(false)
-                }
-                persistTemporaryViewState(state)
-                return .none
+                return applyTaskFilterMutation(.clearOptionalFilters, state: &state)
 
             // MARK: - Timeline filter actions
 
             case let .selectedTimelineRangeChanged(range):
-                state.selectedTimelineRange = range
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.selectedRange(range), state: &state)
 
             case let .selectedTimelineFilterTypeChanged(filterType):
-                state.selectedTimelineFilterType = filterType
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
 
             case let .selectedTimelineTagChanged(tag):
-                state.selectedTimelineTag = tag
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.selectedTag(tag), state: &state)
 
             case let .selectedTimelineTagsChanged(tags):
-                state.selectedTimelineTags = tags
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.selectedTags(tags), state: &state)
 
             case let .selectedTimelineIncludeTagMatchModeChanged(mode):
-                state.selectedTimelineIncludeTagMatchMode = mode
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
 
             case let .selectedTimelineExcludedTagsChanged(tags):
-                state.selectedTimelineExcludedTags = tags
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)
 
             case let .selectedTimelineExcludeTagMatchModeChanged(mode):
-                state.selectedTimelineExcludeTagMatchMode = mode
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.excludeTagMatchMode(mode), state: &state)
 
             case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
-                state.selectedTimelineImportanceUrgencyFilter = filter
-                persistTemporaryViewState(state)
-                return .none
+                return applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
 
             // MARK: - Stats filter actions
 
             case let .statsSelectedRangeChanged(range):
-                state.statsSelectedRange = range
-                persistTemporaryViewState(state)
-                return .none
+                return applyStatsFilterMutation(.selectedRange(range), state: &state)
 
             case let .statsSelectedTagChanged(tag):
-                state.statsSelectedTag = tag
-                persistTemporaryViewState(state)
-                return .none
+                return applyStatsFilterMutation(.selectedTag(tag), state: &state)
 
             case let .statsSelectedTagsChanged(tags):
-                state.statsSelectedTags = tags
-                persistTemporaryViewState(state)
-                return .none
+                return applyStatsFilterMutation(.selectedTags(tags), state: &state)
 
             case let .statsIncludeTagMatchModeChanged(mode):
-                state.statsIncludeTagMatchMode = mode
-                persistTemporaryViewState(state)
-                return .none
+                return applyStatsFilterMutation(.includeTagMatchMode(mode), state: &state)
 
             case .deleteTasksConfirmed:
                 let ids = state.presentation.pendingDeleteTaskIDs
@@ -921,11 +864,11 @@ struct HomeFeature {
                 state.presentation.addRoutineState = nil
                 return .none
 
-            case let .addRoutineSheet(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints))):
+            case let .addRoutineSheet(.delegate(.didSave(request))):
                 return .run { @MainActor send in
                     do {
                         let context = self.modelContext()
-                        guard let trimmedName = RoutineTask.trimmedName(name), !trimmedName.isEmpty else {
+                        guard let trimmedName = RoutineTask.trimmedName(request.name), !trimmedName.isEmpty else {
                             send(.routineSaveFailed)
                             return
                         }
@@ -935,35 +878,14 @@ struct HomeFeature {
                             return
                         }
 
-                        let newRoutine = RoutineTask(
+                        let newRoutine = HomeAddRoutineSupport.makeRoutine(
+                            from: request,
                             name: trimmedName,
-                            emoji: emoji,
-                            notes: notes,
-                            link: link,
-                            deadline: deadline,
-                            priority: priority,
-                            importance: importance,
-                            urgency: urgency,
-                            imageData: imageData,
-                            placeID: placeID,
-                            tags: tags,
-                            relationships: relationships,
-                            steps: steps,
-                            checklistItems: checklistItems,
-                            scheduleMode: scheduleMode,
-                            interval: Int16(freq),
-                            recurrenceRule: recurrenceRule,
-                            lastDone: nil,
-                            scheduleAnchor: scheduleMode == .oneOff ? nil : self.now,
-                            color: color,
-                            autoAssumeDailyDone: autoAssumeDailyDone,
-                            estimatedDurationMinutes: estimatedDurationMinutes,
-                            storyPoints: storyPoints
+                            scheduleAnchor: self.now
                         )
                         context.insert(newRoutine)
-                        for item in attachments {
-                            let att = RoutineAttachment(id: item.id, taskID: newRoutine.id, fileName: item.fileName, data: item.data)
-                            context.insert(att)
+                        for attachment in HomeAddRoutineSupport.makeAttachments(from: request, taskID: newRoutine.id) {
+                            context.insert(attachment)
                         }
                         try context.save()
                         send(.routineSavedSuccessfully(newRoutine))
@@ -1060,8 +982,8 @@ struct HomeFeature {
         }
         .ifLet(\.addRoutineState, action: \.addRoutineSheet) {
             AddRoutineFeature(
-                onSave: { name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints in
-                    .send(.delegate(.didSave(name, freq, recurrenceRule, emoji, notes, link, deadline, priority, importance, urgency, imageData, placeID, tags, relationships, steps, scheduleMode, checklistItems, attachments, color, autoAssumeDailyDone, estimatedDurationMinutes, storyPoints)))
+                onSave: { request in
+                    .send(.delegate(.didSave(request)))
                 },
                 onCancel: { .send(.delegate(.didCancel)) }
             )
@@ -1081,6 +1003,46 @@ struct HomeFeature {
             routinePlaces: state.routinePlaces,
             tags: \.tags
         )
+    }
+
+    private func applyTaskFilterMutation(
+        _ mutation: HomeTaskFilterMutation,
+        state: inout State
+    ) -> Effect<Action> {
+        var taskFilters = state.taskFilters
+        var hideUnavailableRoutines = state.hideUnavailableRoutines
+        let result = HomeFilterEditor.apply(
+            mutation,
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+        state.taskFilters = taskFilters
+        state.hideUnavailableRoutines = hideUnavailableRoutines
+        if result.didResetHideUnavailableRoutines {
+            appSettingsClient.setHideUnavailableRoutines(false)
+        }
+        if result.shouldPersistTemporaryViewState {
+            persistTemporaryViewState(state)
+        }
+        return .none
+    }
+
+    private func applyTimelineFilterMutation(
+        _ mutation: HomeTimelineFilterMutation,
+        state: inout State
+    ) -> Effect<Action> {
+        HomeFilterEditor.apply(mutation, timelineFilters: &state.timelineFilters)
+        persistTemporaryViewState(state)
+        return .none
+    }
+
+    private func applyStatsFilterMutation(
+        _ mutation: HomeStatsFilterMutation,
+        state: inout State
+    ) -> Effect<Action> {
+        HomeFilterEditor.apply(mutation, statsFilters: &state.statsFilters)
+        persistTemporaryViewState(state)
+        return .none
     }
 
     private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {
