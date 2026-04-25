@@ -26,7 +26,7 @@ struct RoutinaUITests {
         #expect(addRoutineButton.waitForExistence(timeout: 10))
         addRoutineButton.tap()
 
-        let nameField = app.textFields["Routine name"]
+        let nameField = app.textFields["Task name"]
         #expect(nameField.waitForExistence(timeout: 10))
         nameField.tap()
         nameField.typeText(String(routineName))
@@ -99,7 +99,7 @@ struct RoutinaUITests {
 
     @MainActor
     private func homeAddRoutineButton(in app: XCUIApplication) -> XCUIElement {
-        app.navigationBars.buttons["Add Routine"].firstMatch
+        app.navigationBars.buttons["Add Task"].firstMatch
     }
 
     @MainActor
@@ -108,7 +108,7 @@ struct RoutinaUITests {
         #expect(addRoutineButton.waitForExistence(timeout: 10))
         addRoutineButton.tap()
 
-        let nameField = app.textFields["Routine name"]
+        let nameField = app.textFields["Task name"]
         #expect(nameField.waitForExistence(timeout: 10))
         nameField.tap()
         nameField.typeText(routineName)
