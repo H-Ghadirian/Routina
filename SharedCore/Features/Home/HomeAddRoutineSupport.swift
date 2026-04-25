@@ -118,4 +118,35 @@ enum HomeAddRoutineSupport {
             }
         }
     }
+
+    static func applySavedRoutine<Action>(
+        _ task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar,
+        tasks: inout [RoutineTask],
+        presentation: inout HomePresentationState,
+        scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
+    ) -> Effect<Action> {
+        tasks.append(task.detachedCopy())
+        presentation.isAddRoutineSheetPresented = false
+        presentation.addRoutineState = nil
+        NotificationCenter.default.postRoutineDidUpdate()
+
+        guard NotificationCoordinator.shouldScheduleNotification(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) else {
+            return .none
+        }
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        return .run { _ in
+            await scheduleNotification(payload)
+        }
+    }
 }

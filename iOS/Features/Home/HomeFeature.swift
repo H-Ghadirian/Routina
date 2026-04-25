@@ -456,6 +456,20 @@ struct HomeFeature {
     @Dependency(\.continuousClock) var clock
     @Dependency(\.appSettingsClient) var appSettingsClient
 
+    private func taskLifecycleCoordinator() -> HomeTaskLifecycleCoordinator<Action> {
+        HomeTaskLifecycleCoordinator(
+            referenceDate: { self.now },
+            calendar: calendar,
+            modelContext: { self.modelContext() },
+            cancelNotification: { identifier in
+                await self.notificationClient.cancel(identifier)
+            },
+            scheduleNotification: { payload in
+                await self.notificationClient.schedule(payload)
+            }
+        )
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -712,10 +726,8 @@ struct HomeFeature {
             case let .markTaskDone(id):
                 var routineTasks = state.routineTasks
                 var doneStats = state.doneStats
-                guard let update = HomeTaskLifecycleSupport.markTaskDone(
+                guard let effect = taskLifecycleCoordinator().markTaskDone(
                     taskID: id,
-                    referenceDate: now,
-                    calendar: calendar,
                     tasks: &routineTasks,
                     doneStats: &doneStats
                 ) else {
@@ -725,118 +737,54 @@ struct HomeFeature {
                 state.doneStats = doneStats
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-
-                switch update {
-                case let .checklist(checklistUpdate):
-                    return HomeTaskLifecycleExecutionSupport.markChecklistItemsPurchased(
-                        checklistUpdate,
-                        calendar: calendar,
-                        modelContext: { self.modelContext() },
-                        scheduleNotification: { payload in
-                            await self.notificationClient.schedule(payload)
-                        }
-                    )
-
-                case let .advance(advanceUpdate):
-                    return HomeTaskLifecycleExecutionSupport.advanceTask(
-                        advanceUpdate,
-                        calendar: calendar,
-                        modelContext: { self.modelContext() },
-                        cancelNotification: { identifier in
-                            await self.notificationClient.cancel(identifier)
-                        },
-                        scheduleNotification: { payload in
-                            await self.notificationClient.schedule(payload)
-                        }
-                    )
-                }
+                return effect
 
             case let .pauseTask(id):
-                guard let update = HomeTaskLifecycleSupport.pauseTask(
+                guard let effect = taskLifecycleCoordinator().pauseTask(
                     taskID: id,
-                    pauseDate: now,
-                    calendar: calendar,
                     tasks: &state.routineTasks
                 ) else {
                     return .none
                 }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-
-                return HomeTaskLifecycleExecutionSupport.pauseTask(
-                    update,
-                    modelContext: { self.modelContext() },
-                    cancelNotification: { identifier in
-                        await self.notificationClient.cancel(identifier)
-                    }
-                )
+                return effect
 
             case let .resumeTask(id):
-                guard let update = HomeTaskLifecycleSupport.resumeTask(
+                guard let effect = taskLifecycleCoordinator().resumeTask(
                     taskID: id,
-                    resumeDate: now,
-                    calendar: calendar,
                     tasks: &state.routineTasks
                 ) else {
                     return .none
                 }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-
-                return HomeTaskLifecycleExecutionSupport.resumeTask(
-                    update,
-                    calendar: calendar,
-                    modelContext: { self.modelContext() },
-                    cancelNotification: { identifier in
-                        await self.notificationClient.cancel(identifier)
-                    },
-                    scheduleNotification: { payload in
-                        await self.notificationClient.schedule(payload)
-                    }
-                )
+                return effect
 
             case let .notTodayTask(id):
-                guard let update = HomeTaskLifecycleSupport.notTodayTask(
+                guard let effect = taskLifecycleCoordinator().notTodayTask(
                     taskID: id,
-                    referenceDate: now,
-                    calendar: calendar,
                     tasks: &state.routineTasks
                 ) else {
                     return .none
                 }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-
-                return HomeTaskLifecycleExecutionSupport.notTodayTask(
-                    update,
-                    calendar: calendar,
-                    modelContext: { self.modelContext() },
-                    cancelNotification: { identifier in
-                        await self.notificationClient.cancel(identifier)
-                    },
-                    scheduleNotification: { payload in
-                        await self.notificationClient.schedule(payload)
-                    }
-                )
+                return effect
 
             case let .pinTask(id):
-                guard let update = HomeTaskLifecycleSupport.pinTask(
+                guard let effect = taskLifecycleCoordinator().pinTask(
                     taskID: id,
-                    pinnedAt: now,
                     tasks: &state.routineTasks
                 ) else {
                     return .none
                 }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-
-                return HomeTaskLifecycleExecutionSupport.pinTask(
-                    update,
-                    modelContext: { self.modelContext() }
-                )
+                return effect
 
             case let .unpinTask(id):
-                guard let update = HomeTaskLifecycleSupport.unpinTask(
+                guard let effect = taskLifecycleCoordinator().unpinTask(
                     taskID: id,
                     tasks: &state.routineTasks
                 ) else {
@@ -844,11 +792,7 @@ struct HomeFeature {
                 }
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-
-                return HomeTaskLifecycleExecutionSupport.unpinTask(
-                    update,
-                    modelContext: { self.modelContext() }
-                )
+                return effect
 
             case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
                 return moveTaskInSection(
@@ -874,19 +818,23 @@ struct HomeFeature {
                 )
 
             case let .routineSavedSuccessfully(task):
-                state.routineTasks.append(task.detachedCopy())
+                var routineTasks = state.routineTasks
+                var presentation = state.presentation
+                let effect: Effect<Action> = HomeAddRoutineSupport.applySavedRoutine(
+                    task,
+                    referenceDate: now,
+                    calendar: calendar,
+                    tasks: &routineTasks,
+                    presentation: &presentation,
+                    scheduleNotification: { payload in
+                        await self.notificationClient.schedule(payload)
+                    }
+                )
+                state.routineTasks = routineTasks
+                state.presentation = presentation
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-                state.presentation.isAddRoutineSheetPresented = false
-                state.presentation.addRoutineState = nil
-                NotificationCenter.default.postRoutineDidUpdate()
-                guard NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: now, calendar: calendar) else {
-                    return .none
-                }
-                let payload = makeNotificationPayload(for: task, referenceDate: now)
-                return .run { _ in
-                    await self.notificationClient.schedule(payload)
-                }
+                return effect
 
             case .routineSaveFailed:
                 print("Failed to save routine.")
@@ -1091,13 +1039,6 @@ struct HomeFeature {
 
     func logsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
         HomeTaskSupport.logsDescriptor(for: taskID)
-    }
-
-    private func makeNotificationPayload(
-        for task: RoutineTask,
-        referenceDate: Date
-    ) -> NotificationPayload {
-        NotificationCoordinator.notificationPayload(for: task, referenceDate: referenceDate, calendar: calendar)
     }
 
     private func loadTasksEffect() -> Effect<Action> {
