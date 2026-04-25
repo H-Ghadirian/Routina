@@ -147,6 +147,7 @@ struct TimelineFeatureTests {
         }
         await store.send(.selectedTagChanged("Deep")) {
             $0.selectedTag = "Deep"
+            $0.selectedTags = ["Deep"]
             $0.groupedEntries = [
                 TimelineFeature.TimelineSection(
                     date: calendar.startOfDay(for: makeDate("2026-03-10T08:00:00Z")),
@@ -173,6 +174,7 @@ struct TimelineFeatureTests {
         await store.send(.selectedRangeChanged(.today)) {
             $0.selectedRange = .today
             $0.selectedTag = nil
+            $0.selectedTags = []
             $0.availableTags = ["Home"]
             $0.groupedEntries = [
                 TimelineFeature.TimelineSection(
@@ -285,6 +287,7 @@ struct StatsFeatureTests {
         }
         await store.send(.selectedTagChanged("Focus")) {
             $0.selectedTag = "Focus"
+            $0.selectedTags = ["Focus"]
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: RoutineCompletionStats.points(
@@ -337,6 +340,7 @@ struct StatsFeatureTests {
             $0.tasks = [healthTask]
             $0.logs = [healthLog]
             $0.selectedTag = nil
+            $0.selectedTags = []
             $0.availableTags = ["Health"]
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
@@ -446,6 +450,10 @@ struct StatsFeatureTests {
             $0.tasks = [focusTask, healthTask, hybridTask]
             $0.logs = [focusLog, healthLog, hybridLog]
             $0.availableTags = ["Focus", "Health"]
+            $0.relatedTagRules = [
+                RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Health"]),
+                RoutineRelatedTagRule(tag: "Health", relatedTags: ["Focus"]),
+            ]
             $0.filteredTaskCount = 3
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: allChartPoints,
@@ -486,12 +494,14 @@ struct StatsFeatureTests {
 
         await store.send(.selectedTagChanged("Focus")) {
             $0.selectedTag = "Focus"
+            $0.selectedTags = ["Focus"]
         }
 
         await store.send(.setData(tasks: [focusTask], logs: [focusLog])) {
             $0.tasks = [focusTask]
             $0.logs = [focusLog]
             $0.excludedTags = []
+            $0.relatedTagRules = []
             $0.availableTags = ["Focus"]
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(

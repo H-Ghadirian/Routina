@@ -41,9 +41,11 @@ struct AppFeatureTests {
             $0.timeline.selectedRange = .month
             $0.timeline.filterType = .todos
             $0.timeline.selectedTag = "Errands"
+            $0.timeline.selectedTags = ["Errands"]
             $0.stats.selectedRange = .year
             $0.stats.taskTypeFilter = .todos
             $0.stats.selectedTag = "Focus"
+            $0.stats.selectedTags = ["Focus"]
             $0.stats.excludedTags = ["Deep Work"]
         }
     }

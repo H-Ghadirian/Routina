@@ -387,6 +387,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.locationClient.snapshot = { _ in locationSnapshot }
             $0.appSettingsClient.temporaryViewState = { persistedState }
@@ -594,6 +595,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([log]))) {
             $0.routineDisplays = [
@@ -735,6 +737,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([log]))) {
             $0.taskDetailState?.logs = [log]
@@ -813,6 +816,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -980,6 +984,7 @@ struct HomeFeatureTests {
         }
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -1157,6 +1162,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -1246,6 +1252,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -1346,6 +1353,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -1376,6 +1384,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -1496,6 +1505,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -1526,6 +1536,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
@@ -1715,6 +1726,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))

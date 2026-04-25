@@ -4,13 +4,6 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
-    enum MoveDirection: String, Equatable {
-        case top
-        case up
-        case down
-        case bottom
-    }
-
     enum TaskListMode: String, CaseIterable, Equatable, Identifiable {
         case all = "All"
         case routines = "Routines"
@@ -38,6 +31,8 @@ struct HomeFeature {
     typealias SelectedTaskReloadGuard = HomeSelectedTaskReloadGuard
 
     typealias DoneStats = HomeDoneStats
+
+    typealias MoveDirection = HomeTaskMoveDirection
 
     struct RoutineDisplay: Equatable, Identifiable {
         let taskID: UUID
@@ -490,28 +485,22 @@ struct HomeFeature {
                 }
 
             case let .tasksLoadedSuccessfully(tasks, places, logs, doneStats):
-                let detachedTasks = detachedTasks(from: tasks)
-                let detachedPlaces = detachedPlaces(from: places)
-                let reconciliation = HomeReloadGuardSupport.reconcileSelectedDetailTask(
-                    detachedTasks,
+                let snapshot = HomeTaskLoadSupport.makeSnapshot(
+                    tasks: tasks,
+                    places: places,
+                    logs: logs,
+                    doneStats: doneStats,
                     selectedTaskID: state.selection.selectedTaskID,
                     detailTask: state.selection.taskDetailState?.task,
-                    selectedTaskReloadGuard: state.selection.selectedTaskReloadGuard
+                    selectedTaskReloadGuard: state.selection.selectedTaskReloadGuard,
+                    persistedRelatedTagRules: appSettingsClient.relatedTagRules()
                 )
-                let reconciledTasks = reconciliation.tasks
-                state.relatedTagRules = RoutineTagRelations.sanitized(
-                    appSettingsClient.relatedTagRules()
-                    + RoutineTagRelations.learnedRules(from: reconciledTasks.map(\.tags))
-                )
-                state.selection.selectedTaskReloadGuard = reconciliation.selectedTaskReloadGuard
-                state.routineTasks = reconciledTasks
-                state.routinePlaces = detachedPlaces
-                state.timelineLogs = logs.sorted {
-                    let lhs = $0.timestamp ?? .distantPast
-                    let rhs = $1.timestamp ?? .distantPast
-                    return lhs > rhs
-                }
-                state.doneStats = doneStats
+                state.relatedTagRules = snapshot.relatedTagRules
+                state.selection.selectedTaskReloadGuard = snapshot.selectedTaskReloadGuard
+                state.routineTasks = snapshot.tasks
+                state.routinePlaces = snapshot.places
+                state.timelineLogs = snapshot.timelineLogs
+                state.doneStats = snapshot.doneStats
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
                 validateFilterState(&state)
@@ -520,15 +509,15 @@ struct HomeFeature {
                 guard state.presentation.addRoutineState != nil else { return detailRefreshEffect }
                 return .merge(
                     detailRefreshEffect,
-                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: reconciledTasks)))),
+                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: snapshot.tasks)))),
                     .send(.addRoutineSheet(.availableTagSummariesChanged(
                         RoutineTag.summaries(
-                            from: reconciledTasks,
+                            from: snapshot.tasks,
                             countsByTaskID: doneStats.countsByTaskID
                         )
                     ))),
-                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: detachedPlaces, linkedTo: reconciledTasks)))),
-                    .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(reconciledTasks))))
+                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: snapshot.places, linkedTo: snapshot.tasks)))),
+                    .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(snapshot.tasks))))
                 )
 
             case .tasksLoadFailed:
@@ -557,9 +546,10 @@ struct HomeFeature {
                 if taskID != nil {
                     state.presentation.isMacFilterDetailPresented = false
                 }
+                let routineTasks = state.routineTasks
                 _ = HomeSelectionEditor.selectTask(
                     taskID: taskID,
-                    tasks: state.routineTasks,
+                    tasks: routineTasks,
                     selection: &state.selection,
                     makeTaskDetailState: makeTaskDetailState(for:)
                 )
@@ -612,23 +602,12 @@ struct HomeFeature {
                 }
                 state.taskListMode = mode
                 state.presentation.isMacFilterDetailPresented = false
-                // Clear task selection if the selected task doesn't match the new mode
-                if let selectedTaskID = state.selection.selectedTaskID,
-                   let task = state.routineTasks.first(where: { $0.id == selectedTaskID }) {
-                    let keepSelection: Bool
-                    switch mode {
-                    case .all:
-                        keepSelection = true
-                    case .todos:
-                        keepSelection = task.isOneOffTask
-                    case .routines:
-                        keepSelection = !task.isOneOffTask
-                    }
-                    if !keepSelection {
-                        state.selection.selectedTaskID = nil
-                        state.selection.taskDetailState = nil
-                    }
-                }
+                let routineTasks = state.routineTasks
+                HomeDetailSelectionSupport.clearSelectionIfNeededForTaskListMode(
+                    selection: &state.selection,
+                    tasks: routineTasks,
+                    modeRawValue: mode.rawValue
+                )
                 persistTemporaryViewState(state)
                 return .none
 
@@ -1017,33 +996,25 @@ struct HomeFeature {
                 return .none
 
             case let .taskDetail(.toggleChecklistItemCompletion(itemID)):
-                state.selection.pendingSelectedChecklistReloadGuardTaskID = HomeReloadGuardSupport
-                    .pendingChecklistReloadGuardTaskID(
-                        for: itemID,
-                        selectedTaskID: state.selection.selectedTaskID,
-                        detailState: state.selection.taskDetailState,
-                        now: now,
-                        calendar: calendar
-                    )
+                HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+                    for: itemID,
+                    selection: &state.selection,
+                    now: now,
+                    calendar: calendar
+                )
                 return .none
 
             case let .taskDetail(.markChecklistItemCompleted(itemID)):
-                state.selection.pendingSelectedChecklistReloadGuardTaskID = HomeReloadGuardSupport
-                    .pendingChecklistReloadGuardTaskID(
-                        for: itemID,
-                        selectedTaskID: state.selection.selectedTaskID,
-                        detailState: state.selection.taskDetailState,
-                        now: now,
-                        calendar: calendar
-                    )
+                HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+                    for: itemID,
+                    selection: &state.selection,
+                    now: now,
+                    calendar: calendar
+                )
                 return .none
 
             case .taskDetail(.undoSelectedDateCompletion):
-                state.selection.pendingSelectedChecklistReloadGuardTaskID = HomeReloadGuardSupport
-                    .pendingChecklistUndoReloadGuardTaskID(
-                        selectedTaskID: state.selection.selectedTaskID,
-                        detailState: state.selection.taskDetailState
-                    )
+                HomeDetailSelectionSupport.updatePendingChecklistUndoReloadGuard(selection: &state.selection)
                 return .none
 
             case .taskDetail(.logsLoaded):
@@ -1051,9 +1022,10 @@ struct HomeFeature {
                 return .none
 
             case let .taskDetail(.openLinkedTask(taskID)):
+                let routineTasks = state.routineTasks
                 guard HomeSelectionEditor.selectTask(
                     taskID: taskID,
-                    tasks: state.routineTasks,
+                    tasks: routineTasks,
                     selection: &state.selection,
                     makeTaskDetailState: makeTaskDetailState(for:)
                 ) else {
@@ -1112,47 +1084,27 @@ struct HomeFeature {
     }
 
     private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {
-        let uniqueIDs = uniqueTaskIDs(ids)
-        guard !uniqueIDs.isEmpty else { return .none }
-
-        let idSet = Set(uniqueIDs)
-        RoutineTask.removeRelationships(targeting: idSet, from: state.routineTasks)
-        state.routineTasks.removeAll { idSet.contains($0.id) }
-        var removedDoneCount = 0
-        var removedCanceledCount = 0
-        for id in uniqueIDs {
-            removedDoneCount += state.doneStats.countsByTaskID[id, default: 0]
-            removedCanceledCount += state.doneStats.canceledCountsByTaskID[id, default: 0]
-            state.doneStats.countsByTaskID.removeValue(forKey: id)
-            state.doneStats.canceledCountsByTaskID.removeValue(forKey: id)
-        }
-        state.doneStats.totalCount = max(state.doneStats.totalCount - removedDoneCount, 0)
-        state.doneStats.canceledTotalCount = max(state.doneStats.canceledTotalCount - removedCanceledCount, 0)
+        var routineTasks = state.routineTasks
+        var doneStats = state.doneStats
+        guard let update = HomeTaskDeletionSupport.prepareDeleteTasks(
+            ids: ids,
+            tasks: &routineTasks,
+            doneStats: &doneStats
+        ) else { return .none }
+        state.routineTasks = routineTasks
+        state.doneStats = doneStats
         refreshDisplays(&state)
         syncSelectedTaskDetailState(&state)
 
-        let deleteEffect: Effect<Action> = .run { @MainActor [uniqueIDs] _ in
-            let context = self.modelContext()
-            let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
-            RoutineTask.removeRelationships(targeting: idSet, from: allTasks)
-            for id in uniqueIDs {
-                let descriptor = FetchDescriptor<RoutineTask>(
-                    predicate: #Predicate { task in
-                        task.id == id
-                    }
-                )
-                if let task = try context.fetch(descriptor).first {
-                    context.delete(task)
-                }
-                let logs = try context.fetch(logsDescriptor(for: id))
-                for log in logs {
-                    context.delete(log)
-                }
-                await self.notificationClient.cancel(id.uuidString)
+        let deleteEffect: Effect<Action> = HomeTaskDeletionSupport.deleteTasks(
+            update,
+            sprintBoardData: nil,
+            modelContext: { self.modelContext() },
+            saveSprintBoardData: { _ in },
+            cancelNotification: { identifier in
+                await self.notificationClient.cancel(identifier)
             }
-            try? context.save()
-            NotificationCenter.default.postRoutineDidUpdate()
-        }
+        )
         guard state.presentation.addRoutineState != nil else { return deleteEffect }
         return .merge(
             deleteEffect,
@@ -1175,59 +1127,21 @@ struct HomeFeature {
         direction: MoveDirection,
         state: inout State
     ) -> Effect<Action> {
-        let existingTaskIDs = Set(state.routineTasks.map(\.id))
-        var seen: Set<UUID> = []
-        var normalizedIDs: [UUID] = []
-        normalizedIDs.reserveCapacity(orderedTaskIDs.count)
-        for id in orderedTaskIDs where existingTaskIDs.contains(id) {
-            if seen.insert(id).inserted {
-                normalizedIDs.append(id)
-            }
-        }
-
-        guard normalizedIDs.count > 1,
-              let currentIndex = normalizedIDs.firstIndex(of: taskID) else {
-            return .none
-        }
-
-        let targetIndex: Int
-        switch direction {
-        case .top:
-            targetIndex = 0
-        case .up:
-            targetIndex = currentIndex - 1
-        case .down:
-            targetIndex = currentIndex + 1
-        case .bottom:
-            targetIndex = normalizedIDs.count - 1
-        }
-        guard normalizedIDs.indices.contains(targetIndex),
-              targetIndex != currentIndex else { return .none }
-
-        let movedID = normalizedIDs.remove(at: currentIndex)
-        normalizedIDs.insert(movedID, at: targetIndex)
-
-        for (order, id) in normalizedIDs.enumerated() {
-            guard let index = state.routineTasks.firstIndex(where: { $0.id == id }) else { continue }
-            state.routineTasks[index].setManualSectionOrder(order, for: sectionKey)
-        }
+        guard let update = HomeTaskOrderingSupport.moveTaskInSection(
+            taskID: taskID,
+            sectionKey: sectionKey,
+            orderedTaskIDs: orderedTaskIDs,
+            direction: direction,
+            tasks: &state.routineTasks
+        ) else { return .none }
         refreshDisplays(&state)
         syncSelectedTaskDetailState(&state)
 
-        return .run { @MainActor [normalizedIDs, sectionKey] _ in
-            do {
-                let context = self.modelContext()
-                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                let tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
-                for (order, id) in normalizedIDs.enumerated() {
-                    tasksByID[id]?.setManualSectionOrder(order, for: sectionKey)
-                }
-                try context.save()
-                NotificationCenter.default.postRoutineDidUpdate()
-            } catch {
-                print("Failed to persist manual section order: \(error)")
-            }
-        }
+        return HomeTaskOrderingSupport.persistTaskOrder(
+            update,
+            failureMessage: "Failed to persist manual section order",
+            modelContext: { self.modelContext() }
+        )
     }
 
     private func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
@@ -1264,36 +1178,14 @@ struct HomeFeature {
     }
 
     private func syncSelectedTaskDetailState(_ state: inout State) {
-        guard let selectedTaskID = state.selection.selectedTaskID else {
-            HomeSelectionEditor.clearTaskSelection(&state.selection)
-            return
-        }
-
-        guard let task = state.routineTasks.first(where: { $0.id == selectedTaskID }) else {
-            HomeSelectionEditor.clearTaskSelection(&state.selection)
-            return
-        }
-
-        if var detailState = state.selection.taskDetailState {
-            detailState.task = task.detachedCopy()
-            detailState.taskRefreshID &+= 1
-            detailState.daysSinceLastRoutine = RoutineDateMath.elapsedDaysSinceLastDone(
-                from: detailState.task.lastDone,
-                referenceDate: now
-            )
-            detailState.overdueDays = detailState.task.isArchived(referenceDate: now, calendar: calendar)
-                ? 0
-                : RoutineDateMath.overdueDays(for: detailState.task, referenceDate: now, calendar: calendar)
-            detailState.isDoneToday = detailState.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
-            detailState.isAssumedDoneToday = RoutineAssumedCompletion.isAssumedDone(
-                for: detailState.task,
-                on: now,
-                logs: detailState.logs
-            )
-            state.selection.taskDetailState = detailState
-        } else {
-            state.selection.taskDetailState = makeTaskDetailState(for: task)
-        }
+        let routineTasks = state.routineTasks
+        HomeDetailSelectionSupport.refreshSelectedTaskDetailState(
+            selection: &state.selection,
+            tasks: routineTasks,
+            now: now,
+            calendar: calendar,
+            makeTaskDetailState: makeTaskDetailState(for:)
+        )
     }
 
     private func refreshSelectedTaskDetailEffect(for state: State) -> Effect<Action> {
@@ -1302,25 +1194,16 @@ struct HomeFeature {
     }
 
     private func syncSelectedTaskFromTaskDetail(_ state: inout State) {
-        guard let detailTask = state.selection.taskDetailState?.task else { return }
-        guard let index = state.routineTasks.firstIndex(where: { $0.id == detailTask.id }) else { return }
-        let syncedTask = detailTask.detachedCopy()
-        state.routineTasks[index] = syncedTask
-        if state.selection.pendingSelectedChecklistReloadGuardTaskID == syncedTask.id,
-           syncedTask.isChecklistCompletionRoutine,
-           state.selection.selectedTaskID == detailTask.id {
-            state.selection.selectedTaskReloadGuard = HomeReloadGuardSupport.makeSelectedTaskReloadGuard(for: syncedTask)
+        var selection = state.selection
+        var routineTasks = state.routineTasks
+        if HomeDetailSelectionSupport.syncSelectedTaskFromDetail(
+            selection: &selection,
+            tasks: &routineTasks
+        ) {
+            state.selection = selection
+            state.routineTasks = routineTasks
+            refreshDisplays(&state)
         }
-        state.selection.pendingSelectedChecklistReloadGuardTaskID = nil
-        refreshDisplays(&state)
-    }
-
-    private func detachedTasks(from tasks: [RoutineTask]) -> [RoutineTask] {
-        tasks.map { $0.detachedCopy() }
-    }
-
-    private func detachedPlaces(from places: [RoutinePlace]) -> [RoutinePlace] {
-        places.map { $0.detachedCopy() }
     }
 
     private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {

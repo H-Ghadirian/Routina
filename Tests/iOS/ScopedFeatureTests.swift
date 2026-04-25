@@ -147,6 +147,7 @@ struct TimelineFeatureTests {
         }
         await store.send(.selectedTagChanged("Deep")) {
             $0.selectedTag = "Deep"
+            $0.selectedTags = ["Deep"]
             $0.groupedEntries = [
                 TimelineFeature.TimelineSection(
                     date: calendar.startOfDay(for: makeDate("2026-03-10T08:00:00Z")),
@@ -173,6 +174,7 @@ struct TimelineFeatureTests {
         await store.send(.selectedRangeChanged(.today)) {
             $0.selectedRange = .today
             $0.selectedTag = nil
+            $0.selectedTags = []
             $0.availableTags = ["Home"]
             $0.groupedEntries = [
                 TimelineFeature.TimelineSection(
@@ -375,6 +377,7 @@ struct StatsFeatureTests {
         }
         await store.send(.selectedTagChanged("Focus")) {
             $0.selectedTag = "Focus"
+            $0.selectedTags = ["Focus"]
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: RoutineCompletionStats.points(
@@ -427,6 +430,7 @@ struct StatsFeatureTests {
             $0.tasks = [healthTask]
             $0.logs = [healthLog]
             $0.selectedTag = nil
+            $0.selectedTags = []
             $0.availableTags = ["Health"]
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
@@ -529,11 +533,13 @@ struct StatsFeatureTests {
 
         await store.send(.selectedTagChanged("Errands")) {
             $0.selectedTag = "Errands"
+            $0.selectedTags = ["Errands"]
         }
 
         await store.send(.taskTypeFilterChanged(.routines)) {
             $0.taskTypeFilter = .routines
             $0.selectedTag = nil
+            $0.selectedTags = []
             $0.availableTags = ["Focus"]
             $0.filteredTaskCount = 1
             $0.metrics.totalDoneCount = 1

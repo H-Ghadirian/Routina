@@ -358,6 +358,15 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableTagsLoaded(["Evening", "Mobility"])) {
             $0.availableTags = ["Evening", "Mobility"]
         }
+        await store.receive(.relatedTagRulesLoaded([
+            RoutineRelatedTagRule(tag: "Evening", relatedTags: ["Mobility"]),
+            RoutineRelatedTagRule(tag: "Mobility", relatedTags: ["Evening"]),
+        ])) {
+            $0.relatedTagRules = [
+                RoutineRelatedTagRule(tag: "Evening", relatedTags: ["Mobility"]),
+                RoutineRelatedTagRule(tag: "Mobility", relatedTags: ["Evening"]),
+            ]
+        }
         await store.receive(.availableRelationshipTasksLoaded([]))
     }
 
@@ -605,6 +614,15 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableTagsLoaded(["Focus", "Night"])) {
             $0.availableTags = ["Focus", "Night"]
         }
+        await store.receive(.relatedTagRulesLoaded([
+            RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Night"]),
+            RoutineRelatedTagRule(tag: "Night", relatedTags: ["Focus"]),
+        ])) {
+            $0.relatedTagRules = [
+                RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Night"]),
+                RoutineRelatedTagRule(tag: "Night", relatedTags: ["Focus"]),
+            ]
+        }
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
@@ -658,6 +676,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
@@ -711,6 +730,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
@@ -830,6 +850,7 @@ struct TaskDetailFeatureTests {
             ]
         }
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
@@ -894,6 +915,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
@@ -965,6 +987,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
@@ -1035,6 +1058,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
@@ -1142,6 +1166,7 @@ struct TaskDetailFeatureTests {
 
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
