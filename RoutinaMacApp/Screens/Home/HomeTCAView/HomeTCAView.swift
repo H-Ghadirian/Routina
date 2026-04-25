@@ -36,7 +36,7 @@ struct HomeTCAView: View {
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
-    @State var draggedSection: String?
+    @State var draggedSection: FormSection?
     @State var isBoardTaskDetailSheetPresented = false
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool

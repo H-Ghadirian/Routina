@@ -52,7 +52,7 @@ struct TaskFormContent: View {
             }
             .onChange(of: formCoordinator.scrollTarget) { _, target in
                 guard let target else { return }
-                if target == "Identity" {
+                if target == .identity {
                     formCoordinator.scrollTarget = nil
                     return
                 }
@@ -82,14 +82,14 @@ struct TaskFormContent: View {
 
     // MARK: - Form sections
 
-    /// All sections that are available given the current form state (excluding Identity).
-    private var availableSections: [String] {
-        var sections = ["Color", "Behavior", "Pressure", "Estimation", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
-        if isStepBasedMode { sections.append("Steps") }
-        sections.append("Image")
-        sections.append("Attachment")
+    /// All sections that are available given the current form state (excluding `.identity`).
+    private var availableSections: [FormSection] {
+        var sections: [FormSection] = [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .linkedTasks, .linkURL, .notes]
+        if isStepBasedMode { sections.append(.steps) }
+        sections.append(.image)
+        sections.append(.attachment)
         if model.onDelete != nil || model.pauseResumeAction != nil {
-            sections.append("Danger Zone")
+            sections.append(.dangerZone)
         }
         return sections
     }
@@ -105,23 +105,23 @@ struct TaskFormContent: View {
     }
 
     @ViewBuilder
-    private func formSectionView(for section: String) -> some View {
+    private func formSectionView(for section: FormSection) -> some View {
         switch section {
-        case "Color":                 colorCard
-        case "Behavior":              behaviorCard
-        case "Pressure":              pressureCard
-        case "Estimation":            estimationCard
-        case "Places":                placesCard
-        case "Importance & Urgency":  importanceCard
-        case "Tags":                  tagsCard
-        case "Linked tasks":          linkedTasksCard
-        case "Link URL":              linkURLCard
-        case "Notes":                 notesCard
-        case "Steps":                 stepsCard
-        case "Image":                 imageCard
-        case "Attachment":            attachmentCard
-        case "Danger Zone":           dangerZoneCard
-        default:                      EmptyView()
+        case .identity:           EmptyView() // identityCard is rendered separately above the ScrollView
+        case .color:              colorCard
+        case .behavior:           behaviorCard
+        case .pressure:           pressureCard
+        case .estimation:         estimationCard
+        case .places:             placesCard
+        case .importanceUrgency:  importanceCard
+        case .tags:               tagsCard
+        case .linkedTasks:        linkedTasksCard
+        case .linkURL:            linkURLCard
+        case .notes:              notesCard
+        case .steps:              stepsCard
+        case .image:              imageCard
+        case .attachment:         attachmentCard
+        case .dangerZone:         dangerZoneCard
         }
     }
 
@@ -206,7 +206,7 @@ struct TaskFormContent: View {
                 }
             }
         }
-        .id("Identity")
+        .id(FormSection.identity)
     }
 
     private var taskNameField: some View {
@@ -510,7 +510,7 @@ struct TaskFormContent: View {
 
             }
         }
-        .id("Behavior")
+        .id(FormSection.behavior)
     }
 
     // MARK: Places
@@ -536,7 +536,7 @@ struct TaskFormContent: View {
                 }
             }
         }
-        .id("Pressure")
+        .id(FormSection.pressure)
     }
 
     private var estimationCard: some View {
@@ -574,7 +574,7 @@ struct TaskFormContent: View {
                 }
             }
         }
-        .id("Estimation")
+        .id(FormSection.estimation)
     }
 
     // MARK: Places
@@ -605,7 +605,7 @@ struct TaskFormContent: View {
                 }
             }
         }
-        .id("Places")
+        .id(FormSection.places)
     }
 
     // MARK: Importance
@@ -622,7 +622,7 @@ struct TaskFormContent: View {
                 .frame(maxWidth: 420, alignment: .leading)
             }
         }
-        .id("Importance & Urgency")
+        .id(FormSection.importanceUrgency)
     }
 
     // MARK: Tags
@@ -639,7 +639,7 @@ struct TaskFormContent: View {
                 manageTagsButton
             }
         }
-        .id("Tags")
+        .id(FormSection.tags)
     }
 
     // MARK: Linked Tasks
@@ -655,7 +655,7 @@ struct TaskFormContent: View {
                 removeRelationship: model.onRemoveRelationship
             )
         }
-        .id("Linked tasks")
+        .id(FormSection.linkedTasks)
     }
 
     // MARK: Link URL
@@ -668,7 +668,7 @@ struct TaskFormContent: View {
                 .textFieldStyle(.roundedBorder)
                 .routinaAddRoutinePlatformLinkField()
         }
-        .id("Link URL")
+        .id(FormSection.linkURL)
     }
 
     // MARK: Notes
@@ -699,7 +699,7 @@ struct TaskFormContent: View {
                 }
             }
         }
-        .id("Notes")
+        .id(FormSection.notes)
     }
 
     // MARK: Steps
@@ -711,7 +711,7 @@ struct TaskFormContent: View {
                 stepsContent
             }
         }
-        .id("Steps")
+        .id(FormSection.steps)
     }
 
     // MARK: Image
@@ -722,7 +722,7 @@ struct TaskFormContent: View {
         ) {
             imageAttachmentContent
         }
-        .id("Image")
+        .id(FormSection.image)
     }
 
     // MARK: Attachment
@@ -733,7 +733,7 @@ struct TaskFormContent: View {
         ) {
             attachmentContent
         }
-        .id("Attachment")
+        .id(FormSection.attachment)
     }
 
     @ViewBuilder
@@ -841,7 +841,7 @@ struct TaskFormContent: View {
                 }
             }
         }
-        .id("Danger Zone")
+        .id(FormSection.dangerZone)
     }
 
     // MARK: - Sub-views

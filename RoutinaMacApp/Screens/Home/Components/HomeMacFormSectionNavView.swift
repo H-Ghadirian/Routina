@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct HomeMacFormSectionNavView<Header: View>: View {
-    let availableSections: [String]
+    let availableSections: [FormSection]
     let coordinator: AddEditFormCoordinator
-    @Binding var draggedSection: String?
+    @Binding var draggedSection: FormSection?
     @ViewBuilder let header: () -> Header
 
-    @State private var hoveredSection: String?
+    @State private var hoveredSection: FormSection?
 
     var body: some View {
         let sections = coordinator.orderedSections(available: availableSections)
@@ -19,7 +19,7 @@ struct HomeMacFormSectionNavView<Header: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(sections, id: \.self) { section in
-                        sectionRow(section: section, isMovable: section != "Identity")
+                        sectionRow(section: section, isMovable: section != .identity)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -30,7 +30,7 @@ struct HomeMacFormSectionNavView<Header: View>: View {
     }
 
     @ViewBuilder
-    private func sectionRow(section: String, isMovable: Bool) -> some View {
+    private func sectionRow(section: FormSection, isMovable: Bool) -> some View {
         let isHovered = hoveredSection == section
         let isDragging = draggedSection == section
 
@@ -41,13 +41,13 @@ struct HomeMacFormSectionNavView<Header: View>: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color.accentColor.opacity(0.12))
-                    Image(systemName: formSectionIcon(for: section))
+                    Image(systemName: section.icon)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color.accentColor)
                 }
                 .frame(width: 32, height: 32)
 
-                Text(section)
+                Text(section.title)
                     .font(.body.weight(.medium))
                     .foregroundStyle(.primary)
 
@@ -89,7 +89,7 @@ struct HomeMacFormSectionNavView<Header: View>: View {
                     // Synchronous — fires on every drag start, so state
                     // never goes stale after a cancelled drag.
                     draggedSection = section
-                    return NSItemProvider(object: section as NSString)
+                    return NSItemProvider(object: section.rawValue as NSString)
                 }, preview: {
                     formSectionDragPreview(for: section)
                 })
@@ -104,12 +104,12 @@ struct HomeMacFormSectionNavView<Header: View>: View {
         }
     }
 
-    private func formSectionDragPreview(for section: String) -> some View {
+    private func formSectionDragPreview(for section: FormSection) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: formSectionIcon(for: section))
+            Image(systemName: section.icon)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.accentColor)
-            Text(section)
+            Text(section.title)
                 .font(.body.weight(.medium))
         }
         .padding(.horizontal, 12)
@@ -121,9 +121,9 @@ struct HomeMacFormSectionNavView<Header: View>: View {
     }
 
     @ViewBuilder
-    private func formSectionContextMenu(for section: String) -> some View {
+    private func formSectionContextMenu(for section: FormSection) -> some View {
         let ordered = coordinator.orderedSections(available: availableSections)
-        let movableOrdered = ordered.filter { $0 != "Identity" }
+        let movableOrdered = ordered.filter { $0 != .identity }
         let isFirst = movableOrdered.first == section
         let isLast = movableOrdered.last == section
 
@@ -145,32 +145,12 @@ struct HomeMacFormSectionNavView<Header: View>: View {
         }
         .disabled(isLast)
     }
-
-    private func formSectionIcon(for section: String) -> String {
-        switch section {
-        case "Identity": return "person.fill"
-        case "Color": return "paintpalette.fill"
-        case "Behavior": return "repeat"
-        case "Estimation": return "clock.fill"
-        case "Places": return "mappin.and.ellipse"
-        case "Importance & Urgency": return "flag.fill"
-        case "Tags": return "tag.fill"
-        case "Linked tasks": return "link"
-        case "Link URL": return "globe"
-        case "Notes": return "note.text"
-        case "Steps": return "list.number"
-        case "Image": return "photo.fill"
-        case "Attachment": return "paperclip"
-        case "Danger Zone": return "exclamationmark.triangle.fill"
-        default: return "circle.fill"
-    }
-    }
 }
 
 private struct HomeMacSectionDropDelegate: DropDelegate {
-    let item: String
+    let item: FormSection
     let coordinator: AddEditFormCoordinator
-    @Binding var draggedSection: String?
+    @Binding var draggedSection: FormSection?
 
     func performDrop(info: DropInfo) -> Bool {
         draggedSection = nil
