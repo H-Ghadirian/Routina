@@ -114,6 +114,7 @@ let package = Package(
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
+                "SharedCore/App/RoutinaUITestSeeder.swift",
                 "SharedCore/AI",
                 "SharedCore/Models",
                 "SharedCore/Dependencies/AppIconClient.swift",

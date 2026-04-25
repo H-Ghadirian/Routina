@@ -116,6 +116,17 @@ enum AppEnvironment {
         return isSandboxDataMode ? "app.sandbox" : "app"
     }()
 
+    static let uiTestSeedProfile: String? = {
+        guard isUITestMode,
+              let rawValue = processEnvironment["ROUTINA_UI_TEST_SEED_PROFILE"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawValue.isEmpty
+        else {
+            return nil
+        }
+
+        return rawValue
+    }()
+
     static let dataModeLabel: String = {
         if isSandboxDataMode {
             return isCloudSyncEnabled ? "Sandbox (separate iCloud)" : "Sandbox (local only)"

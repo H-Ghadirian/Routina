@@ -21,7 +21,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     func testTabSwitchingInteractionPerformance() {
-        let app = makeApp()
+        let app = makeApp(seedProfile: "performance")
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
@@ -34,6 +34,41 @@ final class RoutinaUIPerformanceTests: XCTestCase {
             tapTab("Dones", in: app)
             tapTab("Search", in: app)
             tapTab("Home", in: app)
+        }
+    }
+
+    func testSeededHomeListScrollInteractionPerformance() {
+        let app = makeApp(seedProfile: "performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(seedTask(named: "Seed Task 01", in: app).waitForExistence(timeout: 10))
+
+        app.swipeUp()
+        app.swipeDown()
+
+        measureInteraction {
+            app.swipeUp()
+            app.swipeDown()
+        }
+    }
+
+    func testSeededTaskDetailNavigationInteractionPerformance() {
+        let app = makeApp(seedProfile: "performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+
+        let row = seedTask(named: "Seed Task 01", in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        XCTAssertTrue(taskDetailLoaded(in: app))
+        backToHome(in: app)
+
+        measureInteraction {
+            let measuredRow = seedTask(named: "Seed Task 01", in: app)
+            XCTAssertTrue(measuredRow.waitForExistence(timeout: 10))
+            measuredRow.tap()
+            XCTAssertTrue(taskDetailLoaded(in: app))
+            backToHome(in: app)
         }
     }
 
@@ -50,14 +85,34 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     func testFilterSheetPresentationPerformance() {
-        let app = makeApp()
+        let app = makeApp(seedProfile: "performance")
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(seedTask(named: "Seed Task 01", in: app).waitForExistence(timeout: 10))
 
         openAndCloseFilterSheet(in: app)
         measureInteraction {
             openAndCloseFilterSheet(in: app)
+        }
+    }
+
+    func testSeededFilterTagTogglePerformance() {
+        let app = makeApp(seedProfile: "performance")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(seedTask(named: "Seed Task 01", in: app).waitForExistence(timeout: 10))
+
+        openFilterSheet(in: app)
+        toggleFilterChip(containing: "#Health", in: app)
+        toggleFilterChip(containing: "#Health", in: app)
+        closeFilterSheet(in: app)
+
+        measureInteraction {
+            openFilterSheet(in: app)
+            toggleFilterChip(containing: "#Health", in: app)
+            toggleFilterChip(containing: "#Health", in: app)
+            closeFilterSheet(in: app)
         }
     }
 
@@ -107,13 +162,16 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         }
     }
 
-    private func makeApp() -> XCUIApplication {
+    private func makeApp(seedProfile: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         let runID = UUID().uuidString.lowercased()
         app.launchEnvironment["ROUTINA_UI_TEST_MODE"] = "1"
         app.launchEnvironment["ROUTINA_SANDBOX"] = "1"
         app.launchEnvironment["ROUTINA_STORE_FILENAME"] = "RoutinaModel-UIPerf-\(runID).sqlite"
         app.launchEnvironment["ROUTINA_USER_DEFAULTS_SUITE"] = "app.ui-perf.\(runID)"
+        if let seedProfile {
+            app.launchEnvironment["ROUTINA_UI_TEST_SEED_PROFILE"] = seedProfile
+        }
         return app
     }
 
@@ -149,6 +207,22 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         app.navigationBars.buttons["Add Task"].firstMatch
     }
 
+    private func seedTask(named taskName: String, in app: XCUIApplication) -> XCUIElement {
+        app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", taskName)).firstMatch
+    }
+
+    private func taskDetailLoaded(in app: XCUIApplication) -> Bool {
+        app.staticTexts["Routine Logs"].waitForExistence(timeout: 10)
+            || app.buttons["Edit"].waitForExistence(timeout: 10)
+    }
+
+    private func backToHome(in app: XCUIApplication) {
+        let homeBackButton = app.navigationBars.buttons["Routina"].firstMatch
+        XCTAssertTrue(homeBackButton.waitForExistence(timeout: 10))
+        homeBackButton.tap()
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+    }
+
     private func openAndCloseAddTaskSheet(in app: XCUIApplication) {
         let addTaskButton = homeAddTaskButton(in: app)
         XCTAssertTrue(addTaskButton.waitForExistence(timeout: 10))
@@ -162,15 +236,32 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     private func openAndCloseFilterSheet(in app: XCUIApplication) {
+        openFilterSheet(in: app)
+        closeFilterSheet(in: app)
+    }
+
+    private func openFilterSheet(in app: XCUIApplication) {
         let filtersButton = app.buttons["Filters"].firstMatch
         XCTAssertTrue(filtersButton.waitForExistence(timeout: 10))
         filtersButton.tap()
 
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: 10))
+    }
+
+    private func closeFilterSheet(in app: XCUIApplication) {
         let doneButton = app.navigationBars["Filters"].buttons["Done"].firstMatch
         XCTAssertTrue(doneButton.waitForExistence(timeout: 10))
         doneButton.tap()
 
         XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func toggleFilterChip(containing labelPart: String, in app: XCUIApplication) {
+        let chip = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS %@", labelPart)
+        ).firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "Missing filter chip containing \(labelPart)")
+        chip.tap()
     }
 
     private func addRoutine(in app: XCUIApplication) {
