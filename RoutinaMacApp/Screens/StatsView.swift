@@ -18,8 +18,23 @@ struct StatsView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
+    @State private var isActiveItemsInfoPresented = false
 
     private typealias Metrics = StatsFeature.Metrics
+
+    private struct ActiveItemsBreakdown {
+        let routineCount: Int
+        let todoCount: Int
+        let openTodoCount: Int
+        let completedTodoCount: Int
+        let canceledTodoCount: Int
+        let archivedCount: Int
+        let activeCount: Int
+
+        var matchingCount: Int {
+            routineCount + todoCount
+        }
+    }
 
     private var selectedRange: DoneChartRange {
         store.selectedRange
@@ -35,6 +50,63 @@ struct StatsView: View {
 
     private var filteredTaskCount: Int {
         store.filteredTaskCount
+    }
+
+    private var activeItemsBreakdown: ActiveItemsBreakdown {
+        let now = Date()
+        let filteredTasks = filteredTasksForCurrentStatsFilters
+        let routineCount = filteredTasks.filter { !$0.isOneOffTask }.count
+        let todoTasks = filteredTasks.filter(\.isOneOffTask)
+        let archivedCount = filteredTasks.filter {
+            $0.isArchived(referenceDate: now, calendar: calendar)
+        }.count
+
+        return ActiveItemsBreakdown(
+            routineCount: routineCount,
+            todoCount: todoTasks.count,
+            openTodoCount: todoTasks.filter { !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count,
+            completedTodoCount: todoTasks.filter(\.isCompletedOneOff).count,
+            canceledTodoCount: todoTasks.filter(\.isCanceledOneOff).count,
+            archivedCount: archivedCount,
+            activeCount: filteredTasks.count - archivedCount
+        )
+    }
+
+    private var filteredTasksForCurrentStatsFilters: [RoutineTask] {
+        let tasksMatchingTypeFilter = tasks.filter { task in
+            switch selectedTaskTypeFilter {
+            case .all:
+                return true
+            case .routines:
+                return !task.isOneOffTask
+            case .todos:
+                return task.isOneOffTask
+            }
+        }
+
+        let tasksMatchingMatrixFilter = tasksMatchingTypeFilter.filter { task in
+            HomeFeature.matchesImportanceUrgencyFilter(
+                store.selectedImportanceUrgencyFilter,
+                importance: task.importance,
+                urgency: task.urgency
+            )
+        }
+
+        let includeFilteredTasks = tasksMatchingMatrixFilter.filter { task in
+            HomeFeature.matchesSelectedTags(
+                store.effectiveSelectedTags,
+                mode: store.includeTagMatchMode,
+                in: task.tags
+            )
+        }
+
+        return includeFilteredTasks.filter { task in
+            HomeFeature.matchesExcludedTags(
+                store.excludedTags,
+                mode: store.excludeTagMatchMode,
+                in: task.tags
+            )
+        }
     }
 
     private var gitHubConnection: GitHubConnectionStatus {
@@ -334,7 +406,8 @@ struct StatsView: View {
                 title: activeItemsCardTitle,
                 value: metrics.activeRoutineCount.formatted(),
                 caption: activeRoutineCardCaption(metrics: metrics),
-                accessibilityIdentifier: "stats.summary.activeRoutines"
+                accessibilityIdentifier: "stats.summary.activeRoutines",
+                showsActiveItemsInfo: true
             )
 
             summaryCard(
@@ -953,14 +1026,23 @@ struct StatsView: View {
         title: String,
         value: String,
         caption: String,
-        accessibilityIdentifier: String
+        accessibilityIdentifier: String,
+        showsActiveItemsInfo: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            Image(systemName: icon)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(accent)
-                .frame(width: 42, height: 42)
-                .background(accent.opacity(colorScheme == .dark ? 0.18 : 0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            HStack(alignment: .top) {
+                Image(systemName: icon)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(accent)
+                    .frame(width: 42, height: 42)
+                    .background(accent.opacity(colorScheme == .dark ? 0.18 : 0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                Spacer(minLength: 0)
+
+                if showsActiveItemsInfo {
+                    activeItemsInfoButton
+                }
+            }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
@@ -992,10 +1074,93 @@ struct StatsView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
         )
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: showsActiveItemsInfo ? .contain : .combine)
         .accessibilityLabel(title)
         .accessibilityValue("\(value). \(caption)")
         .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private var activeItemsInfoButton: some View {
+        Button {
+            isActiveItemsInfoPresented.toggle()
+        } label: {
+            Image(systemName: "info.circle")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help("Show active items calculation")
+        .accessibilityLabel("Show active items calculation")
+        .popover(isPresented: $isActiveItemsInfoPresented, arrowEdge: .top) {
+            activeItemsInfoPopover
+        }
+    }
+
+    private var activeItemsInfoPopover: some View {
+        let breakdown = activeItemsBreakdown
+
+        return VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Active items")
+                    .font(.headline.weight(.semibold))
+
+                Text("Calculated from the items matching the current Stats filters.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                formulaRow(
+                    title: "Matching items",
+                    formula: "\(breakdown.routineCount.formatted()) routines + \(breakdown.todoCount.formatted()) todos",
+                    result: breakdown.matchingCount.formatted()
+                )
+
+                formulaRow(
+                    title: "Active items",
+                    formula: "\(breakdown.matchingCount.formatted()) matching - \(breakdown.archivedCount.formatted()) archived",
+                    result: breakdown.activeCount.formatted()
+                )
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Todo breakdown")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text("\(breakdown.openTodoCount.formatted()) open + \(breakdown.completedTodoCount.formatted()) completed + \(breakdown.canceledTodoCount.formatted()) canceled = \(breakdown.todoCount.formatted()) todos")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .frame(width: 300, alignment: .leading)
+    }
+
+    private func formulaRow(title: String, formula: String, result: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 12)
+
+                Text(result)
+                    .font(.system(.subheadline, design: .rounded, weight: .bold))
+            }
+
+            Text(formula)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func smallHighlightBadge(title: String, value: String) -> some View {
