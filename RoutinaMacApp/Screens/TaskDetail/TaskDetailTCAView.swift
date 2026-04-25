@@ -167,6 +167,7 @@ struct TaskDetailTCAView: View {
                     calendarSection
                     todoStatePicker
                 }
+                pressurePicker
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -178,6 +179,29 @@ struct TaskDetailTCAView: View {
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var pressurePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Pressure")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Picker("Pressure", selection: Binding(
+                get: { store.task.pressure },
+                set: { store.send(.pressureChanged($0)) }
+            )) {
+                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
+                    Text(pressure.title).tag(pressure)
+                }
+            }
+            .pickerStyle(.segmented)
+            Text("Use this for tasks that keep occupying your mind, even when they are not the most urgent.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .detailCardStyle()
     }
 
     private var todoStatePicker: some View {
@@ -232,6 +256,7 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 calendarSection
+                pressurePicker
                 routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection

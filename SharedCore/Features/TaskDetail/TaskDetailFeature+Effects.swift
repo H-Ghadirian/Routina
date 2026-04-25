@@ -618,6 +618,20 @@ extension TaskDetailFeature {
         }
     }
 
+    func handlePressureChanged(taskID: UUID, pressure: RoutineTaskPressure) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                task.pressure = pressure
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating pressure: \(error)")
+            }
+        }
+    }
+
     func allLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
         FetchDescriptor<RoutineLog>(
             predicate: #Predicate { log in

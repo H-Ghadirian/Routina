@@ -13,6 +13,7 @@ struct TaskDetailTCAView: View {
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
     @State private var isTodoStatePickerPresented = false
+    @State private var isPressurePickerPresented = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -569,7 +570,18 @@ struct TaskDetailTCAView: View {
     private var todoPrimaryActionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                todoStatePickerPill
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        todoStatePickerPill
+                        pressurePickerPill
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        todoStatePickerPill
+                        pressurePickerPill
+                    }
+                }
+            } else {
+                pressurePickerPill
             }
             primaryActionButton
             cancelTodoButton
@@ -583,6 +595,33 @@ struct TaskDetailTCAView: View {
         }
         .padding(16)
         .detailCardStyle()
+    }
+
+    private var pressurePickerPill: some View {
+        let pressure = store.task.pressure
+        return Button {
+            isPressurePickerPresented = true
+        } label: {
+            Label("Pressure: \(pressure.title)", systemImage: pressurePillSystemImage(pressure))
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(pressurePillColor(pressure))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(pressurePillColor(pressure).opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .confirmationDialog("Set Pressure", isPresented: $isPressurePickerPresented) {
+            ForEach(RoutineTaskPressure.allCases, id: \.self) { option in
+                if option != pressure {
+                    Button(option.title) {
+                        store.send(.pressureChanged(option))
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Current: \(pressure.title)")
+        }
     }
 
     private var todoStatePickerPill: some View {
@@ -640,6 +679,24 @@ struct TaskDetailTCAView: View {
         }
     }
 
+    private func pressurePillColor(_ pressure: RoutineTaskPressure) -> Color {
+        switch pressure {
+        case .none: return .secondary
+        case .low: return .teal
+        case .medium: return .orange
+        case .high: return .red
+        }
+    }
+
+    private func pressurePillSystemImage(_ pressure: RoutineTaskPressure) -> String {
+        switch pressure {
+        case .none: return "circle"
+        case .low: return "circle.lefthalf.filled"
+        case .medium: return "circle.fill"
+        case .high: return "exclamationmark.circle.fill"
+        }
+    }
+
     private func routinePrimaryActionSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
@@ -656,6 +713,8 @@ struct TaskDetailTCAView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+
+            pressurePickerPill
 
             primaryActionButton
 

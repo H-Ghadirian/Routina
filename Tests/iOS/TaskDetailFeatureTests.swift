@@ -1962,6 +1962,34 @@ struct TodoStateFeatureTests {
     // MARK: - Reducer: todoStateChanged
 
     @Test
+    func pressureChanged_updatesPressureAndPersists() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-03-18T10:00:00Z")
+        let task = RoutineTask(name: "Prepare budget", scheduleMode: .fixedInterval)
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            setTestDateDependencies(&$0, now: now)
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.pressureChanged(.high))
+
+        #expect(store.state.task.pressure == .high)
+        #expect(store.state.editPressure == .high)
+        #expect(store.state.taskRefreshID == 1)
+        let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(saved.pressure == .high)
+        #expect(saved.pressureUpdatedAt != nil)
+    }
+
+    @Test
     func todoStateChanged_toInProgress_updatesRawValueAndPersists() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-18T10:00:00Z")

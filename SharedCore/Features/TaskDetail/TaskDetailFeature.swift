@@ -203,6 +203,7 @@ struct TaskDetailFeature: Reducer {
         case openAddLinkedTask
         case editColorChanged(RoutineTaskColor)
         case todoStateChanged(TodoState)
+        case pressureChanged(RoutineTaskPressure)
         case setBlockedStateConfirmation(Bool)
         case confirmBlockedStateCompletion
         case onAppear
@@ -912,6 +913,14 @@ struct TaskDetailFeature: Reducer {
                 updateDerivedState(&state)
                 return handleTodoStateChanged(taskID: state.task.id, rawValue: newState.rawValue, pausedAt: nil, clearSnoozed: true)
             }
+
+        case let .pressureChanged(pressure):
+            guard state.task.pressure != pressure else { return .none }
+            state.task.pressure = pressure
+            state.editPressure = pressure
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handlePressureChanged(taskID: state.task.id, pressure: pressure)
 
         case let .setBlockedStateConfirmation(isPresented):
             state.isBlockedStateConfirmationPresented = isPresented
