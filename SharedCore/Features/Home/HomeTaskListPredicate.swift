@@ -8,6 +8,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
     func matchesVisibleTask(_ task: Display) -> Bool {
         matchesCurrentTaskListMode(task)
             && matchesSearch(task)
+            && matchesAdvancedQuery(task)
             && matchesFilter(task)
             && matchesTaskListViewMode(task)
             && matchesManualPlaceFilter(task)
@@ -25,6 +26,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && (includePinned || !task.isPinned)
             && matchesTaskListViewMode(task)
             && matchesSearch(task)
+            && matchesAdvancedQuery(task)
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
@@ -41,6 +43,10 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             || (task.notes?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
+    }
+
+    func matchesAdvancedQuery(_ task: Display) -> Bool {
+        HomeTaskAdvancedQuery(configuration.advancedQuery).matches(task, metrics: metrics)
     }
 
     func matchesFilter(_ task: Display) -> Bool {

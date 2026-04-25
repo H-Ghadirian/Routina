@@ -45,6 +45,7 @@ struct HomeFilterEditorTests {
     func taskFilterMutation_clearOptionalFiltersResetsFiltersAndHiddenPreference() {
         var taskFilters = HomeTaskFiltersState(
             selectedFilter: .doneToday,
+            advancedQuery: "tag:work",
             selectedTag: "Focus",
             selectedTags: ["Focus", "Health"],
             includeTagMatchMode: .any,
@@ -65,6 +66,7 @@ struct HomeFilterEditorTests {
         )
 
         #expect(taskFilters.selectedFilter == .doneToday)
+        #expect(taskFilters.advancedQuery.isEmpty)
         #expect(taskFilters.selectedTag == nil)
         #expect(taskFilters.effectiveSelectedTags.isEmpty)
         #expect(taskFilters.includeTagMatchMode == .all)
@@ -85,6 +87,7 @@ struct HomeFilterEditorTests {
         let placeID = UUID()
         var taskFilters = HomeTaskFiltersState(
             selectedFilter: .due,
+            advancedQuery: "tag:focus",
             selectedTag: "Focus",
             selectedTags: ["Focus", "Health"],
             includeTagMatchMode: .all,
@@ -103,6 +106,7 @@ struct HomeFilterEditorTests {
                     excludedTags: ["Home"],
                     excludeTagMatchMode: .any,
                     selectedFilter: .all,
+                    advancedQuery: "type:todo",
                     selectedManualPlaceFilterID: nil,
                     selectedTodoStateFilter: .ready,
                     selectedPressureFilter: RoutineTaskPressure.none,
@@ -122,6 +126,7 @@ struct HomeFilterEditorTests {
         #expect(!didResetHidden)
         #expect(hideUnavailableRoutines)
         #expect(taskFilters.selectedTag == "Errands")
+        #expect(taskFilters.advancedQuery == "type:todo")
         #expect(taskFilters.effectiveSelectedTags == ["Errands"])
         #expect(taskFilters.includeTagMatchMode == .any)
         #expect(taskFilters.excludedTags == ["Home"])
@@ -136,6 +141,7 @@ struct HomeFilterEditorTests {
             excludedTags: ["Admin"],
             excludeTagMatchMode: .all,
             selectedFilter: .due,
+            advancedQuery: "tag:focus",
             selectedManualPlaceFilterID: placeID,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,

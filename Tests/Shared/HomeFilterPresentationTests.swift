@@ -12,6 +12,7 @@ struct HomeFilterPresentationTests {
     func activeOptionalFilterCountTracksEveryFilterBucket() {
         let presentation = HomeFilterPresentation(
             taskListKind: .todos,
+            advancedQuery: "type:todo",
             taskListViewMode: .actionable,
             selectedTodoStateFilter: .inProgress,
             selectedTags: ["Focus", "Work"],
@@ -22,7 +23,7 @@ struct HomeFilterPresentationTests {
             hideUnavailableRoutines: true
         )
 
-        #expect(presentation.activeOptionalFilterCount == 9)
+        #expect(presentation.activeOptionalFilterCount == 10)
         #expect(presentation.hasActiveOptionalFilters)
     }
 
@@ -31,6 +32,7 @@ struct HomeFilterPresentationTests {
         let presentation = HomeFilterPresentation(
             taskListKind: .all,
             selectedFilter: .due,
+            advancedQuery: "tag:work",
             taskListViewMode: .actionable,
             selectedTodoStateFilter: .blocked,
             selectedTags: ["Focus", "Work"],
@@ -47,13 +49,14 @@ struct HomeFilterPresentationTests {
             "Actionable",
             "Blocked",
             "Pressure High",
+            "Query tag:work",
             "Any 2 tags",
             "not #Errand",
             "Office",
             "L4/L3+",
             "Away hidden"
         ])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Actionable • Blocked • Pressure High +5 • 12 results")
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Actionable • Blocked • Pressure High +6 • 12 results")
     }
 
     @Test

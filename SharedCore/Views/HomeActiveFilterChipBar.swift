@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeActiveFilterChipBar: View {
     let taskListViewMode: HomeTaskListViewMode
+    let advancedQuery: String
     let selectedTags: Set<String>
     let excludedTags: Set<String>
     let selectedPlaceName: String?
@@ -10,6 +11,7 @@ struct HomeActiveFilterChipBar: View {
     let hideUnavailableRoutines: Bool
     let onClearAll: () -> Void
     let onClearTaskListViewMode: () -> Void
+    let onClearAdvancedQuery: () -> Void
     let onRemoveIncludedTag: (String) -> Void
     let onRemoveExcludedTag: (String) -> Void
     let onClearPlace: () -> Void
@@ -30,6 +32,15 @@ struct HomeActiveFilterChipBar: View {
                         title: "View: \(taskListViewMode.title)",
                         systemImage: taskListViewMode.systemImage,
                         action: onClearTaskListViewMode
+                    )
+                }
+
+                let trimmedAdvancedQuery = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedAdvancedQuery.isEmpty {
+                    HomeActiveFilterChip(
+                        title: "Query: \(trimmedAdvancedQuery)",
+                        systemImage: "text.magnifyingglass",
+                        action: onClearAdvancedQuery
                     )
                 }
 

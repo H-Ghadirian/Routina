@@ -83,6 +83,50 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func advancedQueryMatchesFieldedTermsAndExclusions() {
+        let tasks = [
+            TestTaskDisplay(name: "Draft launch plan", placeName: "Office", tags: ["Work"], isOneOffTask: true, todoState: .ready),
+            TestTaskDisplay(name: "File receipts", placeName: "Home", tags: ["Admin"], isOneOffTask: true, todoState: .done),
+            TestTaskDisplay(name: "Water plants", placeName: "Home", tags: ["Home"], isOneOffTask: false)
+        ]
+
+        let result = makeFiltering(advancedQuery: "type:todo place:office -is:done tag:work")
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Draft launch plan"])
+    }
+
+    @Test
+    func advancedQueryMatchesQuotedTextAndLevels() {
+        let tasks = [
+            TestTaskDisplay(name: "Write launch plan", importance: .level3, urgency: .level2),
+            TestTaskDisplay(name: "Launch checklist", importance: .level2, urgency: .level4)
+        ]
+
+        let result = makeFiltering(advancedQuery: "\"launch plan\" importance:l3")
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Write launch plan"])
+    }
+
+    @Test
+    func advancedQuerySupportsOrderedComparisons() {
+        let tasks = [
+            TestTaskDisplay(name: "Low pressure", importance: .level2, pressure: .low),
+            TestTaskDisplay(name: "Medium pressure", importance: .level3, pressure: .medium),
+            TestTaskDisplay(name: "High pressure", importance: .level4, pressure: .high)
+        ]
+
+        let pressureResult = makeFiltering(advancedQuery: "pressure:>low")
+            .filteredTasks(tasks)
+        let importanceResult = makeFiltering(advancedQuery: "importance:>=l3")
+            .filteredTasks(tasks)
+
+        #expect(Set(pressureResult.map(\.name)) == ["Medium pressure", "High pressure"])
+        #expect(Set(importanceResult.map(\.name)) == ["Medium pressure", "High pressure"])
+    }
+
+    @Test
     func groupedRoutineSectionsBuildsExpectedStatusBuckets() {
         let tasks = [
             TestTaskDisplay(name: "Overdue", daysUntilDue: -2),
@@ -188,6 +232,7 @@ private func makeFiltering(
     selectedTodoStateFilter: TodoState? = nil,
     selectedPressureFilter: RoutineTaskPressure? = nil,
     taskListViewMode: HomeTaskListViewMode = .all,
+    advancedQuery: String = "",
     selectedTags: Set<String> = [],
     includeTagMatchMode: RoutineTagMatchMode = .all,
     excludedTags: Set<String> = [],
@@ -202,6 +247,7 @@ private func makeFiltering(
     return HomeTaskListFiltering(
         configuration: HomeTaskListFilteringConfiguration(
             selectedFilter: selectedFilter,
+            advancedQuery: advancedQuery,
             selectedManualPlaceFilterID: selectedManualPlaceFilterID,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,

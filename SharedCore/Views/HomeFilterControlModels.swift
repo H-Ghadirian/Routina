@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HomeFilterBindings {
     let taskListViewMode: Binding<HomeTaskListViewMode>
+    let advancedQuery: Binding<String>
     let selectedFilter: Binding<RoutineListFilter>
     let selectedTodoStateFilter: Binding<TodoState?>
     let selectedImportanceUrgencyFilter: Binding<ImportanceUrgencyFilterCell?>

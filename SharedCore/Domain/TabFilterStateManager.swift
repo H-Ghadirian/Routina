@@ -36,6 +36,7 @@ struct TabFilterStateManager {
         var excludedTags: Set<String>
         var excludeTagMatchMode: RoutineTagMatchMode
         var selectedFilter: RoutineListFilter
+        var advancedQuery: String
         var selectedManualPlaceFilterID: UUID?
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var selectedTodoStateFilter: TodoState? = nil
@@ -50,6 +51,7 @@ struct TabFilterStateManager {
                 excludedTags: [],
                 excludeTagMatchMode: .any,
                 selectedFilter: .all,
+                advancedQuery: "",
                 selectedManualPlaceFilterID: nil,
                 selectedImportanceUrgencyFilter: nil,
                 selectedTodoStateFilter: nil,
@@ -65,6 +67,7 @@ struct TabFilterStateManager {
             excludedTags: Set<String>,
             excludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedFilter: RoutineListFilter,
+            advancedQuery: String = "",
             selectedManualPlaceFilterID: UUID?,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
@@ -77,6 +80,7 @@ struct TabFilterStateManager {
             self.excludedTags = excludedTags
             self.excludeTagMatchMode = excludeTagMatchMode
             self.selectedFilter = selectedFilter
+            self.advancedQuery = advancedQuery
             self.selectedManualPlaceFilterID = selectedManualPlaceFilterID
             self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
             self.selectedTodoStateFilter = selectedTodoStateFilter
@@ -91,6 +95,7 @@ struct TabFilterStateManager {
             case excludedTags
             case excludeTagMatchMode
             case selectedFilter
+            case advancedQuery
             case selectedManualPlaceFilterID
             case selectedImportanceUrgencyFilter
             case selectedTodoStateFilter
@@ -107,6 +112,7 @@ struct TabFilterStateManager {
             excludedTags = try container.decodeIfPresent(Set<String>.self, forKey: .excludedTags) ?? []
             excludeTagMatchMode = try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .excludeTagMatchMode) ?? .any
             selectedFilter = try container.decodeIfPresent(RoutineListFilter.self, forKey: .selectedFilter) ?? .all
+            advancedQuery = try container.decodeIfPresent(String.self, forKey: .advancedQuery) ?? ""
             selectedManualPlaceFilterID = try container.decodeIfPresent(UUID.self, forKey: .selectedManualPlaceFilterID)
             selectedImportanceUrgencyFilter = try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .selectedImportanceUrgencyFilter)
             selectedTodoStateFilter = try container.decodeIfPresent(TodoState.self, forKey: .selectedTodoStateFilter)
@@ -137,6 +143,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var selectedAppTabRawValue: String?
     var homeTaskListModeRawValue: String?
     var homeSelectedFilter: RoutineListFilter
+    var homeAdvancedQuery: String
     var homeSelectedTag: String?
     var homeSelectedTags: Set<String>
     var homeIncludeTagMatchMode: RoutineTagMatchMode
@@ -180,6 +187,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         selectedAppTabRawValue: String?,
         homeTaskListModeRawValue: String?,
         homeSelectedFilter: RoutineListFilter,
+        homeAdvancedQuery: String = "",
         homeSelectedTag: String?,
         homeSelectedTags: Set<String>? = nil,
         homeIncludeTagMatchMode: RoutineTagMatchMode = .all,
@@ -222,6 +230,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.selectedAppTabRawValue = selectedAppTabRawValue
         self.homeTaskListModeRawValue = homeTaskListModeRawValue
         self.homeSelectedFilter = homeSelectedFilter
+        self.homeAdvancedQuery = homeAdvancedQuery
         self.homeSelectedTag = homeSelectedTag
         self.homeSelectedTags = homeSelectedTags ?? homeSelectedTag.map { [$0] } ?? []
         self.homeIncludeTagMatchMode = homeIncludeTagMatchMode
@@ -266,6 +275,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case selectedAppTabRawValue
         case homeTaskListModeRawValue
         case homeSelectedFilter
+        case homeAdvancedQuery
         case homeSelectedTag
         case homeSelectedTags
         case homeIncludeTagMatchMode
@@ -312,6 +322,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             selectedAppTabRawValue: try container.decodeIfPresent(String.self, forKey: .selectedAppTabRawValue),
             homeTaskListModeRawValue: try container.decodeIfPresent(String.self, forKey: .homeTaskListModeRawValue),
             homeSelectedFilter: try container.decodeIfPresent(RoutineListFilter.self, forKey: .homeSelectedFilter) ?? .all,
+            homeAdvancedQuery: try container.decodeIfPresent(String.self, forKey: .homeAdvancedQuery) ?? "",
             homeSelectedTag: try container.decodeIfPresent(String.self, forKey: .homeSelectedTag),
             homeSelectedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTags),
             homeIncludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeIncludeTagMatchMode) ?? .all,
@@ -357,6 +368,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         selectedAppTabRawValue: Tab.home.rawValue,
         homeTaskListModeRawValue: nil,
         homeSelectedFilter: .all,
+        homeAdvancedQuery: "",
         homeSelectedTag: nil,
         homeSelectedTags: [],
         homeIncludeTagMatchMode: .all,

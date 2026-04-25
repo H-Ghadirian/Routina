@@ -129,12 +129,14 @@ struct AppFeature {
     private func resetTemporaryViewState(_ state: inout State) {
         state.home.taskListMode = .all
         state.home.selectedFilter = .all
+        state.home.advancedQuery = ""
         state.home.selectedTags = []
         state.home.includeTagMatchMode = .all
         state.home.excludedTags = []
         state.home.excludeTagMatchMode = .any
         state.home.selectedManualPlaceFilterID = nil
         state.home.selectedImportanceUrgencyFilter = nil
+        state.home.selectedTodoStateFilter = nil
         state.home.selectedPressureFilter = nil
         state.home.tabFilterSnapshots = [:]
         state.home.hideUnavailableRoutines = false
@@ -178,6 +180,7 @@ struct AppFeature {
                 selectedAppTabRawValue: state.selectedTab.rawValue,
                 homeTaskListModeRawValue: existing.homeTaskListModeRawValue,
                 homeSelectedFilter: existing.homeSelectedFilter,
+                homeAdvancedQuery: existing.homeAdvancedQuery,
                 homeSelectedTag: existing.homeSelectedTag,
                 homeSelectedTags: existing.homeSelectedTags,
                 homeIncludeTagMatchMode: existing.homeIncludeTagMatchMode,
@@ -185,6 +188,7 @@ struct AppFeature {
                 homeExcludeTagMatchMode: existing.homeExcludeTagMatchMode,
                 homeSelectedManualPlaceFilterID: existing.homeSelectedManualPlaceFilterID,
                 homeSelectedImportanceUrgencyFilter: existing.homeSelectedImportanceUrgencyFilter,
+                homeSelectedTodoStateFilter: existing.homeSelectedTodoStateFilter,
                 homeSelectedPressureFilter: existing.homeSelectedPressureFilter,
                 homeTabFilterSnapshots: existing.homeTabFilterSnapshots,
                 hideUnavailableRoutines: existing.hideUnavailableRoutines,

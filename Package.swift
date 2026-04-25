@@ -166,6 +166,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeSelectionSupport.swift",
                 "SharedCore/Features/Home/HomeTaskDeletionSupport.swift",
                 "SharedCore/Features/Home/HomeTaskListDisplay.swift",
+                "SharedCore/Features/Home/HomeTaskAdvancedQuery.swift",
                 "SharedCore/Features/Home/HomeTaskListFiltering.swift",
                 "SharedCore/Features/Home/HomeTaskListMetrics.swift",
                 "SharedCore/Features/Home/HomeTaskListPredicate.swift",

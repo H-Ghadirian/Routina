@@ -2,6 +2,7 @@ import Foundation
 
 struct HomeTaskFiltersState: Equatable {
     var selectedFilter: RoutineListFilter = .all
+    var advancedQuery: String = ""
     var selectedTag: String? = nil
     var selectedTags: Set<String> = []
     var includeTagMatchMode: RoutineTagMatchMode = .all
@@ -23,6 +24,7 @@ struct HomeTaskFiltersState: Equatable {
             excludedTags: excludedTags,
             excludeTagMatchMode: excludeTagMatchMode,
             selectedFilter: selectedFilter,
+            advancedQuery: advancedQuery,
             selectedManualPlaceFilterID: selectedManualPlaceFilterID,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
@@ -53,6 +55,7 @@ struct HomeTaskFiltersState: Equatable {
         excludedTags = snapshot.excludedTags
         excludeTagMatchMode = snapshot.excludeTagMatchMode
         selectedFilter = snapshot.selectedFilter
+        advancedQuery = snapshot.advancedQuery
         selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
         selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
         selectedTodoStateFilter = snapshot.selectedTodoStateFilter
@@ -127,6 +130,7 @@ enum HomeTemporaryViewStateMapper {
         let persistedState = persistedState ?? .default
         var taskFilters = HomeTaskFiltersState(
             selectedFilter: persistedState.homeSelectedFilter,
+            advancedQuery: persistedState.homeAdvancedQuery,
             selectedTag: persistedState.homeSelectedTag,
             selectedTags: persistedState.homeSelectedTags,
             includeTagMatchMode: persistedState.homeIncludeTagMatchMode,
@@ -186,6 +190,7 @@ enum HomeTemporaryViewStateMapper {
             selectedAppTabRawValue: existing.selectedAppTabRawValue,
             homeTaskListModeRawValue: values.taskListModeRawValue,
             homeSelectedFilter: taskFilters.selectedFilter,
+            homeAdvancedQuery: taskFilters.advancedQuery,
             homeSelectedTag: taskFilters.selectedTag,
             homeSelectedTags: taskFilters.effectiveSelectedTags,
             homeIncludeTagMatchMode: taskFilters.includeTagMatchMode,

@@ -9,6 +9,7 @@ struct HomeFiltersSheetView: View {
     var body: some View {
         NavigationStack {
             List {
+                HomeFiltersQuerySection(advancedQuery: bindings.advancedQuery)
                 HomeFiltersViewModeSection(taskListViewMode: bindings.taskListViewMode)
                 HomeFiltersStatusSection(
                     placeFilterPluralNoun: configuration.place.placeFilterPluralNoun,

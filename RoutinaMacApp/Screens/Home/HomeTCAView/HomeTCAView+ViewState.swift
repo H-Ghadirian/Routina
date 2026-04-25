@@ -5,6 +5,7 @@ extension HomeTCAView {
     var activeFilterChipBar: some View {
         HomeActiveFilterChipBar(
             taskListViewMode: store.taskListViewMode,
+            advancedQuery: store.advancedQuery,
             selectedTags: store.selectedTags,
             excludedTags: store.excludedTags,
             selectedPlaceName: selectedPlaceName,
@@ -13,6 +14,7 @@ extension HomeTCAView {
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             onClearAll: { store.send(.clearOptionalFilters) },
             onClearTaskListViewMode: { store.send(.taskListViewModeChanged(.all)) },
+            onClearAdvancedQuery: { store.send(.advancedQueryChanged("")) },
             onRemoveIncludedTag: { tag in
                 var selected = store.selectedTags
                 selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
@@ -40,6 +42,7 @@ extension HomeTCAView {
         HomeFilterPresentation(
             taskListKind: store.taskListMode.filterTaskListKind,
             selectedFilter: store.selectedFilter,
+            advancedQuery: store.advancedQuery,
             taskListViewMode: store.taskListViewMode,
             selectedTodoStateFilter: store.selectedTodoStateFilter,
             selectedTags: store.selectedTags,
@@ -82,6 +85,10 @@ extension HomeTCAView {
             taskListViewMode: Binding(
                 get: { store.taskListViewMode },
                 set: { store.send(.taskListViewModeChanged($0)) }
+            ),
+            advancedQuery: Binding(
+                get: { store.advancedQuery },
+                set: { store.send(.advancedQueryChanged($0)) }
             ),
             selectedFilter: Binding(
                 get: { store.selectedFilter },

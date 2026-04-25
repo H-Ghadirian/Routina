@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: View {
     let availableFilters: [RoutineListFilter]
     @Binding var selectedFilter: RoutineListFilter
+    @Binding var advancedQuery: String
     @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
@@ -14,6 +15,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     var body: some View {
         Group {
+            HomeMacSidebarSectionCard(title: "Query") {
+                queryBuilder
+            }
+
             HomeMacSidebarSectionCard {
                 viewModePicker
             }
@@ -45,6 +50,44 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 }
             }
         }
+    }
+
+    private var queryBuilder: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("tag:work -is:done type:todo", text: $advancedQuery)
+                .textFieldStyle(.roundedBorder)
+
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                queryTokenButton("tag:")
+                queryTokenButton("place:")
+                queryTokenButton("type:todo")
+                queryTokenButton("is:done")
+                queryTokenButton("-is:done")
+                queryTokenButton("due:soon")
+                queryTokenButton("pressure:high")
+                queryTokenButton("pressure:>low")
+                queryTokenButton("pressure:>=medium")
+                queryTokenButton("priority:>low")
+                queryTokenButton("importance:l3")
+                queryTokenButton("importance:>=l3")
+                queryTokenButton("urgency:l3")
+                queryTokenButton("urgency:>=l3")
+            }
+        }
+    }
+
+    private func queryTokenButton(_ token: String) -> some View {
+        Button(token) {
+            appendQueryToken(token)
+        }
+        .font(.caption.weight(.semibold))
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+    }
+
+    private func appendQueryToken(_ token: String) {
+        let trimmed = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        advancedQuery = trimmed.isEmpty ? token : "\(trimmed) \(token)"
     }
 
     private var viewModePicker: some View {

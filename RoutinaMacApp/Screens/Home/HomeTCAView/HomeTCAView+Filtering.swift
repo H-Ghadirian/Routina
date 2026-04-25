@@ -8,6 +8,7 @@ extension HomeTCAView {
         HomeTaskListFiltering(
             configuration: HomeTaskListFilteringConfiguration(
                 selectedFilter: store.selectedFilter,
+                advancedQuery: store.advancedQuery,
                 selectedManualPlaceFilterID: store.selectedManualPlaceFilterID,
                 selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: store.selectedTodoStateFilter,

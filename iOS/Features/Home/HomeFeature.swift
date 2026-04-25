@@ -270,6 +270,11 @@ struct HomeFeature {
             set { taskFilters.selectedFilter = newValue }
         }
 
+        var advancedQuery: String {
+            get { taskFilters.advancedQuery }
+            set { taskFilters.advancedQuery = newValue }
+        }
+
         var selectedTag: String? {
             get { taskFilters.selectedTag }
             set { taskFilters.setSelectedTag(newValue) }
@@ -417,6 +422,7 @@ struct HomeFeature {
 
         // Filter actions
         case selectedFilterChanged(RoutineListFilter)
+        case advancedQueryChanged(String)
         case selectedTagChanged(String?)
         case selectedTagsChanged(Set<String>)
         case includeTagMatchModeChanged(RoutineTagMatchMode)
@@ -656,6 +662,9 @@ struct HomeFeature {
 
             case let .selectedFilterChanged(filter):
                 return applyTaskFilterMutation(.selectedFilter(filter), state: &state)
+
+            case let .advancedQueryChanged(query):
+                return applyTaskFilterMutation(.advancedQuery(query), state: &state)
 
             case let .selectedTagChanged(tag):
                 return applyTaskFilterMutation(.selectedTag(tag), state: &state)

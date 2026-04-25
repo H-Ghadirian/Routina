@@ -42,6 +42,7 @@ extension HomeTaskListSection: Equatable where Display: Equatable {}
 
 struct HomeTaskListFilteringConfiguration {
     var selectedFilter: RoutineListFilter
+    var advancedQuery: String
     var selectedManualPlaceFilterID: UUID?
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     var selectedTodoStateFilter: TodoState?

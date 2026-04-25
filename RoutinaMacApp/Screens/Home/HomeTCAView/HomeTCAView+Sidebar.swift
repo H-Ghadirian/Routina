@@ -340,6 +340,7 @@ extension HomeTCAView {
             HomeMacRoutineFiltersDetailView(
                 availableFilters: macAvailableFilters,
                 selectedFilter: homeFilterBindings.selectedFilter,
+                advancedQuery: homeFilterBindings.advancedQuery,
                 taskListViewMode: homeFilterBindings.taskListViewMode,
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 selectedPressureFilter: homeFilterBindings.selectedPressureFilter,

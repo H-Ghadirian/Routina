@@ -31,6 +31,7 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
 struct HomeFilterPresentation: Equatable, Sendable {
     let taskListKind: HomeFilterTaskListKind
     let selectedFilter: RoutineListFilter
+    let advancedQuery: String
     let taskListViewMode: HomeTaskListViewMode
     let selectedTodoStateFilter: TodoState?
     let selectedTags: Set<String>
@@ -48,6 +49,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     init(
         taskListKind: HomeFilterTaskListKind,
         selectedFilter: RoutineListFilter = .all,
+        advancedQuery: String = "",
         taskListViewMode: HomeTaskListViewMode = .all,
         selectedTodoStateFilter: TodoState? = nil,
         selectedTags: Set<String> = [],
@@ -64,6 +66,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     ) {
         self.taskListKind = taskListKind
         self.selectedFilter = selectedFilter
+        self.advancedQuery = advancedQuery
         self.taskListViewMode = taskListViewMode
         self.selectedTodoStateFilter = selectedTodoStateFilter
         self.selectedTags = selectedTags
@@ -87,6 +90,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if selectedImportanceUrgencyFilter != nil { count += 1 }
         if selectedTodoStateFilter != nil { count += 1 }
         if selectedPressureFilter != nil { count += 1 }
+        if !advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
         if taskListViewMode != .all { count += 1 }
         if hideUnavailableRoutines { count += 1 }
         return count
@@ -113,6 +117,11 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if let selectedPressureFilter {
             labels.append("Pressure \(selectedPressureFilter.title)")
+        }
+
+        let trimmedAdvancedQuery = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedAdvancedQuery.isEmpty {
+            labels.append("Query \(trimmedAdvancedQuery)")
         }
 
         if !selectedTags.isEmpty {

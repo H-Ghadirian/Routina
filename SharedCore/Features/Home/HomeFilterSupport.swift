@@ -7,6 +7,7 @@ struct HomeFilterMutationResult: Equatable {
 
 enum HomeTaskFilterMutation: Equatable {
     case selectedFilter(RoutineListFilter)
+    case advancedQuery(String)
     case selectedTag(String?)
     case selectedTags(Set<String>)
     case includeTagMatchMode(RoutineTagMatchMode)
@@ -66,6 +67,7 @@ enum HomeFilterEditor {
         hideUnavailableRoutines: inout Bool
     ) -> Bool {
         taskFilters.setSelectedTag(nil)
+        taskFilters.advancedQuery = ""
         taskFilters.includeTagMatchMode = .all
         taskFilters.excludedTags = []
         taskFilters.excludeTagMatchMode = .any
@@ -92,6 +94,9 @@ enum HomeFilterEditor {
         switch mutation {
         case let .selectedFilter(filter):
             taskFilters.selectedFilter = filter
+
+        case let .advancedQuery(query):
+            taskFilters.advancedQuery = query
 
         case let .selectedTag(tag):
             taskFilters.setSelectedTag(tag)
