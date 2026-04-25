@@ -11,6 +11,34 @@ import Testing
 @MainActor
 struct HomeFilterEditorTests {
     @Test
+    func advancedQueryInputSuggestsAndCommitsAtomicTokens() {
+        let state = HomeAdvancedQueryInputState(query: "pressure:>lo")
+
+        #expect(state.primarySuggestion?.token == "pressure:>low")
+        #expect(state.primaryGhostSuffix == "w")
+        #expect(state.accepting(state.primarySuggestion!) == "pressure:>low ")
+        #expect(HomeAdvancedQueryInputState(query: "pressure:>lo ").normalizingCommittedAtomicTokens() == "pressure:>low ")
+    }
+
+    @Test
+    func advancedQueryInputRemovesCommittedTokenBlocks() {
+        let state = HomeAdvancedQueryInputState(query: "pressure:>low tag:work ")
+
+        #expect(state.tokens == ["pressure:>low", "tag:work"])
+        #expect(state.removingToken(at: 0) == "tag:work")
+    }
+
+    @Test
+    func advancedQueryInputKeepsOpenFieldSuggestionsEditable() {
+        let state = HomeAdvancedQueryInputState(query: "ta")
+        let suggestion = state.primarySuggestion!
+
+        #expect(suggestion.token == "tag:")
+        #expect(state.accepting(suggestion) == "tag:")
+        #expect(HomeAdvancedQueryInputState(query: "tag:").tokens.isEmpty)
+    }
+
+    @Test
     func taskFilterMutation_selectedTagKeepsSingleAndSetSelectionInSync() {
         var taskFilters = HomeTaskFiltersState()
         var hideUnavailableRoutines = false

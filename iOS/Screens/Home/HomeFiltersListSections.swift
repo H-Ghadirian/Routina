@@ -5,45 +5,8 @@ struct HomeFiltersQuerySection: View {
 
     var body: some View {
         Section("Query") {
-            TextField("tag:work -is:done type:todo", text: $advancedQuery, axis: .vertical)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .lineLimit(1...3)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    queryTokenButton("tag:")
-                    queryTokenButton("place:")
-                    queryTokenButton("type:todo")
-                    queryTokenButton("is:done")
-                    queryTokenButton("-is:done")
-                    queryTokenButton("due:soon")
-                    queryTokenButton("pressure:high")
-                    queryTokenButton("pressure:>low")
-                    queryTokenButton("pressure:>=medium")
-                    queryTokenButton("priority:>low")
-                    queryTokenButton("importance:l3")
-                    queryTokenButton("importance:>=l3")
-                    queryTokenButton("urgency:l3")
-                    queryTokenButton("urgency:>=l3")
-                }
-                .padding(.vertical, 2)
-            }
+            HomeAdvancedQueryBuilder(query: $advancedQuery)
         }
-    }
-
-    private func queryTokenButton(_ token: String) -> some View {
-        Button(token) {
-            appendQueryToken(token)
-        }
-        .font(.caption.weight(.semibold))
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-    }
-
-    private func appendQueryToken(_ token: String) {
-        let trimmed = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        advancedQuery = trimmed.isEmpty ? token : "\(trimmed) \(token)"
     }
 }
 
