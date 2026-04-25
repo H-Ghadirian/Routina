@@ -37,6 +37,7 @@ struct AppFeatureTests {
         }
 
         await store.send(.onAppear) {
+            $0.hasRestoredTemporaryViewState = true
             $0.selectedTab = .timeline
             $0.timeline.selectedRange = .month
             $0.timeline.filterType = .todos
@@ -48,6 +49,53 @@ struct AppFeatureTests {
             $0.stats.selectedTags = ["Focus"]
             $0.stats.excludedTags = ["Deep Work"]
         }
+    }
+
+    @Test
+    func onAppear_restoresPersistedStateOnlyOnce() async {
+        let persistedState = TemporaryViewState(
+            selectedAppTabRawValue: Tab.timeline.rawValue,
+            homeTaskListModeRawValue: HomeFeature.TaskListMode.all.rawValue,
+            homeSelectedFilter: .all,
+            homeSelectedTag: nil,
+            homeExcludedTags: [],
+            homeSelectedManualPlaceFilterID: nil,
+            homeTabFilterSnapshots: [:],
+            hideUnavailableRoutines: false,
+            homeSelectedTimelineRange: .all,
+            homeSelectedTimelineFilterType: .all,
+            homeSelectedTimelineTag: nil,
+            macHomeSidebarModeRawValue: nil,
+            macSelectedSettingsSectionRawValue: nil,
+            timelineSelectedRange: .month,
+            timelineFilterType: .todos,
+            timelineSelectedTag: "Errands",
+            statsSelectedRange: .week,
+            statsSelectedTag: nil,
+            statsExcludedTags: [],
+            statsTaskTypeFilterRawValue: StatsTaskTypeFilter.all.rawValue
+        )
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.temporaryViewState = { persistedState }
+        }
+
+        await store.send(.onAppear) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .timeline
+            $0.timeline.selectedRange = .month
+            $0.timeline.filterType = .todos
+            $0.timeline.selectedTag = "Errands"
+            $0.timeline.selectedTags = ["Errands"]
+        }
+
+        await store.send(.tabSelected(.search)) {
+            $0.selectedTab = .search
+        }
+
+        await store.send(.onAppear)
     }
 
     @Test

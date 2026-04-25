@@ -15,6 +15,7 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         var selectedTab: Tab = .home
+        var hasRestoredTemporaryViewState = false
         var home = HomeFeature.State()
         var timeline = TimelineFeature.State()
         var stats = StatsFeature.State()
@@ -53,6 +54,8 @@ struct AppFeature {
                 persistTemporaryViewState(state)
                 return .none
             case .onAppear:
+                guard !state.hasRestoredTemporaryViewState else { return .none }
+                state.hasRestoredTemporaryViewState = true
                 applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
                 return .none
             case .settings(.resetTemporaryViewStateTapped):

@@ -15,15 +15,19 @@ enum CloudKitSyncDiagnostics {
     private static let timestampKey = "cloudKitSyncDiagnostics.timestamp"
     private static let pushStatusKey = "cloudKitSyncDiagnostics.pushStatus"
     private static let defaults = UserDefaults.standard
+    private static let observerBox = ObserverBox()
 
     static func startIfNeeded() {
-        NotificationCenter.default.addObserver(
+        guard observerBox.observer == nil else { return }
+
+        let observer = NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: nil,
             queue: .main
         ) { notification in
             record(notification)
         }
+        observerBox.observer = observer
     }
 
     static func snapshot() -> Snapshot {
@@ -120,5 +124,21 @@ enum CloudKitSyncDiagnostics {
         formatter.dateStyle = .short
         formatter.timeStyle = .medium
         return formatter.string(from: date)
+    }
+}
+
+private final class ObserverBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: NSObjectProtocol?
+
+    var observer: NSObjectProtocol? {
+        get {
+            lock.withLock { value }
+        }
+        set {
+            lock.withLock {
+                value = newValue
+            }
+        }
     }
 }
