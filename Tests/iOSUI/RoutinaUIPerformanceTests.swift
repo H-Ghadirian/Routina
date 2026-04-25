@@ -49,6 +49,64 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         }
     }
 
+    func testFilterSheetPresentationPerformance() {
+        let app = makeApp()
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+
+        openAndCloseFilterSheet(in: app)
+        measureInteraction {
+            openAndCloseFilterSheet(in: app)
+        }
+    }
+
+    func testSearchTabActivationPerformance() {
+        let app = makeApp()
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+
+        tapTab("Search", in: app)
+        tapTab("Home", in: app)
+
+        measureInteraction {
+            tapTab("Search", in: app)
+            tapTab("Home", in: app)
+        }
+    }
+
+    func testAddRoutineSaveFlowPerformance() {
+        let app = makeApp()
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+
+        measureInteraction {
+            addRoutine(in: app)
+        }
+    }
+
+    func testTaskDetailNavigationPerformance() {
+        let app = makeApp()
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+
+        let routineName = "PerfDetail-\(UUID().uuidString.prefix(6))"
+        addRoutine(named: String(routineName), in: app)
+
+        let row = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", String(routineName))
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+
+        openAndCloseTaskDetail(forRow: row, in: app)
+        measureInteraction {
+            openAndCloseTaskDetail(forRow: row, in: app)
+        }
+    }
+
     private func makeApp() -> XCUIApplication {
         let app = XCUIApplication()
         let runID = UUID().uuidString.lowercased()
@@ -99,6 +157,50 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         let cancelButton = app.navigationBars.buttons["Cancel"].firstMatch
         XCTAssertTrue(cancelButton.waitForExistence(timeout: 10))
         cancelButton.tap()
+
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func openAndCloseFilterSheet(in app: XCUIApplication) {
+        let filtersButton = app.buttons["Filters"].firstMatch
+        XCTAssertTrue(filtersButton.waitForExistence(timeout: 10))
+        filtersButton.tap()
+
+        let doneButton = app.navigationBars["Filters"].buttons["Done"].firstMatch
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 10))
+        doneButton.tap()
+
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func addRoutine(in app: XCUIApplication) {
+        addRoutine(named: "Perf-\(UUID().uuidString.prefix(6))", in: app)
+    }
+
+    private func addRoutine(named routineName: String, in app: XCUIApplication) {
+        let addTaskButton = homeAddTaskButton(in: app)
+        XCTAssertTrue(addTaskButton.waitForExistence(timeout: 10))
+        addTaskButton.tap()
+
+        let nameField = app.textFields["Task name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        nameField.tap()
+        nameField.typeText(routineName)
+
+        let saveButton = app.navigationBars.buttons["Save"].firstMatch
+        XCTAssertTrue(saveButton.waitForExistence(timeout: 10))
+        saveButton.tap()
+
+        XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
+    }
+
+    private func openAndCloseTaskDetail(forRow row: XCUIElement, in app: XCUIApplication) {
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+
+        let backButton = app.navigationBars.buttons["Routina"].firstMatch
+        XCTAssertTrue(backButton.waitForExistence(timeout: 10))
+        backButton.tap()
 
         XCTAssertTrue(homeAddTaskButton(in: app).waitForExistence(timeout: 10))
     }
