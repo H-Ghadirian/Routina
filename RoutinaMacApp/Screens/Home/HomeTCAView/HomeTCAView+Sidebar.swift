@@ -351,7 +351,7 @@ extension HomeTCAView {
                 taskListViewMode: homeFilterBindings.taskListViewMode,
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 importanceUrgencySummary: importanceUrgencyFilterSummary,
-                showsTagSection: !availableTags.isEmpty,
+                showsTagSection: homeTagFilterData.hasTags,
                 showsPlaceSection: hasPlaceAwareContent
             ) {
                 tagFilterBar

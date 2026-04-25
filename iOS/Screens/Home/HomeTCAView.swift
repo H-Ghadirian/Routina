@@ -642,103 +642,34 @@ struct HomeTCAView: View {
         [.all, .due, .doneToday]
     }
 
-    var availableTags: [String] {
-        tagSummaries.map(\.name)
+    var homeTagFilterSupport: HomeTagFilterSupport<HomeFeature.RoutineDisplay> {
+        HomeTagFilterSupport(
+            allDisplays: allRoutineDisplays,
+            matchesCurrentTaskListMode: matchesCurrentTaskListMode,
+            tags: \.tags,
+            selectedTags: store.selectedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            relatedTagRules: store.relatedTagRules,
+            suggestionAnchor: relatedFilterTagSuggestionAnchor
+        )
     }
 
-    var tagSummaries: [RoutineTagSummary] {
-        HomeFeature.tagSummaries(from: allRoutineDisplays.filter(matchesCurrentTaskListMode))
-    }
-
-    var allTagTaskCount: Int {
-        allRoutineDisplays.filter(matchesCurrentTaskListMode).count
-    }
-
-    /// Tags available for exclusion — scoped to tasks that already match the selected include tag.
-    var availableExcludeTags: [String] {
-        availableExcludeTagSummaries.map(\.name)
-    }
-
-    var availableExcludeTagSummaries: [RoutineTagSummary] {
-        let base = allRoutineDisplays.filter(matchesCurrentTaskListMode).filter { task in
-            HomeFeature.matchesSelectedTags(
-                store.selectedTags,
-                mode: store.includeTagMatchMode,
-                in: task.tags
-            )
-        }
-        return HomeFeature.tagSummaries(from: base).filter { summary in
-            // Don't offer the include tag itself as an exclude option
-            !store.selectedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
-        }
+    var homeTagFilterCoordinator: HomeTagFilterCoordinator<HomeFeature.RoutineDisplay> {
+        HomeTagFilterCoordinator(
+            support: homeTagFilterSupport,
+            excludedTags: store.excludedTags,
+            setSelectedTags: { store.send(.selectedTagsChanged($0)) },
+            setExcludedTags: { store.send(.excludedTagsChanged($0)) },
+            setSuggestionAnchor: { relatedFilterTagSuggestionAnchor = $0 }
+        )
     }
 
     var homeTagFilterData: HomeTagFilterData {
-        HomeTagFilterData(
-            selectedTags: store.selectedTags,
-            excludedTags: store.excludedTags,
-            tagSummaries: tagSummaries,
-            allTagTaskCount: allTagTaskCount,
-            suggestedRelatedTags: suggestedRelatedFilterTags,
-            availableExcludeTagSummaries: availableExcludeTagSummaries
-        )
+        homeTagFilterCoordinator.data
     }
 
     var homeTagFilterActions: HomeTagFilterActions {
-        HomeTagFilterActions(
-            onShowAllTags: {
-                relatedFilterTagSuggestionAnchor = nil
-                store.send(.selectedTagsChanged([]))
-            },
-            onToggleIncludedTag: toggleIncludedTag,
-            onAddIncludedTag: addIncludedTag,
-            onToggleExcludedTag: toggleExcludedTag
-        )
-    }
-
-    var suggestedRelatedFilterTags: [String] {
-        let selectedTags = store.selectedTags
-        guard !selectedTags.isEmpty else { return [] }
-        let suggestionSource = relatedFilterTagSuggestionAnchor.map { [$0] } ?? Array(selectedTags)
-        return RoutineTagRelations.relatedTags(
-            for: suggestionSource,
-            rules: store.relatedTagRules,
-            availableTags: availableTags
-        )
-    }
-
-    func toggleIncludedTag(_ tag: String) {
-        var selected = store.selectedTags
-        if selected.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            selected.insert(tag)
-            relatedFilterTagSuggestionAnchor = tag
-        }
-        store.send(.selectedTagsChanged(selected))
-        if selected.isEmpty {
-            relatedFilterTagSuggestionAnchor = nil
-        }
-    }
-
-    func addIncludedTag(_ tag: String) {
-        guard !homeTagFilterData.isIncludedTagSelected(tag) else { return }
-        var selected = store.selectedTags
-        selected.insert(tag)
-        store.send(.selectedTagsChanged(selected))
-    }
-
-    func toggleExcludedTag(_ tag: String) {
-        var excluded = store.excludedTags
-        if excluded.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            excluded = excluded.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            excluded.insert(tag)
-            var selected = store.selectedTags
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-            store.send(.selectedTagsChanged(selected))
-        }
-        store.send(.excludedTagsChanged(excluded))
+        homeTagFilterCoordinator.actions
     }
 
     func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {

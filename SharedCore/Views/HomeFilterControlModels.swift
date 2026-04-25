@@ -55,3 +55,47 @@ struct HomeTagFilterActions {
     let onAddIncludedTag: (String) -> Void
     let onToggleExcludedTag: (String) -> Void
 }
+
+struct HomeTagFilterCoordinator<Display> {
+    let support: HomeTagFilterSupport<Display>
+    let excludedTags: Set<String>
+    let setSelectedTags: (Set<String>) -> Void
+    let setExcludedTags: (Set<String>) -> Void
+    let setSuggestionAnchor: (String?) -> Void
+
+    var data: HomeTagFilterData {
+        HomeTagFilterData(
+            selectedTags: support.selectedTags,
+            excludedTags: excludedTags,
+            tagSummaries: support.tagSummaries,
+            allTagTaskCount: support.allTagTaskCount,
+            suggestedRelatedTags: support.suggestedRelatedTags,
+            availableExcludeTagSummaries: support.availableExcludeTagSummaries
+        )
+    }
+
+    var actions: HomeTagFilterActions {
+        HomeTagFilterActions(
+            onShowAllTags: {
+                applyIncludedTagMutation(support.clearedIncludedTags())
+            },
+            onToggleIncludedTag: { tag in
+                applyIncludedTagMutation(support.toggledIncludedTag(tag))
+            },
+            onAddIncludedTag: { tag in
+                guard let mutation = support.addedIncludedTag(tag) else { return }
+                applyIncludedTagMutation(mutation)
+            },
+            onToggleExcludedTag: { tag in
+                let mutation = support.toggledExcludedTag(tag, excludedTags: excludedTags)
+                setSelectedTags(mutation.selectedTags)
+                setExcludedTags(mutation.excludedTags)
+            }
+        )
+    }
+
+    private func applyIncludedTagMutation(_ mutation: HomeIncludedTagMutation) {
+        setSuggestionAnchor(mutation.suggestionAnchor)
+        setSelectedTags(mutation.selectedTags)
+    }
+}

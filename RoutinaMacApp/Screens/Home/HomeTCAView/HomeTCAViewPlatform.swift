@@ -289,7 +289,7 @@ extension HomeTCAView {
 
     @ViewBuilder
     var platformTagFilterBar: some View {
-        if !availableTags.isEmpty {
+        if homeTagFilterData.hasTags {
             HomeMacRoutineTagFiltersView(
                 bindings: homeFilterBindings.tagRules,
                 data: homeTagFilterData,

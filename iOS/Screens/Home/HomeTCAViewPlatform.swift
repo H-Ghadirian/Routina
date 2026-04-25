@@ -308,7 +308,7 @@ extension HomeTCAView {
 
     @ViewBuilder
     var platformTagFilterBar: some View {
-        if !availableTags.isEmpty {
+        if homeTagFilterData.hasTags {
             HomeTagFilterBar(
                 data: homeTagFilterData,
                 actions: homeTagFilterActions
