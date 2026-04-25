@@ -149,4 +149,23 @@ enum HomeAddRoutineSupport {
             await scheduleNotification(payload)
         }
     }
+
+    static func availabilityRefreshEffect<Action>(
+        tasks: [RoutineTask],
+        places: [RoutinePlace],
+        doneStats: HomeDoneStats,
+        action: @escaping (AddRoutineFeature.Action) -> Action
+    ) -> Effect<Action> {
+        .merge(
+            .send(action(.existingRoutineNamesChanged(HomeTaskSupport.existingRoutineNames(from: tasks)))),
+            .send(action(.availableTagSummariesChanged(
+                RoutineTag.summaries(
+                    from: tasks,
+                    countsByTaskID: doneStats.countsByTaskID
+                )
+            ))),
+            .send(action(.availablePlacesChanged(RoutinePlace.summaries(from: places, linkedTo: tasks)))),
+            .send(action(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(tasks))))
+        )
+    }
 }

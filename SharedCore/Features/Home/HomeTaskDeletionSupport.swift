@@ -10,6 +10,43 @@ struct HomeTaskDeletionUpdate: Equatable, Sendable {
     }
 }
 
+struct HomeTaskDeletionCoordinator<Action> {
+    var modelContext: @MainActor @Sendable () -> ModelContext
+    var saveSprintBoardData: @Sendable (SprintBoardData) async -> Void
+    var cancelNotification: @Sendable (String) async -> Void
+
+    func deleteTasks(
+        ids: [UUID],
+        tasks: inout [RoutineTask],
+        doneStats: inout HomeDoneStats,
+        sprintBoardData: inout SprintBoardData?
+    ) -> Effect<Action>? {
+        guard let update = HomeTaskDeletionSupport.prepareDeleteTasks(
+            ids: ids,
+            tasks: &tasks,
+            doneStats: &doneStats
+        ) else {
+            return nil
+        }
+
+        if var boardData = sprintBoardData {
+            HomeTaskDeletionSupport.removeSprintAssignments(
+                targeting: update.uniqueIDs,
+                from: &boardData
+            )
+            sprintBoardData = boardData
+        }
+
+        return HomeTaskDeletionSupport.deleteTasks(
+            update,
+            sprintBoardData: sprintBoardData,
+            modelContext: modelContext,
+            saveSprintBoardData: saveSprintBoardData,
+            cancelNotification: cancelNotification
+        )
+    }
+}
+
 enum HomeTaskDeletionSupport {
     static func prepareDeleteTasks(
         ids: [UUID],

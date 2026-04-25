@@ -470,6 +470,16 @@ struct HomeFeature {
         )
     }
 
+    private func taskDeletionCoordinator() -> HomeTaskDeletionCoordinator<Action> {
+        HomeTaskDeletionCoordinator(
+            modelContext: { self.modelContext() },
+            saveSprintBoardData: { _ in },
+            cancelNotification: { identifier in
+                await self.notificationClient.cancel(identifier)
+            }
+        )
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -523,15 +533,12 @@ struct HomeFeature {
                 guard state.presentation.addRoutineState != nil else { return detailRefreshEffect }
                 return .merge(
                     detailRefreshEffect,
-                    .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: snapshot.tasks)))),
-                    .send(.addRoutineSheet(.availableTagSummariesChanged(
-                        RoutineTag.summaries(
-                            from: snapshot.tasks,
-                            countsByTaskID: doneStats.countsByTaskID
-                        )
-                    ))),
-                    .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: snapshot.places, linkedTo: snapshot.tasks)))),
-                    .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(snapshot.tasks))))
+                    HomeAddRoutineSupport.availabilityRefreshEffect(
+                        tasks: snapshot.tasks,
+                        places: snapshot.places,
+                        doneStats: snapshot.doneStats,
+                        action: { .addRoutineSheet($0) }
+                    )
                 )
 
             case .tasksLoadFailed:
@@ -975,37 +982,27 @@ struct HomeFeature {
     private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {
         var routineTasks = state.routineTasks
         var doneStats = state.doneStats
-        guard let update = HomeTaskDeletionSupport.prepareDeleteTasks(
+        var sprintBoardData: SprintBoardData?
+        guard let deleteEffect = taskDeletionCoordinator().deleteTasks(
             ids: ids,
             tasks: &routineTasks,
-            doneStats: &doneStats
+            doneStats: &doneStats,
+            sprintBoardData: &sprintBoardData
         ) else { return .none }
         state.routineTasks = routineTasks
         state.doneStats = doneStats
         refreshDisplays(&state)
         syncSelectedTaskDetailState(&state)
 
-        let deleteEffect: Effect<Action> = HomeTaskDeletionSupport.deleteTasks(
-            update,
-            sprintBoardData: nil,
-            modelContext: { self.modelContext() },
-            saveSprintBoardData: { _ in },
-            cancelNotification: { identifier in
-                await self.notificationClient.cancel(identifier)
-            }
-        )
         guard state.presentation.addRoutineState != nil else { return deleteEffect }
         return .merge(
             deleteEffect,
-            .send(.addRoutineSheet(.existingRoutineNamesChanged(existingRoutineNames(from: state.routineTasks)))),
-            .send(.addRoutineSheet(.availableTagSummariesChanged(
-                RoutineTag.summaries(
-                    from: state.routineTasks,
-                    countsByTaskID: state.doneStats.countsByTaskID
-                )
-            ))),
-            .send(.addRoutineSheet(.availablePlacesChanged(RoutinePlace.summaries(from: state.routinePlaces, linkedTo: state.routineTasks)))),
-            .send(.addRoutineSheet(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(state.routineTasks))))
+            HomeAddRoutineSupport.availabilityRefreshEffect(
+                tasks: state.routineTasks,
+                places: state.routinePlaces,
+                doneStats: state.doneStats,
+                action: { .addRoutineSheet($0) }
+            )
         )
     }
 
