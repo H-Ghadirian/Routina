@@ -213,6 +213,7 @@ struct HomeFeatureTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -333,6 +334,7 @@ struct HomeFeatureTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -650,6 +652,7 @@ struct HomeFeatureTests {
             $0.taskDetailState?.isDoneToday = false
         }
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
     }
 
     @Test
@@ -780,6 +783,7 @@ struct HomeFeatureTests {
             $0.taskDetailState?.isDoneToday = false
         }
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
     }
 
     @Test
@@ -854,6 +858,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         _ = sourceTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
         _ = sourceTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
@@ -1022,6 +1027,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 1)
         #expect(store.state.taskDetailState?.task.completedChecklistItemCount == 1)
@@ -1200,6 +1206,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.taskDetailState?.task.lastDone == now)
@@ -1290,6 +1297,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         #expect(store.state.selectedTaskReloadGuard?.lastDone == now)
     }
@@ -1391,6 +1399,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
@@ -1422,6 +1431,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
@@ -1543,6 +1553,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
@@ -1574,6 +1585,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         #expect(store.state.routineTasks[0].lastDone == now)
         #expect(store.state.routineTasks[0].completedChecklistItemCount == 0)
@@ -1764,6 +1776,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
         await store.receive(.taskDetail(.attachmentsLoaded([])))
+        await receiveTaskDetailNotificationStatus(store)
 
         #expect(store.state.routineTasks[0].lastDone == nil)
         #expect(store.state.taskDetailState?.task.lastDone == nil)
@@ -3624,6 +3637,7 @@ struct HomeFeatureTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -3658,6 +3672,7 @@ struct HomeFeatureTests {
         ) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -3688,6 +3703,24 @@ struct HomeFeatureTests {
         await store.send(.taskListModeChanged(.routines)) {
             $0.taskListMode = .routines
             $0.isMacFilterDetailPresented = false
+        }
+    }
+}
+
+@MainActor
+private func receiveTaskDetailNotificationStatus(
+    _ store: TestStoreOf<HomeFeature>
+) async {
+    let isAlreadyLoaded = store.state.taskDetailState?.hasLoadedNotificationStatus == true
+        && store.state.taskDetailState?.appNotificationsEnabled == false
+        && store.state.taskDetailState?.systemNotificationsAuthorized == false
+    if isAlreadyLoaded {
+        await store.receive(.taskDetail(.notificationStatusLoaded(appEnabled: false, systemAuthorized: false)))
+    } else {
+        await store.receive(.taskDetail(.notificationStatusLoaded(appEnabled: false, systemAuthorized: false))) {
+            $0.taskDetailState?.hasLoadedNotificationStatus = true
+            $0.taskDetailState?.appNotificationsEnabled = false
+            $0.taskDetailState?.systemNotificationsAuthorized = false
         }
     }
 }

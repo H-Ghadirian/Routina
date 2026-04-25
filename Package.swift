@@ -174,6 +174,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeTaskListSorter.swift",
                 "SharedCore/Features/Home/HomeTaskLoadSupport.swift",
                 "SharedCore/Features/Home/HomeTaskOrderingSupport.swift",
+                "SharedCore/Features/Home/HomeTaskRowActionPresentation.swift",
                 "SharedCore/Features/Home/HomeTaskSupport.swift",
                 "SharedCore/Features/Home/HomeTagFilterSupport.swift",
                 "SharedCore/Features/Home/HomeTaskLifecycleCoordinator.swift",

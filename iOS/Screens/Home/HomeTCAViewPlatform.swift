@@ -502,20 +502,6 @@ extension HomeTCAView {
     }
 
     @ViewBuilder
-    func platformPinMenuItem(for task: HomeFeature.RoutineDisplay) -> some View {
-        EmptyView()
-    }
-
-    @ViewBuilder
-    func platformDeleteMenuItem(for task: HomeFeature.RoutineDisplay) -> some View {
-        Button(role: .destructive) {
-            deleteTask(task.taskID)
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-    }
-
-    @ViewBuilder
     private var iosSidebarContent: some View {
         Group {
             if store.routineTasks.isEmpty {

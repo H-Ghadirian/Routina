@@ -152,24 +152,4 @@ extension HomeTCAView {
             }
     }
 
-    @ViewBuilder
-    func platformPinMenuItem(for task: HomeFeature.RoutineDisplay) -> some View {
-        Button {
-            store.send(task.isPinned ? .unpinTask(task.taskID) : .pinTask(task.taskID))
-        } label: {
-            Label(
-                task.isPinned ? "Unpin from Top" : "Pin to Top",
-                systemImage: task.isPinned ? "pin.slash" : "pin"
-            )
-        }
-    }
-
-    @ViewBuilder
-    func platformDeleteMenuItem(for task: HomeFeature.RoutineDisplay) -> some View {
-        Button(role: .destructive) {
-            deleteTask(task.taskID)
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-    }
 }

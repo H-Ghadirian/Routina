@@ -338,40 +338,6 @@ extension HomeTCAView {
         return "Due \(dueDate.formatted(date: .abbreviated, time: .omitted))"
     }
 
-    func markDoneLabel(for task: HomeFeature.RoutineDisplay) -> String {
-        if task.scheduleMode == .derivedFromChecklist {
-            if task.dueChecklistItemCount == 0 {
-                return "No Due Items"
-            }
-            if task.dueChecklistItemCount == 1 {
-                return "Buy Due Item"
-            }
-            return "Buy Due Items"
-        }
-        if task.scheduleMode == .fixedIntervalChecklist {
-            return "Checklist"
-        }
-        return task.steps.isEmpty ? "Mark Done" : "Complete Next Step"
-    }
-
-    func isMarkDoneDisabled(_ task: HomeFeature.RoutineDisplay) -> Bool {
-        if task.isOneOffTask {
-            return task.isCompletedOneOff || task.isCanceledOneOff || task.isPaused
-        }
-        if task.scheduleMode == .derivedFromChecklist {
-            return task.isPaused || task.dueChecklistItemCount == 0
-        }
-        if task.scheduleMode == .fixedIntervalChecklist {
-            return true
-        }
-        if task.recurrenceRule.isFixedCalendar,
-           let dueDate = task.dueDate,
-           dueDate > Date() {
-            return true
-        }
-        return task.isDoneToday || task.isPaused
-    }
-
     func placeMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
         switch task.locationAvailability {
         case .unrestricted:

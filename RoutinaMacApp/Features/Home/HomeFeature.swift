@@ -1541,7 +1541,7 @@ struct HomeFeature {
 
 }
 
-extension HomeFeature.RoutineDisplay: HomeTaskListDisplay {}
+extension HomeFeature.RoutineDisplay: HomeTaskListDisplay, HomeTaskRowDisplay {}
 
 extension HomeFeature {
     @MainActor
