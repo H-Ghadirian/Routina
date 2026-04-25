@@ -342,6 +342,7 @@ extension HomeTCAView {
                 selectedFilter: homeFilterBindings.selectedFilter,
                 taskListViewMode: homeFilterBindings.taskListViewMode,
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
+                selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
                 importanceUrgencySummary: importanceUrgencyFilterSummary,
                 showsTagSection: homeTagFilterData.hasTags,
                 showsPlaceSection: hasPlaceAwareContent

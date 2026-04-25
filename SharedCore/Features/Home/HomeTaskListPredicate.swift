@@ -12,6 +12,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesTaskListViewMode(task)
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
+            && matchesPressureFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
             && matchesExcludedTags(task)
@@ -26,6 +27,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesSearch(task)
             && matchesManualPlaceFilter(task)
             && matchesTodoStateFilter(task)
+            && matchesPressureFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
             && matchesExcludedTags(task)
@@ -66,6 +68,13 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             configuration.selectedTodoStateFilter,
             isOneOffTask: task.isOneOffTask,
             todoState: task.todoState
+        )
+    }
+
+    func matchesPressureFilter(_ task: Display) -> Bool {
+        HomeDisplayFilterSupport.matchesPressureFilter(
+            configuration.selectedPressureFilter,
+            pressure: task.pressure
         )
     }
 

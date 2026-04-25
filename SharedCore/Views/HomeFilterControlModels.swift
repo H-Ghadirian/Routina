@@ -6,6 +6,7 @@ struct HomeFilterBindings {
     let selectedFilter: Binding<RoutineListFilter>
     let selectedTodoStateFilter: Binding<TodoState?>
     let selectedImportanceUrgencyFilter: Binding<ImportanceUrgencyFilterCell?>
+    let selectedPressureFilter: Binding<RoutineTaskPressure?>
     let includeTagMatchMode: Binding<RoutineTagMatchMode>
     let excludeTagMatchMode: Binding<RoutineTagMatchMode>
     let selectedPlaceID: Binding<UUID?>

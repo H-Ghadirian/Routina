@@ -173,6 +173,7 @@ struct HomeFeature {
             selectedManualPlaceFilterID: UUID? = nil,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
+            selectedPressureFilter: RoutineTaskPressure? = nil,
             taskListViewMode: HomeTaskListViewMode = .all,
             tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:],
             isFilterSheetPresented: Bool = false,
@@ -232,6 +233,7 @@ struct HomeFeature {
                 selectedManualPlaceFilterID: selectedManualPlaceFilterID,
                 selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: selectedTodoStateFilter,
+                selectedPressureFilter: selectedPressureFilter,
                 taskListViewMode: taskListViewMode,
                 tabFilterSnapshots: tabFilterSnapshots,
                 isFilterSheetPresented: isFilterSheetPresented
@@ -358,6 +360,11 @@ struct HomeFeature {
         var selectedTodoStateFilter: TodoState? {
             get { taskFilters.selectedTodoStateFilter }
             set { taskFilters.selectedTodoStateFilter = newValue }
+        }
+
+        var selectedPressureFilter: RoutineTaskPressure? {
+            get { taskFilters.selectedPressureFilter }
+            set { taskFilters.selectedPressureFilter = newValue }
         }
 
         var taskListViewMode: HomeTaskListViewMode {
@@ -529,6 +536,7 @@ struct HomeFeature {
         case selectedManualPlaceFilterIDChanged(UUID?)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case selectedTodoStateFilterChanged(TodoState?)
+        case selectedPressureFilterChanged(RoutineTaskPressure?)
         case taskListViewModeChanged(HomeTaskListViewMode)
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
@@ -812,6 +820,9 @@ struct HomeFeature {
             case let .selectedTodoStateFilterChanged(filter):
                 return applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
 
+            case let .selectedPressureFilterChanged(filter):
+                return applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
+
             case let .taskListViewModeChanged(mode):
                 return applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
 
@@ -929,10 +940,11 @@ struct HomeFeature {
                     if state.macSidebarMode != .board {
                         state.macSidebarMode = .routines
                     }
-                    // Sync taskListMode and save/restore filter snapshots inline
+                    // Keep All stable when choosing a mixed-list item; selecting a task
+                    // should not narrow the visible tab behind the user's back.
                     if let task = state.routineTasks.first(where: { $0.id == taskID }) {
                         let newMode: TaskListMode = task.isOneOffTask ? .todos : .routines
-                        if newMode != state.taskListMode {
+                        if state.taskListMode != .all, newMode != state.taskListMode {
                             let oldMode = state.taskListMode
                             var taskFilters = state.taskFilters
                             var hideUnavailableRoutines = state.hideUnavailableRoutines

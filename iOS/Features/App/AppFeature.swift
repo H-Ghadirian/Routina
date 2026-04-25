@@ -132,6 +132,7 @@ struct AppFeature {
         state.home.excludeTagMatchMode = .any
         state.home.selectedManualPlaceFilterID = nil
         state.home.selectedImportanceUrgencyFilter = nil
+        state.home.selectedPressureFilter = nil
         state.home.tabFilterSnapshots = [:]
         state.home.hideUnavailableRoutines = false
         state.home.isFilterSheetPresented = false
@@ -181,6 +182,7 @@ struct AppFeature {
                 homeExcludeTagMatchMode: existing.homeExcludeTagMatchMode,
                 homeSelectedManualPlaceFilterID: existing.homeSelectedManualPlaceFilterID,
                 homeSelectedImportanceUrgencyFilter: existing.homeSelectedImportanceUrgencyFilter,
+                homeSelectedPressureFilter: existing.homeSelectedPressureFilter,
                 homeTabFilterSnapshots: existing.homeTabFilterSnapshots,
                 hideUnavailableRoutines: existing.hideUnavailableRoutines,
                 homeSelectedTimelineRange: existing.homeSelectedTimelineRange,

@@ -55,6 +55,34 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func pressureFilterShowsTasksWithSelectedPressureLevel() {
+        let tasks = [
+            TestTaskDisplay(name: "Low pressure", pressure: .low),
+            TestTaskDisplay(name: "No pressure", pressure: .none),
+            TestTaskDisplay(name: "High pressure", pressure: .high)
+        ]
+
+        let result = makeFiltering(selectedPressureFilter: .low)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Low pressure"])
+    }
+
+    @Test
+    func pressureNoneFilterShowsTasksWithNoPressure() {
+        let tasks = [
+            TestTaskDisplay(name: "Low pressure", pressure: .low),
+            TestTaskDisplay(name: "No pressure", pressure: .none),
+            TestTaskDisplay(name: "High pressure", pressure: .high)
+        ]
+
+        let result = makeFiltering(selectedPressureFilter: RoutineTaskPressure.none)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["No pressure"])
+    }
+
+    @Test
     func groupedRoutineSectionsBuildsExpectedStatusBuckets() {
         let tasks = [
             TestTaskDisplay(name: "Overdue", daysUntilDue: -2),
@@ -158,6 +186,7 @@ private func makeFiltering(
     selectedManualPlaceFilterID: UUID? = nil,
     selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
     selectedTodoStateFilter: TodoState? = nil,
+    selectedPressureFilter: RoutineTaskPressure? = nil,
     taskListViewMode: HomeTaskListViewMode = .all,
     selectedTags: Set<String> = [],
     includeTagMatchMode: RoutineTagMatchMode = .all,
@@ -176,6 +205,7 @@ private func makeFiltering(
             selectedManualPlaceFilterID: selectedManualPlaceFilterID,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
+            selectedPressureFilter: selectedPressureFilter,
             taskListViewMode: taskListViewMode,
             selectedTags: selectedTags,
             includeTagMatchMode: includeTagMatchMode,

@@ -39,6 +39,7 @@ struct TabFilterStateManager {
         var selectedManualPlaceFilterID: UUID?
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var selectedTodoStateFilter: TodoState? = nil
+        var selectedPressureFilter: RoutineTaskPressure? = nil
         var taskListViewMode: HomeTaskListViewMode = .all
 
         static var `default`: Snapshot {
@@ -52,6 +53,7 @@ struct TabFilterStateManager {
                 selectedManualPlaceFilterID: nil,
                 selectedImportanceUrgencyFilter: nil,
                 selectedTodoStateFilter: nil,
+                selectedPressureFilter: nil,
                 taskListViewMode: .all
             )
         }
@@ -66,6 +68,7 @@ struct TabFilterStateManager {
             selectedManualPlaceFilterID: UUID?,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
+            selectedPressureFilter: RoutineTaskPressure? = nil,
             taskListViewMode: HomeTaskListViewMode = .all
         ) {
             self.selectedTag = selectedTag
@@ -77,6 +80,7 @@ struct TabFilterStateManager {
             self.selectedManualPlaceFilterID = selectedManualPlaceFilterID
             self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
             self.selectedTodoStateFilter = selectedTodoStateFilter
+            self.selectedPressureFilter = selectedPressureFilter
             self.taskListViewMode = taskListViewMode
         }
 
@@ -90,6 +94,7 @@ struct TabFilterStateManager {
             case selectedManualPlaceFilterID
             case selectedImportanceUrgencyFilter
             case selectedTodoStateFilter
+            case selectedPressureFilter
             case taskListViewMode
         }
 
@@ -105,6 +110,7 @@ struct TabFilterStateManager {
             selectedManualPlaceFilterID = try container.decodeIfPresent(UUID.self, forKey: .selectedManualPlaceFilterID)
             selectedImportanceUrgencyFilter = try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .selectedImportanceUrgencyFilter)
             selectedTodoStateFilter = try container.decodeIfPresent(TodoState.self, forKey: .selectedTodoStateFilter)
+            selectedPressureFilter = try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .selectedPressureFilter)
             taskListViewMode = try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .taskListViewMode) ?? .all
         }
     }
@@ -139,6 +145,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedManualPlaceFilterID: UUID?
     var homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var homeSelectedTodoStateFilter: TodoState? = nil
+    var homeSelectedPressureFilter: RoutineTaskPressure? = nil
     var homeTaskListViewMode: HomeTaskListViewMode = .all
     var homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot]
     var hideUnavailableRoutines: Bool
@@ -181,6 +188,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedManualPlaceFilterID: UUID?,
         homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         homeSelectedTodoStateFilter: TodoState? = nil,
+        homeSelectedPressureFilter: RoutineTaskPressure? = nil,
         homeTaskListViewMode: HomeTaskListViewMode = .all,
         homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot],
         hideUnavailableRoutines: Bool,
@@ -222,6 +230,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedManualPlaceFilterID = homeSelectedManualPlaceFilterID
         self.homeSelectedImportanceUrgencyFilter = homeSelectedImportanceUrgencyFilter
         self.homeSelectedTodoStateFilter = homeSelectedTodoStateFilter
+        self.homeSelectedPressureFilter = homeSelectedPressureFilter
         self.homeTaskListViewMode = homeTaskListViewMode
         self.homeTabFilterSnapshots = homeTabFilterSnapshots
         self.hideUnavailableRoutines = hideUnavailableRoutines
@@ -265,6 +274,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedManualPlaceFilterID
         case homeSelectedImportanceUrgencyFilter
         case homeSelectedTodoStateFilter
+        case homeSelectedPressureFilter
         case homeTaskListViewMode
         case homeTabFilterSnapshots
         case hideUnavailableRoutines
@@ -310,6 +320,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedManualPlaceFilterID: try container.decodeIfPresent(UUID.self, forKey: .homeSelectedManualPlaceFilterID),
             homeSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedImportanceUrgencyFilter),
             homeSelectedTodoStateFilter: try container.decodeIfPresent(TodoState.self, forKey: .homeSelectedTodoStateFilter),
+            homeSelectedPressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedPressureFilter),
             homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
             homeTabFilterSnapshots: try container.decodeIfPresent([String: TabFilterStateManager.Snapshot].self, forKey: .homeTabFilterSnapshots) ?? [:],
             hideUnavailableRoutines: try container.decodeIfPresent(Bool.self, forKey: .hideUnavailableRoutines) ?? false,
@@ -354,6 +365,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedManualPlaceFilterID: nil,
         homeSelectedImportanceUrgencyFilter: nil,
         homeSelectedTodoStateFilter: nil,
+        homeSelectedPressureFilter: nil,
         homeTaskListViewMode: .all,
         homeTabFilterSnapshots: [:],
         hideUnavailableRoutines: false,

@@ -10,6 +10,7 @@ struct HomeTaskFiltersState: Equatable {
     var selectedManualPlaceFilterID: UUID? = nil
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var selectedTodoStateFilter: TodoState? = nil
+    var selectedPressureFilter: RoutineTaskPressure? = nil
     var taskListViewMode: HomeTaskListViewMode = .all
     var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:]
     var isFilterSheetPresented: Bool = false
@@ -25,6 +26,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedManualPlaceFilterID: selectedManualPlaceFilterID,
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
+            selectedPressureFilter: selectedPressureFilter,
             taskListViewMode: taskListViewMode
         )
     }
@@ -54,6 +56,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
         selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
         selectedTodoStateFilter = snapshot.selectedTodoStateFilter
+        selectedPressureFilter = snapshot.selectedPressureFilter
         taskListViewMode = snapshot.taskListViewMode
     }
 }
@@ -132,6 +135,7 @@ enum HomeTemporaryViewStateMapper {
             selectedManualPlaceFilterID: persistedState.homeSelectedManualPlaceFilterID,
             selectedImportanceUrgencyFilter: persistedState.homeSelectedImportanceUrgencyFilter,
             selectedTodoStateFilter: persistedState.homeSelectedTodoStateFilter,
+            selectedPressureFilter: persistedState.homeSelectedPressureFilter,
             taskListViewMode: persistedState.homeTaskListViewMode,
             tabFilterSnapshots: persistedState.homeTabFilterSnapshots,
             isFilterSheetPresented: false
@@ -190,6 +194,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedManualPlaceFilterID: taskFilters.selectedManualPlaceFilterID,
             homeSelectedImportanceUrgencyFilter: taskFilters.selectedImportanceUrgencyFilter,
             homeSelectedTodoStateFilter: taskFilters.selectedTodoStateFilter,
+            homeSelectedPressureFilter: taskFilters.selectedPressureFilter,
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTabFilterSnapshots: taskFilters.tabFilterSnapshots,
             hideUnavailableRoutines: values.hideUnavailableRoutines,

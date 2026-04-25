@@ -164,6 +164,7 @@ struct TaskDetailTCAView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
+                importanceUrgencyMatrixCard
                 if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                     calendarSection
                 }
@@ -191,6 +192,7 @@ struct TaskDetailTCAView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
+                importanceUrgencyMatrixCard
                 calendarSection
                 routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
                 routineSummarySection
@@ -345,6 +347,22 @@ struct TaskDetailTCAView: View {
         ) { tag in
             statusTagChip(tag)
         }
+    }
+
+    private var importanceUrgencyMatrixCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Importance & Urgency")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            ImportanceUrgencyMatrixPicker(
+                importance: .constant(store.task.importance),
+                urgency: .constant(store.task.urgency)
+            )
+            .allowsHitTesting(false)
+        }
+        .padding(16)
+        .detailCardStyle()
     }
 
     private var todoHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {

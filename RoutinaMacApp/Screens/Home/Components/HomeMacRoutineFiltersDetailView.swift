@@ -5,6 +5,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var selectedFilter: RoutineListFilter
     @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    @Binding var selectedPressureFilter: RoutineTaskPressure?
     let importanceUrgencySummary: String
     let showsTagSection: Bool
     let showsPlaceSection: Bool
@@ -19,6 +20,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             HomeMacSidebarSectionCard {
                 filterPicker
+            }
+
+            HomeMacSidebarSectionCard(title: "Pressure") {
+                pressurePicker
             }
 
             HomeMacSidebarSectionCard(title: "Importance & Urgency") {
@@ -110,5 +115,38 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 }
             }
         }
+    }
+
+    private var pressurePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                pressureButton(title: "All", pressure: nil)
+                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
+                    pressureButton(title: pressure.title, pressure: pressure)
+                }
+            }
+        }
+    }
+
+    private func pressureButton(title: String, pressure: RoutineTaskPressure?) -> some View {
+        Button {
+            selectedPressureFilter = pressure
+        } label: {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .foregroundStyle(selectedPressureFilter == pressure ? Color.white : Color.primary)
+                .background(
+                    Capsule()
+                        .fill(selectedPressureFilter == pressure ? Color.accentColor : Color.secondary.opacity(0.10))
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

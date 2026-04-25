@@ -6,6 +6,7 @@ struct HomeActiveFilterChipBar: View {
     let excludedTags: Set<String>
     let selectedPlaceName: String?
     let selectedImportanceUrgencyFilterLabel: String?
+    let selectedPressureFilter: RoutineTaskPressure?
     let hideUnavailableRoutines: Bool
     let onClearAll: () -> Void
     let onClearTaskListViewMode: () -> Void
@@ -13,6 +14,7 @@ struct HomeActiveFilterChipBar: View {
     let onRemoveExcludedTag: (String) -> Void
     let onClearPlace: () -> Void
     let onClearImportanceUrgency: () -> Void
+    let onClearPressure: () -> Void
     let onShowUnavailableRoutines: () -> Void
 
     var body: some View {
@@ -56,6 +58,14 @@ struct HomeActiveFilterChipBar: View {
                         title: selectedImportanceUrgencyFilterLabel,
                         systemImage: "square.grid.3x3.topleft.filled",
                         action: onClearImportanceUrgency
+                    )
+                }
+
+                if let selectedPressureFilter {
+                    HomeActiveFilterChip(
+                        title: "Pressure \(selectedPressureFilter.title)",
+                        systemImage: "brain",
+                        action: onClearPressure
                     )
                 }
 

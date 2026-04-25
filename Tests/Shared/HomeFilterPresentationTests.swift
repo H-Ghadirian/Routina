@@ -18,10 +18,11 @@ struct HomeFilterPresentationTests {
             excludedTags: ["Errand", "Low"],
             hasSelectedPlaceFilter: true,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            selectedPressureFilter: .medium,
             hideUnavailableRoutines: true
         )
 
-        #expect(presentation.activeOptionalFilterCount == 8)
+        #expect(presentation.activeOptionalFilterCount == 9)
         #expect(presentation.hasActiveOptionalFilters)
     }
 
@@ -37,6 +38,7 @@ struct HomeFilterPresentationTests {
             excludedTags: ["Errand"],
             selectedPlaceName: "Office",
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
+            selectedPressureFilter: .high,
             hideUnavailableRoutines: true
         )
 
@@ -44,13 +46,14 @@ struct HomeFilterPresentationTests {
             "Due",
             "Actionable",
             "Blocked",
+            "Pressure High",
             "Any 2 tags",
             "not #Errand",
             "Office",
             "L4/L3+",
             "Away hidden"
         ])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Actionable • Blocked • Any 2 tags +4 • 12 results")
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Actionable • Blocked • Pressure High +5 • 12 results")
     }
 
     @Test

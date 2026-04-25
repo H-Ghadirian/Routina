@@ -53,6 +53,22 @@ struct HomeFiltersTodoStateSection: View {
     }
 }
 
+struct HomeFiltersPressureSection: View {
+    @Binding var selectedPressureFilter: RoutineTaskPressure?
+
+    var body: some View {
+        Section("Pressure") {
+            Picker("Pressure", selection: $selectedPressureFilter) {
+                Text("All").tag(Optional<RoutineTaskPressure>.none)
+                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
+                    Text(pressure.title).tag(Optional(pressure))
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+}
+
 struct HomeFiltersImportanceUrgencySection: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let summary: String

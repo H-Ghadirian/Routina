@@ -201,6 +201,7 @@ struct HomeTCAView: View {
             excludedTags: store.excludedTags,
             selectedPlaceName: selectedPlaceName,
             selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
+            selectedPressureFilter: store.selectedPressureFilter,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             onClearAll: { store.send(.clearOptionalFilters) },
             onClearTaskListViewMode: { store.send(.taskListViewModeChanged(.all)) },
@@ -217,6 +218,9 @@ struct HomeTCAView: View {
             },
             onClearImportanceUrgency: {
                 store.send(.selectedImportanceUrgencyFilterChanged(nil))
+            },
+            onClearPressure: {
+                store.send(.selectedPressureFilterChanged(nil))
             },
             onShowUnavailableRoutines: {
                 store.send(.hideUnavailableRoutinesChanged(false))
@@ -236,6 +240,7 @@ struct HomeTCAView: View {
             selectedPlaceName: selectedPlaceName,
             hasSelectedPlaceFilter: store.selectedManualPlaceFilterID != nil,
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            selectedPressureFilter: store.selectedPressureFilter,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             hasSavedPlaces: hasSavedPlaces,
             awayRoutineCount: store.awayRoutineDisplays.count,
@@ -281,6 +286,10 @@ struct HomeTCAView: View {
             selectedImportanceUrgencyFilter: Binding(
                 get: { store.selectedImportanceUrgencyFilter },
                 set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+            ),
+            selectedPressureFilter: Binding(
+                get: { store.selectedPressureFilter },
+                set: { store.send(.selectedPressureFilterChanged($0)) }
             ),
             includeTagMatchMode: Binding(
                 get: { store.includeTagMatchMode },

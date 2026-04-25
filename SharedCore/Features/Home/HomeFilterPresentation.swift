@@ -39,6 +39,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let selectedPlaceName: String?
     let hasSelectedPlaceFilter: Bool
     let selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    let selectedPressureFilter: RoutineTaskPressure?
     let hideUnavailableRoutines: Bool
     let hasSavedPlaces: Bool
     let awayRoutineCount: Int
@@ -55,6 +56,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedPlaceName: String? = nil,
         hasSelectedPlaceFilter: Bool = false,
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
+        selectedPressureFilter: RoutineTaskPressure? = nil,
         hideUnavailableRoutines: Bool = false,
         hasSavedPlaces: Bool = false,
         awayRoutineCount: Int = 0,
@@ -70,6 +72,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.selectedPlaceName = selectedPlaceName
         self.hasSelectedPlaceFilter = hasSelectedPlaceFilter
         self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
+        self.selectedPressureFilter = selectedPressureFilter
         self.hideUnavailableRoutines = hideUnavailableRoutines
         self.hasSavedPlaces = hasSavedPlaces
         self.awayRoutineCount = awayRoutineCount
@@ -83,6 +86,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if hasSelectedPlaceFilter { count += 1 }
         if selectedImportanceUrgencyFilter != nil { count += 1 }
         if selectedTodoStateFilter != nil { count += 1 }
+        if selectedPressureFilter != nil { count += 1 }
         if taskListViewMode != .all { count += 1 }
         if hideUnavailableRoutines { count += 1 }
         return count
@@ -105,6 +109,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if let selectedTodoStateFilter {
             labels.append(selectedTodoStateFilter.displayTitle)
+        }
+
+        if let selectedPressureFilter {
+            labels.append("Pressure \(selectedPressureFilter.title)")
         }
 
         if !selectedTags.isEmpty {

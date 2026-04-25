@@ -11,6 +11,7 @@ extension HomeTCAView {
                 selectedManualPlaceFilterID: store.selectedManualPlaceFilterID,
                 selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: store.selectedTodoStateFilter,
+                selectedPressureFilter: store.selectedPressureFilter,
                 taskListViewMode: store.taskListViewMode,
                 selectedTags: store.selectedTags,
                 includeTagMatchMode: store.includeTagMatchMode,

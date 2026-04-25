@@ -15,6 +15,7 @@ enum HomeTaskFilterMutation: Equatable {
     case selectedManualPlaceFilterID(UUID?)
     case selectedImportanceUrgencyFilter(ImportanceUrgencyFilterCell?)
     case selectedTodoStateFilter(TodoState?)
+    case selectedPressureFilter(RoutineTaskPressure?)
     case taskListViewMode(HomeTaskListViewMode)
     case isFilterSheetPresented(Bool)
     case clearOptionalFilters
@@ -71,6 +72,7 @@ enum HomeFilterEditor {
         taskFilters.selectedManualPlaceFilterID = nil
         taskFilters.selectedImportanceUrgencyFilter = nil
         taskFilters.selectedTodoStateFilter = nil
+        taskFilters.selectedPressureFilter = nil
         taskFilters.taskListViewMode = .all
 
         if hideUnavailableRoutines {
@@ -114,6 +116,9 @@ enum HomeFilterEditor {
 
         case let .selectedTodoStateFilter(filter):
             taskFilters.selectedTodoStateFilter = filter
+
+        case let .selectedPressureFilter(filter):
+            taskFilters.selectedPressureFilter = filter
 
         case let .taskListViewMode(mode):
             taskFilters.taskListViewMode = mode

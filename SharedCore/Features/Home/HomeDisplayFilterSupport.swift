@@ -88,6 +88,14 @@ enum HomeDisplayFilterSupport {
         return todoState == filter
     }
 
+    static func matchesPressureFilter(
+        _ filter: RoutineTaskPressure?,
+        pressure: RoutineTaskPressure
+    ) -> Bool {
+        guard let filter else { return true }
+        return pressure == filter
+    }
+
     static func hasActiveRelationshipBlocker(
         taskID: UUID,
         tasks: [RoutineTask],

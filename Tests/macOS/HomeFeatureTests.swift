@@ -3604,6 +3604,75 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macSidebarSelectionChanged_selectingTodoFromAllKeepsAllMode() async {
+        let context = makeInMemoryContext()
+        let todo = makeTask(
+            in: context,
+            name: "Buy milk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🛒",
+            scheduleMode: .oneOff
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [todo],
+                taskListMode: .all,
+                macSidebarMode: .routines
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.macSidebarSelectionChanged(.task(todo.id))) {
+            $0.macSidebarSelection = .task(todo.id)
+        }
+        await store.receive(.setSelectedTask(todo.id))
+
+        #expect(store.state.taskListMode == .all)
+        #expect(store.state.selectedTaskID == todo.id)
+    }
+
+    @Test
+    func macSidebarSelectionChanged_selectingRoutineFromAllKeepsAllMode() async {
+        let context = makeInMemoryContext()
+        let routine = makeTask(
+            in: context,
+            name: "Meditate",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🧘"
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [routine],
+                taskListMode: .all,
+                macSidebarMode: .routines
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.macSidebarSelectionChanged(.task(routine.id))) {
+            $0.macSidebarSelection = .task(routine.id)
+        }
+        await store.receive(.setSelectedTask(routine.id))
+
+        #expect(store.state.taskListMode == .all)
+        #expect(store.state.selectedTaskID == routine.id)
+    }
+
+    @Test
     func taskListModeChanged_hidesMacFilterDetail() async {
         let context = makeInMemoryContext()
         let store = TestStore(

@@ -53,6 +53,7 @@ struct HomeFilterEditorTests {
             selectedManualPlaceFilterID: UUID(),
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
             selectedTodoStateFilter: .blocked,
+            selectedPressureFilter: .high,
             taskListViewMode: .actionable
         )
         var hideUnavailableRoutines = true
@@ -72,6 +73,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedManualPlaceFilterID == nil)
         #expect(taskFilters.selectedImportanceUrgencyFilter == nil)
         #expect(taskFilters.selectedTodoStateFilter == nil)
+        #expect(taskFilters.selectedPressureFilter == nil)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(!hideUnavailableRoutines)
         #expect(result.didResetHideUnavailableRoutines)
@@ -91,6 +93,7 @@ struct HomeFilterEditorTests {
             selectedManualPlaceFilterID: placeID,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,
+            selectedPressureFilter: .medium,
             taskListViewMode: .actionable,
             tabFilterSnapshots: [
                 "Todos": TabFilterStateManager.Snapshot(
@@ -102,6 +105,7 @@ struct HomeFilterEditorTests {
                     selectedFilter: .all,
                     selectedManualPlaceFilterID: nil,
                     selectedTodoStateFilter: .ready,
+                    selectedPressureFilter: RoutineTaskPressure.none,
                     taskListViewMode: .all
                 )
             ]
@@ -123,6 +127,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.excludedTags == ["Home"])
         #expect(taskFilters.excludeTagMatchMode == .any)
         #expect(taskFilters.selectedTodoStateFilter == .ready)
+        #expect(taskFilters.selectedPressureFilter == RoutineTaskPressure.none)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.tabFilterSnapshots["Routines"] == TabFilterStateManager.Snapshot(
             selectedTag: "Focus",
@@ -134,6 +139,7 @@ struct HomeFilterEditorTests {
             selectedManualPlaceFilterID: placeID,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,
+            selectedPressureFilter: .medium,
             taskListViewMode: .actionable
         ))
     }

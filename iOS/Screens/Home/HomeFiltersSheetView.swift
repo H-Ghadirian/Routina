@@ -19,6 +19,9 @@ struct HomeFiltersSheetView: View {
                     taskListMode: configuration.taskListMode,
                     selectedTodoStateFilter: bindings.selectedTodoStateFilter
                 )
+                HomeFiltersPressureSection(
+                    selectedPressureFilter: bindings.selectedPressureFilter
+                )
                 HomeFiltersImportanceUrgencySection(
                     selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
                     summary: configuration.importanceUrgencySummary

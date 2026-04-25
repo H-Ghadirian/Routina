@@ -45,6 +45,7 @@ struct HomeTaskListFilteringConfiguration {
     var selectedManualPlaceFilterID: UUID?
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     var selectedTodoStateFilter: TodoState?
+    var selectedPressureFilter: RoutineTaskPressure?
     var taskListViewMode: HomeTaskListViewMode
     var selectedTags: Set<String>
     var includeTagMatchMode: RoutineTagMatchMode
