@@ -127,6 +127,8 @@ extension HomeTCAView {
             return true
         case .due:
             return !task.isDoneToday && (urgencyLevel(for: task) > 0 || isYellowUrgency(task))
+        case .onMyMind:
+            return !task.isDoneToday && task.pressure != .none
         case .todos:
             return task.isOneOffTask
         case .doneToday:

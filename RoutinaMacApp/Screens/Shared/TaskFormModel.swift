@@ -32,6 +32,7 @@ struct TaskFormModel {
     // MARK: Priority matrix
     var importance: Binding<RoutineTaskImportance>
     var urgency: Binding<RoutineTaskUrgency>
+    var pressure: Binding<RoutineTaskPressure>
 
     // MARK: Estimation
     var estimatedDurationMinutes: Binding<Int?>

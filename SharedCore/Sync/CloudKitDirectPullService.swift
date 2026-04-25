@@ -220,6 +220,8 @@ enum CloudKitDirectPullService {
         var autoAssumeDailyDone: Bool?
         var estimatedDurationMinutes: Int?
         var storyPoints: Int?
+        var pressure: RoutineTaskPressure?
+        var pressureUpdatedAt: Date?
     }
 
     private struct PlacePayload {
@@ -392,6 +394,14 @@ enum CloudKitDirectPullService {
                 "cd_storypoints"
             ]
         )
+        let pressureValue = stringValue(
+            in: record,
+            keys: ["pressureRawValue", "PRESSURERAWVALUE", "zpressurerawvalue", "ZPRESSURERAWVALUE", "cd_pressurerawvalue"]
+        ).flatMap(RoutineTaskPressure.init(rawValue:))
+        let pressureUpdatedAtValue = dateValue(
+            in: record,
+            keys: ["pressureUpdatedAt", "PRESSUREUPDATEDAT", "zpressureupdatedat", "ZPRESSUREUPDATEDAT", "cd_pressureupdatedat"]
+        )
 
         guard
             intervalValue != nil
@@ -417,6 +427,8 @@ enum CloudKitDirectPullService {
                 || sequenceStartedAtValue != nil
                 || activityStateRawValueValue != nil
                 || ongoingSinceValue != nil
+                || pressureValue != nil
+                || pressureUpdatedAtValue != nil
                 || estimatedDurationMinutesValue != nil
                 || storyPointsValue != nil
                 || autoAssumeDailyDoneValue != nil
@@ -469,7 +481,9 @@ enum CloudKitDirectPullService {
             ongoingSince: ongoingSinceValue,
             autoAssumeDailyDone: autoAssumeDailyDoneValue,
             estimatedDurationMinutes: estimatedDurationMinutesValue,
-            storyPoints: storyPointsValue
+            storyPoints: storyPointsValue,
+            pressure: pressureValue,
+            pressureUpdatedAt: pressureUpdatedAtValue
         )
     }
 
@@ -604,6 +618,10 @@ enum CloudKitDirectPullService {
                 if let storyPoints = payload.storyPoints {
                     taskWithSameName.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 }
+                if let pressure = payload.pressure {
+                    taskWithSameName.pressure = pressure
+                    taskWithSameName.pressureUpdatedAt = payload.pressureUpdatedAt
+                }
                 try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -659,6 +677,10 @@ enum CloudKitDirectPullService {
             if let storyPoints = payload.storyPoints {
                 existing.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
             }
+            if let pressure = payload.pressure {
+                existing.pressure = pressure
+                existing.pressureUpdatedAt = payload.pressureUpdatedAt
+            }
             return existing.id
         } else {
             if let normalizedIncomingName,
@@ -713,6 +735,10 @@ enum CloudKitDirectPullService {
                 if let storyPoints = payload.storyPoints {
                     taskWithSameName.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 }
+                if let pressure = payload.pressure {
+                    taskWithSameName.pressure = pressure
+                    taskWithSameName.pressureUpdatedAt = payload.pressureUpdatedAt
+                }
                 try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
                 return taskWithSameName.id
             }
@@ -725,6 +751,8 @@ enum CloudKitDirectPullService {
                     notes: payload.notes,
                     link: payload.link,
                     deadline: payload.deadline,
+                    pressure: payload.pressure ?? .none,
+                    pressureUpdatedAt: payload.pressureUpdatedAt,
                     imageData: payload.imageData,
                     placeID: payload.placeID,
                     tags: payload.tags ?? [],

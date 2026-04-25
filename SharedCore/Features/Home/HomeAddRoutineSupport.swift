@@ -50,6 +50,7 @@ enum HomeAddRoutineSupport {
             priority: request.priority,
             importance: request.importance,
             urgency: request.urgency,
+            pressure: request.pressure,
             imageData: request.imageData,
             placeID: request.selectedPlaceID,
             tags: request.tags,

@@ -29,6 +29,7 @@ struct TaskFormContent: View {
                 deadlineSection
             }
             importanceUrgencySection
+            pressureSection
             estimationSection
             imageSection
             attachmentSection
@@ -477,6 +478,20 @@ struct TaskFormContent: View {
         Section(header: Text("Importance & Urgency")) {
             ImportanceUrgencyMatrixPicker(importance: model.importance, urgency: model.urgency)
             Text(importanceUrgencyDescription).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var pressureSection: some View {
+        Section(header: Text("Pressure")) {
+            Picker("Pressure", selection: model.pressure) {
+                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
+                    Text(pressure.title).tag(pressure)
+                }
+            }
+            .pickerStyle(.segmented)
+            Text("Use this for tasks that keep occupying your mind, even when they are not the most urgent.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

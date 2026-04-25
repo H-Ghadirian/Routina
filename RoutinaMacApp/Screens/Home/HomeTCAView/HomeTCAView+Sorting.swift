@@ -14,6 +14,10 @@ extension HomeTCAView {
             return manualOrderComparison
         }
 
+        if store.selectedFilter == .onMyMind, task1.pressure != task2.pressure {
+            return task1.pressure.sortOrder > task2.pressure.sortOrder
+        }
+
         let overdueDays1 = overdueDays(for: task1)
         let overdueDays2 = overdueDays(for: task2)
 

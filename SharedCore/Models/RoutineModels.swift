@@ -151,6 +151,8 @@ final class RoutineTask {
     var priorityRawValue: String = RoutineTaskPriority.none.rawValue
     var importanceRawValue: String = RoutineTaskImportance.level2.rawValue
     var urgencyRawValue: String = RoutineTaskUrgency.level2.rawValue
+    var pressureRawValue: String = RoutineTaskPressure.none.rawValue
+    var pressureUpdatedAt: Date?
     @Attribute(.externalStorage) var imageData: Data?
     var placeID: UUID?
     var tagsStorage: String = ""
@@ -243,6 +245,14 @@ final class RoutineTask {
     var urgency: RoutineTaskUrgency {
         get { RoutineTaskUrgency(rawValue: urgencyRawValue) ?? .level2 }
         set { urgencyRawValue = newValue.rawValue }
+    }
+
+    var pressure: RoutineTaskPressure {
+        get { RoutineTaskPressure(rawValue: pressureRawValue) ?? .none }
+        set {
+            pressureRawValue = newValue.rawValue
+            pressureUpdatedAt = newValue == .none ? nil : Date()
+        }
     }
 
     var color: RoutineTaskColor {
@@ -459,6 +469,8 @@ final class RoutineTask {
         priority: RoutineTaskPriority = .none,
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
+        pressure: RoutineTaskPressure = .none,
+        pressureUpdatedAt: Date? = nil,
         imageData: Data? = nil,
         placeID: UUID? = nil,
         tags: [String] = [],
@@ -499,6 +511,8 @@ final class RoutineTask {
         self.priorityRawValue = priority.rawValue
         self.importanceRawValue = importance.rawValue
         self.urgencyRawValue = urgency.rawValue
+        self.pressureRawValue = pressure.rawValue
+        self.pressureUpdatedAt = pressure == .none ? nil : pressureUpdatedAt
         self.imageData = imageData
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
@@ -876,6 +890,8 @@ final class RoutineTask {
             priority: priority,
             importance: importance,
             urgency: urgency,
+            pressure: pressure,
+            pressureUpdatedAt: pressureUpdatedAt,
             imageData: imageData,
             placeID: placeID,
             tags: tags,

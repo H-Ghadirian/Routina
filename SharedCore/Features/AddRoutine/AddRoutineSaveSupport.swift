@@ -75,6 +75,7 @@ struct AddRoutineSaveRequest: Equatable {
     let priority: RoutineTaskPriority
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
+    let pressure: RoutineTaskPressure
     let imageData: Data?
     let selectedPlaceID: UUID?
     let tags: [String]
@@ -99,6 +100,7 @@ struct AddRoutineSaveRequest: Equatable {
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
+        pressure: RoutineTaskPressure = .none,
         imageData: Data? = nil,
         selectedPlaceID: UUID? = nil,
         tags: [String] = [],
@@ -122,6 +124,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.priority = priority
         self.importance = importance
         self.urgency = urgency
+        self.pressure = pressure
         self.imageData = imageData
         self.selectedPlaceID = selectedPlaceID
         self.tags = tags
@@ -164,6 +167,7 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.importance = basics.importance
         self.urgency = basics.urgency
+        self.pressure = basics.pressure
         self.imageData = basics.imageData
         self.selectedPlaceID = basics.selectedPlaceID
         self.tags = organization.routineTags

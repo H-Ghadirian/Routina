@@ -69,6 +69,10 @@ extension AddRoutineTCAView {
             deadline: deadlineBinding,
             importance: importanceBinding,
             urgency: urgencyBinding,
+            pressure: Binding(
+                get: { store.basics.pressure },
+                set: { store.send(.pressureChanged($0)) }
+            ),
             estimatedDurationMinutes: Binding(
                 get: { store.basics.estimatedDurationMinutes },
                 set: { store.send(.estimatedDurationChanged($0)) }

@@ -58,6 +58,13 @@ enum AddRoutineBasicsEditor {
         )
     }
 
+    static func setPressure(
+        _ pressure: RoutineTaskPressure,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.pressure = pressure
+    }
+
     static func setImage(
         _ data: Data?,
         basics: inout AddRoutineBasicsState

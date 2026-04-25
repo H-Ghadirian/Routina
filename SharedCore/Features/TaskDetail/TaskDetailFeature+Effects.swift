@@ -185,6 +185,7 @@ extension TaskDetailFeature {
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency,
+        pressure: RoutineTaskPressure,
         imageData: Data?,
         attachments: [AttachmentItem],
         placeID: UUID?,
@@ -215,6 +216,7 @@ extension TaskDetailFeature {
                 task.priority = priority
                 task.importance = importance
                 task.urgency = urgency
+                task.pressure = pressure
                 task.color = color
                 task.imageData = imageData
                 // Sync attachments by taskID

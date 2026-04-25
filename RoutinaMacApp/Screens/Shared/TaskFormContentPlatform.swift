@@ -84,7 +84,7 @@ struct TaskFormContent: View {
 
     /// All sections that are available given the current form state (excluding Identity).
     private var availableSections: [String] {
-        var sections = ["Color", "Behavior", "Estimation", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
+        var sections = ["Color", "Behavior", "Pressure", "Estimation", "Places", "Importance & Urgency", "Tags", "Linked tasks", "Link URL", "Notes"]
         if isStepBasedMode { sections.append("Steps") }
         sections.append("Image")
         sections.append("Attachment")
@@ -109,6 +109,7 @@ struct TaskFormContent: View {
         switch section {
         case "Color":                 colorCard
         case "Behavior":              behaviorCard
+        case "Pressure":              pressureCard
         case "Estimation":            estimationCard
         case "Places":                placesCard
         case "Importance & Urgency":  importanceCard
@@ -513,6 +514,30 @@ struct TaskFormContent: View {
     }
 
     // MARK: Places
+
+    private var pressureCard: some View {
+        macSectionCard(
+            title: "Pressure"
+        ) {
+            macControlBlock(
+                title: "Mental load",
+                caption: "Use this for tasks that keep occupying your mind, even when they are not the most urgent."
+            ) {
+                HStack(spacing: 0) {
+                    Picker("Pressure", selection: model.pressure) {
+                        ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
+                            Text(pressure.title).tag(pressure)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .id("Pressure")
+    }
 
     private var estimationCard: some View {
         macSectionCard(

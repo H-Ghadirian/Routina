@@ -10,6 +10,7 @@ struct AddRoutineBasicsState: Equatable {
     var priority: RoutineTaskPriority = .medium
     var importance: RoutineTaskImportance = .level2
     var urgency: RoutineTaskUrgency = .level2
+    var pressure: RoutineTaskPressure = .none
     var imageData: Data?
     var attachments: [AttachmentItem] = []
     var selectedPlaceID: UUID?

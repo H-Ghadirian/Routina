@@ -49,6 +49,7 @@ struct TaskDetailFeature: Reducer {
         var editPriority: RoutineTaskPriority = .none
         var editImportance: RoutineTaskImportance = .level2
         var editUrgency: RoutineTaskUrgency = .level2
+        var editPressure: RoutineTaskPressure = .none
         var editImageData: Data?
         var taskAttachments: [AttachmentItem] = []
         var editAttachments: [AttachmentItem] = []
@@ -151,6 +152,7 @@ struct TaskDetailFeature: Reducer {
         case editPriorityChanged(RoutineTaskPriority)
         case editImportanceChanged(RoutineTaskImportance)
         case editUrgencyChanged(RoutineTaskUrgency)
+        case editPressureChanged(RoutineTaskPressure)
         case editImagePicked(Data?)
         case editRemoveImageTapped
         case editAttachmentPicked(Data, String)
@@ -534,6 +536,10 @@ struct TaskDetailFeature: Reducer {
             )
             return .none
 
+        case let .editPressureChanged(pressure):
+            state.editPressure = pressure
+            return .none
+
         case let .editImagePicked(data):
             state.editImageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
             return .none
@@ -806,6 +812,7 @@ struct TaskDetailFeature: Reducer {
                 ),
                 importance: state.editImportance,
                 urgency: state.editUrgency,
+                pressure: state.editPressure,
                 imageData: state.editImageData,
                 attachments: state.editAttachments,
                 placeID: state.editSelectedPlaceID,

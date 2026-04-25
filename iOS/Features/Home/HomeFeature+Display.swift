@@ -77,6 +77,7 @@ extension HomeFeature {
             priority: task.priority,
             importance: task.importance,
             urgency: task.urgency,
+            pressure: task.pressure,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
             snoozedUntil: task.snoozedUntil,

@@ -56,6 +56,7 @@ struct HomeFeature {
         var priority: RoutineTaskPriority
         var importance: RoutineTaskImportance
         var urgency: RoutineTaskUrgency
+        var pressure: RoutineTaskPressure = .none
         var scheduleAnchor: Date?
         var pausedAt: Date?
         var snoozedUntil: Date?

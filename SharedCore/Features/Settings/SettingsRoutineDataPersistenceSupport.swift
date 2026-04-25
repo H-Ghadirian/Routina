@@ -56,6 +56,8 @@ enum SettingsRoutineDataPersistence {
             var autoAssumeDailyDone: Bool?
             var estimatedDurationMinutes: Int?
             var storyPoints: Int?
+            var pressure: RoutineTaskPressure?
+            var pressureUpdatedAt: Date?
         }
 
         struct Log: Codable {
@@ -163,7 +165,9 @@ enum SettingsRoutineDataPersistence {
                     ongoingSince: $0.ongoingSince,
                     autoAssumeDailyDone: $0.autoAssumeDailyDone,
                     estimatedDurationMinutes: $0.estimatedDurationMinutes,
-                    storyPoints: $0.storyPoints
+                    storyPoints: $0.storyPoints,
+                    pressure: $0.pressure,
+                    pressureUpdatedAt: $0.pressureUpdatedAt
                 )
             },
             logs: logs.map {
@@ -473,6 +477,8 @@ enum SettingsRoutineDataPersistence {
                     notes: task.notes,
                     link: task.link,
                     deadline: task.deadline,
+                    pressure: task.pressure ?? .none,
+                    pressureUpdatedAt: task.pressureUpdatedAt,
                     imageData: imageData,
                     placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
                     tags: task.tags ?? [],

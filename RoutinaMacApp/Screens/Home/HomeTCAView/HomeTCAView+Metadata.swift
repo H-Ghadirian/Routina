@@ -11,9 +11,9 @@ extension HomeTCAView {
         let prioritySegment = task.priority.metadataLabel.map { "\($0) • " } ?? ""
 
         if task.isPaused {
-            return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+            return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(pressureMetadataSuffix(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
         }
-        return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+        return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(pressureMetadataSuffix(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
     }
 
     func todoRowMetadataItems(for task: HomeFeature.RoutineDisplay) -> [String] {
@@ -25,6 +25,10 @@ extension HomeTCAView {
 
         if let priorityText = task.priority.metadataLabel {
             items.append(priorityText)
+        }
+
+        if let pressureText = task.pressure.metadataLabel {
+            items.append(pressureText)
         }
 
         if task.isPaused {
@@ -42,6 +46,11 @@ extension HomeTCAView {
         }
 
         return items
+    }
+
+    func pressureMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
+        guard let pressureText = task.pressure.metadataLabel else { return "" }
+        return " • \(pressureText)"
     }
 
     func pauseDescription(for task: HomeFeature.RoutineDisplay) -> String {
