@@ -344,6 +344,10 @@ extension HomeTCAView {
                 taskListViewMode: homeFilterBindings.taskListViewMode,
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
+                queryOptions: HomeAdvancedQueryOptions(
+                    tags: homeTagFilterData.tagSummaries.map(\.name),
+                    places: sortedRoutinePlaces.map(\.displayName)
+                ),
                 importanceUrgencySummary: importanceUrgencyFilterSummary,
                 showsTagSection: homeTagFilterData.hasTags,
                 showsPlaceSection: hasPlaceAwareContent

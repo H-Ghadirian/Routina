@@ -7,6 +7,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
+    let queryOptions: HomeAdvancedQueryOptions
     let importanceUrgencySummary: String
     let showsTagSection: Bool
     let showsPlaceSection: Bool
@@ -53,7 +54,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var queryBuilder: some View {
-        HomeAdvancedQueryBuilder(query: $advancedQuery, usesFlowLayout: true)
+        HomeAdvancedQueryBuilder(query: $advancedQuery, usesFlowLayout: true, options: queryOptions)
     }
 
     private var viewModePicker: some View {

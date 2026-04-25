@@ -1,16 +1,19 @@
 import Foundation
 
 struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
-    private let tokens: [Token]
+    private let clauses: [[Token]]
 
     init(_ query: String) {
-        tokens = Self.parse(query)
+        clauses = Self.parse(query)
     }
 
     func matches(_ task: Display, metrics: HomeTaskListMetrics<Display>) -> Bool {
-        tokens.allSatisfy { token in
-            let isMatch = matches(token: token, task: task, metrics: metrics)
-            return token.isNegated ? !isMatch : isMatch
+        guard !clauses.isEmpty else { return true }
+        return clauses.contains { tokens in
+            tokens.allSatisfy { token in
+                let isMatch = matches(token: token, task: task, metrics: metrics)
+                return token.isNegated ? !isMatch : isMatch
+            }
         }
     }
 
@@ -178,8 +181,25 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
         }?.sortOrder
     }
 
-    private static func parse(_ query: String) -> [Token] {
-        split(query).compactMap { rawToken in
+    private static func parse(_ query: String) -> [[Token]] {
+        split(query).reduce(into: [[]]) { clauses, rawToken in
+            let normalizedToken = rawToken.normalizedQueryText
+            if normalizedToken == "or" {
+                if clauses.last?.isEmpty == false {
+                    clauses.append([])
+                }
+                return
+            }
+            if normalizedToken == "and" {
+                return
+            }
+            guard let token = parseToken(rawToken) else { return }
+            clauses[clauses.count - 1].append(token)
+        }
+        .filter { !$0.isEmpty }
+    }
+
+    private static func parseToken(_ rawToken: String) -> Token? {
             var rawToken = rawToken.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !rawToken.isEmpty else { return nil }
 
@@ -203,7 +223,6 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
             let value = rawToken.normalizedQueryText
             guard !value.isEmpty else { return nil }
             return Token(field: nil, value: value, comparison: nil, isNegated: isNegated)
-        }
     }
 
     private static func parsedComparisonValue(_ value: String) -> (comparison: Comparison?, value: String) {

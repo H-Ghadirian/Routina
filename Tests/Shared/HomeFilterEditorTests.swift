@@ -14,7 +14,7 @@ struct HomeFilterEditorTests {
     func advancedQueryInputSuggestsAndCommitsAtomicTokens() {
         let state = HomeAdvancedQueryInputState(query: "pressure:>lo")
 
-        #expect(state.primarySuggestion?.token == "pressure:>low")
+        #expect(state.primarySuggestion?.token == "Low")
         #expect(state.primaryGhostSuffix == "w")
         #expect(state.accepting(state.primarySuggestion!) == "pressure:>low ")
         #expect(HomeAdvancedQueryInputState(query: "pressure:>lo ").normalizingCommittedAtomicTokens() == "pressure:>low ")
@@ -25,7 +25,7 @@ struct HomeFilterEditorTests {
         let state = HomeAdvancedQueryInputState(query: "pressure:>low tag:work ")
 
         #expect(state.tokens == ["pressure:>low", "tag:work"])
-        #expect(state.removingToken(at: 0) == "tag:work")
+        #expect(state.removingToken(at: 0) == "tag:work ")
     }
 
     @Test
@@ -33,9 +33,51 @@ struct HomeFilterEditorTests {
         let state = HomeAdvancedQueryInputState(query: "ta")
         let suggestion = state.primarySuggestion!
 
-        #expect(suggestion.token == "tag:")
-        #expect(state.accepting(suggestion) == "tag:")
+        #expect(suggestion.token == "tag")
+        #expect(state.accepting(suggestion) == "tag")
+        #expect(HomeAdvancedQueryInputState(query: "tag").accepting(HomeAdvancedQueryInputState(query: "tag").suggestions[0]) == "tag:")
         #expect(HomeAdvancedQueryInputState(query: "tag:").tokens.isEmpty)
+    }
+
+    @Test
+    func advancedQueryInputAutoCommitsExactAtomicValues() {
+        let state = HomeAdvancedQueryInputState(query: "")
+
+        #expect(state.replacingDraftOrCommittingExactAtomicToken(with: "pressure:medium") == "pressure:medium ")
+        #expect(HomeAdvancedQueryInputState(query: "tag").replacingDraftOrCommittingExactAtomicToken(with: "tag:") == "tag:")
+    }
+
+    @Test
+    func advancedQueryInputSuggestsAndCommitsKnownTagValues() {
+        let state = HomeAdvancedQueryInputState(
+            query: "tag:fo",
+            options: HomeAdvancedQueryOptions(tags: ["Focus", "Deep Work"])
+        )
+
+        #expect(state.suggestions.map(\.token).contains("Focus"))
+        #expect(HomeAdvancedQueryInputState(query: "tag:", options: state.options).suggestions.map(\.token) == ["Focus", "Deep Work"])
+        #expect(state.replacingDraftOrCommittingExactAtomicToken(with: "tag:focus") == "tag:focus ")
+        #expect(state.committingDraft("tag:unknown") == "tag:unknown")
+    }
+
+    @Test
+    func advancedQueryInputSuggestsOperatorsSeparatelyFromKeysAndValues() {
+        let keyState = HomeAdvancedQueryInputState(query: "pressure")
+
+        #expect(keyState.suggestions.map(\.token).prefix(3) == [":", ">", ">="])
+        #expect(keyState.accepting(keyState.suggestions[1]) == "pressure:>")
+
+        let valueState = HomeAdvancedQueryInputState(query: "pressure:>")
+        #expect(valueState.suggestions.map(\.token) == ["Low", "Medium", "High"])
+        #expect(valueState.accepting(valueState.suggestions[0]) == "pressure:>low ")
+    }
+
+    @Test
+    func advancedQueryInputSuggestsOperatorsAfterCommittedToken() {
+        let state = HomeAdvancedQueryInputState(query: "pressure:>low ")
+
+        #expect(state.suggestions.map(\.token).prefix(2) == ["AND", "OR"])
+        #expect(state.accepting(state.suggestions[0]) == "pressure:>low AND ")
     }
 
     @Test

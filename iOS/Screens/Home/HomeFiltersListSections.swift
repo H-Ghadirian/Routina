@@ -2,10 +2,11 @@ import SwiftUI
 
 struct HomeFiltersQuerySection: View {
     @Binding var advancedQuery: String
+    let options: HomeAdvancedQueryOptions
 
     var body: some View {
         Section("Query") {
-            HomeAdvancedQueryBuilder(query: $advancedQuery)
+            HomeAdvancedQueryBuilder(query: $advancedQuery, options: options)
         }
     }
 }

@@ -127,6 +127,23 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func advancedQuerySupportsExplicitAndOrOperators() {
+        let tasks = [
+            TestTaskDisplay(name: "Office todo", placeName: "Office", pressure: .low, isOneOffTask: true),
+            TestTaskDisplay(name: "Home high pressure", placeName: "Home", pressure: .high, isOneOffTask: false),
+            TestTaskDisplay(name: "Home low pressure", placeName: "Home", pressure: .low, isOneOffTask: false)
+        ]
+
+        let andResult = makeFiltering(advancedQuery: "type:todo AND place:office")
+            .filteredTasks(tasks)
+        let orResult = makeFiltering(advancedQuery: "place:office OR pressure:high")
+            .filteredTasks(tasks)
+
+        #expect(andResult.map { $0.name } == ["Office todo"])
+        #expect(Set(orResult.map { $0.name }) == ["Office todo", "Home high pressure"])
+    }
+
+    @Test
     func groupedRoutineSectionsBuildsExpectedStatusBuckets() {
         let tasks = [
             TestTaskDisplay(name: "Overdue", daysUntilDue: -2),
