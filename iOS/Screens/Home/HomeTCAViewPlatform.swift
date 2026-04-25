@@ -328,39 +328,14 @@ extension HomeTCAView {
         awayRoutineDisplays: [HomeFeature.RoutineDisplay],
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
-        let sections = groupedRoutineSections(from: routineDisplays)
-        let awayTasks = filteredAwayTasks(awayRoutineDisplays)
-        let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays)
-        let emptyStateTitle: String = {
-            switch store.taskListMode {
-            case .all:
-                return "No matching tasks"
-            case .todos:
-                return "No matching todos"
-            case .routines:
-                return "No matching routines"
-            }
-        }()
-        let inlineEmptyState: (title: String, message: String, systemImage: String)? = {
-            guard sections.isEmpty && archivedTasks.isEmpty && (store.hideUnavailableRoutines || awayTasks.isEmpty)
-            else {
-                return nil
-            }
-
-            if store.hideUnavailableRoutines && !awayTasks.isEmpty {
-                return (
-                    title: "No routines available here",
-                    message: "\(awayTasks.count) routines are hidden because you are away from their saved place.",
-                    systemImage: "location.slash"
-                )
-            }
-
-            return (
-                title: emptyStateTitle,
-                message: "Try a different search or switch back to another filter.",
-                systemImage: "magnifyingglass"
-            )
-        }()
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: taskListFiltering(),
+            routineDisplays: routineDisplays,
+            awayRoutineDisplays: awayRoutineDisplays,
+            archivedRoutineDisplays: archivedRoutineDisplays,
+            hideUnavailableRoutines: store.hideUnavailableRoutines,
+            taskListKind: store.taskListMode.filterTaskListKind
+        )
 
         VStack(spacing: 0) {
             if !isCompactHeaderHidden && hasActiveOptionalFilters {
@@ -371,46 +346,26 @@ extension HomeTCAView {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            if let inlineEmptyState {
+            if let emptyState = presentation.emptyState {
                 inlineEmptyStateRow(
-                    title: inlineEmptyState.title,
-                    message: inlineEmptyState.message,
-                    systemImage: inlineEmptyState.systemImage
+                    title: emptyState.title,
+                    message: emptyState.message,
+                    systemImage: emptyState.systemImage
                 )
             } else {
                 List(selection: selectedTaskBinding) {
-                    ForEach(sections) { section in
-                        let sectionStart = sections.prefix(while: { $0.id != section.id }).reduce(0) { $0 + $1.tasks.count }
+                    ForEach(presentation.sections) { section in
                         Section(section.title) {
                             ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                                routineNavigationRow(for: task, rowNumber: sectionStart + index + 1)
+                                routineNavigationRow(
+                                    for: task,
+                                    rowNumber: section.rowNumber(forTaskAt: index),
+                                    includeMarkDone: section.includeMarkDone,
+                                    moveContext: section.moveContext
+                                )
                             }
                             .onDelete { offsets in
                                 deleteTasks(at: offsets, from: section.tasks)
-                            }
-                        }
-                    }
-
-                    if !store.hideUnavailableRoutines && !awayTasks.isEmpty {
-                        let awayOffset = sections.reduce(0) { $0 + $1.tasks.count }
-                        Section("Not Here Right Now") {
-                            ForEach(Array(awayTasks.enumerated()), id: \.element.id) { index, task in
-                                routineNavigationRow(for: task, rowNumber: awayOffset + index + 1, includeMarkDone: false)
-                            }
-                            .onDelete { offsets in
-                                deleteTasks(at: offsets, from: awayTasks)
-                            }
-                        }
-                    }
-
-                    if !archivedTasks.isEmpty {
-                        let archivedOffset = sections.reduce(0) { $0 + $1.tasks.count } + (store.hideUnavailableRoutines ? 0 : awayTasks.count)
-                        Section("Archived") {
-                            ForEach(Array(archivedTasks.enumerated()), id: \.element.id) { index, task in
-                                routineNavigationRow(for: task, rowNumber: archivedOffset + index + 1)
-                            }
-                            .onDelete { offsets in
-                                deleteTasks(at: offsets, from: archivedTasks)
                             }
                         }
                     }
@@ -535,7 +490,7 @@ extension HomeTCAView {
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
         includeMarkDone: Bool,
-        moveContext: ManualMoveContext?
+        moveContext: HomeTaskListMoveContext?
     ) -> some View {
         NavigationLink(value: task.taskID) {
             routineRow(for: task, rowNumber: rowNumber)

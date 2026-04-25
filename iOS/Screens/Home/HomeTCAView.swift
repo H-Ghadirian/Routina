@@ -6,18 +6,6 @@ import SwiftData
 import SwiftUI
 
 struct HomeTCAView: View {
-    struct RoutineListSection: Identifiable {
-        let title: String
-        var tasks: [HomeFeature.RoutineDisplay]
-
-        var id: String { title }
-    }
-
-    struct ManualMoveContext: Equatable {
-        let sectionKey: String
-        let orderedTaskIDs: [UUID]
-    }
-
     let store: StoreOf<HomeFeature>
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
@@ -172,18 +160,6 @@ struct HomeTCAView: View {
 
     var tagFilterBar: some View {
         platformTagFilterBar
-    }
-
-    func sharedTaskSections(
-        routineDisplays: [HomeFeature.RoutineDisplay],
-        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
-        archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
-    ) -> (sections: [RoutineListSection], awayTasks: [HomeFeature.RoutineDisplay], archivedTasks: [HomeFeature.RoutineDisplay]) {
-        (
-            groupedRoutineSections(from: routineDisplays),
-            filteredAwayTasks(awayRoutineDisplays),
-            filteredArchivedTasks(archivedRoutineDisplays)
-        )
     }
 
     func listOfSortedTasksView(
@@ -425,7 +401,7 @@ struct HomeTCAView: View {
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
         includeMarkDone: Bool = true,
-        moveContext: ManualMoveContext? = nil
+        moveContext: HomeTaskListMoveContext? = nil
     ) -> some View {
         platformRoutineNavigationRow(
             for: task,
@@ -439,7 +415,7 @@ struct HomeTCAView: View {
     func routineContextMenu(
         for task: HomeFeature.RoutineDisplay,
         includeMarkDone: Bool,
-        moveContext: ManualMoveContext? = nil
+        moveContext: HomeTaskListMoveContext? = nil
     ) -> some View {
         Button {
             openTask(task.taskID)
@@ -722,7 +698,7 @@ struct HomeTCAView: View {
     }
 }
 
-private extension HomeFeature.TaskListMode {
+extension HomeFeature.TaskListMode {
     var filterTaskListKind: HomeFilterTaskListKind {
         switch self {
         case .all:

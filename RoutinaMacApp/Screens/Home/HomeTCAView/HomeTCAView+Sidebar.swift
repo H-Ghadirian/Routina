@@ -89,19 +89,11 @@ extension HomeTCAView {
     }
 
     var macVisibleTaskResultCount: Int {
-        let pinnedTasks = filteredPinnedTasks(
-            activeRoutineDisplays: store.routineDisplays,
+        macTaskListPresentation(
+            routineDisplays: store.routineDisplays,
             awayRoutineDisplays: store.awayRoutineDisplays,
             archivedRoutineDisplays: store.archivedRoutineDisplays
-        )
-        let sections = groupedRoutineSections(
-            from: (store.routineDisplays + store.awayRoutineDisplays).filter { !$0.isPinned }
-        )
-        let archivedTasks = filteredArchivedTasks(store.archivedRoutineDisplays, includePinned: false)
-
-        return pinnedTasks.count
-            + sections.reduce(0) { $0 + $1.tasks.count }
-            + archivedTasks.count
+        ).visibleTaskCount
     }
 
     func summarizedFilterLabels(from labels: [String], maxVisibleCount: Int) -> String {

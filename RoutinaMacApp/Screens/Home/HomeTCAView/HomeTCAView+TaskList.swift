@@ -8,80 +8,33 @@ extension HomeTCAView {
         awayRoutineDisplays: [HomeFeature.RoutineDisplay],
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
-        let pinnedTasks = filteredPinnedTasks(
-            activeRoutineDisplays: routineDisplays,
+        let presentation = macTaskListPresentation(
+            routineDisplays: routineDisplays,
             awayRoutineDisplays: awayRoutineDisplays,
             archivedRoutineDisplays: archivedRoutineDisplays
         )
-        let sections = groupedRoutineSections(from: (routineDisplays + awayRoutineDisplays).filter { !$0.isPinned })
-        let archivedTasks = filteredArchivedTasks(archivedRoutineDisplays, includePinned: false)
 
-        if pinnedTasks.isEmpty && sections.isEmpty && archivedTasks.isEmpty {
+        if let emptyState = presentation.emptyState {
             emptyStateView(
-                title: emptyTaskListTitle,
-                message: emptyTaskListMessage,
-                systemImage: "magnifyingglass"
+                title: emptyState.title,
+                message: emptyState.message,
+                systemImage: emptyState.systemImage
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(selection: macSidebarSelectionBinding) {
-                let pinnedOffset = 0
-                if !pinnedTasks.isEmpty {
-                    let pinnedContext = ManualMoveContext(
-                        sectionKey: pinnedManualOrderSectionKey,
-                        orderedTaskIDs: pinnedTasks.map(\.taskID)
-                    )
-                    Section("Pinned") {
-                        ForEach(Array(pinnedTasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(
-                                for: task,
-                                rowNumber: pinnedOffset + index + 1,
-                                moveContext: pinnedContext
-                            )
-                        }
-                        .onDelete { offsets in
-                            deleteTasks(at: offsets, from: pinnedTasks)
-                        }
-                    }
-                }
-
-                let sectionOffset = pinnedTasks.count
-                ForEach(sections) { section in
-                    let sectionStart = sectionOffset + sections.prefix(while: { $0.id != section.id }).reduce(0) { $0 + $1.tasks.count }
-                    let sectionContext = ManualMoveContext(
-                        sectionKey: section.tasks.first.map { regularManualOrderSectionKey(for: $0) } ?? "onTrack",
-                        orderedTaskIDs: section.tasks.map(\.taskID)
-                    )
+                ForEach(presentation.sections) { section in
                     Section(section.title) {
                         ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
                             routineNavigationRow(
                                 for: task,
-                                rowNumber: sectionStart + index + 1,
-                                moveContext: sectionContext
+                                rowNumber: section.rowNumber(forTaskAt: index),
+                                includeMarkDone: section.includeMarkDone,
+                                moveContext: section.moveContext
                             )
                         }
                         .onDelete { offsets in
                             deleteTasks(at: offsets, from: section.tasks)
-                        }
-                    }
-                }
-
-                if !archivedTasks.isEmpty {
-                    let archivedOffset = sectionOffset + sections.reduce(0) { $0 + $1.tasks.count }
-                    let archivedContext = ManualMoveContext(
-                        sectionKey: archivedManualOrderSectionKey,
-                        orderedTaskIDs: archivedTasks.map(\.taskID)
-                    )
-                    Section("Archived") {
-                        ForEach(Array(archivedTasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(
-                                for: task,
-                                rowNumber: archivedOffset + index + 1,
-                                moveContext: archivedContext
-                            )
-                        }
-                        .onDelete { offsets in
-                            deleteTasks(at: offsets, from: archivedTasks)
                         }
                     }
                 }
@@ -185,7 +138,7 @@ extension HomeTCAView {
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
         includeMarkDone: Bool,
-        moveContext: ManualMoveContext?
+        moveContext: HomeTaskListMoveContext?
     ) -> some View {
         routineRow(for: task, rowNumber: rowNumber)
             .tag(MacSidebarSelection.task(task.taskID))

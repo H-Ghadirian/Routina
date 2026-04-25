@@ -2,14 +2,6 @@ import Foundation
 import SwiftUI
 
 extension HomeTCAView {
-    var pinnedManualOrderSectionKey: String {
-        HomeTaskListFiltering<HomeFeature.RoutineDisplay>.pinnedManualOrderSectionKey
-    }
-
-    var archivedManualOrderSectionKey: String {
-        HomeTaskListFiltering<HomeFeature.RoutineDisplay>.archivedManualOrderSectionKey
-    }
-
     func taskListFiltering(
         referenceDate: Date = Date()
     ) -> HomeTaskListFiltering<HomeFeature.RoutineDisplay> {
@@ -36,39 +28,28 @@ extension HomeTCAView {
         )
     }
 
-    func regularManualOrderSectionKey(for task: HomeFeature.RoutineDisplay) -> String {
-        taskListFiltering().regularManualOrderSectionKey(for: task)
+    func macTaskListPresentation(
+        routineDisplays: [HomeFeature.RoutineDisplay],
+        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
+        archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
+    ) -> HomeTaskListPresentation<HomeFeature.RoutineDisplay> {
+        HomeTaskListPresentation.sidebar(
+            filtering: taskListFiltering(),
+            routineDisplays: routineDisplays,
+            awayRoutineDisplays: awayRoutineDisplays,
+            archivedRoutineDisplays: archivedRoutineDisplays,
+            emptyState: HomeTaskListEmptyState(
+                title: emptyTaskListTitle,
+                message: emptyTaskListMessage,
+                systemImage: "magnifyingglass"
+            )
+        )
     }
 
     func filteredTasks(
         _ routineDisplays: [HomeFeature.RoutineDisplay]
     ) -> [HomeFeature.RoutineDisplay] {
         taskListFiltering().filteredTasks(routineDisplays)
-    }
-
-    func filteredAwayTasks(
-        _ routineDisplays: [HomeFeature.RoutineDisplay]
-    ) -> [HomeFeature.RoutineDisplay] {
-        taskListFiltering().filteredAwayTasks(routineDisplays)
-    }
-
-    func filteredArchivedTasks(
-        _ routineDisplays: [HomeFeature.RoutineDisplay],
-        includePinned: Bool = true
-    ) -> [HomeFeature.RoutineDisplay] {
-        taskListFiltering().filteredArchivedTasks(routineDisplays, includePinned: includePinned)
-    }
-
-    func filteredPinnedTasks(
-        activeRoutineDisplays: [HomeFeature.RoutineDisplay],
-        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
-        archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
-    ) -> [HomeFeature.RoutineDisplay] {
-        taskListFiltering().filteredPinnedTasks(
-            activeDisplays: activeRoutineDisplays,
-            awayDisplays: awayRoutineDisplays,
-            archivedDisplays: archivedRoutineDisplays
-        )
     }
 
     func matchesSearch(_ task: HomeFeature.RoutineDisplay) -> Bool {
@@ -89,22 +70,6 @@ extension HomeTCAView {
 
     func matchesTaskListViewMode(_ task: HomeFeature.RoutineDisplay) -> Bool {
         taskListFiltering().matchesTaskListViewMode(task)
-    }
-
-    func groupedRoutineSections(
-        from routineDisplays: [HomeFeature.RoutineDisplay]
-    ) -> [RoutineListSection] {
-        taskListFiltering()
-            .groupedRoutineSections(from: routineDisplays)
-            .map { RoutineListSection(title: $0.title, tasks: $0.tasks) }
-    }
-
-    func deadlineBasedSections(
-        from tasks: [HomeFeature.RoutineDisplay]
-    ) -> [RoutineListSection] {
-        taskListFiltering()
-            .deadlineBasedSections(from: tasks)
-            .map { RoutineListSection(title: $0.title, tasks: $0.tasks) }
     }
 
     func sectionDateForDeadlineGrouping(

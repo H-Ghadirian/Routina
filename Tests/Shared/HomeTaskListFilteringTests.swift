@@ -85,6 +85,72 @@ struct HomeTaskListFilteringTests {
 
         #expect(result.map(\.name) == ["Sooner", "Later"])
     }
+
+    @Test
+    func iOSPresentationBuildsVisibleSectionsAndOffsets() {
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(),
+            routineDisplays: [TestTaskDisplay(name: "Active", daysUntilDue: 4)],
+            awayRoutineDisplays: [TestTaskDisplay(name: "Away", daysUntilDue: 4)],
+            archivedRoutineDisplays: [TestTaskDisplay(name: "Archived")],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.title) == ["On Track", "Not Here Right Now", "Archived"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 2])
+        #expect(presentation.sections.map(\.includeMarkDone) == [true, false, true])
+        #expect(presentation.visibleTaskCount == 3)
+        #expect(presentation.emptyState == nil)
+    }
+
+    @Test
+    func iOSPresentationReportsHiddenUnavailableEmptyState() {
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(),
+            routineDisplays: [],
+            awayRoutineDisplays: [TestTaskDisplay(name: "Away")],
+            archivedRoutineDisplays: [],
+            hideUnavailableRoutines: true,
+            taskListKind: .routines
+        )
+
+        #expect(presentation.sections.isEmpty)
+        #expect(presentation.hiddenUnavailableTaskCount == 1)
+        #expect(presentation.emptyState == HomeTaskListEmptyState(
+            title: "No routines available here",
+            message: "1 routines are hidden because you are away from their saved place.",
+            systemImage: "location.slash"
+        ))
+    }
+
+    @Test
+    func sidebarPresentationBuildsMoveContextsAndOffsets() {
+        let pinnedID = UUID()
+        let regularID = UUID()
+        let archivedID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(taskID: regularID, name: "Regular", daysUntilDue: 4),
+                TestTaskDisplay(taskID: pinnedID, name: "Pinned", isPinned: true)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [TestTaskDisplay(taskID: archivedID, name: "Archived")],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Pinned", "On Track", "Archived"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 2])
+        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["pinned", "onTrack", "archived"])
+        #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [pinnedID, regularID, archivedID])
+        #expect(presentation.visibleTaskCount == 3)
+        #expect(presentation.emptyState == nil)
+    }
 }
 
 private func makeFiltering(
