@@ -241,6 +241,7 @@ struct TaskDetailTCAView: View {
             recurrenceWeekday: store.editRecurrenceWeekday,
             recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
             autoAssumeDailyDone: store.editAutoAssumeDailyDone,
+            pressure: store.editPressure,
             task: store.task
         )
     }
@@ -1654,6 +1655,7 @@ struct TaskDetailTCAView: View {
         recurrenceWeekday: Int,
         recurrenceDayOfMonth: Int,
         autoAssumeDailyDone: Bool,
+        pressure: RoutineTaskPressure,
         task: RoutineTask
     ) -> Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1725,6 +1727,7 @@ struct TaskDetailTCAView: View {
             || sanitizedCandidateChecklistItems != currentChecklistItems
             || newRecurrenceRule != currentRecurrenceRule
             || autoAssumeDailyDone != task.autoAssumeDailyDone
+            || pressure != task.pressure
     }
 
     private func canToggleChecklistItem(_ item: RoutineChecklistItem) -> Bool {
