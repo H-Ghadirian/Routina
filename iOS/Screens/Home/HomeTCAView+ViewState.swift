@@ -197,7 +197,16 @@ extension HomeTCAView {
     }
 
     var homeTagFilterData: HomeTagFilterData {
-        homeTagFilterCoordinator.data
+        let data = homeTagFilterCoordinator.data
+        return HomeTagFilterData(
+            selectedTags: data.selectedTags,
+            excludedTags: data.excludedTags,
+            tagSummaries: RoutineTagColors.applying(store.tagColors, to: data.tagSummaries),
+            allTagTaskCount: data.allTagTaskCount,
+            suggestedRelatedTags: data.suggestedRelatedTags,
+            availableExcludeTagSummaries: RoutineTagColors.applying(store.tagColors, to: data.availableExcludeTagSummaries),
+            showsTagCounts: data.showsTagCounts
+        )
     }
 
     var homeTagFilterActions: HomeTagFilterActions {

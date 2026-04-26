@@ -102,6 +102,11 @@ struct HomeTagFilterData {
     func linkedTaskCount(for tag: String) -> Int {
         tagSummaries.first { RoutineTag.contains($0.name, in: [tag]) }?.linkedRoutineCount ?? 0
     }
+
+    func color(for tag: String) -> Color? {
+        tagSummaries.first { RoutineTag.contains($0.name, in: [tag]) }?.displayColor
+            ?? availableExcludeTagSummaries.first { RoutineTag.contains($0.name, in: [tag]) }?.displayColor
+    }
 }
 
 struct HomeTagFilterActions {

@@ -445,10 +445,15 @@ extension HomeTCAView {
                 }
 
                 if !task.tags.isEmpty {
-                    Text(task.tags.map { "#\($0)" }.joined(separator: "  "))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    HStack(spacing: 8) {
+                        ForEach(task.tags, id: \.self) { tag in
+                            Text("#\(tag)")
+                                .font(.caption2)
+                                .foregroundStyle(tagColor(for: tag) ?? .secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .lineLimit(1)
                 }
             }
 
@@ -462,6 +467,10 @@ extension HomeTCAView {
                     .fill(color.opacity(0.12))
             }
         )
+    }
+
+    private func tagColor(for tag: String) -> Color? {
+        Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: store.tagColors))
     }
 
     func platformDeleteTasks(

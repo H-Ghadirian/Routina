@@ -110,6 +110,7 @@ struct HomeFeature {
         var timelineFilters = HomeTimelineFiltersState()
         var statsFilters = HomeStatsFiltersState()
         var relatedTagRules: [RoutineRelatedTagRule] = []
+        var tagColors: [String: String] = [:]
 
         init(
             routineTasks: [RoutineTask] = [],
@@ -161,7 +162,8 @@ struct HomeFeature {
             statsSelectedTag: String? = nil,
             statsSelectedTags: Set<String> = [],
             statsIncludeTagMatchMode: RoutineTagMatchMode = .all,
-            relatedTagRules: [RoutineRelatedTagRule] = []
+            relatedTagRules: [RoutineRelatedTagRule] = [],
+            tagColors: [String: String] = [:]
         ) {
             self.routineTasks = routineTasks
             self.routinePlaces = routinePlaces
@@ -218,6 +220,7 @@ struct HomeFeature {
                 includeTagMatchMode: statsIncludeTagMatchMode
             )
             self.relatedTagRules = relatedTagRules
+            self.tagColors = RoutineTagColors.sanitized(tagColors)
         }
 
         var selectedTaskID: UUID? {
@@ -500,6 +503,7 @@ struct HomeFeature {
             switch action {
             case .onAppear:
                 applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
+                state.tagColors = appSettingsClient.tagColors()
                 return .concatenate(
                     loadTasksEffect(),
                     .run { @MainActor send in
@@ -535,6 +539,7 @@ struct HomeFeature {
                     persistedRelatedTagRules: appSettingsClient.relatedTagRules()
                 )
                 state.relatedTagRules = snapshot.relatedTagRules
+                state.tagColors = appSettingsClient.tagColors()
                 state.selection.selectedTaskReloadGuard = snapshot.selectedTaskReloadGuard
                 state.routineTasks = snapshot.tasks
                 state.routinePlaces = snapshot.places

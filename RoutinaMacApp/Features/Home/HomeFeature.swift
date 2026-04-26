@@ -136,6 +136,7 @@ struct HomeFeature {
         var statsFilters = HomeStatsFiltersState()
         var navigation = HomeMacNavigationState()
         var relatedTagRules: [RoutineRelatedTagRule] = []
+        var tagColors: [String: String] = [:]
 
         init(
             routineTasks: [RoutineTask] = [],
@@ -193,7 +194,8 @@ struct HomeFeature {
             macSidebarSelection: MacSidebarSelection? = nil,
             selectedSettingsSection: SettingsMacSection? = .notifications,
             selectedBoardScope: BoardScope = .backlog,
-            relatedTagRules: [RoutineRelatedTagRule] = []
+            relatedTagRules: [RoutineRelatedTagRule] = [],
+            tagColors: [String: String] = [:]
         ) {
             self.routineTasks = routineTasks
             self.routinePlaces = routinePlaces
@@ -260,6 +262,7 @@ struct HomeFeature {
                 selectedSettingsSection: selectedSettingsSection
             )
             self.relatedTagRules = relatedTagRules
+            self.tagColors = RoutineTagColors.sanitized(tagColors)
         }
 
         var selectedTaskID: UUID? {
@@ -619,6 +622,7 @@ struct HomeFeature {
             switch action {
             case .onAppear:
                 applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
+                state.tagColors = appSettingsClient.tagColors()
                 return .concatenate(
                     loadTasksEffect(),
                     loadSprintBoardEffect(),
@@ -655,6 +659,7 @@ struct HomeFeature {
                     persistedRelatedTagRules: appSettingsClient.relatedTagRules()
                 )
                 state.relatedTagRules = snapshot.relatedTagRules
+                state.tagColors = appSettingsClient.tagColors()
                 state.selection.selectedTaskReloadGuard = snapshot.selectedTaskReloadGuard
                 state.routineTasks = snapshot.tasks
                 state.routinePlaces = snapshot.places

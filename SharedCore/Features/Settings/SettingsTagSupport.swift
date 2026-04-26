@@ -35,16 +35,35 @@ enum SettingsTagEditor {
         _ tags: [RoutineTagSummary],
         state: inout SettingsTagsState
     ) {
-        state.savedTags = tags
+        state.savedTags = RoutineTagColors.applying(state.tagColors, to: tags)
         syncRelatedTagDrafts(state: &state)
         if let pendingTag = state.tagPendingDeletion,
-           let updatedTag = tagSummary(named: pendingTag.name, in: tags) {
+           let updatedTag = tagSummary(named: pendingTag.name, in: state.savedTags) {
             state.tagPendingDeletion = updatedTag
         }
         if let pendingTag = state.tagPendingRename,
-           let updatedTag = tagSummary(named: pendingTag.name, in: tags) {
+           let updatedTag = tagSummary(named: pendingTag.name, in: state.savedTags) {
             state.tagPendingRename = updatedTag
         }
+    }
+
+    static func loadedTagColors(
+        _ colors: [String: String],
+        state: inout SettingsTagsState
+    ) {
+        state.tagColors = RoutineTagColors.sanitized(colors)
+        state.savedTags = RoutineTagColors.applying(state.tagColors, to: state.savedTags)
+    }
+
+    static func updateTagColor(
+        tagName: String,
+        colorHex: String?,
+        state: inout SettingsTagsState
+    ) -> [String: String] {
+        state.tagColors = RoutineTagColors.setting(colorHex, for: tagName, in: state.tagColors)
+        state.savedTags = RoutineTagColors.applying(state.tagColors, to: state.savedTags)
+        state.tagStatusMessage = ""
+        return state.tagColors
     }
 
     static func loadedRelatedTagRules(

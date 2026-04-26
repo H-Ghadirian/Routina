@@ -66,7 +66,13 @@ private struct HomeIncludedTagsFilterSection: View {
                 }
             } else {
                 ForEach(data.selectedTags.sorted(), id: \.self) { tag in
-                    HomeFilterChipButton(title: "#\(tag)", isSelected: true) {
+                    let color = data.color(for: tag)
+                    HomeFilterChipButton(
+                        title: "#\(tag)",
+                        isSelected: true,
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
+                    ) {
                         actions.onToggleIncludedTag(tag)
                     }
                 }
@@ -83,7 +89,13 @@ private struct HomeIncludedTagsFilterSection: View {
 
             HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(data.suggestedRelatedTags, id: \.self) { tag in
-                    HomeFilterChipButton(title: "#\(tag)", isSelected: false) {
+                    let color = data.color(for: tag)
+                    HomeFilterChipButton(
+                        title: "#\(tag)",
+                        isSelected: false,
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
+                    ) {
                         actions.onAddIncludedTag(tag)
                     }
                 }
@@ -99,9 +111,12 @@ private struct HomeIncludedTagsFilterSection: View {
 
             HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(data.tagSummaries.filter { !data.isIncludedTagSelected($0.name) }) { summary in
+                    let color = summary.displayColor
                     HomeFilterChipButton(
                         title: title(for: summary),
-                        isSelected: false
+                        isSelected: false,
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
                     ) {
                         actions.onToggleIncludedTag(summary.name)
                     }
@@ -180,7 +195,8 @@ private struct HomeExcludedTagsFilterSection: View {
                     HomeFilterChipButton(
                         title: title(for: summary),
                         isSelected: false,
-                        selectedColor: .red
+                        selectedColor: .red,
+                        unselectedColor: summary.displayColor
                     ) {
                         actions.onToggleExcludedTag(summary.name)
                     }

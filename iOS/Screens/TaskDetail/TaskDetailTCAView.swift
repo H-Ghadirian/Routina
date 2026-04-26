@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
+    @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
@@ -1164,19 +1165,22 @@ struct TaskDetailTCAView: View {
     }
 
     private func statusTagChip(_ tag: String) -> some View {
-        Text("#\(tag)")
+        let tint = Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: appSettingsClient.tagColors()))
+            ?? Color.accentColor
+
+        return Text("#\(tag)")
             .font(.caption.weight(.medium))
-            .foregroundStyle(.primary)
+            .foregroundStyle(tint)
             .lineLimit(1)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(Color.accentColor.opacity(0.12))
+                    .fill(tint.opacity(0.12))
             )
             .overlay(
                 Capsule()
-                    .stroke(Color.accentColor.opacity(0.22), lineWidth: 1)
+                    .stroke(tint.opacity(0.22), lineWidth: 1)
             )
     }
 

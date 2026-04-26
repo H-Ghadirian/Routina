@@ -559,6 +559,27 @@ struct SettingsTagsDetailView: View {
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                 }
+
+                                HStack(spacing: 12) {
+                                    ColorPicker(
+                                        "Tag color",
+                                        selection: tagColorBinding(for: tag),
+                                        supportsOpacity: false
+                                    )
+                                    .disabled(store.tags.isTagOperationInProgress)
+
+                                    Spacer()
+
+                                    if tag.colorHex != nil {
+                                        Button {
+                                            store.send(.tagColorChanged(tagName: tag.name, colorHex: nil))
+                                        } label: {
+                                            Label("Clear", systemImage: "xmark.circle")
+                                        }
+                                        .buttonStyle(.borderless)
+                                        .disabled(store.tags.isTagOperationInProgress)
+                                    }
+                                }
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button {
@@ -629,6 +650,13 @@ struct SettingsTagsDetailView: View {
                 return store.tags.relatedTagDrafts[key] ?? ""
             },
             set: { store.send(.relatedTagDraftChanged(tagName: tagName, draft: $0)) }
+        )
+    }
+
+    private func tagColorBinding(for tag: RoutineTagSummary) -> Binding<Color> {
+        Binding(
+            get: { Color(routineTagHex: tag.colorHex) ?? .accentColor },
+            set: { store.send(.tagColorChanged(tagName: tag.name, colorHex: $0.routineTagHex)) }
         )
     }
 }

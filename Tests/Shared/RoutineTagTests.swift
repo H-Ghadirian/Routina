@@ -107,4 +107,33 @@ struct RoutineTagTests {
 
         #expect(suggestions == ["Energy", "Health"])
     }
+
+    @Test
+    func tagColors_normalizeApplyRenameAndRemove() {
+        let colors = RoutineTagColors.sanitized([
+            " Focus ": "ff8800",
+            "Café": "#44AAEE",
+            "Broken": "not-a-color"
+        ])
+
+        #expect(colors == [
+            "focus": "#FF8800",
+            "cafe": "#44AAEE"
+        ])
+        #expect(RoutineTagColors.colorHex(for: "focus", in: colors) == "#FF8800")
+        #expect(RoutineTagColors.colorHex(for: "Cafe", in: colors) == "#44AAEE")
+
+        let summaries = RoutineTagColors.applying(colors, to: [
+            RoutineTagSummary(name: "Focus", linkedRoutineCount: 1),
+            RoutineTagSummary(name: "Other", linkedRoutineCount: 1)
+        ])
+        #expect(summaries.map(\.colorHex) == ["#FF8800", nil])
+
+        let renamed = RoutineTagColors.replacing("Focus", with: "Deep Work", in: colors)
+        #expect(renamed["focus"] == nil)
+        #expect(renamed["deep work"] == "#FF8800")
+
+        let removed = RoutineTagColors.removing("Café", from: colors)
+        #expect(removed["cafe"] == nil)
+    }
 }

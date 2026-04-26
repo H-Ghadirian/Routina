@@ -625,6 +625,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
 
         let persistedTaskID = task.id
         let descriptor = FetchDescriptor<RoutineTask>(
@@ -679,6 +680,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
 
         let persistedTaskID = task.id
         let descriptor = FetchDescriptor<RoutineTask>(
@@ -733,6 +735,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -853,6 +856,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -918,6 +922,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -990,6 +995,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -1061,6 +1067,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -1169,6 +1176,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
         await store.receive(.attachmentsLoaded([]))
+        await receiveNotificationStatusLoaded(store)
     }
 
     @Test
@@ -1793,5 +1801,15 @@ struct TaskDetailFeatureTests {
         #expect(persistedLogs.count == 1)
         #expect(persistedLogs.first?.timestamp == now)
         #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+}
+
+@MainActor
+private func receiveNotificationStatusLoaded(_ store: TestStoreOf<TaskDetailFeature>) async {
+    await store.receive(.notificationStatusLoaded(appEnabled: false, systemAuthorized: false)) {
+        $0.hasLoadedNotificationStatus = true
+        $0.appNotificationsEnabled = false
+        $0.systemNotificationsAuthorized = false
     }
 }

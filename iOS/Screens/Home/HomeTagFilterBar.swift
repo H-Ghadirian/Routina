@@ -14,9 +14,12 @@ struct HomeTagFilterBar: View {
                 )
 
                 ForEach(data.tagSummaries) { summary in
+                    let color = summary.displayColor
                     HomeFilterChipButton(
                         title: "#\(summary.name) \(summary.linkedRoutineCount)",
-                        isSelected: data.isIncludedTagSelected(summary.name)
+                        isSelected: data.isIncludedTagSelected(summary.name),
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
                     ) {
                         actions.onToggleIncludedTag(summary.name)
                     }
@@ -30,7 +33,13 @@ struct HomeTagFilterBar: View {
                         .foregroundStyle(.secondary)
 
                     ForEach(data.suggestedRelatedTags, id: \.self) { tag in
-                        HomeFilterChipButton(title: "#\(tag)", isSelected: false) {
+                        let color = data.color(for: tag)
+                        HomeFilterChipButton(
+                            title: "#\(tag)",
+                            isSelected: false,
+                            selectedColor: color ?? .accentColor,
+                            unselectedColor: color
+                        ) {
                             actions.onAddIncludedTag(tag)
                         }
                     }

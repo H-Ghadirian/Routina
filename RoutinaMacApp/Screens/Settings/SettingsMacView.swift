@@ -748,6 +748,33 @@ struct SettingsMacTagsDetailView: View {
                                             .disabled(store.tags.isTagOperationInProgress)
                                             .help("Save related tags")
                                         }
+
+                                        HStack(spacing: 8) {
+                                            ColorPicker(
+                                                "Tag color",
+                                                selection: tagColorBinding(for: tag),
+                                                supportsOpacity: false
+                                            )
+                                            .labelsHidden()
+                                            .disabled(store.tags.isTagOperationInProgress)
+                                            .help("Tag color")
+
+                                            Text(tag.colorHex ?? "Default color")
+                                                .font(.footnote)
+                                                .foregroundStyle(.secondary)
+
+                                            if tag.colorHex != nil {
+                                                Button {
+                                                    store.send(.tagColorChanged(tagName: tag.name, colorHex: nil))
+                                                } label: {
+                                                    Label("Clear tag color", systemImage: "xmark.circle")
+                                                }
+                                                .labelStyle(.iconOnly)
+                                                .buttonStyle(.borderless)
+                                                .disabled(store.tags.isTagOperationInProgress)
+                                                .help("Clear tag color")
+                                            }
+                                        }
                                     }
 
                                     Spacer()
@@ -826,6 +853,13 @@ struct SettingsMacTagsDetailView: View {
                 return store.tags.relatedTagDrafts[key] ?? ""
             },
             set: { store.send(.relatedTagDraftChanged(tagName: tagName, draft: $0)) }
+        )
+    }
+
+    private func tagColorBinding(for tag: RoutineTagSummary) -> Binding<Color> {
+        Binding(
+            get: { Color(routineTagHex: tag.colorHex) ?? .accentColor },
+            set: { store.send(.tagColorChanged(tagName: tag.name, colorHex: $0.routineTagHex)) }
         )
     }
 }

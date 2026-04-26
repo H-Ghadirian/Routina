@@ -38,11 +38,14 @@ struct HomeMacRoutineTagFiltersView: View {
                     )
                 } else {
                     ForEach(data.selectedTags.sorted(), id: \.self) { tag in
+                        let color = data.color(for: tag)
                         HomeMacTagChipView(
                             title: "#\(tag)",
                             count: data.linkedTaskCount(for: tag),
                             systemImage: "tag.fill",
-                            isSelected: true
+                            isSelected: true,
+                            selectedColor: color ?? .accentColor,
+                            unselectedColor: color
                         ) {
                             actions.onToggleIncludedTag(tag)
                         }
@@ -63,11 +66,14 @@ struct HomeMacRoutineTagFiltersView: View {
 
                 WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(data.suggestedRelatedTags, id: \.self) { tag in
+                        let color = data.color(for: tag)
                         HomeMacTagChipView(
                             title: "#\(tag)",
                             count: data.linkedTaskCount(for: tag),
                             systemImage: "tag.fill",
-                            isSelected: false
+                            isSelected: false,
+                            selectedColor: color ?? .accentColor,
+                            unselectedColor: color
                         ) {
                             actions.onAddIncludedTag(tag)
                         }
@@ -86,11 +92,14 @@ struct HomeMacRoutineTagFiltersView: View {
 
             WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(data.tagSummaries.filter { !data.isIncludedTagSelected($0.name) }) { summary in
+                    let color = summary.displayColor
                     HomeMacTagChipView(
                         title: "#\(summary.name)",
                         count: summary.linkedRoutineCount,
                         systemImage: "tag.fill",
-                        isSelected: false
+                        isSelected: false,
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
                     ) {
                         actions.onToggleIncludedTag(summary.name)
                     }
@@ -158,7 +167,8 @@ struct HomeMacRoutineTagFiltersView: View {
                         count: summary.linkedRoutineCount,
                         systemImage: "tag.slash.fill",
                         isSelected: false,
-                        selectedColor: .red
+                        selectedColor: .red,
+                        unselectedColor: summary.displayColor
                     ) {
                         actions.onToggleExcludedTag(summary.name)
                     }

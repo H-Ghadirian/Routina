@@ -6,6 +6,7 @@ struct HomeMacTagChipView: View {
     let systemImage: String
     let isSelected: Bool
     let selectedColor: Color
+    let unselectedColor: Color?
     let action: () -> Void
 
     init(
@@ -14,6 +15,7 @@ struct HomeMacTagChipView: View {
         systemImage: String,
         isSelected: Bool,
         selectedColor: Color = .accentColor,
+        unselectedColor: Color? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -21,6 +23,7 @@ struct HomeMacTagChipView: View {
         self.systemImage = systemImage
         self.isSelected = isSelected
         self.selectedColor = selectedColor
+        self.unselectedColor = unselectedColor
         self.action = action
     }
 
@@ -42,12 +45,12 @@ struct HomeMacTagChipView: View {
                             .fill(isSelected ? Color.white.opacity(0.18) : Color.primary.opacity(0.08))
                     )
             }
-            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .foregroundStyle(isSelected ? Color.white : (unselectedColor ?? Color.primary))
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
                 Capsule(style: .continuous)
-                    .fill(isSelected ? selectedColor : Color.secondary.opacity(0.10))
+                    .fill(isSelected ? selectedColor : (unselectedColor ?? Color.secondary).opacity(0.10))
             )
             .overlay(
                 Capsule(style: .continuous)

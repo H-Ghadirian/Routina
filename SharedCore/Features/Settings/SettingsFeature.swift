@@ -45,11 +45,13 @@ struct SettingsFeature {
         case setTagRenameSheet(Bool)
         case placesLoaded([RoutinePlaceSummary])
         case tagsLoaded([RoutineTagSummary])
+        case tagColorsLoaded([String: String])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
         case tagRenameDraftChanged(String)
         case relatedTagDraftChanged(tagName: String, draft: String)
+        case tagColorChanged(tagName: String, colorHex: String?)
         case saveRelatedTagsTapped(String)
         case placeDraftCoordinateChanged(LocationCoordinate?)
         case placeDraftRadiusChanged(Double)
@@ -435,6 +437,7 @@ struct SettingsFeature {
                     send(.tagsLoaded(SettingsRefreshExecution.loadTagSummaries(
                         modelContext: self.modelContext
                     )))
+                    send(.tagColorsLoaded(appSettingsClient.tagColors()))
                     send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
                 }
 
@@ -517,6 +520,10 @@ struct SettingsFeature {
                 SettingsTagEditor.loadedTags(tags, state: &state.tags)
                 return .none
 
+            case let .tagColorsLoaded(colors):
+                SettingsTagEditor.loadedTagColors(colors, state: &state.tags)
+                return .none
+
             case let .relatedTagRulesLoaded(rules):
                 SettingsTagEditor.loadedRelatedTagRules(rules, state: &state.tags)
                 return .none
@@ -539,6 +546,15 @@ struct SettingsFeature {
                     draft: draft,
                     state: &state.tags
                 )
+                return .none
+
+            case let .tagColorChanged(tagName, colorHex):
+                let colors = SettingsTagEditor.updateTagColor(
+                    tagName: tagName,
+                    colorHex: colorHex,
+                    state: &state.tags
+                )
+                appSettingsClient.setTagColors(colors)
                 return .none
 
             case let .saveRelatedTagsTapped(tagName):
@@ -581,6 +597,13 @@ struct SettingsFeature {
                 )
                 appSettingsClient.setRelatedTagRules(updatedRules)
                 SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state.tags)
+                let updatedColors = RoutineTagColors.replacing(
+                    request.originalTagName,
+                    with: request.cleanedName,
+                    in: appSettingsClient.tagColors()
+                )
+                appSettingsClient.setTagColors(updatedColors)
+                SettingsTagEditor.loadedTagColors(updatedColors, state: &state.tags)
 
                 return SettingsTagExecution.rename(
                     request,
@@ -618,6 +641,12 @@ struct SettingsFeature {
                 )
                 appSettingsClient.setRelatedTagRules(updatedRules)
                 SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state.tags)
+                let updatedColors = RoutineTagColors.removing(
+                    request.tagName,
+                    from: appSettingsClient.tagColors()
+                )
+                appSettingsClient.setTagColors(updatedColors)
+                SettingsTagEditor.loadedTagColors(updatedColors, state: &state.tags)
 
                 return SettingsTagExecution.delete(
                     request,
@@ -700,6 +729,7 @@ struct SettingsFeature {
             send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
             send(.placesLoaded(result.placeSummaries))
             send(.tagsLoaded(result.tagSummaries))
+            send(.tagColorsLoaded(appSettingsClient.tagColors()))
             send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
             send(.locationSnapshotUpdated(result.locationSnapshot))
 

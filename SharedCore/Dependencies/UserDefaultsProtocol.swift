@@ -58,6 +58,7 @@ public enum UserDefaultStringValueKey: String {
     case appSettingRoutineListSectioningMode
     case appSettingTagCounterDisplayMode
     case appSettingRelatedTagRules
+    case appSettingTagColors
     case appSettingTemporaryViewState
     case macFormSectionOrder
 }
@@ -83,6 +84,8 @@ struct AppSettingsClient: Sendable {
     var setTagCounterDisplayMode: @Sendable (TagCounterDisplayMode) -> Void
     var relatedTagRules: @Sendable () -> [RoutineRelatedTagRule]
     var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
+    var tagColors: @Sendable () -> [String: String]
+    var setTagColors: @Sendable ([String: String]) -> Void
     var notificationReminderTime: @Sendable () -> Date
     var setNotificationReminderTime: @Sendable (Date) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
@@ -155,6 +158,28 @@ extension AppSettingsClient {
             }
             SharedDefaults.app[.appSettingRelatedTagRules] = rawValue
         },
+        tagColors: {
+            guard let rawValue = SharedDefaults.app[.appSettingTagColors],
+                  let data = rawValue.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode([String: String].self, from: data)
+            else {
+                return [:]
+            }
+            return RoutineTagColors.sanitized(decoded)
+        },
+        setTagColors: { colors in
+            let sanitizedColors = RoutineTagColors.sanitized(colors)
+            guard !sanitizedColors.isEmpty else {
+                SharedDefaults.app[.appSettingTagColors] = nil
+                return
+            }
+            guard let data = try? JSONEncoder().encode(sanitizedColors),
+                  let rawValue = String(data: data, encoding: .utf8)
+            else {
+                return
+            }
+            SharedDefaults.app[.appSettingTagColors] = rawValue
+        },
         notificationReminderTime: {
             NotificationPreferences.reminderTimeDate()
         },
@@ -208,6 +233,8 @@ extension AppSettingsClient {
         setTagCounterDisplayMode: { _ in },
         relatedTagRules: { [] },
         setRelatedTagRules: { _ in },
+        tagColors: { [:] },
+        setTagColors: { _ in },
         notificationReminderTime: { Date() },
         setNotificationReminderTime: { _ in },
         selectedAppIcon: { .orange },

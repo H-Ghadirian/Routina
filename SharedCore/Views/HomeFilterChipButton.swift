@@ -6,6 +6,7 @@ struct HomeFilterChipButton: View {
     let selectedColor: Color
     let selectedForegroundColor: Color?
     let unselectedForegroundColor: Color
+    let unselectedColor: Color?
     let selectedBackgroundOpacity: Double
     let unselectedBackgroundOpacity: Double
     let fillsAvailableWidth: Bool
@@ -19,6 +20,7 @@ struct HomeFilterChipButton: View {
         selectedColor: Color = .accentColor,
         selectedForegroundColor: Color? = nil,
         unselectedForegroundColor: Color = .secondary,
+        unselectedColor: Color? = nil,
         selectedBackgroundOpacity: Double = 0.16,
         unselectedBackgroundOpacity: Double = 0.10,
         fillsAvailableWidth: Bool = false,
@@ -31,6 +33,7 @@ struct HomeFilterChipButton: View {
         self.selectedColor = selectedColor
         self.selectedForegroundColor = selectedForegroundColor
         self.unselectedForegroundColor = unselectedForegroundColor
+        self.unselectedColor = unselectedColor
         self.selectedBackgroundOpacity = selectedBackgroundOpacity
         self.unselectedBackgroundOpacity = unselectedBackgroundOpacity
         self.fillsAvailableWidth = fillsAvailableWidth
@@ -59,7 +62,7 @@ struct HomeFilterChipButton: View {
         if isSelected {
             selectedForegroundColor ?? selectedColor
         } else {
-            unselectedForegroundColor
+            unselectedColor ?? unselectedForegroundColor
         }
     }
 
@@ -67,7 +70,7 @@ struct HomeFilterChipButton: View {
         if isSelected {
             selectedColor.opacity(selectedBackgroundOpacity)
         } else {
-            Color.secondary.opacity(unselectedBackgroundOpacity)
+            (unselectedColor ?? Color.secondary).opacity(unselectedBackgroundOpacity)
         }
     }
 }

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
+    @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
@@ -1365,6 +1366,10 @@ struct TaskDetailTCAView: View {
     }
 
     private func tagTint(for tag: String) -> Color {
+        if let color = Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: appSettingsClient.tagColors())) {
+            return color
+        }
+
         let palette: [Color] = [.blue, .teal, .green, .orange, .purple, .pink, .indigo, .mint]
         let index = tag.unicodeScalars.reduce(0) { partialResult, scalar in
             partialResult + Int(scalar.value)

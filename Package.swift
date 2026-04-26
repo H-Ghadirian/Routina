@@ -236,6 +236,7 @@ let package = Package(
                 "SharedCore/Views/HomeFilterFlowLayout.swift",
                 "SharedCore/Views/HomeTodoStateFilterChips.swift",
                 "SharedCore/Views/ImportanceUrgencyMatrixPicker.swift",
+                "SharedCore/Views/RoutineTagColor.swift",
                 "SharedCore/Services/GitHubStatsClient.swift",
                 "SharedCore/Services/GitHubWidgetService.swift",
                 "SharedCore/Services/GitLabStatsClient.swift",
