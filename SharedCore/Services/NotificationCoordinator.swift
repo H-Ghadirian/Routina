@@ -212,17 +212,28 @@ enum NotificationCoordinator {
         let context = PersistenceController.shared.container.mainContext
 
         do {
+            let now = Date()
             guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
-            guard !task.isArchived() else { return }
-            let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            guard !task.isArchived(referenceDate: now) else { return }
+            let calendar = Calendar.current
+            let tomorrow = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: now)
+            ) ?? now
+            task.snoozedUntil = tomorrow
+            try context.save()
             let payload = notificationPayload(
                 for: task,
-                triggerDate: NotificationPreferences.reminderDate(on: tomorrow),
+                triggerDate: NotificationPreferences.reminderDate(on: tomorrow, calendar: calendar),
                 isArchivedOverride: false,
-                referenceDate: Date()
+                referenceDate: tomorrow,
+                calendar: calendar
             )
             await scheduleNotification(payload)
+            NotificationCenter.default.postRoutineDidUpdate()
         } catch {
+            context.rollback()
             NSLog("Notification action failed to snooze routine: \(error.localizedDescription)")
         }
     }
@@ -233,9 +244,11 @@ enum NotificationCoordinator {
         center.removeDeliveredNotifications(withIdentifiers: [identifier])
     }
 
-    static func createNotificationTrigger(for payload: NotificationPayload) -> UNCalendarNotificationTrigger {
+    static func createNotificationTrigger(
+        for payload: NotificationPayload,
+        now: Date = Date()
+    ) -> UNCalendarNotificationTrigger {
         let calendar = Calendar.current
-        let now = Date()
 
         let targetDate: Date
         if let triggerDate = payload.triggerDate {
@@ -252,7 +265,14 @@ enum NotificationCoordinator {
                 : NotificationPreferences.nextReminderDate(after: now, calendar: calendar)
         }
 
-        let safeDate = targetDate > now ? targetDate : now.addingTimeInterval(60)
+        let safeDate: Date
+        if targetDate > now {
+            safeDate = targetDate
+        } else if payload.usesExactTime {
+            safeDate = now.addingTimeInterval(60)
+        } else {
+            safeDate = NotificationPreferences.nextReminderDate(after: now, calendar: calendar)
+        }
         let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: safeDate)
         return UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
     }
@@ -310,6 +330,7 @@ enum NotificationCoordinator {
             return
         }
 
+        cancelNotification(payload.identifier)
         let request = UNNotificationRequest(
             identifier: payload.identifier,
             content: createNotificationContent(for: payload),

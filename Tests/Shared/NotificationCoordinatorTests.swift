@@ -171,4 +171,34 @@ struct NotificationCoordinatorTests {
             #expect(content.relevanceScore == 1.0)
         }
     }
+
+    @Test
+    func notificationTrigger_movesPastNonExactTriggerToNextReminderTime() {
+        let now = makeDate("2026-04-25T12:00:00Z")
+        let payload = NotificationPayload(
+            identifier: UUID().uuidString,
+            name: "Exercise",
+            emoji: nil,
+            interval: 1,
+            lastDone: nil,
+            dueDate: makeDate("2026-04-24T12:00:00Z"),
+            triggerDate: makeDate("2026-04-24T20:00:00Z"),
+            isOneOffTask: false,
+            isArchived: false,
+            usesExactTime: false,
+            isChecklistDriven: false,
+            isChecklistCompletionRoutine: false,
+            nextDueChecklistItemTitle: nil
+        )
+
+        let trigger = NotificationCoordinator.createNotificationTrigger(for: payload, now: now)
+        let expectedDate = NotificationPreferences.nextReminderDate(after: now)
+        let expectedComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: expectedDate)
+
+        #expect(trigger.dateComponents.year == expectedComponents.year)
+        #expect(trigger.dateComponents.month == expectedComponents.month)
+        #expect(trigger.dateComponents.day == expectedComponents.day)
+        #expect(trigger.dateComponents.hour == expectedComponents.hour)
+        #expect(trigger.dateComponents.minute == expectedComponents.minute)
+    }
 }

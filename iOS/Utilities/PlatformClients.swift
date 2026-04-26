@@ -43,7 +43,10 @@ extension NotificationClient {
                 content: NotificationCoordinator.createNotificationContent(for: payload),
                 trigger: NotificationCoordinator.createNotificationTrigger(for: payload)
             )
-            try? await UNUserNotificationCenter.current().add(request)
+            let center = UNUserNotificationCenter.current()
+            center.removePendingNotificationRequests(withIdentifiers: [payload.identifier])
+            center.removeDeliveredNotifications(withIdentifiers: [payload.identifier])
+            try? await center.add(request)
         },
         cancel: { identifier in
             let center = UNUserNotificationCenter.current()
