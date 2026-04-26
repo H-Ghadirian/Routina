@@ -10,35 +10,42 @@ struct ImportanceUrgencyMatrixPicker: View {
     @Binding private var urgency: RoutineTaskUrgency
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private let selectionMode: SelectionMode
+    private let showsSummaryChip: Bool
 
     private let importanceLevels = RoutineTaskImportance.allCases.sorted { $0.sortOrder > $1.sortOrder }
     private let urgencyLevels = RoutineTaskUrgency.allCases.sorted { $0.sortOrder < $1.sortOrder }
 
     init(
         importance: Binding<RoutineTaskImportance>,
-        urgency: Binding<RoutineTaskUrgency>
+        urgency: Binding<RoutineTaskUrgency>,
+        showsSummaryChip: Bool = true
     ) {
         self._importance = importance
         self._urgency = urgency
         self.selectionMode = .task
+        self.showsSummaryChip = showsSummaryChip
     }
 
     init(
-        selectedFilter: Binding<ImportanceUrgencyFilterCell?>
+        selectedFilter: Binding<ImportanceUrgencyFilterCell?>,
+        showsSummaryChip: Bool = true
     ) {
         self._importance = .constant(selectedFilter.wrappedValue?.importance ?? .level2)
         self._urgency = .constant(selectedFilter.wrappedValue?.urgency ?? .level2)
         self.selectionMode = .filter(selectedFilter)
+        self.showsSummaryChip = showsSummaryChip
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            summaryChip(
-                title: derivedPriority.title,
-                systemImage: "flag.fill",
-                color: priorityColor(for: derivedPriority),
-                emphasized: true
-            )
+            if showsSummaryChip {
+                summaryChip(
+                    title: derivedPriority.title,
+                    systemImage: "flag.fill",
+                    color: priorityColor(for: derivedPriority),
+                    emphasized: true
+                )
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {

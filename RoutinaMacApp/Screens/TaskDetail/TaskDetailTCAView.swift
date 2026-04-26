@@ -112,6 +112,11 @@ struct TaskDetailTCAView: View {
             }
             .onAppear {
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+                isCalendarExpanded = false
+            }
+            .onChange(of: store.task.id) { _, _ in
+                isCalendarExpanded = false
+                displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
             }
             .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
                 guard shouldDismiss else { return }
@@ -166,9 +171,6 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                    collapsibleCalendarSection
-                }
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -183,10 +185,11 @@ struct TaskDetailTCAView: View {
     }
 
     private var pressurePicker: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text("PRESSURE")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
+            Spacer(minLength: 2)
             Picker("Pressure", selection: Binding(
                 get: { store.task.pressure },
                 set: { store.send(.pressureChanged($0)) }
@@ -198,14 +201,16 @@ struct TaskDetailTCAView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
         }
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
         .detailHeaderBoxStyle()
     }
 
     private var todoStatePicker: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text("STATE")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
+            Spacer(minLength: 2)
             Picker("State", selection: Binding(
                 get: { store.task.todoState ?? .ready },
                 set: { newState in
@@ -223,6 +228,7 @@ struct TaskDetailTCAView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
         }
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
         .detailHeaderBoxStyle()
         .alert(
             "Blocked Task",
@@ -252,15 +258,7 @@ struct TaskDetailTCAView: View {
                         Text("PRIORITY")
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Image(systemName: "flag.fill")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Text(priorityDisclosureValueText)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        prioritySummaryRow
                     }
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.down")
@@ -285,19 +283,98 @@ struct TaskDetailTCAView: View {
                     urgency: Binding(
                         get: { store.task.urgency },
                         set: { store.send(.urgencyChanged($0)) }
-                    )
+                    ),
+                    showsSummaryChip: false
                 )
                 .frame(maxWidth: 420, alignment: .leading)
             }
         }
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
         .detailHeaderBoxStyle()
     }
 
-    private var priorityDisclosureValueText: String {
-        if let priorityLabel = store.task.priority.metadataLabel {
-            return store.state.priorityMetadataText(priorityLabel: priorityLabel)
+    private var prioritySummaryRow: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Label(store.task.priority.title, systemImage: "flag.fill")
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .foregroundStyle(prioritySummaryColor)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(prioritySummaryColor.opacity(0.12), in: Capsule())
+
+            priorityMetadataChip(
+                title: "Importance",
+                value: store.task.importance.title,
+                tint: importanceTint(for: store.task.importance)
+            )
+            priorityMetadataChip(
+                title: "Urgency",
+                value: store.task.urgency.title,
+                tint: urgencyTint(for: store.task.urgency)
+            )
         }
-        return "None • \(store.task.importance.title) importance • \(store.task.urgency.title) urgency"
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func priorityMetadataChip(title: String, value: String, tint: Color) -> some View {
+        HStack(spacing: 4) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(tint)
+        }
+        .lineLimit(1)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(tint.opacity(0.10), in: Capsule())
+        .overlay(
+            Capsule()
+                .stroke(tint.opacity(0.18), lineWidth: 1)
+        )
+    }
+
+    private var prioritySummaryColor: Color {
+        switch store.task.priority {
+        case .none:
+            return .secondary
+        case .low:
+            return .green
+        case .medium:
+            return .yellow
+        case .high:
+            return .orange
+        case .urgent:
+            return .red
+        }
+    }
+
+    private func importanceTint(for importance: RoutineTaskImportance) -> Color {
+        switch importance {
+        case .level1:
+            return .green
+        case .level2:
+            return .yellow
+        case .level3:
+            return .orange
+        case .level4:
+            return .red
+        }
+    }
+
+    private func urgencyTint(for urgency: RoutineTaskUrgency) -> Color {
+        switch urgency {
+        case .level1:
+            return .green
+        case .level2:
+            return .yellow
+        case .level3:
+            return .orange
+        case .level4:
+            return .red
+        }
     }
 
     private var headerTagsBox: some View {
@@ -305,11 +382,7 @@ struct TaskDetailTCAView: View {
             Text("TAGS")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
-                alignment: .leading,
-                spacing: 8
-            ) {
+            HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
                 ForEach(store.task.tags, id: \.self) { tag in
                     statusTagChip(tag)
                 }
@@ -343,30 +416,93 @@ struct TaskDetailTCAView: View {
         }
     }
 
-    private var collapsibleCalendarSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+    private var headerCalendarDisclosure: some View {
+        VStack(alignment: .leading, spacing: 10) {
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isCalendarExpanded.toggle()
                 }
             } label: {
-                HStack {
-                    Text("Calendar")
-                        .font(.headline)
-                    Spacer()
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("CALENDAR")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Image(systemName: "calendar")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.blue)
+                            Text(headerCalendarSummaryText)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Spacer(minLength: 8)
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(isCalendarExpanded ? 180 : 0))
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
             if isCalendarExpanded {
+                Divider()
                 calendarSection
-                    .padding(.top, 12)
+                    .background(TaskDetailPlatformStyle.calendarCardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                    )
             }
+        }
+        .detailHeaderBoxStyle(tint: .blue)
+    }
+
+    private var headerCalendarSummaryText: String {
+        let dateText = store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted)
+        if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
+            return "Today • \(dateText)"
+        }
+        return dateText
+    }
+
+    @ViewBuilder
+    private var todoHeaderControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            priorityDisclosureBox
+
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 8) {
+                    if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
+                        todoStatePicker
+                            .frame(minWidth: 380)
+                    }
+                    pressurePicker
+                        .frame(minWidth: 300)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
+                        todoStatePicker
+                    }
+                    pressurePicker
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var routineHeaderControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            priorityDisclosureBox
+            pressurePicker
         }
     }
 
@@ -377,7 +513,6 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                collapsibleCalendarSection
                 routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
@@ -516,11 +651,12 @@ struct TaskDetailTCAView: View {
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                priorityDisclosureBox
+                todoHeaderControls
+
                 if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                    todoStatePicker
+                    headerCalendarDisclosure
                 }
-                pressurePicker
+
                 if !store.task.tags.isEmpty {
                     headerTagsBox
                 }
@@ -539,8 +675,10 @@ struct TaskDetailTCAView: View {
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                priorityDisclosureBox
-                pressurePicker
+                routineHeaderControls
+
+                headerCalendarDisclosure
+
                 if !store.task.tags.isEmpty {
                     headerTagsBox
                 }
@@ -1208,20 +1346,30 @@ struct TaskDetailTCAView: View {
     }
 
     private func statusTagChip(_ tag: String) -> some View {
-        Text("#\(tag)")
+        let tint = tagTint(for: tag)
+
+        return Text("#\(tag)")
             .font(.caption.weight(.medium))
-            .foregroundStyle(.primary)
+            .foregroundStyle(tint)
             .lineLimit(1)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(Color.accentColor.opacity(0.12))
+                    .fill(tint.opacity(0.13))
             )
             .overlay(
                 Capsule()
-                    .stroke(Color.accentColor.opacity(0.22), lineWidth: 1)
+                    .stroke(tint.opacity(0.25), lineWidth: 1)
             )
+    }
+
+    private func tagTint(for tag: String) -> Color {
+        let palette: [Color] = [.blue, .teal, .green, .orange, .purple, .pink, .indigo, .mint]
+        let index = tag.unicodeScalars.reduce(0) { partialResult, scalar in
+            partialResult + Int(scalar.value)
+        } % palette.count
+        return palette[index]
     }
 
     private var statusContextMessage: String? {
