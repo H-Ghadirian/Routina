@@ -83,6 +83,7 @@ struct AppFeature {
                  .stats(.selectedTagChanged),
                  .stats(.selectedTagsChanged),
                  .stats(.includeTagMatchModeChanged),
+                 .stats(.advancedQueryChanged),
                  .stats(.selectedImportanceUrgencyFilterChanged),
                  .stats(.excludedTagsChanged),
                  .stats(.excludeTagMatchModeChanged),
@@ -120,6 +121,7 @@ struct AppFeature {
         state.stats.excludedTags = persistedState.statsExcludedTags
         state.stats.excludeTagMatchMode = persistedState.statsExcludeTagMatchMode
         state.stats.selectedImportanceUrgencyFilter = persistedState.statsSelectedImportanceUrgencyFilter
+        state.stats.advancedQuery = persistedState.statsAdvancedQuery
         if let rawValue = persistedState.statsTaskTypeFilterRawValue,
            let filter = StatsTaskTypeFilter(rawValue: rawValue) {
             state.stats.taskTypeFilter = filter
@@ -170,6 +172,7 @@ struct AppFeature {
         state.stats.excludeTagMatchMode = .any
         state.stats.selectedImportanceUrgencyFilter = nil
         state.stats.taskTypeFilter = .all
+        state.stats.advancedQuery = ""
     }
 
     private func persistTemporaryViewState(_ state: State) {
@@ -216,7 +219,8 @@ struct AppFeature {
                 statsExcludedTags: state.stats.excludedTags,
                 statsExcludeTagMatchMode: state.stats.excludeTagMatchMode,
                 statsSelectedImportanceUrgencyFilter: state.stats.selectedImportanceUrgencyFilter,
-                statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue
+                statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue,
+                statsAdvancedQuery: state.stats.advancedQuery
             )
         )
     }
@@ -427,6 +431,7 @@ struct StatsFeature {
         var excludedTags: Set<String> = []
         var excludeTagMatchMode: RoutineTagMatchMode = .any
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+        var advancedQuery: String = ""
         var availableTags: [String] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var filteredTaskCount: Int = 0
@@ -438,7 +443,12 @@ struct StatsFeature {
         var isGitFeaturesEnabled: Bool = false
 
         var hasActiveFilters: Bool {
-            selectedRange != .week || taskTypeFilter != .all || !effectiveSelectedTags.isEmpty || !excludedTags.isEmpty || selectedImportanceUrgencyFilter != nil
+            selectedRange != .week
+                || taskTypeFilter != .all
+                || !advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || !effectiveSelectedTags.isEmpty
+                || !excludedTags.isEmpty
+                || selectedImportanceUrgencyFilter != nil
         }
 
         var effectiveSelectedTags: Set<String> {
@@ -465,6 +475,7 @@ struct StatsFeature {
         case selectedTagChanged(String?)
         case selectedTagsChanged(Set<String>)
         case includeTagMatchModeChanged(RoutineTagMatchMode)
+        case advancedQueryChanged(String)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
@@ -542,6 +553,11 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .advancedQueryChanged(query):
+                state.advancedQuery = query
+                refreshDerivedState(&state)
+                return .none
+
             case let .selectedImportanceUrgencyFilterChanged(filter):
                 state.selectedImportanceUrgencyFilter = filter
                 refreshDerivedState(&state)
@@ -593,6 +609,7 @@ struct StatsFeature {
                 state.excludedTags = []
                 state.excludeTagMatchMode = .any
                 state.selectedImportanceUrgencyFilter = nil
+                state.advancedQuery = ""
                 refreshDerivedState(&state)
                 return .none
             }
@@ -669,7 +686,34 @@ struct StatsFeature {
             )
         }
 
-        state.availableTags = RoutineTag.allTags(from: tasksMatchingMatrixFilter.map(\.tags))
+        let query = HomeTaskAdvancedQuery<StatsTaskQueryDisplay>(state.advancedQuery)
+        let queryDisplays = tasksMatchingMatrixFilter.map {
+            StatsTaskQueryDisplay(task: $0, referenceDate: now, calendar: calendar)
+        }
+        let queryMetrics = HomeTaskListMetrics<StatsTaskQueryDisplay>(
+            configuration: HomeTaskListFilteringConfiguration(
+                selectedFilter: .all,
+                advancedQuery: "",
+                selectedManualPlaceFilterID: nil,
+                selectedImportanceUrgencyFilter: nil,
+                selectedTodoStateFilter: nil,
+                selectedPressureFilter: nil,
+                taskListViewMode: .all,
+                selectedTags: [],
+                includeTagMatchMode: .all,
+                excludedTags: [],
+                excludeTagMatchMode: .any,
+                searchText: "",
+                routineListSectioningMode: .status,
+                routineTasks: state.tasks,
+                referenceDate: now,
+                calendar: calendar
+            )
+        )
+        let queryMatchedTaskIDs = Set(queryDisplays.filter { query.matches($0, metrics: queryMetrics) }.map(\.taskID))
+        let tasksMatchingQuery = tasksMatchingMatrixFilter.filter { queryMatchedTaskIDs.contains($0.id) }
+
+        state.availableTags = RoutineTag.allTags(from: tasksMatchingQuery.map { $0.tags })
         state.setSelectedTags(state.effectiveSelectedTags.filter { RoutineTag.contains($0, in: state.availableTags) })
         let availableExcludeTags = state.availableTags.filter { tag in
             !state.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
@@ -678,7 +722,7 @@ struct StatsFeature {
 
         let filteredTasks: [RoutineTask]
         let filteredLogs: [RoutineLog]
-        let includeFilteredTasks = tasksMatchingMatrixFilter.filter { task in
+        let includeFilteredTasks = tasksMatchingQuery.filter { task in
             HomeFeature.matchesSelectedTags(
                 state.effectiveSelectedTags,
                 mode: state.includeTagMatchMode,
@@ -791,5 +835,77 @@ struct StatsFeature {
                 return nil
             }
         }
+    }
+}
+
+private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
+    let taskID: UUID
+    let name: String
+    let emoji: String
+    let notes: String?
+    let placeID: UUID?
+    let placeName: String?
+    let tags: [String]
+    let interval: Int
+    let recurrenceRule: RoutineRecurrenceRule
+    let scheduleMode: RoutineScheduleMode
+    let lastDone: Date?
+    let dueDate: Date?
+    let priority: RoutineTaskPriority
+    let importance: RoutineTaskImportance
+    let urgency: RoutineTaskUrgency
+    let pressure: RoutineTaskPressure
+    let scheduleAnchor: Date?
+    let pausedAt: Date?
+    let pinnedAt: Date?
+    let daysUntilDue: Int
+    let isOneOffTask: Bool
+    let isCompletedOneOff: Bool
+    let isCanceledOneOff: Bool
+    let isDoneToday: Bool
+    let isPaused: Bool
+    let isPinned: Bool
+    let isInProgress: Bool
+    let completedChecklistItemCount: Int
+    let manualSectionOrders: [String: Int]
+    let todoState: TodoState?
+
+    init(task: RoutineTask, referenceDate: Date, calendar: Calendar) {
+        let dueDate = RoutineDateMath.dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+
+        self.taskID = task.id
+        self.name = task.name ?? "Untitled"
+        self.emoji = task.emoji ?? "•"
+        self.notes = task.notes
+        self.placeID = task.placeID
+        self.placeName = nil
+        self.tags = task.tags
+        self.interval = Int(task.interval)
+        self.recurrenceRule = task.recurrenceRule
+        self.scheduleMode = task.scheduleMode
+        self.lastDone = task.lastDone
+        self.dueDate = dueDate
+        self.priority = task.priority
+        self.importance = task.importance
+        self.urgency = task.urgency
+        self.pressure = task.pressure
+        self.scheduleAnchor = task.scheduleAnchor
+        self.pausedAt = task.pausedAt
+        self.pinnedAt = task.pinnedAt
+        self.daysUntilDue = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: referenceDate),
+            to: calendar.startOfDay(for: dueDate)
+        ).day ?? 0
+        self.isOneOffTask = task.isOneOffTask
+        self.isCompletedOneOff = task.isCompletedOneOff
+        self.isCanceledOneOff = task.isCanceledOneOff
+        self.isDoneToday = task.lastDone.map { calendar.isDate($0, inSameDayAs: referenceDate) } ?? false
+        self.isPaused = task.isPaused
+        self.isPinned = task.isPinned
+        self.isInProgress = task.isInProgress
+        self.completedChecklistItemCount = task.completedChecklistItemCount
+        self.manualSectionOrders = task.manualSectionOrders
+        self.todoState = task.todoState
     }
 }

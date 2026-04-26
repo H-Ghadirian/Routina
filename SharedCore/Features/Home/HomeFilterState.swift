@@ -228,7 +228,8 @@ enum HomeTemporaryViewStateMapper {
             statsExcludedTags: existing.statsExcludedTags,
             statsExcludeTagMatchMode: existing.statsExcludeTagMatchMode,
             statsSelectedImportanceUrgencyFilter: existing.statsSelectedImportanceUrgencyFilter,
-            statsTaskTypeFilterRawValue: existing.statsTaskTypeFilterRawValue
+            statsTaskTypeFilterRawValue: existing.statsTaskTypeFilterRawValue,
+            statsAdvancedQuery: existing.statsAdvancedQuery
         )
     }
 }

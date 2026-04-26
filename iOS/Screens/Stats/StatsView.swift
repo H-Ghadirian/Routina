@@ -61,6 +61,17 @@ struct StatsView: View {
         )
     }
 
+    private var advancedQueryBinding: Binding<String> {
+        Binding(
+            get: { store.advancedQuery },
+            set: { store.send(.advancedQueryChanged($0)) }
+        )
+    }
+
+    private var advancedQueryOptions: HomeAdvancedQueryOptions {
+        HomeAdvancedQueryOptions(tags: availableTags, places: [])
+    }
+
     private var metrics: Metrics {
         Metrics(store.metrics)
     }
@@ -113,17 +124,59 @@ struct StatsView: View {
         }
     }
 
+    private var tagRuleBindings: HomeTagRuleBindings {
+        HomeTagRuleBindings(
+            includeTagMatchMode: Binding(
+                get: { store.includeTagMatchMode },
+                set: { store.send(.includeTagMatchModeChanged($0)) }
+            ),
+            excludeTagMatchMode: Binding(
+                get: { store.excludeTagMatchMode },
+                set: { store.send(.excludeTagMatchModeChanged($0)) }
+            )
+        )
+    }
+
+    private var tagRuleData: HomeTagFilterData {
+        HomeTagFilterData(
+            selectedTags: store.effectiveSelectedTags,
+            excludedTags: store.excludedTags,
+            tagSummaries: availableTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) },
+            allTagTaskCount: 0,
+            suggestedRelatedTags: suggestedRelatedFilterTags,
+            availableExcludeTagSummaries: availableExcludeTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) },
+            showsTagCounts: false
+        )
+    }
+
+    private var tagRuleActions: HomeTagFilterActions {
+        HomeTagFilterActions(
+            onShowAllTags: {
+                relatedFilterTagSuggestionAnchor = nil
+                store.send(.selectedTagsChanged([]))
+            },
+            onToggleIncludedTag: toggleIncludedTag,
+            onAddIncludedTag: addIncludedTag,
+            onToggleExcludedTag: toggleExcludedTag
+        )
+    }
+
     private var hasActiveFilters: Bool {
         store.hasActiveFilters
     }
 
     private var hasActiveSheetFilters: Bool {
-        selectedTaskTypeFilter != .all || !store.effectiveSelectedTags.isEmpty || !store.excludedTags.isEmpty || store.selectedImportanceUrgencyFilter != nil
+        selectedTaskTypeFilter != .all
+            || !store.advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !store.effectiveSelectedTags.isEmpty
+            || !store.excludedTags.isEmpty
+            || store.selectedImportanceUrgencyFilter != nil
     }
 
     private var activeSheetFilterCount: Int {
         var count = 0
         if selectedTaskTypeFilter != .all { count += 1 }
+        if !store.advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
         if !store.effectiveSelectedTags.isEmpty { count += 1 }
         count += store.excludedTags.count
         if store.selectedImportanceUrgencyFilter != nil { count += 1 }
@@ -360,6 +413,13 @@ struct StatsView: View {
                     }
                 }
 
+                let trimmedAdvancedQuery = store.advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedAdvancedQuery.isEmpty {
+                    compactFilterChip(title: trimmedAdvancedQuery, systemImage: "magnifyingglass") {
+                        store.send(.advancedQueryChanged(""))
+                    }
+                }
+
                 ForEach(store.effectiveSelectedTags.sorted(), id: \.self) { tag in
                     compactFilterChip(title: "#\(tag)") {
                         var selected = store.effectiveSelectedTags
@@ -431,6 +491,10 @@ struct StatsView: View {
     private var statsFiltersSheet: some View {
         NavigationStack {
             List {
+                Section("Query") {
+                    HomeAdvancedQueryBuilder(query: advancedQueryBinding, options: advancedQueryOptions)
+                }
+
                 if tasks.contains(where: \.isOneOffTask) {
                     Section("Type") {
                         Picker("Type", selection: taskTypeFilterBinding) {
@@ -443,146 +507,30 @@ struct StatsView: View {
                     }
                 }
 
-                Section("Importance & Urgency") {
-                    Button(store.selectedImportanceUrgencyFilter == nil ? "All levels selected" : "Show all levels") {
-                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(store.selectedImportanceUrgencyFilter == nil ? Color.accentColor : Color.primary)
+                HomeFiltersImportanceUrgencySection(
+                    selectedImportanceUrgencyFilter: Binding(
+                        get: { store.selectedImportanceUrgencyFilter },
+                        set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+                    ),
+                    summary: importanceUrgencyFilterSummary
+                )
 
-                    ImportanceUrgencyMatrixPicker(
-                        selectedFilter: Binding(
-                            get: { store.selectedImportanceUrgencyFilter },
-                            set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                        )
+                HomeFiltersTagRulesSection(
+                    bindings: tagRuleBindings,
+                    data: tagRuleData,
+                    actions: tagRuleActions,
+                    labels: HomeTagFilterSectionLabels(
+                        includedTitle: "Show stats with",
+                        includedPickerTitle: "Show stats with",
+                        excludedTitle: "Hide stats with",
+                        excludedPickerTitle: "Hide stats with"
                     )
-                    .frame(maxWidth: 420, alignment: .leading)
+                )
 
-                    Text(importanceUrgencyFilterSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                if !availableTags.isEmpty {
-                    Section("Tag Rules") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("Show stats with")
-                                    .font(.subheadline.weight(.semibold))
-                                Spacer()
-                                Picker("Show stats with", selection: Binding(
-                                    get: { store.includeTagMatchMode },
-                                    set: { store.send(.includeTagMatchModeChanged($0)) }
-                                )) {
-                                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                                        Text(mode.rawValue).tag(mode)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(maxWidth: 180)
-                            }
-
-                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                if store.effectiveSelectedTags.isEmpty {
-                                    statsTagButton(title: "All Tags", isSelected: true) {
-                                        relatedFilterTagSuggestionAnchor = nil
-                                        store.send(.selectedTagsChanged([]))
-                                    }
-                                } else {
-                                    ForEach(store.effectiveSelectedTags.sorted(), id: \.self) { tag in
-                                        statsTagButton(title: "#\(tag)", isSelected: true) {
-                                            toggleIncludedTag(tag)
-                                        }
-                                    }
-                                }
-                            }
-
-                            if !suggestedRelatedFilterTags.isEmpty {
-                                Text("Suggested")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                    ForEach(suggestedRelatedFilterTags, id: \.self) { tag in
-                                        statsTagButton(title: "#\(tag)", isSelected: false) {
-                                            addIncludedTag(tag)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Text("Add more")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                ForEach(availableTags.filter { !isIncludedTagSelected($0) }, id: \.self) { tag in
-                                    statsTagButton(title: "#\(tag)", isSelected: false) {
-                                        toggleIncludedTag(tag)
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("Hide stats with")
-                                    .font(.subheadline.weight(.semibold))
-                                Spacer()
-                                Picker("Hide stats with", selection: Binding(
-                                    get: { store.excludeTagMatchMode },
-                                    set: { store.send(.excludeTagMatchModeChanged($0)) }
-                                )) {
-                                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                                        Text(mode.rawValue).tag(mode)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .frame(maxWidth: 180)
-                            }
-
-                            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                if store.excludedTags.isEmpty {
-                                    Text("No hidden tags")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    ForEach(store.excludedTags.sorted(), id: \.self) { tag in
-                                        statsTagButton(title: "#\(tag)", isSelected: true, selectedColor: .red) {
-                                            toggleExcludedTag(tag)
-                                        }
-                                    }
-                                }
-                            }
-
-                            if !availableExcludeTags.isEmpty {
-                                Text("Add tags to hide")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                                    ForEach(availableExcludeTags.filter { tag in
-                                        !store.excludedTags.contains { RoutineTag.contains($0, in: [tag]) }
-                                    }, id: \.self) { tag in
-                                        statsTagButton(title: "#\(tag)", isSelected: false, selectedColor: .red) {
-                                            toggleExcludedTag(tag)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                if hasActiveFilters {
-                    Section {
-                        Button("Clear Filters") {
-                            store.send(.clearFilters)
-                        }
-                        .foregroundStyle(.red)
-                    }
-                }
+                HomeFiltersClearSection(
+                    hasActiveOptionalFilters: hasActiveFilters,
+                    onClearOptionalFilters: { store.send(.clearFilters) }
+                )
             }
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
@@ -614,27 +562,6 @@ struct StatsView: View {
         return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }
 
-    private func statsTagButton(
-        title: String,
-        isSelected: Bool,
-        selectedColor: Color = .accentColor,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .lineLimit(1)
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(isSelected ? selectedColor : Color.secondary.opacity(0.12))
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
     private func statsTaskTypeIcon(for filter: StatsTaskTypeFilter) -> String {
         switch filter {
         case .all:
@@ -643,80 +570,6 @@ struct StatsView: View {
             return "repeat"
         case .todos:
             return "checklist"
-        }
-    }
-
-    private struct WrappingHStack: Layout {
-        let horizontalSpacing: CGFloat
-        let verticalSpacing: CGFloat
-
-        init(horizontalSpacing: CGFloat = 8, verticalSpacing: CGFloat = 8) {
-            self.horizontalSpacing = horizontalSpacing
-            self.verticalSpacing = verticalSpacing
-        }
-
-        func sizeThatFits(
-            proposal: ProposedViewSize,
-            subviews: Subviews,
-            cache: inout ()
-        ) -> CGSize {
-            let maxWidth = proposal.width ?? .infinity
-            var currentRowWidth: CGFloat = 0
-            var currentRowHeight: CGFloat = 0
-            var totalHeight: CGFloat = 0
-            var maxRowWidth: CGFloat = 0
-
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-                let spacing = currentRowWidth == 0 ? 0 : horizontalSpacing
-
-                if currentRowWidth + spacing + size.width > maxWidth, currentRowWidth > 0 {
-                    totalHeight += currentRowHeight + verticalSpacing
-                    maxRowWidth = max(maxRowWidth, currentRowWidth)
-                    currentRowWidth = size.width
-                    currentRowHeight = size.height
-                } else {
-                    currentRowWidth += spacing + size.width
-                    currentRowHeight = max(currentRowHeight, size.height)
-                }
-            }
-
-            maxRowWidth = max(maxRowWidth, currentRowWidth)
-            totalHeight += currentRowHeight
-
-            return CGSize(width: maxRowWidth, height: totalHeight)
-        }
-
-        func placeSubviews(
-            in bounds: CGRect,
-            proposal: ProposedViewSize,
-            subviews: Subviews,
-            cache: inout ()
-        ) {
-            var x = bounds.minX
-            var y = bounds.minY
-            var rowHeight: CGFloat = 0
-
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-                let proposedX = x == bounds.minX ? x : x + horizontalSpacing
-
-                if proposedX + size.width > bounds.maxX, x > bounds.minX {
-                    x = bounds.minX
-                    y += rowHeight + verticalSpacing
-                    rowHeight = 0
-                } else if x > bounds.minX {
-                    x += horizontalSpacing
-                }
-
-                subview.place(
-                    at: CGPoint(x: x, y: y),
-                    proposal: ProposedViewSize(width: size.width, height: size.height)
-                )
-
-                x += size.width
-                rowHeight = max(rowHeight, size.height)
-            }
         }
     }
 

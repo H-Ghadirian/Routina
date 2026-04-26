@@ -11,6 +11,14 @@ extension HomeTCAView {
             onSelectRange: { range in
                 statsStore?.send(.selectedRangeChanged(range))
             },
+            advancedQuery: Binding(
+                get: { statsStore?.advancedQuery ?? "" },
+                set: { statsStore?.send(.advancedQueryChanged($0)) }
+            ),
+            queryOptions: HomeAdvancedQueryOptions(
+                tags: statsAllTags,
+                places: []
+            ),
             selectedImportanceUrgencyFilter: Binding(
                 get: { statsStore?.selectedImportanceUrgencyFilter },
                 set: { statsStore?.send(.selectedImportanceUrgencyFilterChanged($0)) }

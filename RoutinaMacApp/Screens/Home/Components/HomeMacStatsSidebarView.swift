@@ -5,6 +5,8 @@ struct HomeMacStatsSidebarView: View {
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
     let selectedRange: DoneChartRange
     let onSelectRange: (DoneChartRange) -> Void
+    @Binding var advancedQuery: String
+    let queryOptions: HomeAdvancedQueryOptions
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let importanceUrgencySummary: String
     let allTags: [String]
@@ -28,6 +30,7 @@ struct HomeMacStatsSidebarView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                statsQuerySection
                 statsTaskTypeSection
                 statsRangeSection
                 statsImportanceUrgencySection
@@ -42,6 +45,21 @@ struct HomeMacStatsSidebarView: View {
             .padding(.vertical, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var statsQuerySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Query")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+
+            HomeAdvancedQueryBuilder(
+                query: $advancedQuery,
+                usesFlowLayout: true,
+                options: queryOptions
+            )
+        }
     }
 
     private var statsTaskTypeSection: some View {

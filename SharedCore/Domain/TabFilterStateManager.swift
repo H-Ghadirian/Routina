@@ -182,6 +182,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var statsExcludeTagMatchMode: RoutineTagMatchMode
     var statsSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var statsTaskTypeFilterRawValue: String?
+    var statsAdvancedQuery: String
 
     init(
         selectedAppTabRawValue: String?,
@@ -225,7 +226,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         statsExcludedTags: Set<String>,
         statsExcludeTagMatchMode: RoutineTagMatchMode = .any,
         statsSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
-        statsTaskTypeFilterRawValue: String?
+        statsTaskTypeFilterRawValue: String?,
+        statsAdvancedQuery: String = ""
     ) {
         self.selectedAppTabRawValue = selectedAppTabRawValue
         self.homeTaskListModeRawValue = homeTaskListModeRawValue
@@ -269,6 +271,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.statsExcludeTagMatchMode = statsExcludeTagMatchMode
         self.statsSelectedImportanceUrgencyFilter = statsSelectedImportanceUrgencyFilter
         self.statsTaskTypeFilterRawValue = statsTaskTypeFilterRawValue
+        self.statsAdvancedQuery = statsAdvancedQuery
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -314,6 +317,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case statsExcludeTagMatchMode
         case statsSelectedImportanceUrgencyFilter
         case statsTaskTypeFilterRawValue
+        case statsAdvancedQuery
     }
 
     init(from decoder: Decoder) throws {
@@ -360,7 +364,8 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             statsExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .statsExcludedTags) ?? [],
             statsExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .statsExcludeTagMatchMode) ?? .any,
             statsSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .statsSelectedImportanceUrgencyFilter),
-            statsTaskTypeFilterRawValue: try container.decodeIfPresent(String.self, forKey: .statsTaskTypeFilterRawValue)
+            statsTaskTypeFilterRawValue: try container.decodeIfPresent(String.self, forKey: .statsTaskTypeFilterRawValue),
+            statsAdvancedQuery: try container.decodeIfPresent(String.self, forKey: .statsAdvancedQuery) ?? ""
         )
     }
 
@@ -406,6 +411,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         statsExcludedTags: [],
         statsExcludeTagMatchMode: .any,
         statsSelectedImportanceUrgencyFilter: nil,
-        statsTaskTypeFilterRawValue: nil
+        statsTaskTypeFilterRawValue: nil,
+        statsAdvancedQuery: ""
     )
 }

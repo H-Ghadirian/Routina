@@ -4,6 +4,7 @@ struct HomeFiltersTagRulesSection: View {
     let bindings: HomeTagRuleBindings
     let data: HomeTagFilterData
     let actions: HomeTagFilterActions
+    var labels = HomeTagFilterSectionLabels()
 
     @ViewBuilder
     var body: some View {
@@ -12,13 +13,15 @@ struct HomeFiltersTagRulesSection: View {
                 HomeIncludedTagsFilterSection(
                     includeTagMatchMode: bindings.includeTagMatchMode,
                     data: data,
-                    actions: actions
+                    actions: actions,
+                    labels: labels
                 )
 
                 HomeExcludedTagsFilterSection(
                     excludeTagMatchMode: bindings.excludeTagMatchMode,
                     data: data,
-                    actions: actions
+                    actions: actions,
+                    labels: labels
                 )
             }
         }
@@ -29,14 +32,15 @@ private struct HomeIncludedTagsFilterSection: View {
     @Binding var includeTagMatchMode: RoutineTagMatchMode
     let data: HomeTagFilterData
     let actions: HomeTagFilterActions
+    let labels: HomeTagFilterSectionLabels
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Show tasks with")
+                Text(labels.includedTitle)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                Picker("Show tasks with", selection: $includeTagMatchMode) {
+                Picker(labels.includedPickerTitle, selection: $includeTagMatchMode) {
                     ForEach(RoutineTagMatchMode.allCases) { mode in
                         Text(mode.rawValue).tag(mode)
                     }
@@ -57,7 +61,7 @@ private struct HomeIncludedTagsFilterSection: View {
     private var selectedIncludedTags: some View {
         HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
             if data.selectedTags.isEmpty {
-                HomeFilterChipButton(title: "All Tags \(data.allTagTaskCount)", isSelected: true) {
+                HomeFilterChipButton(title: allTagsTitle, isSelected: true) {
                     actions.onShowAllTags()
                 }
             } else {
@@ -73,7 +77,7 @@ private struct HomeIncludedTagsFilterSection: View {
     @ViewBuilder
     private var suggestedTags: some View {
         if !data.suggestedRelatedTags.isEmpty {
-            Text("Suggested")
+            Text(labels.suggestedTitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -89,14 +93,14 @@ private struct HomeIncludedTagsFilterSection: View {
 
     private var addIncludedTags: some View {
         Group {
-            Text("Add more")
+            Text(labels.addIncludedTitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(data.tagSummaries.filter { !data.isIncludedTagSelected($0.name) }) { summary in
                     HomeFilterChipButton(
-                        title: "#\(summary.name) \(summary.linkedRoutineCount)",
+                        title: title(for: summary),
                         isSelected: false
                     ) {
                         actions.onToggleIncludedTag(summary.name)
@@ -105,20 +109,29 @@ private struct HomeIncludedTagsFilterSection: View {
             }
         }
     }
+
+    private var allTagsTitle: String {
+        data.showsTagCounts ? "\(labels.allTagsTitle) \(data.allTagTaskCount)" : labels.allTagsTitle
+    }
+
+    private func title(for summary: RoutineTagSummary) -> String {
+        data.showsTagCounts ? "#\(summary.name) \(summary.linkedRoutineCount)" : "#\(summary.name)"
+    }
 }
 
 private struct HomeExcludedTagsFilterSection: View {
     @Binding var excludeTagMatchMode: RoutineTagMatchMode
     let data: HomeTagFilterData
     let actions: HomeTagFilterActions
+    let labels: HomeTagFilterSectionLabels
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Hide tasks with")
+                Text(labels.excludedTitle)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                Picker("Hide tasks with", selection: $excludeTagMatchMode) {
+                Picker(labels.excludedPickerTitle, selection: $excludeTagMatchMode) {
                     ForEach(RoutineTagMatchMode.allCases) { mode in
                         Text(mode.rawValue).tag(mode)
                     }
@@ -138,7 +151,7 @@ private struct HomeExcludedTagsFilterSection: View {
     private var selectedExcludedTags: some View {
         HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
             if data.excludedTags.isEmpty {
-                Text("No hidden tags")
+                Text(labels.emptyExcludedTitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -158,14 +171,14 @@ private struct HomeExcludedTagsFilterSection: View {
     @ViewBuilder
     private var availableExcludedTags: some View {
         if !data.availableExcludeTagSummaries.isEmpty {
-            Text("Add tags to hide")
+            Text(labels.addExcludedTitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(data.availableExcludeTagSummaries.filter { !data.isExcludedTagSelected($0.name) }) { summary in
                     HomeFilterChipButton(
-                        title: "#\(summary.name) \(summary.linkedRoutineCount)",
+                        title: title(for: summary),
                         isSelected: false,
                         selectedColor: .red
                     ) {
@@ -174,5 +187,9 @@ private struct HomeExcludedTagsFilterSection: View {
                 }
             }
         }
+    }
+
+    private func title(for summary: RoutineTagSummary) -> String {
+        data.showsTagCounts ? "#\(summary.name) \(summary.linkedRoutineCount)" : "#\(summary.name)"
     }
 }

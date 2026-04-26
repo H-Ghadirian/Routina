@@ -26,6 +26,40 @@ struct HomeTagRuleBindings {
     let excludeTagMatchMode: Binding<RoutineTagMatchMode>
 }
 
+struct HomeTagFilterSectionLabels {
+    var includedTitle: String
+    var includedPickerTitle: String
+    var excludedTitle: String
+    var excludedPickerTitle: String
+    var allTagsTitle: String
+    var suggestedTitle: String
+    var addIncludedTitle: String
+    var emptyExcludedTitle: String
+    var addExcludedTitle: String
+
+    init(
+        includedTitle: String = "Show tasks with",
+        includedPickerTitle: String = "Show tasks with",
+        excludedTitle: String = "Hide tasks with",
+        excludedPickerTitle: String = "Hide tasks with",
+        allTagsTitle: String = "All Tags",
+        suggestedTitle: String = "Suggested",
+        addIncludedTitle: String = "Add more",
+        emptyExcludedTitle: String = "No hidden tags",
+        addExcludedTitle: String = "Add tags to hide"
+    ) {
+        self.includedTitle = includedTitle
+        self.includedPickerTitle = includedPickerTitle
+        self.excludedTitle = excludedTitle
+        self.excludedPickerTitle = excludedPickerTitle
+        self.allTagsTitle = allTagsTitle
+        self.suggestedTitle = suggestedTitle
+        self.addIncludedTitle = addIncludedTitle
+        self.emptyExcludedTitle = emptyExcludedTitle
+        self.addExcludedTitle = addExcludedTitle
+    }
+}
+
 struct HomeTagFilterData {
     let selectedTags: Set<String>
     let excludedTags: Set<String>
@@ -33,6 +67,25 @@ struct HomeTagFilterData {
     let allTagTaskCount: Int
     let suggestedRelatedTags: [String]
     let availableExcludeTagSummaries: [RoutineTagSummary]
+    let showsTagCounts: Bool
+
+    init(
+        selectedTags: Set<String>,
+        excludedTags: Set<String>,
+        tagSummaries: [RoutineTagSummary],
+        allTagTaskCount: Int,
+        suggestedRelatedTags: [String],
+        availableExcludeTagSummaries: [RoutineTagSummary],
+        showsTagCounts: Bool = true
+    ) {
+        self.selectedTags = selectedTags
+        self.excludedTags = excludedTags
+        self.tagSummaries = tagSummaries
+        self.allTagTaskCount = allTagTaskCount
+        self.suggestedRelatedTags = suggestedRelatedTags
+        self.availableExcludeTagSummaries = availableExcludeTagSummaries
+        self.showsTagCounts = showsTagCounts
+    }
 
     var hasTags: Bool {
         !tagSummaries.isEmpty
