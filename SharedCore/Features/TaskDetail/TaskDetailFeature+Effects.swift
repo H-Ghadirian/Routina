@@ -640,6 +640,27 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleMatrixPositionChanged(
+        taskID: UUID,
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        priority: RoutineTaskPriority
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                task.importance = importance
+                task.urgency = urgency
+                task.priority = priority
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating matrix position: \(error)")
+            }
+        }
+    }
+
     func allLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
         FetchDescriptor<RoutineLog>(
             predicate: #Predicate { log in

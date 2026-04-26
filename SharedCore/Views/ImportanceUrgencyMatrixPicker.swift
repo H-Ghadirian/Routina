@@ -33,23 +33,12 @@ struct ImportanceUrgencyMatrixPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Importance")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(displayedImportance.title)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                Spacer(minLength: 8)
-                Text("Urgency")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(displayedUrgency.title)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
+            summaryChip(
+                title: derivedPriority.title,
+                systemImage: "flag.fill",
+                color: priorityColor(for: derivedPriority),
+                emphasized: true
+            )
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
@@ -91,33 +80,6 @@ struct ImportanceUrgencyMatrixPicker: View {
                     Text("Urgency")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
-                }
-            }
-
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    summaryChip(title: displayedImportance.title, systemImage: "star")
-                    summaryChip(title: displayedUrgency.title, systemImage: "bolt")
-                    summaryChip(
-                        title: derivedPriority.title,
-                        systemImage: "flag.fill",
-                        color: priorityColor(for: derivedPriority),
-                        emphasized: true
-                    )
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        summaryChip(title: displayedImportance.title, systemImage: "star")
-                        summaryChip(title: displayedUrgency.title, systemImage: "bolt")
-                    }
-
-                    summaryChip(
-                        title: derivedPriority.title,
-                        systemImage: "flag.fill",
-                        color: priorityColor(for: derivedPriority),
-                        emphasized: true
-                    )
                 }
             }
         }

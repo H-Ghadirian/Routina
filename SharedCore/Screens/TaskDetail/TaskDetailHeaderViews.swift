@@ -8,12 +8,29 @@ struct TaskDetailHeaderBadgeItem: Identifiable {
     let tint: Color
 }
 
-struct TaskDetailHeaderSectionView<TagChipContent: View>: View {
+struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View>: View {
     let title: String
     let statusContextMessage: String?
     let badgeRows: [[TaskDetailHeaderBadgeItem]]
     let tags: [String]
     let tagChip: (String) -> TagChipContent
+    let additionalContent: () -> AdditionalContent
+
+    init(
+        title: String,
+        statusContextMessage: String?,
+        badgeRows: [[TaskDetailHeaderBadgeItem]],
+        tags: [String],
+        @ViewBuilder tagChip: @escaping (String) -> TagChipContent,
+        @ViewBuilder additionalContent: @escaping () -> AdditionalContent
+    ) {
+        self.title = title
+        self.statusContextMessage = statusContextMessage
+        self.badgeRows = badgeRows
+        self.tags = tags
+        self.tagChip = tagChip
+        self.additionalContent = additionalContent
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -39,12 +56,33 @@ struct TaskDetailHeaderSectionView<TagChipContent: View>: View {
                 }
             }
 
+            additionalContent()
+
             if !tags.isEmpty {
                 TaskDetailHeaderTagsView(tags: tags, tagChip: tagChip)
             }
         }
         .padding(16)
         .detailCardStyle(cornerRadius: 16)
+    }
+}
+
+extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView {
+    init(
+        title: String,
+        statusContextMessage: String?,
+        badgeRows: [[TaskDetailHeaderBadgeItem]],
+        tags: [String],
+        @ViewBuilder tagChip: @escaping (String) -> TagChipContent
+    ) {
+        self.init(
+            title: title,
+            statusContextMessage: statusContextMessage,
+            badgeRows: badgeRows,
+            tags: tags,
+            tagChip: tagChip,
+            additionalContent: { EmptyView() }
+        )
     }
 }
 
@@ -81,6 +119,31 @@ struct TaskDetailHeaderBadgeView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(item.tint.opacity(0.24), lineWidth: 1)
         )
+    }
+}
+
+struct DetailHeaderBoxStyle: ViewModifier {
+    var tint: Color = .secondary
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(tint.opacity(0.12))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(tint.opacity(0.24), lineWidth: 1)
+            )
+    }
+}
+
+extension View {
+    func detailHeaderBoxStyle(tint: Color = .secondary) -> some View {
+        modifier(DetailHeaderBoxStyle(tint: tint))
     }
 }
 

@@ -207,6 +207,8 @@ struct TaskDetailFeature: Reducer {
         case editColorChanged(RoutineTaskColor)
         case todoStateChanged(TodoState)
         case pressureChanged(RoutineTaskPressure)
+        case importanceChanged(RoutineTaskImportance)
+        case urgencyChanged(RoutineTaskUrgency)
         case setBlockedStateConfirmation(Bool)
         case confirmBlockedStateCompletion
         case notificationDisabledWarningTapped
@@ -927,6 +929,38 @@ struct TaskDetailFeature: Reducer {
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handlePressureChanged(taskID: state.task.id, pressure: pressure)
+
+        case let .importanceChanged(importance):
+            guard state.task.importance != importance else { return .none }
+            state.task.importance = importance
+            state.editImportance = importance
+            let newPriority = matrixPriority(importance: importance, urgency: state.task.urgency)
+            state.task.priority = newPriority
+            state.editPriority = newPriority
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleMatrixPositionChanged(
+                taskID: state.task.id,
+                importance: importance,
+                urgency: state.task.urgency,
+                priority: newPriority
+            )
+
+        case let .urgencyChanged(urgency):
+            guard state.task.urgency != urgency else { return .none }
+            state.task.urgency = urgency
+            state.editUrgency = urgency
+            let newPriority = matrixPriority(importance: state.task.importance, urgency: urgency)
+            state.task.priority = newPriority
+            state.editPriority = newPriority
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleMatrixPositionChanged(
+                taskID: state.task.id,
+                importance: state.task.importance,
+                urgency: urgency,
+                priority: newPriority
+            )
 
         case let .setBlockedStateConfirmation(isPresented):
             state.isBlockedStateConfirmationPresented = isPresented

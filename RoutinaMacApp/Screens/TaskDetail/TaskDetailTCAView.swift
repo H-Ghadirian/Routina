@@ -12,6 +12,8 @@ struct TaskDetailTCAView: View {
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
+    @State private var isMatrixExpanded = false
+    @State private var isCalendarExpanded = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -164,17 +166,14 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                importanceUrgencyMatrixCard
                 if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                    calendarSection
-                    todoStatePicker
+                    collapsibleCalendarSection
                 }
-                pressurePicker
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
                 relationshipsSection
-                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
+                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty {
                     taskExtrasSection
                 }
             }
@@ -184,9 +183,9 @@ struct TaskDetailTCAView: View {
     }
 
     private var pressurePicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Pressure")
-                .font(.subheadline.weight(.semibold))
+        VStack(alignment: .leading, spacing: 4) {
+            Text("PRESSURE")
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
             Picker("Pressure", selection: Binding(
                 get: { store.task.pressure },
@@ -197,19 +196,15 @@ struct TaskDetailTCAView: View {
                 }
             }
             .pickerStyle(.segmented)
-            Text("Use this for tasks that keep occupying your mind, even when they are not the most urgent.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            .labelsHidden()
         }
-        .padding(16)
-        .detailCardStyle()
+        .detailHeaderBoxStyle()
     }
 
     private var todoStatePicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("State")
-                .font(.subheadline.weight(.semibold))
+        VStack(alignment: .leading, spacing: 4) {
+            Text("STATE")
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
             Picker("State", selection: Binding(
                 get: { store.task.todoState ?? .ready },
@@ -226,15 +221,9 @@ struct TaskDetailTCAView: View {
                 }
             }
             .pickerStyle(.segmented)
-            if !store.blockingRelationships.isEmpty {
-                Text(store.blockerSummaryText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            .labelsHidden()
         }
-        .padding(16)
-        .detailCardStyle()
+        .detailHeaderBoxStyle()
         .alert(
             "Blocked Task",
             isPresented: Binding(
@@ -251,6 +240,136 @@ struct TaskDetailTCAView: View {
         }
     }
 
+    private var priorityDisclosureBox: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isMatrixExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PRIORITY")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Image(systemName: "flag.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text(priorityDisclosureValueText)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isMatrixExpanded ? 180 : 0))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isMatrixExpanded {
+                Divider()
+                    .padding(.top, 10)
+                    .padding(.bottom, 12)
+                ImportanceUrgencyMatrixPicker(
+                    importance: Binding(
+                        get: { store.task.importance },
+                        set: { store.send(.importanceChanged($0)) }
+                    ),
+                    urgency: Binding(
+                        get: { store.task.urgency },
+                        set: { store.send(.urgencyChanged($0)) }
+                    )
+                )
+                .frame(maxWidth: 420, alignment: .leading)
+            }
+        }
+        .detailHeaderBoxStyle()
+    }
+
+    private var priorityDisclosureValueText: String {
+        if let priorityLabel = store.task.priority.metadataLabel {
+            return store.state.priorityMetadataText(priorityLabel: priorityLabel)
+        }
+        return "None • \(store.task.importance.title) importance • \(store.task.urgency.title) urgency"
+    }
+
+    private var headerTagsBox: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("TAGS")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(store.task.tags, id: \.self) { tag in
+                    statusTagChip(tag)
+                }
+            }
+        }
+        .detailHeaderBoxStyle()
+    }
+
+    @ViewBuilder
+    private var headerLinkBox: some View {
+        if let linkURL = store.task.resolvedLinkURL {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("DETAILS")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Link(destination: linkURL) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Image(systemName: "link")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.blue)
+                        Text(store.task.link ?? linkURL.absoluteString)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.blue)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .detailHeaderBoxStyle()
+        }
+    }
+
+    private var collapsibleCalendarSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isCalendarExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Text("Calendar")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isCalendarExpanded ? 180 : 0))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isCalendarExpanded {
+                calendarSection
+                    .padding(.top, 12)
+            }
+        }
+    }
+
     private var taskDetailContent: some View {
         let _ = store.taskRefreshID
 
@@ -258,15 +377,13 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                importanceUrgencyMatrixCard
-                calendarSection
-                pressurePicker
+                collapsibleCalendarSection
                 routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
                 relationshipsSection
-                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
+                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty {
                     taskExtrasSection
                 }
             }
@@ -394,9 +511,21 @@ struct TaskDetailTCAView: View {
             title: store.task.name ?? "Task",
             statusContextMessage: statusContextMessage,
             badgeRows: todoHeaderBadgeRows,
-            tags: store.task.tags
+            tags: []
         ) { tag in
             statusTagChip(tag)
+        } additionalContent: {
+            VStack(alignment: .leading, spacing: 8) {
+                priorityDisclosureBox
+                if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
+                    todoStatePicker
+                }
+                pressurePicker
+                if !store.task.tags.isEmpty {
+                    headerTagsBox
+                }
+                headerLinkBox
+            }
         }
     }
 
@@ -405,27 +534,19 @@ struct TaskDetailTCAView: View {
             title: store.task.name ?? "Routine",
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows,
-            tags: store.task.tags
+            tags: []
         ) { tag in
             statusTagChip(tag)
+        } additionalContent: {
+            VStack(alignment: .leading, spacing: 8) {
+                priorityDisclosureBox
+                pressurePicker
+                if !store.task.tags.isEmpty {
+                    headerTagsBox
+                }
+                headerLinkBox
+            }
         }
-    }
-
-    private var importanceUrgencyMatrixCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Importance & Urgency")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            ImportanceUrgencyMatrixPicker(
-                importance: .constant(store.task.importance),
-                urgency: .constant(store.task.urgency)
-            )
-            .frame(maxWidth: 420, alignment: .leading)
-            .allowsHitTesting(false)
-        }
-        .padding(16)
-        .detailCardStyle()
     }
 
     @ViewBuilder
@@ -469,46 +590,17 @@ struct TaskDetailTCAView: View {
     }
 
     private var todoHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {
-        var rows: [[TaskDetailHeaderBadgeItem]] = [
-            [
-                TaskDetailHeaderBadgeItem(
-                    title: "Status",
-                    value: store.summaryStatusTitle,
-                    systemImage: nil,
-                    tint: summaryStatusColor
-                ),
-                TaskDetailHeaderBadgeItem(
-                    title: "Selected",
-                    value: store.selectedDateMetadataText,
-                    systemImage: nil,
-                    tint: .accentColor
-                )
-            ]
-        ]
+        var rows: [[TaskDetailHeaderBadgeItem]] = []
 
-        var secondRow: [TaskDetailHeaderBadgeItem] = []
-        if let priorityLabel = store.task.priority.metadataLabel {
-            secondRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Priority",
-                    value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
-                    systemImage: "flag.fill",
-                    tint: .secondary
-                )
-            )
-        }
         if let linkedPlace = store.linkedPlaceSummary {
-            secondRow.append(
+            rows.append([
                 TaskDetailHeaderBadgeItem(
                     title: "Location",
                     value: linkedPlace.name,
                     systemImage: nil,
                     tint: .blue
                 )
-            )
-        }
-        if !secondRow.isEmpty {
-            rows.append(secondRow)
+            ])
         }
 
         if let dueDateMetadataText = store.dueDateMetadataText {
@@ -597,29 +689,15 @@ struct TaskDetailTCAView: View {
         }
         rows.append(secondRow)
 
-        var thirdRow: [TaskDetailHeaderBadgeItem] = []
-        if let priorityLabel = store.task.priority.metadataLabel {
-            thirdRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Priority",
-                    value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
-                    systemImage: "flag.fill",
-                    tint: .secondary
-                )
-            )
-        }
         if let linkedPlace = store.linkedPlaceSummary, store.dueDateMetadataText != nil {
-            thirdRow.append(
+            rows.append([
                 TaskDetailHeaderBadgeItem(
                     title: "Location",
                     value: linkedPlace.name,
                     systemImage: nil,
                     tint: .blue
                 )
-            )
-        }
-        if !thirdRow.isEmpty {
-            rows.append(thirdRow)
+            ])
         }
 
         if let createdAtBadgeValue = store.state.createdAtBadgeValue {
@@ -916,21 +994,6 @@ struct TaskDetailTCAView: View {
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let linkURL = store.task.resolvedLinkURL {
-                Link(destination: linkURL) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "link")
-                            .foregroundStyle(.blue)
-                        Text(store.task.link ?? linkURL.absoluteString)
-                            .font(.subheadline)
-                            .foregroundStyle(.blue)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
             }
         }
         .padding(12)
