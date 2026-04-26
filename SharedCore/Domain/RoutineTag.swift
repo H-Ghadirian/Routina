@@ -4,6 +4,7 @@ struct RoutineTagSummary: Equatable, Identifiable, Sendable {
     var name: String
     var linkedRoutineCount: Int
     var doneCount: Int = 0
+    var linkedTodoCount: Int = 0
     var colorHex: String?
 
     var id: String {
@@ -232,10 +233,20 @@ enum RoutineTag {
             }
         }
 
+        let todoTagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
+            guard task.isOneOffTask else { return }
+            for tag in task.tags {
+                guard let normalizedTag = normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += 1
+            }
+        }
+
         return allTags(from: tasks.map(\.tags)).map { tag in
-            RoutineTagSummary(
+            let key = normalized(tag) ?? tag
+            return RoutineTagSummary(
                 name: tag,
-                linkedRoutineCount: tagCounts[normalized(tag) ?? tag, default: 0]
+                linkedRoutineCount: tagCounts[key, default: 0],
+                linkedTodoCount: todoTagCounts[key, default: 0]
             )
         }
     }
@@ -245,6 +256,14 @@ enum RoutineTag {
         countsByTaskID: [UUID: Int]
     ) -> [RoutineTagSummary] {
         let linkedTagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
+            for tag in task.tags {
+                guard let normalizedTag = normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += 1
+            }
+        }
+
+        let todoTagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
+            guard task.isOneOffTask else { return }
             for tag in task.tags {
                 guard let normalizedTag = normalized(tag) else { continue }
                 partialResult[normalizedTag, default: 0] += 1
@@ -262,10 +281,12 @@ enum RoutineTag {
         }
 
         return allTags(from: tasks.map(\.tags)).map { tag in
-            RoutineTagSummary(
+            let key = normalized(tag) ?? tag
+            return RoutineTagSummary(
                 name: tag,
-                linkedRoutineCount: linkedTagCounts[normalized(tag) ?? tag, default: 0],
-                doneCount: doneTagCounts[normalized(tag) ?? tag, default: 0]
+                linkedRoutineCount: linkedTagCounts[key, default: 0],
+                doneCount: doneTagCounts[key, default: 0],
+                linkedTodoCount: todoTagCounts[key, default: 0]
             )
         }
     }

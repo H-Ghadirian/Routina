@@ -47,12 +47,15 @@ struct SettingsFeature {
         case tagsLoaded([RoutineTagSummary])
         case tagColorsLoaded([String: String])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
+        case learnedRelatedTagRulesLoaded([RoutineRelatedTagRule])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
         case tagRenameDraftChanged(String)
+        case tagSearchQueryChanged(String)
         case relatedTagDraftChanged(tagName: String, draft: String)
         case tagColorChanged(tagName: String, colorHex: String?)
         case saveRelatedTagsTapped(String)
+        case appendRelatedTagSuggestionTapped(tagName: String, suggestion: String)
         case placeDraftCoordinateChanged(LocationCoordinate?)
         case placeDraftRadiusChanged(Double)
         case savePlaceTapped
@@ -439,6 +442,13 @@ struct SettingsFeature {
                     )))
                     send(.tagColorsLoaded(appSettingsClient.tagColors()))
                     send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
+                    send(.learnedRelatedTagRulesLoaded(
+                        RoutineTagRelations.learnedRules(
+                            from: SettingsRefreshExecution.loadTaskTagCollections(
+                                modelContext: self.modelContext
+                            )
+                        )
+                    ))
                 }
 
             case .contactUsTapped:
@@ -528,6 +538,10 @@ struct SettingsFeature {
                 SettingsTagEditor.loadedRelatedTagRules(rules, state: &state.tags)
                 return .none
 
+            case let .learnedRelatedTagRulesLoaded(rules):
+                SettingsTagEditor.loadedLearnedRelatedTagRules(rules, state: &state.tags)
+                return .none
+
             case let .locationSnapshotUpdated(snapshot):
                 SettingsPlaceEditor.applyLocationSnapshot(snapshot, state: &state.places)
                 return .none
@@ -538,6 +552,10 @@ struct SettingsFeature {
 
             case let .tagRenameDraftChanged(name):
                 SettingsTagEditor.updateRenameDraft(name, state: &state.tags)
+                return .none
+
+            case let .tagSearchQueryChanged(query):
+                state.tags.tagSearchQuery = query
                 return .none
 
             case let .relatedTagDraftChanged(tagName, draft):
@@ -559,6 +577,15 @@ struct SettingsFeature {
 
             case let .saveRelatedTagsTapped(tagName):
                 let rules = SettingsTagEditor.saveRelatedTags(for: tagName, state: &state.tags)
+                appSettingsClient.setRelatedTagRules(rules)
+                return .none
+
+            case let .appendRelatedTagSuggestionTapped(tagName, suggestion):
+                let rules = SettingsTagEditor.appendRelatedTagSuggestion(
+                    tagName: tagName,
+                    suggestion: suggestion,
+                    state: &state.tags
+                )
                 appSettingsClient.setRelatedTagRules(rules)
                 return .none
 
@@ -731,6 +758,9 @@ struct SettingsFeature {
             send(.tagsLoaded(result.tagSummaries))
             send(.tagColorsLoaded(appSettingsClient.tagColors()))
             send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
+            send(.learnedRelatedTagRulesLoaded(
+                RoutineTagRelations.learnedRules(from: result.taskTagCollections)
+            ))
             send(.locationSnapshotUpdated(result.locationSnapshot))
 
             await SettingsRefreshExecution.reconcileNotificationsIfNeeded(

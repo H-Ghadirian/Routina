@@ -92,14 +92,44 @@ struct SettingsTagsState: Equatable {
     var savedTags: [RoutineTagSummary] = []
     var tagColors: [String: String] = [:]
     var relatedTagRules: [RoutineRelatedTagRule] = []
+    var learnedRelatedTagRules: [RoutineRelatedTagRule] = []
     var relatedTagDrafts: [String: String] = [:]
     var tagPendingDeletion: RoutineTagSummary?
     var tagPendingRename: RoutineTagSummary?
     var tagRenameDraft: String = ""
     var tagStatusMessage: String = ""
+    var tagSearchQuery: String = ""
     var isTagOperationInProgress: Bool = false
     var isDeleteTagConfirmationPresented: Bool = false
     var isTagRenameSheetPresented: Bool = false
+}
+
+extension SettingsTagsState {
+    var filteredSavedTags: [RoutineTagSummary] {
+        let trimmed = tagSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return savedTags }
+        let needle = trimmed.lowercased()
+        return savedTags.filter { $0.name.lowercased().contains(needle) }
+    }
+
+    func suggestedRelatedTags(for tagName: String) -> [String] {
+        let mergedRules = RoutineTagRelations.sanitized(relatedTagRules + learnedRelatedTagRules)
+        let existingDraft = relatedTagDrafts[RoutineTag.normalized(tagName) ?? tagName] ?? ""
+        let alreadyAdded = Set(
+            RoutineTag.parseDraft(existingDraft)
+                .compactMap { RoutineTag.normalized($0) }
+        )
+        let normalizedTag = RoutineTag.normalized(tagName)
+        return RoutineTagRelations.relatedTags(
+            for: [tagName],
+            rules: mergedRules,
+            availableTags: savedTags.map(\.name)
+        ).filter { suggestion in
+            guard let normalizedSuggestion = RoutineTag.normalized(suggestion) else { return false }
+            return normalizedSuggestion != normalizedTag
+                && !alreadyAdded.contains(normalizedSuggestion)
+        }
+    }
 }
 
 @ObservableState

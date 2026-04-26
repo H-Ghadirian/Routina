@@ -5,6 +5,7 @@ struct SettingsRefreshExecutionResult {
     var cloudUsageEstimate: CloudUsageEstimate
     var placeSummaries: [RoutinePlaceSummary]
     var tagSummaries: [RoutineTagSummary]
+    var taskTagCollections: [[String]]
     var locationSnapshot: LocationSnapshot
 }
 
@@ -20,6 +21,7 @@ enum SettingsRefreshExecution {
         let cloudUsageEstimate = SettingsDataQueries.loadCloudUsageEstimate(in: context)
         let placeSummaries = (try? SettingsDataQueries.fetchPlaceSummaries(in: context)) ?? []
         let tagSummaries = (try? SettingsDataQueries.fetchTagSummaries(in: context)) ?? []
+        let taskTagCollections = (try? SettingsDataQueries.fetchTaskTagCollections(in: context)) ?? []
         let locationSnapshot = await locationClient.snapshot(false)
 
         return SettingsRefreshExecutionResult(
@@ -27,6 +29,7 @@ enum SettingsRefreshExecution {
             cloudUsageEstimate: cloudUsageEstimate,
             placeSummaries: placeSummaries,
             tagSummaries: tagSummaries,
+            taskTagCollections: taskTagCollections,
             locationSnapshot: locationSnapshot
         )
     }
@@ -36,6 +39,13 @@ enum SettingsRefreshExecution {
         modelContext: @escaping @MainActor @Sendable () -> ModelContext
     ) -> [RoutineTagSummary] {
         (try? SettingsDataQueries.fetchTagSummaries(in: modelContext())) ?? []
+    }
+
+    @MainActor
+    static func loadTaskTagCollections(
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> [[String]] {
+        (try? SettingsDataQueries.fetchTaskTagCollections(in: modelContext())) ?? []
     }
 
     @MainActor

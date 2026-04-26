@@ -221,8 +221,18 @@ extension SettingsTagsState {
 
 extension RoutineTagSummary {
     var settingsSubtitle: String {
-        linkedRoutineCount == 1
-            ? "Used by 1 routine"
-            : "Used by \(linkedRoutineCount) routines"
+        let routinesOnly = max(0, linkedRoutineCount - linkedTodoCount)
+        var parts: [String] = []
+        if routinesOnly > 0 {
+            parts.append(routinesOnly == 1 ? "1 routine" : "\(routinesOnly) routines")
+        }
+        if linkedTodoCount > 0 {
+            parts.append(linkedTodoCount == 1 ? "1 todo" : "\(linkedTodoCount) todos")
+        }
+        if doneCount > 0 {
+            parts.append(doneCount == 1 ? "1 done" : "\(doneCount) done")
+        }
+        guard !parts.isEmpty else { return "" }
+        return "Used by " + parts.joined(separator: " · ")
     }
 }

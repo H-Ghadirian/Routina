@@ -19,6 +19,12 @@ enum SettingsDataQueries {
         return RoutineTag.summaries(from: tasks)
     }
 
+    @MainActor
+    static func fetchTaskTagCollections(in context: ModelContext) throws -> [[String]] {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        return tasks.map(\.tags)
+    }
+
     static func hasDuplicatePlaceName(_ name: String, in context: ModelContext) throws -> Bool {
         guard let normalizedName = RoutinePlace.normalizedName(name) else { return false }
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())

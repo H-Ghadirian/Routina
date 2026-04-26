@@ -74,6 +74,13 @@ enum SettingsTagEditor {
         syncRelatedTagDrafts(state: &state)
     }
 
+    static func loadedLearnedRelatedTagRules(
+        _ rules: [RoutineRelatedTagRule],
+        state: inout SettingsTagsState
+    ) {
+        state.learnedRelatedTagRules = RoutineTagRelations.sanitized(rules)
+    }
+
     static func updateRelatedTagDraft(
         tagName: String,
         draft: String,
@@ -82,6 +89,27 @@ enum SettingsTagEditor {
         guard let key = RoutineTag.normalized(tagName) else { return }
         state.relatedTagDrafts[key] = draft
         state.tagStatusMessage = ""
+    }
+
+    static func appendRelatedTagSuggestion(
+        tagName: String,
+        suggestion: String,
+        state: inout SettingsTagsState
+    ) -> [RoutineRelatedTagRule] {
+        guard let key = RoutineTag.normalized(tagName),
+              let cleanedSuggestion = RoutineTag.cleaned(suggestion) else {
+            return state.relatedTagRules
+        }
+
+        let existing = RoutineTag.parseDraft(state.relatedTagDrafts[key] ?? "")
+        let alreadyContains = existing.contains {
+            RoutineTag.normalized($0) == RoutineTag.normalized(cleanedSuggestion)
+        }
+        guard !alreadyContains else { return state.relatedTagRules }
+
+        let updated = existing + [cleanedSuggestion]
+        state.relatedTagDrafts[key] = updated.joined(separator: ", ")
+        return saveRelatedTags(for: tagName, state: &state)
     }
 
     static func saveRelatedTags(
