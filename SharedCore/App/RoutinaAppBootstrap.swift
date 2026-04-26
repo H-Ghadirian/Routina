@@ -16,6 +16,7 @@ enum RoutinaAppBootstrap {
         )
         if !AppEnvironment.isAutomatedTestMode {
             CloudKitSyncDiagnostics.startIfNeeded()
+            CloudSettingsKeyValueSync.startIfNeeded()
         }
         SharedDefaults.app.register(defaults: [
             .appSettingNotificationsEnabled: false,

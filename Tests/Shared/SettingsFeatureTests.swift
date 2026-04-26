@@ -729,6 +729,102 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func addRelatedTagDraftSubmitted_addsNewRelatedTagsAndPersistsRules() async {
+        let persistedRules = LockIsolated<[RoutineRelatedTagRule]>([])
+        let cleaningSummary = RoutineTagSummary(name: "Cleaning", linkedRoutineCount: 1)
+        let homeSummary = RoutineTagSummary(name: "Home", linkedRoutineCount: 1)
+        let organizingSummary = RoutineTagSummary(name: "Organizing", linkedRoutineCount: 1)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                tags: .init(
+                    savedTags: [cleaningSummary, homeSummary, organizingSummary],
+                    relatedTagRules: [
+                        RoutineRelatedTagRule(tag: "Cleaning", relatedTags: ["Home"])
+                    ],
+                    relatedTagDrafts: [
+                        "cleaning": "Home",
+                        "home": "",
+                        "organizing": ""
+                    ]
+                )
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setRelatedTagRules = { persistedRules.setValue($0) }
+        }
+
+        await store.send(.addRelatedTagDraftSubmitted(
+            tagName: "Cleaning",
+            draft: "Organizing, home, Cleaning"
+        )) {
+            $0.tags.relatedTagRules = [
+                RoutineRelatedTagRule(tag: "Cleaning", relatedTags: ["Home", "Organizing"])
+            ]
+            $0.tags.relatedTagDrafts = [
+                "cleaning": "Home, Organizing",
+                "home": "",
+                "organizing": ""
+            ]
+            $0.tags.tagStatusMessage = "Added #Organizing to #Cleaning."
+        }
+
+        #expect(persistedRules.value == [
+            RoutineRelatedTagRule(tag: "Cleaning", relatedTags: ["Home", "Organizing"])
+        ])
+    }
+
+    @Test
+    func removeRelatedTagTapped_removesChipAndPersistsRules() async {
+        let persistedRules = LockIsolated<[RoutineRelatedTagRule]>([])
+        let cleaningSummary = RoutineTagSummary(name: "Cleaning", linkedRoutineCount: 1)
+        let homeSummary = RoutineTagSummary(name: "Home", linkedRoutineCount: 1)
+        let organizingSummary = RoutineTagSummary(name: "Organizing", linkedRoutineCount: 1)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                tags: .init(
+                    savedTags: [cleaningSummary, homeSummary, organizingSummary],
+                    relatedTagRules: [
+                        RoutineRelatedTagRule(tag: "Cleaning", relatedTags: ["Home", "Organizing"])
+                    ],
+                    relatedTagDrafts: [
+                        "cleaning": "Home, Organizing",
+                        "home": "",
+                        "organizing": ""
+                    ]
+                )
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setRelatedTagRules = { persistedRules.setValue($0) }
+        }
+
+        await store.send(.removeRelatedTagTapped(
+            tagName: "Cleaning",
+            relatedTag: "Home"
+        )) {
+            $0.tags.relatedTagRules = [
+                RoutineRelatedTagRule(tag: "Cleaning", relatedTags: ["Organizing"])
+            ]
+            $0.tags.relatedTagDrafts = [
+                "cleaning": "Organizing",
+                "home": "",
+                "organizing": ""
+            ]
+            $0.tags.tagStatusMessage = "Removed #Home from #Cleaning."
+        }
+
+        #expect(persistedRules.value == [
+            RoutineRelatedTagRule(tag: "Cleaning", relatedTags: ["Organizing"])
+        ])
+    }
+
+    @Test
     func resetTemporaryViewStateTapped_clearsSavedTemporaryViewPreferences() async {
         let context = makeInMemoryContext()
         let resetCallCount = LockIsolated(0)

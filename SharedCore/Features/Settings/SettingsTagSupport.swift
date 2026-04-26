@@ -96,20 +96,119 @@ enum SettingsTagEditor {
         suggestion: String,
         state: inout SettingsTagsState
     ) -> [RoutineRelatedTagRule] {
+        guard relatedTagsToAdd(
+            tagName: tagName,
+            relatedTags: RoutineTag.parseDraft(suggestion),
+            state: state
+        ).isEmpty == false else {
+            state.tagStatusMessage = "No new related tags to add."
+            return state.relatedTagRules
+        }
+
+        let rules = appendRelatedTags(
+            tagName: tagName,
+            relatedTags: RoutineTag.parseDraft(suggestion),
+            state: &state
+        )
+        if let cleanedTag = RoutineTag.cleaned(tagName),
+           let cleanedSuggestion = RoutineTag.cleaned(suggestion) {
+            state.tagStatusMessage = "Added #\(cleanedSuggestion) as related to #\(cleanedTag)."
+        }
+        return rules
+    }
+
+    static func appendRelatedTagDraft(
+        tagName: String,
+        draft: String,
+        state: inout SettingsTagsState
+    ) -> [RoutineRelatedTagRule] {
+        let submittedTags = RoutineTag.parseDraft(draft)
+        guard !submittedTags.isEmpty else {
+            state.tagStatusMessage = "Enter a related tag first."
+            return state.relatedTagRules
+        }
+
+        let addableTags = relatedTagsToAdd(
+            tagName: tagName,
+            relatedTags: submittedTags,
+            state: state
+        )
+        guard !addableTags.isEmpty else {
+            state.tagStatusMessage = "No new related tags to add."
+            return state.relatedTagRules
+        }
+
+        let rules = appendRelatedTags(
+            tagName: tagName,
+            relatedTags: addableTags,
+            state: &state
+        )
+        if let cleanedTag = RoutineTag.cleaned(tagName) {
+            let addedSummary = addableTags.count == 1
+                ? "#\(addableTags[0])"
+                : "\(addableTags.count) related tags"
+            state.tagStatusMessage = "Added \(addedSummary) to #\(cleanedTag)."
+        }
+        return rules
+    }
+
+    static func removeRelatedTag(
+        _ relatedTag: String,
+        from tagName: String,
+        state: inout SettingsTagsState
+    ) -> [RoutineRelatedTagRule] {
         guard let key = RoutineTag.normalized(tagName),
-              let cleanedSuggestion = RoutineTag.cleaned(suggestion) else {
+              let cleanedTag = RoutineTag.cleaned(tagName),
+              let cleanedRelatedTag = RoutineTag.cleaned(relatedTag),
+              let normalizedRelatedTag = RoutineTag.normalized(cleanedRelatedTag) else {
             return state.relatedTagRules
         }
 
         let existing = RoutineTag.parseDraft(state.relatedTagDrafts[key] ?? "")
-        let alreadyContains = existing.contains {
-            RoutineTag.normalized($0) == RoutineTag.normalized(cleanedSuggestion)
-        }
-        guard !alreadyContains else { return state.relatedTagRules }
+        let updated = existing.filter { RoutineTag.normalized($0) != normalizedRelatedTag }
+        state.relatedTagDrafts[key] = updated.joined(separator: ", ")
+        let rules = saveRelatedTags(for: tagName, state: &state)
+        state.tagStatusMessage = "Removed #\(cleanedRelatedTag) from #\(cleanedTag)."
+        return rules
+    }
 
-        let updated = existing + [cleanedSuggestion]
+    private static func appendRelatedTags(
+        tagName: String,
+        relatedTags: [String],
+        state: inout SettingsTagsState
+    ) -> [RoutineRelatedTagRule] {
+        guard let key = RoutineTag.normalized(tagName),
+              let normalizedTag = RoutineTag.normalized(tagName) else {
+            return state.relatedTagRules
+        }
+
+        let existing = RoutineTag.parseDraft(state.relatedTagDrafts[key] ?? "")
+        let updated = RoutineTag.deduplicated(existing + relatedTags).filter {
+            RoutineTag.normalized($0) != normalizedTag
+        }
+        guard updated != existing else { return state.relatedTagRules }
+
         state.relatedTagDrafts[key] = updated.joined(separator: ", ")
         return saveRelatedTags(for: tagName, state: &state)
+    }
+
+    private static func relatedTagsToAdd(
+        tagName: String,
+        relatedTags: [String],
+        state: SettingsTagsState
+    ) -> [String] {
+        guard let key = RoutineTag.normalized(tagName),
+              let normalizedTag = RoutineTag.normalized(tagName) else {
+            return []
+        }
+
+        let existing = RoutineTag.parseDraft(state.relatedTagDrafts[key] ?? "")
+        let existingKeys = Set(existing.compactMap(RoutineTag.normalized))
+        return RoutineTag.deduplicated(relatedTags).filter { relatedTag in
+            guard let normalizedRelatedTag = RoutineTag.normalized(relatedTag) else { return false }
+            return normalizedRelatedTag != normalizedTag
+                && !existingKeys.contains(normalizedRelatedTag)
+        }
     }
 
     static func saveRelatedTags(

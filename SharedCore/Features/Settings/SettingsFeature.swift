@@ -55,7 +55,9 @@ struct SettingsFeature {
         case relatedTagDraftChanged(tagName: String, draft: String)
         case tagColorChanged(tagName: String, colorHex: String?)
         case saveRelatedTagsTapped(String)
+        case addRelatedTagDraftSubmitted(tagName: String, draft: String)
         case appendRelatedTagSuggestionTapped(tagName: String, suggestion: String)
+        case removeRelatedTagTapped(tagName: String, relatedTag: String)
         case placeDraftCoordinateChanged(LocationCoordinate?)
         case placeDraftRadiusChanged(Double)
         case savePlaceTapped
@@ -580,10 +582,28 @@ struct SettingsFeature {
                 appSettingsClient.setRelatedTagRules(rules)
                 return .none
 
+            case let .addRelatedTagDraftSubmitted(tagName, draft):
+                let rules = SettingsTagEditor.appendRelatedTagDraft(
+                    tagName: tagName,
+                    draft: draft,
+                    state: &state.tags
+                )
+                appSettingsClient.setRelatedTagRules(rules)
+                return .none
+
             case let .appendRelatedTagSuggestionTapped(tagName, suggestion):
                 let rules = SettingsTagEditor.appendRelatedTagSuggestion(
                     tagName: tagName,
                     suggestion: suggestion,
+                    state: &state.tags
+                )
+                appSettingsClient.setRelatedTagRules(rules)
+                return .none
+
+            case let .removeRelatedTagTapped(tagName, relatedTag):
+                let rules = SettingsTagEditor.removeRelatedTag(
+                    relatedTag,
+                    from: tagName,
                     state: &state.tags
                 )
                 appSettingsClient.setRelatedTagRules(rules)

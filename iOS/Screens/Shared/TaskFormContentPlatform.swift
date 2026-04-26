@@ -5,6 +5,7 @@ import PhotosUI
 
 struct TaskFormContent: View {
     let model: TaskFormModel
+    @Dependency(\.appSettingsClient) private var appSettingsClient
     @FocusState private var isNameFocused: Bool
     @State private var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
@@ -580,16 +581,17 @@ struct TaskFormContent: View {
                         Button {
                             model.acceptTagAutocompleteSuggestion()
                         } label: {
+                            let tint = tagColor(for: suggestion) ?? .secondary
                             Text("#\(suggestion)")
                                 .font(.caption.weight(.medium))
                                 .lineLimit(1)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(tint)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(.thinMaterial, in: Capsule())
+                                .background(tint.opacity(0.12), in: Capsule())
                                 .overlay {
                                     Capsule()
-                                        .stroke(Color.secondary.opacity(0.22), lineWidth: 1)
+                                        .stroke(tint.opacity(0.28), lineWidth: 1)
                                 }
                         }
                         .buttonStyle(.plain)
@@ -613,13 +615,19 @@ struct TaskFormContent: View {
                     spacing: 8
                 ) {
                     ForEach(model.routineTags, id: \.self) { tag in
+                        let tint = tagColor(for: tag) ?? .accentColor
                         Button { model.onRemoveTag(tag) } label: {
                             HStack(spacing: 6) {
                                 Text("#\(tag)").lineLimit(1)
                                 Image(systemName: "xmark.circle.fill").font(.caption)
                             }
+                            .foregroundStyle(tint)
                             .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Color.accentColor.opacity(0.14), in: Capsule())
+                            .background(tint.opacity(0.14), in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .stroke(tint.opacity(0.28), lineWidth: 1)
+                            }
                         }
                         .buttonStyle(.plain)
                     }
@@ -892,18 +900,19 @@ struct TaskFormContent: View {
                     spacing: 8
                 ) {
                     ForEach(suggestions, id: \.self) { tag in
+                        let tint = tagColor(for: tag) ?? .orange
                         Button { model.onToggleTagSelection(tag) } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.caption)
                                 Text("#\(tag)").lineLimit(1)
                             }
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(tint)
                             .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Color.orange.opacity(0.10), in: Capsule())
+                            .background(tint.opacity(0.10), in: Capsule())
                             .overlay {
                                 Capsule()
-                                    .stroke(Color.orange.opacity(0.45), lineWidth: 1)
+                                    .stroke(tint.opacity(0.45), lineWidth: 1)
                             }
                         }
                         .buttonStyle(.plain)
@@ -931,21 +940,26 @@ struct TaskFormContent: View {
                         let summary = model.availableTagSummaries.first(where: {
                             RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
                         })
+                        let tint = tagColor(for: tag) ?? .accentColor
                         Button { model.onToggleTagSelection(tag) } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
                                     .font(.caption)
                                 Text(tagChipTitle(tag: tag, summary: summary)).lineLimit(1)
                             }
-                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                            .foregroundStyle(isSelected ? tint : (tagColor(for: tag) ?? .secondary))
                             .padding(.horizontal, 10).padding(.vertical, 6)
                             .background(
                                 Capsule().fill(
                                     isSelected
-                                        ? Color.accentColor.opacity(0.16)
-                                        : Color.secondary.opacity(0.10)
+                                        ? tint.opacity(0.16)
+                                        : (tagColor(for: tag) ?? .secondary).opacity(0.10)
                                 )
                             )
+                            .overlay {
+                                Capsule()
+                                    .stroke((tagColor(for: tag) ?? .secondary).opacity(0.24), lineWidth: 1)
+                            }
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("\(isSelected ? "Remove" : "Add") tag \(tag)")
@@ -962,6 +976,13 @@ struct TaskFormContent: View {
             summary: summary,
             mode: model.tagCounterDisplayMode
         )
+    }
+
+    private func tagColor(for tag: String) -> Color? {
+        model.availableTagSummaries.first {
+            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
+        }?.displayColor
+        ?? Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: appSettingsClient.tagColors()))
     }
 
     @ViewBuilder

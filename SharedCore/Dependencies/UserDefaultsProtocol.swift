@@ -45,7 +45,7 @@ enum SharedDefaults: SharedDefaultsProtocol {
     }()
 }
 
-public enum UserDefaultBoolValueKey: String {
+public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingNotificationsEnabled
     case appSettingHideUnavailableRoutines
     case appSettingAppLockEnabled
@@ -53,7 +53,7 @@ public enum UserDefaultBoolValueKey: String {
     case requestNotificationPermission
 }
 
-public enum UserDefaultStringValueKey: String {
+public enum UserDefaultStringValueKey: String, Sendable {
     case selectedMacAppIcon
     case appSettingRoutineListSectioningMode
     case appSettingTagCounterDisplayMode
@@ -92,6 +92,116 @@ struct AppSettingsClient: Sendable {
     var temporaryViewState: @Sendable () -> TemporaryViewState?
     var setTemporaryViewState: @Sendable (TemporaryViewState?) -> Void
     var resetTemporaryViewState: @Sendable () -> Void
+}
+
+enum CloudSettingsKeyValueSync {
+    private static let observerBox = CloudSettingsObserverBox()
+    private static let syncedStringKeys: Set<UserDefaultStringValueKey> = [
+        .appSettingRelatedTagRules,
+        .appSettingTagColors
+    ]
+
+    static func startIfNeeded() {
+        guard AppEnvironment.isCloudSyncEnabled,
+              !AppEnvironment.isAutomatedTestMode else {
+            return
+        }
+
+        guard observerBox.observer == nil else {
+            synchronizeKnownValues()
+            return
+        }
+
+        let observer = NotificationCenter.default.addObserver(
+            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: NSUbiquitousKeyValueStore.default,
+            queue: .main
+        ) { notification in
+            handleExternalChange(notification)
+        }
+        observerBox.observer = observer
+        synchronizeKnownValues()
+    }
+
+    static func string(for key: UserDefaultStringValueKey) -> String? {
+        guard syncedStringKeys.contains(key),
+              AppEnvironment.isCloudSyncEnabled,
+              !AppEnvironment.isAutomatedTestMode else {
+            return SharedDefaults.app[key]
+        }
+
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+        guard let remoteValue = store.string(forKey: key.rawValue) else {
+            return SharedDefaults.app[key]
+        }
+
+        if SharedDefaults.app[key] != remoteValue {
+            SharedDefaults.app[key] = remoteValue
+        }
+        return remoteValue
+    }
+
+    static func setString(_ value: String?, for key: UserDefaultStringValueKey) {
+        SharedDefaults.app[key] = value
+
+        guard syncedStringKeys.contains(key),
+              AppEnvironment.isCloudSyncEnabled,
+              !AppEnvironment.isAutomatedTestMode else {
+            return
+        }
+
+        let store = NSUbiquitousKeyValueStore.default
+        if let value {
+            store.set(value, forKey: key.rawValue)
+        } else {
+            store.removeObject(forKey: key.rawValue)
+        }
+        store.synchronize()
+    }
+
+    private static func synchronizeKnownValues() {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        for key in syncedStringKeys {
+            if let remoteValue = store.string(forKey: key.rawValue) {
+                SharedDefaults.app[key] = remoteValue
+            } else if let localValue = SharedDefaults.app[key] {
+                store.set(localValue, forKey: key.rawValue)
+            }
+        }
+
+        store.synchronize()
+    }
+
+    private static func handleExternalChange(_ notification: Notification) {
+        guard let changedRawKeys = notification.userInfo?[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] else {
+            synchronizeKnownValues()
+            return
+        }
+
+        let store = NSUbiquitousKeyValueStore.default
+        for key in syncedStringKeys where changedRawKeys.contains(key.rawValue) {
+            SharedDefaults.app[key] = store.string(forKey: key.rawValue)
+        }
+    }
+}
+
+private final class CloudSettingsObserverBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: NSObjectProtocol?
+
+    var observer: NSObjectProtocol? {
+        get {
+            lock.withLock { value }
+        }
+        set {
+            lock.withLock {
+                value = newValue
+            }
+        }
+    }
 }
 
 extension AppSettingsClient {
@@ -137,7 +247,7 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingTagCounterDisplayMode] = mode.rawValue
         },
         relatedTagRules: {
-            guard let rawValue = SharedDefaults.app[.appSettingRelatedTagRules],
+            guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingRelatedTagRules),
                   let data = rawValue.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode([RoutineRelatedTagRule].self, from: data)
             else {
@@ -148,7 +258,7 @@ extension AppSettingsClient {
         setRelatedTagRules: { rules in
             let sanitizedRules = RoutineTagRelations.sanitized(rules)
             guard !sanitizedRules.isEmpty else {
-                SharedDefaults.app[.appSettingRelatedTagRules] = nil
+                CloudSettingsKeyValueSync.setString(nil, for: .appSettingRelatedTagRules)
                 return
             }
             guard let data = try? JSONEncoder().encode(sanitizedRules),
@@ -156,10 +266,10 @@ extension AppSettingsClient {
             else {
                 return
             }
-            SharedDefaults.app[.appSettingRelatedTagRules] = rawValue
+            CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingRelatedTagRules)
         },
         tagColors: {
-            guard let rawValue = SharedDefaults.app[.appSettingTagColors],
+            guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingTagColors),
                   let data = rawValue.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode([String: String].self, from: data)
             else {
@@ -170,7 +280,7 @@ extension AppSettingsClient {
         setTagColors: { colors in
             let sanitizedColors = RoutineTagColors.sanitized(colors)
             guard !sanitizedColors.isEmpty else {
-                SharedDefaults.app[.appSettingTagColors] = nil
+                CloudSettingsKeyValueSync.setString(nil, for: .appSettingTagColors)
                 return
             }
             guard let data = try? JSONEncoder().encode(sanitizedColors),
@@ -178,7 +288,7 @@ extension AppSettingsClient {
             else {
                 return
             }
-            SharedDefaults.app[.appSettingTagColors] = rawValue
+            CloudSettingsKeyValueSync.setString(rawValue, for: .appSettingTagColors)
         },
         notificationReminderTime: {
             NotificationPreferences.reminderTimeDate()

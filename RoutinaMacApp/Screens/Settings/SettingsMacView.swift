@@ -845,6 +845,7 @@ private struct SettingsMacTagRow: View {
     let tag: RoutineTagSummary
     @State private var isExpanded = false
     @State private var isColorPopoverPresented = false
+    @State private var relatedTagEntry = ""
 
     var body: some View {
         WithPerceptionTracking {
@@ -971,65 +972,131 @@ private struct SettingsMacTagRow: View {
 
             let suggestions = store.tags.suggestedRelatedTags(for: tag.name)
             if !suggestions.isEmpty {
-                HStack(alignment: .top, spacing: 10) {
-                    Text("Suggested")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 60, alignment: .leading)
-                        .padding(.top, 4)
-
-                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
-                        ForEach(suggestions, id: \.self) { suggestion in
-                            Button {
-                                store.send(.appendRelatedTagSuggestionTapped(
-                                    tagName: tag.name,
-                                    suggestion: suggestion
-                                ))
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.caption2.weight(.semibold))
-                                    RoutineTagPill(
-                                        name: suggestion,
-                                        color: suggestionColor(for: suggestion),
-                                        size: .small,
-                                        showsIcon: false
-                                    )
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .help("Add \(suggestion) as a related tag")
-                            .disabled(store.tags.isTagOperationInProgress)
-                        }
-                    }
-                }
+                relatedSuggestionSection(suggestions)
             }
 
-            HStack(spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
                 Text("Related")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .frame(width: 60, alignment: .leading)
+                    .padding(.top, 5)
 
-                TextField("Comma-separated tag names", text: relatedTagDraftBinding)
-                    .textFieldStyle(.roundedBorder)
-                    .disabled(store.tags.isTagOperationInProgress)
-                    .onSubmit {
-                        store.send(.saveRelatedTagsTapped(tag.name))
+                VStack(alignment: .leading, spacing: 8) {
+                    let relatedTags = RoutineTag.parseDraft(relatedTagDraftBinding.wrappedValue)
+                    if relatedTags.isEmpty {
+                        Text("No related tags")
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                            .padding(.vertical, 3)
+                    } else {
+                        HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                            ForEach(relatedTags, id: \.self) { relatedTag in
+                                relatedTagChip(relatedTag)
+                            }
+                        }
                     }
 
-                Button {
-                    store.send(.saveRelatedTagsTapped(tag.name))
-                } label: {
-                    Label("Save", systemImage: "checkmark.circle")
+                    HStack(spacing: 6) {
+                        TextField("Add related tag", text: $relatedTagEntry)
+                            .textFieldStyle(.roundedBorder)
+                            .disabled(store.tags.isTagOperationInProgress)
+                            .onSubmit(addRelatedTagEntry)
+
+                        Button(action: addRelatedTagEntry) {
+                            Label("Add", systemImage: "plus.circle")
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .disabled(
+                            store.tags.isTagOperationInProgress
+                            || RoutineTag.parseDraft(relatedTagEntry).isEmpty
+                        )
+                        .help("Add related tag")
+                    }
+
+                    Text("Related tags appear as suggestions across filters and routine forms.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .disabled(store.tags.isTagOperationInProgress)
-                .help("Save related tags")
             }
         }
         .padding(.leading, 4)
+    }
+
+    @ViewBuilder
+    private func relatedSuggestionSection(_ suggestions: [String]) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("Suggested")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .leading)
+                .padding(.top, 4)
+
+            HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                ForEach(suggestions, id: \.self) { suggestion in
+                    Button {
+                        store.send(.appendRelatedTagSuggestionTapped(
+                            tagName: tag.name,
+                            suggestion: suggestion
+                        ))
+                    } label: {
+                        HStack(spacing: 4) {
+                            RoutineTagPill(
+                                name: suggestion,
+                                color: suggestionColor(for: suggestion),
+                                size: .small,
+                                showsIcon: false
+                            )
+
+                            Image(systemName: "plus.circle.fill")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help("Add \(suggestion) as a related tag")
+                    .disabled(store.tags.isTagOperationInProgress)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func relatedTagChip(_ relatedTag: String) -> some View {
+        HStack(spacing: 4) {
+            RoutineTagPill(
+                name: relatedTag,
+                color: suggestionColor(for: relatedTag),
+                size: .small,
+                showsIcon: false
+            )
+
+            Button {
+                store.send(.removeRelatedTagTapped(
+                    tagName: tag.name,
+                    relatedTag: relatedTag
+                ))
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Remove \(relatedTag)")
+            .disabled(store.tags.isTagOperationInProgress)
+        }
+        .padding(.trailing, 2)
+    }
+
+    private func addRelatedTagEntry() {
+        let submittedTags = RoutineTag.parseDraft(relatedTagEntry)
+        guard !submittedTags.isEmpty else { return }
+        store.send(.addRelatedTagDraftSubmitted(
+            tagName: tag.name,
+            draft: relatedTagEntry
+        ))
+        relatedTagEntry = ""
     }
 
     @ViewBuilder

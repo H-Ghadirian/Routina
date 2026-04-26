@@ -513,7 +513,7 @@ struct SettingsTagsDetailView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(tag.name)
+                                        RoutineTagPill(tag: tag)
                                         Text(tag.settingsSubtitle)
                                             .font(.footnote)
                                             .foregroundStyle(.secondary)
