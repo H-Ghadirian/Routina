@@ -831,7 +831,7 @@ final class RoutineTask {
         within candidates: [RoutineTaskRelationshipCandidate]
     ) -> [RoutineTaskResolvedRelationship] {
         var resolvedByID: [String: RoutineTaskResolvedRelationship] = [:]
-        let candidateByID = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0) })
+        let candidateByID = RoutineTaskRelationshipCandidate.lookupByID(candidates)
 
         for relationship in task.relationships {
             guard let candidate = candidateByID[relationship.targetTaskID] else { continue }

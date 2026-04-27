@@ -760,7 +760,7 @@ struct TaskRelationshipsEditor: View {
     @State private var isPickerPresented = false
 
     private var resolvedRelationships: [RoutineTaskResolvedRelationship] {
-        let candidateByID = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0) })
+        let candidateByID = RoutineTaskRelationshipCandidate.lookupByID(candidates)
         return relationships.compactMap { relationship in
             guard let candidate = candidateByID[relationship.targetTaskID] else { return nil }
             return RoutineTaskResolvedRelationship(
@@ -862,7 +862,8 @@ struct TaskRelationshipPickerSheet: View {
     @State private var selectedKind: RoutineTaskRelationshipKind = .related
 
     private var availableCandidates: [RoutineTaskRelationshipCandidate] {
-        candidates.filter { !linkedTaskIDs.contains($0.id) }
+        RoutineTaskRelationshipCandidate.uniqueByID(candidates)
+            .filter { !linkedTaskIDs.contains($0.id) }
     }
 
     private var filteredCandidates: [RoutineTaskRelationshipCandidate] {

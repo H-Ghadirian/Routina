@@ -25,6 +25,11 @@ enum CloudDataResetService {
             context.delete(log)
         }
 
+        let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
+        for session in focusSessions {
+            context.delete(session)
+        }
+
         let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
         for att in attachments {
             context.delete(att)

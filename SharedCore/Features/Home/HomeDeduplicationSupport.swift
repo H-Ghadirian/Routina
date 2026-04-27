@@ -36,6 +36,10 @@ enum HomeDeduplicationSupport {
                 for log in logs {
                     context.delete(log)
                 }
+                let focusSessions = try context.fetch(HomeTaskSupport.focusSessionsDescriptor(for: task.id))
+                for session in focusSessions {
+                    context.delete(session)
+                }
                 context.delete(task)
                 removedAny = true
             }

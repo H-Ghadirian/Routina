@@ -1,11 +1,14 @@
 import SwiftUI
 import ComposableArchitecture
+import SwiftData
 import UniformTypeIdentifiers
 
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
+    @Query private var focusSessionTasks: [RoutineTask]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
     @State var isEditEmojiPickerPresented = false
@@ -172,6 +175,7 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
+                focusSessionSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -514,6 +518,7 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
+                focusSessionSection
                 routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
@@ -526,6 +531,14 @@ struct TaskDetailTCAView: View {
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var focusSessionSection: some View {
+        FocusSessionCard(
+            task: store.task,
+            sessions: focusSessions,
+            allTasks: focusSessionTasks
+        )
     }
 
     private var canSaveCurrentEdit: Bool {

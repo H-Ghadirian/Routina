@@ -416,6 +416,10 @@ extension TaskDetailFeature {
                 for log in logs {
                     context.delete(log)
                 }
+                let focusSessions = try context.fetch(focusSessionsDescriptor(for: task.id))
+                for session in focusSessions {
+                    context.delete(session)
+                }
                 let attachmentsToDelete = try context.fetch(attachmentDescriptor(for: task.id))
                 for att in attachmentsToDelete {
                     context.delete(att)
@@ -665,6 +669,14 @@ extension TaskDetailFeature {
         FetchDescriptor<RoutineLog>(
             predicate: #Predicate { log in
                 log.taskID == taskID
+            }
+        )
+    }
+
+    func focusSessionsDescriptor(for taskID: UUID) -> FetchDescriptor<FocusSession> {
+        FetchDescriptor<FocusSession>(
+            predicate: #Predicate { session in
+                session.taskID == taskID
             }
         )
     }

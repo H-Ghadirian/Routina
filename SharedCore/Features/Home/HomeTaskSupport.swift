@@ -25,6 +25,14 @@ enum HomeTaskSupport {
         )
     }
 
+    static func focusSessionsDescriptor(for taskID: UUID) -> FetchDescriptor<FocusSession> {
+        FetchDescriptor<FocusSession>(
+            predicate: #Predicate { session in
+                session.taskID == taskID
+            }
+        )
+    }
+
     static func makeTaskDetailState(
         for task: RoutineTask,
         now: Date,

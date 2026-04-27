@@ -163,6 +163,17 @@ struct RoutineTaskRelationshipCandidate: Equatable, Hashable, Identifiable, Send
         name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled task" : name
     }
 
+    static func uniqueByID(_ candidates: [RoutineTaskRelationshipCandidate]) -> [RoutineTaskRelationshipCandidate] {
+        var seenIDs: Set<UUID> = []
+        return candidates.filter { candidate in
+            seenIDs.insert(candidate.id).inserted
+        }
+    }
+
+    static func lookupByID(_ candidates: [RoutineTaskRelationshipCandidate]) -> [UUID: RoutineTaskRelationshipCandidate] {
+        Dictionary(uniqueKeysWithValues: uniqueByID(candidates).map { ($0.id, $0) })
+    }
+
     static func from(
         _ tasks: [RoutineTask],
         excluding excludedTaskID: UUID? = nil,
@@ -182,6 +193,13 @@ struct RoutineTaskRelationshipCandidate: Equatable, Hashable, Identifiable, Send
         .sorted { lhs, rhs in
             lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
         }
+        .uniquedByID()
+    }
+}
+
+private extension [RoutineTaskRelationshipCandidate] {
+    func uniquedByID() -> [RoutineTaskRelationshipCandidate] {
+        RoutineTaskRelationshipCandidate.uniqueByID(self)
     }
 }
 

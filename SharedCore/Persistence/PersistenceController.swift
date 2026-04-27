@@ -18,6 +18,7 @@ public struct PersistenceController {
             container = try ModelContainer(
                 for: RoutineTask.self,
                 RoutineLog.self,
+                FocusSession.self,
                 RoutinePlace.self,
                 RoutineAttachment.self,
                 configurations: primaryConfiguration
@@ -50,6 +51,7 @@ public struct PersistenceController {
                     container = try ModelContainer(
                         for: RoutineTask.self,
                         RoutineLog.self,
+                        FocusSession.self,
                         RoutinePlace.self,
                         RoutineAttachment.self,
                         configurations: retriedConfiguration
@@ -67,6 +69,7 @@ public struct PersistenceController {
                 container = try ModelContainer(
                     for: RoutineTask.self,
                     RoutineLog.self,
+                    FocusSession.self,
                     RoutinePlace.self,
                     RoutineAttachment.self,
                     configurations: localFallback
@@ -79,6 +82,7 @@ public struct PersistenceController {
                     container = try ModelContainer(
                         for: RoutineTask.self,
                         RoutineLog.self,
+                        FocusSession.self,
                         RoutinePlace.self,
                         RoutineAttachment.self,
                         configurations: memoryFallback
@@ -104,6 +108,7 @@ public struct PersistenceController {
         return try ModelContainer(
             for: RoutineTask.self,
             RoutineLog.self,
+            FocusSession.self,
             RoutinePlace.self,
             RoutineAttachment.self,
             configurations: configuration

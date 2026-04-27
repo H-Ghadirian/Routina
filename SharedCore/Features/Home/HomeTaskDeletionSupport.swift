@@ -106,6 +106,10 @@ enum HomeTaskDeletionSupport {
                 for log in logs {
                     context.delete(log)
                 }
+                let focusSessions = try context.fetch(HomeTaskSupport.focusSessionsDescriptor(for: id))
+                for session in focusSessions {
+                    context.delete(session)
+                }
                 await cancelNotification(id.uuidString)
             }
             try? context.save()

@@ -63,11 +63,12 @@ struct AppFeature {
                 let timelineLogs = state.timeline.logs
                 let statsTasks = state.stats.tasks
                 let statsLogs = state.stats.logs
+                let statsFocusSessions = state.stats.focusSessions
                 resetTemporaryViewState(&state)
                 persistTemporaryViewState(state)
                 return .merge(
                     .send(.timeline(.setData(tasks: timelineTasks, logs: timelineLogs))),
-                    .send(.stats(.setData(tasks: statsTasks, logs: statsLogs)))
+                    .send(.stats(.setData(tasks: statsTasks, logs: statsLogs, focusSessions: statsFocusSessions)))
                 )
             case .timeline(.selectedRangeChanged),
                  .timeline(.filterTypeChanged),
@@ -406,15 +407,21 @@ struct TimelineFeature {
 struct StatsFeature {
     struct Metrics: Equatable {
         var chartPoints: [DoneChartPoint] = []
+        var focusChartPoints: [FocusDurationChartPoint] = []
         var totalDoneCount: Int = 0
         var totalCanceledCount: Int = 0
+        var totalFocusSeconds: TimeInterval = 0
+        var averageFocusSecondsPerDay: TimeInterval = 0
         var activeRoutineCount: Int = 0
         var archivedRoutineCount: Int = 0
         var totalCount: Int = 0
         var averagePerDay: Double = 0
         var highlightedBusiestDay: DoneChartPoint?
+        var highlightedFocusDay: FocusDurationChartPoint?
         var activeDayCount: Int = 0
+        var focusActiveDayCount: Int = 0
         var chartUpperBound: Double = 1
+        var focusChartUpperBound: Double = 1
         var sparklinePoints: [DoneChartPoint] = []
         var sparklineMaxCount: Int = 1
         var xAxisDates: [Date] = []
@@ -424,6 +431,7 @@ struct StatsFeature {
     struct State: Equatable {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
+        var focusSessions: [FocusSession] = []
         var selectedRange: DoneChartRange = .week
         var taskTypeFilter: StatsTaskTypeFilter = .all
         var isFilterSheetPresented: Bool = false
@@ -470,7 +478,7 @@ struct StatsFeature {
     }
 
     enum Action: Equatable {
-        case setData(tasks: [RoutineTask], logs: [RoutineLog])
+        case setData(tasks: [RoutineTask], logs: [RoutineLog], focusSessions: [FocusSession])
         case onAppear
         case selectedRangeChanged(DoneChartRange)
         case taskTypeFilterChanged(StatsTaskTypeFilter)
@@ -497,9 +505,10 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs):
+            case let .setData(tasks, logs, focusSessions):
                 state.tasks = tasks
                 state.logs = logs
+                state.focusSessions = focusSessions
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -745,6 +754,7 @@ struct StatsFeature {
         }
         let filteredTaskIDs = Set(filteredTasks.map(\.id))
         filteredLogs = state.logs.filter { filteredTaskIDs.contains($0.taskID) }
+        let filteredFocusSessions = state.focusSessions.filter { filteredTaskIDs.contains($0.taskID) }
 
         let completionDates = filteredLogs
             .filter { $0.kind == .completed }
@@ -758,27 +768,43 @@ struct StatsFeature {
             referenceDate: now,
             calendar: calendar
         )
+        let focusChartPoints = FocusDurationStats.points(
+            for: state.selectedRange,
+            sessions: filteredFocusSessions,
+            referenceDate: now,
+            calendar: calendar
+        )
         let totalCount = RoutineCompletionStats.totalCount(in: chartPoints)
         let averagePerDay = RoutineCompletionStats.averageCount(in: chartPoints)
         let busiestDay = RoutineCompletionStats.busiestDay(in: chartPoints)
+        let totalFocusSeconds = FocusDurationStats.totalSeconds(in: focusChartPoints)
+        let averageFocusSecondsPerDay = FocusDurationStats.averageSeconds(in: focusChartPoints)
+        let busiestFocusDay = FocusDurationStats.busiestDay(in: focusChartPoints)
         let sparklinePoints = sampledSparklinePoints(
             from: chartPoints,
             for: state.selectedRange
         )
         let maxCount = chartPoints.map(\.count).max() ?? 0
+        let maxFocusMinutes = focusChartPoints.map(\.minutes).max() ?? 0
 
         state.filteredTaskCount = filteredTasks.count
         state.metrics = Metrics(
             chartPoints: chartPoints,
+            focusChartPoints: focusChartPoints,
             totalDoneCount: completionDates.count,
             totalCanceledCount: canceledDates.count,
+            totalFocusSeconds: totalFocusSeconds,
+            averageFocusSecondsPerDay: averageFocusSecondsPerDay,
             activeRoutineCount: filteredTasks.filter { !$0.isArchived(referenceDate: now, calendar: calendar) }.count,
             archivedRoutineCount: filteredTasks.filter { $0.isArchived(referenceDate: now, calendar: calendar) }.count,
             totalCount: totalCount,
             averagePerDay: averagePerDay,
             highlightedBusiestDay: (busiestDay?.count ?? 0) > 0 ? busiestDay : nil,
+            highlightedFocusDay: (busiestFocusDay?.seconds ?? 0) > 0 ? busiestFocusDay : nil,
             activeDayCount: chartPoints.filter { $0.count > 0 }.count,
+            focusActiveDayCount: focusChartPoints.filter { $0.seconds > 0 }.count,
             chartUpperBound: Double(max(maxCount, Int(ceil(averagePerDay))) + 1),
+            focusChartUpperBound: max(10, ceil(max(maxFocusMinutes, averageFocusSecondsPerDay / 60)) + 5),
             sparklinePoints: sparklinePoints,
             sparklineMaxCount: max(sparklinePoints.map(\.count).max() ?? 0, 1),
             xAxisDates: makeXAxisDates(from: chartPoints, for: state.selectedRange, calendar: calendar)
