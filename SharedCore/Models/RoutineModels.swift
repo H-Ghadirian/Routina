@@ -659,7 +659,7 @@ final class RoutineTask {
             return .advancedChecklist(completedItems: completedCount, totalItems: totalCount)
         }
 
-        recordCompletion(at: completedAt)
+        recordCompletion(at: completedAt, calendar: calendar)
         resetChecklistProgress()
         return .completedRoutine
     }
@@ -682,7 +682,7 @@ final class RoutineTask {
             if let lastDone, calendar.isDate(lastDone, inSameDayAs: completedAt) {
                 return .ignoredAlreadyCompletedToday
             }
-            recordCompletion(at: completedAt)
+            recordCompletion(at: completedAt, calendar: calendar)
             return .completedRoutine
         }
 
@@ -702,7 +702,7 @@ final class RoutineTask {
             return .advancedStep(completedSteps: nextCompletedStepCount, totalSteps: totalSteps)
         }
 
-        recordCompletion(at: completedAt)
+        recordCompletion(at: completedAt, calendar: calendar)
         resetStepProgress()
         return .completedRoutine
     }
@@ -735,7 +735,7 @@ final class RoutineTask {
         return candidate > lastDone
     }
 
-    private func recordCompletion(at completedAt: Date) {
+    private func recordCompletion(at completedAt: Date, calendar: Calendar = .current) {
         guard shouldUpdateLastDone(with: completedAt) else { return }
         lastDone = completedAt
         canceledAt = nil
@@ -743,6 +743,58 @@ final class RoutineTask {
         ongoingSince = nil
         if usesRollingScheduleAnchor {
             scheduleAnchor = completedAt
+        }
+        advanceReminderAfterCompletion(completedAt: completedAt, calendar: calendar)
+    }
+
+    private func advanceReminderAfterCompletion(completedAt: Date, calendar: Calendar) {
+        guard !isOneOffTask, let reminderAt else { return }
+        guard let nextReminderAt = nextReminderDateAfterCompletion(
+            completedAt: completedAt,
+            previousReminderAt: reminderAt,
+            calendar: calendar
+        ) else {
+            return
+        }
+        self.reminderAt = nextReminderAt
+    }
+
+    private func nextReminderDateAfterCompletion(
+        completedAt: Date,
+        previousReminderAt: Date,
+        calendar: Calendar
+    ) -> Date? {
+        var candidate = previousReminderAt
+        var remainingAdvances = 10_000
+
+        repeat {
+            guard let nextCandidate = nextReminderOccurrence(after: candidate, calendar: calendar) else {
+                return nil
+            }
+            candidate = nextCandidate
+            remainingAdvances -= 1
+        } while candidate <= completedAt && remainingAdvances > 0
+
+        return candidate > completedAt ? candidate : nil
+    }
+
+    private func nextReminderOccurrence(after date: Date, calendar: Calendar) -> Date? {
+        switch recurrenceRule.kind {
+        case .intervalDays:
+            return calendar.date(
+                byAdding: .day,
+                value: max(recurrenceRule.interval, 1),
+                to: date
+            )
+
+        case .dailyTime:
+            return calendar.date(byAdding: .day, value: 1, to: date)
+
+        case .weekly:
+            return calendar.date(byAdding: .day, value: 7, to: date)
+
+        case .monthlyDay:
+            return calendar.date(byAdding: .month, value: 1, to: date)
         }
     }
 

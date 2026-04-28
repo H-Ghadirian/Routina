@@ -764,7 +764,7 @@ struct TaskDetailTCAView: View {
             ])
         }
 
-        if let dueDateMetadataText = store.dueDateMetadataText {
+        if let dueDateMetadataText = dueDateMetadataDisplayText {
             rows.append([
                 TaskDetailHeaderBadgeItem(
                     title: "Due",
@@ -840,7 +840,7 @@ struct TaskDetailTCAView: View {
                 )
             )
         }
-        if let dueDateMetadataText = store.dueDateMetadataText {
+        if let dueDateMetadataText = dueDateMetadataDisplayText {
             secondRow.append(
                 TaskDetailHeaderBadgeItem(
                     title: "Due",
@@ -1239,7 +1239,7 @@ struct TaskDetailTCAView: View {
                     label: "Paused",
                     value: pausedAt.formatted(date: .abbreviated, time: .omitted)
                 )
-            } else if let dueDateMetadataText = store.dueDateMetadataText {
+            } else if let dueDateMetadataText = dueDateMetadataDisplayText {
                 statusMetadataRow(label: "Due", value: dueDateMetadataText)
             }
 
@@ -1443,6 +1443,16 @@ struct TaskDetailTCAView: View {
         return "Reviewing \(dateText)."
     }
 
+    private var dueDateMetadataDisplayText: String? {
+        guard let dueDateMetadataText = store.dueDateMetadataText else { return nil }
+        guard let dueDate = store.resolvedDueDate else { return dueDateMetadataText }
+        return PersianDateDisplay.appendingSupplementaryDate(
+            to: dueDateMetadataText,
+            for: dueDate,
+            enabled: showPersianDates
+        )
+    }
+
     private var shouldShowCompletionCount: Bool {
         if store.task.isOneOffTask {
             return store.completedLogCount > 0 || store.canceledLogCount > 0
@@ -1478,23 +1488,22 @@ struct TaskDetailTCAView: View {
                 let logs = displayedLogs(from: store.logs)
                 ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
                     HStack(spacing: 8) {
-                        Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                        Text(logTimestampText(log.timestamp))
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         Text(log.kind == .completed ? "Done" : "Canceled")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(log.kind == .completed ? .green : .orange)
-
-                        if let timestamp = log.timestamp {
-                            Button(log.kind == .completed ? "Undo" : "Remove") {
-                                store.send(.removeLogEntry(timestamp))
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                        }
                     }
                     .padding(.vertical, 8)
+                    .contextMenu {
+                        if let timestamp = log.timestamp {
+                            Button(routineLogActionTitle(for: log)) {
+                                store.send(.removeLogEntry(timestamp))
+                            }
+                        }
+                    }
 
                     if index < logs.count - 1 {
                         Divider()
@@ -1516,6 +1525,19 @@ struct TaskDetailTCAView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
+    private func routineLogActionTitle(for log: RoutineLog) -> String {
+        log.kind == .completed ? "Undo" : "Remove"
+    }
+
+    private func logTimestampText(_ timestamp: Date?) -> String {
+        guard let timestamp else { return "Unknown date" }
+        return PersianDateDisplay.appendingSupplementaryDate(
+            to: timestamp.formatted(date: .abbreviated, time: .shortened),
+            for: timestamp,
+            enabled: showPersianDates
         )
     }
 

@@ -26,6 +26,7 @@ func makeTask(
     interval: Int16,
     lastDone: Date?,
     emoji: String?,
+    reminderAt: Date? = nil,
     placeID: UUID? = nil,
     tags: [String] = [],
     steps: [RoutineStep] = [],
@@ -39,6 +40,7 @@ func makeTask(
     let task = RoutineTask(
         name: name,
         emoji: emoji,
+        reminderAt: reminderAt,
         placeID: placeID,
         tags: tags,
         steps: steps,

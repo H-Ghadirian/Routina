@@ -100,6 +100,65 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func markAsDone_advancesCustomReminderAndSchedulesUpdatedReminder() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-04-25T10:00:00Z")
+        let reminderAt = makeDate("2026-04-25T08:00:00Z")
+        let expectedReminderAt = makeDate("2026-04-28T08:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 3,
+            lastDone: nil,
+            emoji: "🧘",
+            reminderAt: reminderAt,
+            recurrenceRule: .interval(days: 3),
+            scheduleAnchor: makeDate("2026-04-22T10:00:00Z")
+        )
+        let scheduledTriggerDates = LockIsolated<[Date?]>([])
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { payload in
+                scheduledTriggerDates.withValue { $0.append(payload.triggerDate) }
+            }
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.taskRefreshID = 1
+                $0.task.reminderAt = expectedReminderAt
+                $0.isDoneToday = true
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+            }
+        }
+
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            return false
+        } assert: {
+            let verificationContext = ModelContext(context.container)
+            let descriptor = FetchDescriptor<RoutineLog>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+            $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
+            $0.task.reminderAt = expectedReminderAt
+            $0.isDoneToday = true
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(persistedTask.reminderAt == expectedReminderAt)
+        #expect(scheduledTriggerDates.value == [expectedReminderAt])
+    }
+
+    @Test
     func notificationDisabledWarningTapped_enablesAppNotificationsAndSchedulesTaskWhenAuthorized() async {
         let now = makeDate("2026-04-25T09:00:00Z")
         let calendar = makeTestCalendar()

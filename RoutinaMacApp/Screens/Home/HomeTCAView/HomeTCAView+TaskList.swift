@@ -57,6 +57,13 @@ extension HomeTCAView {
                 .fixedSize(horizontal: true, vertical: false)
                 .frame(minWidth: sidebarRowNumberMinWidth, alignment: .trailing)
 
+            if let color = task.color.swiftUIColor {
+                Capsule(style: .continuous)
+                    .fill(color)
+                    .frame(width: 3, height: 28)
+                    .accessibilityHidden(true)
+            }
+
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(rowIconBackgroundColor(for: task))
@@ -111,13 +118,6 @@ extension HomeTCAView {
             Spacer(minLength: 0)
         }
         .padding(.vertical, 4)
-        .padding(.horizontal, task.color != .none ? 8 : 0)
-        .background(
-            task.color.swiftUIColor.map { color in
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(color.opacity(0.12))
-            }
-        )
     }
 
     private func tagColor(for tag: String) -> Color? {

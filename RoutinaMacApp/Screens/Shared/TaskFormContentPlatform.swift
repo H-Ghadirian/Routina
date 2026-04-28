@@ -21,6 +21,10 @@ struct TaskFormContent: View {
         SettingsFeature()
     }
     @Environment(\.addEditFormCoordinator) private var formCoordinator
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
+        store: SharedDefaults.app
+    ) private var showPersianDates = false
 
     private var sectionCardBackground: some ShapeStyle {
         Color(nsColor: .controlBackgroundColor)
@@ -502,6 +506,11 @@ struct TaskFormContent: View {
                             if model.deadlineEnabled.wrappedValue {
                                 DatePicker("Deadline", selection: model.deadline)
                                     .labelsHidden()
+                                if let persianDeadlineText {
+                                    Text(persianDeadlineText)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
@@ -1445,7 +1454,7 @@ struct TaskFormContent: View {
     private var previewScheduleSummary: String {
         if model.taskType.wrappedValue == .todo {
             return model.deadlineEnabled.wrappedValue
-                ? "Due \(model.deadline.wrappedValue.formatted(date: .abbreviated, time: .omitted))"
+                ? "Due \(deadlineSummaryText)"
                 : "One-off"
         }
         switch model.recurrenceKind.wrappedValue {
@@ -1467,6 +1476,21 @@ struct TaskFormContent: View {
             }
             return "Monthly on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue))"
         }
+    }
+
+    private var deadlineSummaryText: String {
+        PersianDateDisplay.appendingSupplementaryDate(
+            to: model.deadline.wrappedValue.formatted(date: .abbreviated, time: .omitted),
+            for: model.deadline.wrappedValue,
+            enabled: showPersianDates
+        )
+    }
+
+    private var persianDeadlineText: String? {
+        PersianDateDisplay.supplementaryText(
+            for: model.deadline.wrappedValue,
+            enabled: showPersianDates
+        )
     }
 
     private var previewPlaceSummary: String? {

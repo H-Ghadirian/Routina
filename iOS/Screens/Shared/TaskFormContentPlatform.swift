@@ -17,6 +17,10 @@ struct TaskFormContent: View {
     }
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isFileImporterPresented = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
+        store: SharedDefaults.app
+    ) private var showPersianDates = false
 
     var body: some View {
         Form {
@@ -472,8 +476,20 @@ struct TaskFormContent: View {
             Toggle("Set deadline", isOn: model.deadlineEnabled)
             if model.deadlineEnabled.wrappedValue {
                 DatePicker("Deadline", selection: model.deadline)
+                if let persianDeadlineText {
+                    Text(persianDeadlineText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
+    }
+
+    private var persianDeadlineText: String? {
+        PersianDateDisplay.supplementaryText(
+            for: model.deadline.wrappedValue,
+            enabled: showPersianDates
+        )
     }
 
     private var reminderSection: some View {

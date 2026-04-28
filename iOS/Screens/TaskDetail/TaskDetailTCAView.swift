@@ -16,6 +16,7 @@ struct TaskDetailTCAView: View {
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
+    @State private var isMatrixExpanded = false
     @State private var isTodoStatePickerPresented = false
     @State private var isPressurePickerPresented = false
     @AppStorage(
@@ -173,7 +174,6 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                importanceUrgencyMatrixCard
                 if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
                     calendarSection
                 }
@@ -203,7 +203,6 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                importanceUrgencyMatrixCard
                 calendarSection
                 routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
                 focusSessionSection
@@ -356,6 +355,8 @@ struct TaskDetailTCAView: View {
             tags: store.task.tags
         ) { tag in
             statusTagChip(tag)
+        } additionalContent: {
+            priorityDisclosureBox
         }
     }
 
@@ -367,23 +368,160 @@ struct TaskDetailTCAView: View {
             tags: store.task.tags
         ) { tag in
             statusTagChip(tag)
+        } additionalContent: {
+            priorityDisclosureBox
         }
     }
 
-    private var importanceUrgencyMatrixCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Importance & Urgency")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+    private var priorityDisclosureBox: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isMatrixExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PRIORITY")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        prioritySummaryRow
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isMatrixExpanded ? 180 : 0))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-            ImportanceUrgencyMatrixPicker(
-                importance: .constant(store.task.importance),
-                urgency: .constant(store.task.urgency)
-            )
-            .allowsHitTesting(false)
+            if isMatrixExpanded {
+                Divider()
+                    .padding(.top, 10)
+                    .padding(.bottom, 12)
+                ImportanceUrgencyMatrixPicker(
+                    importance: Binding(
+                        get: { store.task.importance },
+                        set: { store.send(.importanceChanged($0)) }
+                    ),
+                    urgency: Binding(
+                        get: { store.task.urgency },
+                        set: { store.send(.urgencyChanged($0)) }
+                    ),
+                    showsSummaryChip: false
+                )
+            }
         }
-        .padding(16)
-        .detailCardStyle()
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        .detailHeaderBoxStyle()
+    }
+
+    private var prioritySummaryRow: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: 8) {
+                priorityFlagChip
+                priorityMetadataChip(
+                    title: "Importance",
+                    value: store.task.importance.title,
+                    tint: importanceTint(for: store.task.importance)
+                )
+                priorityMetadataChip(
+                    title: "Urgency",
+                    value: store.task.urgency.title,
+                    tint: urgencyTint(for: store.task.urgency)
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                priorityFlagChip
+                HStack(alignment: .center, spacing: 8) {
+                    priorityMetadataChip(
+                        title: "Importance",
+                        value: store.task.importance.title,
+                        tint: importanceTint(for: store.task.importance)
+                    )
+                    priorityMetadataChip(
+                        title: "Urgency",
+                        value: store.task.urgency.title,
+                        tint: urgencyTint(for: store.task.urgency)
+                    )
+                }
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var priorityFlagChip: some View {
+        Label(store.task.priority.title, systemImage: "flag.fill")
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .foregroundStyle(prioritySummaryColor)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(prioritySummaryColor.opacity(0.12), in: Capsule())
+    }
+
+    private func priorityMetadataChip(title: String, value: String, tint: Color) -> some View {
+        HStack(spacing: 4) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(tint)
+        }
+        .lineLimit(1)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(tint.opacity(0.10), in: Capsule())
+        .overlay(
+            Capsule()
+                .stroke(tint.opacity(0.18), lineWidth: 1)
+        )
+    }
+
+    private var prioritySummaryColor: Color {
+        switch store.task.priority {
+        case .none:
+            return .secondary
+        case .low:
+            return .green
+        case .medium:
+            return .yellow
+        case .high:
+            return .orange
+        case .urgent:
+            return .red
+        }
+    }
+
+    private func importanceTint(for importance: RoutineTaskImportance) -> Color {
+        switch importance {
+        case .level1:
+            return .green
+        case .level2:
+            return .yellow
+        case .level3:
+            return .orange
+        case .level4:
+            return .red
+        }
+    }
+
+    private func urgencyTint(for urgency: RoutineTaskUrgency) -> Color {
+        switch urgency {
+        case .level1:
+            return .green
+        case .level2:
+            return .yellow
+        case .level3:
+            return .orange
+        case .level4:
+            return .red
+        }
     }
 
     @ViewBuilder
@@ -445,16 +583,6 @@ struct TaskDetailTCAView: View {
         ]
 
         var secondRow: [TaskDetailHeaderBadgeItem] = []
-        if let priorityLabel = store.task.priority.metadataLabel {
-            secondRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Priority",
-                    value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
-                    systemImage: "flag.fill",
-                    tint: .secondary
-                )
-            )
-        }
         if let linkedPlace = store.linkedPlaceSummary {
             secondRow.append(
                 TaskDetailHeaderBadgeItem(
@@ -469,7 +597,7 @@ struct TaskDetailTCAView: View {
             rows.append(secondRow)
         }
 
-        if let dueDateMetadataText = store.dueDateMetadataText {
+        if let dueDateMetadataText = dueDateMetadataDisplayText {
             rows.append([
                 TaskDetailHeaderBadgeItem(
                     title: "Due",
@@ -527,58 +655,20 @@ struct TaskDetailTCAView: View {
             ]
         ]
 
-        var secondRow: [TaskDetailHeaderBadgeItem] = [
-            TaskDetailHeaderBadgeItem(
-                title: "Completed",
-                value: store.completedLogCountText,
-                systemImage: nil,
-                tint: .green
-            )
-        ]
-        if store.canceledLogCount > 0 {
-            secondRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Canceled",
-                    value: store.canceledLogCountText,
-                    systemImage: nil,
-                    tint: .orange
-                )
-            )
-        }
-        if let dueDateMetadataText = store.dueDateMetadataText {
-            secondRow.append(
+        if let dueDateMetadataText = dueDateMetadataDisplayText {
+            rows.append([
                 TaskDetailHeaderBadgeItem(
                     title: "Due",
                     value: dueDateMetadataText,
                     systemImage: nil,
                     tint: .orange
                 )
-            )
-        } else if let linkedPlace = store.linkedPlaceSummary {
-            secondRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Location",
-                    value: linkedPlace.name,
-                    systemImage: nil,
-                    tint: .blue
-                )
-            )
+            ])
         }
-        rows.append(secondRow)
 
-        var thirdRow: [TaskDetailHeaderBadgeItem] = []
-        if let priorityLabel = store.task.priority.metadataLabel {
-            thirdRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Priority",
-                    value: store.state.priorityMetadataText(priorityLabel: priorityLabel),
-                    systemImage: "flag.fill",
-                    tint: .secondary
-                )
-            )
-        }
-        if let linkedPlace = store.linkedPlaceSummary, store.dueDateMetadataText != nil {
-            thirdRow.append(
+        var completedLocationRow: [TaskDetailHeaderBadgeItem] = []
+        if let linkedPlace = store.linkedPlaceSummary {
+            completedLocationRow.append(
                 TaskDetailHeaderBadgeItem(
                     title: "Location",
                     value: linkedPlace.name,
@@ -587,8 +677,25 @@ struct TaskDetailTCAView: View {
                 )
             )
         }
-        if !thirdRow.isEmpty {
-            rows.append(thirdRow)
+        completedLocationRow.append(
+            TaskDetailHeaderBadgeItem(
+                title: "Completed",
+                value: store.completedLogCountText,
+                systemImage: nil,
+                tint: .green
+            )
+        )
+        rows.append(completedLocationRow)
+
+        if store.canceledLogCount > 0 {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Canceled",
+                    value: store.canceledLogCountText,
+                    systemImage: nil,
+                    tint: .orange
+                )
+            ])
         }
 
         if let reminderMetadataText = store.reminderMetadataText {
@@ -1063,7 +1170,7 @@ struct TaskDetailTCAView: View {
                     label: "Paused",
                     value: pausedAt.formatted(date: .abbreviated, time: .omitted)
                 )
-            } else if let dueDateMetadataText = store.dueDateMetadataText {
+            } else if let dueDateMetadataText = dueDateMetadataDisplayText {
                 statusMetadataRow(label: "Due", value: dueDateMetadataText)
             }
 
@@ -1251,6 +1358,16 @@ struct TaskDetailTCAView: View {
         return "Reviewing \(dateText)."
     }
 
+    private var dueDateMetadataDisplayText: String? {
+        guard let dueDateMetadataText = store.dueDateMetadataText else { return nil }
+        guard let dueDate = store.resolvedDueDate else { return dueDateMetadataText }
+        return PersianDateDisplay.appendingSupplementaryDate(
+            to: dueDateMetadataText,
+            for: dueDate,
+            enabled: showPersianDates
+        )
+    }
+
     private var shouldShowCompletionCount: Bool {
         if store.task.isOneOffTask {
             return store.completedLogCount > 0 || store.canceledLogCount > 0
@@ -1285,24 +1402,18 @@ struct TaskDetailTCAView: View {
             } else {
                 let logs = displayedLogs(from: store.logs)
                 ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
-                    HStack(spacing: 8) {
-                        Text(log.timestamp?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        Text(log.kind == .completed ? "Done" : "Canceled")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(log.kind == .completed ? .green : .orange)
-
+                    RoutineLogSwipeRow(
+                        timestampText: logTimestampText(log.timestamp),
+                        statusText: log.kind == .completed ? "Done" : "Canceled",
+                        statusColor: log.kind == .completed ? .green : .orange,
+                        actionTitle: routineLogActionTitle(for: log),
+                        actionColor: log.kind == .completed ? .green : .orange,
+                        isActionEnabled: log.timestamp != nil
+                    ) {
                         if let timestamp = log.timestamp {
-                            Button(log.kind == .completed ? "Undo" : "Remove") {
-                                store.send(.removeLogEntry(timestamp))
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            store.send(.removeLogEntry(timestamp))
                         }
                     }
-                    .padding(.vertical, 8)
 
                     if index < logs.count - 1 {
                         Divider()
@@ -1324,6 +1435,19 @@ struct TaskDetailTCAView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
+    private func routineLogActionTitle(for log: RoutineLog) -> String {
+        log.kind == .completed ? "Undo" : "Remove"
+    }
+
+    private func logTimestampText(_ timestamp: Date?) -> String {
+        guard let timestamp else { return "Unknown date" }
+        return PersianDateDisplay.appendingSupplementaryDate(
+            to: timestamp.formatted(date: .abbreviated, time: .shortened),
+            for: timestamp,
+            enabled: showPersianDates
         )
     }
 
@@ -1983,6 +2107,94 @@ extension View {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
             )
+    }
+}
+
+private struct RoutineLogSwipeRow: View {
+    private let actionWidth: CGFloat = 88
+    private let fullSwipeThreshold: CGFloat = 132
+
+    let timestampText: String
+    let statusText: String
+    let statusColor: Color
+    let actionTitle: String
+    let actionColor: Color
+    let isActionEnabled: Bool
+    let action: () -> Void
+
+    @State private var restingOffset: CGFloat = 0
+    @GestureState private var dragTranslation: CGFloat = 0
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            if isActionEnabled {
+                Button(actionTitle) {
+                    performAction()
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: actionWidth)
+                .frame(maxHeight: .infinity)
+                .background(actionColor)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .padding(.vertical, 6)
+            }
+
+            rowContent
+                .background(TaskDetailPlatformStyle.summaryCardBackground)
+                .offset(x: currentOffset)
+                .contentShape(Rectangle())
+                .simultaneousGesture(swipeGesture)
+                .animation(.snappy(duration: 0.18), value: restingOffset)
+        }
+        .clipped()
+    }
+
+    private var rowContent: some View {
+        HStack(spacing: 8) {
+            Text(timestampText)
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(statusText)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(statusColor)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var currentOffset: CGFloat {
+        guard isActionEnabled else { return 0 }
+        return min(0, max(-actionWidth, restingOffset + dragTranslation))
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .updating($dragTranslation) { value, state, _ in
+                guard isHorizontalSwipe(value) else { return }
+                state = value.translation.width
+            }
+            .onEnded { value in
+                guard isHorizontalSwipe(value) else { return }
+                let translation = value.translation.width
+                let predictedTranslation = value.predictedEndTranslation.width
+
+                if translation <= -fullSwipeThreshold || predictedTranslation <= -fullSwipeThreshold {
+                    performAction()
+                } else {
+                    let finalOffset = min(0, max(-actionWidth, restingOffset + translation))
+                    restingOffset = finalOffset <= -(actionWidth / 2) ? -actionWidth : 0
+                }
+            }
+    }
+
+    private func isHorizontalSwipe(_ value: DragGesture.Value) -> Bool {
+        isActionEnabled && abs(value.translation.width) > abs(value.translation.height)
+    }
+
+    private func performAction() {
+        restingOffset = 0
+        action()
     }
 }
 
