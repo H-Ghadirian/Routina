@@ -425,5 +425,12 @@ struct HomeMacView: View {
         ) { _ in
             settingsStore.send(.cloudDiagnosticsUpdated)
         }
+        .onReceive(
+            NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)
+                .receive(on: RunLoop.main)
+        ) { _ in
+            appStore.send(.cloudSettingsChanged)
+            store.send(.onAppear)
+        }
     }
 }

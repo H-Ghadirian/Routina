@@ -30,6 +30,7 @@ struct AppFeature {
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
         case onAppear
+        case cloudSettingsChanged
     }
 
     @Dependency(\.appSettingsClient) var appSettingsClient
@@ -57,6 +58,22 @@ struct AppFeature {
                 guard !state.hasRestoredTemporaryViewState else { return .none }
                 state.hasRestoredTemporaryViewState = true
                 applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
+                return .none
+            case .cloudSettingsChanged:
+                let tagColors = appSettingsClient.tagColors()
+                let relatedTagRules = appSettingsClient.relatedTagRules()
+                state.home.tagColors = tagColors
+                state.home.relatedTagRules = RoutineTagRelations.sanitized(
+                    relatedTagRules + RoutineTagRelations.learnedRules(from: state.home.routineTasks.map(\.tags))
+                )
+                state.timeline.relatedTagRules = RoutineTagRelations.sanitized(
+                    relatedTagRules + RoutineTagRelations.learnedRules(from: state.timeline.tasks.map(\.tags))
+                )
+                state.stats.relatedTagRules = RoutineTagRelations.sanitized(
+                    relatedTagRules + RoutineTagRelations.learnedRules(from: state.stats.tasks.map(\.tags))
+                )
+                SettingsTagEditor.loadedTagColors(tagColors, state: &state.settings.tags)
+                SettingsTagEditor.loadedRelatedTagRules(relatedTagRules, state: &state.settings.tags)
                 return .none
             case .settings(.resetTemporaryViewStateTapped):
                 let timelineTasks = state.timeline.tasks
@@ -90,6 +107,9 @@ struct AppFeature {
                  .stats(.excludeTagMatchModeChanged),
                  .stats(.clearFilters):
                 persistTemporaryViewState(state)
+                return .none
+            case .settings(.tagColorChanged):
+                state.home.tagColors = appSettingsClient.tagColors()
                 return .none
             default:
                 return .none

@@ -110,10 +110,10 @@ extension HomeTCAView {
                     urgency: task.urgency
                 )
             }
-            return RoutineTag.summaries(from: filteredTasks)
+            return RoutineTagColors.applying(store.tagColors, to: RoutineTag.summaries(from: filteredTasks))
         }
 
-        return RoutineTag.summaries(from: store.routineTasks)
+        return RoutineTagColors.applying(store.tagColors, to: RoutineTag.summaries(from: store.routineTasks))
     }
 
     private var statsTaskCountForSelectedTypeFilter: Int {

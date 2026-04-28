@@ -101,10 +101,7 @@ extension HomeTCAView {
                 if !task.tags.isEmpty {
                     HStack(spacing: 8) {
                         ForEach(task.tags, id: \.self) { tag in
-                            Text("#\(tag)")
-                                .font(.caption2)
-                                .foregroundStyle(tagColor(for: tag) ?? .secondary)
-                                .lineLimit(1)
+                            sidebarTagChip(tag)
                         }
                     }
                     .lineLimit(1)
@@ -124,7 +121,33 @@ extension HomeTCAView {
     }
 
     private func tagColor(for tag: String) -> Color? {
-        Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: store.tagColors))
+        Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: appSettingsClient.tagColors()))
+    }
+
+    private func tagTint(for tag: String) -> Color {
+        if let color = tagColor(for: tag) {
+            return color
+        }
+        return .secondary
+    }
+
+    private func sidebarTagChip(_ tag: String) -> some View {
+        let tint = tagTint(for: tag)
+
+        return Text("#\(tag)")
+            .font(.caption2.weight(.semibold))
+            .foregroundColor(tint)
+            .lineLimit(1)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(tint.opacity(0.14))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(tint.opacity(0.28), lineWidth: 0.5)
+            )
     }
 
     func platformDeleteTasks(

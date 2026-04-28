@@ -42,11 +42,17 @@ struct AppView: View {
             if store.selectedTab == .search {
                 tabView
                     .searchable(text: $searchText, prompt: "Search routines and todos")
+                    .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                        store.send(.cloudSettingsChanged)
+                    }
                     .task {
                         store.send(.onAppear)
                     }
             } else {
                 tabView
+                    .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                        store.send(.cloudSettingsChanged)
+                    }
                     .task {
                         store.send(.onAppear)
                     }
