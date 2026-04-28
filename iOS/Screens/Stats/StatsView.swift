@@ -21,27 +21,7 @@ struct StatsView: View {
     @Query private var focusSessions: [FocusSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
 
-    fileprivate struct Metrics {
-        let chartPoints: [DoneChartPoint]
-        let focusChartPoints: [FocusDurationChartPoint]
-        let totalDoneCount: Int
-        let totalCanceledCount: Int
-        let totalFocusSeconds: TimeInterval
-        let averageFocusSecondsPerDay: TimeInterval
-        let activeRoutineCount: Int
-        let archivedRoutineCount: Int
-        let totalCount: Int
-        let averagePerDay: Double
-        let highlightedBusiestDay: DoneChartPoint?
-        let highlightedFocusDay: FocusDurationChartPoint?
-        let activeDayCount: Int
-        let focusActiveDayCount: Int
-        let chartUpperBound: Double
-        let focusChartUpperBound: Double
-        let sparklinePoints: [DoneChartPoint]
-        let sparklineMaxCount: Int
-        let xAxisDates: [Date]
-    }
+    private typealias Metrics = StatsFeature.Metrics
 
     private var selectedRange: DoneChartRange {
         store.selectedRange
@@ -80,7 +60,7 @@ struct StatsView: View {
     }
 
     private var metrics: Metrics {
-        Metrics(store.metrics)
+        store.metrics
     }
 
     private var availableTags: [String] {
@@ -357,17 +337,18 @@ struct StatsView: View {
         WithPerceptionTracking {
             NavigationStack {
                 ScrollView(.vertical, showsIndicators: false) {
+                    let currentMetrics = metrics
                     VStack(alignment: .leading, spacing: 24) {
-                        rangeSection
+                        AnyView(rangeSection)
                         if hasActiveSheetFilters {
-                            activeFilterChipBar
+                            AnyView(activeFilterChipBar)
                         }
-                        heroSection(metrics: metrics)
-                        summaryCards(metrics: metrics)
-                        chartSection(metrics: metrics)
-                        focusChartSection(metrics: metrics)
+                        AnyView(heroSection(metrics: currentMetrics))
+                        AnyView(summaryCards(metrics: currentMetrics))
+                        AnyView(chartSection(metrics: currentMetrics))
+                        AnyView(focusChartSection(metrics: currentMetrics))
                         if store.isGitFeaturesEnabled {
-                            gitHubSection
+                            AnyView(gitHubSection)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -1690,31 +1671,5 @@ struct StatsView: View {
                 .fill(selectorActiveFill)
                 .shadow(color: Color.accentColor.opacity(0.28), radius: 16, y: 8)
         }
-    }
-}
-
-private extension StatsView.Metrics {
-    init(_ source: StatsFeature.Metrics) {
-        self.init(
-            chartPoints: source.chartPoints,
-            focusChartPoints: source.focusChartPoints,
-            totalDoneCount: source.totalDoneCount,
-            totalCanceledCount: source.totalCanceledCount,
-            totalFocusSeconds: source.totalFocusSeconds,
-            averageFocusSecondsPerDay: source.averageFocusSecondsPerDay,
-            activeRoutineCount: source.activeRoutineCount,
-            archivedRoutineCount: source.archivedRoutineCount,
-            totalCount: source.totalCount,
-            averagePerDay: source.averagePerDay,
-            highlightedBusiestDay: source.highlightedBusiestDay,
-            highlightedFocusDay: source.highlightedFocusDay,
-            activeDayCount: source.activeDayCount,
-            focusActiveDayCount: source.focusActiveDayCount,
-            chartUpperBound: source.chartUpperBound,
-            focusChartUpperBound: source.focusChartUpperBound,
-            sparklinePoints: source.sparklinePoints,
-            sparklineMaxCount: source.sparklineMaxCount,
-            xAxisDates: source.xAxisDates
-        )
     }
 }
