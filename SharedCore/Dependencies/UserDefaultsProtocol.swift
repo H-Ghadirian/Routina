@@ -56,6 +56,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
 
 public enum UserDefaultStringValueKey: String, Sendable {
     case selectedMacAppIcon
+    case appSettingAppColorScheme
     case appSettingRoutineListSectioningMode
     case appSettingTagCounterDisplayMode
     case appSettingRelatedTagRules
@@ -81,6 +82,8 @@ struct AppSettingsClient: Sendable {
     var setGitFeaturesEnabled: @Sendable (Bool) -> Void
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
+    var appColorScheme: @Sendable () -> AppColorScheme
+    var setAppColorScheme: @Sendable (AppColorScheme) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
     var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
     var tagCounterDisplayMode: @Sendable () -> TagCounterDisplayMode
@@ -259,6 +262,14 @@ extension AppSettingsClient {
         setShowPersianDates: { isEnabled in
             SharedDefaults.app[.appSettingShowPersianDates] = isEnabled
         },
+        appColorScheme: {
+            AppColorScheme(
+                rawValue: SharedDefaults.app[.appSettingAppColorScheme] ?? ""
+            ) ?? .system
+        },
+        setAppColorScheme: { scheme in
+            SharedDefaults.app[.appSettingAppColorScheme] = scheme.rawValue
+        },
         routineListSectioningMode: {
             RoutineListSectioningMode(
                 rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
@@ -368,6 +379,8 @@ extension AppSettingsClient {
         setGitFeaturesEnabled: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
+        appColorScheme: { .system },
+        setAppColorScheme: { _ in },
         routineListSectioningMode: { .defaultValue },
         setRoutineListSectioningMode: { _ in },
         tagCounterDisplayMode: { .defaultValue },

@@ -200,6 +200,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func appColorSchemeChanged_persistsSelection() async {
+        let persistedValue = LockIsolated<AppColorScheme?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAppColorScheme = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.appColorSchemeChanged(.dark)) {
+            $0.appearance.appColorScheme = .dark
+        }
+
+        #expect(persistedValue.value == .dark)
+    }
+
+    @Test
     func gitFeaturesToggled_persistsSelection() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

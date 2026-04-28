@@ -62,6 +62,8 @@ struct SettingsFeatureDependencyTests {
                 setGitFeaturesEnabled: { _ in },
                 showPersianDates: { true },
                 setShowPersianDates: { _ in },
+                appColorScheme: { .dark },
+                setAppColorScheme: { _ in },
                 routineListSectioningMode: { .deadlineDate },
                 setRoutineListSectioningMode: { _ in },
                 tagCounterDisplayMode: { .defaultValue },
@@ -100,6 +102,7 @@ struct SettingsFeatureDependencyTests {
             $0.notifications.notificationsEnabled = true
             $0.notifications.notificationReminderTime = reminderTime
             $0.appearance.routineListSectioningMode = .deadlineDate
+            $0.appearance.appColorScheme = .dark
             $0.appearance.isAppLockEnabled = true
             $0.appearance.isGitFeaturesEnabled = true
             $0.appearance.showPersianDates = true

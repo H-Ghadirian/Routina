@@ -672,6 +672,18 @@ private struct SettingsAppearanceDetailView: View {
     var body: some View {
         WithPerceptionTracking {
             List {
+                Section("App Theme") {
+                    Picker("Theme", selection: appColorSchemeBinding) {
+                        ForEach(AppColorScheme.allCases) { scheme in
+                            Text(scheme.title).tag(scheme)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(store.appearance.appColorScheme.subtitle)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Routine List") {
                     Picker("Grouping", selection: routineListSectioningModeBinding) {
                         ForEach(RoutineListSectioningMode.allCases) { mode in
@@ -792,6 +804,13 @@ private struct SettingsAppearanceDetailView: View {
         Binding(
             get: { store.appearance.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
+        )
+    }
+
+    private var appColorSchemeBinding: Binding<AppColorScheme> {
+        Binding(
+            get: { store.appearance.appColorScheme },
+            set: { store.send(.appColorSchemeChanged($0)) }
         )
     }
 

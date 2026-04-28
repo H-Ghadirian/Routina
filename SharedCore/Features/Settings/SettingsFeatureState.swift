@@ -1,6 +1,36 @@
 import ComposableArchitecture
 import Foundation
 
+enum AppColorScheme: String, CaseIterable, Identifiable, Sendable, Equatable {
+    case system
+    case light
+    case dark
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .system:
+            return "System"
+        case .light:
+            return "Light"
+        case .dark:
+            return "Dark"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .system:
+            return "Follow the device appearance."
+        case .light:
+            return "Always use light mode."
+        case .dark:
+            return "Always use dark mode."
+        }
+    }
+}
+
 struct SettingsDiagnosticsState: Equatable {
     var appVersion: String = ""
     var dataModeDescription: String = ""
@@ -18,6 +48,7 @@ struct SettingsNotificationsState: Equatable {
 }
 
 struct SettingsAppearanceState: Equatable {
+    var appColorScheme: AppColorScheme = .system
     var routineListSectioningMode: RoutineListSectioningMode = .defaultValue
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
     var isAppLockEnabled: Bool = false

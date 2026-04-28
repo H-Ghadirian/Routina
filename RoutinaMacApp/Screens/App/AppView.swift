@@ -4,6 +4,8 @@ import ComposableArchitecture
 struct AppView: View {
     let store: StoreOf<AppFeature>
     @State private var searchText = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
+    private var appColorSchemeRawValue = AppColorScheme.system.rawValue
 
     var body: some View {
         WithPerceptionTracking {
@@ -39,26 +41,46 @@ struct AppView: View {
                     )
                 }
             }
-            if store.selectedTab == .search {
-                tabView
-                    .searchable(text: $searchText, prompt: "Search routines and todos")
-                    .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
-                        PlatformSupport.applyAppIcon(.persistedSelection)
-                        store.send(.cloudSettingsChanged)
-                    }
-                    .task {
-                        store.send(.onAppear)
-                    }
-            } else {
-                tabView
-                    .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
-                        PlatformSupport.applyAppIcon(.persistedSelection)
-                        store.send(.cloudSettingsChanged)
-                    }
-                    .task {
-                        store.send(.onAppear)
-                    }
+            Group {
+                if store.selectedTab == .search {
+                    tabView
+                        .searchable(text: $searchText, prompt: "Search routines and todos")
+                        .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                            PlatformSupport.applyAppIcon(.persistedSelection)
+                            store.send(.cloudSettingsChanged)
+                        }
+                        .task {
+                            store.send(.onAppear)
+                        }
+                } else {
+                    tabView
+                        .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                            PlatformSupport.applyAppIcon(.persistedSelection)
+                            store.send(.cloudSettingsChanged)
+                        }
+                        .task {
+                            store.send(.onAppear)
+                        }
+                }
             }
+            .preferredColorScheme(appColorScheme.preferredColorScheme)
+        }
+    }
+
+    private var appColorScheme: AppColorScheme {
+        AppColorScheme(rawValue: appColorSchemeRawValue) ?? .system
+    }
+}
+
+private extension AppColorScheme {
+    var preferredColorScheme: ColorScheme? {
+        switch self {
+        case .system:
+            return nil
+        case .light:
+            return .light
+        case .dark:
+            return .dark
         }
     }
 }

@@ -11,6 +11,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var notificationReminderTime: Date
     var routineListSectioningMode: RoutineListSectioningMode
     var tagCounterDisplayMode: TagCounterDisplayMode
+    var appColorScheme: AppColorScheme
     var appLockEnabled: Bool
     var gitFeaturesEnabled: Bool
     var showPersianDates: Bool
@@ -65,6 +66,7 @@ enum SettingsRefreshEditor {
             state: &state.appearance
         )
         SettingsAppearanceEditor.refreshFromSettings(
+            appColorScheme: snapshot.appColorScheme,
             appLockEnabled: snapshot.appLockEnabled,
             gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
             showPersianDates: snapshot.showPersianDates,

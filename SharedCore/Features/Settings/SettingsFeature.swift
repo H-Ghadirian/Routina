@@ -10,6 +10,7 @@ struct SettingsFeature {
 
     enum Action: Equatable {
         case toggleNotifications(Bool)
+        case appColorSchemeChanged(AppColorScheme)
         case routineListSectioningModeChanged(RoutineListSectioningMode)
         case tagCounterDisplayModeChanged(TagCounterDisplayMode)
         case appLockToggled(Bool)
@@ -96,6 +97,14 @@ struct SettingsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case let .appColorSchemeChanged(scheme):
+                SettingsAppearanceEditor.updateAppColorScheme(
+                    scheme,
+                    state: &state.appearance
+                )
+                appSettingsClient.setAppColorScheme(scheme)
+                return .none
+
             case let .routineListSectioningModeChanged(mode):
                 SettingsAppearanceEditor.updateRoutineListSectioningMode(
                     mode,

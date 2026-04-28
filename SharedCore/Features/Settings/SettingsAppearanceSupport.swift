@@ -1,6 +1,13 @@
 import Foundation
 
 enum SettingsAppearanceEditor {
+    static func updateAppColorScheme(
+        _ scheme: AppColorScheme,
+        state: inout SettingsAppearanceState
+    ) {
+        state.appColorScheme = scheme
+    }
+
     static func updateRoutineListSectioningMode(
         _ mode: RoutineListSectioningMode,
         state: inout SettingsAppearanceState
@@ -16,6 +23,7 @@ enum SettingsAppearanceEditor {
     }
 
     static func refreshFromSettings(
+        appColorScheme: AppColorScheme,
         appLockEnabled: Bool,
         gitFeaturesEnabled: Bool,
         showPersianDates: Bool,
@@ -24,6 +32,7 @@ enum SettingsAppearanceEditor {
         hasTemporaryViewStateToReset: Bool,
         state: inout SettingsAppearanceState
     ) {
+        state.appColorScheme = appColorScheme
         state.isAppLockEnabled = appLockEnabled
         state.isGitFeaturesEnabled = gitFeaturesEnabled
         state.showPersianDates = showPersianDates

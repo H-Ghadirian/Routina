@@ -492,17 +492,12 @@ extension HomeTCAView {
             Spacer(minLength: 0)
         }
         .padding(.vertical, 4)
-        .padding(.horizontal, task.color != .none ? 8 : 0)
-        .background(
-            task.color.swiftUIColor.map { color in
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(color.opacity(0.12))
-            }
-        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func tagColor(for tag: String) -> Color? {
-        Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: store.tagColors))
+        let tagColors = appSettingsClient.tagColors().merging(store.tagColors) { _, storeColor in storeColor }
+        return Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: tagColors))
     }
 
     func platformDeleteTasks(
@@ -536,9 +531,19 @@ extension HomeTCAView {
         NavigationLink(value: task.taskID) {
             routineRow(for: task, rowNumber: rowNumber)
         }
+        .listRowBackground(routineListRowBackground(for: task))
         .contentShape(Rectangle())
         .contextMenu {
             routineContextMenu(for: task, includeMarkDone: includeMarkDone, moveContext: moveContext)
+        }
+    }
+
+    @ViewBuilder
+    private func routineListRowBackground(for task: HomeFeature.RoutineDisplay) -> some View {
+        if let color = task.color.swiftUIColor {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(color.opacity(0.12))
+                .padding(.vertical, 4)
         }
     }
 

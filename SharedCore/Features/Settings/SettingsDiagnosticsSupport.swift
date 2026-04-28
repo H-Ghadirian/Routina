@@ -20,6 +20,7 @@ enum SettingsDiagnosticsLoader {
             notificationReminderTime: appSettingsClient.notificationReminderTime(),
             routineListSectioningMode: appSettingsClient.routineListSectioningMode(),
             tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
+            appColorScheme: appSettingsClient.appColorScheme(),
             appLockEnabled: appSettingsClient.appLockEnabled(),
             gitFeaturesEnabled: appSettingsClient.gitFeaturesEnabled(),
             showPersianDates: appSettingsClient.showPersianDates(),

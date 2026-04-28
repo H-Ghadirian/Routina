@@ -1214,8 +1214,21 @@ private struct SettingsMacAppearanceDetailView: View {
         WithPerceptionTracking {
             SettingsMacDetailShell(
                 title: "Appearance",
-                subtitle: "Pick the app icon you want to see in the Dock and app switcher, and choose how the home list is grouped."
+                subtitle: "Choose the app theme, pick the Dock icon, and decide how the home list is grouped."
             ) {
+                SettingsMacDetailCard(title: "App Theme") {
+                    Picker("Theme", selection: appColorSchemeBinding) {
+                        ForEach(AppColorScheme.allCases) { scheme in
+                            Text(scheme.title).tag(scheme)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(store.appearance.appColorScheme.subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "Routine List") {
                     Picker("Grouping", selection: routineListSectioningModeBinding) {
                         ForEach(RoutineListSectioningMode.allCases) { mode in
@@ -1358,6 +1371,13 @@ private struct SettingsMacAppearanceDetailView: View {
         Binding(
             get: { store.appearance.routineListSectioningMode },
             set: { store.send(.routineListSectioningModeChanged($0)) }
+        )
+    }
+
+    private var appColorSchemeBinding: Binding<AppColorScheme> {
+        Binding(
+            get: { store.appearance.appColorScheme },
+            set: { store.send(.appColorSchemeChanged($0)) }
         )
     }
 
