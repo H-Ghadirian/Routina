@@ -150,6 +150,57 @@ extension TaskDetailFeature {
         state.task.resetChecklistProgress()
     }
 
+    func trackPendingLocalCompletion(at timestamp: Date, in state: inout State) {
+        let alreadyPending = state.pendingLocalCompletionDates.contains {
+            calendar.isDate($0, inSameDayAs: timestamp)
+        }
+        guard !alreadyPending else { return }
+        state.pendingLocalCompletionDates.append(timestamp)
+    }
+
+    func removePendingLocalCompletion(on completedDay: Date, from state: inout State) {
+        state.pendingLocalCompletionDates.removeAll {
+            calendar.isDate($0, inSameDayAs: completedDay)
+        }
+    }
+
+    func logsPreservingPendingLocalCompletions(
+        _ loadedLogs: [RoutineLog],
+        in state: inout State
+    ) -> [RoutineLog] {
+        var mergedLogs = loadedLogs.map { $0.detachedCopy() }
+
+        state.pendingLocalCompletionDates.removeAll { pendingDate in
+            mergedLogs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+            }
+        }
+
+        for pendingDate in state.pendingLocalCompletionDates {
+            guard !mergedLogs.contains(where: { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+            }) else {
+                continue
+            }
+
+            if let optimisticLog = state.logs.first(where: { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+            }) {
+                mergedLogs.append(optimisticLog.detachedCopy())
+            } else {
+                mergedLogs.append(RoutineLog(timestamp: pendingDate, taskID: state.task.id, kind: .completed))
+            }
+        }
+
+        mergedLogs.sort {
+            ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast)
+        }
+        return mergedLogs
+    }
+
     func upsertLocalLog(at timestamp: Date, kind: RoutineLogKind = .completed, in state: inout State) {
         if let existingIndex = state.logs.firstIndex(where: { log in
             guard let logTimestamp = log.timestamp else { return false }

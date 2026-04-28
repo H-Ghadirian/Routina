@@ -1202,14 +1202,17 @@ struct TaskDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone) {
-            $0.taskRefreshID = 1
-            $0.isDoneToday = true
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.taskRefreshID = 1
+                $0.isDoneToday = true
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+            }
         }
         #expect(store.state.task.lastDone == now)
         #expect(store.state.task.scheduleAnchor == now)
+        #expect(store.state.logs.count == 1)
 
         await store.receive {
             if case .logsLoaded = $0 { return true }
@@ -1265,12 +1268,15 @@ struct TaskDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone) {
-            $0.taskRefreshID = 1
-            $0.isDoneToday = true
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.taskRefreshID = 1
+                $0.isDoneToday = true
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+            }
         }
+        #expect(store.state.logs.count == 1)
 
         await store.receive {
             if case .logsLoaded = $0 { return true }
@@ -1546,9 +1552,16 @@ struct TaskDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone) {
-            $0.taskRefreshID = 1
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.taskRefreshID = 1
+            }
         }
+        #expect(store.state.logs.count == 2)
+        #expect(store.state.logs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: selectedDayStart)
+        })
         #expect(store.state.task.completedStepCount == 1)
         #expect(store.state.task.sequenceStartedAt == now)
 
@@ -1635,6 +1648,93 @@ struct TaskDetailFeatureTests {
         #expect(persistedTask.lastDone == now)
         #expect(persistedTask.scheduleAnchor == now)
         #expect(persistedLogs.count == 2)
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func markAsDone_forSelectedPastDateOnNeverCompletedIntervalRoutine_persistsLog() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-04-28T10:00:00Z")
+        let selectedDate = makeDate("2026-04-21T08:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Exercise",
+            interval: 4,
+            lastDone: nil,
+            emoji: "🏃"
+        )
+        try context.save()
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let selectedDayStart = calendar.startOfDay(for: selectedDate)
+
+        let initialState = TaskDetailFeature.State(
+            task: task,
+            logs: [],
+            selectedDate: selectedDayStart,
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: false
+        )
+
+        let store = TestStore(initialState: initialState) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.taskRefreshID = 1
+                $0.daysSinceLastRoutine = 7
+            }
+        }
+        #expect(store.state.logs.count == 1)
+        #expect(store.state.logs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: selectedDayStart)
+        })
+
+        let taskID = task.id
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            if case .attachmentsLoaded = $0 { return true }
+            return false
+        } assert: {
+            let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+            $0.logs = logs
+            #expect(logs.count == 1)
+            #expect(logs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return calendar.isDate(timestamp, inSameDayAs: selectedDayStart)
+            })
+            $0.daysSinceLastRoutine = 7
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        let persistedTaskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
+                )
+            ).first
+        )
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedTask.lastDone == makeDate("2026-04-21T12:00:00Z"))
+        #expect(persistedTask.scheduleAnchor == now)
+        #expect(persistedLogs.count == 1)
         #expect(scheduledIDs.value == [task.id.uuidString])
     }
 

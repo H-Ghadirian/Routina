@@ -46,13 +46,14 @@ extension TaskDetailFeature {
         )
     }
 
-    func handleMarkAsDone(taskID: UUID, completedAt: Date) -> Effect<Action> {
+    func handleMarkAsDone(taskID: UUID, completedAt: Date, referenceDate: Date? = nil) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = ModelContext(modelContext().container)
                 guard let advancedTask = try RoutineLogHistory.advanceTask(
                     taskID: taskID,
                     completedAt: completedAt,
+                    referenceDate: referenceDate,
                     context: context,
                     calendar: calendar
                 ) else {

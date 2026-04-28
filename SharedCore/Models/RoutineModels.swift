@@ -730,9 +730,24 @@ final class RoutineTask {
         }
     }
 
+    func preserveCurrentScheduleAnchorForBackfill(
+        completedAt: Date,
+        referenceDate: Date
+    ) {
+        guard usesRollingScheduleAnchor else { return }
+        guard completedAt < referenceDate else { return }
+        guard scheduleAnchor == nil else { return }
+        scheduleAnchor = referenceDate
+    }
+
     private func shouldUpdateLastDone(with candidate: Date) -> Bool {
         guard let lastDone else { return true }
         return candidate > lastDone
+    }
+
+    private func shouldUpdateScheduleAnchor(with candidate: Date) -> Bool {
+        guard let scheduleAnchor else { return true }
+        return candidate > scheduleAnchor
     }
 
     private func recordCompletion(at completedAt: Date, calendar: Calendar = .current) {
@@ -741,7 +756,7 @@ final class RoutineTask {
         canceledAt = nil
         activityState = .idle
         ongoingSince = nil
-        if usesRollingScheduleAnchor {
+        if usesRollingScheduleAnchor && shouldUpdateScheduleAnchor(with: completedAt) {
             scheduleAnchor = completedAt
         }
         advanceReminderAfterCompletion(completedAt: completedAt, calendar: calendar)

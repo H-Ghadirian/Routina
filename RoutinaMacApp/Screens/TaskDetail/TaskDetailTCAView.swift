@@ -118,6 +118,20 @@ struct TaskDetailTCAView: View {
             } message: {
                 Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
             }
+            .alert(
+                "Undo log?",
+                isPresented: Binding(
+                    get: { store.isUndoCompletionConfirmationPresented },
+                    set: { store.send(.setUndoCompletionConfirmation($0)) }
+                )
+            ) {
+                Button("Undo", role: .destructive) {
+                    store.send(.confirmUndoCompletion)
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("This will remove the selected log and may update the routine's schedule.")
+            }
             .onAppear {
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
                 isCalendarExpanded = false
@@ -1500,7 +1514,7 @@ struct TaskDetailTCAView: View {
                     .contextMenu {
                         if let timestamp = log.timestamp {
                             Button(routineLogActionTitle(for: log)) {
-                                store.send(.removeLogEntry(timestamp))
+                                store.send(.requestRemoveLogEntry(timestamp))
                             }
                         }
                     }

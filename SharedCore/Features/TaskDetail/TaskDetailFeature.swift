@@ -35,6 +35,7 @@ struct TaskDetailFeature: Reducer {
         var task: RoutineTask
         var taskRefreshID: UInt64 = 0
         var logs: [RoutineLog] = []
+        var pendingLocalCompletionDates: [Date] = []
         var selectedDate: Date?
         var daysSinceLastRoutine: Int = 0
         var overdueDays: Int = 0
@@ -79,6 +80,8 @@ struct TaskDetailFeature: Reducer {
         var editEstimatedDurationMinutes: Int?
         var editStoryPoints: Int?
         var isDeleteConfirmationPresented: Bool = false
+        var isUndoCompletionConfirmationPresented: Bool = false
+        var pendingLogRemovalTimestamp: Date?
         var shouldDismissAfterDelete: Bool = false
         var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
         var editColor: RoutineTaskColor = .none
@@ -138,7 +141,9 @@ struct TaskDetailFeature: Reducer {
         case markChecklistItemPurchased(UUID)
         case toggleChecklistItemCompletion(UUID)
         case markChecklistItemCompleted(UUID)
+        case requestUndoSelectedDateCompletion
         case undoSelectedDateCompletion
+        case requestRemoveLogEntry(Date)
         case removeLogEntry(Date)
         case pauseTapped
         case notTodayTapped
@@ -200,6 +205,8 @@ struct TaskDetailFeature: Reducer {
         case editSaveTapped
         case confirmAssumedPastDays
         case setDeleteConfirmation(Bool)
+        case setUndoCompletionConfirmation(Bool)
+        case confirmUndoCompletion
         case deleteRoutineConfirmed
         case routineDeleted
         case deleteDismissHandled
@@ -275,17 +282,27 @@ struct TaskDetailFeature: Reducer {
             guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
                 return .none
             }
+            let isHistoricalCompletion = completionDate < now && !calendar.isDate(completionDate, inSameDayAs: now)
             guard RoutineDateMath.canMarkDone(
                 for: state.task,
                 referenceDate: completionDate,
-                calendar: calendar
+                calendar: calendar,
+                ignoreArchiveAtReferenceDate: isHistoricalCompletion
             ) else {
                 return .none
             }
-            _ = state.task.advance(completedAt: completionDate, calendar: calendar)
+            state.task.preserveCurrentScheduleAnchorForBackfill(
+                completedAt: completionDate,
+                referenceDate: now
+            )
+            let advanceResult = state.task.advance(completedAt: completionDate, calendar: calendar)
             refreshTaskView(&state)
+            if case .completedRoutine = advanceResult {
+                upsertLocalLog(at: completionDate, in: &state)
+                trackPendingLocalCompletion(at: completionDate, in: &state)
+            }
             updateDerivedState(&state)
-            return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate)
+            return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate, referenceDate: now)
 
         case .cancelTodo:
             guard state.task.isOneOffTask else { return .none }
@@ -424,16 +441,28 @@ struct TaskDetailFeature: Reducer {
                 return .none
             }
             let selectedDay = resolvedSelectedDay(for: state.selectedDate)
+            removePendingLocalCompletion(on: selectedDay, from: &state)
             removeCompletion(on: selectedDay, from: &state)
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleUndoCompletion(taskID: state.task.id, completedDay: selectedDay)
 
+        case .requestUndoSelectedDateCompletion:
+            state.pendingLogRemovalTimestamp = nil
+            state.isUndoCompletionConfirmationPresented = true
+            return .none
+
         case let .removeLogEntry(timestamp):
+            removePendingLocalCompletion(on: timestamp, from: &state)
             removeLogEntry(at: timestamp, from: &state)
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleRemoveLogEntry(taskID: state.task.id, timestamp: timestamp)
+
+        case let .requestRemoveLogEntry(timestamp):
+            state.pendingLogRemovalTimestamp = timestamp
+            state.isUndoCompletionConfirmationPresented = true
+            return .none
 
         case .pauseTapped:
             guard !state.task.isOneOffTask else { return .none }
@@ -880,6 +909,21 @@ struct TaskDetailFeature: Reducer {
             state.isDeleteConfirmationPresented = isPresented
             return .none
 
+        case let .setUndoCompletionConfirmation(isPresented):
+            state.isUndoCompletionConfirmationPresented = isPresented
+            if !isPresented {
+                state.pendingLogRemovalTimestamp = nil
+            }
+            return .none
+
+        case .confirmUndoCompletion:
+            state.isUndoCompletionConfirmationPresented = false
+            if let timestamp = state.pendingLogRemovalTimestamp {
+                state.pendingLogRemovalTimestamp = nil
+                return reduce(into: &state, action: .removeLogEntry(timestamp))
+            }
+            return reduce(into: &state, action: .undoSelectedDateCompletion)
+
         case .deleteRoutineConfirmed:
             state.isDeleteConfirmationPresented = false
             return handleDeleteRoutine(taskID: state.task.id)
@@ -894,7 +938,7 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .logsLoaded(logs):
-            state.logs = logs.map { $0.detachedCopy() }
+            state.logs = logsPreservingPendingLocalCompletions(logs, in: &state)
             updateDerivedState(&state)
             return .none
 

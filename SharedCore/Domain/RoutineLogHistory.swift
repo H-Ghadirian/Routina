@@ -72,6 +72,7 @@ enum RoutineLogHistory {
     static func advanceTask(
         taskID: UUID,
         completedAt: Date,
+        referenceDate: Date? = nil,
         context: ModelContext,
         calendar: Calendar = .current
     ) throws -> (task: RoutineTask, result: RoutineAdvanceResult)? {
@@ -92,6 +93,13 @@ enum RoutineLogHistory {
         }
         if hasMatchingLog {
             return (task, .ignoredAlreadyCompletedToday)
+        }
+
+        if let referenceDate {
+            task.preserveCurrentScheduleAnchorForBackfill(
+                completedAt: completedAt,
+                referenceDate: referenceDate
+            )
         }
 
         let result = task.advance(completedAt: completedAt, calendar: calendar)

@@ -159,9 +159,12 @@ enum RoutineDateMath {
     static func canMarkDone(
         for task: RoutineTask,
         referenceDate: Date,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        ignoreArchiveAtReferenceDate: Bool = false
     ) -> Bool {
-        guard !task.isArchived(referenceDate: referenceDate, calendar: calendar) else { return false }
+        if !ignoreArchiveAtReferenceDate {
+            guard !task.isArchived(referenceDate: referenceDate, calendar: calendar) else { return false }
+        }
 
         if task.isOneOffTask {
             return !task.isCompletedOneOff

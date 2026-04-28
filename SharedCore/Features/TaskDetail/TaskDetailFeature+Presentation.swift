@@ -175,7 +175,7 @@ extension TaskDetailFeature.State {
 
     var completionButtonAction: TaskDetailFeature.Action {
         if canUndoSelectedDate {
-            return .undoSelectedDateCompletion
+            return .requestUndoSelectedDateCompletion
         }
         if task.isSoftIntervalRoutine && task.isOngoing {
             return .finishOngoingTapped
