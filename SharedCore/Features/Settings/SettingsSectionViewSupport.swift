@@ -15,7 +15,8 @@ extension SettingsNotificationsState {
 
 extension SettingsAppearanceState {
     var overviewSubtitle: String {
-        "Lock: \(isAppLockEnabled ? "On" : "Off") • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)"
+        let calendarText = showPersianDates ? " • Persian dates" : ""
+        return "Lock: \(isAppLockEnabled ? "On" : "Off") • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)\(calendarText)"
     }
 
     var routineListSectioningSubtitle: String {

@@ -55,7 +55,7 @@ enum AppIconOption: String, CaseIterable, Equatable, Identifiable {
     }
 
     static var persistedSelection: AppIconOption {
-        guard let rawValue = SharedDefaults.app[.selectedMacAppIcon],
+        guard let rawValue = CloudSettingsKeyValueSync.string(for: .selectedMacAppIcon),
               let option = migratedOption(for: rawValue) else {
             return .orange
         }
@@ -63,7 +63,7 @@ enum AppIconOption: String, CaseIterable, Equatable, Identifiable {
     }
 
     static func persist(_ option: AppIconOption) {
-        SharedDefaults.app[.selectedMacAppIcon] = option.rawValue
+        CloudSettingsKeyValueSync.setString(option.rawValue, for: .selectedMacAppIcon)
     }
 
     private static func migratedOption(for rawValue: String) -> AppIconOption? {

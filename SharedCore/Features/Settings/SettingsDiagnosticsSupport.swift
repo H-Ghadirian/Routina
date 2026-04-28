@@ -22,6 +22,7 @@ enum SettingsDiagnosticsLoader {
             tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
             appLockEnabled: appSettingsClient.appLockEnabled(),
             gitFeaturesEnabled: appSettingsClient.gitFeaturesEnabled(),
+            showPersianDates: appSettingsClient.showPersianDates(),
             deviceAuthenticationStatus: deviceAuthenticationClient.status(),
             selectedAppIcon: appSettingsClient.selectedAppIcon(),
             hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(

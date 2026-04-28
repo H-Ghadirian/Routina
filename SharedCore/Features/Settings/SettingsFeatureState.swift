@@ -26,6 +26,7 @@ struct SettingsAppearanceState: Equatable {
     var appLockUnavailableReason: String?
     var appLockStatusMessage: String = ""
     var isGitFeaturesEnabled: Bool = false
+    var showPersianDates: Bool = false
     var appIconStatusMessage: String = ""
     var selectedAppIcon: AppIconOption = .orange
     var hasTemporaryViewStateToReset: Bool = false

@@ -50,6 +50,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingHideUnavailableRoutines
     case appSettingAppLockEnabled
     case appSettingGitFeaturesEnabled
+    case appSettingShowPersianDates
     case requestNotificationPermission
 }
 
@@ -78,6 +79,8 @@ struct AppSettingsClient: Sendable {
     var setAppLockEnabled: @Sendable (Bool) -> Void
     var gitFeaturesEnabled: @Sendable () -> Bool
     var setGitFeaturesEnabled: @Sendable (Bool) -> Void
+    var showPersianDates: @Sendable () -> Bool
+    var setShowPersianDates: @Sendable (Bool) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
     var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
     var tagCounterDisplayMode: @Sendable () -> TagCounterDisplayMode
@@ -99,6 +102,7 @@ enum CloudSettingsKeyValueSync {
 
     private static let observerBox = CloudSettingsObserverBox()
     private static let syncedStringKeys: Set<UserDefaultStringValueKey> = [
+        .selectedMacAppIcon,
         .appSettingRelatedTagRules,
         .appSettingTagColors
     ]
@@ -249,6 +253,12 @@ extension AppSettingsClient {
         setGitFeaturesEnabled: { isEnabled in
             SharedDefaults.app[.appSettingGitFeaturesEnabled] = isEnabled
         },
+        showPersianDates: {
+            SharedDefaults.app[.appSettingShowPersianDates]
+        },
+        setShowPersianDates: { isEnabled in
+            SharedDefaults.app[.appSettingShowPersianDates] = isEnabled
+        },
         routineListSectioningMode: {
             RoutineListSectioningMode(
                 rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
@@ -356,6 +366,8 @@ extension AppSettingsClient {
         setAppLockEnabled: { _ in },
         gitFeaturesEnabled: { false },
         setGitFeaturesEnabled: { _ in },
+        showPersianDates: { false },
+        setShowPersianDates: { _ in },
         routineListSectioningMode: { .defaultValue },
         setRoutineListSectioningMode: { _ in },
         tagCounterDisplayMode: { .defaultValue },

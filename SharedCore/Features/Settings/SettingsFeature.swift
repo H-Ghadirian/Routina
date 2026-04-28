@@ -15,6 +15,7 @@ struct SettingsFeature {
         case appLockToggled(Bool)
         case appLockEnableFinished(DeviceAuthenticationResult)
         case gitFeaturesToggled(Bool)
+        case showPersianDatesToggled(Bool)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -172,6 +173,11 @@ struct SettingsFeature {
             case let .gitFeaturesToggled(isEnabled):
                 state.appearance.isGitFeaturesEnabled = isEnabled
                 appSettingsClient.setGitFeaturesEnabled(isEnabled)
+                return .none
+
+            case let .showPersianDatesToggled(isEnabled):
+                state.appearance.showPersianDates = isEnabled
+                appSettingsClient.setShowPersianDates(isEnabled)
                 return .none
 
             case .resetTemporaryViewStateTapped:

@@ -13,8 +13,14 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
     ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
+        store: SharedDefaults.app
+    ) var showPersianDates = false
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
+    @State var areTaskListModeActionsExpanded = false
+    @State var areTopActionsExpanded = false
     @State private var isRefreshScheduled = false
     @State private var isCalendarTaskImportPresented = false
     @State var relatedFilterTagSuggestionAnchor: String?
@@ -186,6 +192,7 @@ struct HomeTCAView: View {
 
     var filterSheetButton: some View {
         Button {
+            collapseExpandedToolbarActions()
             store.send(.isFilterSheetPresentedChanged(true))
         } label: {
             Image(
@@ -201,6 +208,7 @@ struct HomeTCAView: View {
 
     var calendarTaskImportButton: some View {
         Button {
+            collapseExpandedToolbarActions()
             isCalendarTaskImportPresented = true
         } label: {
             Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
@@ -343,6 +351,10 @@ struct HomeTCAView: View {
     func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {
         let delta = newOffset - oldOffset
 
+        if abs(delta) > 2 {
+            collapseExpandedToolbarActions()
+        }
+
         if newOffset <= 12 {
             if isCompactHeaderHidden {
                 isCompactHeaderHidden = false
@@ -363,6 +375,7 @@ struct HomeTCAView: View {
 
         Button {
             store.send(.taskListModeChanged(mode))
+            collapseExpandedToolbarActions()
         } label: {
             Image(systemName: mode.systemImage)
                 .font(.subheadline.weight(.semibold))
@@ -375,6 +388,14 @@ struct HomeTCAView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(mode.accessibilityLabel)
+    }
+
+    func collapseExpandedToolbarActions() {
+        guard areTaskListModeActionsExpanded || areTopActionsExpanded else { return }
+        withAnimation(.snappy(duration: 0.2)) {
+            areTaskListModeActionsExpanded = false
+            areTopActionsExpanded = false
+        }
     }
 
     @MainActor

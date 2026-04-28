@@ -17,6 +17,10 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
     ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
+        store: SharedDefaults.app
+    ) var showPersianDates = false
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
     @State private var localSearchText = ""

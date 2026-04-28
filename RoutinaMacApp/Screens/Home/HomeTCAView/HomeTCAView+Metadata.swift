@@ -317,10 +317,18 @@ extension HomeTCAView {
         guard task.isOneOffTask, let dueDate = task.dueDate else { return nil }
         let calendar = Calendar.current
         if calendar.isDateInToday(dueDate) {
-            return "Due today"
+            return PersianDateDisplay.appendingSupplementaryDate(
+                to: "Due today",
+                for: dueDate,
+                enabled: showPersianDates
+            )
         }
         if calendar.isDateInTomorrow(dueDate) {
-            return "Due tomorrow"
+            return PersianDateDisplay.appendingSupplementaryDate(
+                to: "Due tomorrow",
+                for: dueDate,
+                enabled: showPersianDates
+            )
         }
         if dueDate < Date() {
             let days = max(
@@ -333,7 +341,12 @@ extension HomeTCAView {
             )
             return "Overdue \(days)d"
         }
-        return "Due \(dueDate.formatted(date: .abbreviated, time: .omitted))"
+        let dueText = "Due \(dueDate.formatted(date: .abbreviated, time: .omitted))"
+        return PersianDateDisplay.appendingSupplementaryDate(
+            to: dueText,
+            for: dueDate,
+            enabled: showPersianDates
+        )
     }
 
     func placeMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {

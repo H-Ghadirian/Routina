@@ -13,6 +13,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var tagCounterDisplayMode: TagCounterDisplayMode
     var appLockEnabled: Bool
     var gitFeaturesEnabled: Bool
+    var showPersianDates: Bool
     var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
     var hasTemporaryViewStateToReset: Bool
@@ -66,6 +67,7 @@ enum SettingsRefreshEditor {
         SettingsAppearanceEditor.refreshFromSettings(
             appLockEnabled: snapshot.appLockEnabled,
             gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
+            showPersianDates: snapshot.showPersianDates,
             deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,
             selectedAppIcon: snapshot.selectedAppIcon,
             hasTemporaryViewStateToReset: snapshot.hasTemporaryViewStateToReset,

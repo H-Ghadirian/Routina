@@ -49,3 +49,36 @@ struct RoutineTimeOfDay: Codable, Equatable, Hashable, Sendable {
         return formatter.string(from: date(on: Date(), calendar: calendar))
     }
 }
+
+enum PersianDateDisplay {
+    static func supplementaryText(for date: Date, enabled: Bool) -> String? {
+        guard enabled else { return nil }
+        return rightToLeft(formatter().string(from: date))
+    }
+
+    static func appendingSupplementaryDate(
+        to text: String,
+        for date: Date,
+        enabled: Bool
+    ) -> String {
+        guard let supplementaryText = supplementaryText(for: date, enabled: enabled) else {
+            return text
+        }
+        return "\(text) (\(supplementaryText))"
+    }
+
+    private static func formatter() -> DateFormatter {
+        var calendar = Calendar(identifier: .persian)
+        calendar.locale = Locale(identifier: "fa_IR")
+
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "fa_IR")
+        formatter.setLocalizedDateFormatFromTemplate("d MMMM y")
+        return formatter
+    }
+
+    private static func rightToLeft(_ text: String) -> String {
+        "\u{2067}\(text)\u{2069}"
+    }
+}

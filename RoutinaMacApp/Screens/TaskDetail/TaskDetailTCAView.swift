@@ -18,6 +18,10 @@ struct TaskDetailTCAView: View {
     @State private var isRelationshipGraphPresented = false
     @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
+        store: SharedDefaults.app
+    ) private var showPersianDates = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -471,7 +475,11 @@ struct TaskDetailTCAView: View {
     }
 
     private var headerCalendarSummaryText: String {
-        let dateText = store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted)
+        let dateText = PersianDateDisplay.appendingSupplementaryDate(
+            to: store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted),
+            for: store.resolvedSelectedDate,
+            enabled: showPersianDates
+        )
         if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
             return "Today • \(dateText)"
         }
@@ -1427,7 +1435,12 @@ struct TaskDetailTCAView: View {
         if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
             return "Today is selected. Pick another date to review its history."
         }
-        return "Reviewing \(store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted))."
+        let dateText = PersianDateDisplay.appendingSupplementaryDate(
+            to: store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted),
+            for: store.resolvedSelectedDate,
+            enabled: showPersianDates
+        )
+        return "Reviewing \(dateText)."
     }
 
     private var shouldShowCompletionCount: Bool {

@@ -43,6 +43,7 @@ struct AppView: View {
                 tabView
                     .searchable(text: $searchText, prompt: "Search routines and todos")
                     .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                        PlatformSupport.applyAppIcon(.persistedSelection)
                         store.send(.cloudSettingsChanged)
                     }
                     .task {
@@ -51,6 +52,7 @@ struct AppView: View {
             } else {
                 tabView
                     .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
+                        PlatformSupport.applyAppIcon(.persistedSelection)
                         store.send(.cloudSettingsChanged)
                     }
                     .task {

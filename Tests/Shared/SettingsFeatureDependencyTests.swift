@@ -60,6 +60,8 @@ struct SettingsFeatureDependencyTests {
                 setAppLockEnabled: { _ in },
                 gitFeaturesEnabled: { true },
                 setGitFeaturesEnabled: { _ in },
+                showPersianDates: { true },
+                setShowPersianDates: { _ in },
                 routineListSectioningMode: { .deadlineDate },
                 setRoutineListSectioningMode: { _ in },
                 tagCounterDisplayMode: { .defaultValue },
@@ -100,6 +102,7 @@ struct SettingsFeatureDependencyTests {
             $0.appearance.routineListSectioningMode = .deadlineDate
             $0.appearance.isAppLockEnabled = true
             $0.appearance.isGitFeaturesEnabled = true
+            $0.appearance.showPersianDates = true
             $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
             $0.appearance.selectedAppIcon = .teal
             $0.appearance.appIconStatusMessage = ""
@@ -140,6 +143,7 @@ struct SettingsFeatureDependencyTests {
         }
         await store.receive(.tagColorsLoaded([:]))
         await store.receive(.relatedTagRulesLoaded([]))
+        await store.receive(.learnedRelatedTagRulesLoaded([]))
         await store.receive(.locationSnapshotUpdated(snapshot)) {
             $0.places.locationAuthorizationStatus = .authorizedAlways
             $0.places.lastKnownLocationCoordinate = snapshot.coordinate

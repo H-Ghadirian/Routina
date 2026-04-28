@@ -96,19 +96,50 @@ extension HomeTCAView {
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarLeading) {
-            iosTaskListModeButton(.all)
-            iosTaskListModeButton(.routines)
-            iosTaskListModeButton(.todos)
+            if areTaskListModeActionsExpanded {
+                iosTaskListModeButton(.all)
+                iosTaskListModeButton(.routines)
+                iosTaskListModeButton(.todos)
+            }
+            Button {
+                withAnimation(.snappy(duration: 0.2)) {
+                    areTaskListModeActionsExpanded.toggle()
+                    if areTaskListModeActionsExpanded {
+                        areTopActionsExpanded = false
+                    }
+                }
+            } label: {
+                Label(
+                    areTaskListModeActionsExpanded ? "Collapse Task List Modes" : "Expand Task List Modes",
+                    systemImage: areTaskListModeActionsExpanded ? "chevron.left.circle" : store.taskListMode.systemImage
+                )
+            }
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
             platformRefreshButton
-            filterSheetButton
-            calendarTaskImportButton
+            if areTopActionsExpanded {
+                filterSheetButton
+                calendarTaskImportButton
+                Button {
+                    collapseExpandedToolbarActions()
+                    openAddTask()
+                } label: {
+                    Label("Add Task", systemImage: "plus")
+                }
+            }
             Button {
-                openAddTask()
+                withAnimation(.snappy(duration: 0.2)) {
+                    areTopActionsExpanded.toggle()
+                    if areTopActionsExpanded {
+                        areTaskListModeActionsExpanded = false
+                    }
+                }
             } label: {
-                Label("Add Task", systemImage: "plus")
+                Label(
+                    areTopActionsExpanded ? "Collapse Actions" : "Expand Actions",
+                    systemImage: areTopActionsExpanded ? "chevron.right.circle" : "ellipsis.circle"
+                )
             }
         }
     }

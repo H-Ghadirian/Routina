@@ -1255,6 +1255,21 @@ private struct SettingsMacAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                SettingsMacDetailCard(title: "Dates") {
+                    Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
+                        .toggleStyle(.switch)
+
+                    if store.appearance.showPersianDates {
+                        Text(persianDatePreviewText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "App Lock") {
                     Toggle("Require unlock when opening Routina", isOn: appLockBinding)
                         .toggleStyle(.switch)
@@ -1357,6 +1372,23 @@ private struct SettingsMacAppearanceDetailView: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
+        )
+    }
+
+    private var showPersianDatesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showPersianDates },
+            set: { store.send(.showPersianDatesToggled($0)) }
+        )
+    }
+
+    private var persianDatePreviewText: String {
+        let today = Date()
+        let dateText = today.formatted(date: .abbreviated, time: .omitted)
+        return "Today: " + PersianDateDisplay.appendingSupplementaryDate(
+            to: dateText,
+            for: today,
+            enabled: true
         )
     }
 

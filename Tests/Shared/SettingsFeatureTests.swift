@@ -218,6 +218,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func showPersianDatesToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setShowPersianDates = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.showPersianDatesToggled(true)) {
+            $0.appearance.showPersianDates = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func appLockToggled_onAuthenticatesThenPersistsSetting() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

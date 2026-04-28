@@ -25,6 +25,7 @@ struct RoutinaIOSRootScene: Scene {
                 .onAppear {
                     guard !AppEnvironment.isAutomatedTestMode else { return }
                     UIApplication.shared.registerForRemoteNotifications()
+                    PlatformSupport.applyAppIcon(.persistedSelection)
                     Task {
                         await CloudKitPushSubscriptionService.ensureSubscriptionIfNeeded(
                             containerIdentifier: AppEnvironment.cloudKitContainerIdentifier
