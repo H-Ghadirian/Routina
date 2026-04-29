@@ -60,17 +60,44 @@ struct BoardSprint: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
+struct BoardBacklog: Codable, Equatable, Sendable, Identifiable {
+    var id: UUID
+    var title: String
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.title = title
+        self.createdAt = createdAt
+    }
+}
+
 struct SprintAssignment: Codable, Equatable, Sendable {
     var todoID: UUID
     var sprintID: UUID
 }
 
+struct BacklogAssignment: Codable, Equatable, Sendable {
+    var todoID: UUID
+    var backlogID: UUID
+}
+
 struct SprintBoardData: Codable, Equatable, Sendable {
     var sprints: [BoardSprint] = []
     var assignments: [SprintAssignment] = []
+    var backlogs: [BoardBacklog] = []
+    var backlogAssignments: [BacklogAssignment] = []
+
+    var activeSprints: [BoardSprint] {
+        sprints.filter { $0.status == .active }
+    }
 
     var activeSprint: BoardSprint? {
-        sprints.first(where: { $0.status == .active })
+        activeSprints.first
     }
 
     func sprintID(for todoID: UUID) -> UUID? {
@@ -80,5 +107,41 @@ struct SprintBoardData: Codable, Equatable, Sendable {
     func sprint(for todoID: UUID) -> BoardSprint? {
         guard let sprintID = sprintID(for: todoID) else { return nil }
         return sprints.first(where: { $0.id == sprintID })
+    }
+
+    func backlogID(for todoID: UUID) -> UUID? {
+        backlogAssignments.last(where: { $0.todoID == todoID })?.backlogID
+    }
+
+    func backlog(for todoID: UUID) -> BoardBacklog? {
+        guard let backlogID = backlogID(for: todoID) else { return nil }
+        return backlogs.first(where: { $0.id == backlogID })
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sprints
+        case assignments
+        case backlogs
+        case backlogAssignments
+    }
+
+    init(
+        sprints: [BoardSprint] = [],
+        assignments: [SprintAssignment] = [],
+        backlogs: [BoardBacklog] = [],
+        backlogAssignments: [BacklogAssignment] = []
+    ) {
+        self.sprints = sprints
+        self.assignments = assignments
+        self.backlogs = backlogs
+        self.backlogAssignments = backlogAssignments
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sprints = try container.decodeIfPresent([BoardSprint].self, forKey: .sprints) ?? []
+        assignments = try container.decodeIfPresent([SprintAssignment].self, forKey: .assignments) ?? []
+        backlogs = try container.decodeIfPresent([BoardBacklog].self, forKey: .backlogs) ?? []
+        backlogAssignments = try container.decodeIfPresent([BacklogAssignment].self, forKey: .backlogAssignments) ?? []
     }
 }

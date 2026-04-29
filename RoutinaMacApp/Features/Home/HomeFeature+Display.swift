@@ -57,6 +57,7 @@ extension HomeFeature {
                 ? Int.max
                 : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
         let assignedSprint = sprintBoardData.sprint(for: task.id)
+        let assignedBacklog = sprintBoardData.backlog(for: task.id)
 
         return RoutineDisplay(
             taskID: task.id,
@@ -114,7 +115,9 @@ extension HomeFeature {
             color: task.color,
             todoState: task.todoState,
             assignedSprintID: assignedSprint?.id,
-            assignedSprintTitle: assignedSprint?.title
+            assignedSprintTitle: assignedSprint?.title,
+            assignedBacklogID: assignedBacklog?.id,
+            assignedBacklogTitle: assignedBacklog?.title
         )
     }
 

@@ -272,6 +272,142 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
+    func createBacklogConfirmed_addsNamedBacklogAndSelectsIt() async throws {
+        let now = makeDate("2026-04-19T10:00:00Z")
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.date.now = now
+        }
+        store.exhaustivity = .off
+
+        await store.send(.createBacklogTapped) {
+            $0.creatingBacklogTitle = ""
+        }
+
+        await store.send(.createBacklogTitleChanged("Writing")) {
+            $0.creatingBacklogTitle = "Writing"
+        }
+
+        await store.send(.createBacklogConfirmed)
+
+        let backlog = try #require(store.state.sprintBoardData.backlogs.first)
+        #expect(backlog.title == "Writing")
+        #expect(store.state.selectedBoardScope == .namedBacklog(backlog.id))
+    }
+
+    @Test
+    func assignTodoToBacklog_updatesBoardDisplayAssignment() async throws {
+        let todo = RoutineTask(
+            name: "Draft pitch",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let backlog = BoardBacklog(
+            id: UUID(uuidString: "99999999-9999-9999-9999-999999999999")!,
+            title: "Writing",
+            createdAt: makeDate("2026-04-01T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .tasksLoadedSuccessfully([todo], [], [], HomeFeature.DoneStats())
+        )
+
+        await store.send(.sprintBoardLoaded(SprintBoardData(backlogs: [backlog]))) {
+            $0.sprintBoardData = SprintBoardData(backlogs: [backlog])
+        }
+
+        await store.send(.assignTodoToBacklog(taskID: todo.id, backlogID: backlog.id)) {
+            $0.sprintBoardData.backlogAssignments = [BacklogAssignment(todoID: todo.id, backlogID: backlog.id)]
+            $0.routineDisplays[0].assignedBacklogID = backlog.id
+            $0.routineDisplays[0].assignedBacklogTitle = "Writing"
+            $0.boardTodoDisplays[0].assignedBacklogID = backlog.id
+            $0.boardTodoDisplays[0].assignedBacklogTitle = "Writing"
+        }
+
+        let display = try #require(store.state.boardTodoDisplays.first(where: { $0.id == todo.id }))
+        #expect(display.assignedBacklogID == backlog.id)
+        #expect(display.assignedBacklogTitle == "Writing")
+        #expect(HomeFeature.matchesBoardScope(display, selectedScope: .namedBacklog(backlog.id), activeSprintIDs: []))
+        #expect(!HomeFeature.matchesBoardScope(display, selectedScope: .backlog, activeSprintIDs: []))
+    }
+
+    @Test
+    func assignTodoToSprint_clearsNamedBacklogAssignment() async throws {
+        let todo = RoutineTask(
+            name: "Draft pitch",
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let backlog = BoardBacklog(
+            id: UUID(uuidString: "99999999-9999-9999-9999-999999999999")!,
+            title: "Writing",
+            createdAt: makeDate("2026-04-01T09:00:00Z")
+        )
+        let sprint = BoardSprint(
+            id: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!,
+            title: "Sprint 7",
+            createdAt: makeDate("2026-04-01T09:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .tasksLoadedSuccessfully([todo], [], [], HomeFeature.DoneStats())
+        )
+
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(
+                    sprints: [sprint],
+                    assignments: [],
+                    backlogs: [backlog],
+                    backlogAssignments: [BacklogAssignment(todoID: todo.id, backlogID: backlog.id)]
+                )
+            )
+        ) {
+            $0.sprintBoardData = SprintBoardData(
+                sprints: [sprint],
+                assignments: [],
+                backlogs: [backlog],
+                backlogAssignments: [BacklogAssignment(todoID: todo.id, backlogID: backlog.id)]
+            )
+            $0.routineDisplays[0].assignedBacklogID = backlog.id
+            $0.routineDisplays[0].assignedBacklogTitle = "Writing"
+            $0.boardTodoDisplays[0].assignedBacklogID = backlog.id
+            $0.boardTodoDisplays[0].assignedBacklogTitle = "Writing"
+        }
+
+        await store.send(.assignTodoToSprint(taskID: todo.id, sprintID: sprint.id)) {
+            $0.sprintBoardData.assignments = [SprintAssignment(todoID: todo.id, sprintID: sprint.id)]
+            $0.sprintBoardData.backlogAssignments = []
+            $0.routineDisplays[0].assignedSprintID = sprint.id
+            $0.routineDisplays[0].assignedSprintTitle = "Sprint 7"
+            $0.routineDisplays[0].assignedBacklogID = nil
+            $0.routineDisplays[0].assignedBacklogTitle = nil
+            $0.boardTodoDisplays[0].assignedSprintID = sprint.id
+            $0.boardTodoDisplays[0].assignedSprintTitle = "Sprint 7"
+            $0.boardTodoDisplays[0].assignedBacklogID = nil
+            $0.boardTodoDisplays[0].assignedBacklogTitle = nil
+        }
+
+        #expect(store.state.sprintBoardData.backlogAssignments.isEmpty)
+    }
+
+    @Test
     func assignTodosToSprint_updatesBoardDisplayAssignments() async throws {
         let firstTodo = RoutineTask(
             name: "Plan next release",
@@ -328,7 +464,7 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
-    func startSprintTapped_makesOnlySelectedSprintActive() async {
+    func startSprintTapped_allowsMultipleActiveSprints() async {
         let now = makeDate("2026-04-19T10:00:00Z")
         let previouslyActive = BoardSprint(
             id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
@@ -361,16 +497,59 @@ struct HomeBoardPrototypeTests {
         }
 
         await store.send(.startSprintTapped(planned.id)) {
-            $0.sprintBoardData.sprints[0].status = .planned
-            $0.sprintBoardData.sprints[0].startedAt = nil
             $0.sprintBoardData.sprints[1].status = .active
             $0.sprintBoardData.sprints[1].startedAt = now
             $0.sprintBoardData.sprints[1].finishedAt = nil
             $0.selectedBoardScope = .currentSprint
         }
 
-        #expect(store.state.sprintBoardData.activeSprint?.id == planned.id)
-        #expect(store.state.sprintBoardData.sprints.filter { $0.status == .active }.count == 1)
+        #expect(Set(store.state.sprintBoardData.activeSprints.map(\.id)) == Set([previouslyActive.id, planned.id]))
+        #expect(store.state.sprintBoardData.sprints[0].startedAt == previouslyActive.startedAt)
+    }
+
+    @Test
+    func finishSprintTapped_keepsCurrentSprintScopeWhenOtherSprintsRemainActive() async {
+        let now = makeDate("2026-04-19T10:00:00Z")
+        let firstSprint = BoardSprint(
+            id: UUID(uuidString: "12121212-1212-1212-1212-121212121212")!,
+            title: "Sprint 1",
+            status: .active,
+            createdAt: makeDate("2026-04-01T09:00:00Z"),
+            startedAt: makeDate("2026-04-10T09:00:00Z")
+        )
+        let secondSprint = BoardSprint(
+            id: UUID(uuidString: "23232323-2323-2323-2323-232323232323")!,
+            title: "Sprint 2",
+            status: .active,
+            createdAt: makeDate("2026-04-02T09:00:00Z"),
+            startedAt: makeDate("2026-04-11T09:00:00Z")
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(selectedBoardScope: .currentSprint)
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.date.now = now
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(sprints: [firstSprint, secondSprint], assignments: [])
+            )
+        ) {
+            $0.sprintBoardData = SprintBoardData(sprints: [firstSprint, secondSprint], assignments: [])
+        }
+
+        await store.send(.finishSprintTapped(firstSprint.id)) {
+            $0.sprintBoardData.sprints[0].status = .finished
+            $0.sprintBoardData.sprints[0].finishedAt = now
+        }
+
+        #expect(store.state.selectedBoardScope == .currentSprint)
+        #expect(store.state.sprintBoardData.activeSprints.map(\.id) == [secondSprint.id])
     }
 
     @Test
@@ -488,6 +667,58 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
+    func currentSprintScope_matchesTodosAssignedToAnyActiveSprint() async throws {
+        let firstSprint = BoardSprint(
+            id: UUID(uuidString: "56565656-5656-5656-5656-565656565656")!,
+            title: "Active Sprint 1",
+            status: .active,
+            createdAt: makeDate("2026-04-16T09:00:00Z")
+        )
+        let secondSprint = BoardSprint(
+            id: UUID(uuidString: "67676767-6767-6767-6767-676767676767")!,
+            title: "Active Sprint 2",
+            status: .active,
+            createdAt: makeDate("2026-04-17T09:00:00Z")
+        )
+        let plannedSprint = BoardSprint(
+            id: UUID(uuidString: "78787878-7878-7878-7878-787878787878")!,
+            title: "Planned Sprint",
+            status: .planned,
+            createdAt: makeDate("2026-04-18T09:00:00Z")
+        )
+        let firstTodo = RoutineTask(name: "First active", scheduleMode: .oneOff, lastDone: nil)
+        let secondTodo = RoutineTask(name: "Second active", scheduleMode: .oneOff, lastDone: nil)
+        let plannedTodo = RoutineTask(name: "Planned", scheduleMode: .oneOff, lastDone: nil)
+        let backlogTodo = RoutineTask(name: "Backlog", scheduleMode: .oneOff, lastDone: nil)
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .tasksLoadedSuccessfully([firstTodo, secondTodo, plannedTodo, backlogTodo], [], [], HomeFeature.DoneStats())
+        )
+
+        var firstDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == firstTodo.id })
+        firstDisplay.assignedSprintID = firstSprint.id
+        var secondDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == secondTodo.id })
+        secondDisplay.assignedSprintID = secondSprint.id
+        var plannedDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == plannedTodo.id })
+        plannedDisplay.assignedSprintID = plannedSprint.id
+        let backlogDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == backlogTodo.id })
+
+        let activeSprintIDs = Set([firstSprint.id, secondSprint.id])
+
+        #expect(HomeFeature.matchesBoardScope(firstDisplay, selectedScope: .currentSprint, activeSprintIDs: activeSprintIDs))
+        #expect(HomeFeature.matchesBoardScope(secondDisplay, selectedScope: .currentSprint, activeSprintIDs: activeSprintIDs))
+        #expect(!HomeFeature.matchesBoardScope(plannedDisplay, selectedScope: .currentSprint, activeSprintIDs: activeSprintIDs))
+        #expect(!HomeFeature.matchesBoardScope(backlogDisplay, selectedScope: .currentSprint, activeSprintIDs: activeSprintIDs))
+    }
+
+    @Test
     func backlogScope_excludesDoneTodos() async throws {
         let openTodo = RoutineTask(
             name: "Open backlog item",
@@ -524,11 +755,11 @@ struct HomeBoardPrototypeTests {
         let openDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == openTodo.id })
         let doneDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == doneTodo.id })
 
-        #expect(HomeFeature.matchesBoardScope(openDisplay, selectedScope: .backlog, activeSprintID: nil))
-        #expect(!HomeFeature.matchesBoardScope(doneDisplay, selectedScope: .backlog, activeSprintID: nil))
+        #expect(HomeFeature.matchesBoardScope(openDisplay, selectedScope: .backlog, activeSprintIDs: []))
+        #expect(!HomeFeature.matchesBoardScope(doneDisplay, selectedScope: .backlog, activeSprintIDs: []))
 
         var sprintDoneDisplay = doneDisplay
         sprintDoneDisplay.assignedSprintID = sprint.id
-        #expect(HomeFeature.matchesBoardScope(sprintDoneDisplay, selectedScope: .sprint(sprint.id), activeSprintID: nil))
+        #expect(HomeFeature.matchesBoardScope(sprintDoneDisplay, selectedScope: .sprint(sprint.id), activeSprintIDs: []))
     }
 }

@@ -34,6 +34,10 @@ struct HomeTaskDeletionCoordinator<Action> {
                 targeting: update.uniqueIDs,
                 from: &boardData
             )
+            HomeTaskDeletionSupport.removeBacklogAssignments(
+                targeting: update.uniqueIDs,
+                from: &boardData
+            )
             sprintBoardData = boardData
         }
 
@@ -80,6 +84,14 @@ enum HomeTaskDeletionSupport {
     ) {
         let idSet = Set(uniqueIDs)
         sprintBoardData.assignments.removeAll { idSet.contains($0.todoID) }
+    }
+
+    static func removeBacklogAssignments(
+        targeting uniqueIDs: [UUID],
+        from sprintBoardData: inout SprintBoardData
+    ) {
+        let idSet = Set(uniqueIDs)
+        sprintBoardData.backlogAssignments.removeAll { idSet.contains($0.todoID) }
     }
 
     static func deleteTasks<Action>(

@@ -19,11 +19,14 @@ struct HomeMacTodoBoardView: View {
     let layout: Layout
     let selectedTaskID: UUID?
     let isCompactLayout: Bool
+    let availableBacklogs: [BoardBacklog]
     let availableSprints: [BoardSprint]
-    let activeSprint: BoardSprint?
+    let activeSprints: [BoardSprint]
     let onSelectTask: (UUID) -> Void
     let onOpenTask: (UUID) -> Void
     let onMoveTask: (UUID, TodoState) -> Void
+    let onAssignTaskToBacklog: (UUID, UUID?) -> Void
+    let onAssignTasksToBacklog: ([UUID], UUID?) -> Void
     let onAssignTaskToSprint: (UUID, UUID?) -> Void
     let onAssignTasksToSprint: ([UUID], UUID?) -> Void
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
@@ -110,7 +113,7 @@ struct HomeMacTodoBoardView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text("Status")
                 Text("Due")
-                Text("Sprint")
+                Text("List")
                 Text("")
             }
             .font(.caption.weight(.semibold))
@@ -175,9 +178,9 @@ struct HomeMacTodoBoardView: View {
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(task.assignedSprintTitle ?? "Backlog")
+                Text(task.assignedSprintTitle ?? task.assignedBacklogTitle ?? "Backlog")
                     .font(.caption)
-                    .foregroundStyle(task.assignedSprintTitle == nil ? .tertiary : .secondary)
+                    .foregroundStyle(task.assignedSprintTitle == nil && task.assignedBacklogTitle == nil ? .tertiary : .secondary)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -232,11 +235,25 @@ struct HomeMacTodoBoardView: View {
                     assignSelectedBacklogTasks(to: nil)
                 }
 
-                if let activeSprint {
-                    Button("Assign to \(activeSprint.title)") {
-                        assignSelectedBacklogTasks(to: activeSprint.id)
+                if availableBacklogs.isEmpty {
+                    Button("Move to Backlog") {
+                        assignSelectedBacklogTasksToBacklog(nil)
+                    }
+                } else {
+                    Menu("Move to Backlog") {
+                        Button("Backlog") {
+                            assignSelectedBacklogTasksToBacklog(nil)
+                        }
+
+                        ForEach(availableBacklogs) { backlog in
+                            Button(backlog.title) {
+                                assignSelectedBacklogTasksToBacklog(backlog.id)
+                            }
+                        }
                     }
                 }
+
+                selectedBacklogActiveSprintMenuItems
 
                 if !availableSprints.isEmpty {
                     Menu("Assign to Sprint") {
@@ -401,6 +418,10 @@ struct HomeMacTodoBoardView: View {
                 HStack(spacing: 6) {
                     statusBadge(title: assignedSprintTitle, tint: .purple)
                 }
+            } else if let assignedBacklogTitle = task.assignedBacklogTitle {
+                HStack(spacing: 6) {
+                    statusBadge(title: assignedBacklogTitle, tint: .teal)
+                }
             }
 
             HStack(spacing: 8) {
@@ -492,19 +513,67 @@ struct HomeMacTodoBoardView: View {
 
         Divider()
 
-        Button(task.assignedSprintID == nil ? "Move to Backlog" : "Remove from Sprint") {
-            onAssignTaskToSprint(task.id, nil)
-        }
+        if availableBacklogs.isEmpty {
+            Button("Move to Backlog") {
+                onAssignTaskToBacklog(task.id, nil)
+            }
+            .disabled(task.assignedSprintID == nil && task.assignedBacklogID == nil)
+        } else {
+            Menu("Move to Backlog") {
+                Button("Backlog") {
+                    onAssignTaskToBacklog(task.id, nil)
+                }
+                .disabled(task.assignedSprintID == nil && task.assignedBacklogID == nil)
 
-        if let activeSprint, task.assignedSprintID != activeSprint.id {
-            Button("Assign to \(activeSprint.title)") {
-                onAssignTaskToSprint(task.id, activeSprint.id)
+                ForEach(availableBacklogs) { backlog in
+                    Button(backlog.title) {
+                        onAssignTaskToBacklog(task.id, backlog.id)
+                    }
+                    .disabled(task.assignedSprintID == nil && task.assignedBacklogID == backlog.id)
+                }
             }
         }
+
+        activeSprintMenuItems(for: task)
 
         if !availableSprints.isEmpty {
             Menu("Assign to Sprint") {
                 ForEach(availableSprints) { sprint in
+                    Button(sprint.title) {
+                        onAssignTaskToSprint(task.id, sprint.id)
+                    }
+                    .disabled(task.assignedSprintID == sprint.id)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var selectedBacklogActiveSprintMenuItems: some View {
+        if activeSprints.count == 1, let activeSprint = activeSprints.first {
+            Button("Assign to \(activeSprint.title)") {
+                assignSelectedBacklogTasks(to: activeSprint.id)
+            }
+        } else if activeSprints.count > 1 {
+            Menu("Assign to Active Sprint") {
+                ForEach(activeSprints) { sprint in
+                    Button(sprint.title) {
+                        assignSelectedBacklogTasks(to: sprint.id)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func activeSprintMenuItems(for task: HomeFeature.RoutineDisplay) -> some View {
+        if activeSprints.count == 1, let activeSprint = activeSprints.first, task.assignedSprintID != activeSprint.id {
+            Button("Assign to \(activeSprint.title)") {
+                onAssignTaskToSprint(task.id, activeSprint.id)
+            }
+        } else if activeSprints.count > 1 {
+            Menu("Assign to Active Sprint") {
+                ForEach(activeSprints) { sprint in
                     Button(sprint.title) {
                         onAssignTaskToSprint(task.id, sprint.id)
                     }
@@ -558,6 +627,13 @@ struct HomeMacTodoBoardView: View {
         let selectedIDs = Array(selectedBacklogTaskIDs)
         guard !selectedIDs.isEmpty else { return }
         onAssignTasksToSprint(selectedIDs, sprintID)
+        selectedBacklogTaskIDs.removeAll()
+    }
+
+    private func assignSelectedBacklogTasksToBacklog(_ backlogID: UUID?) {
+        let selectedIDs = Array(selectedBacklogTaskIDs)
+        guard !selectedIDs.isEmpty else { return }
+        onAssignTasksToBacklog(selectedIDs, backlogID)
         selectedBacklogTaskIDs.removeAll()
     }
 

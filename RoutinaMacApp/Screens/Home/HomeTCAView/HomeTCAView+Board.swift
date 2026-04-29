@@ -2,6 +2,12 @@ import ComposableArchitecture
 import SwiftUI
 
 extension HomeTCAView {
+    var boardBacklogs: [BoardBacklog] {
+        store.sprintBoardData.backlogs.sorted { lhs, rhs in
+            lhs.createdAt > rhs.createdAt
+        }
+    }
+
     var boardSprints: [BoardSprint] {
         store.sprintBoardData.sprints.sorted { lhs, rhs in
             if lhs.status == rhs.status {
@@ -13,16 +19,44 @@ extension HomeTCAView {
         }
     }
 
-    var boardActiveSprint: BoardSprint? {
-        store.sprintBoardData.activeSprint
+    var boardActiveSprints: [BoardSprint] {
+        boardSprints.filter { $0.status == .active }
+    }
+
+    var boardOpenSprints: [BoardSprint] {
+        boardSprints.filter { $0.status != .finished }
+    }
+
+    var boardFinishedSprints: [BoardSprint] {
+        boardSprints.filter { $0.status == .finished }
+    }
+
+    var boardActiveSprintIDs: Set<UUID> {
+        Set(boardActiveSprints.map(\.id))
+    }
+
+    var boardFinishableSprintsInCurrentScope: [BoardSprint] {
+        switch store.selectedBoardScope {
+        case .currentSprint:
+            return boardActiveSprints
+        case let .sprint(sprintID):
+            return boardSprints.filter { $0.id == sprintID && $0.status == .active }
+        case .backlog, .namedBacklog:
+            return []
+        }
     }
 
     var boardScopeTitle: String {
         switch store.selectedBoardScope {
         case .backlog:
             return "Backlog"
+        case let .namedBacklog(backlogID):
+            return boardBacklogs.first(where: { $0.id == backlogID })?.title ?? "Backlog"
         case .currentSprint:
-            return boardActiveSprint?.title ?? "Current Sprint"
+            if boardActiveSprints.count == 1 {
+                return boardActiveSprints[0].title
+            }
+            return "Active Sprints"
         case let .sprint(sprintID):
             return boardSprints.first(where: { $0.id == sprintID })?.title ?? "Sprint"
         }
@@ -35,7 +69,7 @@ extension HomeTCAView {
                     && HomeFeature.matchesBoardScope(
                         task,
                         selectedScope: store.selectedBoardScope,
-                        activeSprintID: boardActiveSprint?.id
+                        activeSprintIDs: boardActiveSprintIDs
                     )
                     && matchesSearch(task)
                     && matchesFilter(task)
@@ -115,8 +149,70 @@ extension HomeTCAView {
                     VStack(alignment: .leading, spacing: 8) {
                         boardScopeButton(title: "Backlog", scope: .backlog)
 
-                        ForEach(boardSprints) { sprint in
+                        ForEach(boardBacklogs) { backlog in
+                            boardScopeButton(title: backlog.title, scope: .namedBacklog(backlog.id))
+                        }
+
+                        if !boardActiveSprints.isEmpty {
+                            boardScopeButton(
+                                title: boardActiveSprints.count == 1 ? "Active Sprint" : "Active Sprints",
+                                scope: .currentSprint
+                            )
+                        }
+
+                        ForEach(boardOpenSprints) { sprint in
                             sprintScopeRow(sprint)
+                        }
+
+                        if !boardFinishedSprints.isEmpty {
+                            finishedSprintsDisclosure
+                        }
+                    }
+                }
+
+                HomeMacSidebarSectionCard(title: "Backlogs") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let creatingTitle = store.creatingBacklogTitle {
+                            HStack(spacing: 6) {
+                                TextField("Backlog name...", text: Binding(
+                                    get: { creatingTitle },
+                                    set: { store.send(.createBacklogTitleChanged($0)) }
+                                ))
+                                .textFieldStyle(.plain)
+                                .font(.caption.weight(.semibold))
+                                .focused($isBacklogCreationFieldFocused)
+                                .onSubmit { store.send(.createBacklogConfirmed) }
+                                .onAppear { isBacklogCreationFieldFocused = true }
+
+                                Button(action: { store.send(.createBacklogConfirmed) }) {
+                                    Image(systemName: "checkmark")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.green)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(creatingTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                                Button(action: { store.send(.createBacklogCanceled) }) {
+                                    Image(systemName: "xmark")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(Color.secondary.opacity(0.1))
+                            )
+                        } else {
+                            Button {
+                                store.send(.createBacklogTapped)
+                            } label: {
+                                Label("Create backlog", systemImage: "plus")
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .buttonStyle(.borderless)
                         }
                     }
                 }
@@ -166,28 +262,32 @@ extension HomeTCAView {
                             .buttonStyle(.borderless)
                         }
 
-                        if let activeSprint = boardActiveSprint {
-                            HStack(spacing: 8) {
-                                Text(activeSprint.title)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.primary)
+                        if !boardActiveSprints.isEmpty {
+                            ForEach(boardActiveSprints) { activeSprint in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 8) {
+                                        Text(activeSprint.title)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(.primary)
 
-                                Text("Active")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.green)
-                            }
+                                        Text("Active")
+                                            .font(.caption2.weight(.semibold))
+                                            .foregroundStyle(.green)
+                                    }
 
-                            if let activeDayCount = activeSprint.activeDayCount(relativeTo: Date()) {
-                                Text(activeDayCount == 1 ? "Day 1" : "Day \(activeDayCount)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                                    if let activeDayCount = activeSprint.activeDayCount(relativeTo: Date()) {
+                                        Text(activeDayCount == 1 ? "Day 1" : "Day \(activeDayCount)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
 
-                            Button("Finish active sprint") {
-                                store.send(.finishSprintTapped(activeSprint.id))
+                                    if let dateSummary = sprintDateSummary(for: activeSprint) {
+                                        Text(dateSummary)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
-                            .buttonStyle(.borderless)
-                            .font(.caption.weight(.semibold))
                         } else if let nextSprint = boardSprints.first(where: { $0.status == .planned }) {
                             Text("No active sprint")
                                 .font(.caption)
@@ -320,22 +420,41 @@ extension HomeTCAView {
 
     @ViewBuilder
     var macTodoBoardDetailView: some View {
+        macBoardCenterContent
+    }
+
+    @ViewBuilder
+    var macBoardCenterContent: some View {
+        if store.isMacFilterDetailPresented {
+            macActiveFiltersDetailView
+        } else {
+            macTodoBoardContent
+        }
+    }
+
+    var macTodoBoardContent: some View {
         HomeMacTodoBoardView(
             columns: macTodoBoardColumns,
-            layout: store.selectedBoardScope == .backlog ? .backlogList : .board,
+            layout: isBacklogScope(store.selectedBoardScope) ? .backlogList : .board,
             selectedTaskID: store.selectedTaskID,
             isCompactLayout: isMacTodoBoardCompactCards,
+            availableBacklogs: boardBacklogs,
             availableSprints: boardSprints,
-            activeSprint: boardActiveSprint,
+            activeSprints: boardActiveSprints,
             onSelectTask: { taskID in
                 store.send(.setSelectedTask(taskID))
             },
             onOpenTask: { taskID in
                 store.send(.setSelectedTask(taskID))
-                isBoardTaskDetailSheetPresented = true
             },
             onMoveTask: { taskID, state in
                 store.send(.moveTodoToState(taskID, state))
+            },
+            onAssignTaskToBacklog: { taskID, backlogID in
+                store.send(.assignTodoToBacklog(taskID: taskID, backlogID: backlogID))
+            },
+            onAssignTasksToBacklog: { taskIDs, backlogID in
+                store.send(.assignTodosToBacklog(taskIDs: taskIDs, backlogID: backlogID))
             },
             onAssignTaskToSprint: { taskID, sprintID in
                 store.send(.assignTodoToSprint(taskID: taskID, sprintID: sprintID))
@@ -374,21 +493,252 @@ extension HomeTCAView {
             }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $isBoardTaskDetailSheetPresented) {
-            if let detailStore = store.scope(
-                state: \.taskDetailState,
-                action: \.taskDetail
-            ) {
-                TaskDetailTCAView(store: detailStore)
-                    .frame(minWidth: 720, minHeight: 640)
-            } else {
-                ContentUnavailableView(
-                    "Task unavailable",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text("Select a task on the board to open its details.")
-                )
-                .frame(minWidth: 520, minHeight: 420)
+    }
+
+    var macBoardTaskInspector: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Text(boardInspectorTitle)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                if store.selectedTaskID != nil {
+                    Button {
+                        store.send(.setSelectedTask(nil))
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Close ticket details")
+                }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            if let selectedTaskID = store.selectedTaskID,
+               let detailStore = store.scope(
+                   state: \.taskDetailState,
+                   action: \.taskDetail
+               ) {
+                TaskDetailTCAView(store: detailStore)
+                    .id(selectedTaskID)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+            } else {
+                boardScopeInspector
+            }
+        }
+        .background(.regularMaterial)
+        .clipped()
+    }
+
+    var boardInspectorTitle: String {
+        if store.selectedTaskID != nil {
+            return "Ticket Details"
+        }
+
+        switch store.selectedBoardScope {
+        case .backlog, .namedBacklog:
+            return "Backlog Details"
+        case .currentSprint, .sprint:
+            return "Sprint Details"
+        }
+    }
+
+    private var boardScopeInspector: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 14) {
+                boardScopeSummaryCard
+                boardScopeCountsCard
+                boardScopeDateCard
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var boardScopeSummaryCard: some View {
+        boardInspectorCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Label(boardScopeTitle, systemImage: boardScopeIcon)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+
+                Text(boardScopeDescription)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var boardScopeCountsCard: some View {
+        boardInspectorCard(title: "Tasks") {
+            VStack(alignment: .leading, spacing: 8) {
+                boardInspectorStatRow("Open", boardOpenTodoCount, tint: .secondary)
+                boardInspectorStatRow("In Progress", boardInProgressTodoCount, tint: .blue)
+                boardInspectorStatRow("Blocked", boardBlockedTodoCount, tint: .red)
+
+                if !isBacklogScope(store.selectedBoardScope) {
+                    boardInspectorStatRow("Done", boardDoneTodoCount, tint: .green)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var boardScopeDateCard: some View {
+        boardInspectorCard(title: boardScopeDateCardTitle) {
+            VStack(alignment: .leading, spacing: 8) {
+                switch store.selectedBoardScope {
+                case .backlog:
+                    boardInspectorDateRow("Created", nil)
+                case let .namedBacklog(backlogID):
+                    let backlog = boardBacklogs.first(where: { $0.id == backlogID })
+                    boardInspectorDateRow("Created", backlog?.createdAt)
+                case .currentSprint:
+                    if boardActiveSprints.isEmpty {
+                        Text("No active sprint.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(boardActiveSprints) { sprint in
+                            boardSprintInspectorDateSummary(sprint)
+                        }
+                    }
+                case let .sprint(sprintID):
+                    if let sprint = boardSprints.first(where: { $0.id == sprintID }) {
+                        boardSprintInspectorDateSummary(sprint)
+                    }
+                }
+            }
+        }
+    }
+
+    private var boardScopeDateCardTitle: String {
+        isBacklogScope(store.selectedBoardScope) ? "Timeline" : "Sprint Dates"
+    }
+
+    private var boardScopeIcon: String {
+        switch store.selectedBoardScope {
+        case .backlog, .namedBacklog:
+            return "tray.full"
+        case .currentSprint, .sprint:
+            return "flag.checkered"
+        }
+    }
+
+    private var boardScopeDescription: String {
+        switch store.selectedBoardScope {
+        case .backlog:
+            return "Default backlog for todos that are not assigned to a named backlog or sprint."
+        case .namedBacklog:
+            return "Named backlog for grouping todos before they move into a sprint."
+        case .currentSprint:
+            return boardActiveSprints.count == 1
+                ? "Currently active sprint."
+                : "\(boardActiveSprints.count) active sprints are shown together."
+        case let .sprint(sprintID):
+            let status = boardSprints.first(where: { $0.id == sprintID })?.status.displayTitle ?? "Sprint"
+            return "\(status) sprint."
+        }
+    }
+
+    private func boardInspectorCard<Content: View>(
+        title: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let title {
+                Text(title.uppercased())
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            content()
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.secondary.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private func boardInspectorStatRow(_ title: String, _ value: Int, tint: Color) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(tint)
+                .frame(width: 8, height: 8)
+
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+
+            Spacer(minLength: 0)
+
+            Text("\(value)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func boardSprintInspectorDateSummary(_ sprint: BoardSprint) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(sprint.title)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+
+            boardInspectorDateRow("Start", sprint.startedAt)
+            boardInspectorDateRow("Finish", sprint.finishedAt)
+
+            if let activeDayCount = sprint.activeDayCount(relativeTo: Date()) {
+                boardInspectorDetailRow("Day", activeDayCount == 1 ? "Day 1" : "Day \(activeDayCount)")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func boardInspectorDateRow(_ title: String, _ date: Date?) -> some View {
+        boardInspectorDetailRow(title, date.map(boardDateLabel(for:)) ?? "Not set")
+    }
+
+    private func boardInspectorDetailRow(_ title: String, _ value: String) -> some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 54, alignment: .leading)
+
+            Text(value)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+    }
+
+    func isBacklogScope(_ scope: HomeFeature.BoardScope) -> Bool {
+        switch scope {
+        case .backlog, .namedBacklog:
+            return true
+        case .currentSprint, .sprint:
+            return false
         }
     }
 
@@ -471,14 +821,23 @@ extension HomeTCAView {
             Button {
                 store.send(.selectedBoardScopeChanged(.sprint(sprint.id)))
             } label: {
-                HStack(spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
                     Circle()
                         .fill(boardSprintTint(for: sprint.status))
                         .frame(width: 8, height: 8)
+                        .padding(.top, 4)
 
-                    Text(sprint.title)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.primary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(sprint.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+
+                        if let dateSummary = sprintDateSummary(for: sprint) {
+                            Text(dateSummary)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
 
                     Spacer(minLength: 0)
 
@@ -514,6 +873,57 @@ extension HomeTCAView {
                 .disabled(sprint.status == .active)
             }
         }
+    }
+
+    private var finishedSprintsDisclosure: some View {
+        DisclosureGroup(isExpanded: $isFinishedSprintsExpanded) {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(boardFinishedSprints) { sprint in
+                    sprintScopeRow(sprint)
+                }
+            }
+            .padding(.top, 6)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 12)
+
+                Text("Finished Sprints")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 0)
+
+                Text("\(boardFinishedSprints.count)")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
+        .font(.caption)
+        .accentColor(.secondary)
+    }
+
+    private func sprintDateSummary(for sprint: BoardSprint) -> String? {
+        switch (sprint.startedAt, sprint.finishedAt) {
+        case let (startedAt?, finishedAt?):
+            return "Start \(boardDateLabel(for: startedAt)) · Finish \(boardDateLabel(for: finishedAt))"
+        case let (startedAt?, nil):
+            return "Start \(boardDateLabel(for: startedAt))"
+        case let (nil, finishedAt?):
+            return "Finish \(boardDateLabel(for: finishedAt))"
+        case (nil, nil):
+            return nil
+        }
+    }
+
+    private func boardDateLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 
     private func boardSidebarStatRow(title: String, value: Int, tint: Color) -> some View {
@@ -555,10 +965,14 @@ extension HomeTCAView {
         switch (store.selectedBoardScope, scope) {
         case (.backlog, .backlog):
             return true
+        case let (.namedBacklog(lhs), .namedBacklog(rhs)):
+            return lhs == rhs
         case let (.sprint(lhs), .sprint(rhs)):
             return lhs == rhs
         case (.currentSprint, .sprint(let id)):
-            return boardActiveSprint?.id == id
+            return boardActiveSprintIDs.contains(id)
+        case (.currentSprint, .currentSprint):
+            return true
         default:
             return false
         }

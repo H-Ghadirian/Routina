@@ -3,9 +3,9 @@ import MapKit
 import SwiftUI
 
 private enum HomeSidebarSizing {
-    static let minWidth: CGFloat = 320
-    static let idealWidth: CGFloat = 380
-    static let maxWidth: CGFloat = 520
+    static let minWidth: CGFloat = 220
+    static let idealWidth: CGFloat = 300
+    static let maxWidth: CGFloat = 360
 }
 
 extension View {
@@ -25,19 +25,29 @@ extension HomeTCAView {
 
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            if isMacBoardMode {
+        if isMacBoardMode {
+            ToolbarItem(placement: .primaryAction) {
+                macBoardTicketInspectorToolbarItem
+            }
+
+            ToolbarItemGroup(placement: .primaryAction) {
+                macBoardFinishSprintToolbarItem
                 macBoardOpenCountToolbarItem
                 macBoardInProgressCountToolbarItem
                 macBoardBlockedCountToolbarItem
-                macBoardDoneCountToolbarItem
-            } else {
+                if !isBacklogScope(store.selectedBoardScope) {
+                    macBoardDoneCountToolbarItem
+                }
+                calendarTaskImportButton
+            }
+        } else {
+            ToolbarItemGroup(placement: .primaryAction) {
                 macDoneCountToolbarItem
                 macCanceledCountToolbarItem
                 macRoutineCountToolbarItem
                 macTodoCountToolbarItem
+                calendarTaskImportButton
             }
-            calendarTaskImportButton
         }
     }
 
@@ -47,27 +57,49 @@ extension HomeTCAView {
                 macSidebarContent
             }
         } detail: {
-            MacDetailContainerView(
-                store: store,
-                isBoardPresented: isMacBoardMode,
-                isTimelinePresented: isMacTimelineMode,
-                isStatsPresented: isMacStatsMode,
-                isSettingsPresented: isMacSettingsMode,
-                settingsStore: settingsStore,
-                statsStore: statsStore,
-                selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
-                addRoutineStore: self.store.scope(
-                    state: \.addRoutineState,
-                    action: \.addRoutineSheet
-                )
-            ) {
-                macActiveFiltersDetailView
-            } boardView: {
-                macTodoBoardDetailView
+            if isMacBoardMode {
+                macBoardCenterContent
+                    .navigationTitle(macSidebarNavigationTitle)
+                    .environment(\.addEditFormCoordinator, addEditFormCoordinator)
+            } else {
+                MacDetailContainerView(
+                    store: store,
+                    isBoardPresented: isMacBoardMode,
+                    isTimelinePresented: isMacTimelineMode,
+                    isStatsPresented: isMacStatsMode,
+                    isSettingsPresented: isMacSettingsMode,
+                    settingsStore: settingsStore,
+                    statsStore: statsStore,
+                    selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
+                    addRoutineStore: self.store.scope(
+                        state: \.addRoutineState,
+                        action: \.addRoutineSheet
+                    )
+                ) {
+                    macActiveFiltersDetailView
+                } boardView: {
+                    macTodoBoardDetailView
+                }
+                .navigationTitle(macSidebarNavigationTitle)
+                .environment(\.addEditFormCoordinator, addEditFormCoordinator)
             }
-            .navigationTitle(macSidebarNavigationTitle)
-            .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
+        .inspector(isPresented: macBoardInspectorPresentedBinding) {
+            macBoardTaskInspector
+                .inspectorColumnWidth(min: 320, ideal: 400, max: 460)
+                .environment(\.addEditFormCoordinator, addEditFormCoordinator)
+        }
+    }
+
+    var macBoardInspectorPresentedBinding: Binding<Bool> {
+        Binding(
+            get: {
+                isMacBoardMode && isMacBoardTicketInspectorPresented
+            },
+            set: { isPresented in
+                isMacBoardTicketInspectorPresented = isPresented
+            }
+        )
     }
 
     func applyPlatformDeleteConfirmation<Content: View>(to view: Content) -> some View {
@@ -368,6 +400,47 @@ extension HomeTCAView {
             tintColor: .secondaryLabelColor
         )
         .help("Open todos in the current board view")
+    }
+
+    var macBoardTicketInspectorToolbarItem: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                isMacBoardTicketInspectorPresented.toggle()
+            }
+        } label: {
+            Label(
+                isMacBoardTicketInspectorPresented ? "Hide Ticket Details" : "Show Ticket Details",
+                systemImage: "sidebar.right"
+            )
+        }
+        .help(isMacBoardTicketInspectorPresented ? "Hide ticket details" : "Show ticket details")
+    }
+
+    @ViewBuilder
+    var macBoardFinishSprintToolbarItem: some View {
+        if !store.isMacFilterDetailPresented {
+            let finishableSprints = boardFinishableSprintsInCurrentScope
+
+            if finishableSprints.count == 1, let sprint = finishableSprints.first {
+                Button {
+                    store.send(.finishSprintTapped(sprint.id))
+                } label: {
+                    Label("Finish Sprint", systemImage: "flag.checkered")
+                }
+                .help("Finish \(sprint.title)")
+            } else if finishableSprints.count > 1 {
+                Menu {
+                    ForEach(finishableSprints) { sprint in
+                        Button(sprint.title) {
+                            store.send(.finishSprintTapped(sprint.id))
+                        }
+                    }
+                } label: {
+                    Label("Finish Sprint", systemImage: "flag.checkered")
+                }
+                .help("Finish an active sprint")
+            }
+        }
     }
 
     var macBoardInProgressCountToolbarItem: some View {

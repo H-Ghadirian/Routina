@@ -4,6 +4,7 @@ struct HomeBoardState: Equatable {
     var todoDisplays: [HomeFeature.RoutineDisplay] = []
     var sprintBoardData: SprintBoardData = SprintBoardData()
     var selectedScope: HomeFeature.BoardScope = .backlog
+    var creatingBacklogTitle: String? = nil
     var creatingSprintTitle: String? = nil
     var renamingSprintID: UUID? = nil
     var renamingSprintTitle: String = ""

@@ -23,6 +23,8 @@ struct HomeTCAView: View {
     ) var showPersianDates = false
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
+    @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)
+    var isMacBoardTicketInspectorPresented = true
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State private var isRefreshScheduled = false
@@ -31,8 +33,9 @@ struct HomeTCAView: View {
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
     @State var draggedSection: FormSection?
-    @State var isBoardTaskDetailSheetPresented = false
+    @State var isFinishedSprintsExpanded = false
     @FocusState var isSprintCreationFieldFocused: Bool
+    @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
 
     init(

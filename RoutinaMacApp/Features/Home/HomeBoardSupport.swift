@@ -5,14 +5,20 @@ extension HomeFeature {
     static func matchesBoardScope(
         _ task: RoutineDisplay,
         selectedScope: BoardScope,
-        activeSprintID: UUID?
+        activeSprintIDs: Set<UUID>
     ) -> Bool {
         switch selectedScope {
         case .backlog:
-            return task.assignedSprintID == nil && task.todoState != .done
+            return task.assignedSprintID == nil
+                && task.assignedBacklogID == nil
+                && task.todoState != .done
+        case let .namedBacklog(backlogID):
+            return task.assignedSprintID == nil
+                && task.assignedBacklogID == backlogID
+                && task.todoState != .done
         case .currentSprint:
-            guard let activeSprintID else { return false }
-            return task.assignedSprintID == activeSprintID
+            guard let assignedSprintID = task.assignedSprintID else { return false }
+            return activeSprintIDs.contains(assignedSprintID)
         case let .sprint(sprintID):
             return task.assignedSprintID == sprintID
         }
@@ -127,6 +133,17 @@ extension HomeFeature {
         return .merge(moveEffect, reorderEffect)
     }
 
+    func handleCreateBacklogConfirmed(title: String, state: inout State) -> Effect<Action> {
+        let finalTitle = title.trimmingCharacters(in: .whitespaces)
+        state.creatingBacklogTitle = nil
+        guard !finalTitle.isEmpty else { return .none }
+        let backlog = BoardBacklog(title: finalTitle, createdAt: now)
+        state.sprintBoardData.backlogs.insert(backlog, at: 0)
+        state.selectedBoardScope = .namedBacklog(backlog.id)
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
     func handleCreateSprintConfirmed(title: String, state: inout State) -> Effect<Action> {
         let finalTitle = title.trimmingCharacters(in: .whitespaces)
         state.creatingSprintTitle = nil
@@ -164,7 +181,7 @@ extension HomeFeature {
             state.selectedBoardScope = .backlog
         }
         if case .currentSprint = state.selectedBoardScope,
-           state.sprintBoardData.activeSprint == nil {
+           state.sprintBoardData.activeSprints.isEmpty {
             state.selectedBoardScope = .backlog
         }
         refreshDisplays(&state)
@@ -179,15 +196,10 @@ extension HomeFeature {
             return .none
         }
 
-        for sprintIndex in state.sprintBoardData.sprints.indices {
-            if state.sprintBoardData.sprints[sprintIndex].status == .active {
-                state.sprintBoardData.sprints[sprintIndex].status = .planned
-                state.sprintBoardData.sprints[sprintIndex].startedAt = nil
-            }
-        }
-
         state.sprintBoardData.sprints[index].status = .active
-        state.sprintBoardData.sprints[index].startedAt = now
+        if state.sprintBoardData.sprints[index].startedAt == nil {
+            state.sprintBoardData.sprints[index].startedAt = now
+        }
         state.sprintBoardData.sprints[index].finishedAt = nil
         state.selectedBoardScope = .currentSprint
         refreshDisplays(&state)
@@ -203,7 +215,8 @@ extension HomeFeature {
         }
         state.sprintBoardData.sprints[index].status = .finished
         state.sprintBoardData.sprints[index].finishedAt = now
-        if case .currentSprint = state.selectedBoardScope {
+        if case .currentSprint = state.selectedBoardScope,
+           state.sprintBoardData.activeSprints.isEmpty {
             state.selectedBoardScope = .backlog
         }
         refreshDisplays(&state)
@@ -232,6 +245,28 @@ extension HomeFeature {
         return saveSprintBoardEffect(state.sprintBoardData)
     }
 
+    func handleAssignTodoToBacklog(
+        taskID: UUID,
+        backlogID: UUID?,
+        state: inout State
+    ) -> Effect<Action> {
+        applyBacklogAssignment(taskIDs: [taskID], backlogID: backlogID, state: &state)
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleAssignTodosToBacklog(
+        taskIDs: [UUID],
+        backlogID: UUID?,
+        state: inout State
+    ) -> Effect<Action> {
+        let uniqueIDs = uniqueTaskIDs(taskIDs)
+        guard !uniqueIDs.isEmpty else { return .none }
+        applyBacklogAssignment(taskIDs: uniqueIDs, backlogID: backlogID, state: &state)
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
     private func applySprintAssignment(
         taskIDs: [UUID],
         sprintID: UUID?,
@@ -239,9 +274,27 @@ extension HomeFeature {
     ) {
         let taskIDSet = Set(taskIDs)
         state.sprintBoardData.assignments.removeAll(where: { taskIDSet.contains($0.todoID) })
+        if sprintID != nil {
+            state.sprintBoardData.backlogAssignments.removeAll(where: { taskIDSet.contains($0.todoID) })
+        }
         if let sprintID {
             state.sprintBoardData.assignments.append(
                 contentsOf: taskIDs.map { SprintAssignment(todoID: $0, sprintID: sprintID) }
+            )
+        }
+    }
+
+    private func applyBacklogAssignment(
+        taskIDs: [UUID],
+        backlogID: UUID?,
+        state: inout State
+    ) {
+        let taskIDSet = Set(taskIDs)
+        state.sprintBoardData.assignments.removeAll(where: { taskIDSet.contains($0.todoID) })
+        state.sprintBoardData.backlogAssignments.removeAll(where: { taskIDSet.contains($0.todoID) })
+        if let backlogID {
+            state.sprintBoardData.backlogAssignments.append(
+                contentsOf: taskIDs.map { BacklogAssignment(todoID: $0, backlogID: backlogID) }
             )
         }
     }

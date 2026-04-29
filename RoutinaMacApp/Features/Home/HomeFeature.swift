@@ -88,6 +88,8 @@ struct HomeFeature {
         var todoState: TodoState? = nil
         var assignedSprintID: UUID? = nil
         var assignedSprintTitle: String? = nil
+        var assignedBacklogID: UUID? = nil
+        var assignedBacklogTitle: String? = nil
     }
 
     enum MacSidebarSelection: Hashable, Equatable {
@@ -108,6 +110,7 @@ struct HomeFeature {
 
     enum BoardScope: Equatable, Sendable {
         case backlog
+        case namedBacklog(UUID)
         case currentSprint
         case sprint(UUID)
     }
@@ -490,6 +493,11 @@ struct HomeFeature {
             set { board.creatingSprintTitle = newValue }
         }
 
+        var creatingBacklogTitle: String? {
+            get { board.creatingBacklogTitle }
+            set { board.creatingBacklogTitle = newValue }
+        }
+
         var renamingSprintID: UUID? {
             get { board.renamingSprintID }
             set { board.renamingSprintID = newValue }
@@ -527,12 +535,18 @@ struct HomeFeature {
         case moveTodoToState(UUID, TodoState)
         case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
         case selectedBoardScopeChanged(BoardScope)
+        case createBacklogTapped
+        case createBacklogTitleChanged(String)
+        case createBacklogConfirmed
+        case createBacklogCanceled
         case createSprintTapped
         case createSprintTitleChanged(String)
         case createSprintConfirmed
         case createSprintCanceled
         case startSprintTapped(UUID)
         case finishSprintTapped(UUID)
+        case assignTodoToBacklog(taskID: UUID, backlogID: UUID?)
+        case assignTodosToBacklog(taskIDs: [UUID], backlogID: UUID?)
         case assignTodoToSprint(taskID: UUID, sprintID: UUID?)
         case assignTodosToSprint(taskIDs: [UUID], sprintID: UUID?)
         case renameSprintTapped(UUID)
@@ -702,7 +716,10 @@ struct HomeFeature {
             case let .sprintBoardLoaded(sprintBoardData):
                 state.sprintBoardData = sprintBoardData
                 if case .currentSprint = state.selectedBoardScope,
-                   sprintBoardData.activeSprint == nil {
+                   sprintBoardData.activeSprints.isEmpty {
+                    state.selectedBoardScope = .backlog
+                } else if case let .namedBacklog(backlogID) = state.selectedBoardScope,
+                          !sprintBoardData.backlogs.contains(where: { $0.id == backlogID }) {
                     state.selectedBoardScope = .backlog
                 } else if case let .sprint(sprintID) = state.selectedBoardScope,
                           !sprintBoardData.sprints.contains(where: { $0.id == sprintID }) {
@@ -1060,10 +1077,29 @@ struct HomeFeature {
 
             case let .selectedBoardScopeChanged(scope):
                 state.selectedBoardScope = scope
+                state.selectedTaskID = nil
+                state.taskDetailState = nil
+                state.macSidebarSelection = nil
                 return .none
 
             case .createSprintTapped:
                 state.creatingSprintTitle = ""
+                return .none
+
+            case .createBacklogTapped:
+                state.creatingBacklogTitle = ""
+                return .none
+
+            case let .createBacklogTitleChanged(title):
+                state.creatingBacklogTitle = title
+                return .none
+
+            case .createBacklogConfirmed:
+                let title = state.creatingBacklogTitle ?? ""
+                return handleCreateBacklogConfirmed(title: title, state: &state)
+
+            case .createBacklogCanceled:
+                state.creatingBacklogTitle = nil
                 return .none
 
             case let .createSprintTitleChanged(title):
@@ -1087,6 +1123,20 @@ struct HomeFeature {
             case let .finishSprintTapped(sprintID):
                 return handleFinishSprint(
                     sprintID,
+                    state: &state
+                )
+
+            case let .assignTodoToBacklog(taskID, backlogID):
+                return handleAssignTodoToBacklog(
+                    taskID: taskID,
+                    backlogID: backlogID,
+                    state: &state
+                )
+
+            case let .assignTodosToBacklog(taskIDs, backlogID):
+                return handleAssignTodosToBacklog(
+                    taskIDs: taskIDs,
+                    backlogID: backlogID,
                     state: &state
                 )
 
