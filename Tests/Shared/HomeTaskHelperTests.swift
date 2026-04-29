@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -10,6 +11,52 @@ import Testing
 
 @MainActor
 struct HomeTaskHelperTests {
+    @Test
+    func enforceUniqueRoutineNames_remapsRelationshipsFromDeletedDuplicates() throws {
+        let context = makeInMemoryContext()
+        let keeper = RoutineTask(
+            name: "Make post and streams without products visible",
+            relationships: []
+        )
+        let duplicate = RoutineTask(
+            name: " Make post and streams without products visible ",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: keeper.id, kind: .related)
+            ]
+        )
+        let blocker = RoutineTask(name: "Collect tracking bug context")
+        let dependent = RoutineTask(
+            name: "Release checklist",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: duplicate.id, kind: .blockedBy)
+            ]
+        )
+        duplicate.replaceRelationships([
+            RoutineTaskRelationship(targetTaskID: blocker.id, kind: .blockedBy)
+        ])
+
+        context.insert(keeper)
+        context.insert(duplicate)
+        context.insert(blocker)
+        context.insert(dependent)
+        try context.save()
+
+        try HomeDeduplicationSupport.enforceUniqueRoutineNames(in: context)
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let keptTask = try #require(tasks.first { $0.id == keeper.id })
+        let dependentTask = try #require(tasks.first { $0.id == dependent.id })
+
+        #expect(tasks.filter { RoutineTask.normalizedName($0.name) == RoutineTask.normalizedName(keeper.name) }.count == 1)
+        #expect(!tasks.contains { $0.id == duplicate.id })
+        #expect(keptTask.relationships == [
+            RoutineTaskRelationship(targetTaskID: blocker.id, kind: .blockedBy)
+        ])
+        #expect(dependentTask.relationships == [
+            RoutineTaskRelationship(targetTaskID: keeper.id, kind: .blockedBy)
+        ])
+    }
+
     @Test
     func prepareDeleteTasks_removesTasksRelationshipsAndStats() {
         let keptID = UUID()

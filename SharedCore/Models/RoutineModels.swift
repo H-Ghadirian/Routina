@@ -180,6 +180,7 @@ final class RoutineTask {
     var ongoingSince: Date?
     var autoAssumeDailyDone: Bool = false
     var estimatedDurationMinutes: Int?
+    var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
 
@@ -498,6 +499,7 @@ final class RoutineTask {
         ongoingSince: Date? = nil,
         autoAssumeDailyDone: Bool = false,
         estimatedDurationMinutes: Int? = nil,
+        actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false
     ) {
@@ -543,6 +545,7 @@ final class RoutineTask {
         self.ongoingSince = ongoingSince
         self.autoAssumeDailyDone = autoAssumeDailyDone
         self.estimatedDurationMinutes = Self.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+        self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         self.focusModeEnabled = focusModeEnabled
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
@@ -990,6 +993,7 @@ final class RoutineTask {
             ongoingSince: ongoingSince,
             autoAssumeDailyDone: autoAssumeDailyDone,
             estimatedDurationMinutes: estimatedDurationMinutes,
+            actualDurationMinutes: actualDurationMinutes,
             storyPoints: storyPoints,
             focusModeEnabled: focusModeEnabled
         )
@@ -1000,6 +1004,11 @@ final class RoutineTask {
     }
 
     static func sanitizedEstimatedDurationMinutes(_ value: Int?) -> Int? {
+        guard let value, value > 0 else { return nil }
+        return value
+    }
+
+    static func sanitizedActualDurationMinutes(_ value: Int?) -> Int? {
         guard let value, value > 0 else { return nil }
         return value
     }
@@ -1016,6 +1025,7 @@ final class RoutineLog {
     var timestamp: Date?
     var taskID: UUID = UUID()
     var kindRawValue: String = RoutineLogKind.completed.rawValue
+    var actualDurationMinutes: Int?
 
     var kind: RoutineLogKind {
         get { RoutineLogKind(rawValue: kindRawValue) ?? .completed }
@@ -1026,16 +1036,29 @@ final class RoutineLog {
         id: UUID = UUID(),
         timestamp: Date? = nil,
         taskID: UUID,
-        kind: RoutineLogKind = .completed
+        kind: RoutineLogKind = .completed,
+        actualDurationMinutes: Int? = nil
     ) {
         self.id = id
         self.timestamp = timestamp
         self.taskID = taskID
         self.kindRawValue = kind.rawValue
+        self.actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
     }
 
     func detachedCopy() -> RoutineLog {
-        RoutineLog(id: id, timestamp: timestamp, taskID: taskID, kind: kind)
+        RoutineLog(
+            id: id,
+            timestamp: timestamp,
+            taskID: taskID,
+            kind: kind,
+            actualDurationMinutes: actualDurationMinutes
+        )
+    }
+
+    static func sanitizedActualDurationMinutes(_ value: Int?) -> Int? {
+        guard let value, value > 0 else { return nil }
+        return value
     }
 }
 

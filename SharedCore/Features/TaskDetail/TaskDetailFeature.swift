@@ -78,6 +78,7 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var editAutoAssumeDailyDone: Bool = false
         var editEstimatedDurationMinutes: Int?
+        var editActualDurationMinutes: Int?
         var editStoryPoints: Int?
         var editFocusModeEnabled: Bool = false
         var isDeleteConfirmationPresented: Bool = false
@@ -146,6 +147,8 @@ struct TaskDetailFeature: Reducer {
         case undoSelectedDateCompletion
         case requestRemoveLogEntry(Date)
         case removeLogEntry(Date)
+        case updateTaskDuration(Int?)
+        case updateLogDuration(UUID, Int?)
         case pauseTapped
         case notTodayTapped
         case resumeTapped
@@ -194,6 +197,7 @@ struct TaskDetailFeature: Reducer {
         case editSelectedPlaceChanged(UUID?)
         case editToggleTagSelection(String)
         case editEstimatedDurationChanged(Int?)
+        case editActualDurationChanged(Int?)
         case editStoryPointsChanged(Int?)
         case editFocusModeEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
@@ -460,6 +464,18 @@ struct TaskDetailFeature: Reducer {
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleRemoveLogEntry(taskID: state.task.id, timestamp: timestamp)
+
+        case let .updateLogDuration(logID, durationMinutes):
+            let sanitizedDuration = RoutineLog.sanitizedActualDurationMinutes(durationMinutes)
+            if let index = state.logs.firstIndex(where: { $0.id == logID }) {
+                state.logs[index].actualDurationMinutes = sanitizedDuration
+            }
+            return handleUpdateLogDuration(logID: logID, durationMinutes: sanitizedDuration)
+
+        case let .updateTaskDuration(durationMinutes):
+            let sanitizedDuration = RoutineTask.sanitizedActualDurationMinutes(durationMinutes)
+            state.task.actualDurationMinutes = sanitizedDuration
+            return handleUpdateTaskDuration(taskID: state.task.id, durationMinutes: sanitizedDuration)
 
         case let .requestRemoveLogEntry(timestamp):
             state.pendingLogRemovalTimestamp = timestamp
@@ -767,6 +783,10 @@ struct TaskDetailFeature: Reducer {
             state.editEstimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
             return .none
 
+        case let .editActualDurationChanged(actualDurationMinutes):
+            state.editActualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+            return .none
+
         case let .editStoryPointsChanged(storyPoints):
             state.editStoryPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
             return .none
@@ -885,6 +905,7 @@ struct TaskDetailFeature: Reducer {
                 color: state.editColor,
                 autoAssumeDailyDone: state.editAutoAssumeDailyDone,
                 estimatedDurationMinutes: state.editEstimatedDurationMinutes,
+                actualDurationMinutes: state.editActualDurationMinutes,
                 storyPoints: state.editStoryPoints,
                 focusModeEnabled: state.editFocusModeEnabled
             )

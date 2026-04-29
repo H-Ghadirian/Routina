@@ -50,6 +50,7 @@ enum CloudSharingService {
         var ongoingSince: Date?
         var autoAssumeDailyDone: Bool
         var estimatedDurationMinutes: Int?
+        var actualDurationMinutes: Int?
         var storyPoints: Int?
         var focusModeEnabled: Bool
     }
@@ -274,6 +275,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.ongoingSince = task.ongoingSince
         self.autoAssumeDailyDone = task.autoAssumeDailyDone
         self.estimatedDurationMinutes = task.estimatedDurationMinutes
+        self.actualDurationMinutes = task.actualDurationMinutes
         self.storyPoints = task.storyPoints
         self.focusModeEnabled = task.focusModeEnabled
     }
@@ -323,6 +325,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.ongoingSince = ongoingSince
         task.autoAssumeDailyDone = autoAssumeDailyDone
         task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+        task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
         task.focusModeEnabled = focusModeEnabled
     }
@@ -367,6 +370,7 @@ private extension RoutineTask {
             ongoingSince: payload.ongoingSince,
             autoAssumeDailyDone: payload.autoAssumeDailyDone,
             estimatedDurationMinutes: payload.estimatedDurationMinutes,
+            actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,
             focusModeEnabled: payload.focusModeEnabled
         )

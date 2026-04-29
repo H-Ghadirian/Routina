@@ -120,7 +120,6 @@ extension HomeTCAView {
             platformRefreshButton
             if areTopActionsExpanded {
                 filterSheetButton
-                calendarTaskImportButton
                 Button {
                     collapseExpandedToolbarActions()
                     openAddTask()

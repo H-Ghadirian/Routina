@@ -66,6 +66,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editEstimatedDurationMinutes },
                 set: { store.send(.editEstimatedDurationChanged($0)) }
             ),
+            actualDurationMinutes: Binding(
+                get: { store.editActualDurationMinutes },
+                set: { store.send(.editActualDurationChanged($0)) }
+            ),
             storyPoints: Binding(
                 get: { store.editStoryPoints },
                 set: { store.send(.editStoryPointsChanged($0)) }

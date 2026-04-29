@@ -99,6 +99,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var completedStepCount: Int16
         var sequenceStartedAt: Date?
         var estimatedDurationMinutes: Int?
+        var actualDurationMinutes: Int?
         var storyPoints: Int?
 
         init(task: RoutineTask) {
@@ -130,6 +131,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             completedStepCount = task.completedStepCount
             sequenceStartedAt = task.sequenceStartedAt
             estimatedDurationMinutes = task.estimatedDurationMinutes
+            actualDurationMinutes = task.actualDurationMinutes
             storyPoints = task.storyPoints
         }
     }
@@ -138,11 +140,13 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var id: UUID
         var timestamp: Date?
         var taskID: UUID
+        var actualDurationMinutes: Int?
 
         init(log: RoutineLog) {
             id = log.id
             timestamp = log.timestamp
             taskID = log.taskID
+            actualDurationMinutes = log.actualDurationMinutes
         }
     }
 

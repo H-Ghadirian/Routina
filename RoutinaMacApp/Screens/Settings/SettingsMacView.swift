@@ -1,5 +1,6 @@
 import AppKit
 import ComposableArchitecture
+import SwiftData
 import SwiftUI
 
 private enum SettingsMacLayout {
@@ -152,6 +153,11 @@ struct SettingsMacSidebarRow: View {
         case .notifications:
             return store.notifications.overviewSubtitle
 
+        case .calendar:
+            return store.appearance.showPersianDates
+                ? "Review tasks and show Persian dates"
+                : "Review tasks and date display"
+
         case .places:
             return store.places.overviewSubtitle
 
@@ -185,6 +191,8 @@ struct SettingsMacSidebarRow: View {
         switch section {
         case .notifications:
             return store.notifications.notificationsEnabled ? "On" : "Off"
+        case .calendar:
+            return store.appearance.showPersianDates ? "Persian" : nil
         case .iCloud:
             return store.cloud.cloudSyncAvailable ? nil : "Off"
         case .git:
@@ -248,6 +256,8 @@ struct SettingsMacDetailView: View {
         switch section {
         case .notifications:
             SettingsMacNotificationsDetailView(store: store)
+        case .calendar:
+            SettingsMacCalendarDetailView(store: store)
         case .places:
             SettingsMacPlacesDetailView(
                 store: store,
@@ -392,6 +402,69 @@ private struct SettingsMacNotificationsDetailView: View {
         Binding(
             get: { store.notifications.notificationReminderTime },
             set: { store.send(.notificationReminderTimeChanged($0)) }
+        )
+    }
+}
+
+private struct SettingsMacCalendarDetailView: View {
+    let store: StoreOf<SettingsFeature>
+    @Query private var existingTasks: [RoutineTask]
+    @State private var isCalendarTaskImportPresented = false
+
+    var body: some View {
+        WithPerceptionTracking {
+            SettingsMacDetailShell(
+                title: "Calendar",
+                subtitle: "Review calendar events before adding tasks and choose how dates are displayed."
+            ) {
+                SettingsMacDetailCard(title: "Calendar Tasks") {
+                    Button {
+                        isCalendarTaskImportPresented = true
+                    } label: {
+                        Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                SettingsMacDetailCard(title: "Date Display") {
+                    Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
+                        .toggleStyle(.switch)
+
+                    if store.appearance.showPersianDates {
+                        Text(persianDatePreviewText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .sheet(isPresented: $isCalendarTaskImportPresented) {
+                CalendarTaskImportSheet(existingTasks: existingTasks) {}
+            }
+        }
+    }
+
+    private var showPersianDatesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showPersianDates },
+            set: { store.send(.showPersianDatesToggled($0)) }
+        )
+    }
+
+    private var persianDatePreviewText: String {
+        let today = Date()
+        let dateText = today.formatted(date: .abbreviated, time: .omitted)
+        return "Today: " + PersianDateDisplay.appendingSupplementaryDate(
+            to: dateText,
+            for: today,
+            enabled: true
         )
     }
 }
@@ -1268,21 +1341,6 @@ private struct SettingsMacAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                SettingsMacDetailCard(title: "Dates") {
-                    Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
-                        .toggleStyle(.switch)
-
-                    if store.appearance.showPersianDates {
-                        Text(persianDatePreviewText)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
                 SettingsMacDetailCard(title: "App Lock") {
                     Toggle("Require unlock when opening Routina", isOn: appLockBinding)
                         .toggleStyle(.switch)
@@ -1392,23 +1450,6 @@ private struct SettingsMacAppearanceDetailView: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
-        )
-    }
-
-    private var showPersianDatesBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.showPersianDates },
-            set: { store.send(.showPersianDatesToggled($0)) }
-        )
-    }
-
-    private var persianDatePreviewText: String {
-        let today = Date()
-        let dateText = today.formatted(date: .abbreviated, time: .omitted)
-        return "Today: " + PersianDateDisplay.appendingSupplementaryDate(
-            to: dateText,
-            for: today,
-            enabled: true
         )
     }
 

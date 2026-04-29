@@ -34,7 +34,6 @@ extension HomeTCAView {
                 if !isBacklogScope(store.selectedBoardScope) {
                     macBoardDoneCountToolbarItem
                 }
-                calendarTaskImportButton
             }
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -42,7 +41,6 @@ extension HomeTCAView {
                 macCanceledCountToolbarItem
                 macRoutineCountToolbarItem
                 macTodoCountToolbarItem
-                calendarTaskImportButton
             }
         }
     }

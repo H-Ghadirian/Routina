@@ -12,6 +12,9 @@ struct TaskDetailTCAView: View {
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = true
+    @State private var editingTimeLog: RoutineLog?
+    @State private var editingTimeSpentMinutes = 25
+    @State private var isEditingTaskTimeSpent = false
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
@@ -111,6 +114,12 @@ struct TaskDetailTCAView: View {
                     }
                 )
             }
+            .sheet(item: $editingTimeLog) { log in
+                timeSpentSheet(for: log)
+            }
+            .sheet(isPresented: $isEditingTaskTimeSpent) {
+                taskTimeSpentSheet
+            }
             .alert(
                 "Delete routine?",
                 isPresented: Binding(
@@ -158,10 +167,7 @@ struct TaskDetailTCAView: View {
             .routinaCloudSharingPresenter(request: $cloudSharingRequest)
             .routinaAttachmentShareSheet(url: $attachmentTempURL)
             .fileExporter(
-                isPresented: Binding(
-                    get: { fileToSave != nil },
-                    set: { if !$0 { fileToSave = nil } }
-                ),
+                isPresented: fileExporterPresentationBinding,
                 document: fileToSave.map { RoutineAttachmentFileDocument(data: $0.data) },
                 contentType: .data,
                 defaultFilename: fileToSave?.fileName
@@ -169,6 +175,17 @@ struct TaskDetailTCAView: View {
                 fileToSave = nil
             }
         }
+    }
+
+    private var fileExporterPresentationBinding: Binding<Bool> {
+        Binding(
+            get: { fileToSave != nil },
+            set: { isPresented in
+                if !isPresented {
+                    fileToSave = nil
+                }
+            }
+        )
     }
 
     @ViewBuilder
@@ -515,6 +532,7 @@ struct TaskDetailTCAView: View {
     private var todoHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             priorityDisclosureBox
+            todoTimeSpentHeaderBox
 
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .top, spacing: 8) {
@@ -534,6 +552,34 @@ struct TaskDetailTCAView: View {
                 }
             }
         }
+    }
+
+    private var todoTimeSpentHeaderBox: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("TIME SPENT")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(store.task.actualDurationMinutes.map(estimatedDurationBadgeValue(for:)) ?? "Not logged")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(store.task.actualDurationMinutes == nil ? .secondary : .primary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                beginEditingTaskTime()
+            } label: {
+                Label(
+                    store.task.actualDurationMinutes == nil ? "Add Time" : "Edit Time",
+                    systemImage: "clock.badge"
+                )
+            }
+            .buttonStyle(.bordered)
+            .tint(.cyan)
+        }
+        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+        .detailHeaderBoxStyle(tint: .cyan)
     }
 
     @ViewBuilder
@@ -574,6 +620,100 @@ struct TaskDetailTCAView: View {
             sessions: focusSessions,
             allTasks: focusSessionTasks
         )
+    }
+
+    private func timeSpentSheet(for log: RoutineLog) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Time Spent")
+                    .font(.title3.weight(.semibold))
+                Text("Record the actual time for this completion.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Stepper(value: $editingTimeSpentMinutes, in: 1...1440) {
+                HStack {
+                    Text("Time spent")
+                    Spacer()
+                    Text(RoutineTimeSpentFormatting.compactMinutesText(editingTimeSpentMinutes))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack {
+                if log.actualDurationMinutes != nil {
+                    Button(role: .destructive) {
+                        store.send(.updateLogDuration(log.id, nil))
+                        editingTimeLog = nil
+                    } label: {
+                        Label("Clear", systemImage: "trash")
+                    }
+                }
+
+                Spacer()
+
+                Button("Cancel") {
+                    editingTimeLog = nil
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Button("Save") {
+                    store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
+                    editingTimeLog = nil
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .frame(width: 420)
+        .padding(24)
+    }
+
+    private var taskTimeSpentSheet: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Time Spent")
+                    .font(.title3.weight(.semibold))
+                Text("Record the actual time spent on this task.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Stepper(value: $editingTimeSpentMinutes, in: 1...1440) {
+                HStack {
+                    Text("Time spent")
+                    Spacer()
+                    Text(RoutineTimeSpentFormatting.compactMinutesText(editingTimeSpentMinutes))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack {
+                if store.task.actualDurationMinutes != nil {
+                    Button(role: .destructive) {
+                        store.send(.updateTaskDuration(nil))
+                        isEditingTaskTimeSpent = false
+                    } label: {
+                        Label("Clear", systemImage: "trash")
+                    }
+                }
+
+                Spacer()
+
+                Button("Cancel") {
+                    isEditingTaskTimeSpent = false
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Button("Save") {
+                    store.send(.updateTaskDuration(editingTimeSpentMinutes))
+                    isEditingTaskTimeSpent = false
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .frame(width: 420)
+        .padding(24)
     }
 
     private var canSaveCurrentEdit: Bool {
@@ -923,6 +1063,17 @@ struct TaskDetailTCAView: View {
             )
         }
 
+        if displayedActualDurationMinutes > 0 {
+            badges.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Spent",
+                    value: estimatedDurationBadgeValue(for: displayedActualDurationMinutes),
+                    systemImage: "clock.fill",
+                    tint: .cyan
+                )
+            )
+        }
+
         if let storyPoints = store.task.storyPoints {
             badges.append(
                 TaskDetailHeaderBadgeItem(
@@ -935,6 +1086,22 @@ struct TaskDetailTCAView: View {
         }
 
         return badges
+    }
+
+    private var totalLoggedActualDurationMinutes: Int {
+        store.logs.reduce(0) { partialResult, log in
+            partialResult + (log.kind == .completed ? (log.actualDurationMinutes ?? 0) : 0)
+        }
+    }
+
+    private var displayedActualDurationMinutes: Int {
+        store.task.isOneOffTask ? (store.task.actualDurationMinutes ?? 0) : totalLoggedActualDurationMinutes
+    }
+
+    private var latestCompletedLog: RoutineLog? {
+        store.logs
+            .filter { $0.kind == .completed }
+            .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
     }
 
     private func estimatedDurationBadgeValue(for minutes: Int) -> String {
@@ -1114,6 +1281,39 @@ struct TaskDetailTCAView: View {
     }
 
     @ViewBuilder
+    private var timeSpentActionButton: some View {
+        if store.task.isOneOffTask {
+            Button {
+                beginEditingTaskTime()
+            } label: {
+                Label(
+                    store.task.actualDurationMinutes == nil ? "Add Time Spent" : "Edit Time Spent",
+                    systemImage: "clock.badge"
+                )
+                .routinaPlatformPrimaryActionLabelLayout()
+            }
+            .buttonStyle(.bordered)
+            .tint(.cyan)
+            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: false)
+            .routinaPlatformPrimaryActionButtonLayout()
+        } else if let log = latestCompletedLog {
+            Button {
+                beginEditingTime(for: log)
+            } label: {
+                Label(
+                    log.actualDurationMinutes == nil ? "Add Time Spent" : "Edit Time Spent",
+                    systemImage: "clock.badge"
+                )
+                .routinaPlatformPrimaryActionLabelLayout()
+            }
+            .buttonStyle(.bordered)
+            .tint(.cyan)
+            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: false)
+            .routinaPlatformPrimaryActionButtonLayout()
+        }
+    }
+
+    @ViewBuilder
     private var cancelTodoButton: some View {
         if store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
             Button {
@@ -1238,6 +1438,14 @@ struct TaskDetailTCAView: View {
                 statusMetadataRow(label: "Completed", value: store.completedLogCountText)
             }
 
+            if displayedActualDurationMinutes > 0 {
+                statusMetadataRow(
+                    label: "Time Spent",
+                    value: estimatedDurationBadgeValue(for: displayedActualDurationMinutes),
+                    systemImage: "clock"
+                )
+            }
+
             if store.canceledLogCount > 0 {
                 statusMetadataRow(label: "Canceled", value: store.canceledLogCountText, systemImage: "xmark.circle")
             }
@@ -1305,6 +1513,8 @@ struct TaskDetailTCAView: View {
             .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
             .routinaPlatformPrimaryActionButtonLayout(alignment: .leading)
             .disabled(store.isCompletionButtonDisabled)
+
+            timeSpentActionButton
 
             if !store.task.isOneOffTask {
                 Button(pauseArchivePresentation.actionTitle) {
@@ -1529,9 +1739,20 @@ struct TaskDetailTCAView: View {
                     let logs = displayedLogs(from: store.logs)
                     ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
                         HStack(spacing: 8) {
-                            Text(logTimestampText(log.timestamp))
-                                .font(.subheadline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(logTimestampText(log.timestamp))
+                                    .font(.subheadline)
+
+                                Button {
+                                    beginEditingTime(for: log)
+                                } label: {
+                                    Label(logTimeSpentText(log), systemImage: "clock")
+                                        .font(.caption.weight(.semibold))
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
                             Text(log.kind == .completed ? "Done" : "Canceled")
                                 .font(.caption.weight(.semibold))
@@ -1539,6 +1760,9 @@ struct TaskDetailTCAView: View {
                         }
                         .padding(.vertical, 8)
                         .contextMenu {
+                            Button(log.actualDurationMinutes == nil ? "Add Time Spent" : "Edit Time Spent") {
+                                beginEditingTime(for: log)
+                            }
                             if let timestamp = log.timestamp {
                                 Button(routineLogActionTitle(for: log)) {
                                     store.send(.requestRemoveLogEntry(timestamp))
@@ -1581,6 +1805,21 @@ struct TaskDetailTCAView: View {
             for: timestamp,
             enabled: showPersianDates
         )
+    }
+
+    private func logTimeSpentText(_ log: RoutineLog) -> String {
+        guard let duration = log.actualDurationMinutes else { return "Add time" }
+        return RoutineTimeSpentFormatting.compactMinutesText(duration)
+    }
+
+    private func beginEditingTime(for log: RoutineLog) {
+        editingTimeSpentMinutes = log.actualDurationMinutes ?? store.task.estimatedDurationMinutes ?? 25
+        editingTimeLog = log
+    }
+
+    private func beginEditingTaskTime() {
+        editingTimeSpentMinutes = store.task.actualDurationMinutes ?? store.task.estimatedDurationMinutes ?? 25
+        isEditingTaskTimeSpent = true
     }
 
     private var relationshipsSection: some View {

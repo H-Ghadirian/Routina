@@ -31,7 +31,11 @@ enum HomeDeduplicationSupport {
             guard sameNamedTasks.count > 1 else { continue }
 
             let keeper = preferredTaskToKeep(from: sameNamedTasks)
+            var mergedRelationships = keeper.relationships
+            var replacementTaskIDs: [UUID: UUID] = [:]
             for task in sameNamedTasks where task.id != keeper.id {
+                replacementTaskIDs[task.id] = keeper.id
+                mergedRelationships.append(contentsOf: task.relationships)
                 let logs = try context.fetch(HomeTaskSupport.logsDescriptor(for: task.id))
                 for log in logs {
                     context.delete(log)
@@ -42,6 +46,26 @@ enum HomeDeduplicationSupport {
                 }
                 context.delete(task)
                 removedAny = true
+            }
+
+            if !replacementTaskIDs.isEmpty {
+                keeper.replaceRelationships(
+                    remappedRelationships(
+                        mergedRelationships,
+                        replacing: replacementTaskIDs,
+                        ownerID: keeper.id
+                    )
+                )
+                for task in tasks where task.id != keeper.id {
+                    let updatedRelationships = remappedRelationships(
+                        task.relationships,
+                        replacing: replacementTaskIDs,
+                        ownerID: task.id
+                    )
+                    if updatedRelationships != task.relationships {
+                        task.replaceRelationships(updatedRelationships)
+                    }
+                }
             }
         }
 
@@ -105,6 +129,22 @@ enum HomeDeduplicationSupport {
         let whitespacePenalty = rawName == trimmedName ? 0 : 1
         let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
         return (whitespacePenalty, foldedName, task.id.uuidString.lowercased())
+    }
+
+    private static func remappedRelationships(
+        _ relationships: [RoutineTaskRelationship],
+        replacing replacementTaskIDs: [UUID: UUID],
+        ownerID: UUID
+    ) -> [RoutineTaskRelationship] {
+        RoutineTaskRelationship.sanitized(
+            relationships.map { relationship in
+                RoutineTaskRelationship(
+                    targetTaskID: replacementTaskIDs[relationship.targetTaskID] ?? relationship.targetTaskID,
+                    kind: relationship.kind
+                )
+            },
+            ownerID: ownerID
+        )
     }
 
     private static func placeSelectionKey(

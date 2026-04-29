@@ -83,3 +83,9 @@ enum FocusSessionFormatting {
         return "\(hours)h \(minutes)m"
     }
 }
+
+enum RoutineTimeSpentFormatting {
+    static func compactMinutesText(_ minutes: Int) -> String {
+        FocusSessionFormatting.compactDurationText(seconds: TimeInterval(max(minutes, 1) * 60))
+    }
+}

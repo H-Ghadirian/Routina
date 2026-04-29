@@ -2,6 +2,7 @@ import SwiftUI
 
 enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
     case notifications
+    case calendar
     case places
     case tags
     case appearance
@@ -22,6 +23,7 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .notifications: return "Notifications"
+        case .calendar:      return "Calendar"
         case .places:        return "Places"
         case .tags:          return "Tags"
         case .appearance:    return "Appearance"
@@ -36,6 +38,7 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
     var icon: String {
         switch self {
         case .notifications: return "bell.badge.fill"
+        case .calendar:      return "calendar.badge.plus"
         case .places:        return "mappin.and.ellipse"
         case .tags:          return "tag.fill"
         case .appearance:    return "app.badge.fill"
@@ -50,6 +53,7 @@ enum SettingsMacSection: String, CaseIterable, Identifiable, Hashable {
     var tint: Color {
         switch self {
         case .notifications: return .red
+        case .calendar:      return .purple
         case .places:        return .blue
         case .tags:          return .pink
         case .appearance:    return .orange

@@ -50,6 +50,44 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func deduplicateRedundantSameDayLogs_keepsLatestLogPerTaskDayAndKind() throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚"
+        )
+        let otherTask = makeTask(
+            in: context,
+            name: "Walk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🚶"
+        )
+        let older = makeDate("2026-04-26T13:50:00Z")
+        let newer = makeDate("2026-04-26T13:50:30Z")
+        let nextDay = makeDate("2026-04-27T12:00:00Z")
+        _ = makeLog(in: context, task: task, timestamp: older)
+        _ = makeLog(in: context, task: task, timestamp: newer)
+        _ = makeLog(in: context, task: task, timestamp: nextDay)
+        _ = makeLog(in: context, task: otherTask, timestamp: older)
+        _ = makeLog(in: context, task: task, timestamp: older, kind: .canceled)
+        try context.save()
+
+        let didDelete = try RoutineLogHistory.deduplicateRedundantSameDayLogs(in: context)
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(didDelete)
+        #expect(logs.count == 4)
+        #expect(logs.contains { $0.taskID == task.id && $0.kind == .completed && $0.timestamp == newer })
+        #expect(logs.contains { $0.taskID == task.id && $0.kind == .completed && $0.timestamp == nextDay })
+        #expect(logs.contains { $0.taskID == otherTask.id && $0.kind == .completed && $0.timestamp == older })
+        #expect(logs.contains { $0.taskID == task.id && $0.kind == .canceled && $0.timestamp == older })
+    }
+
+    @Test
     func advanceTask_withSequentialSteps_savesLogOnlyAfterFinalStep() throws {
         let context = makeInMemoryContext()
         let task = makeTask(

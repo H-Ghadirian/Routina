@@ -3,6 +3,43 @@ import SwiftData
 
 enum RoutineLogHistory {
     @MainActor
+    static func deduplicateRedundantSameDayLogs(
+        in context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> Bool {
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        var keptLogsByKey: [RoutineLogDeduplicationKey: RoutineLog] = [:]
+        var didDeleteAny = false
+
+        for log in logs {
+            guard let timestamp = log.timestamp else { continue }
+            let key = RoutineLogDeduplicationKey(
+                taskID: log.taskID,
+                kind: log.kind,
+                day: calendar.startOfDay(for: timestamp)
+            )
+
+            guard let keptLog = keptLogsByKey[key] else {
+                keptLogsByKey[key] = log
+                continue
+            }
+
+            let keptTimestamp = keptLog.timestamp ?? .distantPast
+            if timestamp > keptTimestamp {
+                context.delete(keptLog)
+                keptLogsByKey[key] = log
+            } else {
+                context.delete(log)
+            }
+            didDeleteAny = true
+        }
+
+        guard didDeleteAny else { return false }
+        try context.save()
+        return true
+    }
+
+    @MainActor
     static func backfillMissingLastDoneLogs(in context: ModelContext) throws -> Bool {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -479,4 +516,10 @@ enum RoutineLogHistory {
         guard let lhs else { return false }
         return Calendar.current.isDate(lhs, inSameDayAs: rhs)
     }
+}
+
+private struct RoutineLogDeduplicationKey: Hashable {
+    var taskID: UUID
+    var kind: RoutineLogKind
+    var day: Date
 }

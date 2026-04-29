@@ -184,6 +184,41 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleUpdateLogDuration(logID: UUID, durationMinutes: Int?) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                let descriptor = FetchDescriptor<RoutineLog>(
+                    predicate: #Predicate { log in
+                        log.id == logID
+                    }
+                )
+                guard let log = try context.fetch(descriptor).first else { return }
+                log.actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(durationMinutes)
+                try context.save()
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating routine log duration: \(error)")
+            }
+        }
+    }
+
+    func handleUpdateTaskDuration(taskID: UUID, durationMinutes: Int?) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(durationMinutes)
+                try context.save()
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating task duration: \(error)")
+            }
+        }
+    }
+
     func handleEditSave(
         taskID: UUID,
         name: String,
@@ -208,6 +243,7 @@ extension TaskDetailFeature {
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool,
         estimatedDurationMinutes: Int?,
+        actualDurationMinutes: Int?,
         storyPoints: Int?,
         focusModeEnabled: Bool
     ) -> Effect<Action> {
@@ -262,6 +298,9 @@ extension TaskDetailFeature {
                         hasChecklistItems: !checklistItems.isEmpty
                     )
                 task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+                task.actualDurationMinutes = scheduleMode == .oneOff
+                    ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+                    : nil
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
                 if scheduleMode == .oneOff {

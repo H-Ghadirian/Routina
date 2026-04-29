@@ -56,6 +56,7 @@ enum SettingsRoutineDataPersistence {
             var ongoingSince: Date?
             var autoAssumeDailyDone: Bool?
             var estimatedDurationMinutes: Int?
+            var actualDurationMinutes: Int?
             var storyPoints: Int?
             var pressure: RoutineTaskPressure?
             var pressureUpdatedAt: Date?
@@ -66,6 +67,7 @@ enum SettingsRoutineDataPersistence {
             var timestamp: Date?
             var taskID: UUID
             var kind: RoutineLogKind?
+            var actualDurationMinutes: Int?
         }
 
         struct Attachment: Codable {
@@ -167,6 +169,7 @@ enum SettingsRoutineDataPersistence {
                     ongoingSince: $0.ongoingSince,
                     autoAssumeDailyDone: $0.autoAssumeDailyDone,
                     estimatedDurationMinutes: $0.estimatedDurationMinutes,
+                    actualDurationMinutes: $0.actualDurationMinutes,
                     storyPoints: $0.storyPoints,
                     pressure: $0.pressure,
                     pressureUpdatedAt: $0.pressureUpdatedAt
@@ -177,7 +180,8 @@ enum SettingsRoutineDataPersistence {
                     id: $0.id,
                     timestamp: $0.timestamp,
                     taskID: $0.taskID,
-                    kind: $0.kind
+                    kind: $0.kind,
+                    actualDurationMinutes: $0.actualDurationMinutes
                 )
             },
             attachments: nil
@@ -335,6 +339,7 @@ enum SettingsRoutineDataPersistence {
                     ongoingSince: $0.ongoingSince,
                     autoAssumeDailyDone: $0.autoAssumeDailyDone,
                     estimatedDurationMinutes: $0.estimatedDurationMinutes,
+                    actualDurationMinutes: $0.actualDurationMinutes,
                     storyPoints: $0.storyPoints
                 )
             },
@@ -343,7 +348,8 @@ enum SettingsRoutineDataPersistence {
                     id: $0.id,
                     timestamp: $0.timestamp,
                     taskID: $0.taskID,
-                    kind: $0.kind
+                    kind: $0.kind,
+                    actualDurationMinutes: $0.actualDurationMinutes
                 )
             },
             attachments: attachmentManifests
@@ -505,6 +511,7 @@ enum SettingsRoutineDataPersistence {
                     ongoingSince: task.ongoingSince,
                     autoAssumeDailyDone: task.autoAssumeDailyDone ?? false,
                     estimatedDurationMinutes: task.estimatedDurationMinutes,
+                    actualDurationMinutes: task.actualDurationMinutes,
                     storyPoints: task.storyPoints
                 )
                 context.insert(importedTask)
@@ -544,7 +551,8 @@ enum SettingsRoutineDataPersistence {
                     id: log.id,
                     timestamp: log.timestamp,
                     taskID: log.taskID,
-                    kind: log.kind ?? .completed
+                    kind: log.kind ?? .completed,
+                    actualDurationMinutes: log.actualDurationMinutes
                 )
                 context.insert(importedLog)
                 importedLogCount += 1

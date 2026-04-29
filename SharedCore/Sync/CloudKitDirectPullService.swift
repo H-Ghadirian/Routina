@@ -220,6 +220,7 @@ enum CloudKitDirectPullService {
         var ongoingSince: Date?
         var autoAssumeDailyDone: Bool?
         var estimatedDurationMinutes: Int?
+        var actualDurationMinutes: Int?
         var storyPoints: Int?
         var pressure: RoutineTaskPressure?
         var pressureUpdatedAt: Date?
@@ -239,6 +240,7 @@ enum CloudKitDirectPullService {
         var timestamp: Date?
         var taskID: UUID
         var kind: RoutineLogKind
+        var actualDurationMinutes: Int?
     }
 
     private static func parsePlace(from record: CKRecord) -> PlacePayload? {
@@ -386,6 +388,16 @@ enum CloudKitDirectPullService {
                 "cd_estimateddurationminutes"
             ]
         )
+        let actualDurationMinutesValue = intValue(
+            in: record,
+            keys: [
+                "actualDurationMinutes",
+                "ACTUALDURATIONMINUTES",
+                "zactualdurationminutes",
+                "ZACTUALDURATIONMINUTES",
+                "cd_actualdurationminutes"
+            ]
+        )
         let storyPointsValue = intValue(
             in: record,
             keys: [
@@ -432,6 +444,7 @@ enum CloudKitDirectPullService {
                 || pressureValue != nil
                 || pressureUpdatedAtValue != nil
                 || estimatedDurationMinutesValue != nil
+                || actualDurationMinutesValue != nil
                 || storyPointsValue != nil
                 || autoAssumeDailyDoneValue != nil
         else {
@@ -484,6 +497,7 @@ enum CloudKitDirectPullService {
             ongoingSince: ongoingSinceValue,
             autoAssumeDailyDone: autoAssumeDailyDoneValue,
             estimatedDurationMinutes: estimatedDurationMinutesValue,
+            actualDurationMinutes: RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutesValue),
             storyPoints: storyPointsValue,
             pressure: pressureValue,
             pressureUpdatedAt: pressureUpdatedAtValue
@@ -502,11 +516,22 @@ enum CloudKitDirectPullService {
 
         let timestamp = dateValue(in: record, keys: ["timestamp", "TIMESTAMP", "ztimestamp", "ZTIMESTAMP", "cd_timestamp"])
         let kindRawValue = stringValue(in: record, keys: ["kindRawValue", "kind", "KINDRAWVALUE", "zkindrawvalue", "ZKINDRAWVALUE", "cd_kindrawvalue"])
+        let actualDurationMinutes = intValue(
+            in: record,
+            keys: [
+                "actualDurationMinutes",
+                "ACTUALDURATIONMINUTES",
+                "zactualdurationminutes",
+                "ZACTUALDURATIONMINUTES",
+                "cd_actualdurationminutes"
+            ]
+        )
         return LogPayload(
             id: id,
             timestamp: timestamp,
             taskID: taskID,
-            kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed
+            kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed,
+            actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
         )
     }
 
@@ -627,6 +652,9 @@ enum CloudKitDirectPullService {
                 if let estimatedDurationMinutes = payload.estimatedDurationMinutes {
                     taskWithSameName.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
                 }
+                if let actualDurationMinutes = payload.actualDurationMinutes {
+                    taskWithSameName.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+                }
                 if let storyPoints = payload.storyPoints {
                     taskWithSameName.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 }
@@ -687,6 +715,9 @@ enum CloudKitDirectPullService {
             if let estimatedDurationMinutes = payload.estimatedDurationMinutes {
                 existing.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
             }
+            if let actualDurationMinutes = payload.actualDurationMinutes {
+                existing.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+            }
             if let storyPoints = payload.storyPoints {
                 existing.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
             }
@@ -746,6 +777,9 @@ enum CloudKitDirectPullService {
                 if let estimatedDurationMinutes = payload.estimatedDurationMinutes {
                     taskWithSameName.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
                 }
+                if let actualDurationMinutes = payload.actualDurationMinutes {
+                    taskWithSameName.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+                }
                 if let storyPoints = payload.storyPoints {
                     taskWithSameName.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 }
@@ -790,6 +824,7 @@ enum CloudKitDirectPullService {
                     ongoingSince: payload.ongoingSince,
                     autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false,
                     estimatedDurationMinutes: payload.estimatedDurationMinutes,
+                    actualDurationMinutes: payload.actualDurationMinutes,
                     storyPoints: payload.storyPoints
                 )
             )
@@ -814,17 +849,20 @@ enum CloudKitDirectPullService {
             existing.timestamp = payload.timestamp
             existing.taskID = payload.taskID
             existing.kind = payload.kind
+            existing.actualDurationMinutes = payload.actualDurationMinutes
         } else if let existing = try existingLog(matching: payload, in: context) {
             existing.timestamp = payload.timestamp
             existing.taskID = payload.taskID
             existing.kind = payload.kind
+            existing.actualDurationMinutes = payload.actualDurationMinutes
         } else {
             context.insert(
                 RoutineLog(
                     id: payload.id,
                     timestamp: payload.timestamp,
                     taskID: payload.taskID,
-                    kind: payload.kind
+                    kind: payload.kind,
+                    actualDurationMinutes: payload.actualDurationMinutes
                 )
             )
         }

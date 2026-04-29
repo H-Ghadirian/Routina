@@ -23,7 +23,6 @@ struct HomeTCAView: View {
     @State var areTaskListModeActionsExpanded = false
     @State var areTopActionsExpanded = false
     @State private var isRefreshScheduled = false
-    @State private var isCalendarTaskImportPresented = false
     @State var relatedFilterTagSuggestionAnchor: String?
 
     init(
@@ -55,11 +54,6 @@ struct HomeTCAView: View {
         )
             .sheet(isPresented: isFilterSheetPresentedBinding) {
                 homeFiltersSheet
-            }
-            .sheet(isPresented: $isCalendarTaskImportPresented) {
-                CalendarTaskImportSheet(existingTasks: store.routineTasks) {
-                    requestRefresh()
-                }
             }
             .onAppear {
                 requestRefresh()
@@ -205,16 +199,6 @@ struct HomeTCAView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Filters")
-    }
-
-    var calendarTaskImportButton: some View {
-        Button {
-            collapseExpandedToolbarActions()
-            isCalendarTaskImportPresented = true
-        } label: {
-            Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
-        }
-        .accessibilityLabel("Review Calendar Tasks")
     }
 
     func routineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {

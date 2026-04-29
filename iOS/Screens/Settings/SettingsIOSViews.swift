@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import SwiftData
 import SwiftUI
 import UIKit
 
@@ -37,6 +38,20 @@ struct SettingsIOSRootView: View {
                             title: "Notifications",
                             subtitle: store.notifications.overviewSubtitle,
                             value: store.notifications.notificationsEnabled ? "On" : "Off"
+                        )
+                    }
+
+                    NavigationLink {
+                        SettingsCalendarDetailView(store: store)
+                    } label: {
+                        SettingsNavigationRow(
+                            icon: "calendar.badge.plus",
+                            tint: .purple,
+                            title: "Calendar",
+                            subtitle: store.appearance.showPersianDates
+                                ? "Review tasks and show Persian dates"
+                                : "Review tasks and date display",
+                            value: store.appearance.showPersianDates ? "Persian" : nil
                         )
                     }
 
@@ -192,6 +207,8 @@ private struct SettingsIPadSplitView: View {
         switch section {
         case .notifications:
             SettingsNotificationsDetailView(store: store)
+        case .calendar:
+            SettingsCalendarDetailView(store: store)
         case .places:
             SettingsPlacesDetailView(store: store)
         case .tags:
@@ -214,6 +231,7 @@ private struct SettingsIPadSplitView: View {
 
 private enum SettingsIOSSection: String, CaseIterable, Identifiable, Hashable {
     case notifications
+    case calendar
     case places
     case tags
     case appearance
@@ -235,6 +253,8 @@ private enum SettingsIOSSection: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .notifications:
             return "Notifications"
+        case .calendar:
+            return "Calendar"
         case .places:
             return "Places"
         case .tags:
@@ -258,6 +278,8 @@ private enum SettingsIOSSection: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .notifications:
             return "bell.badge.fill"
+        case .calendar:
+            return "calendar.badge.plus"
         case .places:
             return "mappin.and.ellipse"
         case .tags:
@@ -281,6 +303,8 @@ private enum SettingsIOSSection: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .notifications:
             return .red
+        case .calendar:
+            return .purple
         case .places:
             return .blue
         case .tags:
@@ -319,6 +343,10 @@ private struct SettingsIPadSidebarRow: View {
         switch section {
         case .notifications:
             return store.notifications.overviewSubtitle
+        case .calendar:
+            return store.appearance.showPersianDates
+                ? "Review tasks and show Persian dates"
+                : "Review tasks and date display"
         case .places:
             return store.places.overviewSubtitle
         case .tags:
@@ -346,6 +374,8 @@ private struct SettingsIPadSidebarRow: View {
         switch section {
         case .notifications:
             return store.notifications.notificationsEnabled ? "On" : "Off"
+        case .calendar:
+            return store.appearance.showPersianDates ? "Persian" : nil
         case .iCloud:
             return store.cloud.cloudSyncAvailable ? nil : "Off"
         case .git:
@@ -353,6 +383,64 @@ private struct SettingsIPadSidebarRow: View {
         default:
             return nil
         }
+    }
+}
+
+private struct SettingsCalendarDetailView: View {
+    let store: StoreOf<SettingsFeature>
+    @Query private var existingTasks: [RoutineTask]
+    @State private var isCalendarTaskImportPresented = false
+
+    var body: some View {
+        WithPerceptionTracking {
+            List {
+                Section("Calendar Tasks") {
+                    Button {
+                        isCalendarTaskImportPresented = true
+                    } label: {
+                        Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
+                    }
+
+                    Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Date Display") {
+                    Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
+
+                    if store.appearance.showPersianDates {
+                        Text(persianDatePreviewText)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Calendar")
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $isCalendarTaskImportPresented) {
+                CalendarTaskImportSheet(existingTasks: existingTasks) {}
+            }
+        }
+    }
+
+    private var showPersianDatesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showPersianDates },
+            set: { store.send(.showPersianDatesToggled($0)) }
+        )
+    }
+
+    private var persianDatePreviewText: String {
+        let today = Date()
+        let dateText = today.formatted(date: .abbreviated, time: .omitted)
+        return "Today: " + PersianDateDisplay.appendingSupplementaryDate(
+            to: dateText,
+            for: today,
+            enabled: true
+        )
     }
 }
 
@@ -966,18 +1054,6 @@ private struct SettingsAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section("Dates") {
-                    Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
-
-                    if store.appearance.showPersianDates {
-                        Text(persianDatePreviewText)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
-                        .foregroundStyle(.secondary)
-                }
-
                 Section("App Lock") {
                     Toggle("Require unlock when opening Routina", isOn: appLockBinding)
                         .disabled(store.appearance.isAppLockToggleInProgress)
@@ -1083,23 +1159,6 @@ private struct SettingsAppearanceDetailView: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
-        )
-    }
-
-    private var showPersianDatesBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.showPersianDates },
-            set: { store.send(.showPersianDatesToggled($0)) }
-        )
-    }
-
-    private var persianDatePreviewText: String {
-        let today = Date()
-        let dateText = today.formatted(date: .abbreviated, time: .omitted)
-        return "Today: " + PersianDateDisplay.appendingSupplementaryDate(
-            to: dateText,
-            for: today,
-            enabled: true
         )
     }
 

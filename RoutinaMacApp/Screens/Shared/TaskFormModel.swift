@@ -40,6 +40,7 @@ struct TaskFormModel {
 
     // MARK: Estimation
     var estimatedDurationMinutes: Binding<Int?>
+    var actualDurationMinutes: Binding<Int?>? = nil
     var storyPoints: Binding<Int?>
 
     // MARK: Image

@@ -1114,6 +1114,7 @@ struct HomeFeature {
                 let context = ModelContext(self.modelContext().container)
                 try HomeDeduplicationSupport.enforceUniqueRoutineNames(in: context)
                 try HomeDeduplicationSupport.enforceUniquePlaceNames(in: context)
+                _ = try RoutineLogHistory.deduplicateRedundantSameDayLogs(in: context, calendar: self.calendar)
                 _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 let places = try context.fetch(FetchDescriptor<RoutinePlace>())

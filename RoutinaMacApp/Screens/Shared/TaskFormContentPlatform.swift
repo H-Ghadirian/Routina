@@ -568,7 +568,9 @@ struct TaskFormContent: View {
             VStack(alignment: .leading, spacing: 18) {
                 macControlBlock(
                     title: "Duration",
-                    caption: "Use either field when it helps. Leave both off when you do not want to estimate."
+                    caption: model.taskType.wrappedValue == .todo
+                        ? "Estimate is the plan. Actual time records what really happened."
+                        : "Estimate is the plan. Routines record actual time on each completion."
                 ) {
                     VStack(alignment: .leading, spacing: 10) {
                         Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
@@ -578,6 +580,16 @@ struct TaskFormContent: View {
                                     .frame(minWidth: 160, alignment: .leading)
                             }
                             .fixedSize()
+                        }
+                        if model.taskType.wrappedValue == .todo, model.actualDurationMinutes != nil {
+                            Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
+                            if actualDurationEnabledBinding.wrappedValue {
+                                Stepper(value: actualDurationStepperBinding, in: 1...1_440, step: 5) {
+                                    Text(estimatedDurationLabel(for: actualDurationStepperBinding.wrappedValue))
+                                        .frame(minWidth: 160, alignment: .leading)
+                                }
+                                .fixedSize()
+                            }
                         }
                     }
                 }
@@ -1387,6 +1399,25 @@ struct TaskFormContent: View {
         Binding(
             get: { max(model.estimatedDurationMinutes.wrappedValue ?? 30, 5) },
             set: { model.estimatedDurationMinutes.wrappedValue = RoutineTask.sanitizedEstimatedDurationMinutes(max($0, 5)) }
+        )
+    }
+
+    private var actualDurationEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { model.actualDurationMinutes?.wrappedValue != nil },
+            set: { isEnabled in
+                guard let actualDurationMinutes = model.actualDurationMinutes else { return }
+                actualDurationMinutes.wrappedValue = isEnabled
+                    ? (actualDurationMinutes.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30)
+                    : nil
+            }
+        )
+    }
+
+    private var actualDurationStepperBinding: Binding<Int> {
+        Binding(
+            get: { max(model.actualDurationMinutes?.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30, 1) },
+            set: { model.actualDurationMinutes?.wrappedValue = RoutineTask.sanitizedActualDurationMinutes(max($0, 1)) }
         )
     }
 
