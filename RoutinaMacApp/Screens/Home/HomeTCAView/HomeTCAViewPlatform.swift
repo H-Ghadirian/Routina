@@ -26,10 +26,6 @@ extension HomeTCAView {
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
         if isMacBoardMode {
-            ToolbarItem(placement: .primaryAction) {
-                macBoardTicketInspectorToolbarItem
-            }
-
             ToolbarItemGroup(placement: .primaryAction) {
                 macBoardFinishSprintToolbarItem
                 macBoardOpenCountToolbarItem
@@ -52,49 +48,65 @@ extension HomeTCAView {
     }
 
     var platformNavigationContent: some View {
-        NavigationSplitView {
-            WithPerceptionTracking {
-                macSidebarContent
-            }
-        } detail: {
+        Group {
             if isMacBoardMode {
-                macBoardCenterContent
+                NavigationSplitView {
+                    WithPerceptionTracking {
+                        macSidebarContent
+                    }
+                } detail: {
+                    macBoardCenterContent
+                        .navigationTitle(macSidebarNavigationTitle)
+                        .toolbar { macBoardDetailToolbarContent }
+                        .environment(\.addEditFormCoordinator, addEditFormCoordinator)
+                }
+                .inspector(isPresented: macBoardInspectorPresentedBinding) {
+                    macBoardTaskInspector
+                        .inspectorColumnWidth(min: 320, ideal: 400, max: 460)
+                        .environment(\.addEditFormCoordinator, addEditFormCoordinator)
+                }
+            } else {
+                NavigationSplitView {
+                    WithPerceptionTracking {
+                        macSidebarContent
+                    }
+                } detail: {
+                    MacDetailContainerView(
+                        store: store,
+                        isBoardPresented: isMacBoardMode,
+                        isTimelinePresented: isMacTimelineMode,
+                        isStatsPresented: isMacStatsMode,
+                        isSettingsPresented: isMacSettingsMode,
+                        settingsStore: settingsStore,
+                        statsStore: statsStore,
+                        selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
+                        addRoutineStore: self.store.scope(
+                            state: \.addRoutineState,
+                            action: \.addRoutineSheet
+                        )
+                    ) {
+                        macActiveFiltersDetailView
+                    } boardView: {
+                        macTodoBoardDetailView
+                    }
                     .navigationTitle(macSidebarNavigationTitle)
                     .environment(\.addEditFormCoordinator, addEditFormCoordinator)
-            } else {
-                MacDetailContainerView(
-                    store: store,
-                    isBoardPresented: isMacBoardMode,
-                    isTimelinePresented: isMacTimelineMode,
-                    isStatsPresented: isMacStatsMode,
-                    isSettingsPresented: isMacSettingsMode,
-                    settingsStore: settingsStore,
-                    statsStore: statsStore,
-                    selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
-                    addRoutineStore: self.store.scope(
-                        state: \.addRoutineState,
-                        action: \.addRoutineSheet
-                    )
-                ) {
-                    macActiveFiltersDetailView
-                } boardView: {
-                    macTodoBoardDetailView
                 }
-                .navigationTitle(macSidebarNavigationTitle)
-                .environment(\.addEditFormCoordinator, addEditFormCoordinator)
             }
         }
-        .inspector(isPresented: macBoardInspectorPresentedBinding) {
-            macBoardTaskInspector
-                .inspectorColumnWidth(min: 320, ideal: 400, max: 460)
-                .environment(\.addEditFormCoordinator, addEditFormCoordinator)
+    }
+
+    @ToolbarContentBuilder
+    var macBoardDetailToolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            macBoardTicketInspectorToolbarItem
         }
     }
 
     var macBoardInspectorPresentedBinding: Binding<Bool> {
         Binding(
             get: {
-                isMacBoardMode && isMacBoardTicketInspectorPresented
+                isMacBoardTicketInspectorPresented
             },
             set: { isPresented in
                 isMacBoardTicketInspectorPresented = isPresented
@@ -403,15 +415,13 @@ extension HomeTCAView {
     }
 
     var macBoardTicketInspectorToolbarItem: some View {
-        Button {
+        MacToolbarIconButton(
+            title: isMacBoardTicketInspectorPresented ? "Hide Ticket Details" : "Show Ticket Details",
+            systemImage: "sidebar.right"
+        ) {
             withAnimation(.easeInOut(duration: 0.22)) {
                 isMacBoardTicketInspectorPresented.toggle()
             }
-        } label: {
-            Label(
-                isMacBoardTicketInspectorPresented ? "Hide Ticket Details" : "Show Ticket Details",
-                systemImage: "sidebar.right"
-            )
         }
         .help(isMacBoardTicketInspectorPresented ? "Hide ticket details" : "Show ticket details")
     }

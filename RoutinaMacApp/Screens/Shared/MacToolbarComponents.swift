@@ -62,7 +62,7 @@ struct MacToolbarStatusBadge: NSViewRepresentable {
         textField.textColor = tintColor
         textField.lineBreakMode = .byTruncatingTail
         textField.maximumNumberOfLines = 1
-        textField.setContentCompressionResistancePriority(.required, for: .horizontal)
+        textField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textField.setContentHuggingPriority(.required, for: .horizontal)
 
         let stackView = NSStackView(views: [imageView, textField])
@@ -71,7 +71,7 @@ struct MacToolbarStatusBadge: NSViewRepresentable {
         stackView.spacing = 5
         stackView.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         stackView.setContentHuggingPriority(.required, for: .horizontal)
-        stackView.setContentCompressionResistancePriority(.required, for: .horizontal)
+        stackView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         update(stackView: stackView, imageView: imageView, textField: textField)
         return stackView
