@@ -140,6 +140,70 @@ enum RoutineLogKind: String, Codable, Equatable, Sendable {
     case canceled
 }
 
+enum RoutineTaskChangeKind: String, Codable, Equatable, Sendable {
+    case created
+    case stateChanged
+    case linkedTaskAdded
+    case linkedTaskRemoved
+    case timeSpentAdded
+    case timeSpentChanged
+    case timeSpentRemoved
+}
+
+struct RoutineTaskChangeLogEntry: Codable, Equatable, Identifiable, Sendable {
+    var id: UUID
+    var timestamp: Date
+    var kind: RoutineTaskChangeKind
+    var previousValue: String?
+    var newValue: String?
+    var relatedTaskID: UUID?
+    var relationshipKind: RoutineTaskRelationshipKind?
+    var durationMinutes: Int?
+
+    init(
+        id: UUID = UUID(),
+        timestamp: Date = Date(),
+        kind: RoutineTaskChangeKind,
+        previousValue: String? = nil,
+        newValue: String? = nil,
+        relatedTaskID: UUID? = nil,
+        relationshipKind: RoutineTaskRelationshipKind? = nil,
+        durationMinutes: Int? = nil
+    ) {
+        self.id = id
+        self.timestamp = timestamp
+        self.kind = kind
+        self.previousValue = previousValue
+        self.newValue = newValue
+        self.relatedTaskID = relatedTaskID
+        self.relationshipKind = relationshipKind
+        self.durationMinutes = durationMinutes
+    }
+}
+
+private enum RoutineTaskChangeLogStorage {
+    static func serialize(_ entries: [RoutineTaskChangeLogEntry]) -> String {
+        let sortedEntries = entries.sorted { $0.timestamp > $1.timestamp }
+        guard !sortedEntries.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(sortedEntries),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> [RoutineTaskChangeLogEntry] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([RoutineTaskChangeLogEntry].self, from: data) else {
+            return []
+        }
+        return decoded.sorted { $0.timestamp > $1.timestamp }
+    }
+}
+
 @Model
 final class RoutineTask {
     var id: UUID = UUID()
@@ -183,6 +247,7 @@ final class RoutineTask {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
+    var changeLogStorage: String = ""
 
     var isPaused: Bool {
         pausedAt != nil
@@ -329,6 +394,17 @@ final class RoutineTask {
     var relationships: [RoutineTaskRelationship] {
         get { RoutineTaskRelationshipStorage.deserialize(relationshipsStorage, ownerID: id) }
         set { relationshipsStorage = RoutineTaskRelationshipStorage.serialize(newValue, ownerID: id) }
+    }
+
+    var changeLogEntries: [RoutineTaskChangeLogEntry] {
+        get {
+            let entries = RoutineTaskChangeLogStorage.deserialize(changeLogStorage)
+            if entries.isEmpty, let createdAt {
+                return [RoutineTaskChangeLogEntry(timestamp: createdAt, kind: .created)]
+            }
+            return entries
+        }
+        set { changeLogStorage = RoutineTaskChangeLogStorage.serialize(newValue) }
     }
 
     var scheduleMode: RoutineScheduleMode {
@@ -548,6 +624,23 @@ final class RoutineTask {
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         self.focusModeEnabled = focusModeEnabled
+        var initialChanges = [
+            RoutineTaskChangeLogEntry(
+                timestamp: createdAt ?? Date(),
+                kind: .created
+            )
+        ]
+        initialChanges.append(
+            contentsOf: RoutineTaskRelationship.sanitized(relationships, ownerID: id).map {
+                RoutineTaskChangeLogEntry(
+                    timestamp: createdAt ?? Date(),
+                    kind: .linkedTaskAdded,
+                    relatedTaskID: $0.targetTaskID,
+                    relationshipKind: $0.kind
+                )
+            }
+        )
+        self.changeLogStorage = RoutineTaskChangeLogStorage.serialize(initialChanges)
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
             resetStepProgress()
         }
@@ -999,8 +1092,13 @@ final class RoutineTask {
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage
+        copy.changeLogStorage = changeLogStorage
         copy.scheduleAnchor = scheduleAnchor
         return copy
+    }
+
+    func appendChangeLogEntry(_ entry: RoutineTaskChangeLogEntry) {
+        changeLogEntries = [entry] + changeLogEntries
     }
 
     static func sanitizedEstimatedDurationMinutes(_ value: Int?) -> Int? {

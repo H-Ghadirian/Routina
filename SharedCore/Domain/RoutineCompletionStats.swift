@@ -48,6 +48,22 @@ struct FocusDurationChartPoint: Equatable, Identifiable {
     }
 }
 
+struct TagUsageChartPoint: Equatable, Identifiable {
+    let name: String
+    let completionCount: Int
+    let linkedRoutineCount: Int
+    let linkedTodoCount: Int
+    let colorHex: String?
+
+    var id: String {
+        RoutineTag.normalized(name) ?? name
+    }
+
+    var bubbleValue: Int {
+        max(completionCount, linkedRoutineCount)
+    }
+}
+
 enum RoutineCompletionStats {
     static func points(
         for range: DoneChartRange,
@@ -105,6 +121,58 @@ enum RoutineCompletionStats {
             }
             return lhs.count < rhs.count
         }
+    }
+
+    static func tagUsagePoints(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        chartPoints: [DoneChartPoint],
+        tagColors: [String: String],
+        limit: Int = 12,
+        calendar: Calendar = .current
+    ) -> [TagUsageChartPoint] {
+        guard !tasks.isEmpty else { return [] }
+
+        let taskIDs = Set(tasks.map(\.id))
+        let chartDays = Set(chartPoints.map { calendar.startOfDay(for: $0.date) })
+        let completionCountsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
+            guard log.kind == .completed,
+                  taskIDs.contains(log.taskID),
+                  let timestamp = log.timestamp,
+                  chartDays.contains(calendar.startOfDay(for: timestamp)) else {
+                return
+            }
+
+            partialResult[log.taskID, default: 0] += 1
+        }
+
+        let summaries = RoutineTagColors.applying(
+            tagColors,
+            to: RoutineTag.summaries(from: tasks, countsByTaskID: completionCountsByTaskID)
+        )
+
+        return summaries
+            .filter { $0.doneCount > 0 || $0.linkedRoutineCount > 0 }
+            .map {
+                TagUsageChartPoint(
+                    name: $0.name,
+                    completionCount: $0.doneCount,
+                    linkedRoutineCount: $0.linkedRoutineCount,
+                    linkedTodoCount: $0.linkedTodoCount,
+                    colorHex: $0.colorHex
+                )
+            }
+            .sorted {
+                if $0.completionCount != $1.completionCount {
+                    return $0.completionCount > $1.completionCount
+                }
+                if $0.linkedRoutineCount != $1.linkedRoutineCount {
+                    return $0.linkedRoutineCount > $1.linkedRoutineCount
+                }
+                return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+            .prefix(limit)
+            .map { $0 }
     }
 }
 

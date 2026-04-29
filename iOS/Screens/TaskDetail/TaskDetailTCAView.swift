@@ -12,6 +12,7 @@ struct TaskDetailTCAView: View {
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = true
+    @State private var isTaskChangesExpanded = true
     @State private var editingTimeLog: RoutineLog?
     @State private var editingTimeSpentMinutes = 25
     @State private var isEditingTaskTimeSpent = false
@@ -302,6 +303,7 @@ struct TaskDetailTCAView: View {
                     focusSessionSection
                 }
                 routineLogsSection
+                taskChangesSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -333,6 +335,7 @@ struct TaskDetailTCAView: View {
                 }
                 routineSummarySection
                 routineLogsSection
+                taskChangesSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -1707,6 +1710,122 @@ struct TaskDetailTCAView: View {
     private func beginEditingTaskTime() {
         editingTimeSpentMinutes = store.task.actualDurationMinutes ?? store.task.estimatedDurationMinutes ?? 25
         isEditingTaskTimeSpent = true
+    }
+
+    private var taskChangesSection: some View {
+        let changes = store.task.changeLogEntries
+        return VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isTaskChangesExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Task Changes")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+
+                    Text(changes.count.formatted())
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.secondary.opacity(0.12), in: Capsule())
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isTaskChangesExpanded ? 180 : 0))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isTaskChangesExpanded {
+                if changes.isEmpty {
+                    Text("No changes yet")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(Array(changes.prefix(12).enumerated()), id: \.element.id) { index, change in
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: taskChangeSystemImage(change))
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 18, height: 18)
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(taskChangeTitle(change))
+                                    .font(.subheadline.weight(.medium))
+                                Text(logTimestampText(change.timestamp))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.vertical, 7)
+
+                        if index < min(changes.count, 12) - 1 {
+                            Divider()
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(routineLogsBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        )
+    }
+
+    private func taskChangeTitle(_ change: RoutineTaskChangeLogEntry) -> String {
+        switch change.kind {
+        case .created:
+            return "Task created"
+        case .stateChanged:
+            return "State changed from \(change.previousValue ?? "Unknown") to \(change.newValue ?? "Unknown")"
+        case .linkedTaskAdded:
+            return "Linked \(relatedTaskName(for: change)) as \(change.relationshipKind?.title ?? "Related")"
+        case .linkedTaskRemoved:
+            return "Removed link to \(relatedTaskName(for: change))"
+        case .timeSpentAdded:
+            return "Added \(durationText(for: change.durationMinutes ?? change.newValue.flatMap(Int.init))) time spent"
+        case .timeSpentChanged:
+            return "Changed time spent to \(durationText(for: change.durationMinutes ?? change.newValue.flatMap(Int.init)))"
+        case .timeSpentRemoved:
+            return "Removed time spent"
+        }
+    }
+
+    private func taskChangeSystemImage(_ change: RoutineTaskChangeLogEntry) -> String {
+        switch change.kind {
+        case .created:
+            return "plus.circle"
+        case .stateChanged:
+            return "arrow.triangle.2.circlepath"
+        case .linkedTaskAdded:
+            return "link.badge.plus"
+        case .linkedTaskRemoved:
+            return "link.badge.minus"
+        case .timeSpentAdded, .timeSpentChanged, .timeSpentRemoved:
+            return "clock"
+        }
+    }
+
+    private func relatedTaskName(for change: RoutineTaskChangeLogEntry) -> String {
+        guard let relatedTaskID = change.relatedTaskID else { return "task" }
+        return focusSessionTasks.first(where: { $0.id == relatedTaskID })?.name ?? "task"
+    }
+
+    private func durationText(for minutes: Int?) -> String {
+        guard let minutes else { return "time" }
+        return RoutineTimeSpentFormatting.compactMinutesText(minutes)
     }
 
     private var relationshipsSection: some View {

@@ -308,7 +308,12 @@ struct TaskDetailFeature: Reducer {
                 trackPendingLocalCompletion(at: completionDate, in: &state)
             }
             updateDerivedState(&state)
-            return handleMarkAsDone(taskID: state.task.id, completedAt: completionDate, referenceDate: now)
+            return handleMarkAsDone(
+                taskID: state.task.id,
+                completedAt: completionDate,
+                referenceDate: now,
+                previousStateTitle: state.task.todoState?.displayTitle
+            )
 
         case .cancelTodo:
             guard state.task.isOneOffTask else { return .none }
@@ -467,15 +472,26 @@ struct TaskDetailFeature: Reducer {
 
         case let .updateLogDuration(logID, durationMinutes):
             let sanitizedDuration = RoutineLog.sanitizedActualDurationMinutes(durationMinutes)
+            let previousDuration = state.logs.first(where: { $0.id == logID })?.actualDurationMinutes
             if let index = state.logs.firstIndex(where: { $0.id == logID }) {
                 state.logs[index].actualDurationMinutes = sanitizedDuration
             }
-            return handleUpdateLogDuration(logID: logID, durationMinutes: sanitizedDuration)
+            return handleUpdateLogDuration(
+                taskID: state.task.id,
+                logID: logID,
+                previousDurationMinutes: previousDuration,
+                durationMinutes: sanitizedDuration
+            )
 
         case let .updateTaskDuration(durationMinutes):
             let sanitizedDuration = RoutineTask.sanitizedActualDurationMinutes(durationMinutes)
+            let previousDuration = state.task.actualDurationMinutes
             state.task.actualDurationMinutes = sanitizedDuration
-            return handleUpdateTaskDuration(taskID: state.task.id, durationMinutes: sanitizedDuration)
+            return handleUpdateTaskDuration(
+                taskID: state.task.id,
+                previousDurationMinutes: previousDuration,
+                durationMinutes: sanitizedDuration
+            )
 
         case let .requestRemoveLogEntry(timestamp):
             state.pendingLogRemovalTimestamp = timestamp
@@ -987,6 +1003,7 @@ struct TaskDetailFeature: Reducer {
         case let .todoStateChanged(newState):
             guard state.task.isOneOffTask else { return .none }
             guard !state.task.isCompletedOneOff, !state.task.isCanceledOneOff else { return .none }
+            let previousStateTitle = state.task.todoState?.displayTitle
             switch newState {
             case .done:
                 return reduce(into: &state, action: .markAsDone)
@@ -996,14 +1013,27 @@ struct TaskDetailFeature: Reducer {
                 state.task.todoStateRawValue = nil
                 refreshTaskView(&state)
                 updateDerivedState(&state)
-                return handleTodoStateChanged(taskID: state.task.id, rawValue: nil, pausedAt: pauseDate)
+                return handleTodoStateChanged(
+                    taskID: state.task.id,
+                    rawValue: nil,
+                    pausedAt: pauseDate,
+                    previousStateTitle: previousStateTitle,
+                    newStateTitle: newState.displayTitle
+                )
             case .ready, .inProgress, .blocked:
                 state.task.pausedAt = nil
                 state.task.snoozedUntil = nil
                 state.task.todoStateRawValue = newState.rawValue
                 refreshTaskView(&state)
                 updateDerivedState(&state)
-                return handleTodoStateChanged(taskID: state.task.id, rawValue: newState.rawValue, pausedAt: nil, clearSnoozed: true)
+                return handleTodoStateChanged(
+                    taskID: state.task.id,
+                    rawValue: newState.rawValue,
+                    pausedAt: nil,
+                    clearSnoozed: true,
+                    previousStateTitle: previousStateTitle,
+                    newStateTitle: newState.displayTitle
+                )
             }
 
         case let .pressureChanged(pressure):

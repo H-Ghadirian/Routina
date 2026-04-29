@@ -395,6 +395,7 @@ struct StatsView: View {
                 AnyView(heroSection(metrics: currentMetrics))
                 AnyView(summaryCards(metrics: currentMetrics))
                 AnyView(chartSection(metrics: currentMetrics))
+                AnyView(tagUsageSection(metrics: currentMetrics))
                 AnyView(focusChartSection(metrics: currentMetrics))
                 if store.isGitFeaturesEnabled {
                     AnyView(gitHubSection)
@@ -1534,6 +1535,97 @@ struct StatsView: View {
         )
     }
 
+    private func tagUsageSection(metrics: Metrics) -> some View {
+        let points = metrics.tagUsagePoints
+        let maxValue = max(points.map(\.bubbleValue).max() ?? 1, 1)
+        let columns = tagUsageColumnCount(for: points.count)
+        let rows = max(Int(ceil(Double(max(points.count, 1)) / Double(columns))), 1)
+
+        return VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Tag usage")
+                        .font(.title3.weight(.semibold))
+
+                    Text(tagUsageSectionSubtitle(metrics: metrics))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                smallHighlightBadge(
+                    title: "Tags",
+                    value: points.count.formatted()
+                )
+            }
+
+            if points.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "tag")
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text("Tags will appear here after matching routines are completed.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, minHeight: 220)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
+                )
+            } else {
+                Chart {
+                    ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
+                        PointMark(
+                            x: .value("Column", tagUsageColumn(for: index, columns: columns)),
+                            y: .value("Row", tagUsageRow(for: index, columns: columns, rows: rows))
+                        )
+                        .symbolSize(tagUsageSymbolSize(for: point, maxValue: maxValue))
+                        .foregroundStyle(tagUsageBubbleColor(for: point))
+                        .annotation(position: .overlay) {
+                            VStack(spacing: 2) {
+                                Text("#\(point.name)")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+
+                                Text(tagUsageValueText(for: point))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.82))
+                            }
+                            .minimumScaleFactor(0.72)
+                            .frame(width: tagUsageLabelWidth(for: point, maxValue: maxValue))
+                            .shadow(color: .black.opacity(0.22), radius: 1, x: 0, y: 1)
+                        }
+                    }
+                }
+                .chartXScale(domain: (-0.5)...(Double(columns) - 0.5))
+                .chartYScale(domain: (-0.5)...(Double(rows) - 0.5))
+                .chartXAxis(.hidden)
+                .chartYAxis(.hidden)
+                .chartPlotStyle { plotArea in
+                    plotArea
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
+                        )
+                }
+                .frame(minHeight: tagUsageChartHeight(rows: rows))
+                .accessibilityLabel("Tag usage bubble chart")
+            }
+        }
+        .padding(20)
+        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
+        )
+    }
+
     private func heroStatPill(icon: String, title: String, value: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
@@ -1787,6 +1879,55 @@ struct StatsView: View {
         }
 
         return "\(focusDurationText(metrics.totalFocusSeconds)) focused across \(metrics.focusActiveDayCount) \(metrics.focusActiveDayCount == 1 ? "day" : "days")."
+    }
+
+    private func tagUsageSectionSubtitle(metrics: Metrics) -> String {
+        let completionTotal = metrics.tagUsagePoints.reduce(0) { $0 + $1.completionCount }
+        if completionTotal > 0 {
+            return "Bubbles scale by completions for matching tags in \(selectedRange.periodDescription.lowercased())."
+        }
+        if !metrics.tagUsagePoints.isEmpty {
+            return "No completions yet, so bubbles scale by matching routines per tag."
+        }
+        return "Complete tagged routines to see which themes are getting the most attention."
+    }
+
+    private func tagUsageValueText(for point: TagUsageChartPoint) -> String {
+        if point.completionCount > 0 {
+            return point.completionCount == 1 ? "1 done" : "\(point.completionCount) done"
+        }
+        return point.linkedRoutineCount == 1 ? "1 routine" : "\(point.linkedRoutineCount) routines"
+    }
+
+    private func tagUsageBubbleColor(for point: TagUsageChartPoint) -> Color {
+        Color(routineTagHex: point.colorHex)
+            ?? Color.accentColor.opacity(colorScheme == .dark ? 0.78 : 0.68)
+    }
+
+    private func tagUsageColumnCount(for count: Int) -> Int {
+        min(horizontalSizeClass == .compact ? 3 : 4, max(count, 1))
+    }
+
+    private func tagUsageColumn(for index: Int, columns: Int) -> Double {
+        Double(index % columns)
+    }
+
+    private func tagUsageRow(for index: Int, columns: Int, rows: Int) -> Double {
+        Double(rows - 1 - (index / columns))
+    }
+
+    private func tagUsageSymbolSize(for point: TagUsageChartPoint, maxValue: Int) -> CGFloat {
+        let normalized = sqrt(Double(point.bubbleValue) / Double(max(maxValue, 1)))
+        return 1_900 + CGFloat(normalized) * 5_900
+    }
+
+    private func tagUsageLabelWidth(for point: TagUsageChartPoint, maxValue: Int) -> CGFloat {
+        let normalized = sqrt(Double(point.bubbleValue) / Double(max(maxValue, 1)))
+        return 58 + CGFloat(normalized) * 36
+    }
+
+    private func tagUsageChartHeight(rows: Int) -> CGFloat {
+        CGFloat(rows) * 118 + 18
     }
 
     private func xAxisLabel(for date: Date) -> String {

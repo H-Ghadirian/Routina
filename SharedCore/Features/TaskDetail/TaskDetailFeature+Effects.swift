@@ -46,7 +46,65 @@ extension TaskDetailFeature {
         )
     }
 
-    func handleMarkAsDone(taskID: UUID, completedAt: Date, referenceDate: Date? = nil) -> Effect<Action> {
+    func timeSpentChangeEntry(
+        previousDurationMinutes: Int?,
+        durationMinutes: Int?
+    ) -> RoutineTaskChangeLogEntry {
+        let kind: RoutineTaskChangeKind
+        switch (previousDurationMinutes, durationMinutes) {
+        case (nil, .some):
+            kind = .timeSpentAdded
+        case (.some, nil):
+            kind = .timeSpentRemoved
+        default:
+            kind = .timeSpentChanged
+        }
+        return RoutineTaskChangeLogEntry(
+            timestamp: now,
+            kind: kind,
+            previousValue: previousDurationMinutes.map(String.init),
+            newValue: durationMinutes.map(String.init),
+            durationMinutes: durationMinutes
+        )
+    }
+
+    func appendRelationshipChangeEntries(
+        to task: RoutineTask,
+        previousRelationships: [RoutineTaskRelationship],
+        updatedRelationships: [RoutineTaskRelationship]
+    ) {
+        let previousByID = Dictionary(uniqueKeysWithValues: previousRelationships.map { ($0.targetTaskID, $0) })
+        let updatedByID = Dictionary(uniqueKeysWithValues: updatedRelationships.map { ($0.targetTaskID, $0) })
+
+        for relationship in updatedRelationships where previousByID[relationship.targetTaskID] != relationship {
+            task.appendChangeLogEntry(
+                RoutineTaskChangeLogEntry(
+                    timestamp: now,
+                    kind: .linkedTaskAdded,
+                    relatedTaskID: relationship.targetTaskID,
+                    relationshipKind: relationship.kind
+                )
+            )
+        }
+
+        for relationship in previousRelationships where updatedByID[relationship.targetTaskID] == nil {
+            task.appendChangeLogEntry(
+                RoutineTaskChangeLogEntry(
+                    timestamp: now,
+                    kind: .linkedTaskRemoved,
+                    relatedTaskID: relationship.targetTaskID,
+                    relationshipKind: relationship.kind
+                )
+            )
+        }
+    }
+
+    func handleMarkAsDone(
+        taskID: UUID,
+        completedAt: Date,
+        referenceDate: Date? = nil,
+        previousStateTitle: String? = nil
+    ) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = ModelContext(modelContext().container)
@@ -58,6 +116,18 @@ extension TaskDetailFeature {
                     calendar: calendar
                 ) else {
                     return
+                }
+                if advancedTask.task.isOneOffTask,
+                   previousStateTitle != TodoState.done.displayTitle {
+                    advancedTask.task.appendChangeLogEntry(
+                        RoutineTaskChangeLogEntry(
+                            timestamp: now,
+                            kind: .stateChanged,
+                            previousValue: previousStateTitle,
+                            newValue: TodoState.done.displayTitle
+                        )
+                    )
+                    try context.save()
                 }
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))
@@ -184,7 +254,12 @@ extension TaskDetailFeature {
         }
     }
 
-    func handleUpdateLogDuration(logID: UUID, durationMinutes: Int?) -> Effect<Action> {
+    func handleUpdateLogDuration(
+        taskID: UUID,
+        logID: UUID,
+        previousDurationMinutes: Int?,
+        durationMinutes: Int?
+    ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
@@ -195,6 +270,15 @@ extension TaskDetailFeature {
                 )
                 guard let log = try context.fetch(descriptor).first else { return }
                 log.actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(durationMinutes)
+                if previousDurationMinutes != durationMinutes,
+                   let task = try context.fetch(taskDescriptor(for: taskID)).first {
+                    task.appendChangeLogEntry(
+                        timeSpentChangeEntry(
+                            previousDurationMinutes: previousDurationMinutes,
+                            durationMinutes: durationMinutes
+                        )
+                    )
+                }
                 try context.save()
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -204,12 +288,24 @@ extension TaskDetailFeature {
         }
     }
 
-    func handleUpdateTaskDuration(taskID: UUID, durationMinutes: Int?) -> Effect<Action> {
+    func handleUpdateTaskDuration(
+        taskID: UUID,
+        previousDurationMinutes: Int?,
+        durationMinutes: Int?
+    ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
                 task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(durationMinutes)
+                if previousDurationMinutes != durationMinutes {
+                    task.appendChangeLogEntry(
+                        timeSpentChangeEntry(
+                            previousDurationMinutes: previousDurationMinutes,
+                            durationMinutes: durationMinutes
+                        )
+                    )
+                }
                 try context.save()
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -256,6 +352,8 @@ extension TaskDetailFeature {
                 }
                 let previousScheduleMode = task.scheduleMode
                 let previousRecurrenceRule = task.recurrenceRule
+                let previousRelationships = task.relationships
+                let previousActualDurationMinutes = task.actualDurationMinutes
                 task.name = name
                 task.emoji = emoji
                 task.notes = notes
@@ -301,6 +399,19 @@ extension TaskDetailFeature {
                 task.actualDurationMinutes = scheduleMode == .oneOff
                     ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
                     : nil
+                appendRelationshipChangeEntries(
+                    to: task,
+                    previousRelationships: previousRelationships,
+                    updatedRelationships: task.relationships
+                )
+                if previousActualDurationMinutes != task.actualDurationMinutes {
+                    task.appendChangeLogEntry(
+                        timeSpentChangeEntry(
+                            previousDurationMinutes: previousActualDurationMinutes,
+                            durationMinutes: task.actualDurationMinutes
+                        )
+                    )
+                }
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
                 if scheduleMode == .oneOff {
@@ -658,7 +769,14 @@ extension TaskDetailFeature {
         }
     }
 
-    func handleTodoStateChanged(taskID: UUID, rawValue: String?, pausedAt: Date?, clearSnoozed: Bool = false) -> Effect<Action> {
+    func handleTodoStateChanged(
+        taskID: UUID,
+        rawValue: String?,
+        pausedAt: Date?,
+        clearSnoozed: Bool = false,
+        previousStateTitle: String?,
+        newStateTitle: String
+    ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
@@ -666,6 +784,16 @@ extension TaskDetailFeature {
                 task.todoStateRawValue = rawValue
                 task.pausedAt = pausedAt
                 if clearSnoozed { task.snoozedUntil = nil }
+                if previousStateTitle != newStateTitle {
+                    task.appendChangeLogEntry(
+                        RoutineTaskChangeLogEntry(
+                            timestamp: now,
+                            kind: .stateChanged,
+                            previousValue: previousStateTitle,
+                            newValue: newStateTitle
+                        )
+                    )
+                }
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {

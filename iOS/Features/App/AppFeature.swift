@@ -436,6 +436,7 @@ struct StatsFeature {
     struct Metrics: Equatable {
         var chartPoints: [DoneChartPoint] = []
         var focusChartPoints: [FocusDurationChartPoint] = []
+        var tagUsagePoints: [TagUsageChartPoint] = []
         var totalDoneCount: Int = 0
         var totalCanceledCount: Int = 0
         var totalFocusSeconds: TimeInterval = 0
@@ -814,6 +815,13 @@ struct StatsFeature {
             referenceDate: now,
             calendar: calendar
         )
+        let tagUsagePoints = RoutineCompletionStats.tagUsagePoints(
+            tasks: filteredTasks,
+            logs: filteredLogs,
+            chartPoints: chartPoints,
+            tagColors: state.tagColors,
+            calendar: calendar
+        )
         let totalCount = RoutineCompletionStats.totalCount(in: chartPoints)
         let averagePerDay = RoutineCompletionStats.averageCount(in: chartPoints)
         let busiestDay = RoutineCompletionStats.busiestDay(in: chartPoints)
@@ -831,6 +839,7 @@ struct StatsFeature {
         state.metrics = Metrics(
             chartPoints: chartPoints,
             focusChartPoints: focusChartPoints,
+            tagUsagePoints: tagUsagePoints,
             totalDoneCount: completionDates.count,
             totalCanceledCount: canceledDates.count,
             totalFocusSeconds: totalFocusSeconds,
