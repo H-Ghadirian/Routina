@@ -36,6 +36,7 @@ struct SwiftDataModelTests {
         #expect(task.autoAssumeDailyDone == false)
         #expect(task.estimatedDurationMinutes == nil)
         #expect(task.storyPoints == nil)
+        #expect(task.focusModeEnabled == false)
     }
 
     @Test

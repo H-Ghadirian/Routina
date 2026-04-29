@@ -541,6 +541,8 @@ struct TaskFormContent: View {
                 }
             }
 
+            Toggle("Show focus timer", isOn: model.focusModeEnabled)
+
             Text(estimationHelpText).font(.caption).foregroundStyle(.secondary)
         }
     }

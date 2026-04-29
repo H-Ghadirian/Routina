@@ -1,5 +1,25 @@
 import ComposableArchitecture
 import SwiftUI
+import UIKit
+
+struct SettingsPlatformRootView: View {
+    let store: StoreOf<SettingsFeature>
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    var body: some View {
+        if usesSidebarLayout {
+            SettingsIPadSplitView(store: store)
+        } else {
+            NavigationStack {
+                SettingsIOSRootView(store: store)
+            }
+        }
+    }
+
+    private var usesSidebarLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+    }
+}
 
 struct SettingsIOSRootView: View {
     let store: StoreOf<SettingsFeature>
@@ -88,6 +108,17 @@ struct SettingsIOSRootView: View {
 
                 Section {
                     NavigationLink {
+                        SettingsDataBackupDetailView(store: store)
+                    } label: {
+                        SettingsNavigationRow(
+                            icon: "externaldrive.fill",
+                            tint: .indigo,
+                            title: "Data Backup",
+                            subtitle: store.dataTransfer.overviewSubtitle
+                        )
+                    }
+
+                    NavigationLink {
                         SettingsSupportDetailView(store: store)
                     } label: {
                         SettingsNavigationRow(
@@ -113,6 +144,214 @@ struct SettingsIOSRootView: View {
             .listStyle(.insetGrouped)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+private struct SettingsIPadSplitView: View {
+    let store: StoreOf<SettingsFeature>
+    @State private var selectedSection: SettingsIOSSection? = .notifications
+
+    var body: some View {
+        WithPerceptionTracking {
+            NavigationSplitView {
+                List(selection: $selectedSection) {
+                    ForEach(SettingsIOSSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
+                        SettingsIPadSidebarRow(
+                            section: section,
+                            store: store
+                        )
+                        .tag(section)
+                    }
+                }
+                .listStyle(.sidebar)
+                .navigationTitle("Settings")
+                .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 400)
+            } detail: {
+                settingsDetail(for: selectedDetailSection)
+            }
+            .navigationSplitViewStyle(.balanced)
+            .onChange(of: store.appearance.isGitFeaturesEnabled) { _, isEnabled in
+                if !isEnabled, selectedSection == .git {
+                    selectedSection = .appearance
+                }
+            }
+        }
+    }
+
+    private var selectedDetailSection: SettingsIOSSection {
+        let fallback = selectedSection ?? .notifications
+        if fallback == .git, !store.appearance.isGitFeaturesEnabled {
+            return .appearance
+        }
+        return fallback
+    }
+
+    @ViewBuilder
+    private func settingsDetail(for section: SettingsIOSSection) -> some View {
+        switch section {
+        case .notifications:
+            SettingsNotificationsDetailView(store: store)
+        case .places:
+            SettingsPlacesDetailView(store: store)
+        case .tags:
+            SettingsTagsDetailView(store: store)
+        case .appearance:
+            SettingsAppearanceDetailView(store: store)
+        case .iCloud:
+            SettingsCloudDetailView(store: store)
+        case .git:
+            SettingsGitDetailView(store: store)
+        case .backup:
+            SettingsDataBackupDetailView(store: store)
+        case .support:
+            SettingsSupportDetailView(store: store)
+        case .about:
+            SettingsAboutDetailView(store: store)
+        }
+    }
+}
+
+private enum SettingsIOSSection: String, CaseIterable, Identifiable, Hashable {
+    case notifications
+    case places
+    case tags
+    case appearance
+    case iCloud
+    case git
+    case backup
+    case support
+    case about
+
+    var id: String { rawValue }
+
+    static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsIOSSection] {
+        allCases.filter { section in
+            section != .git || isGitFeaturesEnabled
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .notifications:
+            return "Notifications"
+        case .places:
+            return "Places"
+        case .tags:
+            return "Tags"
+        case .appearance:
+            return "Appearance"
+        case .iCloud:
+            return "iCloud"
+        case .git:
+            return "Git"
+        case .backup:
+            return "Data Backup"
+        case .support:
+            return "Support"
+        case .about:
+            return "About"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .notifications:
+            return "bell.badge.fill"
+        case .places:
+            return "mappin.and.ellipse"
+        case .tags:
+            return "tag.fill"
+        case .appearance:
+            return "app.badge.fill"
+        case .iCloud:
+            return "icloud.fill"
+        case .git:
+            return "arrow.triangle.branch"
+        case .backup:
+            return "externaldrive.fill"
+        case .support:
+            return "envelope.fill"
+        case .about:
+            return "info.circle.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .notifications:
+            return .red
+        case .places:
+            return .blue
+        case .tags:
+            return .pink
+        case .appearance:
+            return .orange
+        case .iCloud:
+            return .cyan
+        case .git, .backup:
+            return .indigo
+        case .support:
+            return .green
+        case .about:
+            return .gray
+        }
+    }
+}
+
+private struct SettingsIPadSidebarRow: View {
+    let section: SettingsIOSSection
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            SettingsNavigationRow(
+                icon: section.icon,
+                tint: section.tint,
+                title: section.title,
+                subtitle: subtitle,
+                value: value
+            )
+        }
+    }
+
+    private var subtitle: String {
+        switch section {
+        case .notifications:
+            return store.notifications.overviewSubtitle
+        case .places:
+            return store.places.overviewSubtitle
+        case .tags:
+            return store.tags.overviewSubtitle
+        case .appearance:
+            return store.appearance.overviewSubtitle
+        case .iCloud:
+            return store.cloud.overviewSubtitle
+        case .git:
+            let ghConnected = store.github.connectedRepository != nil
+            let glConnected = store.gitlab.isConnected
+            if ghConnected && glConnected { return "GitHub & GitLab connected" }
+            if glConnected { return store.gitlab.overviewSubtitle }
+            return store.github.overviewSubtitle
+        case .backup:
+            return store.dataTransfer.overviewSubtitle
+        case .support:
+            return "Contact us by email"
+        case .about:
+            return store.diagnostics.aboutOverviewSubtitle
+        }
+    }
+
+    private var value: String? {
+        switch section {
+        case .notifications:
+            return store.notifications.notificationsEnabled ? "On" : "Off"
+        case .iCloud:
+            return store.cloud.cloudSyncAvailable ? nil : "Off"
+        case .git:
+            return (store.github.connectedRepository != nil || store.gitlab.isConnected) ? "Live" : nil
+        default:
+            return nil
         }
     }
 }
@@ -966,6 +1205,48 @@ private struct SettingsCloudDetailView: View {
             Text(value)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+private struct SettingsDataBackupDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
+        WithPerceptionTracking {
+            List {
+                Section("Actions") {
+                    Button {
+                        store.send(.exportRoutineDataTapped)
+                    } label: {
+                        Label("Export Routine Data", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(store.dataTransfer.isDataTransferInProgress)
+
+                    Button {
+                        store.send(.importRoutineDataTapped)
+                    } label: {
+                        Label("Import Routine Data", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(store.dataTransfer.isDataTransferInProgress)
+                }
+
+                Section("Status") {
+                    if store.dataTransfer.isDataTransferInProgress {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text(store.dataTransfer.statusText)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text(store.dataTransfer.statusText)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Data Backup")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

@@ -657,7 +657,8 @@ struct TaskDetailFeatureTests {
                 editFrequency: .week,
                 editFrequencyValue: 1,
                 editEstimatedDurationMinutes: 95,
-                editStoryPoints: 3
+                editStoryPoints: 3,
+                editFocusModeEnabled: true
             )
         ) {
             TaskDetailFeature()
@@ -692,6 +693,7 @@ struct TaskDetailFeatureTests {
         let persistedTask = try #require(context.fetch(descriptor).first)
         #expect(persistedTask.estimatedDurationMinutes == 95)
         #expect(persistedTask.storyPoints == 3)
+        #expect(persistedTask.focusModeEnabled)
     }
 
     @Test

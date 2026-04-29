@@ -18,6 +18,7 @@ struct AddRoutineBasicsState: Equatable {
     var routineColor: RoutineTaskColor = .none
     var estimatedDurationMinutes: Int?
     var storyPoints: Int?
+    var focusModeEnabled: Bool = false
 }
 
 struct AddRoutineOrganizationState: Equatable {

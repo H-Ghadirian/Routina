@@ -594,6 +594,10 @@ struct TaskFormContent: View {
                         }
                     }
                 }
+
+                macControlBlock(title: "Focus") {
+                    Toggle("Show focus timer", isOn: model.focusModeEnabled)
+                }
             }
         }
         .id(FormSection.estimation)

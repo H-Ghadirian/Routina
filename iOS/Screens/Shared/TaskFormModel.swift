@@ -101,6 +101,7 @@ struct TaskFormModel {
     var frequencyValue: Binding<Int>
     var autoAssumeDailyDone: Binding<Bool> = .constant(false)
     var canAutoAssumeDailyDone: Bool = false
+    var focusModeEnabled: Binding<Bool> = .constant(false)
 
     // MARK: Color
     var color: Binding<RoutineTaskColor>

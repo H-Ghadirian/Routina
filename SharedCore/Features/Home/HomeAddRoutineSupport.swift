@@ -66,7 +66,8 @@ enum HomeAddRoutineSupport {
             color: request.color,
             autoAssumeDailyDone: request.autoAssumeDailyDone,
             estimatedDurationMinutes: request.estimatedDurationMinutes,
-            storyPoints: request.storyPoints
+            storyPoints: request.storyPoints,
+            focusModeEnabled: request.focusModeEnabled
         )
     }
 

@@ -113,4 +113,11 @@ enum AddRoutineBasicsEditor {
     ) {
         basics.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
     }
+
+    static func setFocusModeEnabled(
+        _ isEnabled: Bool,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.focusModeEnabled = isEnabled
+    }
 }

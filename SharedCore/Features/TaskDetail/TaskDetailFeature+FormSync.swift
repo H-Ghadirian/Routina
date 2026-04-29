@@ -42,6 +42,7 @@ extension TaskDetailFeature {
         state.editAutoAssumeDailyDone = state.task.autoAssumeDailyDone
         state.editEstimatedDurationMinutes = state.task.estimatedDurationMinutes
         state.editStoryPoints = state.task.storyPoints
+        state.editFocusModeEnabled = state.task.focusModeEnabled
 
         let interval = max(recurrenceRule.interval, 1)
         if recurrenceRule.kind == .intervalDays {

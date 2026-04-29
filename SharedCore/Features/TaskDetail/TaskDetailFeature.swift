@@ -79,6 +79,7 @@ struct TaskDetailFeature: Reducer {
         var editAutoAssumeDailyDone: Bool = false
         var editEstimatedDurationMinutes: Int?
         var editStoryPoints: Int?
+        var editFocusModeEnabled: Bool = false
         var isDeleteConfirmationPresented: Bool = false
         var isUndoCompletionConfirmationPresented: Bool = false
         var pendingLogRemovalTimestamp: Date?
@@ -194,6 +195,7 @@ struct TaskDetailFeature: Reducer {
         case editToggleTagSelection(String)
         case editEstimatedDurationChanged(Int?)
         case editStoryPointsChanged(Int?)
+        case editFocusModeEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
@@ -769,6 +771,10 @@ struct TaskDetailFeature: Reducer {
             state.editStoryPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
             return .none
 
+        case let .editFocusModeEnabledChanged(isEnabled):
+            state.editFocusModeEnabled = isEnabled
+            return .none
+
         case let .editFrequencyChanged(frequency):
             state.editFrequency = frequency
             if !canAutoAssumeDailyDone(for: state) {
@@ -879,7 +885,8 @@ struct TaskDetailFeature: Reducer {
                 color: state.editColor,
                 autoAssumeDailyDone: state.editAutoAssumeDailyDone,
                 estimatedDurationMinutes: state.editEstimatedDurationMinutes,
-                storyPoints: state.editStoryPoints
+                storyPoints: state.editStoryPoints,
+                focusModeEnabled: state.editFocusModeEnabled
             )
 
         case .confirmAssumedPastDays:

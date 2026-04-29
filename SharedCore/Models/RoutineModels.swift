@@ -181,6 +181,7 @@ final class RoutineTask {
     var autoAssumeDailyDone: Bool = false
     var estimatedDurationMinutes: Int?
     var storyPoints: Int?
+    var focusModeEnabled: Bool = false
 
     var isPaused: Bool {
         pausedAt != nil
@@ -497,7 +498,8 @@ final class RoutineTask {
         ongoingSince: Date? = nil,
         autoAssumeDailyDone: Bool = false,
         estimatedDurationMinutes: Int? = nil,
-        storyPoints: Int? = nil
+        storyPoints: Int? = nil,
+        focusModeEnabled: Bool = false
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
@@ -542,6 +544,7 @@ final class RoutineTask {
         self.autoAssumeDailyDone = autoAssumeDailyDone
         self.estimatedDurationMinutes = Self.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
+        self.focusModeEnabled = focusModeEnabled
         if self.steps.isEmpty || Int(self.completedStepCount) > self.steps.count {
             resetStepProgress()
         }
@@ -987,7 +990,8 @@ final class RoutineTask {
             ongoingSince: ongoingSince,
             autoAssumeDailyDone: autoAssumeDailyDone,
             estimatedDurationMinutes: estimatedDurationMinutes,
-            storyPoints: storyPoints
+            storyPoints: storyPoints,
+            focusModeEnabled: focusModeEnabled
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage

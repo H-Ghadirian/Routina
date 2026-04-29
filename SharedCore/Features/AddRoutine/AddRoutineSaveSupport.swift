@@ -89,6 +89,7 @@ struct AddRoutineSaveRequest: Equatable {
     let autoAssumeDailyDone: Bool
     let estimatedDurationMinutes: Int?
     let storyPoints: Int?
+    let focusModeEnabled: Bool
 
     init(
         name: String,
@@ -114,7 +115,8 @@ struct AddRoutineSaveRequest: Equatable {
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool = false,
         estimatedDurationMinutes: Int? = nil,
-        storyPoints: Int? = nil
+        storyPoints: Int? = nil,
+        focusModeEnabled: Bool = false
     ) {
         self.name = name
         self.frequencyInDays = frequencyInDays
@@ -140,6 +142,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.autoAssumeDailyDone = autoAssumeDailyDone
         self.estimatedDurationMinutes = estimatedDurationMinutes
         self.storyPoints = storyPoints
+        self.focusModeEnabled = focusModeEnabled
     }
 
     init?(state: AddRoutineFeature.State) {
@@ -187,6 +190,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.color = basics.routineColor
         self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)
         self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
+        self.focusModeEnabled = basics.focusModeEnabled
         self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
             && RoutineAssumedCompletion.isEligible(
                 scheduleMode: self.scheduleMode,

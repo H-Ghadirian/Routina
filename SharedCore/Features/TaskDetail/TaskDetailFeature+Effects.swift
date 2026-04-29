@@ -208,7 +208,8 @@ extension TaskDetailFeature {
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool,
         estimatedDurationMinutes: Int?,
-        storyPoints: Int?
+        storyPoints: Int?,
+        focusModeEnabled: Bool
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -262,6 +263,7 @@ extension TaskDetailFeature {
                     )
                 task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+                task.focusModeEnabled = focusModeEnabled
                 if scheduleMode == .oneOff {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1

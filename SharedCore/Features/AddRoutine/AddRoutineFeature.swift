@@ -86,6 +86,7 @@ struct AddRoutineFeature: Reducer {
         case routineColorChanged(RoutineTaskColor)
         case estimatedDurationChanged(Int?)
         case storyPointsChanged(Int?)
+        case focusModeEnabledChanged(Bool)
         case saveTapped
         case cancelTapped
         case delegate(Delegate)
@@ -508,6 +509,13 @@ struct AddRoutineFeature: Reducer {
         case let .storyPointsChanged(storyPoints):
             AddRoutineBasicsEditor.setStoryPoints(
                 storyPoints,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .focusModeEnabledChanged(isEnabled):
+            AddRoutineBasicsEditor.setFocusModeEnabled(
+                isEnabled,
                 basics: &state.basics
             )
             return .none

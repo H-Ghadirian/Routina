@@ -193,7 +193,9 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                focusSessionSection
+                if store.task.focusModeEnabled {
+                    focusSessionSection
+                }
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -540,7 +542,9 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                focusSessionSection
+                if store.task.focusModeEnabled {
+                    focusSessionSection
+                }
                 routineLogsSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
@@ -598,6 +602,7 @@ struct TaskDetailTCAView: View {
             recurrenceWeekday: store.editRecurrenceWeekday,
             recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
             autoAssumeDailyDone: store.editAutoAssumeDailyDone,
+            focusModeEnabled: store.editFocusModeEnabled,
             pressure: store.editPressure,
             task: store.task
         )
@@ -2012,6 +2017,7 @@ struct TaskDetailTCAView: View {
         recurrenceWeekday: Int,
         recurrenceDayOfMonth: Int,
         autoAssumeDailyDone: Bool,
+        focusModeEnabled: Bool,
         pressure: RoutineTaskPressure,
         task: RoutineTask
     ) -> Bool {
@@ -2086,6 +2092,7 @@ struct TaskDetailTCAView: View {
             || sanitizedCandidateChecklistItems != currentChecklistItems
             || newRecurrenceRule != currentRecurrenceRule
             || autoAssumeDailyDone != task.autoAssumeDailyDone
+            || focusModeEnabled != task.focusModeEnabled
             || pressure != task.pressure
     }
 

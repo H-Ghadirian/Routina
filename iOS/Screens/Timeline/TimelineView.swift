@@ -1,17 +1,51 @@
 import ComposableArchitecture
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @State private var relatedFilterTagSuggestionAnchor: String?
+    @State private var selectedTimelineEntryID: UUID?
 
     var body: some View {
         WithPerceptionTracking {
+            timelineRoot
+                .sheet(isPresented: filterSheetBinding) {
+                    timelineFiltersSheet
+                }
+            .task {
+                store.send(.setData(tasks: tasks, logs: logs))
+                ensureTimelineSelection()
+            }
+            .onChange(of: tasks) { _, newValue in
+                store.send(.setData(tasks: newValue, logs: logs))
+            }
+            .onChange(of: logs) { _, newValue in
+                store.send(.setData(tasks: tasks, logs: newValue))
+            }
+            .onChange(of: visibleTimelineEntryIDs) { _, _ in
+                ensureTimelineSelection()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var timelineRoot: some View {
+        if usesSidebarLayout {
+            NavigationSplitView {
+                timelineSidebarContent
+                    .navigationSplitViewColumnWidth(min: 320, ideal: 420, max: 520)
+            } detail: {
+                timelineSidebarDetail
+            }
+            .navigationSplitViewStyle(.balanced)
+        } else {
             NavigationStack {
                 content
                     .navigationTitle("Dones")
@@ -24,20 +58,31 @@ struct TimelineView: View {
                     .navigationDestination(for: UUID.self) { taskID in
                         timelineDetailDestination(taskID: taskID)
                     }
-                    .sheet(isPresented: filterSheetBinding) {
-                        timelineFiltersSheet
-                    }
-            }
-            .task {
-                store.send(.setData(tasks: tasks, logs: logs))
-            }
-            .onChange(of: tasks) { _, newValue in
-                store.send(.setData(tasks: newValue, logs: logs))
-            }
-            .onChange(of: logs) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: newValue))
             }
         }
+    }
+
+    private var usesSidebarLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+    }
+
+    private var visibleTimelineEntryIDs: [UUID] {
+        groupedByDay.flatMap { $0.entries.map(\.id) }
+    }
+
+    private var selectedTimelineEntry: TimelineEntry? {
+        groupedByDay
+            .flatMap(\.entries)
+            .first { $0.id == selectedTimelineEntryID }
+    }
+
+    private func ensureTimelineSelection() {
+        guard usesSidebarLayout else { return }
+        let ids = visibleTimelineEntryIDs
+        if let selectedTimelineEntryID, ids.contains(selectedTimelineEntryID) {
+            return
+        }
+        selectedTimelineEntryID = ids.first
     }
 
     private var filterSheetBinding: Binding<Bool> {
@@ -297,6 +342,66 @@ struct TimelineView: View {
         .listStyle(.plain)
     }
 
+    @ViewBuilder
+    private var timelineSidebarContent: some View {
+        VStack(spacing: 0) {
+            if hasActiveFilters {
+                activeFilterChipBar
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+            }
+
+            if logs.isEmpty {
+                ContentUnavailableView(
+                    "No timeline entries yet",
+                    systemImage: "clock.arrow.circlepath",
+                    description: Text("Completed and canceled items will appear here in chronological order.")
+                )
+            } else if groupedByDay.isEmpty {
+                ContentUnavailableView(
+                    "No matches",
+                    systemImage: "line.3.horizontal.decrease.circle",
+                    description: Text("Try a different time range or filter.")
+                )
+            } else {
+                List(selection: $selectedTimelineEntryID) {
+                    ForEach(groupedByDay, id: \.date) { section in
+                        Section {
+                            ForEach(section.entries) { entry in
+                                timelineRowContent(entry)
+                                    .tag(entry.id)
+                            }
+                        } header: {
+                            Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
+                        }
+                    }
+                }
+                .listStyle(.plain)
+            }
+        }
+        .navigationTitle("Dones")
+        .routinaTimelineNavigationTitleDisplayMode()
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                filterSheetButton
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var timelineSidebarDetail: some View {
+        if let taskID = selectedTimelineEntry?.taskID {
+            timelineDetailDestination(taskID: taskID)
+        } else {
+            ContentUnavailableView(
+                "Select a done",
+                systemImage: "clock.arrow.circlepath",
+                description: Text("Choose a completed or canceled item from the sidebar to see its task detail.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
     private var filterSheetButton: some View {
         Button {
             store.send(.setFilterSheet(true))
@@ -392,45 +497,49 @@ struct TimelineView: View {
 
     private func timelineRow(_ entry: TimelineEntry) -> some View {
         NavigationLink(value: entry.taskID) {
-            HStack(spacing: 12) {
-                Text(entry.taskEmoji)
-                    .font(.title2)
-                    .frame(width: 36, height: 36)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.primary.opacity(0.06))
-                    )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.taskName)
-                        .font(.body.weight(.medium))
-                        .lineLimit(1)
-
-                    Text(entry.timestamp, style: .time)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 0)
-
-                Text(entry.kind == .canceled ? "Canceled" : (entry.isOneOff ? "Todo" : "Routine"))
-                    .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(
-                                entry.kind == .canceled
-                                    ? Color.orange.opacity(0.15)
-                                    : (entry.isOneOff
-                                        ? Color.purple.opacity(0.15)
-                                        : Color.accentColor.opacity(0.15))
-                            )
-                    )
-                    .foregroundStyle(entry.kind == .canceled ? .orange : (entry.isOneOff ? .purple : .accentColor))
-            }
-            .padding(.vertical, 2)
+            timelineRowContent(entry)
         }
+    }
+
+    private func timelineRowContent(_ entry: TimelineEntry) -> some View {
+        HStack(spacing: 12) {
+            Text(entry.taskEmoji)
+                .font(.title2)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.primary.opacity(0.06))
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.taskName)
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+
+                Text(entry.timestamp, style: .time)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            Text(entry.kind == .canceled ? "Canceled" : (entry.isOneOff ? "Todo" : "Routine"))
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(
+                    Capsule()
+                        .fill(
+                            entry.kind == .canceled
+                                ? Color.orange.opacity(0.15)
+                                : (entry.isOneOff
+                                    ? Color.purple.opacity(0.15)
+                                    : Color.accentColor.opacity(0.15))
+                        )
+                )
+                .foregroundStyle(entry.kind == .canceled ? .orange : (entry.isOneOff ? .purple : .accentColor))
+        }
+        .padding(.vertical, 2)
     }
 
     @ViewBuilder

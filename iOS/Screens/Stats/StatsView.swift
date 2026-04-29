@@ -2,6 +2,7 @@ import Charts
 import ComposableArchitecture
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct StatsViewWrapper: View {
     let store: StoreOf<StatsFeature>
@@ -342,40 +343,10 @@ struct StatsView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            NavigationStack {
-                ScrollView(.vertical, showsIndicators: false) {
-                    let currentMetrics = metrics
-                    VStack(alignment: .leading, spacing: 24) {
-                        AnyView(rangeSection)
-                        if hasActiveSheetFilters {
-                            AnyView(activeFilterChipBar)
-                        }
-                        AnyView(heroSection(metrics: currentMetrics))
-                        AnyView(summaryCards(metrics: currentMetrics))
-                        AnyView(chartSection(metrics: currentMetrics))
-                        AnyView(focusChartSection(metrics: currentMetrics))
-                        if store.isGitFeaturesEnabled {
-                            AnyView(gitHubSection)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, contentBottomPadding)
-                    .frame(maxWidth: statsContentMaxWidth, alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .top)
-                }
-                .background(pageBackground.ignoresSafeArea())
-                .navigationTitle("Stats")
-                .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        filterSheetButton
-                    }
-                }
+            statsRoot
                 .sheet(isPresented: filterSheetBinding) {
                     statsFiltersSheet
                 }
-            }
             .task {
                 store.send(.onAppear)
                 store.send(.setData(tasks: tasks, logs: logs, focusSessions: focusSessions))
@@ -389,6 +360,168 @@ struct StatsView: View {
             .onChange(of: focusSessions) { _, newValue in
                 store.send(.setData(tasks: tasks, logs: logs, focusSessions: newValue))
             }
+        }
+    }
+
+    @ViewBuilder
+    private var statsRoot: some View {
+        if usesSidebarLayout {
+            NavigationSplitView {
+                statsSidebarContent
+                    .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 380)
+            } detail: {
+                statsDashboardContent
+            }
+            .navigationSplitViewStyle(.balanced)
+        } else {
+            NavigationStack {
+                statsDashboardContent
+            }
+        }
+    }
+
+    private var usesSidebarLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+    }
+
+    private var statsDashboardContent: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            let currentMetrics = metrics
+            VStack(alignment: .leading, spacing: 24) {
+                AnyView(rangeSection)
+                if hasActiveSheetFilters {
+                    AnyView(activeFilterChipBar)
+                }
+                AnyView(heroSection(metrics: currentMetrics))
+                AnyView(summaryCards(metrics: currentMetrics))
+                AnyView(chartSection(metrics: currentMetrics))
+                AnyView(focusChartSection(metrics: currentMetrics))
+                if store.isGitFeaturesEnabled {
+                    AnyView(gitHubSection)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, contentBottomPadding)
+            .frame(maxWidth: statsContentMaxWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .top)
+        }
+        .background(pageBackground.ignoresSafeArea())
+        .navigationTitle("Stats")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                filterSheetButton
+            }
+        }
+    }
+
+    private var statsSidebarContent: some View {
+        List {
+            Section("Range") {
+                ForEach(DoneChartRange.allCases) { range in
+                    statsSidebarButton(
+                        title: range.rawValue,
+                        subtitle: range.periodDescription,
+                        systemImage: selectedRange == range ? "checkmark.circle.fill" : "circle"
+                    ) {
+                        store.send(.selectedRangeChanged(range))
+                    }
+                    .foregroundStyle(selectedRange == range ? Color.accentColor : Color.primary)
+                }
+            }
+
+            if tasks.contains(where: \.isOneOffTask) {
+                Section("Type") {
+                    ForEach(StatsTaskTypeFilter.allCases) { filter in
+                        statsSidebarButton(
+                            title: filter.rawValue,
+                            subtitle: statsSidebarTypeSubtitle(for: filter),
+                            systemImage: statsTaskTypeIcon(for: filter)
+                        ) {
+                            store.send(.taskTypeFilterChanged(filter))
+                        }
+                        .foregroundStyle(selectedTaskTypeFilter == filter ? Color.accentColor : Color.primary)
+                    }
+                }
+            }
+
+            Section("Filters") {
+                Button {
+                    store.send(.setFilterSheet(true))
+                } label: {
+                    Label(
+                        activeSheetFilterCount == 0 ? "Filter Stats" : "\(activeSheetFilterCount) active filters",
+                        systemImage: hasActiveSheetFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle"
+                    )
+                }
+
+                if hasActiveFilters {
+                    Button(role: .destructive) {
+                        store.send(.clearFilters)
+                    } label: {
+                        Label("Clear All", systemImage: "xmark.circle")
+                    }
+                }
+            }
+
+            if store.isGitFeaturesEnabled {
+                Section("Git") {
+                    HStack {
+                        Label("GitHub", systemImage: "arrow.triangle.branch")
+                        Spacer()
+                        Text(gitHubConnection.isConnected ? "Live" : "Off")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button {
+                        store.send(.gitHubStatsRefreshRequested)
+                    } label: {
+                        Label("Refresh Activity", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(!gitHubConnection.isConnected || isGitHubStatsLoading)
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("Stats")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                filterSheetButton
+            }
+        }
+    }
+
+    private func statsSidebarButton(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } icon: {
+                Image(systemName: systemImage)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func statsSidebarTypeSubtitle(for filter: StatsTaskTypeFilter) -> String {
+        switch filter {
+        case .all:
+            return "\(filteredTaskCount) matching items"
+        case .routines:
+            return "Routine completions"
+        case .todos:
+            return "Todo completions"
         }
     }
 

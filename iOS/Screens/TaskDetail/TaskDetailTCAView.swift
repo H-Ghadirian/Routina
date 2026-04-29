@@ -192,7 +192,9 @@ struct TaskDetailTCAView: View {
                     calendarSection
                 }
                 todoPrimaryActionSection
-                focusSessionSection
+                if store.task.focusModeEnabled {
+                    focusSessionSection
+                }
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -219,7 +221,9 @@ struct TaskDetailTCAView: View {
                 notificationDisabledWarningSection
                 calendarSection
                 routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
-                focusSessionSection
+                if store.task.focusModeEnabled {
+                    focusSessionSection
+                }
                 routineSummarySection
                 routineLogsSection
                 if store.task.hasChecklistItems {
@@ -278,6 +282,7 @@ struct TaskDetailTCAView: View {
             recurrenceWeekday: store.editRecurrenceWeekday,
             recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
             autoAssumeDailyDone: store.editAutoAssumeDailyDone,
+            focusModeEnabled: store.editFocusModeEnabled,
             pressure: store.editPressure,
             task: store.task
         )
@@ -1962,6 +1967,7 @@ struct TaskDetailTCAView: View {
         recurrenceWeekday: Int,
         recurrenceDayOfMonth: Int,
         autoAssumeDailyDone: Bool,
+        focusModeEnabled: Bool,
         pressure: RoutineTaskPressure,
         task: RoutineTask
     ) -> Bool {
@@ -2036,6 +2042,7 @@ struct TaskDetailTCAView: View {
             || sanitizedCandidateChecklistItems != currentChecklistItems
             || newRecurrenceRule != currentRecurrenceRule
             || autoAssumeDailyDone != task.autoAssumeDailyDone
+            || focusModeEnabled != task.focusModeEnabled
             || pressure != task.pressure
     }
 

@@ -66,7 +66,8 @@ struct AddRoutineFeatureTests {
         color: RoutineTaskColor = .none,
         autoAssumeDailyDone: Bool = false,
         estimatedDurationMinutes: Int? = nil,
-        storyPoints: Int? = nil
+        storyPoints: Int? = nil,
+        focusModeEnabled: Bool = false
     ) -> AddRoutineSaveRequest {
         AddRoutineSaveRequest(
             name: name,
@@ -91,7 +92,8 @@ struct AddRoutineFeatureTests {
             color: color,
             autoAssumeDailyDone: autoAssumeDailyDone,
             estimatedDurationMinutes: estimatedDurationMinutes,
-            storyPoints: storyPoints
+            storyPoints: storyPoints,
+            focusModeEnabled: focusModeEnabled
         )
     }
 
@@ -338,7 +340,8 @@ struct AddRoutineFeatureTests {
                 basics: AddRoutineBasicsState(
                     routineName: "Implement Apple Sign In",
                     estimatedDurationMinutes: 180,
-                    storyPoints: 5
+                    storyPoints: 5,
+                    focusModeEnabled: true
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
                 schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
@@ -357,7 +360,8 @@ struct AddRoutineFeatureTests {
             emoji: "✨",
             scheduleMode: .oneOff,
             estimatedDurationMinutes: 180,
-            storyPoints: 5
+            storyPoints: 5,
+            focusModeEnabled: true
         ))))
     }
 

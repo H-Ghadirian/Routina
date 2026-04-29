@@ -178,6 +178,10 @@ extension AddRoutineTCAView {
                 set: { store.send(.autoAssumeDailyDoneChanged($0)) }
             ),
             canAutoAssumeDailyDone: store.canAutoAssumeDailyDone,
+            focusModeEnabled: Binding(
+                get: { store.basics.focusModeEnabled },
+                set: { store.send(.focusModeEnabledChanged($0)) }
+            ),
             color: Binding(
                 get: { store.basics.routineColor },
                 set: { store.send(.routineColorChanged($0)) }
