@@ -1,4 +1,5 @@
 import AppKit
+import CloudKit
 import ComposableArchitecture
 import SwiftUI
 
@@ -42,6 +43,10 @@ extension View {
     /// No-op on macOS — attachment opening is handled directly via NSWorkspace.
     func routinaAttachmentShareSheet(url: Binding<URL?>) -> some View {
         self
+    }
+
+    func routinaCloudSharingPresenter(request: Binding<CloudSharingRequest?>) -> some View {
+        background(CloudSharingPresenter(request: request).frame(width: 0, height: 0))
     }
 }
 
@@ -93,5 +98,96 @@ extension TaskDetailTCAView {
             guard abs(maxHeight - syncedMacOverviewHeight) > 0.5 else { return }
             syncedMacOverviewHeight = maxHeight
         }
+    }
+}
+
+struct CloudSharingRequest: Identifiable {
+    let id = UUID()
+    let task: RoutineTask
+}
+
+private struct CloudSharingPresenter: NSViewRepresentable {
+    @Binding var request: CloudSharingRequest?
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        NSView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let request else { return }
+        DispatchQueue.main.async {
+            self.request = nil
+        }
+        context.coordinator.present(task: request.task, from: nsView)
+    }
+
+    final class Coordinator: NSObject, NSSharingServicePickerDelegate, NSCloudSharingServiceDelegate {
+        private var activePicker: NSSharingServicePicker?
+        private var activeProvider: NSItemProvider?
+
+        @MainActor
+        func present(task: RoutineTask, from view: NSView) {
+            let provider = NSItemProvider()
+            provider.suggestedName = CloudSharingService.SharedTaskPayload(task: task).displayTitle
+            provider.registerCloudKitShare { completion in
+                let completionBox = MacCloudSharingCompletion(completion)
+                CloudSharingService.prepareShare(for: task) { share, container, error in
+                    completionBox.call(share, container, error)
+                }
+            }
+
+            activeProvider = provider
+            let picker = NSSharingServicePicker(items: [provider])
+            picker.delegate = self
+            activePicker = picker
+
+            picker.show(
+                relativeTo: view.bounds,
+                of: view,
+                preferredEdge: .minY
+            )
+        }
+
+        func sharingServicePicker(
+            _ sharingServicePicker: NSSharingServicePicker,
+            delegateFor sharingService: NSSharingService
+        ) -> NSSharingServiceDelegate? {
+            sharingService.title == NSSharingService.Name.cloudSharing.rawValue ? self : nil
+        }
+
+        func options(
+            for cloudKitSharingService: NSSharingService,
+            share provider: NSItemProvider
+        ) -> NSSharingService.CloudKitOptions {
+            NSSharingService.CloudKitOptions(rawValue: (1 << 1) | (1 << 4))
+        }
+
+        func sharingService(
+            _ sharingService: NSSharingService,
+            didCompleteForItems items: [Any],
+            error: Error?
+        ) {
+            if let error {
+                NSLog("Failed to complete CloudKit sharing: \(error.localizedDescription)")
+            }
+            activePicker = nil
+            activeProvider = nil
+        }
+    }
+}
+
+private final class MacCloudSharingCompletion: @unchecked Sendable {
+    private let completion: (CKShare?, CKContainer?, Error?) -> Void
+
+    init(_ completion: @escaping (CKShare?, CKContainer?, Error?) -> Void) {
+        self.completion = completion
+    }
+
+    func call(_ share: CKShare?, _ container: CKContainer?, _ error: Error?) {
+        completion(share, container, error)
     }
 }

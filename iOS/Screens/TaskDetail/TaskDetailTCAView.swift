@@ -15,6 +15,7 @@ struct TaskDetailTCAView: View {
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
+    @State private var isCloudSharingPresented = false
     @State private var isRelationshipGraphPresented = false
     @State private var isMatrixExpanded = false
     @State private var isTodoStatePickerPresented = false
@@ -70,7 +71,12 @@ struct TaskDetailTCAView: View {
                         .disabled(!canSaveCurrentEdit)
                     }
                 } else {
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Button {
+                            isCloudSharingPresented = true
+                        } label: {
+                            Label("Share", systemImage: "person.crop.circle.badge.plus")
+                        }
                         Button("Edit") {
                             store.send(.setEditSheet(true))
                         }
@@ -143,6 +149,10 @@ struct TaskDetailTCAView: View {
             .onChange(of: store.resolvedSelectedDate) { _, newValue in
                 displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
             }
+            .routinaCloudSharingSheet(
+                isPresented: $isCloudSharingPresented,
+                task: store.task
+            )
             .routinaAttachmentShareSheet(url: $attachmentTempURL)
             .fileExporter(
                 isPresented: Binding(

@@ -15,6 +15,7 @@ struct TaskDetailTCAView: View {
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
+    @State private var cloudSharingRequest: CloudSharingRequest?
     @State private var isRelationshipGraphPresented = false
     @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
@@ -71,6 +72,11 @@ struct TaskDetailTCAView: View {
                 } else {
                     ToolbarItemGroup(placement: .primaryAction) {
                         toolbarActionButtons
+                        Button {
+                            cloudSharingRequest = CloudSharingRequest(task: store.task)
+                        } label: {
+                            Label("Share", systemImage: "person.crop.circle.badge.plus")
+                        }
                         Button("Edit") {
                             store.send(.setEditSheet(true))
                         }
@@ -148,6 +154,7 @@ struct TaskDetailTCAView: View {
             .onChange(of: store.resolvedSelectedDate) { _, newValue in
                 displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
             }
+            .routinaCloudSharingPresenter(request: $cloudSharingRequest)
             .routinaAttachmentShareSheet(url: $attachmentTempURL)
             .fileExporter(
                 isPresented: Binding(

@@ -1,5 +1,7 @@
 import AppKit
+import CloudKit
 import Foundation
+import SwiftData
 import UserNotifications
 
 public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
@@ -30,6 +32,22 @@ public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegat
     ) {
         CloudKitSyncDiagnostics.recordRemoteNotificationReceived()
         NotificationCenter.default.postRoutineDidUpdate()
+    }
+
+    public func application(
+        _ application: NSApplication,
+        userDidAcceptCloudKitShareWith metadata: CKShare.Metadata
+    ) {
+        Task { @MainActor in
+            do {
+                try await CloudSharingService.acceptShare(
+                    metadata: metadata,
+                    into: PersistenceController.shared.container.mainContext
+                )
+            } catch {
+                NSLog("Failed to accept CloudKit share: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
