@@ -3,7 +3,7 @@ import SwiftUI
 
 struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var isExpanded = true
+    @State private var isExpanded = false
     @State private var editingSession: FocusSession?
     @State private var editStartedAt = Date()
     @State private var editDurationMinutes = 25
@@ -11,6 +11,22 @@ struct FocusSessionCard: View {
     let task: RoutineTask
     let sessions: [FocusSession]
     let allTasks: [RoutineTask]
+    let isEmbedded: Bool
+    let onCompletedDuration: ((TimeInterval) -> Void)?
+
+    init(
+        task: RoutineTask,
+        sessions: [FocusSession],
+        allTasks: [RoutineTask],
+        isEmbedded: Bool = false,
+        onCompletedDuration: ((TimeInterval) -> Void)? = nil
+    ) {
+        self.task = task
+        self.sessions = sessions
+        self.allTasks = allTasks
+        self.isEmbedded = isEmbedded
+        self.onCompletedDuration = onCompletedDuration
+    }
 
     private let durationOptions: [TimeInterval] = [
         15 * 60,
@@ -73,12 +89,19 @@ struct FocusSessionCard: View {
                 }
             }
         }
-        .padding(16)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(.primary.opacity(0.08), lineWidth: 1)
-        )
+        .padding(isEmbedded ? 0 : 16)
+        .background {
+            if !isEmbedded {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.thinMaterial)
+            }
+        }
+        .overlay {
+            if !isEmbedded {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(.primary.opacity(0.08), lineWidth: 1)
+            }
+        }
         .sheet(item: $editingSession) { session in
             #if os(macOS)
             macEditSheet(for: session)
@@ -134,6 +157,9 @@ struct FocusSessionCard: View {
             }
             .presentationDetents([.medium])
             #endif
+        }
+        .onChange(of: task.id) { _, _ in
+            isExpanded = false
         }
     }
 
@@ -257,10 +283,17 @@ struct FocusSessionCard: View {
                 .accessibilityLabel("More focus durations")
             }
 
-            Text("Focus time is tracked separately from completions.")
+            Text(focusTrackingDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var focusTrackingDescription: String {
+        if onCompletedDuration != nil {
+            return "Finished focus sessions are added to time spent."
+        }
+        return "Focus time is tracked separately from completions."
     }
 
     private func activeSessionContent(_ session: FocusSession) -> some View {
@@ -406,7 +439,9 @@ struct FocusSessionCard: View {
     }
 
     private func finish(_ session: FocusSession) {
+        guard session.completedAt == nil else { return }
         session.completedAt = Date()
+        onCompletedDuration?(session.actualDurationSeconds)
         saveContext()
     }
 

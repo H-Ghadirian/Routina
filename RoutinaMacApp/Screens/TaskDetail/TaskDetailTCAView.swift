@@ -11,11 +11,13 @@ struct TaskDetailTCAView: View {
     @Query private var focusSessionTasks: [RoutineTask]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
-    @State private var isRoutineLogsExpanded = true
-    @State private var isTaskChangesExpanded = true
+    @State private var isRoutineLogsExpanded = false
+    @State private var isTaskChangesExpanded = false
+    @State private var isTimeSectionExpanded = false
     @State private var editingTimeLog: RoutineLog?
     @State private var editingTimeSpentMinutes = 25
-    @State private var isEditingTaskTimeSpent = false
+    @State private var taskTimeEntryHours = 0
+    @State private var taskTimeEntryMinutes = 25
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
@@ -118,9 +120,6 @@ struct TaskDetailTCAView: View {
             .sheet(item: $editingTimeLog) { log in
                 timeSpentSheet(for: log)
             }
-            .sheet(isPresented: $isEditingTaskTimeSpent) {
-                taskTimeSpentSheet
-            }
             .alert(
                 "Delete routine?",
                 isPresented: Binding(
@@ -151,10 +150,10 @@ struct TaskDetailTCAView: View {
             }
             .onAppear {
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
-                isCalendarExpanded = false
+                collapseDefaultSections()
             }
             .onChange(of: store.task.id) { _, _ in
-                isCalendarExpanded = false
+                collapseDefaultSections()
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
             }
             .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
@@ -219,9 +218,6 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                if store.task.focusModeEnabled {
-                    focusSessionSection
-                }
                 routineLogsSection
                 taskChangesSection
                 if store.task.hasChecklistItems {
@@ -243,16 +239,14 @@ struct TaskDetailTCAView: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
             Spacer(minLength: 2)
-            Picker("Pressure", selection: Binding(
-                get: { store.task.pressure },
-                set: { store.send(.pressureChanged($0)) }
-            )) {
-                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
-                    Text(pressure.title).tag(pressure)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            TaskDetailColoredSegmentedControl(
+                options: RoutineTaskPressure.allCases,
+                selection: store.task.pressure,
+                title: { $0.title },
+                tint: { pressureTint(for: $0) },
+                selectedForeground: { pressureSelectedForeground(for: $0) },
+                action: { store.send(.pressureChanged($0)) }
+            )
         }
         .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
         .detailHeaderBoxStyle()
@@ -264,22 +258,20 @@ struct TaskDetailTCAView: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
             Spacer(minLength: 2)
-            Picker("State", selection: Binding(
-                get: { store.task.todoState ?? .ready },
-                set: { newState in
+            TaskDetailColoredSegmentedControl(
+                options: TodoState.allCases,
+                selection: store.task.todoState ?? .ready,
+                title: { $0.displayTitle },
+                tint: { todoStateTint(for: $0) },
+                selectedForeground: { todoStateSelectedForeground(for: $0) },
+                action: { newState in
                     if newState == .done && store.hasActiveRelationshipBlocker {
                         store.send(.setBlockedStateConfirmation(true))
                     } else {
                         store.send(.todoStateChanged(newState))
                     }
                 }
-            )) {
-                ForEach(TodoState.allCases, id: \.self) { state in
-                    Label(state.displayTitle, systemImage: state.systemImage).tag(state)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            )
         }
         .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
         .detailHeaderBoxStyle()
@@ -430,7 +422,55 @@ struct TaskDetailTCAView: View {
         }
     }
 
-    private var headerTagsBox: some View {
+    private func pressureTint(for pressure: RoutineTaskPressure) -> Color {
+        switch pressure {
+        case .none:
+            return .secondary
+        case .low:
+            return .green
+        case .medium:
+            return .orange
+        case .high:
+            return .red
+        }
+    }
+
+    private func pressureSelectedForeground(for pressure: RoutineTaskPressure) -> Color {
+        switch pressure {
+        case .none:
+            return .primary
+        case .medium:
+            return .black.opacity(0.84)
+        case .low, .high:
+            return .white
+        }
+    }
+
+    private func todoStateTint(for state: TodoState) -> Color {
+        switch state {
+        case .ready:
+            return .secondary
+        case .inProgress:
+            return .blue
+        case .blocked:
+            return .red
+        case .done:
+            return .green
+        case .paused:
+            return .teal
+        }
+    }
+
+    private func todoStateSelectedForeground(for state: TodoState) -> Color {
+        switch state {
+        case .ready:
+            return .primary
+        case .inProgress, .blocked, .done, .paused:
+            return .white
+        }
+    }
+
+    private func headerTagsBox(minHeight: CGFloat? = nil) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("TAGS")
                 .font(.caption2.weight(.semibold))
@@ -441,7 +481,49 @@ struct TaskDetailTCAView: View {
                 }
             }
         }
-        .detailHeaderBoxStyle()
+        .detailHeaderBoxStyle(minHeight: minHeight)
+    }
+
+    @ViewBuilder
+    private func headerPointsBox(minHeight: CGFloat? = nil) -> some View {
+        if let storyPoints = store.task.storyPoints {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("POINTS")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(storyPointsBadgeValue(for: storyPoints))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .detailHeaderBoxStyle(tint: .purple, minHeight: minHeight)
+        }
+    }
+
+    @ViewBuilder
+    private var headerTagsAndPointsRow: some View {
+        let hasTags = !store.task.tags.isEmpty
+        let hasPoints = store.task.storyPoints != nil
+
+        if hasTags && hasPoints {
+            ViewThatFits(in: .horizontal) {
+                TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
+                    headerTagsBox(minHeight: minHeight)
+                } trailing: { minHeight in
+                    headerPointsBox(minHeight: minHeight)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    headerTagsBox()
+                    headerPointsBox()
+                }
+            }
+        } else if hasTags {
+            headerTagsBox()
+        } else if hasPoints {
+            headerPointsBox()
+        }
     }
 
     @ViewBuilder
@@ -557,31 +639,132 @@ struct TaskDetailTCAView: View {
     }
 
     private var todoTimeSpentHeaderBox: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("TIME SPENT")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(store.task.actualDurationMinutes.map(estimatedDurationBadgeValue(for:)) ?? "Not logged")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(store.task.actualDurationMinutes == nil ? .secondary : .primary)
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isTimeSectionExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("TIME")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text(taskTimeSpentDisplayText)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(store.task.actualDurationMinutes == nil ? .secondary : .primary)
+                    }
 
-            Spacer(minLength: 8)
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isTimeSectionExpanded ? 180 : 0))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isTimeSectionExpanded {
+                Divider()
+                    .opacity(0.35)
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .bottom, spacing: 10) {
+                        taskTimeEntryControls
+                        taskTimeEntryActions
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        taskTimeEntryControls
+                        taskTimeEntryActions
+                    }
+                }
+
+                if store.task.focusModeEnabled {
+                    Divider()
+                        .opacity(0.35)
+
+                    FocusSessionCard(
+                        task: store.task,
+                        sessions: focusSessions,
+                        allTasks: focusSessionTasks,
+                        isEmbedded: true,
+                        onCompletedDuration: addCompletedFocusToTimeSpent
+                    )
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: isTimeSectionExpanded ? 120 : nil, alignment: .topLeading)
+        .detailHeaderBoxStyle(tint: .cyan)
+        .onAppear {
+            resetTaskTimeEntry()
+        }
+        .onChange(of: store.task.id) { _, _ in
+            resetTaskTimeEntry()
+        }
+        .onChange(of: store.task.actualDurationMinutes) { _, _ in
+            resetTaskTimeEntry()
+        }
+    }
+
+    private var taskTimeEntryControls: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            timeSpentNumberField("Hours", value: $taskTimeEntryHours, range: 0...24)
+            timeSpentNumberField("Minutes", value: $taskTimeEntryMinutes, range: 0...59)
+
+            HStack(spacing: 6) {
+                ForEach([15, 30, 60], id: \.self) { minutes in
+                    Button("+\(RoutineTimeSpentFormatting.compactMinutesText(minutes))") {
+                        setTaskTimeEntryTotal(minutes)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+    }
+
+    private var taskTimeEntryActions: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Label(taskTimeEntryPreviewText, systemImage: "equal.circle")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
 
             Button {
-                beginEditingTaskTime()
+                applyTaskTimeEntry()
             } label: {
                 Label(
-                    store.task.actualDurationMinutes == nil ? "Add Time" : "Edit Time",
-                    systemImage: "clock.badge"
+                    taskTimeEntryApplyTitle,
+                    systemImage: "plus.circle.fill"
                 )
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
             .tint(.cyan)
+            .disabled(!canApplyTaskTimeEntry)
         }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle(tint: .cyan)
+    }
+
+    private func timeSpentNumberField(
+        _ label: String,
+        value: Binding<Int>,
+        range: ClosedRange<Int>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            TextField(label, value: value, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 64)
+                .onChange(of: value.wrappedValue) { _, newValue in
+                    value.wrappedValue = min(max(newValue, range.lowerBound), range.upperBound)
+                }
+        }
     }
 
     @ViewBuilder
@@ -621,7 +804,8 @@ struct TaskDetailTCAView: View {
         FocusSessionCard(
             task: store.task,
             sessions: focusSessions,
-            allTasks: focusSessionTasks
+            allTasks: focusSessionTasks,
+            onCompletedDuration: addCompletedFocusToTimeSpent
         )
     }
 
@@ -664,53 +848,6 @@ struct TaskDetailTCAView: View {
                 Button("Save") {
                     store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
                     editingTimeLog = nil
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-        }
-        .frame(width: 420)
-        .padding(24)
-    }
-
-    private var taskTimeSpentSheet: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Time Spent")
-                    .font(.title3.weight(.semibold))
-                Text("Record the actual time spent on this task.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Stepper(value: $editingTimeSpentMinutes, in: 1...1440) {
-                HStack {
-                    Text("Time spent")
-                    Spacer()
-                    Text(RoutineTimeSpentFormatting.compactMinutesText(editingTimeSpentMinutes))
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            HStack {
-                if store.task.actualDurationMinutes != nil {
-                    Button(role: .destructive) {
-                        store.send(.updateTaskDuration(nil))
-                        isEditingTaskTimeSpent = false
-                    } label: {
-                        Label("Clear", systemImage: "trash")
-                    }
-                }
-
-                Spacer()
-
-                Button("Cancel") {
-                    isEditingTaskTimeSpent = false
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button("Save") {
-                    store.send(.updateTaskDuration(editingTimeSpentMinutes))
-                    isEditingTaskTimeSpent = false
                 }
                 .keyboardShortcut(.defaultAction)
             }
@@ -814,6 +951,14 @@ struct TaskDetailTCAView: View {
         }
     }
 
+    private func collapseDefaultSections() {
+        isMatrixExpanded = false
+        isTimeSectionExpanded = false
+        isCalendarExpanded = false
+        isRoutineLogsExpanded = false
+        isTaskChangesExpanded = false
+    }
+
     func compactStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
@@ -853,9 +998,7 @@ struct TaskDetailTCAView: View {
                     headerCalendarDisclosure
                 }
 
-                if !store.task.tags.isEmpty {
-                    headerTagsBox
-                }
+                headerTagsAndPointsRow
                 headerLinkBox
             }
         }
@@ -875,9 +1018,7 @@ struct TaskDetailTCAView: View {
 
                 headerCalendarDisclosure
 
-                if !store.task.tags.isEmpty {
-                    headerTagsBox
-                }
+                headerTagsAndPointsRow
                 headerLinkBox
             }
         }
@@ -1062,28 +1203,6 @@ struct TaskDetailTCAView: View {
                     value: estimatedDurationBadgeValue(for: estimatedDurationMinutes),
                     systemImage: nil,
                     tint: .teal
-                )
-            )
-        }
-
-        if displayedActualDurationMinutes > 0 {
-            badges.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Spent",
-                    value: estimatedDurationBadgeValue(for: displayedActualDurationMinutes),
-                    systemImage: "clock.fill",
-                    tint: .cyan
-                )
-            )
-        }
-
-        if let storyPoints = store.task.storyPoints {
-            badges.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Points",
-                    value: storyPointsBadgeValue(for: storyPoints),
-                    systemImage: nil,
-                    tint: .purple
                 )
             )
         }
@@ -1812,7 +1931,7 @@ struct TaskDetailTCAView: View {
 
     private func logTimeSpentText(_ log: RoutineLog) -> String {
         guard let duration = log.actualDurationMinutes else { return "Add time" }
-        return RoutineTimeSpentFormatting.compactMinutesText(duration)
+        return estimatedDurationBadgeValue(for: duration)
     }
 
     private func beginEditingTime(for log: RoutineLog) {
@@ -1821,8 +1940,63 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTaskTime() {
-        editingTimeSpentMinutes = store.task.actualDurationMinutes ?? store.task.estimatedDurationMinutes ?? 25
-        isEditingTaskTimeSpent = true
+        resetTaskTimeEntry()
+    }
+
+    private var taskTimeSpentDisplayText: String {
+        store.task.actualDurationMinutes.map(estimatedDurationBadgeValue(for:)) ?? "Not logged"
+    }
+
+    private var taskTimeEntryTotalMinutes: Int {
+        (taskTimeEntryHours * 60) + taskTimeEntryMinutes
+    }
+
+    private var taskTimeEntryPreviewMinutes: Int {
+        (store.task.actualDurationMinutes ?? 0) + taskTimeEntryTotalMinutes
+    }
+
+    private var taskTimeEntryPreviewText: String {
+        let totalText = estimatedDurationBadgeValue(for: max(taskTimeEntryPreviewMinutes, 1))
+        return "Total \(totalText)"
+    }
+
+    private var taskTimeEntryApplyTitle: String {
+        let entryText = estimatedDurationBadgeValue(for: max(taskTimeEntryTotalMinutes, 1))
+        return "Add \(entryText)"
+    }
+
+    private var canApplyTaskTimeEntry: Bool {
+        taskTimeEntryTotalMinutes > 0
+            && taskTimeEntryPreviewMinutes >= 1
+            && taskTimeEntryPreviewMinutes <= 1440
+    }
+
+    private func setTaskTimeEntryTotal(_ minutes: Int) {
+        let clampedMinutes = min(max(minutes, 1), 1440)
+        taskTimeEntryHours = clampedMinutes / 60
+        taskTimeEntryMinutes = clampedMinutes % 60
+    }
+
+    private func resetTaskTimeEntry() {
+        setTaskTimeEntryTotal(store.task.actualDurationMinutes == nil ? (store.task.estimatedDurationMinutes ?? 25) : 25)
+    }
+
+    private func applyTaskTimeEntry() {
+        guard canApplyTaskTimeEntry else { return }
+        store.send(.updateTaskDuration(taskTimeEntryPreviewMinutes))
+        setTaskTimeEntryTotal(25)
+    }
+
+    private func addCompletedFocusToTimeSpent(_ seconds: TimeInterval) {
+        let minutes = max(1, Int((seconds / 60).rounded()))
+
+        if store.task.isOneOffTask {
+            let currentMinutes = store.task.actualDurationMinutes ?? 0
+            store.send(.updateTaskDuration(min(currentMinutes + minutes, 1440)))
+        } else if let latestCompletedLog {
+            let currentMinutes = latestCompletedLog.actualDurationMinutes ?? 0
+            store.send(.updateLogDuration(latestCompletedLog.id, min(currentMinutes + minutes, 1440)))
+        }
     }
 
     private var taskChangesSection: some View {
@@ -2578,6 +2752,125 @@ struct TaskDetailTCAView: View {
         return "png"
     }
 
+}
+
+private struct TaskDetailEqualHeightPairRow<Leading: View, Trailing: View>: View {
+    let spacing: CGFloat
+    let leading: (CGFloat?) -> Leading
+    let trailing: (CGFloat?) -> Trailing
+
+    @State private var measuredHeight: CGFloat = 0
+
+    init(
+        spacing: CGFloat = 8,
+        @ViewBuilder leading: @escaping (CGFloat?) -> Leading,
+        @ViewBuilder trailing: @escaping (CGFloat?) -> Trailing
+    ) {
+        self.spacing = spacing
+        self.leading = leading
+        self.trailing = trailing
+    }
+
+    var body: some View {
+        let synchronizedHeight = measuredHeight > 0 ? measuredHeight : nil
+
+        HStack(alignment: .top, spacing: spacing) {
+            leading(synchronizedHeight)
+                .background(TaskDetailEqualHeightReader(id: "leading"))
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+
+            trailing(synchronizedHeight)
+                .background(TaskDetailEqualHeightReader(id: "trailing"))
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .onPreferenceChange(TaskDetailEqualHeightPreferenceKey.self) { heights in
+            let maxHeight = heights.values.max() ?? 0
+            guard abs(maxHeight - measuredHeight) > 0.5 else { return }
+            measuredHeight = maxHeight
+        }
+    }
+}
+
+private struct TaskDetailEqualHeightReader: View {
+    let id: String
+
+    var body: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: TaskDetailEqualHeightPreferenceKey.self,
+                value: [id: proxy.size.height]
+            )
+        }
+    }
+}
+
+private struct TaskDetailEqualHeightPreferenceKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: [String: CGFloat] = [:]
+
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+private struct TaskDetailColoredSegmentedControl<Option: Hashable>: View {
+    let options: [Option]
+    let selection: Option
+    let title: (Option) -> String
+    let tint: (Option) -> Color
+    let selectedForeground: (Option) -> Color
+    let action: (Option) -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options.indices, id: \.self) { index in
+                let option = options[index]
+                let isSelected = selection == option
+
+                Button {
+                    action(option)
+                } label: {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(isSelected ? selectedForeground(option).opacity(0.88) : tint(option))
+                            .frame(width: 6, height: 6)
+
+                        Text(title(option))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isSelected ? selectedForeground(option) : .primary)
+                    .padding(.horizontal, 8)
+                    .frame(maxWidth: .infinity, minHeight: 30)
+                    .background {
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(tint(option))
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(title(option))
+                .accessibilityValue(isSelected ? "Selected" : "")
+
+                if index < options.index(before: options.endIndex) {
+                    let nextOption = options[options.index(after: index)]
+                    let isAdjacentToSelection = isSelected || selection == nextOption
+
+                    Rectangle()
+                        .fill(.primary.opacity(isAdjacentToSelection ? 0 : 0.14))
+                        .frame(width: 1, height: 18)
+                }
+            }
+        }
+        .padding(3)
+        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
 }
 
 private extension Calendar {

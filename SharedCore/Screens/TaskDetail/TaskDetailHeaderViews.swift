@@ -124,12 +124,14 @@ struct TaskDetailHeaderBadgeView: View {
 
 struct DetailHeaderBoxStyle: ViewModifier {
     var tint: Color = .secondary
+    var minHeight: CGFloat? = nil
 
     func body(content: Content) -> some View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(tint.opacity(0.12))
@@ -142,8 +144,8 @@ struct DetailHeaderBoxStyle: ViewModifier {
 }
 
 extension View {
-    func detailHeaderBoxStyle(tint: Color = .secondary) -> some View {
-        modifier(DetailHeaderBoxStyle(tint: tint))
+    func detailHeaderBoxStyle(tint: Color = .secondary, minHeight: CGFloat? = nil) -> some View {
+        modifier(DetailHeaderBoxStyle(tint: tint, minHeight: minHeight))
     }
 }
 
