@@ -137,6 +137,41 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func advanceTask_forBackfilledCompletionWithoutAnchorDoesNotStartCycleAtReferenceDate() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-04-28T10:00:00Z")
+        let completionDate = makeDate("2026-04-21T12:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Exercise",
+            interval: 4,
+            lastDone: nil,
+            emoji: "🏃",
+            scheduleAnchor: nil
+        )
+        try context.save()
+
+        let result = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: completionDate,
+                referenceDate: referenceDate,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(result.result == .completedRoutine)
+        #expect(result.task.lastDone == completionDate)
+        #expect(result.task.scheduleAnchor == completionDate)
+        #expect(RoutineDateMath.overdueDays(for: result.task, referenceDate: referenceDate, calendar: calendar) == 3)
+        #expect(logs.count == 1)
+        #expect(logs.first?.timestamp == completionDate)
+    }
+
+    @Test
     func advanceChecklistItem_savesLogOnlyAfterFinalChecklistItem() throws {
         let context = makeInMemoryContext()
         let breadID = UUID()

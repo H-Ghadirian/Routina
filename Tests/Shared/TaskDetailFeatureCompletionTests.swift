@@ -199,6 +199,7 @@ struct TaskDetailFeatureCompletionTests {
             await store.send(.markAsDone) {
                 $0.taskRefreshID = 1
                 $0.daysSinceLastRoutine = 7
+                $0.overdueDays = 3
                 $0.pendingLocalCompletionDates = [makeDate("2026-04-21T12:00:00Z")]
             }
         }
@@ -222,7 +223,7 @@ struct TaskDetailFeatureCompletionTests {
                 return calendar.isDate(timestamp, inSameDayAs: selectedDayStart)
             })
             $0.daysSinceLastRoutine = 7
-            $0.overdueDays = 0
+            $0.overdueDays = 3
             $0.isDoneToday = false
         }
 
@@ -238,7 +239,7 @@ struct TaskDetailFeatureCompletionTests {
         )
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
         #expect(persistedTask.lastDone == makeDate("2026-04-21T12:00:00Z"))
-        #expect(persistedTask.scheduleAnchor == now)
+        #expect(persistedTask.scheduleAnchor == makeDate("2026-04-21T12:00:00Z"))
         #expect(persistedLogs.count == 1)
         #expect(scheduledIDs.value == [task.id.uuidString])
     }

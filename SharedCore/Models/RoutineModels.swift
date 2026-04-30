@@ -836,7 +836,8 @@ final class RoutineTask {
         guard usesRollingScheduleAnchor else { return }
         guard completedAt < referenceDate else { return }
         guard scheduleAnchor == nil else { return }
-        scheduleAnchor = referenceDate
+        guard let lastDone else { return }
+        scheduleAnchor = lastDone
     }
 
     private func shouldUpdateLastDone(with candidate: Date) -> Bool {
