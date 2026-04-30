@@ -222,18 +222,22 @@ struct TaskDetailTCAView: View {
                 Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
             }
             .alert(
-                "Undo log?",
+                store.pendingLogRemovalTimestamp == nil ? "Undo log?" : "Remove log?",
                 isPresented: Binding(
                     get: { store.isUndoCompletionConfirmationPresented },
                     set: { store.send(.setUndoCompletionConfirmation($0)) }
                 )
             ) {
-                Button("Undo", role: .destructive) {
+                Button(store.pendingLogRemovalTimestamp == nil ? "Undo" : "Remove", role: .destructive) {
                     store.send(.confirmUndoCompletion)
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("This will remove the selected log and may update the routine's schedule.")
+                if store.pendingLogRemovalTimestamp == nil {
+                    Text("This will remove the selected completion log and may update the routine's schedule.")
+                } else {
+                    Text("This will permanently remove this routine log and may update the routine's schedule.")
+                }
             }
             .onAppear {
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
@@ -328,12 +332,11 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                calendarSection
                 routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
+                calendarSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
-                routineSummarySection
                 routineLogsSection
                 taskChangesSection
                 if store.task.hasChecklistItems {
@@ -1074,33 +1077,10 @@ struct TaskDetailTCAView: View {
     private func routinePrimaryActionSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(store.summaryStatusTitle)
-                    .font(.title3.weight(.semibold))
-                    .foregroundColor(summaryStatusColor)
-
-                if let statusContextMessage {
-                    Text(statusContextMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 12) {
             pressurePickerPill
 
             primaryActionButton
-
-            if store.task.isSoftIntervalRoutine && !store.task.isOngoing && !store.task.isArchived() {
-                Button("Start ongoing") {
-                    store.send(.startOngoingTapped)
-                }
-                .buttonStyle(.bordered)
-                .tint(.teal)
-                .routinaPlatformSecondaryActionControlSize()
-                .frame(maxWidth: .infinity)
-            }
 
             if store.shouldShowBulkConfirmAssumedDays {
                 Button(store.bulkConfirmAssumedDaysTitle) {
@@ -1112,23 +1092,7 @@ struct TaskDetailTCAView: View {
                 .frame(maxWidth: .infinity)
             }
 
-            Button(pauseArchivePresentation.actionTitle) {
-                store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
-            }
-            .buttonStyle(.bordered)
-            .tint(store.task.isArchived() ? .teal : .orange)
-            .routinaPlatformSecondaryActionControlSize()
-            .frame(maxWidth: .infinity)
-
-            if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
-                Button(secondaryActionTitle) {
-                    store.send(.notTodayTapped)
-                }
-                .buttonStyle(.bordered)
-                .tint(.indigo)
-                .routinaPlatformSecondaryActionControlSize()
-                .frame(maxWidth: .infinity)
-            }
+            routineSecondaryActionControls(pauseArchivePresentation: pauseArchivePresentation)
 
             if store.isStepRoutineOffToday {
                 Text("Step-based routines can only be progressed for today.")
@@ -1169,17 +1133,6 @@ struct TaskDetailTCAView: View {
         .detailCardStyle()
     }
 
-    private var routineSummarySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Routine Summary")
-                .font(.headline)
-
-            statusMetadataSection(showSelectedDate: false)
-        }
-        .padding(16)
-        .detailCardStyle()
-    }
-
     @ViewBuilder
     private var primaryActionButton: some View {
         Button {
@@ -1192,6 +1145,76 @@ struct TaskDetailTCAView: View {
         .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
         .routinaPlatformPrimaryActionButtonLayout()
         .disabled(store.isCompletionButtonDisabled)
+    }
+
+    private func routineSecondaryActionControls(
+        pauseArchivePresentation: RoutinePauseArchivePresentation
+    ) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                routinePauseResumeButton(pauseArchivePresentation: pauseArchivePresentation)
+                routineNotTodayButton(pauseArchivePresentation: pauseArchivePresentation)
+                routineStartOngoingButton
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                routinePauseResumeButton(pauseArchivePresentation: pauseArchivePresentation)
+                routineNotTodayButton(pauseArchivePresentation: pauseArchivePresentation)
+                routineStartOngoingButton
+            }
+        }
+    }
+
+    private func routinePauseResumeButton(
+        pauseArchivePresentation: RoutinePauseArchivePresentation
+    ) -> some View {
+        Button {
+            store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
+        } label: {
+            Label(
+                pauseArchivePresentation.actionTitle,
+                systemImage: store.task.isArchived() ? "play.circle" : "pause.circle"
+            )
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(store.task.isArchived() ? .teal : .orange)
+        .routinaPlatformSecondaryActionControlSize()
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func routineNotTodayButton(
+        pauseArchivePresentation: RoutinePauseArchivePresentation
+    ) -> some View {
+        if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
+            Button {
+                store.send(.notTodayTapped)
+            } label: {
+                Label(secondaryActionTitle, systemImage: "moon.zzz.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.indigo)
+            .routinaPlatformSecondaryActionControlSize()
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var routineStartOngoingButton: some View {
+        if store.task.isSoftIntervalRoutine && !store.task.isOngoing && !store.task.isArchived() {
+            Button {
+                store.send(.startOngoingTapped)
+            } label: {
+                Label("Start ongoing", systemImage: "play.circle")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.teal)
+            .routinaPlatformSecondaryActionControlSize()
+            .frame(maxWidth: .infinity)
+        }
     }
 
     @ViewBuilder
@@ -1557,7 +1580,7 @@ struct TaskDetailTCAView: View {
             return "This day is assumed done. Confirm it to count it in stats and history."
         }
         if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
-            return "Today is selected. Pick another date to review its history."
+            return nil
         }
         let dateText = PersianDateDisplay.appendingSupplementaryDate(
             to: store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted),
