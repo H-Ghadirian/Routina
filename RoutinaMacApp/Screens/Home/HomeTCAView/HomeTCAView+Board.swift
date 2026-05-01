@@ -29,32 +29,6 @@ extension HomeTCAView {
 
         return ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 12) {
-                HomeMacSidebarSectionCard(title: "Sprint Scope") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        boardScopeButton(title: "Backlog", scope: .backlog, presentation: presentation)
-
-                        ForEach(presentation.backlogs) { backlog in
-                            boardScopeButton(title: backlog.title, scope: .namedBacklog(backlog.id), presentation: presentation)
-                        }
-
-                        if !presentation.activeSprints.isEmpty {
-                            boardScopeButton(
-                                title: presentation.activeSprints.count == 1 ? "Active Sprint" : "Active Sprints",
-                                scope: .currentSprint,
-                                presentation: presentation
-                            )
-                        }
-
-                        ForEach(presentation.openSprints) { sprint in
-                            sprintScopeRow(sprint, presentation: presentation)
-                        }
-
-                        if !presentation.finishedSprints.isEmpty {
-                            finishedSprintsDisclosure(presentation: presentation)
-                        }
-                    }
-                }
-
                 HomeMacSidebarSectionCard(title: "Backlogs") {
                     VStack(alignment: .leading, spacing: 10) {
                         if let creatingTitle = store.creatingBacklogTitle {
@@ -98,6 +72,12 @@ extension HomeTCAView {
                                     .font(.caption.weight(.semibold))
                             }
                             .buttonStyle(.borderless)
+                        }
+
+                        boardScopeButton(title: "Backlog", scope: .backlog, presentation: presentation)
+
+                        ForEach(presentation.backlogs) { backlog in
+                            boardScopeButton(title: backlog.title, scope: .namedBacklog(backlog.id), presentation: presentation)
                         }
                     }
                 }
@@ -148,133 +128,24 @@ extension HomeTCAView {
                         }
 
                         if !presentation.activeSprints.isEmpty {
-                            ForEach(presentation.activeSprints) { activeSprint in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 8) {
-                                        Text(activeSprint.title)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(.primary)
+                            boardScopeButton(
+                                title: presentation.activeSprints.count == 1 ? "Active Sprint" : "Active Sprints",
+                                scope: .currentSprint,
+                                presentation: presentation
+                            )
+                        }
 
-                                        Text("Active")
-                                            .font(.caption2.weight(.semibold))
-                                            .foregroundStyle(.green)
-                                    }
+                        ForEach(presentation.openSprints) { sprint in
+                            sprintScopeRow(sprint, presentation: presentation)
+                        }
 
-                                    if let activeDayTitle = presentation.activeDayTitle(for: activeSprint) {
-                                        Text(activeDayTitle)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    if let dateSummary = presentation.sprintDateSummary(for: activeSprint) {
-                                        Text(dateSummary)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                        } else if let nextSprint = presentation.sprints.first(where: { $0.status == .planned }) {
-                            Text("No active sprint")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            Button("Start \(nextSprint.title)") {
-                                store.send(.startSprintTapped(nextSprint.id))
-                            }
-                            .buttonStyle(.borderless)
-                            .font(.caption.weight(.semibold))
-                        } else if store.creatingSprintTitle == nil {
+                        if !presentation.finishedSprints.isEmpty {
+                            finishedSprintsDisclosure(presentation: presentation)
+                        } else if presentation.openSprints.isEmpty && store.creatingSprintTitle == nil {
                             Text("Create a sprint to start planning work beyond the backlog.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                    }
-                }
-
-                HomeMacSidebarSectionCard(title: "Board") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        boardSidebarStatRow(
-                            title: "Ready / Paused",
-                            value: presentation.columns.first(where: { $0.state == .ready })?.tasks.count ?? 0,
-                            tint: .orange
-                        )
-                        boardSidebarStatRow(
-                            title: "In Progress",
-                            value: presentation.inProgressTodoCount,
-                            tint: .blue
-                        )
-                        boardSidebarStatRow(
-                            title: "Blocked",
-                            value: presentation.blockedTodoCount,
-                            tint: .red
-                        )
-                        boardSidebarStatRow(
-                            title: "Done",
-                            value: presentation.doneTodoCount,
-                            tint: .green
-                        )
-                    }
-                }
-
-                HomeMacSidebarSectionCard(title: "Visible") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("\(presentation.filteredTodoDisplays.count) cards in \(presentation.scopeTitle)")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-
-                        Text("Search and filters shape these counts.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                HomeMacSidebarSectionCard(title: "Selected") {
-                    if let selected = presentation.selectedTodoDisplay {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(alignment: .center, spacing: 8) {
-                                Text(selected.emoji)
-                                    .font(.headline)
-
-                                Text(selected.name)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(2)
-                            }
-
-                            if let notes = selected.notes, !notes.isEmpty {
-                                Text(notes)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(3)
-                            }
-
-                            HStack(spacing: 8) {
-                                boardStatePill(for: selected.todoState ?? .ready)
-
-                                if let assignedSprintTitle = selected.assignedSprintTitle {
-                                    Text(assignedSprintTitle)
-                                        .font(.caption2.weight(.semibold))
-                                        .foregroundStyle(.purple)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 3)
-                                        .background(
-                                            Capsule(style: .continuous)
-                                                .fill(Color.purple.opacity(0.12))
-                                        )
-                                }
-
-                                if let dueDate = selected.dueDate {
-                                    Text(dueDate, style: .date)
-                                        .font(.caption2.weight(.semibold))
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    } else {
-                        Text("Select a card on the board to inspect it here.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             }
@@ -729,24 +600,6 @@ extension HomeTCAView {
         .accentColor(.secondary)
     }
 
-    private func boardSidebarStatRow(title: String, value: Int, tint: Color) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(tint)
-                .frame(width: 8, height: 8)
-
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 0)
-
-            Text("\(value)")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.primary)
-        }
-    }
-
     private func boardScopeButton(
         title: String,
         scope: HomeFeature.BoardScope,
@@ -777,18 +630,6 @@ extension HomeTCAView {
         case .finished:
             return .secondary
         }
-    }
-
-    private func boardStatePill(for state: TodoState) -> some View {
-        Text(state == .paused ? "Paused" : state.displayTitle)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(boardTint(for: state))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(boardTint(for: state).opacity(0.12))
-            )
     }
 
     private func boardTint(for state: TodoState) -> Color {
