@@ -238,7 +238,7 @@ struct StatsFeatureTests {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
 
-        await store.send(.setData(tasks: [focusTask, healthTask], logs: [focusLog1, focusLog2, healthLog])) {
+        await store.send(.setData(tasks: [focusTask, healthTask], logs: [focusLog1, focusLog2, healthLog], focusSessions: [])) {
             $0.tasks = [focusTask, healthTask]
             $0.logs = [focusLog1, focusLog2, healthLog]
             $0.availableTags = ["Focus", "Health"]
@@ -336,7 +336,7 @@ struct StatsFeatureTests {
         #expect(store.state.metrics.archivedRoutineCount == 0)
         #expect(store.state.metrics.totalCount == 2)
 
-        await store.send(.setData(tasks: [healthTask], logs: [healthLog])) {
+        await store.send(.setData(tasks: [healthTask], logs: [healthLog], focusSessions: [])) {
             $0.tasks = [healthTask]
             $0.logs = [healthLog]
             $0.selectedTag = nil
@@ -446,7 +446,7 @@ struct StatsFeatureTests {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
 
-        await store.send(.setData(tasks: [focusTask, healthTask, hybridTask], logs: [focusLog, healthLog, hybridLog])) {
+        await store.send(.setData(tasks: [focusTask, healthTask, hybridTask], logs: [focusLog, healthLog, hybridLog], focusSessions: [])) {
             $0.tasks = [focusTask, healthTask, hybridTask]
             $0.logs = [focusLog, healthLog, hybridLog]
             $0.availableTags = ["Focus", "Health"]
@@ -497,7 +497,7 @@ struct StatsFeatureTests {
             $0.selectedTags = ["Focus"]
         }
 
-        await store.send(.setData(tasks: [focusTask], logs: [focusLog])) {
+        await store.send(.setData(tasks: [focusTask], logs: [focusLog], focusSessions: [])) {
             $0.tasks = [focusTask]
             $0.logs = [focusLog]
             $0.excludedTags = []

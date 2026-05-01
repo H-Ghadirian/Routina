@@ -31,7 +31,7 @@ extension HomeTCAView {
                 macBoardOpenCountToolbarItem
                 macBoardInProgressCountToolbarItem
                 macBoardBlockedCountToolbarItem
-                if !isBacklogScope(store.selectedBoardScope) {
+                if !boardPresentation.isBacklogScope {
                     macBoardDoneCountToolbarItem
                 }
             }
@@ -422,7 +422,7 @@ extension HomeTCAView {
 
     var macBoardOpenCountToolbarItem: some View {
         MacToolbarStatusBadge(
-            title: "\(boardOpenTodoCount) open",
+            title: "\(boardPresentation.openTodoCount) open",
             systemImage: "square.grid.3x3.topleft.filled",
             tintColor: .secondaryLabelColor
         )
@@ -470,7 +470,7 @@ extension HomeTCAView {
 
     var macBoardInProgressCountToolbarItem: some View {
         MacToolbarStatusBadge(
-            title: "\(boardInProgressTodoCount) in progress",
+            title: "\(boardPresentation.inProgressTodoCount) in progress",
             systemImage: "arrow.clockwise.circle.fill",
             tintColor: .systemBlue
         )
@@ -479,7 +479,7 @@ extension HomeTCAView {
 
     var macBoardBlockedCountToolbarItem: some View {
         MacToolbarStatusBadge(
-            title: "\(boardBlockedTodoCount) blocked",
+            title: "\(boardPresentation.blockedTodoCount) blocked",
             systemImage: "exclamationmark.circle.fill",
             tintColor: .systemRed
         )
@@ -488,7 +488,7 @@ extension HomeTCAView {
 
     var macBoardDoneCountToolbarItem: some View {
         MacToolbarStatusBadge(
-            title: "\(boardDoneTodoCount) done",
+            title: "\(boardPresentation.doneTodoCount) done",
             systemImage: "checkmark.circle.fill",
             tintColor: .systemGreen
         )

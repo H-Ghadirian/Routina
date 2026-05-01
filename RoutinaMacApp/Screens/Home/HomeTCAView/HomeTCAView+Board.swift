@@ -2,170 +2,55 @@ import ComposableArchitecture
 import SwiftUI
 
 extension HomeTCAView {
-    var boardBacklogs: [BoardBacklog] {
-        store.sprintBoardData.backlogs.sorted { lhs, rhs in
-            lhs.createdAt > rhs.createdAt
-        }
-    }
-
-    var boardSprints: [BoardSprint] {
-        store.sprintBoardData.sprints.sorted { lhs, rhs in
-            if lhs.status == rhs.status {
-                return lhs.createdAt > rhs.createdAt
-            }
-
-            let sortOrder: [SprintStatus: Int] = [.active: 0, .planned: 1, .finished: 2]
-            return (sortOrder[lhs.status] ?? 99) < (sortOrder[rhs.status] ?? 99)
-        }
-    }
-
-    var boardActiveSprints: [BoardSprint] {
-        boardSprints.filter { $0.status == .active }
-    }
-
-    var boardOpenSprints: [BoardSprint] {
-        boardSprints.filter { $0.status != .finished }
-    }
-
-    var boardFinishedSprints: [BoardSprint] {
-        boardSprints.filter { $0.status == .finished }
-    }
-
-    var boardActiveSprintIDs: Set<UUID> {
-        Set(boardActiveSprints.map(\.id))
-    }
-
     var boardFinishableSprintsInCurrentScope: [BoardSprint] {
-        switch store.selectedBoardScope {
-        case .currentSprint:
-            return boardActiveSprints
-        case let .sprint(sprintID):
-            return boardSprints.filter { $0.id == sprintID && $0.status == .active }
-        case .backlog, .namedBacklog:
-            return []
-        }
+        boardPresentation.finishableSprintsInCurrentScope
     }
 
-    var boardScopeTitle: String {
-        switch store.selectedBoardScope {
-        case .backlog:
-            return "Backlog"
-        case let .namedBacklog(backlogID):
-            return boardBacklogs.first(where: { $0.id == backlogID })?.title ?? "Backlog"
-        case .currentSprint:
-            if boardActiveSprints.count == 1 {
-                return boardActiveSprints[0].title
-            }
-            return "Active Sprints"
-        case let .sprint(sprintID):
-            return boardSprints.first(where: { $0.id == sprintID })?.title ?? "Sprint"
-        }
-    }
-
-    var boardFilteredTodoDisplays: [HomeFeature.RoutineDisplay] {
-        store.boardTodoDisplays
-            .filter { task in
-                task.isOneOffTask
-                    && HomeFeature.matchesBoardScope(
-                        task,
-                        selectedScope: store.selectedBoardScope,
-                        activeSprintIDs: boardActiveSprintIDs
-                    )
-                    && matchesSearch(task)
-                    && matchesFilter(task)
-                    && matchesManualPlaceFilter(task)
-                    && HomeFeature.matchesImportanceUrgencyFilter(
-                        store.selectedImportanceUrgencyFilter,
-                        importance: task.importance,
-                        urgency: task.urgency
-                    )
-                    && HomeFeature.matchesSelectedTags(store.selectedTags, mode: store.includeTagMatchMode, in: task.tags)
-                    && HomeFeature.matchesExcludedTags(store.excludedTags, mode: store.excludeTagMatchMode, in: task.tags)
-            }
-    }
-
-    var boardOpenTodoCount: Int {
-        boardFilteredTodoDisplays.count { display in
-            display.todoState != .done
-        }
-    }
-
-    var boardDoneTodoCount: Int {
-        boardFilteredTodoDisplays.count { display in
-            display.todoState == .done
-        }
-    }
-
-    var boardBlockedTodoCount: Int {
-        boardFilteredTodoDisplays.count { display in
-            display.todoState == .blocked
-        }
-    }
-
-    var boardInProgressTodoCount: Int {
-        boardFilteredTodoDisplays.count { display in
-            display.todoState == .inProgress
-        }
-    }
-
-    var macTodoBoardColumns: [HomeMacTodoBoardView.Column] {
-        [
-            HomeMacTodoBoardView.Column(
-                state: .ready,
-                title: "Ready / Paused",
-                tint: .orange,
-                tasks: boardTasks(for: .ready)
-            ),
-            HomeMacTodoBoardView.Column(
-                state: .inProgress,
-                title: "In Progress",
-                tint: .blue,
-                tasks: boardTasks(for: .inProgress)
-            ),
-            HomeMacTodoBoardView.Column(
-                state: .blocked,
-                title: "Blocked",
-                tint: .red,
-                tasks: boardTasks(for: .blocked)
-            ),
-            HomeMacTodoBoardView.Column(
-                state: .done,
-                title: "Done",
-                tint: .green,
-                tasks: boardTasks(for: .done)
-            )
-        ]
-    }
-
-    var boardSelectedTodoDisplay: HomeFeature.RoutineDisplay? {
-        guard let selectedTaskID = store.selectedTaskID else { return nil }
-        return boardFilteredTodoDisplays.first(where: { $0.id == selectedTaskID })
+    var boardPresentation: HomeBoardPresentation {
+        HomeBoardPresentation(
+            boardTodoDisplays: store.boardTodoDisplays,
+            sprintBoardData: store.sprintBoardData,
+            selectedScope: store.selectedBoardScope,
+            selectedTaskID: store.selectedTaskID,
+            selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            selectedTags: store.selectedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            excludedTags: store.excludedTags,
+            excludeTagMatchMode: store.excludeTagMatchMode,
+            referenceDate: Date(),
+            matchesSearch: matchesSearch,
+            matchesFilter: matchesFilter,
+            matchesManualPlaceFilter: matchesManualPlaceFilter
+        )
     }
 
     var macBoardSidebarView: some View {
-        ScrollView(.vertical, showsIndicators: true) {
+        let presentation = boardPresentation
+
+        return ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 12) {
                 HomeMacSidebarSectionCard(title: "Sprint Scope") {
                     VStack(alignment: .leading, spacing: 8) {
-                        boardScopeButton(title: "Backlog", scope: .backlog)
+                        boardScopeButton(title: "Backlog", scope: .backlog, presentation: presentation)
 
-                        ForEach(boardBacklogs) { backlog in
-                            boardScopeButton(title: backlog.title, scope: .namedBacklog(backlog.id))
+                        ForEach(presentation.backlogs) { backlog in
+                            boardScopeButton(title: backlog.title, scope: .namedBacklog(backlog.id), presentation: presentation)
                         }
 
-                        if !boardActiveSprints.isEmpty {
+                        if !presentation.activeSprints.isEmpty {
                             boardScopeButton(
-                                title: boardActiveSprints.count == 1 ? "Active Sprint" : "Active Sprints",
-                                scope: .currentSprint
+                                title: presentation.activeSprints.count == 1 ? "Active Sprint" : "Active Sprints",
+                                scope: .currentSprint,
+                                presentation: presentation
                             )
                         }
 
-                        ForEach(boardOpenSprints) { sprint in
-                            sprintScopeRow(sprint)
+                        ForEach(presentation.openSprints) { sprint in
+                            sprintScopeRow(sprint, presentation: presentation)
                         }
 
-                        if !boardFinishedSprints.isEmpty {
-                            finishedSprintsDisclosure
+                        if !presentation.finishedSprints.isEmpty {
+                            finishedSprintsDisclosure(presentation: presentation)
                         }
                     }
                 }
@@ -262,8 +147,8 @@ extension HomeTCAView {
                             .buttonStyle(.borderless)
                         }
 
-                        if !boardActiveSprints.isEmpty {
-                            ForEach(boardActiveSprints) { activeSprint in
+                        if !presentation.activeSprints.isEmpty {
+                            ForEach(presentation.activeSprints) { activeSprint in
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack(spacing: 8) {
                                         Text(activeSprint.title)
@@ -275,20 +160,20 @@ extension HomeTCAView {
                                             .foregroundStyle(.green)
                                     }
 
-                                    if let activeDayCount = activeSprint.activeDayCount(relativeTo: Date()) {
-                                        Text(activeDayCount == 1 ? "Day 1" : "Day \(activeDayCount)")
+                                    if let activeDayTitle = presentation.activeDayTitle(for: activeSprint) {
+                                        Text(activeDayTitle)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
 
-                                    if let dateSummary = sprintDateSummary(for: activeSprint) {
+                                    if let dateSummary = presentation.sprintDateSummary(for: activeSprint) {
                                         Text(dateSummary)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                 }
                             }
-                        } else if let nextSprint = boardSprints.first(where: { $0.status == .planned }) {
+                        } else if let nextSprint = presentation.sprints.first(where: { $0.status == .planned }) {
                             Text("No active sprint")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -310,22 +195,22 @@ extension HomeTCAView {
                     VStack(alignment: .leading, spacing: 12) {
                         boardSidebarStatRow(
                             title: "Ready / Paused",
-                            value: boardTasks(for: .ready).count,
+                            value: presentation.columns.first(where: { $0.state == .ready })?.tasks.count ?? 0,
                             tint: .orange
                         )
                         boardSidebarStatRow(
                             title: "In Progress",
-                            value: boardInProgressTodoCount,
+                            value: presentation.inProgressTodoCount,
                             tint: .blue
                         )
                         boardSidebarStatRow(
                             title: "Blocked",
-                            value: boardBlockedTodoCount,
+                            value: presentation.blockedTodoCount,
                             tint: .red
                         )
                         boardSidebarStatRow(
                             title: "Done",
-                            value: boardDoneTodoCount,
+                            value: presentation.doneTodoCount,
                             tint: .green
                         )
                     }
@@ -333,7 +218,7 @@ extension HomeTCAView {
 
                 HomeMacSidebarSectionCard(title: "Visible") {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("\(boardFilteredTodoDisplays.count) cards in \(boardScopeTitle)")
+                        Text("\(presentation.filteredTodoDisplays.count) cards in \(presentation.scopeTitle)")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.primary)
 
@@ -344,7 +229,7 @@ extension HomeTCAView {
                 }
 
                 HomeMacSidebarSectionCard(title: "Selected") {
-                    if let selected = boardSelectedTodoDisplay {
+                    if let selected = presentation.selectedTodoDisplay {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(alignment: .center, spacing: 8) {
                                 Text(selected.emoji)
@@ -408,7 +293,7 @@ extension HomeTCAView {
             }
             Button("Cancel", role: .cancel) {}
         } message: { sprintID in
-            let title = boardSprints.first(where: { $0.id == sprintID })?.title ?? "this sprint"
+            let title = presentation.sprints.first(where: { $0.id == sprintID })?.title ?? "this sprint"
             let hasAssignments = store.sprintBoardData.assignments.contains(where: { $0.sprintID == sprintID })
             if hasAssignments {
                 Text("\"\(title)\" will be deleted and all its tasks will be moved to the backlog.")
@@ -432,15 +317,30 @@ extension HomeTCAView {
         }
     }
 
+    private func macTodoBoardColumns(
+        from columns: [HomeBoardPresentation.Column]
+    ) -> [HomeMacTodoBoardView.Column] {
+        columns.map { column in
+            HomeMacTodoBoardView.Column(
+                state: column.state,
+                title: column.title,
+                tint: boardTint(for: column.state),
+                tasks: column.tasks
+            )
+        }
+    }
+
     var macTodoBoardContent: some View {
-        HomeMacTodoBoardView(
-            columns: macTodoBoardColumns,
-            layout: isBacklogScope(store.selectedBoardScope) ? .backlogList : .board,
-            selectedTaskID: store.selectedTaskID,
+        let presentation = boardPresentation
+
+        return HomeMacTodoBoardView(
+            columns: macTodoBoardColumns(from: presentation.columns),
+            layout: presentation.isBacklogScope ? .backlogList : .board,
+            selectedTaskID: presentation.selectedTaskID,
             isCompactLayout: isMacTodoBoardCompactCards,
-            availableBacklogs: boardBacklogs,
-            availableSprints: boardSprints,
-            activeSprints: boardActiveSprints,
+            availableBacklogs: presentation.backlogs,
+            availableSprints: presentation.sprints,
+            activeSprints: presentation.activeSprints,
             onSelectTask: { taskID in
                 store.send(.setSelectedTask(taskID))
             },
@@ -496,9 +396,11 @@ extension HomeTCAView {
     }
 
     var macBoardTaskInspector: some View {
-        VStack(spacing: 0) {
+        let presentation = boardPresentation
+
+        return VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Text(boardInspectorTitle)
+                Text(presentation.inspectorTitle)
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
@@ -531,32 +433,19 @@ extension HomeTCAView {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
             } else {
-                boardScopeInspector
+                boardScopeInspector(presentation: presentation)
             }
         }
         .background(.regularMaterial)
         .clipped()
     }
 
-    var boardInspectorTitle: String {
-        if store.selectedTaskID != nil {
-            return "Ticket Details"
-        }
-
-        switch store.selectedBoardScope {
-        case .backlog, .namedBacklog:
-            return "Backlog Details"
-        case .currentSprint, .sprint:
-            return "Sprint Details"
-        }
-    }
-
-    private var boardScopeInspector: some View {
+    private func boardScopeInspector(presentation: HomeBoardPresentation) -> some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 14) {
-                boardScopeSummaryCard
-                boardScopeCountsCard
-                boardScopeDateCard
+                boardScopeSummaryCard(presentation: presentation)
+                boardScopeCountsCard(presentation: presentation)
+                boardScopeDateCard(presentation: presentation)
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -565,15 +454,15 @@ extension HomeTCAView {
     }
 
     @ViewBuilder
-    private var boardScopeSummaryCard: some View {
+    private func boardScopeSummaryCard(presentation: HomeBoardPresentation) -> some View {
         boardInspectorCard {
             VStack(alignment: .leading, spacing: 10) {
-                Label(boardScopeTitle, systemImage: boardScopeIcon)
+                Label(presentation.scopeTitle, systemImage: presentation.scopeIcon)
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
 
-                Text(boardScopeDescription)
+                Text(presentation.scopeDescription)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -582,75 +471,46 @@ extension HomeTCAView {
     }
 
     @ViewBuilder
-    private var boardScopeCountsCard: some View {
+    private func boardScopeCountsCard(presentation: HomeBoardPresentation) -> some View {
         boardInspectorCard(title: "Tasks") {
             VStack(alignment: .leading, spacing: 8) {
-                boardInspectorStatRow("Open", boardOpenTodoCount, tint: .secondary)
-                boardInspectorStatRow("In Progress", boardInProgressTodoCount, tint: .blue)
-                boardInspectorStatRow("Blocked", boardBlockedTodoCount, tint: .red)
+                boardInspectorStatRow("Open", presentation.openTodoCount, tint: .secondary)
+                boardInspectorStatRow("In Progress", presentation.inProgressTodoCount, tint: .blue)
+                boardInspectorStatRow("Blocked", presentation.blockedTodoCount, tint: .red)
 
-                if !isBacklogScope(store.selectedBoardScope) {
-                    boardInspectorStatRow("Done", boardDoneTodoCount, tint: .green)
+                if !presentation.isBacklogScope {
+                    boardInspectorStatRow("Done", presentation.doneTodoCount, tint: .green)
                 }
             }
         }
     }
 
     @ViewBuilder
-    private var boardScopeDateCard: some View {
-        boardInspectorCard(title: boardScopeDateCardTitle) {
+    private func boardScopeDateCard(presentation: HomeBoardPresentation) -> some View {
+        boardInspectorCard(title: presentation.scopeDateCardTitle) {
             VStack(alignment: .leading, spacing: 8) {
-                switch store.selectedBoardScope {
+                switch presentation.selectedScope {
                 case .backlog:
-                    boardInspectorDateRow("Created", nil)
+                    boardInspectorDateRow("Created", nil, presentation: presentation)
                 case let .namedBacklog(backlogID):
-                    let backlog = boardBacklogs.first(where: { $0.id == backlogID })
-                    boardInspectorDateRow("Created", backlog?.createdAt)
+                    let backlog = presentation.backlogs.first(where: { $0.id == backlogID })
+                    boardInspectorDateRow("Created", backlog?.createdAt, presentation: presentation)
                 case .currentSprint:
-                    if boardActiveSprints.isEmpty {
+                    if presentation.activeSprints.isEmpty {
                         Text("No active sprint.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(boardActiveSprints) { sprint in
-                            boardSprintInspectorDateSummary(sprint)
+                        ForEach(presentation.activeSprints) { sprint in
+                            boardSprintInspectorDateSummary(sprint, presentation: presentation)
                         }
                     }
                 case let .sprint(sprintID):
-                    if let sprint = boardSprints.first(where: { $0.id == sprintID }) {
-                        boardSprintInspectorDateSummary(sprint)
+                    if let sprint = presentation.sprints.first(where: { $0.id == sprintID }) {
+                        boardSprintInspectorDateSummary(sprint, presentation: presentation)
                     }
                 }
             }
-        }
-    }
-
-    private var boardScopeDateCardTitle: String {
-        isBacklogScope(store.selectedBoardScope) ? "Timeline" : "Sprint Dates"
-    }
-
-    private var boardScopeIcon: String {
-        switch store.selectedBoardScope {
-        case .backlog, .namedBacklog:
-            return "tray.full"
-        case .currentSprint, .sprint:
-            return "flag.checkered"
-        }
-    }
-
-    private var boardScopeDescription: String {
-        switch store.selectedBoardScope {
-        case .backlog:
-            return "Default backlog for todos that are not assigned to a named backlog or sprint."
-        case .namedBacklog:
-            return "Named backlog for grouping todos before they move into a sprint."
-        case .currentSprint:
-            return boardActiveSprints.count == 1
-                ? "Currently active sprint."
-                : "\(boardActiveSprints.count) active sprints are shown together."
-        case let .sprint(sprintID):
-            let status = boardSprints.first(where: { $0.id == sprintID })?.status.displayTitle ?? "Sprint"
-            return "\(status) sprint."
         }
     }
 
@@ -698,24 +558,31 @@ extension HomeTCAView {
     }
 
     @ViewBuilder
-    private func boardSprintInspectorDateSummary(_ sprint: BoardSprint) -> some View {
+    private func boardSprintInspectorDateSummary(
+        _ sprint: BoardSprint,
+        presentation: HomeBoardPresentation
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(sprint.title)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
 
-            boardInspectorDateRow("Start", sprint.startedAt)
-            boardInspectorDateRow("Finish", sprint.finishedAt)
+            boardInspectorDateRow("Start", sprint.startedAt, presentation: presentation)
+            boardInspectorDateRow("Finish", sprint.finishedAt, presentation: presentation)
 
-            if let activeDayCount = sprint.activeDayCount(relativeTo: Date()) {
-                boardInspectorDetailRow("Day", activeDayCount == 1 ? "Day 1" : "Day \(activeDayCount)")
+            if let activeDayTitle = presentation.activeDayTitle(for: sprint) {
+                boardInspectorDetailRow("Day", activeDayTitle)
             }
         }
     }
 
     @ViewBuilder
-    private func boardInspectorDateRow(_ title: String, _ date: Date?) -> some View {
-        boardInspectorDetailRow(title, date.map(boardDateLabel(for:)) ?? "Not set")
+    private func boardInspectorDateRow(
+        _ title: String,
+        _ date: Date?,
+        presentation: HomeBoardPresentation
+    ) -> some View {
+        boardInspectorDetailRow(title, date.map(presentation.dateLabel(for:)) ?? "Not set")
     }
 
     private func boardInspectorDetailRow(_ title: String, _ value: String) -> some View {
@@ -733,55 +600,11 @@ extension HomeTCAView {
         }
     }
 
-    func isBacklogScope(_ scope: HomeFeature.BoardScope) -> Bool {
-        switch scope {
-        case .backlog, .namedBacklog:
-            return true
-        case .currentSprint, .sprint:
-            return false
-        }
-    }
-
-    private func boardTasks(for columnState: TodoState) -> [HomeFeature.RoutineDisplay] {
-        let sectionKey = HomeFeature.boardSectionKey(for: columnState)
-        let tasks = boardFilteredTodoDisplays.filter { task in
-            switch columnState {
-            case .ready:
-                return task.todoState == .ready || task.todoState == .paused
-            case .inProgress:
-                return task.todoState == .inProgress
-            case .blocked:
-                return task.todoState == .blocked
-            case .done:
-                return task.todoState == .done
-            case .paused:
-                return false
-            }
-        }
-
-        return tasks.sorted { lhs, rhs in
-            let lhsOrder = lhs.manualSectionOrders[sectionKey] ?? Int.max
-            let rhsOrder = rhs.manualSectionOrders[sectionKey] ?? Int.max
-            if lhsOrder != rhsOrder {
-                return lhsOrder < rhsOrder
-            }
-
-            if lhs.isPinned != rhs.isPinned {
-                return lhs.isPinned && !rhs.isPinned
-            }
-
-            let lhsDue = lhs.dueDate ?? .distantFuture
-            let rhsDue = rhs.dueDate ?? .distantFuture
-            if lhsDue != rhsDue {
-                return lhsDue < rhsDue
-            }
-
-            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-        }
-    }
-
     @ViewBuilder
-    private func sprintScopeRow(_ sprint: BoardSprint) -> some View {
+    private func sprintScopeRow(
+        _ sprint: BoardSprint,
+        presentation: HomeBoardPresentation
+    ) -> some View {
         let isRenaming = store.renamingSprintID == sprint.id
 
         if isRenaming {
@@ -832,7 +655,7 @@ extension HomeTCAView {
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.primary)
 
-                        if let dateSummary = sprintDateSummary(for: sprint) {
+                        if let dateSummary = presentation.sprintDateSummary(for: sprint) {
                             Text(dateSummary)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -850,7 +673,7 @@ extension HomeTCAView {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelectedBoardScope(.sprint(sprint.id)) ? Color.accentColor.opacity(0.14) : Color.clear)
+                        .fill(presentation.isSelectedScope(.sprint(sprint.id)) ? Color.accentColor.opacity(0.14) : Color.clear)
                 )
             }
             .buttonStyle(.plain)
@@ -875,11 +698,11 @@ extension HomeTCAView {
         }
     }
 
-    private var finishedSprintsDisclosure: some View {
+    private func finishedSprintsDisclosure(presentation: HomeBoardPresentation) -> some View {
         DisclosureGroup(isExpanded: $isFinishedSprintsExpanded) {
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(boardFinishedSprints) { sprint in
-                    sprintScopeRow(sprint)
+                ForEach(presentation.finishedSprints) { sprint in
+                    sprintScopeRow(sprint, presentation: presentation)
                 }
             }
             .padding(.top, 6)
@@ -896,7 +719,7 @@ extension HomeTCAView {
 
                 Spacer(minLength: 0)
 
-                Text("\(boardFinishedSprints.count)")
+                Text("\(presentation.finishedSprints.count)")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -904,26 +727,6 @@ extension HomeTCAView {
         }
         .font(.caption)
         .accentColor(.secondary)
-    }
-
-    private func sprintDateSummary(for sprint: BoardSprint) -> String? {
-        switch (sprint.startedAt, sprint.finishedAt) {
-        case let (startedAt?, finishedAt?):
-            return "Start \(boardDateLabel(for: startedAt)) · Finish \(boardDateLabel(for: finishedAt))"
-        case let (startedAt?, nil):
-            return "Start \(boardDateLabel(for: startedAt))"
-        case let (nil, finishedAt?):
-            return "Finish \(boardDateLabel(for: finishedAt))"
-        case (nil, nil):
-            return nil
-        }
-    }
-
-    private func boardDateLabel(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
     }
 
     private func boardSidebarStatRow(title: String, value: Int, tint: Color) -> some View {
@@ -944,7 +747,11 @@ extension HomeTCAView {
         }
     }
 
-    private func boardScopeButton(title: String, scope: HomeFeature.BoardScope) -> some View {
+    private func boardScopeButton(
+        title: String,
+        scope: HomeFeature.BoardScope,
+        presentation: HomeBoardPresentation
+    ) -> some View {
         Button {
             store.send(.selectedBoardScopeChanged(scope))
         } label: {
@@ -955,27 +762,10 @@ extension HomeTCAView {
                 .padding(.vertical, 8)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelectedBoardScope(scope) ? Color.accentColor.opacity(0.14) : Color.clear)
+                        .fill(presentation.isSelectedScope(scope) ? Color.accentColor.opacity(0.14) : Color.clear)
                 )
         }
         .buttonStyle(.plain)
-    }
-
-    private func isSelectedBoardScope(_ scope: HomeFeature.BoardScope) -> Bool {
-        switch (store.selectedBoardScope, scope) {
-        case (.backlog, .backlog):
-            return true
-        case let (.namedBacklog(lhs), .namedBacklog(rhs)):
-            return lhs == rhs
-        case let (.sprint(lhs), .sprint(rhs)):
-            return lhs == rhs
-        case (.currentSprint, .sprint(let id)):
-            return boardActiveSprintIDs.contains(id)
-        case (.currentSprint, .currentSprint):
-            return true
-        default:
-            return false
-        }
     }
 
     private func boardSprintTint(for status: SprintStatus) -> Color {

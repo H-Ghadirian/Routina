@@ -1539,6 +1539,7 @@ struct TaskDetailFeatureTests {
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let selectedDayStart = calendar.startOfDay(for: now)
 
         let scheduledIDs = LockIsolated<[String]>([])
 
