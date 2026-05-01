@@ -119,7 +119,7 @@ struct HomeFeature {
     }
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -666,6 +666,19 @@ struct HomeFeature {
         )
     }
 
+    private func taskLoadHandler() -> HomeFeatureTaskLoadHandler<State, Action> {
+        HomeFeatureTaskLoadHandler(
+            relatedTagRules: { appSettingsClient.relatedTagRules() },
+            tagColors: { appSettingsClient.tagColors() },
+            refreshDisplays: { state in refreshDisplays(&state) },
+            syncSelectedTaskDetailState: { state in syncSelectedTaskDetailState(&state) },
+            validateFilterState: { state in filterMutationHandler().validateFilterState(&state) },
+            persistTemporaryViewState: { state in persistTemporaryViewState(state) },
+            refreshSelectedTaskDetailEffect: { state in refreshSelectedTaskDetailEffect(for: state) },
+            addRoutineAction: { .addRoutineSheet($0) }
+        )
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -697,40 +710,13 @@ struct HomeFeature {
                 }
 
             case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
-                let snapshot = HomeTaskLoadSupport.makeSnapshot(
+                return taskLoadHandler().applyLoadedTasks(
                     tasks: tasks,
                     places: places,
                     goals: goals,
                     logs: logs,
                     doneStats: doneStats,
-                    selectedTaskID: state.selection.selectedTaskID,
-                    detailTask: state.selection.taskDetailState?.task,
-                    selectedTaskReloadGuard: state.selection.selectedTaskReloadGuard,
-                    persistedRelatedTagRules: appSettingsClient.relatedTagRules()
-                )
-                state.relatedTagRules = snapshot.relatedTagRules
-                state.tagColors = appSettingsClient.tagColors()
-                state.selection.selectedTaskReloadGuard = snapshot.selectedTaskReloadGuard
-                state.routineTasks = snapshot.tasks
-                state.routinePlaces = snapshot.places
-                state.routineGoals = snapshot.goals
-                state.timelineLogs = snapshot.timelineLogs
-                state.doneStats = snapshot.doneStats
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                filterMutationHandler().validateFilterState(&state)
-                persistTemporaryViewState(state)
-                let detailRefreshEffect = refreshSelectedTaskDetailEffect(for: state)
-                guard state.presentation.addRoutineState != nil else { return detailRefreshEffect }
-                return .merge(
-                    detailRefreshEffect,
-                    HomeAddRoutineSupport.availabilityRefreshEffect(
-                        tasks: snapshot.tasks,
-                        places: snapshot.places,
-                        goals: snapshot.goals,
-                        doneStats: snapshot.doneStats,
-                        action: { .addRoutineSheet($0) }
-                    )
+                    state: &state
                 )
 
             case let .sprintBoardLoaded(sprintBoardData):
