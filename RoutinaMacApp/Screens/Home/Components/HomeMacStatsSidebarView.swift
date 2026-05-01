@@ -342,6 +342,7 @@ struct HomeMacStatsSidebarView: View {
 
     private func statsRangeIcon(for range: DoneChartRange) -> String {
         switch range {
+        case .today: return "calendar.badge.checkmark"
         case .week: return "calendar.badge.clock"
         case .month: return "calendar"
         case .year: return "calendar.badge.plus"

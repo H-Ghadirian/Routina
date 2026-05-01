@@ -1,6 +1,7 @@
 import Foundation
 
 enum DoneChartRange: String, CaseIterable, Equatable, Identifiable, Codable, Sendable {
+    case today = "Today"
     case week = "Week"
     case month = "Month"
     case year = "Year"
@@ -9,6 +10,8 @@ enum DoneChartRange: String, CaseIterable, Equatable, Identifiable, Codable, Sen
 
     var trailingDayCount: Int {
         switch self {
+        case .today:
+            return 1
         case .week:
             return 7
         case .month:
@@ -20,6 +23,8 @@ enum DoneChartRange: String, CaseIterable, Equatable, Identifiable, Codable, Sen
 
     var periodDescription: String {
         switch self {
+        case .today:
+            return "Today"
         case .week:
             return "Last 7 days"
         case .month:

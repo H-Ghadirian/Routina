@@ -394,9 +394,13 @@ struct StatsView: View {
                 }
                 AnyView(heroSection(metrics: currentMetrics))
                 AnyView(summaryCards(metrics: currentMetrics))
-                AnyView(chartSection(metrics: currentMetrics))
+                if selectedRange != .today {
+                    AnyView(chartSection(metrics: currentMetrics))
+                }
                 AnyView(tagUsageSection(metrics: currentMetrics))
-                AnyView(focusChartSection(metrics: currentMetrics))
+                if selectedRange != .today {
+                    AnyView(focusChartSection(metrics: currentMetrics))
+                }
                 if store.isGitFeaturesEnabled {
                     AnyView(gitHubSection)
                 }
@@ -776,34 +780,38 @@ struct StatsView: View {
 
                 Spacer(minLength: 0)
 
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(metrics.activeDayCount)")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundStyle(.white)
+                if selectedRange != .today {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(metrics.activeDayCount)")
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white)
 
-                    Text(metrics.activeDayCount == 1 ? "active day" : "active days")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.7))
+                        Text(metrics.activeDayCount == 1 ? "active day" : "active days")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
 
-            sparklinePreview(metrics: metrics)
+            if selectedRange != .today {
+                sparklinePreview(metrics: metrics)
 
-            HStack(spacing: 12) {
-                heroStatPill(
-                    icon: "gauge.with.dots.needle.50percent",
-                    title: "Daily avg",
-                    value: averagePerDayText(for: metrics)
-                )
+                HStack(spacing: 12) {
+                    heroStatPill(
+                        icon: "gauge.with.dots.needle.50percent",
+                        title: "Daily avg",
+                        value: averagePerDayText(for: metrics)
+                    )
 
-                heroStatPill(
-                    icon: "bolt.fill",
-                    title: "Best day",
-                    value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0"
-                )
+                    heroStatPill(
+                        icon: "bolt.fill",
+                        title: "Best day",
+                        value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0"
+                    )
+                }
             }
         }
         .padding(22)
@@ -854,14 +862,16 @@ struct StatsView: View {
             ],
             spacing: 14
         ) {
-            summaryCard(
-                icon: "gauge.with.dots.needle.50percent",
-                accent: .mint,
-                title: "Daily average",
-                value: averagePerDayText(for: metrics),
-                caption: "Across \(metrics.chartPoints.count) days",
-                accessibilityIdentifier: "stats.summary.dailyAverage"
-            )
+            if selectedRange != .today {
+                summaryCard(
+                    icon: "gauge.with.dots.needle.50percent",
+                    accent: .mint,
+                    title: "Daily average",
+                    value: averagePerDayText(for: metrics),
+                    caption: "Across \(metrics.chartPoints.count) days",
+                    accessibilityIdentifier: "stats.summary.dailyAverage"
+                )
+            }
 
             summaryCard(
                 icon: "timer",
@@ -872,23 +882,25 @@ struct StatsView: View {
                 accessibilityIdentifier: "stats.summary.focusTime"
             )
 
-            summaryCard(
-                icon: "stopwatch.fill",
-                accent: .purple,
-                title: "Focus average",
-                value: focusDurationText(metrics.averageFocusSecondsPerDay),
-                caption: "Per day in this range",
-                accessibilityIdentifier: "stats.summary.focusAverage"
-            )
+            if selectedRange != .today {
+                summaryCard(
+                    icon: "stopwatch.fill",
+                    accent: .purple,
+                    title: "Focus average",
+                    value: focusDurationText(metrics.averageFocusSecondsPerDay),
+                    caption: "Per day in this range",
+                    accessibilityIdentifier: "stats.summary.focusAverage"
+                )
 
-            summaryCard(
-                icon: "bolt.fill",
-                accent: .orange,
-                title: "Best day",
-                value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0",
-                caption: metrics.highlightedBusiestDay.map(bestDayCaption(for:)) ?? "No peak day yet",
-                accessibilityIdentifier: "stats.summary.bestDay"
-            )
+                summaryCard(
+                    icon: "bolt.fill",
+                    accent: .orange,
+                    title: "Best day",
+                    value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0",
+                    caption: metrics.highlightedBusiestDay.map(bestDayCaption(for:)) ?? "No peak day yet",
+                    accessibilityIdentifier: "stats.summary.bestDay"
+                )
+            }
 
             summaryCard(
                 icon: "checkmark.seal.fill",
@@ -1062,30 +1074,32 @@ struct StatsView: View {
             )
         }
 
-        gitHubChart(
-            points: stats.commitPoints,
-            averageCount: stats.averageCommitCount,
-            busiestDay: stats.busiestCommitDay,
-            yAxisLabel: "Commits",
-            averageLabel: "Average"
-        )
-
-        HStack(spacing: 10) {
-            bottomInsightPill(
-                icon: "calendar",
-                text: selectedRange.periodDescription
+        if selectedRange != .today {
+            gitHubChart(
+                points: stats.commitPoints,
+                averageCount: stats.averageCommitCount,
+                busiestDay: stats.busiestCommitDay,
+                yAxisLabel: "Commits",
+                averageLabel: "Average"
             )
 
-            if let busiestCommitDay = stats.busiestCommitDay {
+            HStack(spacing: 10) {
                 bottomInsightPill(
-                    icon: "sparkles",
-                    text: "Best day: \(bestDayCaption(for: busiestCommitDay))"
+                    icon: "calendar",
+                    text: selectedRange.periodDescription
                 )
-            } else {
-                bottomInsightPill(
-                    icon: "arrow.trianglehead.2.clockwise.rotate.90",
-                    text: "No commits in this range"
-                )
+
+                if let busiestCommitDay = stats.busiestCommitDay {
+                    bottomInsightPill(
+                        icon: "sparkles",
+                        text: "Best day: \(bestDayCaption(for: busiestCommitDay))"
+                    )
+                } else {
+                    bottomInsightPill(
+                        icon: "arrow.trianglehead.2.clockwise.rotate.90",
+                        text: "No commits in this range"
+                    )
+                }
             }
         }
     }
@@ -1159,37 +1173,39 @@ struct StatsView: View {
             )
         }
 
-        gitHubChart(
-            points: stats.contributionPoints,
-            averageCount: stats.averageContributionCount,
-            busiestDay: stats.busiestContributionDay,
-            yAxisLabel: "Contributions",
-            averageLabel: "Average"
-        )
-
-        HStack(spacing: 10) {
-            bottomInsightPill(
-                icon: "calendar",
-                text: selectedRange.periodDescription
+        if selectedRange != .today {
+            gitHubChart(
+                points: stats.contributionPoints,
+                averageCount: stats.averageContributionCount,
+                busiestDay: stats.busiestContributionDay,
+                yAxisLabel: "Contributions",
+                averageLabel: "Average"
             )
 
-            if let busiestContributionDay = stats.busiestContributionDay {
+            HStack(spacing: 10) {
                 bottomInsightPill(
-                    icon: "sparkles",
-                    text: "Best day: \(bestDayCaption(for: busiestContributionDay))"
+                    icon: "calendar",
+                    text: selectedRange.periodDescription
                 )
-            } else {
-                bottomInsightPill(
-                    icon: "arrow.trianglehead.2.clockwise.rotate.90",
-                    text: "No contributions in this range"
-                )
-            }
 
-            if stats.restrictedContributionCount > 0 {
-                bottomInsightPill(
-                    icon: "lock.fill",
-                    text: "Private: \(stats.restrictedContributionCount.formatted()) hidden"
-                )
+                if let busiestContributionDay = stats.busiestContributionDay {
+                    bottomInsightPill(
+                        icon: "sparkles",
+                        text: "Best day: \(bestDayCaption(for: busiestContributionDay))"
+                    )
+                } else {
+                    bottomInsightPill(
+                        icon: "arrow.trianglehead.2.clockwise.rotate.90",
+                        text: "No contributions in this range"
+                    )
+                }
+
+                if stats.restrictedContributionCount > 0 {
+                    bottomInsightPill(
+                        icon: "lock.fill",
+                        text: "Private: \(stats.restrictedContributionCount.formatted()) hidden"
+                    )
+                }
             }
         }
     }
@@ -1731,6 +1747,8 @@ struct StatsView: View {
 
     private var rangeHeroLabel: String {
         switch selectedRange {
+        case .today:
+            return "Today"
         case .week:
             return "This week"
         case .month:
@@ -1751,6 +1769,8 @@ struct StatsView: View {
 
     private func rangeButtonSubtitle(for range: DoneChartRange) -> String {
         switch range {
+        case .today:
+            return "1 day"
         case .week:
             return "7 days"
         case .month:
@@ -1764,6 +1784,8 @@ struct StatsView: View {
         let targetCount: Int
 
         switch selectedRange {
+        case .today:
+            targetCount = 1
         case .week:
             targetCount = 7
         case .month:
@@ -1812,6 +1834,8 @@ struct StatsView: View {
 
     private var chartMinWidth: CGFloat {
         switch selectedRange {
+        case .today:
+            return 260
         case .week:
             return 340
         case .month:
@@ -1831,6 +1855,9 @@ struct StatsView: View {
 
     private func makeXAxisDates(from chartPoints: [DoneChartPoint]) -> [Date] {
         switch selectedRange {
+        case .today:
+            return chartPoints.map(\.date)
+
         case .week:
             return chartPoints.map(\.date)
 
@@ -1932,6 +1959,8 @@ struct StatsView: View {
 
     private func xAxisLabel(for date: Date) -> String {
         switch selectedRange {
+        case .today:
+            return date.formatted(.dateTime.weekday(.abbreviated))
         case .week:
             return date.formatted(.dateTime.weekday(.abbreviated))
         case .month:

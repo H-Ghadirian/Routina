@@ -10,6 +10,31 @@ import Testing
 
 struct RoutineCompletionStatsTests {
     @Test
+    func todayPoints_countOnlyReferenceDay() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let referenceDate = makeDate("2026-03-14T10:00:00Z")
+        let timestamps = [
+            makeDate("2026-03-13T23:59:59Z"),
+            makeDate("2026-03-14T08:00:00Z"),
+            makeDate("2026-03-14T18:00:00Z"),
+            makeDate("2026-03-15T00:00:00Z")
+        ]
+
+        let points = RoutineCompletionStats.points(
+            for: .today,
+            timestamps: timestamps,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(points.count == 1)
+        #expect(points.first?.date == makeDate("2026-03-14T00:00:00Z"))
+        #expect(points.first?.count == 2)
+    }
+
+    @Test
     func weekPoints_countTrailingSevenDaysAndZeroFillMissingDays() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

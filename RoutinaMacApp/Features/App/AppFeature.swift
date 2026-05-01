@@ -853,6 +853,8 @@ struct StatsFeature {
         let targetCount: Int
 
         switch range {
+        case .today:
+            targetCount = 1
         case .week:
             targetCount = 7
         case .month:
@@ -879,6 +881,9 @@ struct StatsFeature {
         calendar: Calendar
     ) -> [Date] {
         switch range {
+        case .today:
+            return chartPoints.map(\.date)
+
         case .week:
             return chartPoints.map(\.date)
 
