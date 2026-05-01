@@ -28,6 +28,7 @@ struct HomeMacSidebarModeStripView: View {
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
                 .accessibilityLabel(mode.rawValue)
+                .help(mode.rawValue)
 
                 if mode == .settings {
                     Rectangle()
@@ -53,6 +54,7 @@ struct HomeMacSidebarModeStripView: View {
         switch mode {
         case .routines: return "checklist"
         case .board: return "square.grid.3x3.topleft.filled"
+        case .goals: return "target"
         case .timeline: return "clock.arrow.circlepath"
         case .stats: return "chart.bar.xaxis"
         case .settings: return "gearshape"

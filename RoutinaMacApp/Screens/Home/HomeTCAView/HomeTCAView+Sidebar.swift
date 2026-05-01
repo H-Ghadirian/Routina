@@ -7,6 +7,7 @@ extension HomeTCAView {
     var isMacSettingsMode: Bool { store.macSidebarMode == .settings }
     var isMacRoutinesMode: Bool { store.macSidebarMode == .routines }
     var isMacBoardMode: Bool    { store.macSidebarMode == .board }
+    var isMacGoalsMode: Bool    { store.macSidebarMode == .goals }
     var isMacAddTaskMode: Bool  { store.macSidebarMode == .addTask }
 
     var macSidebarNavigationTitle: String {
@@ -23,6 +24,8 @@ extension HomeTCAView {
                 }
             case .board:
                 return "Filter Board"
+            case .goals:
+                return "Goals"
             case .timeline:
                 return "Filter Dones"
             case .stats:
@@ -46,6 +49,8 @@ extension HomeTCAView {
             }
         case .board:
             return boardScopeTitle
+        case .goals:
+            return "Goals"
         case .timeline:
             return "Dones"
         case .stats:
@@ -69,6 +74,7 @@ extension HomeTCAView {
                 || store.selectedTimelineImportanceUrgencyFilter != nil
                 || !store.selectedTimelineExcludedTags.isEmpty
         }
+        if store.macSidebarMode == .goals { return false }
         if store.macSidebarMode == .stats { return false }
         return store.selectedFilter != .all || hasActiveOptionalFilters
     }
@@ -126,6 +132,7 @@ extension HomeTCAView {
                 switch mode {
                 case .routines:  showRoutinesInSidebar()
                 case .board:     openBoardInSidebar()
+                case .goals:     openGoalsInSidebar()
                 case .timeline:  openTimelineInSidebar()
                 case .stats:     openStatsInSidebar()
                 case .settings:  openSettingsInSidebar()
@@ -159,6 +166,10 @@ extension HomeTCAView {
 
     func openBoardInSidebar() {
         store.send(.macSidebarModeChanged(.board))
+    }
+
+    func openGoalsInSidebar() {
+        store.send(.macSidebarModeChanged(.goals))
     }
 
     func openStatsInSidebar() {
@@ -215,6 +226,8 @@ extension HomeTCAView {
 
                     if isMacTimelineMode {
                         macTimelineSidebarView
+                    } else if isMacGoalsMode {
+                        MacGoalsSidebarView(store: goalsStore)
                     } else if isMacStatsMode {
                         macStatsSidebarView
                     } else if isMacSettingsMode {
@@ -278,12 +291,17 @@ extension HomeTCAView {
             selectedTaskListMode: store.taskListMode,
             isRoutinesMode: isMacRoutinesMode,
             isBoardMode: isMacBoardMode,
+            isGoalsMode: isMacGoalsMode,
             isTimelineMode: isMacTimelineMode,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
             }
         ) {
-            macSearchPanel
+            if isMacGoalsMode {
+                platformSearchField(searchText: goalsSearchTextBinding)
+            } else {
+                macSearchPanel
+            }
         }
     }
 
@@ -323,6 +341,13 @@ extension HomeTCAView {
         ) {
             platformSearchField(searchText: searchTextBinding)
         }
+    }
+
+    var goalsSearchTextBinding: Binding<String> {
+        Binding(
+            get: { goalsStore.searchText },
+            set: { goalsStore.send(.searchTextChanged($0)) }
+        )
     }
 
     @ViewBuilder

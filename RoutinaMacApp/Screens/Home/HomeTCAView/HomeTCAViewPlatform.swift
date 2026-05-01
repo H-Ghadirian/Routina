@@ -35,6 +35,10 @@ extension HomeTCAView {
                     macBoardDoneCountToolbarItem
                 }
             }
+        } else if isMacGoalsMode {
+            ToolbarItem(placement: .primaryAction) {
+                MacGoalsNewGoalButton(store: goalsStore)
+            }
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
                 macDoneCountToolbarItem
@@ -62,6 +66,14 @@ extension HomeTCAView {
                     macBoardTaskInspector
                         .inspectorColumnWidth(min: 320, ideal: 400, max: 460)
                         .environment(\.addEditFormCoordinator, addEditFormCoordinator)
+                }
+            } else if isMacGoalsMode {
+                NavigationSplitView {
+                    WithPerceptionTracking {
+                        macSidebarContent
+                    }
+                } detail: {
+                    MacGoalsDetailView(store: goalsStore)
                 }
             } else {
                 NavigationSplitView {
@@ -198,11 +210,16 @@ extension HomeTCAView {
             .onChange(of: store.macSidebarMode) { _, mode in
                 if mode == .settings {
                     settingsStore.send(.onAppear)
+                } else if mode == .goals {
+                    goalsStore.send(.onAppear)
                 }
             }
     }
 
     var searchPlaceholderText: String {
+        if store.macSidebarMode == .goals {
+            return "Search goals"
+        }
         if store.macSidebarMode == .timeline {
             return "Search dones"
         }
@@ -483,12 +500,14 @@ struct HomeMacView: View {
     let appStore: StoreOf<AppFeature>
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
+    let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
 
     var body: some View {
         HomeTCAView(
             store: store,
             settingsStore: settingsStore,
+            goalsStore: goalsStore,
             statsStore: statsStore
         )
         .task {

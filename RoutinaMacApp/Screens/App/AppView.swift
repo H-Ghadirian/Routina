@@ -23,6 +23,12 @@ struct AppView: View {
                     platformSearchHomeView(searchText: $searchText)
                 }
 
+                SwiftUI.Tab(Tab.goals.rawValue, systemImage: "target", value: Tab.goals) {
+                    GoalsTCAView(
+                        store: store.scope(state: \.goals, action: \.goals)
+                    )
+                }
+
                 SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
                     TimelineView(
                         store: store.scope(state: \.timeline, action: \.timeline)

@@ -5,6 +5,7 @@ extension AppView {
         HomeTCAView(
             store: store.scope(state: \.home, action: \.home),
             settingsStore: store.scope(state: \.settings, action: \.settings),
+            goalsStore: store.scope(state: \.goals, action: \.goals),
             statsStore: store.scope(state: \.stats, action: \.stats)
         )
     }
@@ -13,6 +14,7 @@ extension AppView {
         HomeTCAView(
             store: store.scope(state: \.home, action: \.home),
             settingsStore: store.scope(state: \.settings, action: \.settings),
+            goalsStore: store.scope(state: \.goals, action: \.goals),
             statsStore: store.scope(state: \.stats, action: \.stats),
             searchText: searchText
         )

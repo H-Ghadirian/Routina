@@ -102,6 +102,7 @@ struct HomeFeature {
     enum MacSidebarMode: String, CaseIterable, Identifiable, Equatable {
         case routines = "Routines"
         case board = "Board"
+        case goals = "Goals"
         case timeline = "Timeline"
         case stats    = "Stats"
         case settings = "Settings"
@@ -974,7 +975,7 @@ struct HomeFeature {
                     if state.taskListMode != .todos {
                         return .send(.taskListModeChanged(.todos))
                     }
-                case .timeline, .stats, .settings:
+                case .goals, .timeline, .stats, .settings:
                     if state.presentation.isAddRoutineSheetPresented {
                         state.presentation.isAddRoutineSheetPresented = false
                         state.presentation.addRoutineState = nil

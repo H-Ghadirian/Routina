@@ -17,6 +17,7 @@ struct AppFeature {
         var selectedTab: Tab = .home
         var hasRestoredTemporaryViewState = false
         var home = HomeFeature.State()
+        var goals = GoalsFeature.State()
         var timeline = TimelineFeature.State()
         var stats = StatsFeature.State()
         var settings = SettingsFeature.State()
@@ -27,6 +28,7 @@ struct AppFeature {
         case tabSelected(Tab)
         case homeFastFilterSelected(String)
         case home(HomeFeature.Action)
+        case goals(GoalsFeature.Action)
         case timeline(TimelineFeature.Action)
         case stats(StatsFeature.Action)
         case settings(SettingsFeature.Action)
@@ -39,6 +41,9 @@ struct AppFeature {
     var body: some ReducerOf<Self> {
         Scope(state: \.home, action: \.home) {
             HomeFeature()
+        }
+        Scope(state: \.goals, action: \.goals) {
+            GoalsFeature()
         }
         Scope(state: \.timeline, action: \.timeline) {
             TimelineFeature()

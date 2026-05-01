@@ -8,6 +8,7 @@ import SwiftUI
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
+    let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>?
     @Dependency(\.appSettingsClient) var appSettingsClient
     @State var addEditFormCoordinator = AddEditFormCoordinator()
@@ -40,11 +41,13 @@ struct HomeTCAView: View {
     init(
         store: StoreOf<HomeFeature>,
         settingsStore: StoreOf<SettingsFeature>,
+        goalsStore: StoreOf<GoalsFeature>,
         statsStore: StoreOf<StatsFeature>? = nil,
         searchText: Binding<String>? = nil
     ) {
         self.store = store
         self.settingsStore = settingsStore
+        self.goalsStore = goalsStore
         self.statsStore = statsStore
         self.externalSearchText = searchText
     }
