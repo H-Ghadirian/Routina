@@ -88,10 +88,6 @@ extension NotificationClient {
     )
 
     private static func notificationAuthorizationOptions() -> UNAuthorizationOptions {
-        var options: UNAuthorizationOptions = [.alert, .sound, .badge]
-        if #available(macOS 12.0, *) {
-            options.insert(.timeSensitive)
-        }
-        return options
+        [.alert, .sound, .badge]
     }
 }
