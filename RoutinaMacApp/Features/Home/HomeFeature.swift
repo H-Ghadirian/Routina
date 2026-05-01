@@ -119,7 +119,7 @@ struct HomeFeature {
     }
 
     @ObservableState
-    struct State: Equatable {
+    struct State: Equatable, HomeFeatureFilterMutationState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -655,6 +655,17 @@ struct HomeFeature {
         )
     }
 
+    private func filterMutationHandler() -> HomeFeatureFilterMutationHandler<State, Action> {
+        HomeFeatureFilterMutationHandler(
+            setHideUnavailableRoutines: { isHidden in
+                appSettingsClient.setHideUnavailableRoutines(isHidden)
+            },
+            persistTemporaryViewState: { state in
+                persistTemporaryViewState(state)
+            }
+        )
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -707,7 +718,7 @@ struct HomeFeature {
                 state.doneStats = snapshot.doneStats
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-                validateFilterState(&state)
+                filterMutationHandler().validateFilterState(&state)
                 persistTemporaryViewState(state)
                 let detailRefreshEffect = refreshSelectedTaskDetailEffect(for: state)
                 guard state.presentation.addRoutineState != nil else { return detailRefreshEffect }
@@ -850,92 +861,92 @@ struct HomeFeature {
             // MARK: - Filter actions
 
             case let .selectedFilterChanged(filter):
-                return applyTaskFilterMutation(.selectedFilter(filter), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.selectedFilter(filter), state: &state)
 
             case let .advancedQueryChanged(query):
-                return applyTaskFilterMutation(.advancedQuery(query), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.advancedQuery(query), state: &state)
 
             case let .selectedTagChanged(tag):
-                return applyTaskFilterMutation(.selectedTag(tag), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.selectedTag(tag), state: &state)
 
             case let .selectedTagsChanged(tags):
-                return applyTaskFilterMutation(.selectedTags(tags), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.selectedTags(tags), state: &state)
 
             case let .includeTagMatchModeChanged(mode):
-                return applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)
 
             case let .excludedTagsChanged(tags):
-                return applyTaskFilterMutation(.excludedTags(tags), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.excludedTags(tags), state: &state)
 
             case let .excludeTagMatchModeChanged(mode):
-                return applyTaskFilterMutation(.excludeTagMatchMode(mode), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.excludeTagMatchMode(mode), state: &state)
 
             case let .selectedManualPlaceFilterIDChanged(id):
-                return applyTaskFilterMutation(.selectedManualPlaceFilterID(id), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.selectedManualPlaceFilterID(id), state: &state)
 
             case let .selectedImportanceUrgencyFilterChanged(filter):
-                return applyTaskFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
 
             case let .selectedTodoStateFilterChanged(filter):
-                return applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.selectedTodoStateFilter(filter), state: &state)
 
             case let .selectedPressureFilterChanged(filter):
-                return applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
 
             case let .taskListViewModeChanged(mode):
-                return applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
 
             case let .taskListSortOrderChanged(order):
-                return applyTaskFilterMutation(.taskListSortOrder(order), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.taskListSortOrder(order), state: &state)
 
             case let .createdDateFilterChanged(filter):
-                return applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
 
             case let .isFilterSheetPresentedChanged(isPresented):
-                return applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)
 
             case .clearOptionalFilters:
-                return applyTaskFilterMutation(.clearOptionalFilters, state: &state)
+                return filterMutationHandler().applyTaskFilterMutation(.clearOptionalFilters, state: &state)
 
             // MARK: - Timeline filter actions
 
             case let .selectedTimelineRangeChanged(range):
-                return applyTimelineFilterMutation(.selectedRange(range), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedRange(range), state: &state)
 
             case let .selectedTimelineFilterTypeChanged(filterType):
-                return applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedFilterType(filterType), state: &state)
 
             case let .selectedTimelineTagChanged(tag):
-                return applyTimelineFilterMutation(.selectedTag(tag), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedTag(tag), state: &state)
 
             case let .selectedTimelineTagsChanged(tags):
-                return applyTimelineFilterMutation(.selectedTags(tags), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedTags(tags), state: &state)
 
             case let .selectedTimelineIncludeTagMatchModeChanged(mode):
-                return applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.includeTagMatchMode(mode), state: &state)
 
             case let .selectedTimelineExcludedTagsChanged(tags):
-                return applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedExcludedTags(tags), state: &state)
 
             case let .selectedTimelineExcludeTagMatchModeChanged(mode):
-                return applyTimelineFilterMutation(.excludeTagMatchMode(mode), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.excludeTagMatchMode(mode), state: &state)
 
             case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
-                return applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
 
             // MARK: - Stats filter actions
 
             case let .statsSelectedRangeChanged(range):
-                return applyStatsFilterMutation(.selectedRange(range), state: &state)
+                return filterMutationHandler().applyStatsFilterMutation(.selectedRange(range), state: &state)
 
             case let .statsSelectedTagChanged(tag):
-                return applyStatsFilterMutation(.selectedTag(tag), state: &state)
+                return filterMutationHandler().applyStatsFilterMutation(.selectedTag(tag), state: &state)
 
             case let .statsSelectedTagsChanged(tags):
-                return applyStatsFilterMutation(.selectedTags(tags), state: &state)
+                return filterMutationHandler().applyStatsFilterMutation(.selectedTags(tags), state: &state)
 
             case let .statsIncludeTagMatchModeChanged(mode):
-                return applyStatsFilterMutation(.includeTagMatchMode(mode), state: &state)
+                return filterMutationHandler().applyStatsFilterMutation(.includeTagMatchMode(mode), state: &state)
 
             // MARK: - macOS navigation actions
 
@@ -1381,58 +1392,6 @@ struct HomeFeature {
         .ifLet(\.taskDetailState, action: \.taskDetail) {
             TaskDetailFeature()
         }
-    }
-
-    /// Prunes stale filter state after the task/place list is refreshed.
-    private func validateFilterState(_ state: inout State) {
-        HomeDisplayFilterSupport.validateTaskFilters(
-            taskFilters: &state.taskFilters,
-            routineDisplays: state.routineDisplays,
-            awayRoutineDisplays: state.awayRoutineDisplays,
-            archivedRoutineDisplays: state.archivedRoutineDisplays,
-            routinePlaces: state.routinePlaces,
-            tags: \.tags
-        )
-    }
-
-    private func applyTaskFilterMutation(
-        _ mutation: HomeTaskFilterMutation,
-        state: inout State
-    ) -> Effect<Action> {
-        var taskFilters = state.taskFilters
-        var hideUnavailableRoutines = state.hideUnavailableRoutines
-        let result = HomeFilterEditor.apply(
-            mutation,
-            taskFilters: &taskFilters,
-            hideUnavailableRoutines: &hideUnavailableRoutines
-        )
-        state.taskFilters = taskFilters
-        state.hideUnavailableRoutines = hideUnavailableRoutines
-        if result.didResetHideUnavailableRoutines {
-            appSettingsClient.setHideUnavailableRoutines(false)
-        }
-        if result.shouldPersistTemporaryViewState {
-            persistTemporaryViewState(state)
-        }
-        return .none
-    }
-
-    private func applyTimelineFilterMutation(
-        _ mutation: HomeTimelineFilterMutation,
-        state: inout State
-    ) -> Effect<Action> {
-        HomeFilterEditor.apply(mutation, timelineFilters: &state.timelineFilters)
-        persistTemporaryViewState(state)
-        return .none
-    }
-
-    private func applyStatsFilterMutation(
-        _ mutation: HomeStatsFilterMutation,
-        state: inout State
-    ) -> Effect<Action> {
-        HomeFilterEditor.apply(mutation, statsFilters: &state.statsFilters)
-        persistTemporaryViewState(state)
-        return .none
     }
 
     private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {
