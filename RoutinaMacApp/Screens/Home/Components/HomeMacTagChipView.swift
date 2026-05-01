@@ -42,22 +42,48 @@ struct HomeMacTagChipView: View {
                     .padding(.vertical, 3)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(isSelected ? Color.white.opacity(0.18) : Color.primary.opacity(0.08))
+                            .fill(countBackgroundColor)
                     )
             }
-            .foregroundStyle(isSelected ? Color.white : (unselectedColor ?? Color.primary))
+            .foregroundStyle(foregroundColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
                 Capsule(style: .continuous)
-                    .fill(isSelected ? selectedColor : (unselectedColor ?? Color.secondary).opacity(0.10))
+                    .fill(backgroundColor)
             )
             .overlay(
                 Capsule(style: .continuous)
-                    .stroke(isSelected ? selectedColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(strokeColor, lineWidth: 1)
             )
             .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    private var tint: Color {
+        if isSelected {
+            return selectedColor
+        }
+        return unselectedColor ?? .secondary
+    }
+
+    private var foregroundColor: Color {
+        if isSelected {
+            return selectedColor
+        }
+        return unselectedColor ?? .primary
+    }
+
+    private var backgroundColor: Color {
+        tint.opacity(isSelected ? 0.16 : 0.10)
+    }
+
+    private var countBackgroundColor: Color {
+        tint.opacity(isSelected ? 0.18 : 0.12)
+    }
+
+    private var strokeColor: Color {
+        tint.opacity(isSelected ? 0.35 : 0.18)
     }
 }

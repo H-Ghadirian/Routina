@@ -212,6 +212,10 @@ extension HomeTCAView {
         }.count
     }
 
+    private func timelineTagColor(for tag: String) -> Color? {
+        Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: store.tagColors))
+    }
+
     var macTimelineFiltersDetailView: some View {
         HomeMacTimelineFilterDetailContainerView(
             onAvailableTagsChange: { validateSelectedTimelineTag() },
@@ -244,6 +248,9 @@ extension HomeTCAView {
                 excludedTagSummary: timelineExcludedTagSummary,
                 tagCount: { tag in
                     timelineTagCount(for: tag)
+                },
+                tagColor: { tag in
+                    timelineTagColor(for: tag)
                 },
                 onSelectTags: { tags in
                     relatedTimelineTagSuggestionAnchor = tags.sorted().last

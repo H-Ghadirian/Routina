@@ -119,6 +119,12 @@ extension HomeTCAView {
         ToolbarItemGroup(placement: .primaryAction) {
             platformRefreshButton
             if areTopActionsExpanded {
+                Button {
+                    collapseExpandedToolbarActions()
+                    isQuickAddSheetPresented = true
+                } label: {
+                    Label("Quick Add", systemImage: "text.badge.plus")
+                }
                 filterSheetButton
                 Button {
                     collapseExpandedToolbarActions()

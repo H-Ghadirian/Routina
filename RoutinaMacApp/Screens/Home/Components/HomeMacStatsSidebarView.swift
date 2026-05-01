@@ -143,11 +143,14 @@ struct HomeMacStatsSidebarView: View {
                     }
                 } else {
                     ForEach(selectedTags.sorted(), id: \.self) { tag in
+                        let color = tagColor(for: tag)
                         HomeMacTagChipView(
                             title: "#\(tag)",
                             count: tagCount(tag),
                             systemImage: "tag.fill",
-                            isSelected: true
+                            isSelected: true,
+                            selectedColor: color ?? .accentColor,
+                            unselectedColor: color
                         ) {
                             var newSelection = selectedTags
                             newSelection = newSelection.filter { !RoutineTag.contains($0, in: [tag]) }
@@ -171,7 +174,9 @@ struct HomeMacStatsSidebarView: View {
                         title: "#\(summary.name)",
                         count: summary.linkedRoutineCount,
                         systemImage: "tag.fill",
-                        isSelected: false
+                        isSelected: false,
+                        selectedColor: summary.displayColor ?? .accentColor,
+                        unselectedColor: summary.displayColor
                     ) {
                         var newSelection = selectedTags
                         newSelection.insert(summary.name)
@@ -194,11 +199,14 @@ struct HomeMacStatsSidebarView: View {
 
                 WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(suggestedRelatedTags, id: \.self) { tag in
+                        let color = tagColor(for: tag)
                         HomeMacTagChipView(
                             title: "#\(tag)",
                             count: tagCount(tag),
                             systemImage: "tag.fill",
-                            isSelected: false
+                            isSelected: false,
+                            selectedColor: color ?? .accentColor,
+                            unselectedColor: color
                         ) {
                             onSelectSuggestedTag(tag)
                         }
@@ -261,12 +269,14 @@ struct HomeMacStatsSidebarView: View {
                 ForEach(availableExcludeTags.filter { tag in
                     !selectedExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
                 }, id: \.self) { tag in
+                    let color = tagColor(for: tag)
                     HomeMacTagChipView(
                         title: "#\(tag)",
                         count: tagCount(tag),
                         systemImage: "tag.slash.fill",
                         isSelected: false,
-                        selectedColor: .red
+                        selectedColor: .red,
+                        unselectedColor: color
                     ) {
                         onToggleExcludedTag(tag)
                     }
@@ -347,5 +357,9 @@ struct HomeMacStatsSidebarView: View {
         case .month: return "calendar"
         case .year: return "calendar.badge.plus"
         }
+    }
+
+    private func tagColor(for tag: String) -> Color? {
+        tagSummaries.first { RoutineTag.contains($0.name, in: [tag]) }?.displayColor
     }
 }

@@ -41,6 +41,10 @@ extension HomeTCAView {
             }
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
+                MacToolbarIconButton(title: "Quick Add", systemImage: "text.badge.plus") {
+                    isQuickAddSheetPresented = true
+                }
+                .help("Quick add")
                 macDoneCountToolbarItem
                 macCanceledCountToolbarItem
                 macRoutineCountToolbarItem

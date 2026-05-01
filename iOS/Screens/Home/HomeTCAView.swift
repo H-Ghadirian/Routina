@@ -22,6 +22,7 @@ struct HomeTCAView: View {
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
     @State var areTopActionsExpanded = false
+    @State var isQuickAddSheetPresented = false
     @State private var isRefreshScheduled = false
     @State var relatedFilterTagSuggestionAnchor: String?
 
@@ -54,6 +55,11 @@ struct HomeTCAView: View {
         )
             .sheet(isPresented: isFilterSheetPresentedBinding) {
                 homeFiltersSheet
+            }
+            .sheet(isPresented: $isQuickAddSheetPresented) {
+                QuickAddTaskSheet {
+                    requestRefresh()
+                }
             }
             .onAppear {
                 requestRefresh()

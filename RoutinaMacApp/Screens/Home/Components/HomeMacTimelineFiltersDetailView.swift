@@ -17,6 +17,7 @@ struct HomeMacTimelineFiltersDetailView: View {
     let tagSelectionSummary: String
     let excludedTagSummary: String
     let tagCount: (String) -> Int
+    let tagColor: (String) -> Color?
     let onSelectTags: (Set<String>) -> Void
     let onIncludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let onSelectSuggestedTag: (String) -> Void
@@ -56,6 +57,7 @@ struct HomeMacTimelineFiltersDetailView: View {
                         tagSelectionSummary: tagSelectionSummary,
                         excludedTagSummary: excludedTagSummary,
                         tagCount: tagCount,
+                        tagColor: tagColor,
                         onSelectTags: onSelectTags,
                         onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
                         onSelectSuggestedTag: onSelectSuggestedTag,

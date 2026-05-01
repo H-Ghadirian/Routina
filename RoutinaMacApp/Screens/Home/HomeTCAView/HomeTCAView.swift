@@ -28,6 +28,7 @@ struct HomeTCAView: View {
     var isMacBoardTicketInspectorPresented = true
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
+    @State var isQuickAddSheetPresented = false
     @State private var isRefreshScheduled = false
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var relatedTimelineTagSuggestionAnchor: String?
@@ -73,6 +74,11 @@ struct HomeTCAView: View {
         )
             .sheet(isPresented: isFilterSheetPresentedBinding) {
                 homeFiltersSheet
+            }
+            .sheet(isPresented: $isQuickAddSheetPresented) {
+                QuickAddTaskSheet {
+                    requestRefresh()
+                }
             }
             .onAppear {
                 requestRefresh()

@@ -12,6 +12,7 @@ struct HomeMacTimelineTagFiltersView: View {
     let tagSelectionSummary: String
     let excludedTagSummary: String
     let tagCount: (String) -> Int
+    let tagColor: (String) -> Color?
     let onSelectTags: (Set<String>) -> Void
     let onIncludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let onSelectSuggestedTag: (String) -> Void
@@ -66,11 +67,14 @@ struct HomeMacTimelineTagFiltersView: View {
                     }
                 } else {
                     ForEach(selectedTags.sorted(), id: \.self) { tag in
+                        let color = tagColor(tag)
                         HomeMacTagChipView(
                             title: "#\(tag)",
                             count: tagCount(tag),
                             systemImage: "tag.fill",
-                            isSelected: true
+                            isSelected: true,
+                            selectedColor: color ?? .accentColor,
+                            unselectedColor: color
                         ) {
                             var newSelection = selectedTags
                             newSelection = newSelection.filter { !RoutineTag.contains($0, in: [tag]) }
@@ -90,11 +94,14 @@ struct HomeMacTimelineTagFiltersView: View {
                 ForEach(availableTags.filter { tag in
                     !selectedTags.contains { RoutineTag.contains($0, in: [tag]) }
                 }, id: \.self) { tag in
+                    let color = tagColor(tag)
                     HomeMacTagChipView(
                         title: "#\(tag)",
                         count: tagCount(tag),
                         systemImage: "tag.fill",
-                        isSelected: false
+                        isSelected: false,
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
                     ) {
                         var newSelection = selectedTags
                         newSelection.insert(tag)
@@ -115,11 +122,14 @@ struct HomeMacTimelineTagFiltersView: View {
 
             WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(suggestedRelatedTags, id: \.self) { tag in
+                    let color = tagColor(tag)
                     HomeMacTagChipView(
                         title: "#\(tag)",
                         count: tagCount(tag),
                         systemImage: "tag.fill",
-                        isSelected: false
+                        isSelected: false,
+                        selectedColor: color ?? .accentColor,
+                        unselectedColor: color
                     ) {
                         onSelectSuggestedTag(tag)
                     }
@@ -181,12 +191,14 @@ struct HomeMacTimelineTagFiltersView: View {
                 ForEach(availableExcludeTags.filter { tag in
                     !selectedExcludedTags.contains { RoutineTag.contains($0, in: [tag]) }
                 }, id: \.self) { tag in
+                    let color = tagColor(tag)
                     HomeMacTagChipView(
                         title: "#\(tag)",
                         count: tagCount(tag),
                         systemImage: "tag.slash.fill",
                         isSelected: false,
-                        selectedColor: .red
+                        selectedColor: .red,
+                        unselectedColor: color
                     ) {
                         onToggleExcludedTag(tag)
                     }
