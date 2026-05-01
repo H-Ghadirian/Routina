@@ -24,6 +24,7 @@ struct AddRoutineDraftFinalizer {
 
     func apply(to state: inout AddRoutineFeature.State) {
         AddRoutineOrganizationEditor.commitDraftTag(organization: &state.organization)
+        AddRoutineOrganizationEditor.commitDraftGoal(organization: &state.organization)
         state.checklist.routineSteps = Self.appendingStep(
             from: state.checklist.stepDraft,
             to: state.checklist.routineSteps
@@ -80,6 +81,7 @@ struct AddRoutineSaveRequest: Equatable {
     let imageData: Data?
     let selectedPlaceID: UUID?
     let tags: [String]
+    let goals: [RoutineGoalSummary]
     let relationships: [RoutineTaskRelationship]
     let steps: [RoutineStep]
     let scheduleMode: RoutineScheduleMode
@@ -107,6 +109,7 @@ struct AddRoutineSaveRequest: Equatable {
         imageData: Data? = nil,
         selectedPlaceID: UUID? = nil,
         tags: [String] = [],
+        goals: [RoutineGoalSummary] = [],
         relationships: [RoutineTaskRelationship] = [],
         steps: [RoutineStep] = [],
         scheduleMode: RoutineScheduleMode,
@@ -133,6 +136,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.imageData = imageData
         self.selectedPlaceID = selectedPlaceID
         self.tags = tags
+        self.goals = RoutineGoalSummary.sanitized(goals)
         self.relationships = relationships
         self.steps = steps
         self.scheduleMode = scheduleMode
@@ -178,6 +182,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.imageData = basics.imageData
         self.selectedPlaceID = basics.selectedPlaceID
         self.tags = organization.routineTags
+        self.goals = organization.routineGoals
         self.relationships = organization.relationships
         self.steps = (schedule.scheduleMode == .fixedInterval || schedule.scheduleMode == .softInterval || schedule.scheduleMode == .oneOff)
             ? RoutineStep.sanitized(checklist.routineSteps)

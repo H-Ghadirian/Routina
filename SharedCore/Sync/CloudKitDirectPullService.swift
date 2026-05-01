@@ -95,12 +95,19 @@ enum CloudKitDirectPullService {
     @MainActor
     private static func merge(result: PullResult, into context: ModelContext) throws {
         var mergedPlaceIDs = try deduplicatePlaces(in: context)
+        var mergedGoalIDs: [UUID: UUID] = [:]
         var mergedTaskIDs: [UUID: UUID] = [:]
         var placePayloads: [PlacePayload] = []
+        var goalPayloads: [GoalPayload] = []
         var taskPayloads: [TaskPayload] = []
         var logPayloads: [LogPayload] = []
 
         for record in result.changedRecords {
+            if let goalPayload = parseGoal(from: record) {
+                goalPayloads.append(goalPayload)
+                continue
+            }
+
             if let placePayload = parsePlace(from: record) {
                 placePayloads.append(placePayload)
                 continue
@@ -120,10 +127,17 @@ enum CloudKitDirectPullService {
             mergedPlaceIDs[placePayload.id] = try upsertPlace(placePayload, in: context)
         }
 
+        for goalPayload in goalPayloads {
+            mergedGoalIDs[goalPayload.id] = try upsertGoal(goalPayload, in: context)
+        }
+
         for taskPayload in taskPayloads {
             var canonicalPayload = taskPayload
             canonicalPayload.placeID = canonicalPayload.placeID.flatMap { placeID in
                 canonicalPlaceID(for: placeID, mergedPlaceIDs: mergedPlaceIDs, in: context)
+            }
+            canonicalPayload.goalIDs = canonicalPayload.goalIDs?.map { goalID in
+                canonicalGoalID(for: goalID, mergedGoalIDs: mergedGoalIDs, in: context)
             }
             mergedTaskIDs[taskPayload.id] = try upsertTask(canonicalPayload, in: context)
         }
@@ -149,6 +163,20 @@ enum CloudKitDirectPullService {
                 continue
             }
             if let targetPlaceID = mergedPlaceIDs[id], targetPlaceID != id {
+                continue
+            }
+            if let targetGoalID = mergedGoalIDs[id], targetGoalID != id {
+                continue
+            }
+
+            let goalDescriptor = FetchDescriptor<RoutineGoal>(
+                predicate: #Predicate { goal in
+                    goal.id == id
+                }
+            )
+            if let goal = try context.fetch(goalDescriptor).first {
+                context.delete(goal)
+                try clearGoalReference(goalID: id, in: context)
                 continue
             }
 
@@ -200,6 +228,7 @@ enum CloudKitDirectPullService {
         var reminderAt: Date?
         var placeID: UUID?
         var tags: [String]?
+        var goalIDs: [UUID]?
         var steps: [RoutineStep]?
         var checklistItems: [RoutineChecklistItem]?
         var imageData: Data?
@@ -224,6 +253,18 @@ enum CloudKitDirectPullService {
         var storyPoints: Int?
         var pressure: RoutineTaskPressure?
         var pressureUpdatedAt: Date?
+    }
+
+    private struct GoalPayload {
+        var id: UUID
+        var title: String?
+        var emoji: String?
+        var notes: String?
+        var targetDate: Date?
+        var status: RoutineGoalStatus?
+        var color: RoutineTaskColor?
+        var createdAt: Date?
+        var sortOrder: Int?
     }
 
     private struct PlacePayload {
@@ -274,6 +315,51 @@ enum CloudKitDirectPullService {
         )
     }
 
+    private static func parseGoal(from record: CKRecord) -> GoalPayload? {
+        guard isGoalRecordType(record.recordType) else { return nil }
+        guard let id = UUID(uuidString: record.recordID.recordName) else { return nil }
+
+        let titleValue = stringValue(in: record, keys: ["title", "TITLE", "ztitle", "ZTITLE", "cd_title"])
+        let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
+        let notesValue = stringValue(in: record, keys: ["notes", "NOTES", "znotes", "ZNOTES", "cd_notes"])
+        let targetDateValue = dateValue(in: record, keys: ["targetDate", "TARGETDATE", "ztargetdate", "ZTARGETDATE", "cd_targetdate"])
+        let statusValue = stringValue(
+            in: record,
+            keys: ["statusRawValue", "STATUSRAWVALUE", "zstatusrawvalue", "ZSTATUSRAWVALUE", "cd_statusrawvalue"]
+        ).flatMap(RoutineGoalStatus.init(rawValue:))
+        let colorValue = stringValue(
+            in: record,
+            keys: ["colorRawValue", "COLORRAWVALUE", "zcolorrawvalue", "ZCOLORRAWVALUE", "cd_colorrawvalue"]
+        ).flatMap(RoutineTaskColor.init(rawValue:))
+        let createdAtValue = dateValue(in: record, keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"])
+        let sortOrderValue = intValue(in: record, keys: ["sortOrder", "SORTORDER", "zsortorder", "ZSORTORDER", "cd_sortorder"])
+
+        guard
+            titleValue != nil
+                || emojiValue != nil
+                || notesValue != nil
+                || targetDateValue != nil
+                || statusValue != nil
+                || colorValue != nil
+                || createdAtValue != nil
+                || sortOrderValue != nil
+        else {
+            return nil
+        }
+
+        return GoalPayload(
+            id: id,
+            title: titleValue,
+            emoji: emojiValue,
+            notes: notesValue,
+            targetDate: targetDateValue,
+            status: statusValue,
+            color: colorValue,
+            createdAt: createdAtValue,
+            sortOrder: sortOrderValue
+        )
+    }
+
     private static func parseTask(from record: CKRecord) -> TaskPayload? {
         guard isTaskRecordType(record.recordType) else { return nil }
         let id = UUID(uuidString: record.recordID.recordName)
@@ -288,6 +374,17 @@ enum CloudKitDirectPullService {
         let reminderAtValue = dateValue(in: record, keys: ["reminderAt", "REMINDERAT", "zreminderat", "ZREMINDERAT", "cd_reminderat"])
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
+        let goalIDsStorageValue = stringValue(
+            in: record,
+            keys: [
+                "goalIDsStorage",
+                "goalidsstorage",
+                "GOALIDSSTORAGE",
+                "zgoalidsstorage",
+                "ZGOALIDSSTORAGE",
+                "cd_goalidsstorage"
+            ]
+        )
         let stepsStorageValue = stringValue(in: record, keys: ["stepsStorage", "stepsstorage", "STEPSSTORAGE", "zstepsstorage", "ZSTEPSSTORAGE", "cd_stepsstorage"])
         let checklistItemsStorageValue = stringValue(
             in: record,
@@ -426,6 +523,7 @@ enum CloudKitDirectPullService {
                 || deadlineValue != nil
                 || placeIDValue != nil
                 || tagsStorageValue != nil
+                || goalIDsStorageValue != nil
                 || stepsStorageValue != nil
                 || checklistItemsStorageValue != nil
                 || imageDataValue != nil
@@ -477,6 +575,7 @@ enum CloudKitDirectPullService {
             reminderAt: reminderAtValue,
             placeID: placeIDValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),
+            goalIDs: goalIDsStorageValue.map(RoutineGoalIDStorage.deserialize),
             steps: stepsValue,
             checklistItems: checklistItemsValue,
             imageData: imageDataValue,
@@ -533,6 +632,66 @@ enum CloudKitDirectPullService {
             kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed,
             actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
         )
+    }
+
+    @MainActor
+    private static func upsertGoal(_ payload: GoalPayload, in context: ModelContext) throws -> UUID {
+        let payloadID = payload.id
+        let descriptor = FetchDescriptor<RoutineGoal>(
+            predicate: #Predicate { goal in
+                goal.id == payloadID
+            }
+        )
+        let normalizedIncomingTitle = RoutineGoal.normalizedTitle(payload.title)
+
+        if let existing = try RoutineDuplicateIDCleanup.canonical(
+            descriptor,
+            in: context,
+            rank: { $0.createdAt ?? .distantPast }
+        ) {
+            update(existing, with: payload)
+            return existing.id
+        }
+
+        if let normalizedIncomingTitle,
+           let goalWithSameTitle = try goal(matchingNormalizedTitle: normalizedIncomingTitle, in: context) {
+            update(goalWithSameTitle, with: payload)
+            return goalWithSameTitle.id
+        }
+
+        context.insert(
+            RoutineGoal(
+                id: payload.id,
+                title: RoutineGoal.cleanedTitle(payload.title) ?? "Goal",
+                emoji: payload.emoji,
+                notes: payload.notes,
+                targetDate: payload.targetDate,
+                status: payload.status ?? .active,
+                color: payload.color ?? .none,
+                createdAt: payload.createdAt ?? Date(),
+                sortOrder: payload.sortOrder ?? 0
+            )
+        )
+        return payload.id
+    }
+
+    private static func update(_ goal: RoutineGoal, with payload: GoalPayload) {
+        goal.title = RoutineGoal.cleanedTitle(payload.title) ?? goal.displayTitle
+        goal.emoji = RoutineGoal.cleanedEmoji(payload.emoji)
+        goal.notes = payload.notes?.trimmingCharacters(in: .whitespacesAndNewlines)
+        goal.targetDate = payload.targetDate
+        if let status = payload.status {
+            goal.status = status
+        }
+        if let color = payload.color {
+            goal.color = color
+        }
+        if let createdAt = payload.createdAt {
+            goal.createdAt = createdAt
+        }
+        if let sortOrder = payload.sortOrder {
+            goal.sortOrder = sortOrder
+        }
     }
 
     @MainActor
@@ -612,6 +771,9 @@ enum CloudKitDirectPullService {
                 if let tags = payload.tags {
                     taskWithSameName.tags = tags
                 }
+                if let goalIDs = payload.goalIDs {
+                    taskWithSameName.goalIDs = goalIDs
+                }
                 if let steps = payload.steps {
                     taskWithSameName.replaceSteps(steps)
                 }
@@ -675,6 +837,9 @@ enum CloudKitDirectPullService {
             if let tags = payload.tags {
                 existing.tags = tags
             }
+            if let goalIDs = payload.goalIDs {
+                existing.goalIDs = goalIDs
+            }
             if let steps = payload.steps {
                 existing.replaceSteps(steps)
             }
@@ -736,6 +901,9 @@ enum CloudKitDirectPullService {
                 taskWithSameName.placeID = payload.placeID
                 if let tags = payload.tags {
                     taskWithSameName.tags = tags
+                }
+                if let goalIDs = payload.goalIDs {
+                    taskWithSameName.goalIDs = goalIDs
                 }
                 if let steps = payload.steps {
                     taskWithSameName.replaceSteps(steps)
@@ -805,6 +973,7 @@ enum CloudKitDirectPullService {
                     imageData: payload.imageData,
                     placeID: payload.placeID,
                     tags: payload.tags ?? [],
+                    goalIDs: payload.goalIDs ?? [],
                     steps: payload.steps ?? [],
                     checklistItems: payload.checklistItems ?? [],
                     scheduleMode: payload.scheduleMode,
@@ -974,6 +1143,29 @@ enum CloudKitDirectPullService {
         )
         let task = try? context.fetch(descriptor).first
         return task?.id ?? taskID
+    }
+
+    @MainActor
+    private static func canonicalGoalID(
+        for goalID: UUID,
+        mergedGoalIDs: [UUID: UUID],
+        in context: ModelContext
+    ) -> UUID {
+        var currentGoalID = goalID
+        var visitedGoalIDs: Set<UUID> = []
+
+        while let nextGoalID = mergedGoalIDs[currentGoalID], nextGoalID != currentGoalID {
+            guard visitedGoalIDs.insert(currentGoalID).inserted else { break }
+            currentGoalID = nextGoalID
+        }
+
+        let descriptor = FetchDescriptor<RoutineGoal>(
+            predicate: #Predicate { goal in
+                goal.id == currentGoalID
+            }
+        )
+        let goal = try? context.fetch(descriptor).first
+        return goal?.id ?? currentGoalID
     }
 
     @MainActor
@@ -1183,6 +1375,12 @@ enum CloudKitDirectPullService {
             || normalized.contains("routine_place")
     }
 
+    private static func isGoalRecordType(_ recordType: String) -> Bool {
+        let normalized = recordType.lowercased()
+        return normalized.contains("routinegoal")
+            || normalized.contains("routine_goal")
+    }
+
     private static func isLogRecordType(_ recordType: String) -> Bool {
         let normalized = recordType.lowercased()
         return normalized.contains("routinelog")
@@ -1198,6 +1396,14 @@ enum CloudKitDirectPullService {
     }
 
     @MainActor
+    private static func clearGoalReference(goalID: UUID, in context: ModelContext) throws {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        for task in tasks where task.goalIDs.contains(goalID) {
+            task.goalIDs = task.goalIDs.filter { $0 != goalID }
+        }
+    }
+
+    @MainActor
     private static func task(
         matchingNormalizedName normalizedName: String,
         in context: ModelContext
@@ -1205,6 +1411,17 @@ enum CloudKitDirectPullService {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         return tasks.first { task in
             RoutineTask.normalizedName(task.name) == normalizedName
+        }
+    }
+
+    @MainActor
+    private static func goal(
+        matchingNormalizedTitle normalizedTitle: String,
+        in context: ModelContext
+    ) throws -> RoutineGoal? {
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        return goals.first { goal in
+            RoutineGoal.normalizedTitle(goal.title) == normalizedTitle
         }
     }
 

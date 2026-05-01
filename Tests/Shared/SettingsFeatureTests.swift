@@ -28,6 +28,9 @@ struct SettingsFeatureTests {
             tags: ["Focus", "Evening"]
         )
         task.imageData = Data(repeating: 0xAB, count: 1_024)
+        let goal = RoutineGoal(title: "Portfolio")
+        context.insert(goal)
+        task.goalIDs = [goal.id]
         _ = makeLog(in: context, task: task, timestamp: makeDate("2026-03-21T08:30:00Z"))
         try context.save()
 
@@ -36,11 +39,13 @@ struct SettingsFeatureTests {
         #expect(estimate.taskCount == 1)
         #expect(estimate.logCount == 1)
         #expect(estimate.placeCount == 1)
+        #expect(estimate.goalCount == 1)
         #expect(estimate.imageCount == 1)
         #expect(estimate.imagePayloadBytes == 1_024)
         #expect(estimate.taskPayloadBytes > 0)
         #expect(estimate.logPayloadBytes > 0)
         #expect(estimate.placePayloadBytes > 0)
+        #expect(estimate.goalPayloadBytes > 0)
         #expect(estimate.totalPayloadBytes >= 1_024)
     }
 

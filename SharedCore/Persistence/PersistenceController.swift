@@ -17,6 +17,7 @@ public struct PersistenceController {
             )
             container = try ModelContainer(
                 for: RoutineTask.self,
+                RoutineGoal.self,
                 RoutineLog.self,
                 FocusSession.self,
                 RoutinePlace.self,
@@ -50,6 +51,7 @@ public struct PersistenceController {
                     )
                     container = try ModelContainer(
                         for: RoutineTask.self,
+                        RoutineGoal.self,
                         RoutineLog.self,
                         FocusSession.self,
                         RoutinePlace.self,
@@ -68,6 +70,7 @@ public struct PersistenceController {
                 let localFallback = Self.makeConfiguration(inMemory: inMemory, cloudKitDatabase: .none)
                 container = try ModelContainer(
                     for: RoutineTask.self,
+                    RoutineGoal.self,
                     RoutineLog.self,
                     FocusSession.self,
                     RoutinePlace.self,
@@ -81,6 +84,7 @@ public struct PersistenceController {
                     let memoryFallback = Self.makeConfiguration(inMemory: true, cloudKitDatabase: .none)
                     container = try ModelContainer(
                         for: RoutineTask.self,
+                        RoutineGoal.self,
                         RoutineLog.self,
                         FocusSession.self,
                         RoutinePlace.self,
@@ -107,6 +111,7 @@ public struct PersistenceController {
         )
         return try ModelContainer(
             for: RoutineTask.self,
+            RoutineGoal.self,
             RoutineLog.self,
             FocusSession.self,
             RoutinePlace.self,

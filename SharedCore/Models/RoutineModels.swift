@@ -93,6 +93,34 @@ private enum RoutineTaskRelationshipStorage {
     }
 }
 
+enum RoutineGoalIDStorage {
+    static func sanitized(_ goalIDs: [UUID]) -> [UUID] {
+        var seenIDs: Set<UUID> = []
+        return goalIDs.filter { seenIDs.insert($0).inserted }
+    }
+
+    static func serialize(_ goalIDs: [UUID]) -> String {
+        let sanitizedIDs = sanitized(goalIDs)
+        guard !sanitizedIDs.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(sanitizedIDs),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> [UUID] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([UUID].self, from: data) else {
+            return []
+        }
+        return sanitized(decoded)
+    }
+}
+
 private enum RoutineSectionOrderStorage {
     static func serialize(_ orders: [String: Int]) -> String {
         guard !orders.isEmpty else { return "" }
@@ -225,6 +253,7 @@ final class RoutineTask {
     var checklistItemsStorage: String = ""
     var completedChecklistItemIDsStorage: String = ""
     var relationshipsStorage: String = ""
+    var goalIDsStorage: String = ""
     var scheduleModeRawValue: String = RoutineScheduleMode.fixedInterval.rawValue
     var recurrenceRuleStorage: String = ""
     var interval: Int16 = 1
@@ -396,6 +425,11 @@ final class RoutineTask {
         set { relationshipsStorage = RoutineTaskRelationshipStorage.serialize(newValue, ownerID: id) }
     }
 
+    var goalIDs: [UUID] {
+        get { RoutineGoalIDStorage.deserialize(goalIDsStorage) }
+        set { goalIDsStorage = RoutineGoalIDStorage.serialize(newValue) }
+    }
+
     var changeLogEntries: [RoutineTaskChangeLogEntry] {
         get {
             let entries = RoutineTaskChangeLogStorage.deserialize(changeLogStorage)
@@ -554,6 +588,7 @@ final class RoutineTask {
         imageData: Data? = nil,
         placeID: UUID? = nil,
         tags: [String] = [],
+        goalIDs: [UUID] = [],
         relationships: [RoutineTaskRelationship] = [],
         steps: [RoutineStep] = [],
         checklistItems: [RoutineChecklistItem] = [],
@@ -599,6 +634,7 @@ final class RoutineTask {
         self.imageData = imageData
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
+        self.goalIDsStorage = RoutineGoalIDStorage.serialize(goalIDs)
         self.relationshipsStorage = RoutineTaskRelationshipStorage.serialize(relationships, ownerID: id)
         self.stepsStorage = RoutineStepStorage.serialize(steps)
         self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(resolvedChecklistItems)
@@ -1066,6 +1102,7 @@ final class RoutineTask {
             imageData: imageData,
             placeID: placeID,
             tags: tags,
+            goalIDs: goalIDs,
             relationships: relationships,
             steps: steps,
             checklistItems: checklistItems,

@@ -35,6 +35,7 @@ struct HomeBoardPrototypeTests {
                 [activeTodo, doneTodo, routine],
                 [],
                 [],
+                [],
                 HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [doneTodo.id: 1])
             )
         )
@@ -67,7 +68,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([pausedTodo], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([pausedTodo], [], [], [], HomeFeature.DoneStats())
         )
         await store.send(.moveTodoToState(pausedTodo.id, .inProgress))
 
@@ -137,7 +138,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([first, second], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([first, second], [], [], [], HomeFeature.DoneStats())
         )
 
         await store.send(
@@ -191,7 +192,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([firstBlocked, moving], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([firstBlocked, moving], [], [], [], HomeFeature.DoneStats())
         )
 
         await store.send(
@@ -251,7 +252,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([todo], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([todo], [], [], [], HomeFeature.DoneStats())
         )
 
         await store.send(.sprintBoardLoaded(SprintBoardData(sprints: [sprint], assignments: []))) {
@@ -318,7 +319,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([todo], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([todo], [], [], [], HomeFeature.DoneStats())
         )
 
         await store.send(.sprintBoardLoaded(SprintBoardData(backlogs: [backlog]))) {
@@ -366,7 +367,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([todo], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([todo], [], [], [], HomeFeature.DoneStats())
         )
 
         await store.send(
@@ -433,7 +434,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([firstTodo, secondTodo], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([firstTodo, secondTodo], [], [], [], HomeFeature.DoneStats())
         )
 
         await store.send(.sprintBoardLoaded(SprintBoardData(sprints: [sprint], assignments: []))) {
@@ -636,7 +637,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([backlogTodo, sprintTodo], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([backlogTodo, sprintTodo], [], [], [], HomeFeature.DoneStats())
         )
 
         await store.send(
@@ -699,7 +700,7 @@ struct HomeBoardPrototypeTests {
         store.exhaustivity = .off
 
         await store.send(
-            .tasksLoadedSuccessfully([firstTodo, secondTodo, plannedTodo, backlogTodo], [], [], HomeFeature.DoneStats())
+            .tasksLoadedSuccessfully([firstTodo, secondTodo, plannedTodo, backlogTodo], [], [], [], HomeFeature.DoneStats())
         )
 
         var firstDisplay = try #require(store.state.boardTodoDisplays.first { $0.id == firstTodo.id })
@@ -746,6 +747,7 @@ struct HomeBoardPrototypeTests {
         await store.send(
             .tasksLoadedSuccessfully(
                 [openTodo, doneTodo],
+                [],
                 [],
                 [],
                 HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [doneTodo.id: 1])

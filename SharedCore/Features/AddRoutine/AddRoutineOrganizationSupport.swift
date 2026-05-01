@@ -19,6 +19,21 @@ enum AddRoutineOrganizationEditor {
         organization.availableTags = organization.availableTagSummaries.map(\.name)
     }
 
+    static func setAvailableGoals(
+        _ goals: [RoutineGoalSummary],
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.availableGoals = RoutineGoalSummary.sanitized(goals).sorted {
+            $0.displayTitle.localizedCaseInsensitiveCompare($1.displayTitle) == .orderedAscending
+        }
+        organization.routineGoals = RoutineGoalSummary.sanitized(
+            organization.routineGoals.filter { selectedGoal in
+                organization.availableGoals.contains(where: { $0.id == selectedGoal.id })
+                    || RoutineGoal.normalizedTitle(selectedGoal.title) != nil
+            }
+        )
+    }
+
     static func setRelatedTagRules(
         _ rules: [RoutineRelatedTagRule],
         organization: inout AddRoutineOrganizationState
@@ -48,6 +63,17 @@ enum AddRoutineOrganizationEditor {
         organization.tagDraft = ""
     }
 
+    static func commitDraftGoal(
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.routineGoals = RoutineGoalSummary.appending(
+            organization.goalDraft,
+            availableGoals: organization.availableGoals,
+            to: organization.routineGoals
+        )
+        organization.goalDraft = ""
+    }
+
     static func removeTag(
         _ tag: String,
         organization: inout AddRoutineOrganizationState
@@ -64,6 +90,20 @@ enum AddRoutineOrganizationEditor {
         } else {
             organization.routineTags = RoutineTag.appending(tag, to: organization.routineTags)
         }
+    }
+
+    static func removeGoal(
+        _ goalID: UUID,
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.routineGoals = RoutineGoalSummary.removing(goalID, from: organization.routineGoals)
+    }
+
+    static func toggleGoalSelection(
+        _ goal: RoutineGoalSummary,
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.routineGoals = RoutineGoalSummary.toggling(goal, in: organization.routineGoals)
     }
 
     static func addRelationship(

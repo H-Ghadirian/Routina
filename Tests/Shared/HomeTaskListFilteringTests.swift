@@ -340,6 +340,7 @@ private struct TestTaskDisplay: HomeTaskListDisplay, Equatable {
     var placeID: UUID?
     var placeName: String?
     var tags: [String] = []
+    var goalTitles: [String] = []
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval

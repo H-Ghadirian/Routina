@@ -116,6 +116,7 @@ private struct TestTaskRowDisplay: HomeTaskRowDisplay, Equatable {
     var placeID: UUID?
     var placeName: String?
     var tags: [String] = []
+    var goalTitles: [String] = []
     var steps: [String] = []
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)

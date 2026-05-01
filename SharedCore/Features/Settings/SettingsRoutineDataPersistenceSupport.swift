@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 enum SettingsRoutineDataPersistence {
-    static let currentSchemaVersion = 15
+    static let currentSchemaVersion = 16
     static let legacyJSONSchemaVersion = 14
     static let backupPackageExtension = "routinabackup"
     static let manifestFileName = "manifest.json"
@@ -12,6 +12,7 @@ enum SettingsRoutineDataPersistence {
         var schemaVersion: Int
         var exportedAt: Date
         var places: [Place]?
+        var goals: [Goal]?
         var tasks: [Task]
         var logs: [Log]
         var attachments: [Attachment]?
@@ -23,6 +24,18 @@ enum SettingsRoutineDataPersistence {
             var longitude: Double
             var radiusMeters: Double
             var createdAt: Date?
+        }
+
+        struct Goal: Codable {
+            var id: UUID
+            var title: String
+            var emoji: String?
+            var notes: String?
+            var targetDate: Date?
+            var status: RoutineGoalStatus?
+            var color: RoutineTaskColor?
+            var createdAt: Date?
+            var sortOrder: Int?
         }
 
         struct Task: Codable {
@@ -37,6 +50,7 @@ enum SettingsRoutineDataPersistence {
             var imageAttachmentID: UUID?
             var placeID: UUID?
             var tags: [String]?
+            var goalIDs: [UUID]?
             var steps: [RoutineStep]?
             var checklistItems: [RoutineChecklistItem]?
             var scheduleMode: RoutineScheduleMode?
@@ -87,6 +101,7 @@ enum SettingsRoutineDataPersistence {
 
     struct ImportSummary {
         var places: Int
+        var goals: Int
         var tasks: Int
         var logs: Int
         var attachments: Int
@@ -121,6 +136,7 @@ enum SettingsRoutineDataPersistence {
         exportedAt: Date = Date()
     ) throws -> Data {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
@@ -137,6 +153,19 @@ enum SettingsRoutineDataPersistence {
                     createdAt: $0.createdAt
                 )
             },
+            goals: goals.map {
+                .init(
+                    id: $0.id,
+                    title: $0.displayTitle,
+                    emoji: $0.emoji,
+                    notes: $0.notes,
+                    targetDate: $0.targetDate,
+                    status: $0.status,
+                    color: $0.color,
+                    createdAt: $0.createdAt,
+                    sortOrder: $0.sortOrder
+                )
+            },
             tasks: tasks.map {
                 .init(
                     id: $0.id,
@@ -150,6 +179,7 @@ enum SettingsRoutineDataPersistence {
                     imageAttachmentID: nil,
                     placeID: $0.placeID,
                     tags: $0.tags,
+                    goalIDs: $0.goalIDs,
                     steps: $0.steps,
                     checklistItems: $0.checklistItems,
                     scheduleMode: $0.scheduleMode,
@@ -253,6 +283,7 @@ enum SettingsRoutineDataPersistence {
         exportedAt: Date
     ) throws -> Data {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         let storedAttachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
@@ -307,6 +338,19 @@ enum SettingsRoutineDataPersistence {
                     createdAt: $0.createdAt
                 )
             },
+            goals: goals.map {
+                .init(
+                    id: $0.id,
+                    title: $0.displayTitle,
+                    emoji: $0.emoji,
+                    notes: $0.notes,
+                    targetDate: $0.targetDate,
+                    status: $0.status,
+                    color: $0.color,
+                    createdAt: $0.createdAt,
+                    sortOrder: $0.sortOrder
+                )
+            },
             tasks: tasks.map {
                 .init(
                     id: $0.id,
@@ -320,6 +364,7 @@ enum SettingsRoutineDataPersistence {
                     imageAttachmentID: taskImageAttachmentIDs[$0.id],
                     placeID: $0.placeID,
                     tags: $0.tags,
+                    goalIDs: $0.goalIDs,
                     steps: $0.steps,
                     checklistItems: $0.checklistItems,
                     scheduleMode: $0.scheduleMode,
@@ -436,6 +481,11 @@ enum SettingsRoutineDataPersistence {
                 context.delete(task)
             }
 
+            let existingGoals = try context.fetch(FetchDescriptor<RoutineGoal>())
+            for goal in existingGoals {
+                context.delete(goal)
+            }
+
             let existingPlaces = try context.fetch(FetchDescriptor<RoutinePlace>())
             for place in existingPlaces {
                 context.delete(place)
@@ -456,6 +506,27 @@ enum SettingsRoutineDataPersistence {
                 )
                 context.insert(importedPlace)
                 importedPlaceCount += 1
+            }
+
+            var importedGoalIDs = Set<UUID>()
+            var importedGoalCount = 0
+            for goal in backup.goals ?? [] {
+                guard importedGoalIDs.insert(goal.id).inserted else { continue }
+                guard RoutineGoal.cleanedTitle(goal.title) != nil else { continue }
+
+                let importedGoal = RoutineGoal(
+                    id: goal.id,
+                    title: goal.title,
+                    emoji: goal.emoji,
+                    notes: goal.notes,
+                    targetDate: goal.targetDate,
+                    status: goal.status ?? .active,
+                    color: goal.color ?? .none,
+                    createdAt: goal.createdAt ?? importDate,
+                    sortOrder: goal.sortOrder ?? importedGoalCount
+                )
+                context.insert(importedGoal)
+                importedGoalCount += 1
             }
 
             var importedTaskIDs = Set<UUID>()
@@ -492,6 +563,7 @@ enum SettingsRoutineDataPersistence {
                     imageData: imageData,
                     placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
                     tags: task.tags ?? [],
+                    goalIDs: (task.goalIDs ?? []).filter { importedGoalIDs.contains($0) },
                     steps: task.steps ?? [],
                     checklistItems: task.checklistItems ?? [],
                     scheduleMode: task.scheduleMode,
@@ -561,6 +633,7 @@ enum SettingsRoutineDataPersistence {
             try context.save()
             return ImportSummary(
                 places: importedPlaceCount,
+                goals: importedGoalCount,
                 tasks: importedTaskCount,
                 logs: importedLogCount,
                 attachments: importedAttachmentCount

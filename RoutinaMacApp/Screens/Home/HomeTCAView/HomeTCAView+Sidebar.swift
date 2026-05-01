@@ -252,7 +252,7 @@ extension HomeTCAView {
     var macAddFormSections: [FormSection] {
         let scheduleMode = store.addRoutineState?.schedule.scheduleMode ?? .fixedInterval
         let isStepBased = scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff
-        var sections: [FormSection] = [.identity, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .linkedTasks, .linkURL, .notes]
+        var sections: [FormSection] = [.identity, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
         if isStepBased { sections.append(.steps) }
         sections.append(.image)
         sections.append(.attachment)
@@ -262,7 +262,7 @@ extension HomeTCAView {
     var macEditFormSections: [FormSection] {
         guard let detail = store.taskDetailState else { return [] }
         let scheduleMode = detail.editScheduleMode
-        var sections: [FormSection] = [.identity, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .linkedTasks, .linkURL, .notes]
+        var sections: [FormSection] = [.identity, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
         if scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff {
             sections.append(.steps)
         }

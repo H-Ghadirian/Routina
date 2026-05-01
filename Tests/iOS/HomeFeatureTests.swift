@@ -408,7 +408,7 @@ struct HomeFeatureTests {
             $0.statsSelectedTag = "Focus"
         }
 
-        await store.receive(.tasksLoadedSuccessfully([], [], [], HomeFeature.DoneStats())) {
+        await store.receive(.tasksLoadedSuccessfully([], [], [], [], HomeFeature.DoneStats())) {
             $0.selectedTag = nil
             $0.excludedTags = []
         }
@@ -718,7 +718,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [], [], HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1]))) {
+        await store.send(.tasksLoadedSuccessfully([task], [], [], [], HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1]))) {
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
             $0.routineDisplays = [
                 makeDisplay(
@@ -791,7 +791,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([sourceTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([sourceTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [sourceTask]
             $0.routineDisplays = [
                 makeDisplay(
@@ -964,7 +964,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1140,7 +1140,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1231,7 +1231,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([completedTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([completedTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1333,7 +1333,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([completedTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([completedTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1365,7 +1365,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
 
-        await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([stalePartialTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1487,7 +1487,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([staleOneOfThreeTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([staleOneOfThreeTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1519,7 +1519,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.attachmentsLoaded([])))
         await receiveTaskDetailNotificationStatus(store)
 
-        await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([staleTwoOfThreeTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1710,7 +1710,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([staleReloadTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineDisplays = [
                 makeDisplay(
                     taskID: taskID,
@@ -1769,7 +1769,7 @@ struct HomeFeatureTests {
             $0.notificationClient.cancel = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([survivingTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([survivingTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [survivingTask]
             $0.routineDisplays = [
                 makeDisplay(
@@ -1815,7 +1815,7 @@ struct HomeFeatureTests {
             $0.date.now = today
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [], [], HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3]))) {
+        await store.send(.tasksLoadedSuccessfully([task], [], [], [], HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3]))) {
             $0.routineTasks = [task]
             $0.doneStats = HomeFeature.DoneStats(totalCount: 3, countsByTaskID: [task.id: 3])
             $0.routineDisplays = [
@@ -1860,7 +1860,7 @@ struct HomeFeatureTests {
             $0.notificationClient.cancel = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([task], [], [], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [task]
             $0.routineDisplays = [
                 makeDisplay(taskID: task.id, name: "Read", emoji: "📚", interval: 1, lastDone: nil, isDoneToday: false)
@@ -1922,7 +1922,7 @@ struct HomeFeatureTests {
             $0.notificationClient.schedule = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([activeTask, archivedTask], [], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([activeTask, archivedTask], [], [], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [activeTask, archivedTask]
             $0.routineDisplays = [
                 makeDisplay(
@@ -1983,7 +1983,7 @@ struct HomeFeatureTests {
             $0.notificationClient.cancel = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [home], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([task], [home], [], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [task]
             $0.routinePlaces = [home]
             $0.awayRoutineDisplays = [
@@ -2033,7 +2033,7 @@ struct HomeFeatureTests {
             $0.notificationClient.cancel = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [home], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([task], [home], [], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [task]
             $0.routinePlaces = [home]
             $0.routineDisplays = [
@@ -2083,7 +2083,7 @@ struct HomeFeatureTests {
             $0.notificationClient.cancel = { _ in }
         }
 
-        await store.send(.tasksLoadedSuccessfully([task], [home], [], HomeFeature.DoneStats())) {
+        await store.send(.tasksLoadedSuccessfully([task], [home], [], [], HomeFeature.DoneStats())) {
             $0.routineTasks = [task]
             $0.routinePlaces = [home]
             $0.routineDisplays = [
@@ -2946,7 +2946,7 @@ struct HomeFeatureTests {
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, places, logs, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, _goals, logs, doneStats) = action else { return false }
             #expect(tasks.count == 1)
             #expect(places.isEmpty)
             #expect(logs.isEmpty)
@@ -3026,7 +3026,7 @@ struct HomeFeatureTests {
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, places, logs, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, _goals, logs, doneStats) = action else { return false }
             #expect(tasks.count == 1)
             #expect(places.count == 1)
             #expect(logs.isEmpty)
@@ -3099,7 +3099,7 @@ struct HomeFeatureTests {
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, places, logs, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, _goals, logs, doneStats) = action else { return false }
             #expect(tasks.count == 1)
             #expect(places.isEmpty)
             #expect(tasks.first?.id == task.id)

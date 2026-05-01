@@ -88,7 +88,7 @@ struct TaskFormContent: View {
 
     /// All sections that are available given the current form state (excluding `.identity`).
     private var availableSections: [FormSection] {
-        var sections: [FormSection] = [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .linkedTasks, .linkURL, .notes]
+        var sections: [FormSection] = [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
         if isStepBasedMode { sections.append(.steps) }
         sections.append(.image)
         sections.append(.attachment)
@@ -119,6 +119,7 @@ struct TaskFormContent: View {
         case .places:             placesCard
         case .importanceUrgency:  importanceCard
         case .tags:               tagsCard
+        case .goals:              goalsCard
         case .linkedTasks:        linkedTasksCard
         case .linkURL:            linkURLCard
         case .notes:              notesCard
@@ -680,6 +681,24 @@ struct TaskFormContent: View {
         .id(FormSection.tags)
     }
 
+    // MARK: Goals
+
+    private var goalsCard: some View {
+        macSectionCard(
+            title: "Goals"
+        ) {
+            VStack(alignment: .leading, spacing: 10) {
+                goalComposer
+                goalsContent
+                availableGoalSuggestionsContent
+                Text(goalSectionHelpText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .id(FormSection.goals)
+    }
+
     // MARK: Linked Tasks
 
     private var linkedTasksCard: some View {
@@ -961,6 +980,49 @@ struct TaskFormContent: View {
         }
     }
 
+    private var goalComposer: some View {
+        HStack(spacing: 10) {
+            TextField("Ship portfolio, improve health", text: model.goalDraft)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { model.onAddGoal() }
+
+            Button("Add") { model.onAddGoal() }
+                .buttonStyle(.bordered)
+                .disabled(!canAddGoalDraft)
+        }
+    }
+
+    @ViewBuilder
+    private var goalsContent: some View {
+        if model.selectedGoals.isEmpty {
+            Text(model.availableGoals.isEmpty ? "No goals yet" : "No selected goals yet")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+                ForEach(model.selectedGoals) { goal in
+                    Button { model.onRemoveGoal(goal.id) } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "target")
+                                .font(.caption)
+                            Text(goal.displayTitle)
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                            Image(systemName: "xmark.circle.fill").font(.caption)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                    .accessibilityLabel("Remove goal \(goal.displayTitle)")
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
     @ViewBuilder
     private var relatedTagSuggestionsContent: some View {
         let suggestions = model.suggestedRelatedTags
@@ -1035,6 +1097,46 @@ struct TaskFormContent: View {
                         .buttonStyle(.plain)
                         .fixedSize()
                         .accessibilityLabel("\(isSelected ? "Remove" : "Add") tag \(tag)")
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var availableGoalSuggestionsContent: some View {
+        if !model.availableGoals.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Choose from existing goals")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+
+                TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+                    ForEach(model.availableGoals) { goal in
+                        let isSelected = model.selectedGoals.contains(where: { $0.id == goal.id })
+                        Button { model.onToggleGoalSelection(goal) } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
+                                    .font(.caption)
+                                Text(goal.displayTitle)
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                            }
+                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule().fill(
+                                    isSelected
+                                        ? Color.accentColor.opacity(0.16)
+                                        : Color.secondary.opacity(0.10)
+                                )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                        .accessibilityLabel("\(isSelected ? "Remove" : "Add") goal \(goal.displayTitle)")
                     }
                 }
                 .padding(.vertical, 4)
@@ -1449,6 +1551,18 @@ struct TaskFormContent: View {
         model.availableTags.isEmpty
             ? "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
             : "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
+    }
+
+    private var goalSectionHelpText: String {
+        model.availableGoals.isEmpty
+            ? "Press return or Add. Separate multiple goals with commas."
+            : "Tap an existing goal below, or press return/Add to create a new one. Separate multiple goals with commas."
+    }
+
+    private var canAddGoalDraft: Bool {
+        model.goalDraft.wrappedValue
+            .split(separator: ",")
+            .contains { RoutineGoal.cleanedTitle(String($0)) != nil }
     }
 
     // MARK: - Live preview helpers

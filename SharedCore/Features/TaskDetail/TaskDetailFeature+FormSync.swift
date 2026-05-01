@@ -22,8 +22,13 @@ extension TaskDetailFeature {
         state.editImageData = state.task.imageData
         state.editAttachments = state.taskAttachments
         state.editRoutineTags = state.task.tags
+        state.editRoutineGoals = RoutineGoalSummary.summaries(
+            for: state.task.goalIDs,
+            in: state.availableGoals
+        )
         state.editRelationships = state.task.relationships
         state.editTagDraft = ""
+        state.editGoalDraft = ""
         state.editScheduleMode = state.task.scheduleMode
         state.editRoutineSteps = state.task.steps
         state.editStepDraft = ""

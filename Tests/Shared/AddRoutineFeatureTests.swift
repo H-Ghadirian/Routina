@@ -257,6 +257,7 @@ struct AddRoutineFeatureTests {
         let state = HomeAddRoutineSupport.makeAddRoutineState(
             tasks: [linkedTask, frequentTask, doneHeavyTask, alphabeticalTieTask],
             places: [],
+            goals: [],
             doneStats: HomeDoneStats(
                 countsByTaskID: [
                     frequentTask.id: 7,

@@ -64,6 +64,14 @@ struct TaskFormModel {
     var onRemoveTag: (String) -> Void
     var onToggleTagSelection: (String) -> Void
 
+    // MARK: Goals
+    var goalDraft: Binding<String>
+    var selectedGoals: [RoutineGoalSummary]
+    var availableGoals: [RoutineGoalSummary]
+    var onAddGoal: () -> Void
+    var onRemoveGoal: (UUID) -> Void
+    var onToggleGoalSelection: (RoutineGoalSummary) -> Void
+
     // MARK: Relationships
     var relationships: [RoutineTaskRelationship]
     var availableRelationshipTasks: [RoutineTaskRelationshipCandidate]

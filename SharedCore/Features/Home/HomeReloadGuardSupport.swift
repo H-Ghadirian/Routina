@@ -146,6 +146,7 @@ enum HomeReloadGuardSupport {
             && current.emoji == incoming.emoji
             && current.placeID == incoming.placeID
             && current.tags == incoming.tags
+            && current.goalIDs == incoming.goalIDs
             && current.steps == incoming.steps
             && current.checklistItems == incoming.checklistItems
             && current.scheduleMode == incoming.scheduleMode

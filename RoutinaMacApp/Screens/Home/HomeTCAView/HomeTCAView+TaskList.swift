@@ -113,6 +113,18 @@ extension HomeTCAView {
                     }
                     .lineLimit(1)
                 }
+
+                if !task.goalTitles.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(task.goalTitles, id: \.self) { goal in
+                            Label(goal, systemImage: "target")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 0)

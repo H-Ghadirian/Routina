@@ -8,6 +8,7 @@ protocol HomeTaskListDisplay {
     var placeID: UUID? { get }
     var placeName: String? { get }
     var tags: [String] { get }
+    var goalTitles: [String] { get }
     var interval: Int { get }
     var recurrenceRule: RoutineRecurrenceRule { get }
     var scheduleMode: RoutineScheduleMode { get }

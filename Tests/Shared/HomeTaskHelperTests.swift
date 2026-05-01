@@ -235,6 +235,7 @@ struct HomeTaskHelperTests {
         let snapshot = HomeTaskLoadSupport.makeSnapshot(
             tasks: [selectedTask, relatedTask],
             places: [place],
+            goals: [],
             logs: [oldLog, nilTimestampLog, newLog],
             doneStats: doneStats,
             selectedTaskID: selectedTask.id,

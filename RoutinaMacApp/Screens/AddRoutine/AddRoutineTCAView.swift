@@ -116,6 +116,13 @@ struct AddRoutineTCAView: View {
         )
     }
 
+    var goalDraftBinding: Binding<String> {
+        Binding(
+            get: { store.organization.goalDraft },
+            set: { store.send(.goalDraftChanged($0)) }
+        )
+    }
+
     var stepDraftBinding: Binding<String> {
         Binding(
             get: { store.checklist.stepDraft },

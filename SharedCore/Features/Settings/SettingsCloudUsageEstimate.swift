@@ -5,29 +5,33 @@ struct CloudUsageEstimate: Equatable, Sendable {
     var taskCount: Int
     var logCount: Int
     var placeCount: Int
+    var goalCount: Int
     var imageCount: Int
     var taskPayloadBytes: Int64
     var logPayloadBytes: Int64
     var placePayloadBytes: Int64
+    var goalPayloadBytes: Int64
     var imagePayloadBytes: Int64
 
     static let zero = CloudUsageEstimate(
         taskCount: 0,
         logCount: 0,
         placeCount: 0,
+        goalCount: 0,
         imageCount: 0,
         taskPayloadBytes: 0,
         logPayloadBytes: 0,
         placePayloadBytes: 0,
+        goalPayloadBytes: 0,
         imagePayloadBytes: 0
     )
 
     var totalPayloadBytes: Int64 {
-        taskPayloadBytes + logPayloadBytes + placePayloadBytes + imagePayloadBytes
+        taskPayloadBytes + logPayloadBytes + placePayloadBytes + goalPayloadBytes + imagePayloadBytes
     }
 
     var totalRecordCount: Int {
-        taskCount + logCount + placeCount
+        taskCount + logCount + placeCount + goalCount
     }
 
     @MainActor
@@ -35,6 +39,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let encoder = JSONEncoder()
 
         let taskPayloadBytes = tasks.reduce(into: Int64.zero) { total, task in
@@ -46,6 +51,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
         let placePayloadBytes = places.reduce(into: Int64.zero) { total, place in
             total += encodedByteCount(PlacePayload(place: place), encoder: encoder)
         }
+        let goalPayloadBytes = goals.reduce(into: Int64.zero) { total, goal in
+            total += encodedByteCount(GoalPayload(goal: goal), encoder: encoder)
+        }
         let imagePayloadBytes = tasks.reduce(into: Int64.zero) { total, task in
             total += Int64(task.imageData?.count ?? 0)
         }
@@ -54,6 +62,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             taskCount: tasks.count,
             logCount: logs.count,
             placeCount: places.count,
+            goalCount: goals.count,
             imageCount: tasks.reduce(into: 0) { count, task in
                 if task.imageData?.isEmpty == false {
                     count += 1
@@ -62,6 +71,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             taskPayloadBytes: taskPayloadBytes,
             logPayloadBytes: logPayloadBytes,
             placePayloadBytes: placePayloadBytes,
+            goalPayloadBytes: goalPayloadBytes,
             imagePayloadBytes: imagePayloadBytes
         )
     }
@@ -84,6 +94,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var hasImage: Bool
         var placeID: UUID?
         var tagsStorage: String
+        var goalIDsStorage: String
         var stepsStorage: String
         var checklistItemsStorage: String
         var completedChecklistItemIDsStorage: String
@@ -116,6 +127,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             hasImage = task.hasImage
             placeID = task.placeID
             tagsStorage = task.tagsStorage
+            goalIDsStorage = task.goalIDsStorage
             stepsStorage = task.stepsStorage
             checklistItemsStorage = task.checklistItemsStorage
             completedChecklistItemIDsStorage = task.completedChecklistItemIDsStorage
@@ -165,6 +177,30 @@ struct CloudUsageEstimate: Equatable, Sendable {
             longitude = place.longitude
             radiusMeters = place.radiusMeters
             createdAt = place.createdAt
+        }
+    }
+
+    private struct GoalPayload: Encodable {
+        var id: UUID
+        var title: String
+        var emoji: String?
+        var notes: String?
+        var targetDate: Date?
+        var statusRawValue: String
+        var colorRawValue: String
+        var createdAt: Date?
+        var sortOrder: Int
+
+        init(goal: RoutineGoal) {
+            id = goal.id
+            title = goal.title
+            emoji = goal.emoji
+            notes = goal.notes
+            targetDate = goal.targetDate
+            statusRawValue = goal.statusRawValue
+            colorRawValue = goal.colorRawValue
+            createdAt = goal.createdAt
+            sortOrder = goal.sortOrder
         }
     }
 }

@@ -6,6 +6,7 @@ extension HomeFeature {
     func makeRoutineDisplay(
         _ task: RoutineTask,
         placesByID: [UUID: RoutinePlace],
+        goalsByID: [UUID: RoutineGoal],
         locationSnapshot: LocationSnapshot,
         doneStats: DoneStats,
         sprintBoardData: SprintBoardData
@@ -40,6 +41,7 @@ extension HomeFeature {
 
         let isArchived = task.isArchived(referenceDate: now, calendar: calendar)
         let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
+        let goalTitles = task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
         let dueDate: Date? = {
@@ -69,6 +71,8 @@ extension HomeFeature {
             placeName: linkedPlace?.displayName,
             locationAvailability: locationAvailability,
             tags: task.tags,
+            goalIDs: task.goalIDs,
+            goalTitles: goalTitles,
             steps: task.steps.map(\.title),
             interval: max(Int(task.interval), 1),
             recurrenceRule: task.recurrenceRule,
@@ -123,6 +127,7 @@ extension HomeFeature {
 
     func refreshDisplays(_ state: inout State) {
         let placesByID = Dictionary(state.routinePlaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let goalsByID = Dictionary(state.routineGoals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var active: [RoutineDisplay] = []
         var away: [RoutineDisplay] = []
         var archived: [RoutineDisplay] = []
@@ -132,6 +137,7 @@ extension HomeFeature {
             let display = makeRoutineDisplay(
                 task,
                 placesByID: placesByID,
+                goalsByID: goalsByID,
                 locationSnapshot: state.locationSnapshot,
                 doneStats: state.doneStats,
                 sprintBoardData: state.sprintBoardData

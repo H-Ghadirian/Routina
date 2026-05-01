@@ -23,13 +23,16 @@ struct AddRoutineBasicsState: Equatable {
 
 struct AddRoutineOrganizationState: Equatable {
     var routineTags: [String] = []
+    var routineGoals: [RoutineGoalSummary] = []
     var relationships: [RoutineTaskRelationship] = []
     var availableTags: [String] = []
     var availableTagSummaries: [RoutineTagSummary] = []
+    var availableGoals: [RoutineGoalSummary] = []
     var relatedTagRules: [RoutineRelatedTagRule] = []
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
     var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
     var tagDraft: String = ""
+    var goalDraft: String = ""
     var existingRoutineNames: [String] = []
     var availablePlaces: [RoutinePlaceSummary] = []
     var nameValidationMessage: String?

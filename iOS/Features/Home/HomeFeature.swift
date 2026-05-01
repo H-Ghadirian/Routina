@@ -45,6 +45,8 @@ struct HomeFeature {
         var placeName: String?
         var locationAvailability: RoutineLocationAvailability
         var tags: [String]
+        var goalIDs: [UUID] = []
+        var goalTitles: [String] = []
         var steps: [String]
         var interval: Int
         var recurrenceRule: RoutineRecurrenceRule
@@ -92,6 +94,7 @@ struct HomeFeature {
     struct State: Equatable {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
+        var routineGoals: [RoutineGoal] = []
         var timelineLogs: [RoutineLog] = []
         var routineDisplays: [RoutineDisplay] = []
         var awayRoutineDisplays: [RoutineDisplay] = []
@@ -116,6 +119,7 @@ struct HomeFeature {
         init(
             routineTasks: [RoutineTask] = [],
             routinePlaces: [RoutinePlace] = [],
+            routineGoals: [RoutineGoal] = [],
             timelineLogs: [RoutineLog] = [],
             routineDisplays: [RoutineDisplay] = [],
             awayRoutineDisplays: [RoutineDisplay] = [],
@@ -170,6 +174,7 @@ struct HomeFeature {
         ) {
             self.routineTasks = routineTasks
             self.routinePlaces = routinePlaces
+            self.routineGoals = routineGoals
             self.timelineLogs = timelineLogs
             self.routineDisplays = routineDisplays
             self.awayRoutineDisplays = awayRoutineDisplays
@@ -417,7 +422,7 @@ struct HomeFeature {
     enum Action: Equatable {
         case onAppear
         case manualRefreshRequested
-        case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineLog], DoneStats)
+        case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineGoal], [RoutineLog], DoneStats)
         case tasksLoadFailed
         case locationSnapshotUpdated(LocationSnapshot)
         case hideUnavailableRoutinesChanged(Bool)
@@ -545,10 +550,11 @@ struct HomeFeature {
                     send(.onAppear)
                 }
 
-            case let .tasksLoadedSuccessfully(tasks, places, logs, doneStats):
+            case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
                 let snapshot = HomeTaskLoadSupport.makeSnapshot(
                     tasks: tasks,
                     places: places,
+                    goals: goals,
                     logs: logs,
                     doneStats: doneStats,
                     selectedTaskID: state.selection.selectedTaskID,
@@ -561,6 +567,7 @@ struct HomeFeature {
                 state.selection.selectedTaskReloadGuard = snapshot.selectedTaskReloadGuard
                 state.routineTasks = snapshot.tasks
                 state.routinePlaces = snapshot.places
+                state.routineGoals = snapshot.goals
                 state.timelineLogs = snapshot.timelineLogs
                 state.doneStats = snapshot.doneStats
                 refreshDisplays(&state)
@@ -574,6 +581,7 @@ struct HomeFeature {
                     HomeAddRoutineSupport.availabilityRefreshEffect(
                         tasks: snapshot.tasks,
                         places: snapshot.places,
+                        goals: snapshot.goals,
                         doneStats: snapshot.doneStats,
                         action: { .addRoutineSheet($0) }
                     )
@@ -621,6 +629,7 @@ struct HomeFeature {
                     state.presentation.addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
                         tasks: state.routineTasks,
                         places: state.routinePlaces,
+                        goals: state.routineGoals,
                         doneStats: state.doneStats,
                         tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
                         relatedTagRules: appSettingsClient.relatedTagRules()
@@ -911,7 +920,7 @@ struct HomeFeature {
                 state.presentation = presentation
                 refreshDisplays(&state)
                 syncSelectedTaskDetailState(&state)
-                return effect
+                return .merge(effect, loadTasksEffect())
 
             case .routineSaveFailed:
                 print("Failed to save routine.")
@@ -967,6 +976,7 @@ struct HomeFeature {
                 state.presentation.addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
                     tasks: state.routineTasks,
                     places: state.routinePlaces,
+                    goals: state.routineGoals,
                     doneStats: state.doneStats,
                     tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
                     relatedTagRules: appSettingsClient.relatedTagRules(),
@@ -1070,6 +1080,7 @@ struct HomeFeature {
             HomeAddRoutineSupport.availabilityRefreshEffect(
                 tasks: state.routineTasks,
                 places: state.routinePlaces,
+                goals: state.routineGoals,
                 doneStats: state.doneStats,
                 action: { .addRoutineSheet($0) }
             )
@@ -1118,8 +1129,9 @@ struct HomeFeature {
                 _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+                let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
                 let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-                send(.tasksLoadedSuccessfully(tasks, places, logs, self.makeDoneStats(tasks: tasks, logs: logs)))
+                send(.tasksLoadedSuccessfully(tasks, places, goals, logs, self.makeDoneStats(tasks: tasks, logs: logs)))
             } catch {
                 send(.tasksLoadFailed)
             }

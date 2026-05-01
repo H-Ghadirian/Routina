@@ -331,6 +331,7 @@ extension TaskDetailFeature {
         attachments: [AttachmentItem],
         placeID: UUID?,
         tags: [String],
+        goals: [RoutineGoalSummary],
         relationships: [RoutineTaskRelationship],
         steps: [RoutineStep],
         checklistItems: [RoutineChecklistItem],
@@ -378,6 +379,7 @@ extension TaskDetailFeature {
                 }
                 task.placeID = placeID
                 task.tags = tags
+                task.goalIDs = try RoutineGoalPersistence.ensureGoals(goals, in: context)
                 task.replaceRelationships(relationships)
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
@@ -543,8 +545,10 @@ extension TaskDetailFeature {
             let context = modelContext()
             let places = (try? context.fetch(FetchDescriptor<RoutinePlace>())) ?? []
             let tasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
+            let goals = (try? context.fetch(FetchDescriptor<RoutineGoal>())) ?? []
             send(.availablePlacesLoaded(RoutinePlace.summaries(from: places, linkedTo: tasks)))
             send(.availableTagsLoaded(RoutineTag.allTags(from: tasks.map(\.tags))))
+            send(.availableGoalsLoaded(RoutineGoalSummary.summaries(from: goals)))
             send(.relatedTagRulesLoaded(
                 RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules() + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))

@@ -54,6 +54,7 @@ public struct RoutinaAITaskSummary: Codable, Equatable, Identifiable, Sendable {
     public var notes: String?
     public var link: String?
     public var tags: [String]
+    public var goals: [String]
     public var placeName: String?
     public var todoState: String?
     public var estimatedDurationMinutes: Int?
@@ -102,12 +103,15 @@ public enum RoutinaAIQueryService {
     ) throws -> RoutinaAITaskSnapshot {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let placesByID = Dictionary(places.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let goalsByID = Dictionary(goals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
         let allSummaries = tasks.map {
             makeSummary(
                 for: $0,
                 placesByID: placesByID,
+                goalsByID: goalsByID,
                 now: now,
                 calendar: calendar
             )
@@ -143,10 +147,12 @@ private extension RoutinaAIQueryService {
     static func makeSummary(
         for task: RoutineTask,
         placesByID: [UUID: RoutinePlace],
+        goalsByID: [UUID: RoutineGoal],
         now: Date,
         calendar: Calendar
     ) -> RoutinaAITaskSummary {
         let placeName = task.placeID.flatMap { placesByID[$0]?.displayName }
+        let goalTitles = task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
         let isPaused = task.pausedAt != nil
         let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
         let isArchived = task.isArchived(referenceDate: now, calendar: calendar)
@@ -194,6 +200,7 @@ private extension RoutinaAIQueryService {
             notes: task.notes,
             link: task.link,
             tags: task.tags,
+            goals: goalTitles,
             placeName: placeName,
             todoState: task.todoState?.rawValue,
             estimatedDurationMinutes: task.estimatedDurationMinutes,
@@ -308,6 +315,7 @@ private extension RoutinaAIQueryService {
             summary.link ?? "",
             summary.placeName ?? "",
             summary.tags.joined(separator: " "),
+            summary.goals.joined(separator: " "),
             summary.scheduleDescription,
             summary.primaryStatus.rawValue,
             summary.todoState ?? "",

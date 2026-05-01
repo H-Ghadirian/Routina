@@ -6,6 +6,7 @@ enum HomeAddRoutineSupport {
     static func makeAddRoutineState(
         tasks: [RoutineTask],
         places: [RoutinePlace],
+        goals: [RoutineGoal],
         doneStats: HomeDoneStats,
         tagCounterDisplayMode: TagCounterDisplayMode,
         relatedTagRules: [RoutineRelatedTagRule],
@@ -24,6 +25,7 @@ enum HomeAddRoutineSupport {
                 relationships: preselectedRelationships,
                 availableTags: tagSummaries.map(\.name),
                 availableTagSummaries: tagSummaries,
+                availableGoals: RoutineGoalSummary.summaries(from: goals),
                 relatedTagRules: RoutineTagRelations.sanitized(relatedTagRules + learnedRules),
                 tagCounterDisplayMode: tagCounterDisplayMode,
                 availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(
@@ -39,6 +41,7 @@ enum HomeAddRoutineSupport {
     static func makeRoutine(
         from request: AddRoutineSaveRequest,
         name: String,
+        goalIDs: [UUID],
         scheduleAnchor: Date
     ) -> RoutineTask {
         RoutineTask(
@@ -55,6 +58,7 @@ enum HomeAddRoutineSupport {
             imageData: request.imageData,
             placeID: request.selectedPlaceID,
             tags: request.tags,
+            goalIDs: goalIDs,
             relationships: request.relationships,
             steps: request.steps,
             checklistItems: request.checklistItems,
@@ -105,9 +109,11 @@ enum HomeAddRoutineSupport {
                     return
                 }
 
+                let goalIDs = try RoutineGoalPersistence.ensureGoals(request.goals, in: context)
                 let newRoutine = makeRoutine(
                     from: request,
                     name: trimmedName,
+                    goalIDs: goalIDs,
                     scheduleAnchor: scheduleAnchor()
                 )
                 context.insert(newRoutine)
@@ -156,6 +162,7 @@ enum HomeAddRoutineSupport {
     static func availabilityRefreshEffect<Action>(
         tasks: [RoutineTask],
         places: [RoutinePlace],
+        goals: [RoutineGoal],
         doneStats: HomeDoneStats,
         action: @escaping (AddRoutineFeature.Action) -> Action
     ) -> Effect<Action> {
@@ -168,6 +175,7 @@ enum HomeAddRoutineSupport {
                 )
             ))),
             .send(action(.availablePlacesChanged(RoutinePlace.summaries(from: places, linkedTo: tasks)))),
+            .send(action(.availableGoalsChanged(RoutineGoalSummary.summaries(from: goals)))),
             .send(action(.availableRelationshipTasksChanged(RoutineTaskRelationshipCandidate.from(tasks))))
         )
     }

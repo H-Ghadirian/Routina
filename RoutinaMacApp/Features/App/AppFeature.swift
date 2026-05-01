@@ -918,6 +918,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let placeID: UUID?
     let placeName: String?
     let tags: [String]
+    let goalTitles: [String]
     let interval: Int
     let recurrenceRule: RoutineRecurrenceRule
     let scheduleMode: RoutineScheduleMode
@@ -953,6 +954,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
         self.placeID = task.placeID
         self.placeName = nil
         self.tags = task.tags
+        self.goalTitles = []
         self.interval = Int(task.interval)
         self.recurrenceRule = task.recurrenceRule
         self.scheduleMode = task.scheduleMode

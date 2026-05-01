@@ -90,6 +90,15 @@ struct TaskDetailEditRoutineContent: View {
             onAddTag: { store.send(.editAddTagTapped) },
             onRemoveTag: { store.send(.editRemoveTag($0)) },
             onToggleTagSelection: { store.send(.editToggleTagSelection($0)) },
+            goalDraft: Binding(
+                get: { store.editGoalDraft },
+                set: { store.send(.editGoalDraftChanged($0)) }
+            ),
+            selectedGoals: store.editRoutineGoals,
+            availableGoals: store.availableGoals,
+            onAddGoal: { store.send(.editAddGoalTapped) },
+            onRemoveGoal: { store.send(.editRemoveGoal($0)) },
+            onToggleGoalSelection: { store.send(.editToggleGoalSelection($0)) },
             relationships: store.editRelationships,
             availableRelationshipTasks: store.availableRelationshipTasks,
             onAddRelationship: { store.send(.editAddRelationship($0, $1)) },

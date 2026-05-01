@@ -45,6 +45,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             || (task.notes?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || (task.placeName?.localizedCaseInsensitiveContains(trimmedSearch) ?? false)
             || RoutineTag.matchesQuery(trimmedSearch, in: task.tags)
+            || task.goalTitles.contains { $0.localizedCaseInsensitiveContains(trimmedSearch) }
     }
 
     func matchesAdvancedQuery(_ task: Display) -> Bool {

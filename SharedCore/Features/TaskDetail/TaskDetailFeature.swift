@@ -56,8 +56,10 @@ struct TaskDetailFeature: Reducer {
         var taskAttachments: [AttachmentItem] = []
         var editAttachments: [AttachmentItem] = []
         var editRoutineTags: [String] = []
+        var editRoutineGoals: [RoutineGoalSummary] = []
         var editRelationships: [RoutineTaskRelationship] = []
         var editTagDraft: String = ""
+        var editGoalDraft: String = ""
         var editScheduleMode: RoutineScheduleMode = .fixedInterval
         var editRoutineSteps: [RoutineStep] = []
         var editStepDraft: String = ""
@@ -66,6 +68,7 @@ struct TaskDetailFeature: Reducer {
         var editChecklistItemDraftInterval: Int = 3
         var availablePlaces: [RoutinePlaceSummary] = []
         var availableTags: [String] = []
+        var availableGoals: [RoutineGoalSummary] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var editSelectedPlaceID: UUID?
@@ -174,8 +177,11 @@ struct TaskDetailFeature: Reducer {
         case editRemoveAttachment(UUID)
         case attachmentsLoaded([AttachmentItem])
         case editTagDraftChanged(String)
+        case editGoalDraftChanged(String)
         case editAddTagTapped
+        case editAddGoalTapped
         case editRemoveTag(String)
+        case editRemoveGoal(UUID)
         case editAddRelationship(UUID, RoutineTaskRelationshipKind)
         case editRemoveRelationship(UUID)
         case editTagRenamed(oldName: String, newName: String)
@@ -192,10 +198,12 @@ struct TaskDetailFeature: Reducer {
         case editRemoveChecklistItem(UUID)
         case availablePlacesLoaded([RoutinePlaceSummary])
         case availableTagsLoaded([String])
+        case availableGoalsLoaded([RoutineGoalSummary])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
         case editSelectedPlaceChanged(UUID?)
         case editToggleTagSelection(String)
+        case editToggleGoalSelection(RoutineGoalSummary)
         case editEstimatedDurationChanged(Int?)
         case editActualDurationChanged(Int?)
         case editStoryPointsChanged(Int?)
@@ -647,13 +655,30 @@ struct TaskDetailFeature: Reducer {
             state.editTagDraft = value
             return .none
 
+        case let .editGoalDraftChanged(value):
+            state.editGoalDraft = value
+            return .none
+
         case .editAddTagTapped:
             state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
             state.editTagDraft = ""
             return .none
 
+        case .editAddGoalTapped:
+            state.editRoutineGoals = RoutineGoalSummary.appending(
+                state.editGoalDraft,
+                availableGoals: state.availableGoals,
+                to: state.editRoutineGoals
+            )
+            state.editGoalDraft = ""
+            return .none
+
         case let .editRemoveTag(tag):
             state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+            return .none
+
+        case let .editRemoveGoal(goalID):
+            state.editRoutineGoals = RoutineGoalSummary.removing(goalID, from: state.editRoutineGoals)
             return .none
 
         case let .editAddRelationship(taskID, kind):
@@ -769,6 +794,16 @@ struct TaskDetailFeature: Reducer {
             state.availableTags = RoutineTag.allTags(from: [tags])
             return .none
 
+        case let .availableGoalsLoaded(goals):
+            state.availableGoals = RoutineGoalSummary.sanitized(goals).sorted {
+                $0.displayTitle.localizedCaseInsensitiveCompare($1.displayTitle) == .orderedAscending
+            }
+            state.editRoutineGoals = RoutineGoalSummary.summaries(
+                for: state.task.goalIDs,
+                in: state.availableGoals
+            )
+            return .none
+
         case let .relatedTagRulesLoaded(rules):
             state.relatedTagRules = RoutineTagRelations.sanitized(rules)
             return .none
@@ -793,6 +828,10 @@ struct TaskDetailFeature: Reducer {
             } else {
                 state.editRoutineTags = RoutineTag.appending(tag, to: state.editRoutineTags)
             }
+            return .none
+
+        case let .editToggleGoalSelection(goal):
+            state.editRoutineGoals = RoutineGoalSummary.toggling(goal, in: state.editRoutineGoals)
             return .none
 
         case let .editEstimatedDurationChanged(estimatedDurationMinutes):
@@ -867,6 +906,12 @@ struct TaskDetailFeature: Reducer {
         case .editSaveTapped:
             state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
             state.editTagDraft = ""
+            state.editRoutineGoals = RoutineGoalSummary.appending(
+                state.editGoalDraft,
+                availableGoals: state.availableGoals,
+                to: state.editRoutineGoals
+            )
+            state.editGoalDraft = ""
             state.editRoutineSteps = appendStep(from: state.editStepDraft, to: state.editRoutineSteps)
             state.editStepDraft = ""
             state.editRoutineChecklistItems = appendChecklistItem(
@@ -909,6 +954,7 @@ struct TaskDetailFeature: Reducer {
                 attachments: state.editAttachments,
                 placeID: state.editSelectedPlaceID,
                 tags: state.editRoutineTags,
+                goals: state.editRoutineGoals,
                 relationships: state.editRelationships,
                 steps: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
                     ? state.editRoutineSteps

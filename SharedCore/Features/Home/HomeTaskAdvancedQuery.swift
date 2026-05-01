@@ -32,6 +32,8 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
             return task.notes?.normalizedQueryText.contains(value) ?? false
         case "tag", "tags":
             return task.tags.contains { $0.normalizedQueryText.contains(value) }
+        case "goal", "goals":
+            return task.goalTitles.contains { $0.normalizedQueryText.contains(value) }
         case "place", "location":
             return task.placeName?.normalizedQueryText.contains(value) ?? false
         case "type", "kind":
@@ -79,6 +81,7 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
             || (task.notes?.normalizedQueryText.contains(value) ?? false)
             || (task.placeName?.normalizedQueryText.contains(value) ?? false)
             || task.tags.contains { $0.normalizedQueryText.contains(value) }
+            || task.goalTitles.contains { $0.normalizedQueryText.contains(value) }
     }
 
     private func matchesTaskType(_ value: String, task: Display) -> Bool {

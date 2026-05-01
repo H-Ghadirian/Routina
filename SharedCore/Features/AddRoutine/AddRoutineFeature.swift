@@ -52,12 +52,17 @@ struct AddRoutineFeature: Reducer {
         case taskTypeChanged(RoutineTaskType)
         case availableTagsChanged([String])
         case availableTagSummariesChanged([RoutineTagSummary])
+        case availableGoalsChanged([RoutineGoalSummary])
         case relatedTagRulesChanged([RoutineRelatedTagRule])
         case availableRelationshipTasksChanged([RoutineTaskRelationshipCandidate])
         case tagDraftChanged(String)
+        case goalDraftChanged(String)
         case addTagTapped
+        case addGoalTapped
         case removeTag(String)
+        case removeGoal(UUID)
         case toggleTagSelection(String)
+        case toggleGoalSelection(RoutineGoalSummary)
         case addRelationship(UUID, RoutineTaskRelationshipKind)
         case removeRelationship(UUID)
         case tagRenamed(oldName: String, newName: String)
@@ -244,6 +249,13 @@ struct AddRoutineFeature: Reducer {
             )
             return .none
 
+        case let .availableGoalsChanged(goals):
+            AddRoutineOrganizationEditor.setAvailableGoals(
+                goals,
+                organization: &state.organization
+            )
+            return .none
+
         case let .relatedTagRulesChanged(rules):
             AddRoutineOrganizationEditor.setRelatedTagRules(
                 rules,
@@ -262,8 +274,18 @@ struct AddRoutineFeature: Reducer {
             state.organization.tagDraft = value
             return .none
 
+        case let .goalDraftChanged(value):
+            state.organization.goalDraft = value
+            return .none
+
         case .addTagTapped:
             AddRoutineOrganizationEditor.commitDraftTag(
+                organization: &state.organization
+            )
+            return .none
+
+        case .addGoalTapped:
+            AddRoutineOrganizationEditor.commitDraftGoal(
                 organization: &state.organization
             )
             return .none
@@ -275,9 +297,23 @@ struct AddRoutineFeature: Reducer {
             )
             return .none
 
+        case let .removeGoal(goalID):
+            AddRoutineOrganizationEditor.removeGoal(
+                goalID,
+                organization: &state.organization
+            )
+            return .none
+
         case let .toggleTagSelection(tag):
             AddRoutineOrganizationEditor.toggleTagSelection(
                 tag,
+                organization: &state.organization
+            )
+            return .none
+
+        case let .toggleGoalSelection(goal):
+            AddRoutineOrganizationEditor.toggleGoalSelection(
+                goal,
                 organization: &state.organization
             )
             return .none
