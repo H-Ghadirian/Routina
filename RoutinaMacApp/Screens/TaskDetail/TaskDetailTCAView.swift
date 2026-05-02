@@ -1,7 +1,6 @@
 import SwiftUI
 import ComposableArchitecture
 import SwiftData
-import UniformTypeIdentifiers
 
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
@@ -1038,39 +1037,12 @@ struct TaskDetailTCAView: View {
     private var notificationDisabledWarningSection: some View {
         if let warningText = store.notificationDisabledWarningText,
            let actionTitle = store.notificationDisabledWarningActionTitle {
-            Button {
+            TaskDetailNotificationDisabledWarningView(
+                warningText: warningText,
+                actionTitle: actionTitle
+            ) {
                 store.send(.notificationDisabledWarningTapped)
-            } label: {
-                HStack(alignment: .center, spacing: 10) {
-                    Image(systemName: "bell.slash.fill")
-                        .font(.headline)
-                        .foregroundStyle(.orange)
-                        .frame(width: 22)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("No notification will fire")
-                            .font(.subheadline.weight(.semibold))
-                        Text(warningText)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text(actionTitle)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.orange)
-                    }
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.orange.opacity(0.8))
-                }
             }
-            .buttonStyle(.plain)
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(.orange.opacity(0.25), lineWidth: 1)
-            )
         }
     }
 
@@ -1563,15 +1535,15 @@ struct TaskDetailTCAView: View {
     private func statusMetadataSection(showSelectedDate: Bool) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             if !store.task.isOneOffTask {
-                statusMetadataRow(label: "Frequency", value: store.frequencyText)
+                TaskDetailStatusMetadataRow(label: "Frequency", value: store.frequencyText)
             }
 
             if shouldShowCompletionCount {
-                statusMetadataRow(label: "Completed", value: store.completedLogCountText)
+                TaskDetailStatusMetadataRow(label: "Completed", value: store.completedLogCountText)
             }
 
             if displayedActualDurationMinutes > 0 {
-                statusMetadataRow(
+                TaskDetailStatusMetadataRow(
                     label: "Time Spent",
                     value: estimatedDurationBadgeValue(for: displayedActualDurationMinutes),
                     systemImage: "clock"
@@ -1579,20 +1551,20 @@ struct TaskDetailTCAView: View {
             }
 
             if store.canceledLogCount > 0 {
-                statusMetadataRow(label: "Canceled", value: store.canceledLogCountText, systemImage: "xmark.circle")
+                TaskDetailStatusMetadataRow(label: "Canceled", value: store.canceledLogCountText, systemImage: "xmark.circle")
             }
 
             if let pausedAt = store.task.pausedAt {
-                statusMetadataRow(
+                TaskDetailStatusMetadataRow(
                     label: "Paused",
                     value: pausedAt.formatted(date: .abbreviated, time: .omitted)
                 )
             } else if let dueDateMetadataText = dueDateMetadataDisplayText {
-                statusMetadataRow(label: "Due", value: dueDateMetadataText)
+                TaskDetailStatusMetadataRow(label: "Due", value: dueDateMetadataText)
             }
 
             if showSelectedDate && store.shouldShowSelectedDateMetadata {
-                statusMetadataRow(label: "Selected", value: store.selectedDateMetadataText)
+                TaskDetailStatusMetadataRow(label: "Selected", value: store.selectedDateMetadataText)
             }
 
             if store.task.hasImage || !store.taskAttachments.isEmpty {
@@ -1601,30 +1573,30 @@ struct TaskDetailTCAView: View {
                     store.task.hasImage ? "1 image" : nil,
                     fileCount > 0 ? "\(fileCount) \(fileCount == 1 ? "file" : "files")" : nil
                 ].compactMap { $0 }
-                statusMetadataRow(label: "Attachment", value: parts.joined(separator: ", "), systemImage: "paperclip")
+                TaskDetailStatusMetadataRow(label: "Attachment", value: parts.joined(separator: ", "), systemImage: "paperclip")
             }
 
             if store.task.isChecklistDriven {
-                statusMetadataRow(
+                TaskDetailStatusMetadataRow(
                     label: "Checklist",
                     value: "\(store.task.checklistItems.count) \(store.task.checklistItems.count == 1 ? "item" : "items")"
                 )
                 if let nextDueChecklistItemTitle = store.task.nextDueChecklistItem(referenceDate: Date())?.title {
-                    statusMetadataRow(label: "Next Due", value: nextDueChecklistItemTitle)
+                    TaskDetailStatusMetadataRow(label: "Next Due", value: nextDueChecklistItemTitle)
                 }
             } else if store.task.isChecklistCompletionRoutine {
-                statusMetadataRow(
+                TaskDetailStatusMetadataRow(
                     label: "Checklist",
                     value: "\(store.task.totalChecklistItemCount) \(store.task.totalChecklistItemCount == 1 ? "item" : "items")"
                 )
-                statusMetadataRow(label: "Progress", value: store.checklistProgressText)
+                TaskDetailStatusMetadataRow(label: "Progress", value: store.checklistProgressText)
                 if let nextPendingChecklistItemTitle = store.task.nextPendingChecklistItemTitle {
-                    statusMetadataRow(label: "Next Item", value: nextPendingChecklistItemTitle)
+                    TaskDetailStatusMetadataRow(label: "Next Item", value: nextPendingChecklistItemTitle)
                 }
             } else if store.task.hasSequentialSteps {
-                statusMetadataRow(label: "Progress", value: store.stepProgressText)
+                TaskDetailStatusMetadataRow(label: "Progress", value: store.stepProgressText)
                 if let nextStepTitle = store.task.nextStepTitle {
-                    statusMetadataRow(label: "Next Step", value: nextStepTitle)
+                    TaskDetailStatusMetadataRow(label: "Next Step", value: nextStepTitle)
                 }
             }
         }
@@ -1710,31 +1682,6 @@ struct TaskDetailTCAView: View {
                 Text(store.blockerSummaryText)
                     .font(.caption)
                     .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private func statusMetadataRow(
-        label: String,
-        value: String,
-        systemImage: String? = nil
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label.uppercased())
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Text(value)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -2880,76 +2827,5 @@ private struct TaskDetailColoredSegmentedControl<Option: Hashable>: View {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .stroke(.primary.opacity(0.08), lineWidth: 1)
         )
-    }
-}
-
-private extension Calendar {
-    var orderedShortStandaloneWeekdaySymbols: [String] {
-        let symbols = shortStandaloneWeekdaySymbols
-        let startIndex = firstWeekday - 1
-        return Array(symbols[startIndex...] + symbols[..<startIndex])
-    }
-
-    func startOfMonth(for date: Date) -> Date {
-        let comps = dateComponents([.year, .month], from: date)
-        return self.date(from: comps) ?? date
-    }
-
-    func daysInMonthGrid(for monthStart: Date) -> [Date?] {
-        guard
-            let monthRange = range(of: .day, in: .month, for: monthStart),
-            let monthInterval = dateInterval(of: .month, for: monthStart)
-        else { return [] }
-
-        let firstDay = monthInterval.start
-        let firstWeekday = component(.weekday, from: firstDay)
-        let leadingEmptyDays = (firstWeekday - self.firstWeekday + 7) % 7
-
-        var result: [Date?] = Array(repeating: nil, count: leadingEmptyDays)
-        for day in monthRange {
-            if let date = date(byAdding: .day, value: day - 1, to: firstDay) {
-                result.append(date)
-            }
-        }
-        while result.count % 7 != 0 {
-            result.append(nil)
-        }
-        return result
-    }
-}
-
-extension View {
-    func detailCardStyle(cornerRadius: CGFloat = 12) -> some View {
-        background(TaskDetailPlatformStyle.summaryCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-            )
-    }
-}
-
-struct RoutineAttachmentFileDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.data] }
-    var data: Data
-
-    init(data: Data) {
-        self.data = data
-    }
-
-    init(configuration: ReadConfiguration) throws {
-        data = configuration.file.regularFileContents ?? Data()
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        FileWrapper(regularFileWithContents: data)
-    }
-}
-
-struct TaskDetailOverviewHeightsPreferenceKey: PreferenceKey {
-    nonisolated(unsafe) static var defaultValue: [String: CGFloat] = [:]
-
-    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }

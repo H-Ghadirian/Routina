@@ -737,6 +737,63 @@ struct HomeFeature {
         )
     }
 
+    private func macNavigationRouter() -> HomeFeatureMacNavigationRouter {
+        HomeFeatureMacNavigationRouter(
+            setHideUnavailableRoutines: { isHidden in
+                appSettingsClient.setHideUnavailableRoutines(isHidden)
+            },
+            persistTemporaryViewState: { state in
+                persistTemporaryViewState(state)
+            }
+        )
+    }
+
+    private func macBoardCommandRouter() -> HomeFeatureMacBoardCommandRouter {
+        HomeFeatureMacBoardCommandRouter(
+            moveTodoToState: { id, newState, state in
+                handleMoveTodoToState(id, newState: newState, state: &state)
+            },
+            moveTodoOnBoard: { taskID, targetState, orderedTaskIDs, state in
+                handleMoveTodoOnBoard(
+                    taskID: taskID,
+                    targetState: targetState,
+                    orderedTaskIDs: orderedTaskIDs,
+                    state: &state
+                )
+            },
+            createBacklog: { title, state in
+                handleCreateBacklogConfirmed(title: title, state: &state)
+            },
+            createSprint: { title, state in
+                handleCreateSprintConfirmed(title: title, state: &state)
+            },
+            startSprint: { sprintID, state in
+                handleStartSprint(sprintID, state: &state)
+            },
+            finishSprint: { sprintID, state in
+                handleFinishSprint(sprintID, state: &state)
+            },
+            assignTodoToBacklog: { taskID, backlogID, state in
+                handleAssignTodoToBacklog(taskID: taskID, backlogID: backlogID, state: &state)
+            },
+            assignTodosToBacklog: { taskIDs, backlogID, state in
+                handleAssignTodosToBacklog(taskIDs: taskIDs, backlogID: backlogID, state: &state)
+            },
+            assignTodoToSprint: { taskID, sprintID, state in
+                handleAssignTodoToSprint(taskID: taskID, sprintID: sprintID, state: &state)
+            },
+            assignTodosToSprint: { taskIDs, sprintID, state in
+                handleAssignTodosToSprint(taskIDs: taskIDs, sprintID: sprintID, state: &state)
+            },
+            renameSprint: { id, title, state in
+                handleRenameSprint(id: id, title: title, state: &state)
+            },
+            deleteSprint: { id, state in
+                handleDeleteSprint(id: id, state: &state)
+            }
+        )
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -923,110 +980,13 @@ struct HomeFeature {
             // MARK: - macOS navigation actions
 
             case let .macSidebarModeChanged(mode):
-                state.macSidebarMode = mode
-                state.presentation.isMacFilterDetailPresented = false
-                switch mode {
-                case .routines:
-                    // Close add sheet; selection/taskListMode sync happens via setSelectedTask
-                    if state.presentation.isAddRoutineSheetPresented {
-                        state.presentation.isAddRoutineSheetPresented = false
-                        state.presentation.addRoutineState = nil
-                    }
-                    // Restore macSidebarSelection to reflect selectedTaskID
-                    state.macSidebarSelection = state.selection.selectedTaskID.map(MacSidebarSelection.task)
-                    // Sync taskListMode to the currently selected task (if any)
-                    if let taskID = state.selection.selectedTaskID,
-                       let task = state.routineTasks.first(where: { $0.id == taskID }) {
-                        let newMode: TaskListMode = task.isOneOffTask ? .todos : .routines
-                        if newMode != state.taskListMode {
-                            return .send(.taskListModeChanged(newMode))
-                        }
-                    }
-                case .board:
-                    if state.presentation.isAddRoutineSheetPresented {
-                        state.presentation.isAddRoutineSheetPresented = false
-                        state.presentation.addRoutineState = nil
-                    }
-                    if let taskID = state.selection.selectedTaskID,
-                       let task = state.routineTasks.first(where: { $0.id == taskID }),
-                       task.isOneOffTask {
-                        state.macSidebarSelection = .task(taskID)
-                    } else {
-                        state.macSidebarSelection = nil
-                        HomeSelectionEditor.clearTaskSelection(&state.selection)
-                    }
-                    if state.taskListMode != .todos {
-                        return .send(.taskListModeChanged(.todos))
-                    }
-                case .goals, .timeline, .stats, .settings:
-                    if state.presentation.isAddRoutineSheetPresented {
-                        state.presentation.isAddRoutineSheetPresented = false
-                        state.presentation.addRoutineState = nil
-                    }
-                    state.macSidebarSelection = nil
-                    HomeSelectionEditor.clearTaskSelection(&state.selection)
-                    if mode == .settings && state.selectedSettingsSection == nil {
-                        state.selectedSettingsSection = .notifications
-                    }
-                case .addTask:
-                    state.macSidebarSelection = nil
-                    if state.presentation.isAddRoutineSheetPresented {
-                        state.presentation.isAddRoutineSheetPresented = false
-                        state.presentation.addRoutineState = nil
-                    }
-                }
-                persistTemporaryViewState(state)
-                return .none
+                return macNavigationRouter().sidebarModeChanged(mode, state: &state)
 
             case let .macSidebarSelectionChanged(selection):
-                state.macSidebarSelection = selection
-                state.presentation.isAddRoutineSheetPresented = false
-                state.presentation.addRoutineState = nil
-                state.presentation.isMacFilterDetailPresented = false
-                switch selection {
-                case let .task(taskID):
-                    if state.macSidebarMode != .board {
-                        state.macSidebarMode = .routines
-                    }
-                    // Keep All stable when choosing a mixed-list item; selecting a task
-                    // should not narrow the visible tab behind the user's back.
-                    if let task = state.routineTasks.first(where: { $0.id == taskID }) {
-                        let newMode: TaskListMode = task.isOneOffTask ? .todos : .routines
-                        if state.taskListMode != .all, newMode != state.taskListMode {
-                            let oldMode = state.taskListMode
-                            var taskFilters = state.taskFilters
-                            var hideUnavailableRoutines = state.hideUnavailableRoutines
-                            let didResetHideUnavailableRoutines = HomeFilterEditor.transitionTaskListMode(
-                                from: oldMode.rawValue,
-                                to: newMode.rawValue,
-                                taskFilters: &taskFilters,
-                                hideUnavailableRoutines: &hideUnavailableRoutines
-                            )
-                            state.taskFilters = taskFilters
-                            state.hideUnavailableRoutines = hideUnavailableRoutines
-                            if didResetHideUnavailableRoutines {
-                                appSettingsClient.setHideUnavailableRoutines(false)
-                            }
-                            state.taskListMode = newMode
-                            persistTemporaryViewState(state)
-                        }
-                    }
-                    return .send(.setSelectedTask(taskID))
-                case .timelineEntry:
-                    state.macSidebarMode = .timeline
-                    // Task resolution requires @Query data — handled by view sending .setSelectedTask
-                    return .none
-                case nil:
-                    if state.macSidebarMode == .routines {
-                        return .send(.setSelectedTask(nil))
-                    }
-                    return .none
-                }
+                return macNavigationRouter().sidebarSelectionChanged(selection, state: &state)
 
             case let .selectedSettingsSectionChanged(section):
-                state.selectedSettingsSection = section
-                persistTemporaryViewState(state)
-                return .none
+                return macNavigationRouter().selectedSettingsSectionChanged(section, state: &state)
 
             case .deleteTasksConfirmed:
                 let ids = presentationRouter().consumePendingDeleteTaskIDs(state: &state)
@@ -1050,128 +1010,76 @@ struct HomeFeature {
                 return postMutationRefresher().finishMutation(effect, state: &state)
 
             case let .moveTodoToState(id, newState):
-                return handleMoveTodoToState(
-                    id,
-                    newState: newState,
-                    state: &state
-                )
+                return macBoardCommandRouter().moveTodoToState(id, newState, &state)
 
             case let .moveTodoOnBoard(taskID, targetState, orderedTaskIDs):
-                return handleMoveTodoOnBoard(
-                    taskID: taskID,
-                    targetState: targetState,
-                    orderedTaskIDs: orderedTaskIDs,
-                    state: &state
-                )
+                return macBoardCommandRouter().moveTodoOnBoard(taskID, targetState, orderedTaskIDs, &state)
 
             case let .selectedBoardScopeChanged(scope):
-                state.selectedBoardScope = scope
-                state.selectedTaskID = nil
-                state.taskDetailState = nil
-                state.macSidebarSelection = nil
-                return .none
+                return macBoardCommandRouter().selectedBoardScopeChanged(scope, state: &state)
 
             case .createSprintTapped:
-                state.creatingSprintTitle = ""
-                return .none
+                return macBoardCommandRouter().createSprintTapped(state: &state)
 
             case .createBacklogTapped:
-                state.creatingBacklogTitle = ""
-                return .none
+                return macBoardCommandRouter().createBacklogTapped(state: &state)
 
             case let .createBacklogTitleChanged(title):
-                state.creatingBacklogTitle = title
-                return .none
+                return macBoardCommandRouter().createBacklogTitleChanged(title, state: &state)
 
             case .createBacklogConfirmed:
-                let title = state.creatingBacklogTitle ?? ""
-                return handleCreateBacklogConfirmed(title: title, state: &state)
+                return macBoardCommandRouter().createBacklogConfirmed(state: &state)
 
             case .createBacklogCanceled:
-                state.creatingBacklogTitle = nil
-                return .none
+                return macBoardCommandRouter().createBacklogCanceled(state: &state)
 
             case let .createSprintTitleChanged(title):
-                state.creatingSprintTitle = title
-                return .none
+                return macBoardCommandRouter().createSprintTitleChanged(title, state: &state)
 
             case .createSprintConfirmed:
-                let title = state.creatingSprintTitle ?? ""
-                return handleCreateSprintConfirmed(title: title, state: &state)
+                return macBoardCommandRouter().createSprintConfirmed(state: &state)
 
             case .createSprintCanceled:
-                state.creatingSprintTitle = nil
-                return .none
+                return macBoardCommandRouter().createSprintCanceled(state: &state)
 
             case let .startSprintTapped(sprintID):
-                return handleStartSprint(
-                    sprintID,
-                    state: &state
-                )
+                return macBoardCommandRouter().startSprint(sprintID, &state)
 
             case let .finishSprintTapped(sprintID):
-                return handleFinishSprint(
-                    sprintID,
-                    state: &state
-                )
+                return macBoardCommandRouter().finishSprint(sprintID, &state)
 
             case let .assignTodoToBacklog(taskID, backlogID):
-                return handleAssignTodoToBacklog(
-                    taskID: taskID,
-                    backlogID: backlogID,
-                    state: &state
-                )
+                return macBoardCommandRouter().assignTodoToBacklog(taskID, backlogID, &state)
 
             case let .assignTodosToBacklog(taskIDs, backlogID):
-                return handleAssignTodosToBacklog(
-                    taskIDs: taskIDs,
-                    backlogID: backlogID,
-                    state: &state
-                )
+                return macBoardCommandRouter().assignTodosToBacklog(taskIDs, backlogID, &state)
 
             case let .assignTodoToSprint(taskID, sprintID):
-                return handleAssignTodoToSprint(
-                    taskID: taskID,
-                    sprintID: sprintID,
-                    state: &state
-                )
+                return macBoardCommandRouter().assignTodoToSprint(taskID, sprintID, &state)
 
             case let .assignTodosToSprint(taskIDs, sprintID):
-                return handleAssignTodosToSprint(
-                    taskIDs: taskIDs,
-                    sprintID: sprintID,
-                    state: &state
-                )
+                return macBoardCommandRouter().assignTodosToSprint(taskIDs, sprintID, &state)
 
             case let .renameSprintTapped(id):
-                let currentTitle = state.sprintBoardData.sprints.first(where: { $0.id == id })?.title ?? ""
-                state.renamingSprintID = id
-                state.renamingSprintTitle = currentTitle
-                return .none
+                return macBoardCommandRouter().renameSprintTapped(id, state: &state)
 
             case let .renamingSprintTitleChanged(title):
-                state.renamingSprintTitle = title
-                return .none
+                return macBoardCommandRouter().renamingSprintTitleChanged(title, state: &state)
 
             case .renameSprintConfirmed:
-                guard let id = state.renamingSprintID else { return .none }
-                return handleRenameSprint(id: id, title: state.renamingSprintTitle, state: &state)
+                return macBoardCommandRouter().renameSprintConfirmed(state: &state)
 
             case .renameSprintCanceled:
-                state.renamingSprintID = nil
-                state.renamingSprintTitle = ""
-                return .none
+                return macBoardCommandRouter().renameSprintCanceled(state: &state)
 
             case let .deleteSprintTapped(id):
-                state.deletingSprintID = id
-                return .none
+                return macBoardCommandRouter().deleteSprintTapped(id, state: &state)
 
             case let .deleteSprintConfirmed(id):
-                return handleDeleteSprint(id: id, state: &state)
+                return macBoardCommandRouter().deleteSprint(id, &state)
 
             case .deleteSprintCanceled:
-                state.deletingSprintID = nil
-                return .none
+                return macBoardCommandRouter().deleteSprintCanceled(state: &state)
 
             case let .pauseTask(id):
                 guard let effect = taskLifecycleCoordinator().pauseTask(

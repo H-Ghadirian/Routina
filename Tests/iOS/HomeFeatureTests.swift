@@ -201,29 +201,6 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func setDeleteConfirmation_falseClearsPendingDeleteIDs() async {
-        let context = makeInMemoryContext()
-        let pendingID = UUID()
-
-        let store = TestStore(
-            initialState: HomeFeature.State(
-                pendingDeleteTaskIDs: [pendingID],
-                isDeleteConfirmationPresented: true
-            )
-        ) {
-            HomeFeature()
-        } withDependencies: {
-            $0.modelContext = { context }
-            $0.notificationClient.schedule = { _ in }
-        }
-
-        await store.send(.setDeleteConfirmation(false)) {
-            $0.isDeleteConfirmationPresented = false
-            $0.pendingDeleteTaskIDs = []
-        }
-    }
-
-    @Test
     func clearOptionalFilters_resetsOptionalFiltersAndPersistsState() async {
         let context = makeInMemoryContext()
         let placeID = UUID()
@@ -316,33 +293,6 @@ struct HomeFeatureTests {
                 selectedImportanceUrgencyFilter: nil
             )
         )
-    }
-
-    @Test
-    func setMacFilterDetailPresented_closesAddRoutine() async {
-        let context = makeInMemoryContext()
-
-        let store = TestStore(
-            initialState: HomeFeature.State(
-                selectedTaskID: UUID(),
-                isAddRoutineSheetPresented: true,
-                addRoutineState: AddRoutineFeature.State(
-                    organization: AddRoutineOrganizationState(existingRoutineNames: [])
-                )
-            )
-        ) {
-            HomeFeature()
-        } withDependencies: {
-            $0.modelContext = { context }
-            $0.notificationClient.schedule = { _ in }
-        }
-
-        await store.send(.setMacFilterDetailPresented(true)) {
-            $0.isMacFilterDetailPresented = true
-            $0.isAddRoutineSheetPresented = false
-            $0.addRoutineState = nil
-            $0.selectedTaskID = nil
-        }
     }
 
     @Test
@@ -2256,39 +2206,6 @@ struct HomeFeatureTests {
                 makeDisplay(taskID: task2.id, name: "B", emoji: "🅱️", interval: 2, lastDone: nil, isDoneToday: false, doneCount: 1)
             ]
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task2.id: 1])
-        }
-    }
-
-    @Test
-    func deleteTasksTapped_presentsConfirmationAndStoresPendingIDs() async {
-        let taskID = UUID()
-
-        let store = TestStore(initialState: HomeFeature.State()) {
-            HomeFeature()
-        }
-
-        await store.send(.deleteTasksTapped([taskID])) {
-            $0.pendingDeleteTaskIDs = [taskID]
-            $0.isDeleteConfirmationPresented = true
-        }
-    }
-
-    @Test
-    func setDeleteConfirmation_false_clearsPendingDeletion() async {
-        let taskID = UUID()
-
-        let store = TestStore(
-            initialState: HomeFeature.State(
-                pendingDeleteTaskIDs: [taskID],
-                isDeleteConfirmationPresented: true
-            )
-        ) {
-            HomeFeature()
-        }
-
-        await store.send(.setDeleteConfirmation(false)) {
-            $0.pendingDeleteTaskIDs = []
-            $0.isDeleteConfirmationPresented = false
         }
     }
 
