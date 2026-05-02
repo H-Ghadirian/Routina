@@ -51,38 +51,34 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
     }
 
     private var mainDetailContent: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Picker("Detail mode", selection: $mainDetailMode) {
-                    ForEach(MacHomeDetailMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 220)
-
-                Spacer()
+        Group {
+            switch mainDetailMode {
+            case .details:
+                selectedTaskDetailContent
+            case .planner:
+                DayPlanDetailView(
+                    planner: dayPlanPlanner,
+                    selectedTaskID: selectedTaskID
+                )
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 14)
-            .padding(.bottom, 10)
-
-            Divider()
-
-            Group {
-                switch mainDetailMode {
-                case .details:
-                    selectedTaskDetailContent
-                case .planner:
-                    DayPlanDetailView(
-                        planner: dayPlanPlanner,
-                        selectedTaskID: selectedTaskID
-                    )
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                detailModePicker
+            }
+        }
+    }
+
+    private var detailModePicker: some View {
+        Picker("Detail mode", selection: $mainDetailMode) {
+            ForEach(MacHomeDetailMode.allCases) { mode in
+                Text(mode.rawValue).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 220)
     }
 
     @ViewBuilder
@@ -91,7 +87,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
             state: \.taskDetailState,
             action: \.taskDetail
         ) {
-            TaskDetailTCAView(store: detailStore)
+            TaskDetailTCAView(
+                store: detailStore,
+                showsPrincipalToolbarTitle: false
+            )
         } else {
             ContentUnavailableView(
                 "Select a done item or filters",
@@ -108,7 +107,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
             state: \.taskDetailState,
             action: \.taskDetail
         ) {
-            TaskDetailTCAView(store: detailStore)
+            TaskDetailTCAView(
+                store: detailStore,
+                showsPrincipalToolbarTitle: false
+            )
         } else {
             ContentUnavailableView(
                 store.routineTasks.isEmpty ? "Add a task to get started" : "Select a task",

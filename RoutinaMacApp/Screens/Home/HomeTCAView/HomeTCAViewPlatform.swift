@@ -106,11 +106,18 @@ extension HomeTCAView {
                     } boardView: {
                         macTodoBoardDetailView
                     }
-                    .navigationTitle(macSidebarNavigationTitle)
+                    .navigationTitle(macDetailNavigationTitle)
                     .environment(\.addEditFormCoordinator, addEditFormCoordinator)
                 }
             }
         }
+    }
+
+    private var macDetailNavigationTitle: String {
+        if isMacRoutinesMode && !store.isMacFilterDetailPresented {
+            return ""
+        }
+        return macSidebarNavigationTitle
     }
 
     @ToolbarContentBuilder

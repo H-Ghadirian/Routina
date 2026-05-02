@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
+    var showsPrincipalToolbarTitle = true
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
@@ -37,13 +38,13 @@ struct TaskDetailTCAView: View {
             detailBody
             .routinaInlineTitleDisplayMode()
             .toolbar {
-                if !isInlineEditPresented {
+                if showsPrincipalToolbarTitle && !isInlineEditPresented {
                     ToolbarItem(placement: .principal) {
                         Text(store.routineEmoji)
                             .font(TaskDetailPlatformStyle.principalTitleFont)
                     }
                 }
-                if isInlineEditPresented {
+                if showsPrincipalToolbarTitle && isInlineEditPresented {
                     ToolbarItem(placement: .principal) {
                         HStack(spacing: 8) {
                             Text("✏️")
