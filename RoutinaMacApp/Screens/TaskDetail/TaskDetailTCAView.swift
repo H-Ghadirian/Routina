@@ -212,6 +212,7 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
+                todoStateTimingSection
                 routineLogsSection
                 taskChangesSection
                 if store.task.hasChecklistItems {
@@ -282,6 +283,20 @@ struct TaskDetailTCAView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(store.blockerSummaryText)
+        }
+    }
+
+    @ViewBuilder
+    private var todoStateTimingSection: some View {
+        if let summary = TodoStateTiming.summary(
+            for: store.task,
+            referenceDate: Date(),
+            calendar: Calendar.current
+        ) {
+            TodoStateTimingSectionView(
+                summary: summary,
+                showPersianDates: showPersianDates
+            )
         }
     }
 

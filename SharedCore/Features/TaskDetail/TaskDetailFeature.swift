@@ -297,6 +297,7 @@ struct TaskDetailFeature: Reducer {
                 return .none
             }
             let isHistoricalCompletion = completionDate < now && !calendar.isDate(completionDate, inSameDayAs: now)
+            let previousTodoStateTitle = state.task.isOneOffTask ? state.task.todoState?.displayTitle : nil
             guard RoutineDateMath.canMarkDone(
                 for: state.task,
                 referenceDate: completionDate,
@@ -314,13 +315,18 @@ struct TaskDetailFeature: Reducer {
             if case .completedRoutine = advanceResult {
                 upsertLocalLog(at: completionDate, in: &state)
                 trackPendingLocalCompletion(at: completionDate, in: &state)
+                appendLocalTodoStateChange(
+                    to: state.task,
+                    previousStateTitle: previousTodoStateTitle,
+                    newStateTitle: TodoState.done.displayTitle
+                )
             }
             updateDerivedState(&state)
             return handleMarkAsDone(
                 taskID: state.task.id,
                 completedAt: completionDate,
                 referenceDate: now,
-                previousStateTitle: state.task.todoState?.displayTitle
+                previousStateTitle: previousTodoStateTitle
             )
 
         case .cancelTodo:
@@ -1057,6 +1063,11 @@ struct TaskDetailFeature: Reducer {
                 let pauseDate = now
                 state.task.pausedAt = pauseDate
                 state.task.todoStateRawValue = nil
+                appendLocalTodoStateChange(
+                    to: state.task,
+                    previousStateTitle: previousStateTitle,
+                    newStateTitle: newState.displayTitle
+                )
                 refreshTaskView(&state)
                 updateDerivedState(&state)
                 return handleTodoStateChanged(
@@ -1070,6 +1081,11 @@ struct TaskDetailFeature: Reducer {
                 state.task.pausedAt = nil
                 state.task.snoozedUntil = nil
                 state.task.todoStateRawValue = newState.rawValue
+                appendLocalTodoStateChange(
+                    to: state.task,
+                    previousStateTitle: previousStateTitle,
+                    newStateTitle: newState.displayTitle
+                )
                 refreshTaskView(&state)
                 updateDerivedState(&state)
                 return handleTodoStateChanged(

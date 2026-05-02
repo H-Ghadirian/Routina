@@ -43,6 +43,8 @@ extension HomeFeature {
 
         let targetSectionKey = Self.boardSectionKey(for: newState)
         let nextOrder = nextManualOrder(in: targetSectionKey, tasks: state.routineTasks)
+        let previousStateTitle = state.routineTasks[index].todoState?.displayTitle
+        let newStateTitle = newState.displayTitle
 
         switch newState {
         case .paused:
@@ -51,10 +53,16 @@ extension HomeFeature {
             state.routineTasks[index].snoozedUntil = nil
             state.routineTasks[index].todoStateRawValue = nil
             state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
+            appendBoardTodoStateChange(
+                to: state.routineTasks[index],
+                previousStateTitle: previousStateTitle,
+                newStateTitle: newStateTitle,
+                timestamp: pauseDate
+            )
             refreshDisplays(&state)
             syncSelectedTaskDetailState(&state)
 
-            return .run { @MainActor [id, pauseDate, targetSectionKey, nextOrder] _ in
+            return .run { @MainActor [id, pauseDate, targetSectionKey, nextOrder, previousStateTitle, newStateTitle] _ in
                 do {
                     let context = self.modelContext()
                     guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
@@ -62,6 +70,12 @@ extension HomeFeature {
                     task.snoozedUntil = nil
                     task.todoStateRawValue = nil
                     task.setManualSectionOrder(nextOrder, for: targetSectionKey)
+                    self.appendBoardTodoStateChange(
+                        to: task,
+                        previousStateTitle: previousStateTitle,
+                        newStateTitle: newStateTitle,
+                        timestamp: pauseDate
+                    )
                     try context.save()
                     NotificationCenter.default.postRoutineDidUpdate()
                 } catch {
@@ -74,10 +88,16 @@ extension HomeFeature {
             state.routineTasks[index].snoozedUntil = nil
             state.routineTasks[index].todoStateRawValue = newState.rawValue
             state.routineTasks[index].setManualSectionOrder(nextOrder, for: targetSectionKey)
+            appendBoardTodoStateChange(
+                to: state.routineTasks[index],
+                previousStateTitle: previousStateTitle,
+                newStateTitle: newStateTitle,
+                timestamp: now
+            )
             refreshDisplays(&state)
             syncSelectedTaskDetailState(&state)
 
-            return .run { @MainActor [id, rawValue = newState.rawValue, targetSectionKey, nextOrder] _ in
+            return .run { @MainActor [id, rawValue = newState.rawValue, targetSectionKey, nextOrder, previousStateTitle, newStateTitle, timestamp = now] _ in
                 do {
                     let context = self.modelContext()
                     guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
@@ -85,6 +105,12 @@ extension HomeFeature {
                     task.snoozedUntil = nil
                     task.todoStateRawValue = rawValue
                     task.setManualSectionOrder(nextOrder, for: targetSectionKey)
+                    self.appendBoardTodoStateChange(
+                        to: task,
+                        previousStateTitle: previousStateTitle,
+                        newStateTitle: newStateTitle,
+                        timestamp: timestamp
+                    )
                     try context.save()
                     NotificationCenter.default.postRoutineDidUpdate()
                 } catch {
@@ -95,6 +121,23 @@ extension HomeFeature {
         case .done:
             return .none
         }
+    }
+
+    private func appendBoardTodoStateChange(
+        to task: RoutineTask,
+        previousStateTitle: String?,
+        newStateTitle: String,
+        timestamp: Date
+    ) {
+        guard task.isOneOffTask, previousStateTitle != newStateTitle else { return }
+        task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: timestamp,
+                kind: .stateChanged,
+                previousValue: previousStateTitle,
+                newValue: newStateTitle
+            )
+        )
     }
 
     func handleMoveTodoOnBoard(

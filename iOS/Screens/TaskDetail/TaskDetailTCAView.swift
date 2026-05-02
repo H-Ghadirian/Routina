@@ -303,6 +303,7 @@ struct TaskDetailTCAView: View {
                     calendarSection
                 }
                 todoPrimaryActionSection
+                todoStateTimingSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
@@ -493,6 +494,20 @@ struct TaskDetailTCAView: View {
                 priorityDisclosureBox
                 todoTimeSpentHeaderBox
             }
+        }
+    }
+
+    @ViewBuilder
+    private var todoStateTimingSection: some View {
+        if let summary = TodoStateTiming.summary(
+            for: store.task,
+            referenceDate: Date(),
+            calendar: Calendar.current
+        ) {
+            TodoStateTimingSectionView(
+                summary: summary,
+                showPersianDates: showPersianDates
+            )
         }
     }
 

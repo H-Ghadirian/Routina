@@ -87,6 +87,22 @@ extension TaskDetailFeature {
         ]
     }
 
+    func appendLocalTodoStateChange(
+        to task: RoutineTask,
+        previousStateTitle: String?,
+        newStateTitle: String
+    ) {
+        guard task.isOneOffTask, previousStateTitle != newStateTitle else { return }
+        task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: now,
+                kind: .stateChanged,
+                previousValue: previousStateTitle,
+                newValue: newStateTitle
+            )
+        )
+    }
+
     func scheduleModeRequiresChecklistItems(_ scheduleMode: RoutineScheduleMode) -> Bool {
         scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
     }

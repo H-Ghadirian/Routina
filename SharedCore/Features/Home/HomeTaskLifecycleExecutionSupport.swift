@@ -59,6 +59,19 @@ enum HomeTaskLifecycleExecutionSupport {
                 ) else {
                     return
                 }
+                if taskState.task.isOneOffTask,
+                   taskState.result == .completedRoutine,
+                   update.previousTodoStateTitle != TodoState.done.displayTitle {
+                    taskState.task.appendChangeLogEntry(
+                        RoutineTaskChangeLogEntry(
+                            timestamp: update.completionDate,
+                            kind: .stateChanged,
+                            previousValue: update.previousTodoStateTitle,
+                            newValue: TodoState.done.displayTitle
+                        )
+                    )
+                    try context.save()
+                }
                 if !NotificationCoordinator.shouldScheduleNotification(
                     for: taskState.task,
                     referenceDate: update.completionDate,

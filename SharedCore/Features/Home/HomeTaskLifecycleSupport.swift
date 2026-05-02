@@ -8,6 +8,7 @@ struct HomeChecklistPurchaseUpdate: Equatable {
 struct HomeAdvanceTaskUpdate: Equatable {
     var taskID: UUID
     var completionDate: Date
+    var previousTodoStateTitle: String?
 }
 
 struct HomePauseTaskUpdate: Equatable {
@@ -95,15 +96,28 @@ enum HomeTaskLifecycleSupport {
             )
         }
 
+        let previousTodoStateTitle = tasks[index].isOneOffTask ? tasks[index].todoState?.displayTitle : nil
         let result = tasks[index].advance(completedAt: referenceDate, calendar: calendar)
         if case .completedRoutine = result {
             doneStats.totalCount += 1
             doneStats.countsByTaskID[taskID, default: 0] += 1
+            if tasks[index].isOneOffTask,
+               previousTodoStateTitle != TodoState.done.displayTitle {
+                tasks[index].appendChangeLogEntry(
+                    RoutineTaskChangeLogEntry(
+                        timestamp: referenceDate,
+                        kind: .stateChanged,
+                        previousValue: previousTodoStateTitle,
+                        newValue: TodoState.done.displayTitle
+                    )
+                )
+            }
         }
         return .advance(
             HomeAdvanceTaskUpdate(
                 taskID: taskID,
-                completionDate: referenceDate
+                completionDate: referenceDate,
+                previousTodoStateTitle: previousTodoStateTitle
             )
         )
     }
