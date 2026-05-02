@@ -1,7 +1,6 @@
 import Combine
 import SwiftData
 import SwiftUI
-import UniformTypeIdentifiers
 
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate = Date()
@@ -877,17 +876,21 @@ private struct DayPlanWeekCalendarView: View {
                             )
                         }
                     }
-                    .onDrop(
-                        of: [.text],
-                        delegate: DayPlanTaskDropDelegate(
-                            dates: dates,
-                            dayWidth: dayWidth,
-                            timeColumnWidth: timeColumnWidth,
-                            hourHeight: hourHeight,
-                            isDropTargeted: $isDropTargeted,
-                            onDropTask: onDropTask
-                        )
-                    )
+                    .dropDestination(for: String.self) { items, location in
+                        guard
+                            let taskIDText = items.first,
+                            let taskID = UUID(uuidString: taskIDText),
+                            let target = dropTarget(
+                                for: location,
+                                dayWidth: dayWidth
+                            )
+                        else { return false }
+
+                        onDropTask(taskID, target.date, target.startMinute)
+                        return true
+                    } isTargeted: { isTargeted in
+                        isDropTargeted = isTargeted
+                    }
                 }
                 .frame(height: hourHeight * 24)
             }
@@ -1012,6 +1015,26 @@ private struct DayPlanWeekCalendarView: View {
         CGFloat(block.durationMinutes) / 60 * hourHeight
     }
 
+    private func dropTarget(
+        for location: CGPoint,
+        dayWidth: CGFloat
+    ) -> (date: Date, startMinute: Int)? {
+        guard !dates.isEmpty else { return nil }
+
+        let dayX = location.x - timeColumnWidth
+        guard dayX >= 0 else { return nil }
+
+        let dayIndex = min(max(Int(dayX / dayWidth), 0), dates.count - 1)
+        let boundedY = min(max(location.y, 0), (hourHeight * 24) - 1)
+        let rawMinute = Int((boundedY / hourHeight) * 60)
+        let quarterHourMinute = (rawMinute / 15) * 15
+
+        return (
+            date: dates[dayIndex],
+            startMinute: DayPlanBlock.clampedStartMinute(quarterHourMinute)
+        )
+    }
+
 }
 
 private struct DayPlanCurrentTimeIndicator: View {
@@ -1099,72 +1122,6 @@ private struct DayPlanCurrentTimeIndicator: View {
 
     private func todayColumnX(todayIndex: Int) -> CGFloat {
         timeColumnWidth + (CGFloat(todayIndex) * dayWidth)
-    }
-}
-
-private struct DayPlanTaskDropDelegate: DropDelegate {
-    let dates: [Date]
-    let dayWidth: CGFloat
-    let timeColumnWidth: CGFloat
-    let hourHeight: CGFloat
-    @Binding var isDropTargeted: Bool
-    let onDropTask: (UUID, Date, Int) -> Void
-
-    func validateDrop(info: DropInfo) -> Bool {
-        dropTarget(for: info.location) != nil && info.hasItemsConforming(to: [.text])
-    }
-
-    func dropEntered(info: DropInfo) {
-        isDropTargeted = true
-    }
-
-    func dropExited(info: DropInfo) {
-        isDropTargeted = false
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        guard validateDrop(info: info) else { return nil }
-        return DropProposal(operation: .copy)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        defer {
-            isDropTargeted = false
-        }
-
-        guard
-            let target = dropTarget(for: info.location),
-            let provider = info.itemProviders(for: [.text]).first
-        else { return false }
-
-        provider.loadObject(ofClass: NSString.self) { object, _ in
-            guard
-                let text = object as? NSString,
-                let taskID = UUID(uuidString: text as String)
-            else { return }
-
-            DispatchQueue.main.async {
-                onDropTask(taskID, target.date, target.startMinute)
-            }
-        }
-        return true
-    }
-
-    private func dropTarget(for location: CGPoint) -> (date: Date, startMinute: Int)? {
-        guard !dates.isEmpty else { return nil }
-
-        let dayX = location.x - timeColumnWidth
-        guard dayX >= 0 else { return nil }
-
-        let dayIndex = min(max(Int(dayX / dayWidth), 0), dates.count - 1)
-        let boundedY = min(max(location.y, 0), (hourHeight * 24) - 1)
-        let rawMinute = Int((boundedY / hourHeight) * 60)
-        let quarterHourMinute = (rawMinute / 15) * 15
-
-        return (
-            date: dates[dayIndex],
-            startMinute: DayPlanBlock.clampedStartMinute(quarterHourMinute)
-        )
     }
 }
 

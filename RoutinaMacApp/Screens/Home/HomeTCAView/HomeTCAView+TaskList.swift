@@ -21,6 +21,8 @@ extension HomeTCAView {
                 systemImage: emptyState.systemImage
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if macHomeDetailMode == .planner {
+            plannerTaskSourceList(presentation)
         } else {
             List(selection: macSidebarSelectionBinding) {
                 ForEach(presentation.sections) { section in
@@ -133,12 +135,7 @@ extension HomeTCAView {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .frame(width: 26, height: 30)
-                .contentShape(Rectangle())
-                .help("Drag to planner")
-                .accessibilityLabel("Drag task to planner")
-                .onDrag {
-                    NSItemProvider(object: task.taskID.uuidString as NSString)
-                }
+                .accessibilityHidden(true)
         }
         .padding(.vertical, 4)
     }
@@ -171,6 +168,98 @@ extension HomeTCAView {
                 Capsule(style: .continuous)
                     .stroke(tint.opacity(0.28), lineWidth: 0.5)
             )
+    }
+
+    private func taskDragPreview(for task: HomeFeature.RoutineDisplay) -> some View {
+        HStack(spacing: 8) {
+            Text(task.emoji)
+                .font(.body)
+
+            Text(task.name)
+                .font(.body.weight(.medium))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.ultraThickMaterial)
+        )
+    }
+
+    private func plannerTaskSourceList(
+        _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
+                ForEach(presentation.sections) { section in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(section.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 12)
+
+                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                            plannerTaskSourceRow(
+                                for: task,
+                                rowNumber: section.rowNumber(forTaskAt: index),
+                                includeMarkDone: section.includeMarkDone,
+                                moveContext: section.moveContext
+                            )
+                        }
+                    }
+                }
+            }
+            .padding(12)
+        }
+    }
+
+    private func plannerTaskSourceRow(
+        for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int,
+        includeMarkDone: Bool,
+        moveContext: HomeTaskListMoveContext?
+    ) -> some View {
+        routineRow(for: task, rowNumber: rowNumber)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(plannerTaskSourceRowBackground(for: task))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(plannerTaskSourceRowStroke(for: task), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .onTapGesture {
+                store.send(.macSidebarSelectionChanged(.task(task.taskID)))
+            }
+            .draggable(task.taskID.uuidString) {
+                taskDragPreview(for: task)
+            }
+            .contextMenu {
+                routineContextMenu(
+                    for: task,
+                    includeMarkDone: includeMarkDone,
+                    moveContext: moveContext
+                )
+            }
+            .help("Drag to place this task on the planner")
+    }
+
+    private func plannerTaskSourceRowBackground(for task: HomeFeature.RoutineDisplay) -> Color {
+        if store.selectedTaskID == task.taskID {
+            return Color.accentColor.opacity(0.18)
+        }
+        return Color.secondary.opacity(0.08)
+    }
+
+    private func plannerTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
+        if store.selectedTaskID == task.taskID {
+            return Color.accentColor.opacity(0.55)
+        }
+        return Color.primary.opacity(0.06)
     }
 
     func platformDeleteTasks(
