@@ -168,6 +168,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeFilterState.swift",
                 "SharedCore/Features/Home/HomeFilterPresentation.swift",
                 "SharedCore/Features/Home/HomeFilterSupport.swift",
+                "SharedCore/Features/Home/HomeFeaturePostMutationRefresher.swift",
                 "SharedCore/Features/Home/HomeReloadGuardSupport.swift",
                 "SharedCore/Features/Home/HomeSelectionSupport.swift",
                 "SharedCore/Features/Home/HomeTaskDeletionSupport.swift",

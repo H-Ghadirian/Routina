@@ -119,7 +119,7 @@ struct HomeFeature {
     }
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -689,6 +689,14 @@ struct HomeFeature {
         )
     }
 
+    private func postMutationRefresher() -> HomeFeaturePostMutationRefresher<State, Action> {
+        HomeFeaturePostMutationRefresher(
+            refreshDisplays: { state in refreshDisplays(&state) },
+            syncSelectedTaskDetailState: { state in syncSelectedTaskDetailState(&state) },
+            addRoutineAction: { .addRoutineSheet($0) }
+        )
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -1073,9 +1081,7 @@ struct HomeFeature {
                 }
                 state.routineTasks = routineTasks
                 state.doneStats = doneStats
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                return effect
+                return postMutationRefresher().finishMutation(effect, state: &state)
 
             case let .moveTodoToState(id, newState):
                 return handleMoveTodoToState(
@@ -1208,9 +1214,7 @@ struct HomeFeature {
                 ) else {
                     return .none
                 }
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                return effect
+                return postMutationRefresher().finishMutation(effect, state: &state)
 
             case let .resumeTask(id):
                 guard let effect = taskLifecycleCoordinator().resumeTask(
@@ -1219,9 +1223,7 @@ struct HomeFeature {
                 ) else {
                     return .none
                 }
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                return effect
+                return postMutationRefresher().finishMutation(effect, state: &state)
 
             case let .notTodayTask(id):
                 guard let effect = taskLifecycleCoordinator().notTodayTask(
@@ -1230,9 +1232,7 @@ struct HomeFeature {
                 ) else {
                     return .none
                 }
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                return effect
+                return postMutationRefresher().finishMutation(effect, state: &state)
 
             case let .pinTask(id):
                 guard let effect = taskLifecycleCoordinator().pinTask(
@@ -1241,9 +1241,7 @@ struct HomeFeature {
                 ) else {
                     return .none
                 }
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                return effect
+                return postMutationRefresher().finishMutation(effect, state: &state)
 
             case let .unpinTask(id):
                 guard let effect = taskLifecycleCoordinator().unpinTask(
@@ -1252,9 +1250,7 @@ struct HomeFeature {
                 ) else {
                     return .none
                 }
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                return effect
+                return postMutationRefresher().finishMutation(effect, state: &state)
 
             case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
                 return moveTaskInSection(
@@ -1301,9 +1297,10 @@ struct HomeFeature {
                 )
                 state.routineTasks = routineTasks
                 state.presentation = presentation
-                refreshDisplays(&state)
-                syncSelectedTaskDetailState(&state)
-                return .merge(effect, loadTasksEffect())
+                return postMutationRefresher().finishMutation(
+                    .merge(effect, loadTasksEffect()),
+                    state: &state
+                )
 
             case .routineSaveFailed:
                 print("Failed to save routine.")
@@ -1405,19 +1402,10 @@ struct HomeFeature {
         if let sprintBoardData {
             state.sprintBoardData = sprintBoardData
         }
-        refreshDisplays(&state)
-        syncSelectedTaskDetailState(&state)
-
-        guard state.presentation.addRoutineState != nil else { return deleteEffect }
-        return .merge(
+        return postMutationRefresher().finishMutation(
             deleteEffect,
-            HomeAddRoutineSupport.availabilityRefreshEffect(
-                tasks: state.routineTasks,
-                places: state.routinePlaces,
-                goals: state.routineGoals,
-                doneStats: state.doneStats,
-                action: { .addRoutineSheet($0) }
-            )
+            state: &state,
+            refreshAddRoutineAvailability: true
         )
     }
 
@@ -1435,13 +1423,13 @@ struct HomeFeature {
             direction: direction,
             tasks: &state.routineTasks
         ) else { return .none }
-        refreshDisplays(&state)
-        syncSelectedTaskDetailState(&state)
-
-        return HomeTaskOrderingSupport.persistTaskOrder(
-            update,
-            failureMessage: "Failed to persist manual section order",
-            modelContext: { self.modelContext() }
+        return postMutationRefresher().finishMutation(
+            HomeTaskOrderingSupport.persistTaskOrder(
+                update,
+                failureMessage: "Failed to persist manual section order",
+                modelContext: { self.modelContext() }
+            ),
+            state: &state
         )
     }
 
@@ -1455,13 +1443,13 @@ struct HomeFeature {
             orderedTaskIDs: orderedTaskIDs,
             tasks: &state.routineTasks
         ) else { return .none }
-        refreshDisplays(&state)
-        syncSelectedTaskDetailState(&state)
-
-        return HomeTaskOrderingSupport.persistTaskOrder(
-            update,
-            failureMessage: "Failed to persist board section order",
-            modelContext: { self.modelContext() }
+        return postMutationRefresher().finishMutation(
+            HomeTaskOrderingSupport.persistTaskOrder(
+                update,
+                failureMessage: "Failed to persist board section order",
+                modelContext: { self.modelContext() }
+            ),
+            state: &state
         )
     }
 
