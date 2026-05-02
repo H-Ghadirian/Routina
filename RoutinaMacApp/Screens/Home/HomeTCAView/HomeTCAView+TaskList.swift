@@ -235,9 +235,12 @@ extension HomeTCAView {
             .onTapGesture {
                 store.send(.macSidebarSelectionChanged(.task(task.taskID)))
             }
-            .draggable(task.taskID.uuidString) {
+            .onDrag({
+                store.send(.macSidebarSelectionChanged(.task(task.taskID)))
+                return NSItemProvider(object: task.taskID.uuidString as NSString)
+            }, preview: {
                 taskDragPreview(for: task)
-            }
+            })
             .contextMenu {
                 routineContextMenu(
                     for: task,

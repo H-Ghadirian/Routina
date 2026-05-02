@@ -1,6 +1,7 @@
 import Combine
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate = Date()
@@ -654,6 +655,7 @@ private struct DayPlanTimelinePanelView: View {
                 selectedBlockID: planner.selectedBlockID,
                 selectedDate: planner.selectedDate,
                 calendar: calendar,
+                dropDurationMinutes: planner.durationMinutes,
                 blocksForDate: { date in
                     planner.blocks(on: date, calendar: calendar)
                 },
@@ -841,6 +843,7 @@ private struct DayPlanWeekCalendarView: View {
     var selectedBlockID: DayPlanBlock.ID?
     var selectedDate: Date
     var calendar: Calendar
+    var dropDurationMinutes: Int
     var blocksForDate: (Date) -> [DayPlanBlock]
     var taskTint: (DayPlanBlock) -> Color
     var onSelectSlot: (Date, Int) -> Void
@@ -849,6 +852,8 @@ private struct DayPlanWeekCalendarView: View {
     var onDropTask: (UUID, Date, Int) -> Void
 
     @State private var isDropTargeted = false
+    @State private var isCompletingDrop = false
+    @State private var dropPreview: DayPlanDropPreview?
 
     private let hourHeight: CGFloat = 64
     private let timeColumnWidth: CGFloat = 64
@@ -865,6 +870,17 @@ private struct DayPlanWeekCalendarView: View {
                         weekGrid(dayWidth: dayWidth)
                         selectionButtons(dayWidth: dayWidth)
                         weekBlocks(dayWidth: dayWidth)
+                        if let dropPreview {
+                            DayPlanDropIndicator(
+                                preview: dropPreview,
+                                dates: dates,
+                                calendar: calendar,
+                                dayWidth: dayWidth,
+                                hourHeight: hourHeight,
+                                timeColumnWidth: timeColumnWidth,
+                                durationMinutes: dropDurationMinutes
+                            )
+                        }
                         SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
                             DayPlanCurrentTimeIndicator(
                                 dates: dates,
@@ -876,21 +892,19 @@ private struct DayPlanWeekCalendarView: View {
                             )
                         }
                     }
-                    .dropDestination(for: String.self) { items, location in
-                        guard
-                            let taskIDText = items.first,
-                            let taskID = UUID(uuidString: taskIDText),
-                            let target = dropTarget(
-                                for: location,
-                                dayWidth: dayWidth
-                            )
-                        else { return false }
-
-                        onDropTask(taskID, target.date, target.startMinute)
-                        return true
-                    } isTargeted: { isTargeted in
-                        isDropTargeted = isTargeted
-                    }
+                    .onDrop(
+                        of: [.text],
+                        delegate: DayPlanTaskDropDelegate(
+                            dates: dates,
+                            dayWidth: dayWidth,
+                            timeColumnWidth: timeColumnWidth,
+                            hourHeight: hourHeight,
+                            isCompletingDrop: $isCompletingDrop,
+                            isDropTargeted: $isDropTargeted,
+                            dropPreview: $dropPreview,
+                            onDropTask: onDropTask
+                        )
+                    )
                 }
                 .frame(height: hourHeight * 24)
             }
@@ -1015,10 +1029,194 @@ private struct DayPlanWeekCalendarView: View {
         CGFloat(block.durationMinutes) / 60 * hourHeight
     }
 
-    private func dropTarget(
-        for location: CGPoint,
-        dayWidth: CGFloat
-    ) -> (date: Date, startMinute: Int)? {
+}
+
+private struct DayPlanDropPreview: Equatable {
+    let dayIndex: Int
+    let startMinute: Int
+}
+
+private struct DayPlanDropIndicator: View {
+    var preview: DayPlanDropPreview
+    var dates: [Date]
+    var calendar: Calendar
+    var dayWidth: CGFloat
+    var hourHeight: CGFloat
+    var timeColumnWidth: CGFloat
+    var durationMinutes: Int
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.accentColor.opacity(0.16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(
+                            Color.accentColor.opacity(0.75),
+                            style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
+                        )
+                )
+                .frame(width: indicatorWidth, height: indicatorHeight)
+                .offset(x: indicatorX, y: indicatorY)
+
+            insertionLine
+                .frame(width: indicatorWidth)
+                .offset(x: indicatorX, y: max(indicatorY - 2, 0))
+
+            Text(timeText)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+                .monospacedDigit()
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(.ultraThickMaterial, in: Capsule(style: .continuous))
+                .offset(x: indicatorX + 8, y: indicatorY + 6)
+        }
+        .allowsHitTesting(false)
+        .zIndex(12)
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+    }
+
+    private var insertionLine: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color.accentColor)
+                .frame(width: 8, height: 8)
+
+            Rectangle()
+                .fill(Color.accentColor)
+                .frame(height: 3)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var indicatorWidth: CGFloat {
+        max(dayWidth - 10, 90)
+    }
+
+    private var indicatorHeight: CGFloat {
+        max(CGFloat(durationMinutes) / 60 * hourHeight, 34)
+    }
+
+    private var indicatorX: CGFloat {
+        timeColumnWidth + (CGFloat(preview.dayIndex) * dayWidth) + 5
+    }
+
+    private var indicatorY: CGFloat {
+        CGFloat(preview.startMinute) / 60 * hourHeight
+    }
+
+    private var timeText: String {
+        guard dates.indices.contains(preview.dayIndex) else { return "" }
+        return DayPlanFormatting.timeText(
+            for: preview.startMinute,
+            on: dates[preview.dayIndex],
+            calendar: calendar
+        )
+    }
+}
+
+private struct DayPlanTaskDropDelegate: DropDelegate {
+    let dates: [Date]
+    let dayWidth: CGFloat
+    let timeColumnWidth: CGFloat
+    let hourHeight: CGFloat
+    @Binding var isCompletingDrop: Bool
+    @Binding var isDropTargeted: Bool
+    @Binding var dropPreview: DayPlanDropPreview?
+    let onDropTask: (UUID, Date, Int) -> Void
+
+    func validateDrop(info: DropInfo) -> Bool {
+        !isCompletingDrop && dropTarget(for: info.location) != nil && info.hasItemsConforming(to: [.text])
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard !isCompletingDrop else {
+            clearDropState()
+            return
+        }
+
+        updatePreview(for: info)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        guard !isCompletingDrop, validateDrop(info: info) else {
+            clearDropState()
+            return nil
+        }
+
+        updatePreview(for: info)
+        return DropProposal(operation: .copy)
+    }
+
+    func dropExited(info: DropInfo) {
+        clearDropState()
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        finishDrop()
+
+        defer {
+            clearDropState()
+        }
+
+        guard
+            let target = dropTarget(for: info.location),
+            let provider = info.itemProviders(for: [.text]).first
+        else { return false }
+
+        provider.loadObject(ofClass: NSString.self) { object, _ in
+            guard
+                let text = object as? NSString,
+                let taskID = UUID(uuidString: text as String)
+            else { return }
+
+            DispatchQueue.main.async {
+                onDropTask(taskID, target.date, target.startMinute)
+            }
+        }
+        return true
+    }
+
+    private func updatePreview(for info: DropInfo) {
+        guard !isCompletingDrop else {
+            clearDropState()
+            return
+        }
+
+        guard let target = dropTarget(for: info.location) else {
+            dropPreview = nil
+            isDropTargeted = false
+            return
+        }
+
+        isDropTargeted = true
+        dropPreview = DayPlanDropPreview(
+            dayIndex: target.dayIndex,
+            startMinute: target.startMinute
+        )
+    }
+
+    private func finishDrop() {
+        isCompletingDrop = true
+        clearDropState()
+
+        DispatchQueue.main.async {
+            clearDropState()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            isCompletingDrop = false
+            clearDropState()
+        }
+    }
+
+    private func clearDropState() {
+        isDropTargeted = false
+        dropPreview = nil
+    }
+
+    private func dropTarget(for location: CGPoint) -> (dayIndex: Int, date: Date, startMinute: Int)? {
         guard !dates.isEmpty else { return nil }
 
         let dayX = location.x - timeColumnWidth
@@ -1030,11 +1228,11 @@ private struct DayPlanWeekCalendarView: View {
         let quarterHourMinute = (rawMinute / 15) * 15
 
         return (
+            dayIndex: dayIndex,
             date: dates[dayIndex],
             startMinute: DayPlanBlock.clampedStartMinute(quarterHourMinute)
         )
     }
-
 }
 
 private struct DayPlanCurrentTimeIndicator: View {
