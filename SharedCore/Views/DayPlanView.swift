@@ -117,6 +117,65 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
+    @discardableResult
+    func moveBlock(_ id: DayPlanBlock.ID, to date: Date, startMinute: Int, calendar: Calendar) -> Bool {
+        guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
+
+        let targetDayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        let targetStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        let targetDuration = DayPlanBlock.clampedDuration(
+            locatedBlock.block.durationMinutes,
+            startMinute: targetStartMinute
+        )
+        var targetBlocks = weekBlocksByDayKey[targetDayKey] ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey)
+        let targetEndMinute = targetStartMinute + targetDuration
+        let hasConflict = targetBlocks.contains { block in
+            guard block.id != id else { return false }
+            return max(targetStartMinute, block.startMinute) < min(targetEndMinute, block.endMinute)
+        }
+
+        guard !hasConflict else { return false }
+
+        let movedBlock = DayPlanBlock(
+            id: locatedBlock.block.id,
+            taskID: locatedBlock.block.taskID,
+            dayKey: targetDayKey,
+            startMinute: targetStartMinute,
+            durationMinutes: targetDuration,
+            titleSnapshot: locatedBlock.block.titleSnapshot,
+            emojiSnapshot: locatedBlock.block.emojiSnapshot,
+            createdAt: locatedBlock.block.createdAt,
+            updatedAt: Date()
+        )
+        var sourceBlocks = weekBlocksByDayKey[locatedBlock.dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: locatedBlock.dayKey)
+        sourceBlocks.removeAll { $0.id == id }
+
+        if locatedBlock.dayKey == targetDayKey {
+            sourceBlocks.append(movedBlock)
+            let sortedBlocks = sortedDayBlocks(sourceBlocks)
+            weekBlocksByDayKey[targetDayKey] = sortedBlocks
+            DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: targetDayKey)
+        } else {
+            let sortedSourceBlocks = sortedDayBlocks(sourceBlocks)
+            weekBlocksByDayKey[locatedBlock.dayKey] = sortedSourceBlocks
+            DayPlanStorage.saveBlocks(sortedSourceBlocks, forDayKey: locatedBlock.dayKey)
+
+            targetBlocks.removeAll { $0.id == id }
+            targetBlocks.append(movedBlock)
+            let sortedTargetBlocks = sortedDayBlocks(targetBlocks)
+            weekBlocksByDayKey[targetDayKey] = sortedTargetBlocks
+            DayPlanStorage.saveBlocks(sortedTargetBlocks, forDayKey: targetDayKey)
+        }
+
+        selectedDate = date
+        selectedBlockID = movedBlock.id
+        selectedTaskID = movedBlock.taskID
+        self.startMinute = movedBlock.startMinute
+        durationMinutes = movedBlock.durationMinutes
+        syncSelectedDayBlocks(calendar: calendar)
+        return true
+    }
+
     func commitBlock(task: RoutineTask, calendar: Calendar) {
         guard conflictingBlock == nil else { return }
 
@@ -210,6 +269,32 @@ final class DayPlanPlannerState: ObservableObject {
     private func syncSelectedDayBlocks(calendar: Calendar) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+    }
+
+    private func locatedBlock(
+        _ id: DayPlanBlock.ID,
+        calendar: Calendar
+    ) -> (block: DayPlanBlock, dayKey: String)? {
+        for (dayKey, dayBlocks) in weekBlocksByDayKey {
+            if let block = dayBlocks.first(where: { $0.id == id }) {
+                return (block, dayKey)
+            }
+        }
+
+        if let block = blocks.first(where: { $0.id == id }) {
+            return (block, DayPlanStorage.dayKey(for: selectedDate, calendar: calendar))
+        }
+
+        return nil
+    }
+
+    private func sortedDayBlocks(_ blocks: [DayPlanBlock]) -> [DayPlanBlock] {
+        blocks.sorted {
+            if $0.startMinute != $1.startMinute {
+                return $0.startMinute < $1.startMinute
+            }
+            return $0.createdAt < $1.createdAt
+        }
     }
 
     private func weekDates(containing date: Date, calendar: Calendar) -> [Date] {
@@ -669,6 +754,9 @@ private struct DayPlanTimelinePanelView: View {
                 onDeleteBlock: { block in
                     planner.deleteBlock(block.id, calendar: calendar)
                 },
+                onMoveBlock: { blockID, date, minute in
+                    planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar)
+                },
                 onDropTask: { taskID, date, minute in
                     dropTask(taskID, on: date, startMinute: minute)
                 }
@@ -849,11 +937,14 @@ private struct DayPlanWeekCalendarView: View {
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onDeleteBlock: (DayPlanBlock) -> Void
+    var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
     var onDropTask: (UUID, Date, Int) -> Void
 
     @State private var isDropTargeted = false
     @State private var isCompletingDrop = false
     @State private var dropPreview: DayPlanDropPreview?
+    @State private var draggedBlockID: DayPlanBlock.ID?
+    @State private var draggedBlockDurationMinutes: Int?
 
     private let hourHeight: CGFloat = 64
     private let timeColumnWidth: CGFloat = 64
@@ -870,15 +961,14 @@ private struct DayPlanWeekCalendarView: View {
                         weekGrid(dayWidth: dayWidth)
                         selectionButtons(dayWidth: dayWidth)
                         weekBlocks(dayWidth: dayWidth)
-                        if let dropPreview {
+                        if let dropPreview, isDropTargeted, !isCompletingDrop {
                             DayPlanDropIndicator(
                                 preview: dropPreview,
                                 dates: dates,
                                 calendar: calendar,
                                 dayWidth: dayWidth,
                                 hourHeight: hourHeight,
-                                timeColumnWidth: timeColumnWidth,
-                                durationMinutes: dropDurationMinutes
+                                timeColumnWidth: timeColumnWidth
                             )
                         }
                         SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
@@ -899,9 +989,13 @@ private struct DayPlanWeekCalendarView: View {
                             dayWidth: dayWidth,
                             timeColumnWidth: timeColumnWidth,
                             hourHeight: hourHeight,
+                            dropDurationMinutes: dropDurationMinutes,
+                            draggedBlockID: $draggedBlockID,
+                            draggedBlockDurationMinutes: $draggedBlockDurationMinutes,
                             isCompletingDrop: $isCompletingDrop,
                             isDropTargeted: $isDropTargeted,
                             dropPreview: $dropPreview,
+                            onMoveBlock: onMoveBlock,
                             onDropTask: onDropTask
                         )
                     )
@@ -1015,6 +1109,14 @@ private struct DayPlanWeekCalendarView: View {
                         x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
                         y: yOffset(for: block.startMinute)
                     )
+                    .onDrag {
+                        isCompletingDrop = false
+                        clearDropState()
+                        draggedBlockID = block.id
+                        draggedBlockDurationMinutes = block.durationMinutes
+                        onSelectBlock(block, date)
+                        return NSItemProvider(object: DayPlanBlockDragPayload.text(for: block.id) as NSString)
+                    }
                     .zIndex(block.id == selectedBlockID ? 2 : 1)
                 }
             }
@@ -1029,11 +1131,30 @@ private struct DayPlanWeekCalendarView: View {
         CGFloat(block.durationMinutes) / 60 * hourHeight
     }
 
+    private func clearDropState() {
+        isDropTargeted = false
+        dropPreview = nil
+    }
+
 }
 
 private struct DayPlanDropPreview: Equatable {
     let dayIndex: Int
     let startMinute: Int
+    let durationMinutes: Int
+}
+
+private enum DayPlanBlockDragPayload {
+    private static let prefix = "day-plan-block:"
+
+    static func text(for blockID: DayPlanBlock.ID) -> String {
+        prefix + blockID.uuidString
+    }
+
+    static func blockID(from text: String) -> DayPlanBlock.ID? {
+        guard text.hasPrefix(prefix) else { return nil }
+        return UUID(uuidString: String(text.dropFirst(prefix.count)))
+    }
 }
 
 private struct DayPlanDropIndicator: View {
@@ -1043,7 +1164,6 @@ private struct DayPlanDropIndicator: View {
     var dayWidth: CGFloat
     var hourHeight: CGFloat
     var timeColumnWidth: CGFloat
-    var durationMinutes: Int
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -1095,7 +1215,7 @@ private struct DayPlanDropIndicator: View {
     }
 
     private var indicatorHeight: CGFloat {
-        max(CGFloat(durationMinutes) / 60 * hourHeight, 34)
+        max(CGFloat(preview.durationMinutes) / 60 * hourHeight, 34)
     }
 
     private var indicatorX: CGFloat {
@@ -1121,13 +1241,19 @@ private struct DayPlanTaskDropDelegate: DropDelegate {
     let dayWidth: CGFloat
     let timeColumnWidth: CGFloat
     let hourHeight: CGFloat
+    let dropDurationMinutes: Int
+    @Binding var draggedBlockID: DayPlanBlock.ID?
+    @Binding var draggedBlockDurationMinutes: Int?
     @Binding var isCompletingDrop: Bool
     @Binding var isDropTargeted: Bool
     @Binding var dropPreview: DayPlanDropPreview?
+    let onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
     let onDropTask: (UUID, Date, Int) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
-        !isCompletingDrop && dropTarget(for: info.location) != nil && info.hasItemsConforming(to: [.text])
+        !isCompletingDrop
+            && dropTarget(for: info.location) != nil
+            && (draggedBlockID != nil || info.hasItemsConforming(to: [.text]))
     }
 
     func dropEntered(info: DropInfo) {
@@ -1146,7 +1272,7 @@ private struct DayPlanTaskDropDelegate: DropDelegate {
         }
 
         updatePreview(for: info)
-        return DropProposal(operation: .copy)
+        return DropProposal(operation: draggedBlockID == nil ? .copy : .move)
     }
 
     func dropExited(info: DropInfo) {
@@ -1154,25 +1280,36 @@ private struct DayPlanTaskDropDelegate: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        finishDrop()
-
-        defer {
+        guard let target = dropTarget(for: info.location) else {
             clearDropState()
+            return false
         }
 
-        guard
-            let target = dropTarget(for: info.location),
-            let provider = info.itemProviders(for: [.text]).first
-        else { return false }
+        if let draggedBlockID {
+            finishDrop()
+            onMoveBlock(draggedBlockID, target.date, target.startMinute)
+            return true
+        }
+
+        guard let provider = info.itemProviders(for: [.text]).first else {
+            clearDropState()
+            return false
+        }
+
+        finishDrop()
 
         provider.loadObject(ofClass: NSString.self) { object, _ in
             guard
-                let text = object as? NSString,
-                let taskID = UUID(uuidString: text as String)
+                let text = object as? NSString
             else { return }
 
+            let payloadText = text as String
             DispatchQueue.main.async {
-                onDropTask(taskID, target.date, target.startMinute)
+                if let blockID = DayPlanBlockDragPayload.blockID(from: payloadText) {
+                    onMoveBlock(blockID, target.date, target.startMinute)
+                } else if let taskID = UUID(uuidString: payloadText) {
+                    onDropTask(taskID, target.date, target.startMinute)
+                }
             }
         }
         return true
@@ -1193,27 +1330,45 @@ private struct DayPlanTaskDropDelegate: DropDelegate {
         isDropTargeted = true
         dropPreview = DayPlanDropPreview(
             dayIndex: target.dayIndex,
-            startMinute: target.startMinute
+            startMinute: target.startMinute,
+            durationMinutes: previewDuration(for: info)
         )
     }
 
     private func finishDrop() {
         isCompletingDrop = true
-        clearDropState()
+        clearDragState()
 
         DispatchQueue.main.async {
-            clearDropState()
+            clearDragState()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            clearDragState()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
             isCompletingDrop = false
-            clearDropState()
+            clearDragState()
         }
     }
 
     private func clearDropState() {
         isDropTargeted = false
         dropPreview = nil
+    }
+
+    private func clearDragState() {
+        draggedBlockID = nil
+        draggedBlockDurationMinutes = nil
+        clearDropState()
+    }
+
+    private func previewDuration(for info: DropInfo) -> Int {
+        if draggedBlockID != nil {
+            return draggedBlockDurationMinutes ?? dropDurationMinutes
+        }
+        return dropDurationMinutes
     }
 
     private func dropTarget(for location: CGPoint) -> (dayIndex: Int, date: Date, startMinute: Int)? {
