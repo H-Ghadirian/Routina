@@ -166,7 +166,4 @@ extension HomeFeature {
         HomeTaskSupport.existingRoutineNames(from: tasks)
     }
 
-    func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {
-        HomeTaskSupport.makeDoneStats(tasks: tasks, logs: logs)
-    }
 }

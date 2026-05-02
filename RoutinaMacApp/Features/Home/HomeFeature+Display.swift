@@ -180,10 +180,6 @@ extension HomeFeature {
         HomeTaskSupport.existingRoutineNames(from: tasks)
     }
 
-    func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> DoneStats {
-        HomeTaskSupport.makeDoneStats(tasks: tasks, logs: logs)
-    }
-
     static func placeLinkedCounts(
         from displays: [RoutineDisplay],
         taskListMode: TaskListMode

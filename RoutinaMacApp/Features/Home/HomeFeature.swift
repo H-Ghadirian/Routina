@@ -679,6 +679,16 @@ struct HomeFeature {
         )
     }
 
+    private func taskLoadEffectFactory() -> HomeFeatureTaskLoadEffectFactory<Action, CancelID> {
+        HomeFeatureTaskLoadEffectFactory(
+            calendar: calendar,
+            cancelID: CancelID.loadTasks,
+            modelContext: { self.modelContext() },
+            loadedAction: { .tasksLoadedSuccessfully($0, $1, $2, $3, $4) },
+            failedAction: { .tasksLoadFailed }
+        )
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -1504,23 +1514,7 @@ struct HomeFeature {
     }
 
     private func loadTasksEffect() -> Effect<Action> {
-        .run { @MainActor send in
-            do {
-                let context = ModelContext(self.modelContext().container)
-                try HomeDeduplicationSupport.enforceUniqueRoutineNames(in: context)
-                try HomeDeduplicationSupport.enforceUniquePlaceNames(in: context)
-                _ = try RoutineLogHistory.deduplicateRedundantSameDayLogs(in: context, calendar: self.calendar)
-                _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
-                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-                let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-                let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-                send(.tasksLoadedSuccessfully(tasks, places, goals, logs, self.makeDoneStats(tasks: tasks, logs: logs)))
-            } catch {
-                send(.tasksLoadFailed)
-            }
-        }
-        .cancellable(id: CancelID.loadTasks, cancelInFlight: true)
+        taskLoadEffectFactory().loadTasksEffect()
     }
 
     func syncSelectedTaskDetailState(_ state: inout State) {
