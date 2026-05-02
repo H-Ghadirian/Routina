@@ -3,6 +3,10 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+#if os(macOS)
+import AppKit
+#endif
+
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate = Date()
     @Published var blocks: [DayPlanBlock] = []
@@ -172,6 +176,58 @@ final class DayPlanPlannerState: ObservableObject {
         selectedTaskID = movedBlock.taskID
         self.startMinute = movedBlock.startMinute
         durationMinutes = movedBlock.durationMinutes
+        syncSelectedDayBlocks(calendar: calendar)
+        return true
+    }
+
+    @discardableResult
+    func resizeBlock(
+        _ id: DayPlanBlock.ID,
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        calendar: Calendar
+    ) -> Bool {
+        guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
+
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        let targetStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        let targetDuration = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: targetStartMinute
+        )
+        let targetEndMinute = targetStartMinute + targetDuration
+        var dayBlocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+        let hasConflict = dayBlocks.contains { block in
+            guard block.id != id else { return false }
+            return max(targetStartMinute, block.startMinute) < min(targetEndMinute, block.endMinute)
+        }
+
+        guard !hasConflict else { return false }
+
+        let resizedBlock = DayPlanBlock(
+            id: locatedBlock.block.id,
+            taskID: locatedBlock.block.taskID,
+            dayKey: dayKey,
+            startMinute: targetStartMinute,
+            durationMinutes: targetDuration,
+            titleSnapshot: locatedBlock.block.titleSnapshot,
+            emojiSnapshot: locatedBlock.block.emojiSnapshot,
+            createdAt: locatedBlock.block.createdAt,
+            updatedAt: Date()
+        )
+
+        dayBlocks.removeAll { $0.id == id }
+        dayBlocks.append(resizedBlock)
+        let sortedBlocks = sortedDayBlocks(dayBlocks)
+        weekBlocksByDayKey[dayKey] = sortedBlocks
+        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey)
+
+        selectedDate = date
+        selectedBlockID = resizedBlock.id
+        selectedTaskID = resizedBlock.taskID
+        self.startMinute = resizedBlock.startMinute
+        self.durationMinutes = resizedBlock.durationMinutes
         syncSelectedDayBlocks(calendar: calendar)
         return true
     }
@@ -757,6 +813,15 @@ private struct DayPlanTimelinePanelView: View {
                 onMoveBlock: { blockID, date, minute in
                     planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar)
                 },
+                onResizeBlock: { blockID, date, startMinute, durationMinutes in
+                    planner.resizeBlock(
+                        blockID,
+                        on: date,
+                        startMinute: startMinute,
+                        durationMinutes: durationMinutes,
+                        calendar: calendar
+                    )
+                },
                 onDropTask: { taskID, date, minute in
                     dropTask(taskID, on: date, startMinute: minute)
                 }
@@ -938,6 +1003,7 @@ private struct DayPlanWeekCalendarView: View {
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onDeleteBlock: (DayPlanBlock) -> Void
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
+    var onResizeBlock: (DayPlanBlock.ID, Date, Int, Int) -> Void
     var onDropTask: (UUID, Date, Int) -> Void
 
     @State private var isDropTargeted = false
@@ -945,6 +1011,7 @@ private struct DayPlanWeekCalendarView: View {
     @State private var dropPreview: DayPlanDropPreview?
     @State private var draggedBlockID: DayPlanBlock.ID?
     @State private var draggedBlockDurationMinutes: Int?
+    @State private var resizeSession: DayPlanResizeSession?
 
     private let hourHeight: CGFloat = 64
     private let timeColumnWidth: CGFloat = 64
@@ -1099,6 +1166,24 @@ private struct DayPlanWeekCalendarView: View {
                         },
                         onDelete: {
                             onDeleteBlock(block)
+                        },
+                        onResizeStarted: {
+                            beginResize(block, on: date)
+                        },
+                        onResizeChanged: { edge, verticalDelta in
+                            resize(block, on: date, edge: edge, verticalDelta: verticalDelta)
+                        },
+                        onResizeEnded: {
+                            endResize()
+                        },
+                        onDragProvider: {
+                            isCompletingDrop = false
+                            clearDropState()
+                            endResize()
+                            draggedBlockID = block.id
+                            draggedBlockDurationMinutes = block.durationMinutes
+                            onSelectBlock(block, date)
+                            return NSItemProvider(object: DayPlanBlockDragPayload.text(for: block.id) as NSString)
                         }
                     )
                     .frame(
@@ -1109,14 +1194,6 @@ private struct DayPlanWeekCalendarView: View {
                         x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
                         y: yOffset(for: block.startMinute)
                     )
-                    .onDrag {
-                        isCompletingDrop = false
-                        clearDropState()
-                        draggedBlockID = block.id
-                        draggedBlockDurationMinutes = block.durationMinutes
-                        onSelectBlock(block, date)
-                        return NSItemProvider(object: DayPlanBlockDragPayload.text(for: block.id) as NSString)
-                    }
                     .zIndex(block.id == selectedBlockID ? 2 : 1)
                 }
             }
@@ -1131,6 +1208,64 @@ private struct DayPlanWeekCalendarView: View {
         CGFloat(block.durationMinutes) / 60 * hourHeight
     }
 
+    private func beginResize(_ block: DayPlanBlock, on date: Date) {
+        clearDropState()
+        draggedBlockID = nil
+        draggedBlockDurationMinutes = nil
+        onSelectBlock(block, date)
+        resizeSession = DayPlanResizeSession(
+            blockID: block.id,
+            startMinute: block.startMinute,
+            durationMinutes: block.durationMinutes
+        )
+    }
+
+    private func resize(
+        _ block: DayPlanBlock,
+        on date: Date,
+        edge: DayPlanResizeEdge,
+        verticalDelta: CGFloat
+    ) {
+        let session = resizeSession ?? DayPlanResizeSession(
+            blockID: block.id,
+            startMinute: block.startMinute,
+            durationMinutes: block.durationMinutes
+        )
+        guard session.blockID == block.id else { return }
+
+        let deltaMinutes = minuteDelta(for: verticalDelta)
+        let originalStart = session.startMinute
+        let originalEnd = originalStart + session.durationMinutes
+        let startMinute: Int
+        let durationMinutes: Int
+
+        switch edge {
+        case .top:
+            let minStart = 0
+            let maxStart = originalEnd - DayPlanBlock.minimumDurationMinutes
+            startMinute = min(max(originalStart + deltaMinutes, minStart), maxStart)
+            durationMinutes = originalEnd - startMinute
+        case .bottom:
+            let minEnd = originalStart + DayPlanBlock.minimumDurationMinutes
+            let maxEnd = DayPlanBlock.minutesPerDay
+            let endMinute = min(max(originalEnd + deltaMinutes, minEnd), maxEnd)
+            startMinute = originalStart
+            durationMinutes = endMinute - originalStart
+        }
+
+        guard startMinute != block.startMinute || durationMinutes != block.durationMinutes else { return }
+        onResizeBlock(block.id, date, startMinute, durationMinutes)
+    }
+
+    private func endResize() {
+        resizeSession = nil
+    }
+
+    private func minuteDelta(for verticalDelta: CGFloat) -> Int {
+        let rawMinutes = (verticalDelta / hourHeight) * 60
+        return Int(rawMinutes.rounded())
+    }
+
     private func clearDropState() {
         isDropTargeted = false
         dropPreview = nil
@@ -1140,6 +1275,17 @@ private struct DayPlanWeekCalendarView: View {
 
 private struct DayPlanDropPreview: Equatable {
     let dayIndex: Int
+    let startMinute: Int
+    let durationMinutes: Int
+}
+
+private enum DayPlanResizeEdge {
+    case top
+    case bottom
+}
+
+private struct DayPlanResizeSession: Equatable {
+    let blockID: DayPlanBlock.ID
     let startMinute: Int
     let durationMinutes: Int
 }
@@ -1520,6 +1666,10 @@ private struct DayPlanBlockCard: View {
     var calendar: Calendar
     var onSelect: () -> Void
     var onDelete: () -> Void
+    var onResizeStarted: () -> Void
+    var onResizeChanged: (DayPlanResizeEdge, CGFloat) -> Void
+    var onResizeEnded: () -> Void
+    var onDragProvider: () -> NSItemProvider
 
     var body: some View {
         Button(action: onSelect) {
@@ -1553,6 +1703,25 @@ private struct DayPlanBlockCard: View {
             }
         }
         .buttonStyle(.plain)
+        .onDrag(onDragProvider)
+        .overlay(alignment: .top) {
+            DayPlanResizeHandle(
+                edge: .top,
+                isSelected: isSelected,
+                onResizeStarted: onResizeStarted,
+                onResizeChanged: onResizeChanged,
+                onResizeEnded: onResizeEnded
+            )
+        }
+        .overlay(alignment: .bottom) {
+            DayPlanResizeHandle(
+                edge: .bottom,
+                isSelected: isSelected,
+                onResizeStarted: onResizeStarted,
+                onResizeChanged: onResizeChanged,
+                onResizeEnded: onResizeEnded
+            )
+        }
         .contextMenu {
             Button("Delete", role: .destructive, action: onDelete)
         }
@@ -1565,6 +1734,99 @@ private struct DayPlanBlockCard: View {
         return "\(start)-\(end)  \(duration)"
     }
 }
+
+private struct DayPlanResizeHandle: View {
+    var edge: DayPlanResizeEdge
+    var isSelected: Bool
+    var onResizeStarted: () -> Void
+    var onResizeChanged: (DayPlanResizeEdge, CGFloat) -> Void
+    var onResizeEnded: () -> Void
+
+    @State private var isHovering = false
+    @State private var isResizing = false
+
+    var body: some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(height: 16)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .overlay(alignment: .center) {
+                marker
+                    .opacity(isSelected || isHovering || isResizing ? 1 : 0)
+            }
+            .dayPlanVerticalResizeCursor()
+            .onHover { isHovering = $0 }
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                    .onChanged { value in
+                        if !isResizing {
+                            isResizing = true
+                            onResizeStarted()
+                        }
+                        onResizeChanged(edge, value.translation.height)
+                    }
+                    .onEnded { _ in
+                        isResizing = false
+                        onResizeEnded()
+                    }
+            )
+            .padding(.top, edge == .top ? -6 : 0)
+            .padding(.bottom, edge == .bottom ? -6 : 0)
+    }
+
+    private var marker: some View {
+        VStack(spacing: -3) {
+            Image(systemName: "chevron.up")
+            Capsule()
+                .frame(width: 18, height: 3)
+            Image(systemName: "chevron.down")
+        }
+        .font(.system(size: 7, weight: .bold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(.black.opacity(0.48), in: Capsule(style: .continuous))
+        .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+    }
+}
+
+#if os(macOS)
+private struct DayPlanVerticalResizeCursorModifier: ViewModifier {
+    @State private var didPushCursor = false
+
+    func body(content: Content) -> some View {
+        content
+            .onHover { isHovering in
+                if isHovering, !didPushCursor {
+                    NSCursor.resizeUpDown.push()
+                    didPushCursor = true
+                } else if !isHovering, didPushCursor {
+                    NSCursor.pop()
+                    didPushCursor = false
+                }
+            }
+            .onDisappear {
+                if didPushCursor {
+                    NSCursor.pop()
+                    didPushCursor = false
+                }
+            }
+    }
+}
+
+private extension View {
+    func dayPlanVerticalResizeCursor() -> some View {
+        modifier(DayPlanVerticalResizeCursorModifier())
+    }
+}
+#else
+private extension View {
+    func dayPlanVerticalResizeCursor() -> some View {
+        self
+    }
+}
+#endif
 
 enum DayPlanFormatting {
     static func durationText(_ minutes: Int) -> String {
