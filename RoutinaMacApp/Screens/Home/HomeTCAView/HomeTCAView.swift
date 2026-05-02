@@ -5,6 +5,13 @@ import MapKit
 import SwiftData
 import SwiftUI
 
+enum MacHomeDetailMode: String, CaseIterable, Identifiable {
+    case details = "Details"
+    case planner = "Planner"
+
+    var id: Self { self }
+}
+
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
@@ -34,6 +41,7 @@ struct HomeTCAView: View {
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
     @State var draggedSection: FormSection?
+    @State var macHomeDetailMode: MacHomeDetailMode = .details
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @State var isFinishedSprintsExpanded = false
     @FocusState var isSprintCreationFieldFocused: Bool

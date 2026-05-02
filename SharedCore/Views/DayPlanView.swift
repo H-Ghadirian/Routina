@@ -1,5 +1,7 @@
+import Combine
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate = Date()
@@ -121,7 +123,7 @@ final class DayPlanPlannerState: ObservableObject {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         let now = Date()
         let title = DayPlanTaskSorting.title(for: task)
-        let emoji = task.emoji?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let emoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji)
 
         if let selectedBlock, let index = blocks.firstIndex(where: { $0.id == selectedBlock.id }) {
             blocks[index] = DayPlanBlock(
@@ -420,14 +422,170 @@ struct DayPlanSidebarView: View {
 }
 
 struct DayPlanDetailView: View {
+    @Environment(\.calendar) private var calendar
     @ObservedObject var planner: DayPlanPlannerState
+    var selectedTaskID: UUID? = nil
+    @Query private var tasks: [RoutineTask]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             DayPlanHeaderView(planner: planner)
+            DayPlanPlanningControlsView(planner: planner, selectedTask: selectedTask)
             DayPlanTimelinePanelView(planner: planner)
         }
         .padding(20)
+        .onAppear {
+            syncSelectedTask()
+        }
+        .onChange(of: selectedTaskID) { _, _ in
+            syncSelectedTask()
+        }
+        .onChange(of: tasks.map(\.id)) { _, _ in
+            syncSelectedTask()
+        }
+    }
+
+    private var selectedTask: RoutineTask? {
+        guard let selectedTaskID = planner.selectedTaskID else { return nil }
+        return tasks.first { $0.id == selectedTaskID }
+    }
+
+    private func syncSelectedTask() {
+        guard
+            let selectedTaskID,
+            let task = tasks.first(where: { $0.id == selectedTaskID })
+        else { return }
+
+        if planner.selectedTaskID != selectedTaskID {
+            planner.selectedBlockID = nil
+        }
+        planner.selectTask(task)
+    }
+}
+
+private struct DayPlanPlanningControlsView: View {
+    @Environment(\.calendar) private var calendar
+    @ObservedObject var planner: DayPlanPlannerState
+    var selectedTask: RoutineTask?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 14) {
+                selectedTaskSummary
+
+                Divider()
+                    .frame(height: 34)
+
+                HStack(spacing: 8) {
+                    Text("Start")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    DatePicker("Start", selection: startDateBinding, displayedComponents: [.hourAndMinute])
+                        .labelsHidden()
+                        .datePickerStyle(.compact)
+                }
+
+                Stepper(
+                    "Duration: \(DayPlanFormatting.durationText(planner.durationMinutes))",
+                    value: $planner.durationMinutes,
+                    in: DayPlanBlock.minimumDurationMinutes...planner.maximumDurationForStart,
+                    step: 15
+                )
+                .fixedSize()
+
+                Text("Ends \(endTimeText)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+
+                Spacer(minLength: 12)
+
+                if planner.selectedBlock != nil {
+                    Button("New") {
+                        planner.selectedBlockID = nil
+                    }
+                    .controlSize(.small)
+                }
+
+                Button(planner.selectedBlock == nil ? "Add" : "Save") {
+                    if let selectedTask {
+                        planner.commitBlock(task: selectedTask, calendar: calendar)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(!canCommitBlock)
+
+                if let selectedBlock = planner.selectedBlock {
+                    Button(role: .destructive) {
+                        planner.deleteBlock(selectedBlock.id, calendar: calendar)
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Delete block")
+                }
+            }
+
+            if let conflictingBlock = planner.conflictingBlock {
+                Label("Overlaps \(conflictingBlock.titleSnapshot)", systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(12)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var selectedTaskSummary: some View {
+        HStack(spacing: 10) {
+            DayPlanTaskAvatar(
+                emoji: selectedTask?.emoji,
+                tint: selectedTask?.color.swiftUIColor ?? .accentColor
+            )
+            .frame(width: 32, height: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(selectedTask.map { DayPlanTaskSorting.title(for: $0) } ?? "Select a task")
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+
+                Text(planner.selectedBlock == nil ? "Add to selected day" : "Edit selected block")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(minWidth: 190, maxWidth: 280, alignment: .leading)
+    }
+
+    private var startDateBinding: Binding<Date> {
+        Binding(
+            get: {
+                let startOfDay = calendar.startOfDay(for: planner.selectedDate)
+                return calendar.date(byAdding: .minute, value: planner.startMinute, to: startOfDay) ?? startOfDay
+            },
+            set: { date in
+                let components = calendar.dateComponents([.hour, .minute], from: date)
+                let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+                planner.startMinute = DayPlanBlock.clampedStartMinute(minute)
+                planner.clampDurationForCurrentStart()
+            }
+        )
+    }
+
+    private var endTimeText: String {
+        DayPlanFormatting.timeText(
+            for: planner.startMinute + planner.durationMinutes,
+            on: planner.selectedDate,
+            calendar: calendar
+        )
+    }
+
+    private var canCommitBlock: Bool {
+        selectedTask != nil && planner.conflictingBlock == nil
     }
 }
 
@@ -509,6 +667,9 @@ private struct DayPlanTimelinePanelView: View {
                 },
                 onDeleteBlock: { block in
                     planner.deleteBlock(block.id, calendar: calendar)
+                },
+                onDropTask: { taskID, date, minute in
+                    dropTask(taskID, on: date, startMinute: minute)
                 }
             )
         }
@@ -517,6 +678,13 @@ private struct DayPlanTimelinePanelView: View {
 
     private func taskTint(for block: DayPlanBlock) -> Color {
         tasks.first { $0.id == block.taskID }?.color.swiftUIColor ?? .accentColor
+    }
+
+    private func dropTask(_ taskID: UUID, on date: Date, startMinute: Int) {
+        guard let task = tasks.first(where: { $0.id == taskID }) else { return }
+        planner.selectSlot(on: date, startMinute: startMinute, calendar: calendar)
+        planner.selectTask(task)
+        planner.commitBlock(task: task, calendar: calendar)
     }
 }
 
@@ -654,8 +822,11 @@ private struct DayPlanTaskAvatar: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(tint.opacity(0.16))
-            if let emoji, !emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let emoji = CalendarTaskImportSupport.displayEmoji(for: emoji) {
                 Text(emoji)
+                    .font(.title3)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             } else {
                 Image(systemName: "checkmark")
                     .font(.caption.weight(.semibold))
@@ -676,6 +847,9 @@ private struct DayPlanWeekCalendarView: View {
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onDeleteBlock: (DayPlanBlock) -> Void
+    var onDropTask: (UUID, Date, Int) -> Void
+
+    @State private var isDropTargeted = false
 
     private let hourHeight: CGFloat = 64
     private let timeColumnWidth: CGFloat = 64
@@ -692,7 +866,28 @@ private struct DayPlanWeekCalendarView: View {
                         weekGrid(dayWidth: dayWidth)
                         selectionButtons(dayWidth: dayWidth)
                         weekBlocks(dayWidth: dayWidth)
+                        SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
+                            DayPlanCurrentTimeIndicator(
+                                dates: dates,
+                                now: timeline.date,
+                                calendar: calendar,
+                                dayWidth: dayWidth,
+                                hourHeight: hourHeight,
+                                timeColumnWidth: timeColumnWidth
+                            )
+                        }
                     }
+                    .onDrop(
+                        of: [.text],
+                        delegate: DayPlanTaskDropDelegate(
+                            dates: dates,
+                            dayWidth: dayWidth,
+                            timeColumnWidth: timeColumnWidth,
+                            hourHeight: hourHeight,
+                            isDropTargeted: $isDropTargeted,
+                            onDropTask: onDropTask
+                        )
+                    )
                 }
                 .frame(height: hourHeight * 24)
             }
@@ -700,7 +895,7 @@ private struct DayPlanWeekCalendarView: View {
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                .stroke(isDropTargeted ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.18), lineWidth: isDropTargeted ? 1.5 : 1)
         }
     }
 
@@ -815,6 +1010,161 @@ private struct DayPlanWeekCalendarView: View {
 
     private func blockHeight(for block: DayPlanBlock) -> CGFloat {
         CGFloat(block.durationMinutes) / 60 * hourHeight
+    }
+
+}
+
+private struct DayPlanCurrentTimeIndicator: View {
+    var dates: [Date]
+    var now: Date
+    var calendar: Calendar
+    var dayWidth: CGFloat
+    var hourHeight: CGFloat
+    var timeColumnWidth: CGFloat
+
+    var body: some View {
+        Group {
+            if let todayIndex {
+                ZStack(alignment: .topLeading) {
+                    lineCanvas(todayIndex: todayIndex)
+                    timeLabel
+                    todayDot(todayIndex: todayIndex)
+                }
+                .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
+                .allowsHitTesting(false)
+                .zIndex(20)
+            }
+        }
+    }
+
+    private var timeLabel: some View {
+        Text(DayPlanFormatting.timeText(for: currentMinute, on: now, calendar: calendar))
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.red)
+            .monospacedDigit()
+            .frame(width: timeColumnWidth - 8, alignment: .trailing)
+            .offset(y: max(yOffset - 8, 0))
+    }
+
+    private func todayDot(todayIndex: Int) -> some View {
+        Circle()
+            .fill(.red)
+            .frame(width: 7, height: 7)
+            .offset(x: todayColumnX(todayIndex: todayIndex) - 3.5, y: yOffset - 3.5)
+    }
+
+    private func lineCanvas(todayIndex: Int) -> some View {
+        Canvas { context, size in
+            let y = min(max(yOffset, 0), size.height)
+
+            for index in todayIndex..<dates.count {
+                let x = timeColumnWidth + (CGFloat(index) * dayWidth)
+                let isToday = index == todayIndex
+                let thickness: CGFloat = isToday ? 2.5 : 1
+                let opacity: Double = isToday ? 1 : 0.42
+                let rect = CGRect(
+                    x: x,
+                    y: y - (thickness / 2),
+                    width: dayWidth,
+                    height: thickness
+                )
+
+                context.fill(Path(rect), with: .color(.red.opacity(opacity)))
+            }
+        }
+        .frame(width: contentWidth, height: contentHeight)
+    }
+
+    private var todayIndex: Int? {
+        dates.firstIndex { calendar.isDate($0, inSameDayAs: now) }
+    }
+
+    private var currentMinute: Int {
+        let components = calendar.dateComponents([.hour, .minute], from: now)
+        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        return min(max(minute, 0), DayPlanBlock.minutesPerDay)
+    }
+
+    private var yOffset: CGFloat {
+        CGFloat(currentMinute) / 60 * hourHeight
+    }
+
+    private var contentWidth: CGFloat {
+        timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+    }
+
+    private var contentHeight: CGFloat {
+        hourHeight * 24
+    }
+
+    private func todayColumnX(todayIndex: Int) -> CGFloat {
+        timeColumnWidth + (CGFloat(todayIndex) * dayWidth)
+    }
+}
+
+private struct DayPlanTaskDropDelegate: DropDelegate {
+    let dates: [Date]
+    let dayWidth: CGFloat
+    let timeColumnWidth: CGFloat
+    let hourHeight: CGFloat
+    @Binding var isDropTargeted: Bool
+    let onDropTask: (UUID, Date, Int) -> Void
+
+    func validateDrop(info: DropInfo) -> Bool {
+        dropTarget(for: info.location) != nil && info.hasItemsConforming(to: [.text])
+    }
+
+    func dropEntered(info: DropInfo) {
+        isDropTargeted = true
+    }
+
+    func dropExited(info: DropInfo) {
+        isDropTargeted = false
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        guard validateDrop(info: info) else { return nil }
+        return DropProposal(operation: .copy)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer {
+            isDropTargeted = false
+        }
+
+        guard
+            let target = dropTarget(for: info.location),
+            let provider = info.itemProviders(for: [.text]).first
+        else { return false }
+
+        provider.loadObject(ofClass: NSString.self) { object, _ in
+            guard
+                let text = object as? NSString,
+                let taskID = UUID(uuidString: text as String)
+            else { return }
+
+            DispatchQueue.main.async {
+                onDropTask(taskID, target.date, target.startMinute)
+            }
+        }
+        return true
+    }
+
+    private func dropTarget(for location: CGPoint) -> (date: Date, startMinute: Int)? {
+        guard !dates.isEmpty else { return nil }
+
+        let dayX = location.x - timeColumnWidth
+        guard dayX >= 0 else { return nil }
+
+        let dayIndex = min(max(Int(dayX / dayWidth), 0), dates.count - 1)
+        let boundedY = min(max(location.y, 0), (hourHeight * 24) - 1)
+        let rawMinute = Int((boundedY / hourHeight) * 60)
+        let quarterHourMinute = (rawMinute / 15) * 15
+
+        return (
+            date: dates[dayIndex],
+            startMinute: DayPlanBlock.clampedStartMinute(quarterHourMinute)
+        )
     }
 }
 

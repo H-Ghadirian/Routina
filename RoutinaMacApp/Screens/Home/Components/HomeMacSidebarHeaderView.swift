@@ -4,7 +4,6 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     let selectedTaskListMode: HomeFeature.TaskListMode
     let isRoutinesMode: Bool
-    let isPlanMode: Bool
     let isBoardMode: Bool
     let isGoalsMode: Bool
     let isTimelineMode: Bool

@@ -2,7 +2,6 @@ import ComposableArchitecture
 import SwiftUI
 
 extension HomeTCAView {
-    var isMacPlanMode: Bool     { store.macSidebarMode == .plan }
     var isMacTimelineMode: Bool { store.macSidebarMode == .timeline }
     var isMacStatsMode: Bool    { store.macSidebarMode == .stats }
     var isMacSettingsMode: Bool { store.macSidebarMode == .settings }
@@ -25,8 +24,6 @@ extension HomeTCAView {
                 }
             case .board:
                 return "Filter Board"
-            case .plan:
-                return "Plan"
             case .goals:
                 return "Goals"
             case .timeline:
@@ -52,8 +49,6 @@ extension HomeTCAView {
             }
         case .board:
             return boardPresentation.scopeTitle
-        case .plan:
-            return "Plan"
         case .goals:
             return "Goals"
         case .timeline:
@@ -79,7 +74,6 @@ extension HomeTCAView {
                 || store.selectedTimelineImportanceUrgencyFilter != nil
                 || !store.selectedTimelineExcludedTags.isEmpty
         }
-        if store.macSidebarMode == .plan { return false }
         if store.macSidebarMode == .goals { return false }
         if store.macSidebarMode == .stats { return false }
         return store.selectedFilter != .all || hasActiveOptionalFilters
@@ -137,7 +131,6 @@ extension HomeTCAView {
             set: { mode in
                 switch mode {
                 case .routines:  showRoutinesInSidebar()
-                case .plan:      openPlanInSidebar()
                 case .board:     openBoardInSidebar()
                 case .goals:     openGoalsInSidebar()
                 case .timeline:  openTimelineInSidebar()
@@ -171,10 +164,6 @@ extension HomeTCAView {
         store.send(.macSidebarModeChanged(.routines))
     }
 
-    func openPlanInSidebar() {
-        store.send(.macSidebarModeChanged(.plan))
-    }
-
     func openBoardInSidebar() {
         store.send(.macSidebarModeChanged(.board))
     }
@@ -203,14 +192,6 @@ extension HomeTCAView {
         Group {
             if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
-            } else if isMacPlanMode {
-                VStack(spacing: 0) {
-                    macSidebarHeader
-                    Divider()
-                    DayPlanSidebarView(planner: dayPlanPlanner, usesPanelBackground: false)
-                        .padding(14)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else if isMacRoutinesMode && store.routineTasks.isEmpty {
                 VStack(spacing: 0) {
                     macSidebarHeader
@@ -309,7 +290,6 @@ extension HomeTCAView {
             selectedSidebarMode: macSidebarModeBinding,
             selectedTaskListMode: store.taskListMode,
             isRoutinesMode: isMacRoutinesMode,
-            isPlanMode: isMacPlanMode,
             isBoardMode: isMacBoardMode,
             isGoalsMode: isMacGoalsMode,
             isTimelineMode: isMacTimelineMode,

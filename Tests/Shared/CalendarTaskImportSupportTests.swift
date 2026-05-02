@@ -26,6 +26,7 @@ struct CalendarTaskImportSupportTests {
     @Test
     func displayEmoji_mapsLegacySystemSymbolToCalendarEmoji() {
         #expect(CalendarTaskImportSupport.displayEmoji(for: "calendar.badge.plus") == CalendarTaskImportSupport.defaultTaskEmoji)
+        #expect(CalendarTaskImportSupport.displayEmoji(for: " calendar.badge.plus ") == CalendarTaskImportSupport.defaultTaskEmoji)
         #expect(CalendarTaskImportSupport.displayEmoji(for: "✅") == "✅")
     }
 }

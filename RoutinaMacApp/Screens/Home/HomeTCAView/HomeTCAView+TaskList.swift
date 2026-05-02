@@ -128,6 +128,17 @@ extension HomeTCAView {
             }
 
             Spacer(minLength: 0)
+
+            Image(systemName: "line.3.horizontal")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 30)
+                .contentShape(Rectangle())
+                .help("Drag to planner")
+                .accessibilityLabel("Drag task to planner")
+                .onDrag {
+                    NSItemProvider(object: task.taskID.uuidString as NSString)
+                }
         }
         .padding(.vertical, 4)
     }

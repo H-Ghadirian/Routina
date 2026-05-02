@@ -137,11 +137,13 @@ enum CalendarTaskImportSupport {
     }
 
     static func displayEmoji(for emoji: String?) -> String? {
-        guard let emoji, !emoji.isEmpty else { return nil }
-        if emoji == "calendar.badge.plus" {
+        guard let emoji else { return nil }
+        let trimmedEmoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmoji.isEmpty else { return nil }
+        if trimmedEmoji == "calendar.badge.plus" {
             return defaultTaskEmoji
         }
-        return emoji
+        return trimmedEmoji
     }
 
     static func displayNotes(from notes: String?) -> String? {

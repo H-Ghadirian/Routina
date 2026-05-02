@@ -8,7 +8,6 @@ import SwiftUI
 struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
     let store: StoreOf<HomeFeature>
     let isBoardPresented: Bool
-    let isPlanPresented: Bool
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
@@ -16,6 +15,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
     let statsStore: StoreOf<StatsFeature>?
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
+    @Binding var mainDetailMode: MacHomeDetailMode
+    let selectedTaskID: UUID?
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let boardView: () -> BoardView
@@ -26,8 +27,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
                 filterView()
             } else if isBoardPresented {
                 boardView()
-            } else if isPlanPresented {
-                DayPlanDetailView(planner: dayPlanPlanner)
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
             } else if isStatsPresented, let statsStore {
@@ -43,29 +42,84 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
                     store: settingsStore,
                     section: selectedSettingsSection
                 )
-            } else if let detailStore = store.scope(
-                state: \.taskDetailState,
-                action: \.taskDetail
-            ) {
-                TaskDetailTCAView(store: detailStore)
+            } else if isTimelinePresented {
+                timelineDetailContent
             } else {
-                ContentUnavailableView(
-                    isTimelinePresented
-                        ? "Select a done item or filters"
-                        : (store.routineTasks.isEmpty ? "Add a task to get started" : "Select a task"),
-                    systemImage: isTimelinePresented ? "clock.arrow.circlepath" : "sidebar.right",
-                    description: Text(
-                        isTimelinePresented
-                            ? "Choose a completed routine or todo from the sidebar, or open filters beside search to refine the done history."
-                            : (
-                                store.routineTasks.isEmpty
-                                    ? "Add a routine or to-do to see its details here."
-                                    : "Choose a routine or to-do from the sidebar to see its details."
-                            )
-                    )
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                mainDetailContent
             }
+        }
+    }
+
+    private var mainDetailContent: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Picker("Detail mode", selection: $mainDetailMode) {
+                    ForEach(MacHomeDetailMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 220)
+
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            Divider()
+
+            Group {
+                switch mainDetailMode {
+                case .details:
+                    selectedTaskDetailContent
+                case .planner:
+                    DayPlanDetailView(
+                        planner: dayPlanPlanner,
+                        selectedTaskID: selectedTaskID
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var timelineDetailContent: some View {
+        if let detailStore = store.scope(
+            state: \.taskDetailState,
+            action: \.taskDetail
+        ) {
+            TaskDetailTCAView(store: detailStore)
+        } else {
+            ContentUnavailableView(
+                "Select a done item or filters",
+                systemImage: "clock.arrow.circlepath",
+                description: Text("Choose a completed routine or todo from the sidebar, or open filters beside search to refine the done history.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var selectedTaskDetailContent: some View {
+        if let detailStore = store.scope(
+            state: \.taskDetailState,
+            action: \.taskDetail
+        ) {
+            TaskDetailTCAView(store: detailStore)
+        } else {
+            ContentUnavailableView(
+                store.routineTasks.isEmpty ? "Add a task to get started" : "Select a task",
+                systemImage: "sidebar.right",
+                description: Text(
+                    store.routineTasks.isEmpty
+                        ? "Add a routine or to-do to see its details here."
+                        : "Choose a routine or to-do from the sidebar to see its details."
+                )
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
