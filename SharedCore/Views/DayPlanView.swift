@@ -4,6 +4,7 @@ import SwiftUI
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate = Date()
     @Published var blocks: [DayPlanBlock] = []
+    @Published var weekBlocksByDayKey: [String: [DayPlanBlock]] = [:]
     @Published var selectedTaskID: UUID?
     @Published var selectedBlockID: UUID?
     @Published var searchText = ""
@@ -13,6 +14,10 @@ final class DayPlanPlannerState: ObservableObject {
     var selectedBlock: DayPlanBlock? {
         guard let selectedBlockID else { return nil }
         return blocks.first { $0.id == selectedBlockID }
+            ?? weekBlocksByDayKey.values.lazy.compactMap { blocks in
+                blocks.first { $0.id == selectedBlockID }
+            }
+            .first
     }
 
     var plannedMinutes: Int {
@@ -35,11 +40,29 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func loadBlocks(calendar: Calendar) {
-        blocks = DayPlanStorage.loadBlocks(for: selectedDate, calendar: calendar)
+        let weekDates = weekDates(containing: selectedDate, calendar: calendar)
+        var loadedBlocksByDayKey: [String: [DayPlanBlock]] = [:]
+
+        for date in weekDates {
+            let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            loadedBlocksByDayKey[dayKey] = DayPlanStorage.loadBlocks(forDayKey: dayKey)
+        }
+
+        let selectedDayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        if loadedBlocksByDayKey[selectedDayKey] == nil {
+            loadedBlocksByDayKey[selectedDayKey] = DayPlanStorage.loadBlocks(forDayKey: selectedDayKey)
+        }
+
+        weekBlocksByDayKey = loadedBlocksByDayKey
+        syncSelectedDayBlocks(calendar: calendar)
     }
 
     func persistBlocks(calendar: Calendar) {
-        DayPlanStorage.saveBlocks(blocks, for: selectedDate, calendar: calendar)
+        let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        let sortedBlocks = blocks.sorted { $0.startMinute < $1.startMinute }
+        blocks = sortedBlocks
+        weekBlocksByDayKey[dayKey] = sortedBlocks
+        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey)
     }
 
     func selectDefaultTaskIfNeeded(from tasks: [RoutineTask]) {
@@ -56,7 +79,19 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
-    func edit(_ block: DayPlanBlock) {
+    func selectSlot(on date: Date, startMinute: Int, calendar: Calendar) {
+        selectedDate = date
+        selectedBlockID = nil
+        syncSelectedDayBlocks(calendar: calendar)
+        self.startMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        clampDurationForCurrentStart()
+    }
+
+    func edit(_ block: DayPlanBlock, on date: Date? = nil, calendar: Calendar? = nil) {
+        if let date, let calendar {
+            selectedDate = date
+            syncSelectedDayBlocks(calendar: calendar)
+        }
         selectedBlockID = block.id
         selectedTaskID = block.taskID
         startMinute = block.startMinute
@@ -65,11 +100,19 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func deleteBlock(_ id: DayPlanBlock.ID, calendar: Calendar) {
-        blocks.removeAll { $0.id == id }
+        if let selectedDayIndex = blocks.firstIndex(where: { $0.id == id }) {
+            blocks.remove(at: selectedDayIndex)
+            persistBlocks(calendar: calendar)
+        } else if let dayKey = weekBlocksByDayKey.first(where: { $0.value.contains(where: { $0.id == id }) })?.key {
+            var dayBlocks = weekBlocksByDayKey[dayKey] ?? []
+            dayBlocks.removeAll { $0.id == id }
+            weekBlocksByDayKey[dayKey] = dayBlocks
+            DayPlanStorage.saveBlocks(dayBlocks, forDayKey: dayKey)
+        }
+
         if selectedBlockID == id {
             selectedBlockID = nil
         }
-        persistBlocks(calendar: calendar)
     }
 
     func commitBlock(task: RoutineTask, calendar: Calendar) {
@@ -111,6 +154,38 @@ final class DayPlanPlannerState: ObservableObject {
         persistBlocks(calendar: calendar)
     }
 
+    func blocks(on date: Date, calendar: Calendar) -> [DayPlanBlock] {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        return weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+    }
+
+    func weekDates(calendar: Calendar) -> [Date] {
+        weekDates(containing: selectedDate, calendar: calendar)
+    }
+
+    func moveWeek(by value: Int, calendar: Calendar) {
+        selectedDate = calendar.date(byAdding: .day, value: value * 7, to: selectedDate) ?? selectedDate
+        selectedBlockID = nil
+        loadBlocks(calendar: calendar)
+    }
+
+    func moveToToday(calendar: Calendar) {
+        selectedDate = Date()
+        selectedBlockID = nil
+        loadBlocks(calendar: calendar)
+    }
+
+    func weekTitle(calendar: Calendar) -> String {
+        let dates = weekDates(calendar: calendar)
+        guard let first = dates.first, let last = dates.last else {
+            return selectedDate.formatted(date: .abbreviated, time: .omitted)
+        }
+
+        let firstText = first.formatted(.dateTime.month(.abbreviated).day())
+        let lastText = last.formatted(.dateTime.month(.abbreviated).day().year())
+        return "\(firstText) - \(lastText)"
+    }
+
     func conflict(
         startMinute: Int,
         durationMinutes: Int,
@@ -128,6 +203,19 @@ final class DayPlanPlannerState: ObservableObject {
 
     func clampDurationForCurrentStart() {
         durationMinutes = DayPlanBlock.clampedDuration(durationMinutes, startMinute: startMinute)
+    }
+
+    private func syncSelectedDayBlocks(calendar: Calendar) {
+        let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+    }
+
+    private func weekDates(containing date: Date, calendar: Calendar) -> [Date] {
+        let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: date)?.start
+            ?? calendar.startOfDay(for: date)
+        return (0..<7).compactMap { offset in
+            calendar.date(byAdding: .day, value: offset, to: startOfWeek)
+        }
     }
 }
 
@@ -349,25 +437,41 @@ private struct DayPlanHeaderView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Plan")
-                    .font(.largeTitle.weight(.semibold))
-                Text("\(planner.blocks.count) blocks, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
-                    .font(.subheadline)
+            Button("Today") {
+                planner.moveToToday(calendar: calendar)
+            }
+            .buttonStyle(.bordered)
+
+            HStack(spacing: 4) {
+                Button {
+                    planner.moveWeek(by: -1, calendar: calendar)
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
+
+                Button {
+                    planner.moveWeek(by: 1, calendar: calendar)
+                } label: {
+                    Image(systemName: "chevron.right")
+                }
+            }
+            .buttonStyle(.plain)
+            .font(.title3.weight(.medium))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(planner.weekTitle(calendar: calendar))
+                    .font(.title2.weight(.semibold))
+
+                Text("\(planner.blocks.count) blocks on selected day, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 16)
 
-            DatePicker("Day", selection: $planner.selectedDate, displayedComponents: [.date])
+            DatePicker("Selected day", selection: $planner.selectedDate, displayedComponents: [.date])
                 .labelsHidden()
                 .datePickerStyle(.compact)
-
-            Button("Today") {
-                planner.selectedDate = Date()
-                planner.loadBlocks(calendar: calendar)
-            }
-            .controlSize(.small)
         }
     }
 }
@@ -380,28 +484,28 @@ private struct DayPlanTimelinePanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar))
+                Text("Week")
                     .font(.headline)
-                    .monospacedDigit()
                 Spacer()
-                Text("\(DayPlanFormatting.durationText(planner.unplannedMinutes)) open")
+                Text("\(DayPlanFormatting.durationText(planner.unplannedMinutes)) open on selected day")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
-            DayPlanTimelineView(
-                blocks: planner.blocks,
+            DayPlanWeekCalendarView(
+                dates: planner.weekDates(calendar: calendar),
                 selectedBlockID: planner.selectedBlockID,
                 selectedDate: planner.selectedDate,
                 calendar: calendar,
-                taskTint: taskTint(for:),
-                onSelectStartMinute: { minute in
-                    planner.selectedBlockID = nil
-                    planner.startMinute = DayPlanBlock.clampedStartMinute(minute)
-                    planner.clampDurationForCurrentStart()
+                blocksForDate: { date in
+                    planner.blocks(on: date, calendar: calendar)
                 },
-                onSelectBlock: { block in
-                    planner.edit(block)
+                taskTint: taskTint(for:),
+                onSelectSlot: { date, minute in
+                    planner.selectSlot(on: date, startMinute: minute, calendar: calendar)
+                },
+                onSelectBlock: { block, date in
+                    planner.edit(block, on: date, calendar: calendar)
                 },
                 onDeleteBlock: { block in
                     planner.deleteBlock(block.id, calendar: calendar)
@@ -562,48 +666,36 @@ private struct DayPlanTaskAvatar: View {
     }
 }
 
-private struct DayPlanTimelineView: View {
-    var blocks: [DayPlanBlock]
+private struct DayPlanWeekCalendarView: View {
+    var dates: [Date]
     var selectedBlockID: DayPlanBlock.ID?
     var selectedDate: Date
     var calendar: Calendar
+    var blocksForDate: (Date) -> [DayPlanBlock]
     var taskTint: (DayPlanBlock) -> Color
-    var onSelectStartMinute: (Int) -> Void
-    var onSelectBlock: (DayPlanBlock) -> Void
+    var onSelectSlot: (Date, Int) -> Void
+    var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onDeleteBlock: (DayPlanBlock) -> Void
 
     private let hourHeight: CGFloat = 64
+    private let timeColumnWidth: CGFloat = 64
 
     var body: some View {
-        ScrollView(.vertical) {
-            GeometryReader { proxy in
-                ZStack(alignment: .topLeading) {
-                    hourRows
+        VStack(spacing: 0) {
+            dayHeaderRow
 
-                    ForEach(blocks) { block in
-                        DayPlanBlockCard(
-                            block: block,
-                            tint: taskTint(block),
-                            isSelected: block.id == selectedBlockID,
-                            selectedDate: selectedDate,
-                            calendar: calendar,
-                            onSelect: {
-                                onSelectBlock(block)
-                            },
-                            onDelete: {
-                                onDeleteBlock(block)
-                            }
-                        )
-                        .frame(
-                            width: max(proxy.size.width - 84, 160),
-                            height: max(blockHeight(for: block), 36)
-                        )
-                        .offset(x: 72, y: yOffset(for: block.startMinute))
-                        .zIndex(block.id == selectedBlockID ? 2 : 1)
+            ScrollView(.vertical) {
+                GeometryReader { proxy in
+                    let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(max(dates.count, 1)), 120)
+
+                    ZStack(alignment: .topLeading) {
+                        weekGrid(dayWidth: dayWidth)
+                        selectionButtons(dayWidth: dayWidth)
+                        weekBlocks(dayWidth: dayWidth)
                     }
                 }
+                .frame(height: hourHeight * 24)
             }
-            .frame(height: hourHeight * 24)
         }
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
@@ -612,32 +704,107 @@ private struct DayPlanTimelineView: View {
         }
     }
 
-    private var hourRows: some View {
-        VStack(spacing: 0) {
-            ForEach(0..<24, id: \.self) { hour in
-                Button {
-                    onSelectStartMinute(hour * 60)
-                } label: {
-                    HStack(alignment: .top, spacing: 12) {
-                        Text(DayPlanFormatting.hourText(for: hour, on: selectedDate, calendar: calendar))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                            .frame(width: 48, alignment: .trailing)
-                            .padding(.top, 8)
+    private var dayHeaderRow: some View {
+        HStack(spacing: 0) {
+            Text("Time")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(width: timeColumnWidth, height: 56)
 
-                        VStack(spacing: 0) {
-                            Rectangle()
-                                .fill(Color.secondary.opacity(0.2))
-                                .frame(height: 1)
-                            Spacer(minLength: 0)
-                        }
-                    }
-                    .frame(height: hourHeight)
-                    .contentShape(Rectangle())
+            ForEach(dates, id: \.self) { date in
+                DayPlanWeekDayHeader(
+                    date: date,
+                    isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                    isToday: calendar.isDateInToday(date)
+                )
+            }
+        }
+        .background(Color.secondary.opacity(0.08))
+    }
+
+    private func weekGrid(dayWidth: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(0..<24, id: \.self) { hour in
+                HStack(alignment: .top, spacing: 0) {
+                    Text(DayPlanFormatting.hourText(for: hour, on: selectedDate, calendar: calendar))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .frame(width: timeColumnWidth - 10, alignment: .trailing)
+                        .padding(.trailing, 10)
+                        .padding(.top, 8)
+
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.22))
+                        .frame(height: 1)
+                        .frame(maxWidth: .infinity, alignment: .top)
                 }
-                .buttonStyle(.plain)
-                .background(hour.isMultiple(of: 2) ? Color.secondary.opacity(0.04) : Color.clear)
+                .frame(height: hourHeight)
+                .offset(y: CGFloat(hour) * hourHeight)
+            }
+
+            ForEach(Array(dates.enumerated()), id: \.element) { index, date in
+                Rectangle()
+                    .fill(calendar.isDate(date, inSameDayAs: selectedDate) ? Color.accentColor.opacity(0.08) : Color.clear)
+                    .frame(width: dayWidth, height: hourHeight * 24)
+                    .offset(x: timeColumnWidth + CGFloat(index) * dayWidth)
+
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.18))
+                    .frame(width: 1, height: hourHeight * 24)
+                    .offset(x: timeColumnWidth + CGFloat(index) * dayWidth)
+            }
+        }
+    }
+
+    private func selectionButtons(dayWidth: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
+                ForEach(0..<24, id: \.self) { hour in
+                    Button {
+                        onSelectSlot(date, hour * 60)
+                    } label: {
+                        Color.clear
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: dayWidth, height: hourHeight)
+                    .offset(
+                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth,
+                        y: CGFloat(hour) * hourHeight
+                    )
+                }
+            }
+        }
+    }
+
+    private func weekBlocks(dayWidth: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
+                ForEach(blocksForDate(date)) { block in
+                    DayPlanBlockCard(
+                        block: block,
+                        tint: taskTint(block),
+                        isSelected: block.id == selectedBlockID,
+                        selectedDate: date,
+                        calendar: calendar,
+                        onSelect: {
+                            onSelectBlock(block, date)
+                        },
+                        onDelete: {
+                            onDeleteBlock(block)
+                        }
+                    )
+                    .frame(
+                        width: max(dayWidth - 10, 90),
+                        height: max(blockHeight(for: block), 34)
+                    )
+                    .offset(
+                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
+                        y: yOffset(for: block.startMinute)
+                    )
+                    .zIndex(block.id == selectedBlockID ? 2 : 1)
+                }
             }
         }
     }
@@ -648,6 +815,40 @@ private struct DayPlanTimelineView: View {
 
     private func blockHeight(for block: DayPlanBlock) -> CGFloat {
         CGFloat(block.durationMinutes) / 60 * hourHeight
+    }
+}
+
+private struct DayPlanWeekDayHeader: View {
+    var date: Date
+    var isSelected: Bool
+    var isToday: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(date.formatted(.dateTime.weekday(.abbreviated)))
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+
+            Text(date.formatted(.dateTime.day()))
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(isToday ? Color.white : Color.primary)
+                .padding(.horizontal, isToday ? 8 : 0)
+                .padding(.vertical, isToday ? 3 : 0)
+                .background {
+                    if isToday {
+                        Capsule()
+                            .fill(Color.accentColor)
+                    }
+                }
+        }
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+        .padding(.horizontal, 10)
+        .background(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(Color.secondary.opacity(0.18))
+                .frame(width: 1)
+        }
     }
 }
 

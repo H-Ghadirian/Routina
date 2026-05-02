@@ -73,6 +73,13 @@ enum DayPlanStorage {
         defaults: UserDefaults = SharedDefaults.app
     ) -> [DayPlanBlock] {
         let dayKey = dayKey(for: date, calendar: calendar)
+        return loadBlocks(forDayKey: dayKey, defaults: defaults)
+    }
+
+    static func loadBlocks(
+        forDayKey dayKey: String,
+        defaults: UserDefaults = SharedDefaults.app
+    ) -> [DayPlanBlock] {
         guard let data = defaults.data(forKey: storageKey(for: dayKey)),
               let decoded = try? JSONDecoder().decode([DayPlanBlock].self, from: data) else {
             return []
@@ -88,6 +95,14 @@ enum DayPlanStorage {
         defaults: UserDefaults = SharedDefaults.app
     ) {
         let dayKey = dayKey(for: date, calendar: calendar)
+        saveBlocks(blocks, forDayKey: dayKey, defaults: defaults)
+    }
+
+    static func saveBlocks(
+        _ blocks: [DayPlanBlock],
+        forDayKey dayKey: String,
+        defaults: UserDefaults = SharedDefaults.app
+    ) {
         let blocks = sanitized(blocks, dayKey: dayKey)
         let key = storageKey(for: dayKey)
 
