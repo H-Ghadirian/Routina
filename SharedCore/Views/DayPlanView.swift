@@ -1029,6 +1029,7 @@ private struct DayPlanWeekCalendarView: View {
     @State private var draggedBlockID: DayPlanBlock.ID?
     @State private var draggedBlockDurationMinutes: Int?
     @State private var resizeSession: DayPlanResizeSession?
+    @Namespace private var blockAnimationNamespace
 
     private let hourHeight: CGFloat = 64
     private let timeColumnWidth: CGFloat = 64
@@ -1054,6 +1055,7 @@ private struct DayPlanWeekCalendarView: View {
                                 hourHeight: hourHeight,
                                 timeColumnWidth: timeColumnWidth
                             )
+                            .animation(DayPlanMotion.dropPreview, value: dropPreview)
                         }
                         SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
                             DayPlanCurrentTimeIndicator(
@@ -1211,6 +1213,12 @@ private struct DayPlanWeekCalendarView: View {
                         x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
                         y: yOffset(for: block.startMinute)
                     )
+                    .matchedGeometryEffect(
+                        id: block.id,
+                        in: blockAnimationNamespace,
+                        properties: .frame,
+                        anchor: .topLeading
+                    )
                     .zIndex(block.id == selectedBlockID ? 2 : 1)
                 }
             }
@@ -1294,6 +1302,20 @@ private struct DayPlanDropPreview: Equatable {
     let dayIndex: Int
     let startMinute: Int
     let durationMinutes: Int
+}
+
+private enum DayPlanMotion {
+    static let dropPreview = Animation.interactiveSpring(
+        response: 0.2,
+        dampingFraction: 0.86,
+        blendDuration: 0.04
+    )
+
+    static let dropCommit = Animation.spring(
+        response: 0.28,
+        dampingFraction: 0.88,
+        blendDuration: 0.06
+    )
 }
 
 private enum DayPlanResizeEdge {
@@ -1450,7 +1472,9 @@ private struct DayPlanTaskDropDelegate: DropDelegate {
 
         if let draggedBlockID {
             finishDrop()
-            onMoveBlock(draggedBlockID, target.date, target.startMinute)
+            withAnimation(DayPlanMotion.dropCommit) {
+                onMoveBlock(draggedBlockID, target.date, target.startMinute)
+            }
             return true
         }
 
@@ -1469,9 +1493,13 @@ private struct DayPlanTaskDropDelegate: DropDelegate {
             let payloadText = text as String
             DispatchQueue.main.async {
                 if let blockID = DayPlanBlockDragPayload.blockID(from: payloadText) {
-                    onMoveBlock(blockID, target.date, target.startMinute)
+                    withAnimation(DayPlanMotion.dropCommit) {
+                        onMoveBlock(blockID, target.date, target.startMinute)
+                    }
                 } else if let taskID = UUID(uuidString: payloadText) {
-                    onDropTask(taskID, target.date, target.startMinute)
+                    withAnimation(DayPlanMotion.dropCommit) {
+                        onDropTask(taskID, target.date, target.startMinute)
+                    }
                 }
             }
         }
