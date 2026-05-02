@@ -34,6 +34,7 @@ struct HomeTCAView: View {
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
     @State var draggedSection: FormSection?
+    @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @State var isFinishedSprintsExpanded = false
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool

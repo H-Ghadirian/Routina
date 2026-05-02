@@ -88,12 +88,14 @@ extension HomeTCAView {
                     MacDetailContainerView(
                         store: store,
                         isBoardPresented: isMacBoardMode,
+                        isPlanPresented: isMacPlanMode,
                         isTimelinePresented: isMacTimelineMode,
                         isStatsPresented: isMacStatsMode,
                         isSettingsPresented: isMacSettingsMode,
                         settingsStore: settingsStore,
                         statsStore: statsStore,
                         selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
+                        dayPlanPlanner: dayPlanPlanner,
                         addRoutineStore: self.store.scope(
                             state: \.addRoutineState,
                             action: \.addRoutineSheet

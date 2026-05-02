@@ -8,12 +8,14 @@ import SwiftUI
 struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
     let store: StoreOf<HomeFeature>
     let isBoardPresented: Bool
+    let isPlanPresented: Bool
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
     let selectedSettingsSection: SettingsMacSection
+    let dayPlanPlanner: DayPlanPlannerState
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let boardView: () -> BoardView
@@ -24,6 +26,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
                 filterView()
             } else if isBoardPresented {
                 boardView()
+            } else if isPlanPresented {
+                DayPlanDetailView(planner: dayPlanPlanner)
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
             } else if isStatsPresented, let statsStore {

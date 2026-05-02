@@ -19,6 +19,10 @@ struct AppView: View {
                     platformHomeView
                 }
 
+                SwiftUI.Tab(Tab.plan.rawValue, systemImage: "calendar", value: Tab.plan) {
+                    DayPlanView()
+                }
+
                 SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: Tab.search, role: .search) {
                     platformSearchHomeView(searchText: $searchText)
                 }

@@ -53,6 +53,7 @@ struct HomeMacSidebarModeStripView: View {
     private func sidebarModeIcon(for mode: HomeFeature.MacSidebarMode) -> String {
         switch mode {
         case .routines: return "checklist"
+        case .plan: return "calendar"
         case .board: return "square.grid.3x3.topleft.filled"
         case .goals: return "target"
         case .timeline: return "clock.arrow.circlepath"
