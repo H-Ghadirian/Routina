@@ -63,6 +63,24 @@ final class DayPlanPlannerState: ObservableObject {
         syncSelectedDayBlocks(calendar: calendar)
     }
 
+    func handleSelectedDateChanged(calendar: Calendar) {
+        let blockIDToPreserve = selectedBlockID
+        loadBlocks(calendar: calendar)
+
+        guard
+            let blockIDToPreserve,
+            let preservedBlock = blocks.first(where: { $0.id == blockIDToPreserve })
+        else {
+            selectedBlockID = nil
+            return
+        }
+
+        selectedBlockID = preservedBlock.id
+        selectedTaskID = preservedBlock.taskID
+        startMinute = preservedBlock.startMinute
+        durationMinutes = preservedBlock.durationMinutes
+    }
+
     func persistBlocks(calendar: Calendar) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         let sortedBlocks = blocks.sorted { $0.startMinute < $1.startMinute }
@@ -855,8 +873,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 planner.selectDefaultTaskIfNeeded(from: tasks)
             }
             .onChange(of: planner.selectedDate) { _, _ in
-                planner.selectedBlockID = nil
-                planner.loadBlocks(calendar: calendar)
+                planner.handleSelectedDateChanged(calendar: calendar)
             }
             .onChange(of: tasks.map(\.id)) { _, _ in
                 planner.selectDefaultTaskIfNeeded(from: tasks)
