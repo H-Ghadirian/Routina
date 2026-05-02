@@ -119,7 +119,7 @@ struct HomeFeature {
     }
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -671,10 +671,10 @@ struct HomeFeature {
             relatedTagRules: { appSettingsClient.relatedTagRules() },
             tagColors: { appSettingsClient.tagColors() },
             refreshDisplays: { state in refreshDisplays(&state) },
-            syncSelectedTaskDetailState: { state in syncSelectedTaskDetailState(&state) },
+            syncSelectedTaskDetailState: { state in selectionRouter().refreshSelectedTaskDetailState(&state) },
             validateFilterState: { state in filterMutationHandler().validateFilterState(&state) },
             persistTemporaryViewState: { state in persistTemporaryViewState(state) },
-            refreshSelectedTaskDetailEffect: { state in refreshSelectedTaskDetailEffect(for: state) },
+            refreshSelectedTaskDetailEffect: { state in selectionRouter().refreshSelectedTaskDetailEffect(for: state) },
             addRoutineAction: { .addRoutineSheet($0) }
         )
     }
@@ -692,8 +692,48 @@ struct HomeFeature {
     private func postMutationRefresher() -> HomeFeaturePostMutationRefresher<State, Action> {
         HomeFeaturePostMutationRefresher(
             refreshDisplays: { state in refreshDisplays(&state) },
-            syncSelectedTaskDetailState: { state in syncSelectedTaskDetailState(&state) },
+            syncSelectedTaskDetailState: { state in selectionRouter().refreshSelectedTaskDetailState(&state) },
             addRoutineAction: { .addRoutineSheet($0) }
+        )
+    }
+
+    private func selectionRouter() -> HomeFeatureSelectionRouter<State, Action> {
+        HomeFeatureSelectionRouter(
+            now: now,
+            calendar: calendar,
+            makeTaskDetailState: makeTaskDetailState(for:),
+            refreshDisplays: { state in refreshDisplays(&state) },
+            refreshTaskDetailAction: { .taskDetail(.onAppear) },
+            synchronizePlatformSelection: { state, taskID in
+                if state.macSidebarMode == .routines || state.macSidebarMode == .board {
+                    state.macSidebarSelection = taskID.map(MacSidebarSelection.task)
+                }
+            }
+        )
+    }
+
+    private func addRoutinePresentationRouter() -> HomeFeatureAddRoutinePresentationRouter<State> {
+        HomeFeatureAddRoutinePresentationRouter(
+            tagCounterDisplayMode: { appSettingsClient.tagCounterDisplayMode() },
+            relatedTagRules: { appSettingsClient.relatedTagRules() }
+        )
+    }
+
+    private func presentationRouter() -> HomeFeaturePresentationRouter<State> {
+        HomeFeaturePresentationRouter()
+    }
+
+    private func taskListModeRouter() -> HomeFeatureTaskListModeRouter<State> {
+        HomeFeatureTaskListModeRouter(
+            setHideUnavailableRoutines: { isHidden in
+                appSettingsClient.setHideUnavailableRoutines(isHidden)
+            },
+            persistTemporaryViewState: { state in
+                persistTemporaryViewState(state)
+            },
+            synchronizePlatformSelectionAfterModeChange: { state in
+                state.macSidebarSelection = nil
+            }
         )
     }
 
@@ -768,98 +808,26 @@ struct HomeFeature {
                 return .none
 
             case let .setSelectedTask(taskID):
-                if let taskID,
-                   state.selectedTaskID == taskID,
-                   state.taskDetailState?.task.id == taskID {
-                    state.presentation.isMacFilterDetailPresented = false
-                    return .none
-                }
-                state.selection.selectedTaskID = taskID
-                if taskID != nil {
-                    state.presentation.isMacFilterDetailPresented = false
-                }
-                // Keep macSidebarSelection in sync when in routines mode
-                if state.macSidebarMode == .routines || state.macSidebarMode == .board {
-                    state.macSidebarSelection = taskID.map(MacSidebarSelection.task)
-                }
-                let routineTasks = state.routineTasks
-                _ = HomeSelectionEditor.selectTask(
-                    taskID: taskID,
-                    tasks: routineTasks,
-                    selection: &state.selection,
-                    makeTaskDetailState: makeTaskDetailState(for:)
-                )
-                return refreshSelectedTaskDetailEffect(for: state)
+                return selectionRouter().setSelectedTask(taskID, state: &state)
 
             case let .setAddRoutineSheet(isPresented):
-                state.presentation.isAddRoutineSheetPresented = isPresented
-                if isPresented {
-                    state.presentation.isMacFilterDetailPresented = false
-                    state.presentation.addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
-                        tasks: state.routineTasks,
-                        places: state.routinePlaces,
-                        goals: state.routineGoals,
-                        doneStats: state.doneStats,
-                        tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
-                        relatedTagRules: appSettingsClient.relatedTagRules()
-                    )
-                } else {
-                    state.presentation.addRoutineState = nil
-                }
+                addRoutinePresentationRouter().setSheet(isPresented, state: &state)
                 return .none
 
             case let .deleteTasksTapped(ids):
-                let uniqueIDs = uniqueTaskIDs(ids)
-                guard !uniqueIDs.isEmpty else { return .none }
-                state.presentation.pendingDeleteTaskIDs = uniqueIDs
-                state.presentation.isDeleteConfirmationPresented = true
+                presentationRouter().requestDeleteTasks(ids, state: &state)
                 return .none
 
             case let .setDeleteConfirmation(isPresented):
-                state.presentation.isDeleteConfirmationPresented = isPresented
-                if !isPresented {
-                    state.presentation.pendingDeleteTaskIDs = []
-                }
+                presentationRouter().setDeleteConfirmation(isPresented, state: &state)
                 return .none
 
             case let .taskListModeChanged(mode):
-                let oldMode = state.taskListMode
-                var taskFilters = state.taskFilters
-                var hideUnavailableRoutines = state.hideUnavailableRoutines
-                let didResetHideUnavailableRoutines = HomeFilterEditor.transitionTaskListMode(
-                    from: oldMode.rawValue,
-                    to: mode.rawValue,
-                    taskFilters: &taskFilters,
-                    hideUnavailableRoutines: &hideUnavailableRoutines
-                )
-                state.taskFilters = taskFilters
-                state.hideUnavailableRoutines = hideUnavailableRoutines
-                if didResetHideUnavailableRoutines {
-                    appSettingsClient.setHideUnavailableRoutines(false)
-                }
-                state.taskListMode = mode
-                state.presentation.isMacFilterDetailPresented = false
-                let routineTasks = state.routineTasks
-                HomeDetailSelectionSupport.clearSelectionIfNeededForTaskListMode(
-                    selection: &state.selection,
-                    tasks: routineTasks,
-                    modeRawValue: mode.rawValue
-                )
-                if state.selection.selectedTaskID == nil {
-                    state.macSidebarSelection = nil
-                }
-                persistTemporaryViewState(state)
+                taskListModeRouter().changeMode(mode, state: &state)
                 return .none
 
             case let .setMacFilterDetailPresented(isPresented):
-                state.presentation.isMacFilterDetailPresented = isPresented
-                if isPresented {
-                    state.presentation.isAddRoutineSheetPresented = false
-                    state.presentation.addRoutineState = nil
-                    // Clear list selection so re-clicking the same routine
-                    // triggers a fresh selection change on macOS.
-                    state.selection.selectedTaskID = nil
-                }
+                presentationRouter().setFilterDetailPresented(isPresented, state: &state)
                 return .none
 
             // MARK: - Filter actions
@@ -1061,9 +1029,7 @@ struct HomeFeature {
                 return .none
 
             case .deleteTasksConfirmed:
-                let ids = state.presentation.pendingDeleteTaskIDs
-                state.presentation.pendingDeleteTaskIDs = []
-                state.presentation.isDeleteConfirmationPresented = false
+                let ids = presentationRouter().consumePendingDeleteTaskIDs(state: &state)
                 return handleDeleteTasks(ids, state: &state)
 
             case let .deleteTasks(ids):
@@ -1269,8 +1235,7 @@ struct HomeFeature {
                 )
 
             case .addRoutineSheet(.delegate(.didCancel)):
-                state.presentation.isAddRoutineSheetPresented = false
-                state.presentation.addRoutineState = nil
+                addRoutinePresentationRouter().dismissSheet(state: &state)
                 return .none
 
             case let .addRoutineSheet(.delegate(.didSave(request))):
@@ -1307,64 +1272,30 @@ struct HomeFeature {
                 return .none
 
             case .taskDetail(.routineDeleted):
-                HomeSelectionEditor.clearTaskSelection(&state.selection)
+                selectionRouter().clearTaskSelection(&state)
                 return .none
 
             case let .taskDetail(.toggleChecklistItemCompletion(itemID)):
-                HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
-                    for: itemID,
-                    selection: &state.selection,
-                    now: now,
-                    calendar: calendar
-                )
+                selectionRouter().updatePendingChecklistReloadGuard(for: itemID, state: &state)
                 return .none
 
             case let .taskDetail(.markChecklistItemCompleted(itemID)):
-                HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
-                    for: itemID,
-                    selection: &state.selection,
-                    now: now,
-                    calendar: calendar
-                )
+                selectionRouter().updatePendingChecklistReloadGuard(for: itemID, state: &state)
                 return .none
 
             case .taskDetail(.undoSelectedDateCompletion):
-                HomeDetailSelectionSupport.updatePendingChecklistUndoReloadGuard(selection: &state.selection)
+                selectionRouter().updatePendingChecklistUndoReloadGuard(&state)
                 return .none
 
             case .taskDetail(.logsLoaded):
-                syncSelectedTaskFromTaskDetail(&state)
+                selectionRouter().syncSelectedTaskFromTaskDetail(&state)
                 return .none
 
             case let .taskDetail(.openLinkedTask(taskID)):
-                let routineTasks = state.routineTasks
-                guard HomeSelectionEditor.selectTask(
-                    taskID: taskID,
-                    tasks: routineTasks,
-                    selection: &state.selection,
-                    makeTaskDetailState: makeTaskDetailState(for:)
-                ) else {
-                    return .none
-                }
-                return refreshSelectedTaskDetailEffect(for: state)
+                return selectionRouter().openLinkedTask(taskID, state: &state)
 
             case .taskDetail(.openAddLinkedTask):
-                guard let currentTaskID = state.selection.taskDetailState?.task.id,
-                      let kind = state.selection.taskDetailState?.addLinkedTaskRelationshipKind else { return .none }
-                state.presentation.isAddRoutineSheetPresented = true
-                state.presentation.isMacFilterDetailPresented = false
-                state.presentation.addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
-                    tasks: state.routineTasks,
-                    places: state.routinePlaces,
-                    goals: state.routineGoals,
-                    doneStats: state.doneStats,
-                    tagCounterDisplayMode: appSettingsClient.tagCounterDisplayMode(),
-                    relatedTagRules: appSettingsClient.relatedTagRules(),
-                    preselectedRelationships: [
-                        RoutineTaskRelationship(targetTaskID: currentTaskID, kind: kind.inverse)
-                    ],
-                    excludingRelationshipTaskID: currentTaskID
-                )
+                addRoutinePresentationRouter().openLinkedTaskSheet(state: &state)
                 return .none
 
             case .taskDetail:
@@ -1506,32 +1437,7 @@ struct HomeFeature {
     }
 
     func syncSelectedTaskDetailState(_ state: inout State) {
-        let routineTasks = state.routineTasks
-        HomeDetailSelectionSupport.refreshSelectedTaskDetailState(
-            selection: &state.selection,
-            tasks: routineTasks,
-            now: now,
-            calendar: calendar,
-            makeTaskDetailState: makeTaskDetailState(for:)
-        )
-    }
-
-    private func refreshSelectedTaskDetailEffect(for state: State) -> Effect<Action> {
-        guard state.selection.taskDetailState != nil else { return .none }
-        return .send(.taskDetail(.onAppear))
-    }
-
-    private func syncSelectedTaskFromTaskDetail(_ state: inout State) {
-        var selection = state.selection
-        var routineTasks = state.routineTasks
-        if HomeDetailSelectionSupport.syncSelectedTaskFromDetail(
-            selection: &selection,
-            tasks: &routineTasks
-        ) {
-            state.selection = selection
-            state.routineTasks = routineTasks
-            refreshDisplays(&state)
-        }
+        selectionRouter().refreshSelectedTaskDetailState(&state)
     }
 
     private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {
