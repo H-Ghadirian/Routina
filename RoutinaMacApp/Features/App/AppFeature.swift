@@ -115,130 +115,18 @@ struct AppFeature {
     }
 
     private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {
-        let persistedState = persistedState ?? .default
-        if let rawValue = persistedState.selectedAppTabRawValue,
-           let tab = Tab(rawValue: rawValue) {
-            state.selectedTab = tab
-        }
-        state.timeline.selectedRange = persistedState.timelineSelectedRange
-        state.timeline.filterType = persistedState.timelineFilterType
-        state.timeline.setSelectedTags(persistedState.timelineSelectedTags)
-        if state.timeline.effectiveSelectedTags.isEmpty {
-            state.timeline.setSelectedTag(persistedState.timelineSelectedTag)
-        }
-        state.timeline.includeTagMatchMode = persistedState.timelineIncludeTagMatchMode
-        state.timeline.excludedTags = persistedState.timelineExcludedTags
-        state.timeline.excludeTagMatchMode = persistedState.timelineExcludeTagMatchMode
-        state.timeline.selectedImportanceUrgencyFilter = persistedState.timelineSelectedImportanceUrgencyFilter
-        state.stats.selectedRange = persistedState.statsSelectedRange
-        state.stats.setSelectedTags(persistedState.statsSelectedTags)
-        if state.stats.effectiveSelectedTags.isEmpty {
-            state.stats.setSelectedTag(persistedState.statsSelectedTag)
-        }
-        state.stats.includeTagMatchMode = persistedState.statsIncludeTagMatchMode
-        state.stats.excludedTags = persistedState.statsExcludedTags
-        state.stats.excludeTagMatchMode = persistedState.statsExcludeTagMatchMode
-        state.stats.selectedImportanceUrgencyFilter = persistedState.statsSelectedImportanceUrgencyFilter
-        state.stats.advancedQuery = persistedState.statsAdvancedQuery
-        if let rawValue = persistedState.statsTaskTypeFilterRawValue,
-           let filter = StatsTaskTypeFilter(rawValue: rawValue) {
-            state.stats.taskTypeFilter = filter
-        }
+        AppFeatureTemporaryViewStateSupport.apply(persistedState, to: &state)
     }
 
     private func resetTemporaryViewState(_ state: inout State) {
-        state.home.taskListMode = .routines
-        state.home.selectedFilter = .all
-        state.home.advancedQuery = ""
-        state.home.selectedTags = []
-        state.home.includeTagMatchMode = .all
-        state.home.excludedTags = []
-        state.home.excludeTagMatchMode = .any
-        state.home.selectedManualPlaceFilterID = nil
-        state.home.selectedImportanceUrgencyFilter = nil
-        state.home.selectedTodoStateFilter = nil
-        state.home.selectedPressureFilter = nil
-        state.home.tabFilterSnapshots = [:]
-        state.home.hideUnavailableRoutines = false
-        state.home.isFilterSheetPresented = false
-        state.home.selectedTimelineRange = .all
-        state.home.selectedTimelineFilterType = .all
-        state.home.selectedTimelineTags = []
-        state.home.selectedTimelineIncludeTagMatchMode = .all
-        state.home.selectedTimelineExcludedTags = []
-        state.home.selectedTimelineExcludeTagMatchMode = .any
-        state.home.selectedTimelineImportanceUrgencyFilter = nil
-        state.home.statsSelectedRange = .week
-        state.home.statsSelectedTags = []
-        state.home.statsIncludeTagMatchMode = .all
-
-        state.timeline.selectedRange = .all
-        state.timeline.filterType = .all
-        state.timeline.setSelectedTag(nil)
-        state.timeline.includeTagMatchMode = .all
-        state.timeline.excludedTags = []
-        state.timeline.excludeTagMatchMode = .any
-        state.timeline.selectedImportanceUrgencyFilter = nil
-        state.timeline.isFilterSheetPresented = false
-        state.timeline.availableTags = []
-        state.timeline.groupedEntries = []
-
-        state.stats.selectedRange = .week
-        state.stats.setSelectedTag(nil)
-        state.stats.includeTagMatchMode = .all
-        state.stats.excludedTags = []
-        state.stats.excludeTagMatchMode = .any
-        state.stats.selectedImportanceUrgencyFilter = nil
-        state.stats.taskTypeFilter = .all
-        state.stats.advancedQuery = ""
+        AppFeatureTemporaryViewStateSupport.reset(&state, homeTaskListMode: .routines)
     }
 
     private func persistTemporaryViewState(_ state: State) {
-        let existing = appSettingsClient.temporaryViewState() ?? .default
         appSettingsClient.setTemporaryViewState(
-            TemporaryViewState(
-                selectedAppTabRawValue: state.selectedTab.rawValue,
-                homeTaskListModeRawValue: existing.homeTaskListModeRawValue,
-                homeSelectedFilter: existing.homeSelectedFilter,
-                homeAdvancedQuery: existing.homeAdvancedQuery,
-                homeSelectedTag: existing.homeSelectedTag,
-                homeSelectedTags: existing.homeSelectedTags,
-                homeIncludeTagMatchMode: existing.homeIncludeTagMatchMode,
-                homeExcludedTags: existing.homeExcludedTags,
-                homeExcludeTagMatchMode: existing.homeExcludeTagMatchMode,
-                homeSelectedManualPlaceFilterID: existing.homeSelectedManualPlaceFilterID,
-                homeSelectedImportanceUrgencyFilter: existing.homeSelectedImportanceUrgencyFilter,
-                homeSelectedTodoStateFilter: existing.homeSelectedTodoStateFilter,
-                homeSelectedPressureFilter: existing.homeSelectedPressureFilter,
-                homeTabFilterSnapshots: existing.homeTabFilterSnapshots,
-                hideUnavailableRoutines: existing.hideUnavailableRoutines,
-                homeSelectedTimelineRange: existing.homeSelectedTimelineRange,
-                homeSelectedTimelineFilterType: existing.homeSelectedTimelineFilterType,
-                homeSelectedTimelineTag: existing.homeSelectedTimelineTag,
-                homeSelectedTimelineTags: existing.homeSelectedTimelineTags,
-                homeTimelineIncludeTagMatchMode: existing.homeTimelineIncludeTagMatchMode,
-                homeSelectedTimelineExcludedTags: existing.homeSelectedTimelineExcludedTags,
-                homeTimelineExcludeTagMatchMode: existing.homeTimelineExcludeTagMatchMode,
-                homeSelectedTimelineImportanceUrgencyFilter: existing.homeSelectedTimelineImportanceUrgencyFilter,
-                macHomeSidebarModeRawValue: existing.macHomeSidebarModeRawValue,
-                macSelectedSettingsSectionRawValue: existing.macSelectedSettingsSectionRawValue,
-                timelineSelectedRange: state.timeline.selectedRange,
-                timelineFilterType: state.timeline.filterType,
-                timelineSelectedTag: state.timeline.selectedTag,
-                timelineSelectedTags: state.timeline.effectiveSelectedTags,
-                timelineIncludeTagMatchMode: state.timeline.includeTagMatchMode,
-                timelineExcludedTags: state.timeline.excludedTags,
-                timelineExcludeTagMatchMode: state.timeline.excludeTagMatchMode,
-                timelineSelectedImportanceUrgencyFilter: state.timeline.selectedImportanceUrgencyFilter,
-                statsSelectedRange: state.stats.selectedRange,
-                statsSelectedTag: state.stats.selectedTag,
-                statsSelectedTags: state.stats.effectiveSelectedTags,
-                statsIncludeTagMatchMode: state.stats.includeTagMatchMode,
-                statsExcludedTags: state.stats.excludedTags,
-                statsExcludeTagMatchMode: state.stats.excludeTagMatchMode,
-                statsSelectedImportanceUrgencyFilter: state.stats.selectedImportanceUrgencyFilter,
-                statsTaskTypeFilterRawValue: state.stats.taskTypeFilter.rawValue,
-                statsAdvancedQuery: state.stats.advancedQuery
+            AppFeatureTemporaryViewStateSupport.makeTemporaryViewState(
+                from: state,
+                preserving: appSettingsClient.temporaryViewState()
             )
         )
     }
@@ -533,3 +421,7 @@ struct StatsFeature {
         state.metrics = derivedState.metrics
     }
 }
+
+extension AppFeature.State: AppFeatureTemporaryViewState {}
+
+extension StatsFeature.State: AppStatsFeatureTemporaryViewState {}
