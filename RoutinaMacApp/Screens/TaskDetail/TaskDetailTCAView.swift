@@ -238,8 +238,8 @@ struct TaskDetailTCAView: View {
                 options: RoutineTaskPressure.allCases,
                 selection: store.task.pressure,
                 title: { $0.title },
-                tint: { pressureTint(for: $0) },
-                selectedForeground: { pressureSelectedForeground(for: $0) },
+                tint: { TaskDetailPriorityPresentation.pressureTint(for: $0, style: .segmentedControl) },
+                selectedForeground: { TaskDetailPriorityPresentation.pressureSelectedForeground(for: $0) },
                 action: { store.send(.pressureChanged($0)) }
             )
         }
@@ -257,8 +257,8 @@ struct TaskDetailTCAView: View {
                 options: TodoState.allCases,
                 selection: store.task.todoState ?? .ready,
                 title: { $0.displayTitle },
-                tint: { todoStateTint(for: $0) },
-                selectedForeground: { todoStateSelectedForeground(for: $0) },
+                tint: { TaskDetailPriorityPresentation.todoStateTint(for: $0, style: .segmentedControl) },
+                selectedForeground: { TaskDetailPriorityPresentation.todoStateSelectedForeground(for: $0) },
                 action: { newState in
                     if newState == .done && store.hasActiveRelationshipBlocker {
                         store.send(.setBlockedStateConfirmation(true))
@@ -360,12 +360,12 @@ struct TaskDetailTCAView: View {
             priorityMetadataChip(
                 title: "Importance",
                 value: store.task.importance.title,
-                tint: importanceTint(for: store.task.importance)
+                tint: TaskDetailPriorityPresentation.importanceTint(for: store.task.importance)
             )
             priorityMetadataChip(
                 title: "Urgency",
                 value: store.task.urgency.title,
-                tint: urgencyTint(for: store.task.urgency)
+                tint: TaskDetailPriorityPresentation.urgencyTint(for: store.task.urgency)
             )
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -391,92 +391,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var prioritySummaryColor: Color {
-        switch store.task.priority {
-        case .none:
-            return .secondary
-        case .low:
-            return .green
-        case .medium:
-            return .yellow
-        case .high:
-            return .orange
-        case .urgent:
-            return .red
-        }
-    }
-
-    private func importanceTint(for importance: RoutineTaskImportance) -> Color {
-        switch importance {
-        case .level1:
-            return .green
-        case .level2:
-            return .yellow
-        case .level3:
-            return .orange
-        case .level4:
-            return .red
-        }
-    }
-
-    private func urgencyTint(for urgency: RoutineTaskUrgency) -> Color {
-        switch urgency {
-        case .level1:
-            return .green
-        case .level2:
-            return .yellow
-        case .level3:
-            return .orange
-        case .level4:
-            return .red
-        }
-    }
-
-    private func pressureTint(for pressure: RoutineTaskPressure) -> Color {
-        switch pressure {
-        case .none:
-            return .secondary
-        case .low:
-            return .green
-        case .medium:
-            return .orange
-        case .high:
-            return .red
-        }
-    }
-
-    private func pressureSelectedForeground(for pressure: RoutineTaskPressure) -> Color {
-        switch pressure {
-        case .none:
-            return .primary
-        case .medium:
-            return .black.opacity(0.84)
-        case .low, .high:
-            return .white
-        }
-    }
-
-    private func todoStateTint(for state: TodoState) -> Color {
-        switch state {
-        case .ready:
-            return .secondary
-        case .inProgress:
-            return .blue
-        case .blocked:
-            return .red
-        case .done:
-            return .green
-        case .paused:
-            return .teal
-        }
-    }
-
-    private func todoStateSelectedForeground(for state: TodoState) -> Color {
-        switch state {
-        case .ready:
-            return .primary
-        case .inProgress, .blocked, .done, .paused:
-            return .white
-        }
+        TaskDetailPriorityPresentation.priorityTint(for: store.task.priority)
     }
 
     private func headerTagsBox(minHeight: CGFloat? = nil) -> some View {
@@ -866,44 +781,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var canSaveCurrentEdit: Bool {
-        canSaveEdit(
-            name: store.editRoutineName,
-            emoji: store.editRoutineEmoji,
-            notes: store.editRoutineNotes,
-            link: store.editRoutineLink,
-            estimatedDurationMinutes: store.editEstimatedDurationMinutes,
-            storyPoints: store.editStoryPoints,
-            deadline: store.editDeadline,
-            reminderAt: store.editReminderAt,
-            priority: store.editPriority,
-            importance: store.editImportance,
-            urgency: store.editUrgency,
-            color: store.editColor,
-            imageData: store.editImageData,
-            editAttachments: store.editAttachments,
-            taskAttachments: store.taskAttachments,
-            selectedPlaceID: store.editSelectedPlaceID,
-            tags: store.editRoutineTags,
-            relationships: store.editRelationships,
-            tagDraft: store.editTagDraft,
-            scheduleMode: store.editScheduleMode,
-            steps: store.editRoutineSteps,
-            stepDraft: store.editStepDraft,
-            checklistItems: store.editRoutineChecklistItems,
-            checklistItemDraftTitle: store.editChecklistItemDraftTitle,
-            checklistItemDraftInterval: store.editChecklistItemDraftInterval,
-            frequency: store.editFrequency,
-            frequencyValue: store.editFrequencyValue,
-            recurrenceKind: store.editRecurrenceKind,
-            recurrenceHasExplicitTime: store.editRecurrenceHasExplicitTime,
-            recurrenceTimeOfDay: store.editRecurrenceTimeOfDay,
-            recurrenceWeekday: store.editRecurrenceWeekday,
-            recurrenceDayOfMonth: store.editRecurrenceDayOfMonth,
-            autoAssumeDailyDone: store.editAutoAssumeDailyDone,
-            focusModeEnabled: store.editFocusModeEnabled,
-            pressure: store.editPressure,
-            task: store.task
-        )
+        TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: store.state))
     }
 
     var editSheetBinding: Binding<Bool> {
@@ -938,8 +816,8 @@ struct TaskDetailTCAView: View {
             showsCreatedLegend: store.task.createdAt != nil
         ) {
             calendarGrid(
-                doneDates: doneDates(from: store.logs, task: store.task),
-                assumedDates: assumedDates(from: store.logs, task: store.task),
+                doneDates: TaskDetailCalendarPresentation.doneDates(from: store.logs, task: store.task),
+                assumedDates: TaskDetailCalendarPresentation.assumedDates(from: store.logs, task: store.task),
                 dueDate: store.resolvedDueDate,
                 createdAt: store.task.createdAt,
                 pausedAt: store.task.pausedAt,
@@ -1726,17 +1604,17 @@ struct TaskDetailTCAView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 } else {
-                    let logs = displayedLogs(from: store.logs)
+                    let logs = TaskDetailLogPresentation.displayedLogs(store.logs, showingAll: isShowingAllLogs)
                     ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
                         HStack(spacing: 8) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(logTimestampText(log.timestamp))
+                                Text(TaskDetailLogPresentation.timestampText(log.timestamp, showPersianDates: showPersianDates))
                                     .font(.subheadline)
 
                                 Button {
                                     beginEditingTime(for: log)
                                 } label: {
-                                    Label(logTimeSpentText(log), systemImage: "clock")
+                                    Label(TaskDetailLogPresentation.timeSpentText(for: log, style: .full), systemImage: "clock")
                                         .font(.caption.weight(.semibold))
                                 }
                                 .buttonStyle(.plain)
@@ -1754,7 +1632,7 @@ struct TaskDetailTCAView: View {
                                 beginEditingTime(for: log)
                             }
                             if let timestamp = log.timestamp {
-                                Button(routineLogActionTitle(for: log)) {
+                                Button(TaskDetailLogPresentation.actionTitle(for: log)) {
                                     store.send(.requestRemoveLogEntry(timestamp))
                                 }
                             }
@@ -1782,24 +1660,6 @@ struct TaskDetailTCAView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
         )
-    }
-
-    private func routineLogActionTitle(for log: RoutineLog) -> String {
-        log.kind == .completed ? "Undo" : "Remove"
-    }
-
-    private func logTimestampText(_ timestamp: Date?) -> String {
-        guard let timestamp else { return "Unknown date" }
-        return PersianDateDisplay.appendingSupplementaryDate(
-            to: timestamp.formatted(date: .abbreviated, time: .shortened),
-            for: timestamp,
-            enabled: showPersianDates
-        )
-    }
-
-    private func logTimeSpentText(_ log: RoutineLog) -> String {
-        guard let duration = log.actualDurationMinutes else { return "Add time" }
-        return TaskDetailHeaderBadgePresentation.durationText(for: duration)
     }
 
     private func beginEditingTime(for log: RoutineLog) {
@@ -1907,15 +1767,15 @@ struct TaskDetailTCAView: View {
                 } else {
                     ForEach(Array(changes.prefix(12).enumerated()), id: \.element.id) { index, change in
                         HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: taskChangeSystemImage(change))
+                            Image(systemName: TaskDetailLogPresentation.taskChangeSystemImage(for: change))
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                                 .frame(width: 18, height: 18)
 
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(taskChangeTitle(change))
+                                Text(TaskDetailLogPresentation.taskChangeTitle(for: change, relatedTaskName: relatedTaskName(for: change)))
                                     .font(.subheadline.weight(.medium))
-                                Text(logTimestampText(change.timestamp))
+                                Text(TaskDetailLogPresentation.timestampText(change.timestamp, showPersianDates: showPersianDates))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -1939,48 +1799,9 @@ struct TaskDetailTCAView: View {
         )
     }
 
-    private func taskChangeTitle(_ change: RoutineTaskChangeLogEntry) -> String {
-        switch change.kind {
-        case .created:
-            return "Task created"
-        case .stateChanged:
-            return "State changed from \(change.previousValue ?? "Unknown") to \(change.newValue ?? "Unknown")"
-        case .linkedTaskAdded:
-            return "Linked \(relatedTaskName(for: change)) as \(change.relationshipKind?.title ?? "Related")"
-        case .linkedTaskRemoved:
-            return "Removed link to \(relatedTaskName(for: change))"
-        case .timeSpentAdded:
-            return "Added \(durationText(for: change.durationMinutes ?? change.newValue.flatMap(Int.init))) time spent"
-        case .timeSpentChanged:
-            return "Changed time spent to \(durationText(for: change.durationMinutes ?? change.newValue.flatMap(Int.init)))"
-        case .timeSpentRemoved:
-            return "Removed time spent"
-        }
-    }
-
-    private func taskChangeSystemImage(_ change: RoutineTaskChangeLogEntry) -> String {
-        switch change.kind {
-        case .created:
-            return "plus.circle"
-        case .stateChanged:
-            return "arrow.triangle.2.circlepath"
-        case .linkedTaskAdded:
-            return "link.badge.plus"
-        case .linkedTaskRemoved:
-            return "link.badge.minus"
-        case .timeSpentAdded, .timeSpentChanged, .timeSpentRemoved:
-            return "clock"
-        }
-    }
-
     private func relatedTaskName(for change: RoutineTaskChangeLogEntry) -> String {
         guard let relatedTaskID = change.relatedTaskID else { return "task" }
         return focusSessionTasks.first(where: { $0.id == relatedTaskID })?.name ?? "task"
-    }
-
-    private func durationText(for minutes: Int?) -> String {
-        guard let minutes else { return "time" }
-        return RoutineTimeSpentFormatting.compactMinutesText(minutes)
     }
 
     private var relationshipsSection: some View {
@@ -2223,43 +2044,33 @@ struct TaskDetailTCAView: View {
         onSelectDate: @escaping (Date) -> Void
     ) -> some View {
         let calendar = Calendar.current
-        let isDueDate = dueDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
-        let isCreatedDate = createdAt.map { calendar.isDate($0, inSameDayAs: day) } ?? false
-        let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
-        let isAssumedDate = !isDoneDate && assumedDates.contains { calendar.isDate($0, inSameDayAs: day) }
-        let isToday = calendar.isDateInToday(day)
-        let isDueToTodayRangeDate = isInDueToTodayRange(day: day, dueDate: dueDate)
-        let isPausedDate = isInPausedRange(day: day, pausedAt: pausedAt)
-
-        let backgroundColor: Color = {
-            if isDoneDate { return .green }
-            if isAssumedDate { return .mint }
-            if isPausedDate { return .teal }
-            if isDueToTodayRangeDate || isDueDate { return .red }
-            if isCreatedDate { return .purple }
-            if isToday && isOrangeUrgencyToday { return .orange }
-            if isToday { return .blue }
-            return .clear
-        }()
-
-        let foregroundColor: Color = (isDueDate || isDoneDate || isAssumedDate || isDueToTodayRangeDate || isPausedDate || isCreatedDate || isToday) ? .white : .primary
+        let presentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: day,
+            doneDates: doneDates,
+            assumedDates: assumedDates,
+            dueDate: dueDate,
+            createdAt: createdAt,
+            pausedAt: pausedAt,
+            isOrangeUrgencyToday: isOrangeUrgencyToday,
+            calendar: calendar
+        )
 
         return Button {
             onSelectDate(day)
         } label: {
             Text(day.formatted(.dateTime.day()))
                 .font(.subheadline)
-                .foregroundColor(foregroundColor)
+                .foregroundColor(presentation.foregroundColor)
                 .frame(maxWidth: .infinity)
                 .frame(height: 28)
-                .background(Circle().fill(backgroundColor))
+                .background(Circle().fill(presentation.backgroundColor))
                 .overlay(
                     Circle()
                         .stroke(
                             TaskDetailPresentation.selectionStrokeColor(
                                 isSelected: isSelected,
-                                isToday: isToday,
-                                isHighlightedDay: isDoneDate || isAssumedDate || isDueToTodayRangeDate || isDueDate || isPausedDate || isCreatedDate
+                                isToday: presentation.isToday,
+                                isHighlightedDay: presentation.isHighlightedDay
                             ),
                             lineWidth: isSelected ? 3 : 2
                         )
@@ -2268,66 +2079,8 @@ struct TaskDetailTCAView: View {
         .buttonStyle(.plain)
     }
 
-    private func doneDates(from logs: [RoutineLog], task: RoutineTask) -> Set<Date> {
-        let calendar = Calendar.current
-        var dates = Set<Date>(logs.compactMap { log in
-            guard let timestamp = log.timestamp, log.kind == .completed else { return nil }
-            return RoutineDateMath.completionDisplayDay(for: task, completionDate: timestamp, calendar: calendar)
-        })
-        if let lastDone = task.lastDone {
-            if let displayDay = RoutineDateMath.completionDisplayDay(
-                for: task,
-                completionDate: lastDone,
-                calendar: calendar
-            ) {
-                dates.insert(displayDay)
-            }
-        }
-        return dates
-    }
-
-    private func assumedDates(from logs: [RoutineLog], task: RoutineTask) -> Set<Date> {
-        let calendar = Calendar.current
-        return Set(
-            RoutineAssumedCompletion.assumedDates(for: task, logs: logs)
-                .map { calendar.startOfDay(for: $0) }
-        )
-    }
-
-    private func isInDueToTodayRange(day: Date, dueDate: Date?) -> Bool {
-        guard let dueDate else { return false }
-        let calendar = Calendar.current
-        let dayStart = calendar.startOfDay(for: day)
-        let dueStart = calendar.startOfDay(for: dueDate)
-        let todayStart = calendar.startOfDay(for: Date())
-
-        guard dueStart <= todayStart else { return false }
-        return dayStart >= dueStart && dayStart <= todayStart
-    }
-
-    private func isInPausedRange(day: Date, pausedAt: Date?) -> Bool {
-        guard let pausedAt else { return false }
-        let calendar = Calendar.current
-        let dayStart = calendar.startOfDay(for: day)
-        let pausedStart = calendar.startOfDay(for: pausedAt)
-        let todayStart = calendar.startOfDay(for: Date())
-        return dayStart >= pausedStart && dayStart <= todayStart
-    }
-
-    private func displayedLogs(from logs: [RoutineLog]) -> [RoutineLog] {
-        if isShowingAllLogs { return logs }
-        return Array(logs.prefix(3))
-    }
-
-
     private var sortedChecklistItems: [RoutineChecklistItem] {
-        if store.task.isChecklistCompletionRoutine {
-            return store.task.checklistItems
-        }
-        return store.task.checklistItems.sorted {
-            RoutineDateMath.dueDate(for: $0, referenceDate: Date())
-                < RoutineDateMath.dueDate(for: $1, referenceDate: Date())
-        }
+        TaskDetailChecklistPresentation.sortedItems(for: store.task)
     }
 
     @ViewBuilder
@@ -2341,7 +2094,12 @@ struct TaskDetailTCAView: View {
 
     private func completionChecklistRow(for item: RoutineChecklistItem) -> some View {
         let isDone = store.state.isChecklistItemMarkedDone(item)
-        let isInteractive = canToggleChecklistItem(item)
+        let isInteractive = TaskDetailChecklistPresentation.canToggleItem(
+            item,
+            task: store.task,
+            selectedDate: store.resolvedSelectedDate,
+            isDoneToday: store.isDoneToday
+        )
 
         return Button {
             store.send(.toggleChecklistItemCompletion(item.id))
@@ -2371,7 +2129,11 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
                     .font(.subheadline.weight(.semibold))
-                Text(checklistStatusText(for: item))
+                Text(TaskDetailChecklistPresentation.statusText(
+                    for: item,
+                    task: store.task,
+                    isMarkedDone: store.state.isChecklistItemMarkedDone(item)
+                ))
                     .font(.caption)
                     .foregroundStyle(TaskDetailPresentation.checklistStatusColor(for: item, task: store.task, isMarkedDone: store.state.isChecklistItemMarkedDone(item)))
             }
@@ -2385,165 +2147,6 @@ struct TaskDetailTCAView: View {
             .controlSize(.small)
             .disabled(store.task.isArchived() || !Calendar.current.isDateInToday(store.resolvedSelectedDate))
         }
-    }
-
-    private func checklistStatusText(for item: RoutineChecklistItem) -> String {
-        if store.task.isChecklistCompletionRoutine {
-            return store.state.isChecklistItemMarkedDone(item) ? "Done" : "Pending"
-        }
-        let calendar = Calendar.current
-        let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: Date(), calendar: calendar)
-        let daysUntilDue = calendar.dateComponents(
-            [.day],
-            from: calendar.startOfDay(for: Date()),
-            to: calendar.startOfDay(for: dueDate)
-        ).day ?? 0
-
-        if daysUntilDue < 0 {
-            return "Overdue by \(abs(daysUntilDue)) \(dayWord(abs(daysUntilDue)))"
-        }
-        if daysUntilDue == 0 {
-            return "Due today"
-        }
-        if daysUntilDue == 1 {
-            return "Due tomorrow"
-        }
-        return "Due in \(daysUntilDue) days"
-    }
-
-    private func canSaveEdit(
-        name: String,
-        emoji: String,
-        notes: String,
-        link: String,
-        estimatedDurationMinutes: Int?,
-        storyPoints: Int?,
-        deadline: Date?,
-        reminderAt: Date?,
-        priority: RoutineTaskPriority,
-        importance: RoutineTaskImportance,
-        urgency: RoutineTaskUrgency,
-        color: RoutineTaskColor,
-        imageData: Data?,
-        editAttachments: [AttachmentItem],
-        taskAttachments: [AttachmentItem],
-        selectedPlaceID: UUID?,
-        tags: [String],
-        relationships: [RoutineTaskRelationship],
-        tagDraft: String,
-        scheduleMode: RoutineScheduleMode,
-        steps: [RoutineStep],
-        stepDraft: String,
-        checklistItems: [RoutineChecklistItem],
-        checklistItemDraftTitle: String,
-        checklistItemDraftInterval: Int,
-        frequency: TaskDetailFeature.EditFrequency,
-        frequencyValue: Int,
-        recurrenceKind: RoutineRecurrenceRule.Kind,
-        recurrenceHasExplicitTime: Bool,
-        recurrenceTimeOfDay: RoutineTimeOfDay,
-        recurrenceWeekday: Int,
-        recurrenceDayOfMonth: Int,
-        autoAssumeDailyDone: Bool,
-        focusModeEnabled: Bool,
-        pressure: RoutineTaskPressure,
-        task: RoutineTask
-    ) -> Bool {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return false }
-
-        let currentName = (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let currentEmoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
-        let currentNotes = CalendarTaskImportSupport.displayNotes(from: task.notes) ?? ""
-        let currentLink = task.link ?? ""
-        let currentPriority = task.priority
-        let currentImportance = task.importance
-        let currentUrgency = task.urgency
-        let currentTags = RoutineTag.deduplicated(task.tags)
-        let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
-        let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
-        let currentReminderAt = task.reminderAt
-        let currentImageData = task.imageData
-        let candidateTags = RoutineTag.appending(tagDraft, to: tags)
-        let candidateRelationships = RoutineTaskRelationship.sanitized(relationships, ownerID: task.id)
-        let currentSteps = RoutineStep.sanitized(task.steps)
-        let candidateSteps = RoutineStep.normalizedTitle(stepDraft).map { title in
-            steps + [RoutineStep(title: title)]
-        } ?? steps
-        let currentChecklistItems = RoutineChecklistItem.sanitized(task.checklistItems)
-        let candidateChecklistItems = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle).map { title in
-            checklistItems + [RoutineChecklistItem(title: title, intervalDays: checklistItemDraftInterval)]
-        } ?? checklistItems
-        let currentRecurrenceRule = task.recurrenceRule
-        let newRecurrenceRule: RoutineRecurrenceRule
-        switch recurrenceKind {
-        case .intervalDays:
-            newRecurrenceRule = .interval(days: frequencyValue * frequency.daysMultiplier)
-        case .dailyTime:
-            newRecurrenceRule = .daily(at: recurrenceTimeOfDay)
-        case .weekly:
-            newRecurrenceRule = .weekly(
-                on: recurrenceWeekday,
-                at: recurrenceHasExplicitTime ? recurrenceTimeOfDay : nil
-            )
-        case .monthlyDay:
-            newRecurrenceRule = .monthly(
-                on: recurrenceDayOfMonth,
-                at: recurrenceHasExplicitTime ? recurrenceTimeOfDay : nil
-            )
-        }
-        let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
-
-        guard scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff || !sanitizedCandidateChecklistItems.isEmpty else {
-            return false
-        }
-
-        return trimmedName != currentName
-            || emoji != currentEmoji
-            || notes != currentNotes
-            || link != currentLink
-            || estimatedDurationMinutes != task.estimatedDurationMinutes
-            || storyPoints != task.storyPoints
-            || deadline != currentDeadline
-            || reminderAt != currentReminderAt
-            || priority != currentPriority
-            || importance != currentImportance
-            || urgency != currentUrgency
-            || color != task.color
-            || imageData != currentImageData
-            || editAttachments != taskAttachments
-            || selectedPlaceID != task.placeID
-            || candidateTags != currentTags
-            || candidateRelationships != currentRelationships
-            || scheduleMode != task.scheduleMode
-            || RoutineStep.sanitized(candidateSteps) != currentSteps
-            || sanitizedCandidateChecklistItems != currentChecklistItems
-            || newRecurrenceRule != currentRecurrenceRule
-            || autoAssumeDailyDone != task.autoAssumeDailyDone
-            || focusModeEnabled != task.focusModeEnabled
-            || pressure != task.pressure
-    }
-
-    private func canToggleChecklistItem(_ item: RoutineChecklistItem) -> Bool {
-        guard store.task.isChecklistCompletionRoutine,
-              !store.task.isArchived(),
-              Calendar.current.isDateInToday(store.resolvedSelectedDate) else {
-            return false
-        }
-
-        if store.isDoneToday && !store.task.isChecklistInProgress {
-            return false
-        }
-
-        if store.task.isChecklistItemCompleted(item.id) {
-            return store.task.isChecklistInProgress
-        }
-
-        return true
-    }
-
-    private func dayWord(_ count: Int) -> String {
-        abs(count) == 1 ? "day" : "days"
     }
 
     // MARK: - Attachment actions
@@ -2562,62 +2165,8 @@ struct TaskDetailTCAView: View {
     }
 
     func openTaskImage(data: Data) {
-        let fileName = taskImageFileName(for: store.task, data: data)
+        let fileName = TaskDetailAttachmentPresentation.taskImageFileName(for: store.task, data: data)
         openAttachment(data: data, fileName: fileName)
-    }
-
-    func taskImageFileName(for task: RoutineTask, data: Data) -> String {
-        let baseName = sanitizedAttachmentBaseName(task.name ?? "Routine Image")
-        let fileExtension = detectedImageFileExtension(for: data)
-        return "\(baseName).\(fileExtension)"
-    }
-
-    func sanitizedAttachmentBaseName(_ rawValue: String) -> String {
-        let sanitizedScalars = rawValue.unicodeScalars.map { scalar -> String in
-            CharacterSet.alphanumerics.contains(scalar) ? String(scalar) : "-"
-        }
-        let sanitized = sanitizedScalars.joined()
-            .replacingOccurrences(of: "-+", with: "-", options: .regularExpression)
-            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-
-        return sanitized.isEmpty ? "attachment" : sanitized
-    }
-
-    func detectedImageFileExtension(for data: Data) -> String {
-        if data.range(of: Data("ftypheic".utf8)) != nil || data.range(of: Data("ftypheix".utf8)) != nil {
-            return "heic"
-        }
-
-        if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
-            return "png"
-        }
-
-        if data.starts(with: [0xFF, 0xD8, 0xFF]) {
-            return "jpg"
-        }
-
-        if data.starts(with: [0x47, 0x49, 0x46, 0x38]) {
-            return "gif"
-        }
-
-        if data.starts(with: [0x42, 0x4D]) {
-            return "bmp"
-        }
-
-        if data.starts(with: [0x52, 0x49, 0x46, 0x46]),
-           data.dropFirst(8).starts(with: [0x57, 0x45, 0x42, 0x50]) {
-            return "webp"
-        }
-
-        if data.starts(with: [0x00, 0x00, 0x01, 0x00]) {
-            return "ico"
-        }
-
-        if data.starts(with: [0x49, 0x49, 0x2A, 0x00]) || data.starts(with: [0x4D, 0x4D, 0x00, 0x2A]) {
-            return "tiff"
-        }
-
-        return "png"
     }
 
 }
