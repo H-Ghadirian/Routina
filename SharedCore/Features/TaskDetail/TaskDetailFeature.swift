@@ -167,6 +167,7 @@ struct TaskDetailFeature: Reducer {
         case editDeadlineDateChanged(Date)
         case editReminderEnabledChanged(Bool)
         case editReminderDateChanged(Date)
+        case editReminderLeadMinutesChanged(Int?)
         case editPriorityChanged(RoutineTaskPriority)
         case editImportanceChanged(RoutineTaskImportance)
         case editUrgencyChanged(RoutineTaskUrgency)
@@ -602,15 +603,30 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editDeadlineDateChanged(deadline):
-            state.editDeadline = deadline
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editDeadline = deadline
+            }
             return .none
 
         case let .editReminderEnabledChanged(isEnabled):
-            state.editReminderAt = isEnabled ? (state.editReminderAt ?? now) : nil
+            state.editReminderAt = isEnabled
+                ? (state.editReminderAt ?? editReminderEventDate(for: state) ?? now)
+                : nil
             return .none
 
         case let .editReminderDateChanged(reminderDate):
             state.editReminderAt = reminderDate
+            return .none
+
+        case let .editReminderLeadMinutesChanged(leadMinutes):
+            guard let leadMinutes,
+                  let eventDate = editReminderEventDate(for: state) else {
+                return .none
+            }
+            state.editReminderAt = TaskFormReminderLeadTime.reminderDate(
+                eventDate: eventDate,
+                leadMinutes: leadMinutes
+            )
             return .none
 
         case let .editPriorityChanged(priority):
@@ -719,13 +735,15 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editScheduleModeChanged(mode):
-            state.editScheduleMode = mode
-            if mode != .oneOff {
-                state.editDeadline = nil
-            }
-            if mode == .softInterval {
-                state.editRecurrenceKind = .intervalDays
-                state.editRecurrenceHasExplicitTime = false
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editScheduleMode = mode
+                if mode != .oneOff {
+                    state.editDeadline = nil
+                }
+                if mode == .softInterval {
+                    state.editRecurrenceKind = .intervalDays
+                    state.editRecurrenceHasExplicitTime = false
+                }
             }
             if !canAutoAssumeDailyDone(for: state) {
                 state.editAutoAssumeDailyDone = false
@@ -857,29 +875,35 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editFrequencyChanged(frequency):
-            state.editFrequency = frequency
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editFrequency = frequency
+            }
             if !canAutoAssumeDailyDone(for: state) {
                 state.editAutoAssumeDailyDone = false
             }
             return .none
 
         case let .editFrequencyValueChanged(value):
-            state.editFrequencyValue = value
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editFrequencyValue = value
+            }
             if !canAutoAssumeDailyDone(for: state) {
                 state.editAutoAssumeDailyDone = false
             }
             return .none
 
         case let .editRecurrenceKindChanged(kind):
-            let previousHasExplicitTime = state.editRecurrenceHasExplicitTime
-            state.editRecurrenceKind = kind
-            switch kind {
-            case .intervalDays:
-                state.editRecurrenceHasExplicitTime = false
-            case .dailyTime:
-                state.editRecurrenceHasExplicitTime = true
-            case .weekly, .monthlyDay:
-                state.editRecurrenceHasExplicitTime = previousHasExplicitTime
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                let previousHasExplicitTime = state.editRecurrenceHasExplicitTime
+                state.editRecurrenceKind = kind
+                switch kind {
+                case .intervalDays:
+                    state.editRecurrenceHasExplicitTime = false
+                case .dailyTime:
+                    state.editRecurrenceHasExplicitTime = true
+                case .weekly, .monthlyDay:
+                    state.editRecurrenceHasExplicitTime = previousHasExplicitTime
+                }
             }
             if !canAutoAssumeDailyDone(for: state) {
                 state.editAutoAssumeDailyDone = false
@@ -887,22 +911,30 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editRecurrenceHasExplicitTimeChanged(hasExplicitTime):
-            state.editRecurrenceHasExplicitTime = hasExplicitTime
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editRecurrenceHasExplicitTime = hasExplicitTime
+            }
             return .none
 
         case let .editRecurrenceTimeOfDayChanged(timeOfDay):
-            state.editRecurrenceTimeOfDay = timeOfDay
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editRecurrenceTimeOfDay = timeOfDay
+            }
             if !canAutoAssumeDailyDone(for: state) {
                 state.editAutoAssumeDailyDone = false
             }
             return .none
 
         case let .editRecurrenceWeekdayChanged(weekday):
-            state.editRecurrenceWeekday = min(max(weekday, 1), 7)
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editRecurrenceWeekday = min(max(weekday, 1), 7)
+            }
             return .none
 
         case let .editRecurrenceDayOfMonthChanged(dayOfMonth):
-            state.editRecurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+            rebaseEditReminderIfUsingLeadTime(&state) { state in
+                state.editRecurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+            }
             return .none
 
         case let .editAutoAssumeDailyDoneChanged(isEnabled):

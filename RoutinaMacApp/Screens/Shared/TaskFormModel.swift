@@ -24,6 +24,8 @@ struct TaskFormModel {
     // MARK: Reminder
     var reminderEnabled: Binding<Bool>
     var reminderAt: Binding<Date>
+    var reminderEventDate: Date? = nil
+    var reminderLeadMinutes: Binding<Int?> = .constant(nil)
 
     // MARK: Priority matrix
     var importance: Binding<RoutineTaskImportance>

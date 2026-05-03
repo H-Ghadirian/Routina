@@ -119,6 +119,17 @@ struct SettingsIOSRootView: View {
                             )
                         }
                     }
+
+                    NavigationLink {
+                        SettingsQuickAddDetailView()
+                    } label: {
+                        SettingsNavigationRow(
+                            icon: "text.badge.plus",
+                            tint: .mint,
+                            title: "Quick Add",
+                            subtitle: "Supported syntax and examples"
+                        )
+                    }
                 }
 
                 Section {
@@ -221,6 +232,8 @@ private struct SettingsIPadSplitView: View {
             SettingsGitDetailView(store: store)
         case .backup:
             SettingsDataBackupDetailView(store: store)
+        case .quickAdd:
+            SettingsQuickAddDetailView()
         case .shortcuts:
             SettingsIOSShortcutsDetailView()
         case .support:
@@ -250,6 +263,8 @@ private extension SettingsIOSSection {
             return .cyan
         case .git, .backup:
             return .indigo
+        case .quickAdd:
+            return .mint
         case .shortcuts:
             return .teal
         case .support:
@@ -291,6 +306,57 @@ private struct SettingsIOSShortcutsDetailView: View {
             }
         }
         .navigationTitle("Shortcuts")
+    }
+}
+
+private struct SettingsQuickAddDetailView: View {
+    var body: some View {
+        List {
+            Section("Examples") {
+                ForEach(SettingsQuickAddSyntaxGuide.examples) { example in
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(example.phrase)
+                            .font(.subheadline.weight(.semibold).monospaced())
+                            .textSelection(.enabled)
+
+                        Text(example.result)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
+            ForEach(SettingsQuickAddSyntaxGuide.syntaxGroups) { group in
+                Section(group.title) {
+                    ForEach(group.rows) { row in
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(row.syntax)
+                                .font(.subheadline.weight(.semibold).monospaced())
+                                .textSelection(.enabled)
+
+                            Text(row.detail)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+
+            Section("Notes") {
+                ForEach(SettingsQuickAddSyntaxGuide.notes, id: \.self) { note in
+                    Text(note)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Quick Add")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

@@ -5,6 +5,7 @@ struct TaskDetailEditRoutineContent: View {
     let store: StoreOf<TaskDetailFeature>
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
+    @Environment(\.calendar) private var calendar
 
     var body: some View {
         TaskFormContent(model: makeTaskFormModel())
@@ -50,6 +51,8 @@ struct TaskDetailEditRoutineContent: View {
             deadline: editDeadlineBinding,
             reminderEnabled: editReminderEnabledBinding,
             reminderAt: editReminderBinding,
+            reminderEventDate: editReminderEventDate,
+            reminderLeadMinutes: editReminderLeadMinutesBinding,
             importance: editImportanceBinding,
             urgency: editUrgencyBinding,
             pressure: Binding(
@@ -199,6 +202,28 @@ struct TaskDetailEditRoutineContent: View {
         Binding(
             get: { store.editReminderAt ?? Date() },
             set: { store.send(.editReminderDateChanged($0)) }
+        )
+    }
+
+    private var editReminderEventDate: Date? {
+        TaskFormReminderLeadTime.eventDate(
+            scheduleMode: store.editScheduleMode,
+            deadline: store.editDeadline,
+            recurrenceRule: store.candidateRecurrenceRule,
+            referenceDate: Date(),
+            calendar: calendar
+        )
+    }
+
+    private var editReminderLeadMinutesBinding: Binding<Int?> {
+        Binding(
+            get: {
+                TaskFormReminderLeadTime.matchedLeadMinutes(
+                    eventDate: editReminderEventDate,
+                    reminderAt: store.editReminderAt
+                )
+            },
+            set: { store.send(.editReminderLeadMinutesChanged($0)) }
         )
     }
 

@@ -58,6 +58,38 @@ extension TaskDetailFeature {
         state.canAutoAssumeDailyDone
     }
 
+    func editReminderEventDate(for state: State) -> Date? {
+        TaskFormReminderLeadTime.eventDate(
+            scheduleMode: state.editScheduleMode,
+            deadline: state.editDeadline,
+            recurrenceRule: state.candidateRecurrenceRule,
+            referenceDate: now,
+            calendar: calendar
+        )
+    }
+
+    func rebaseEditReminderIfUsingLeadTime(
+        _ state: inout State,
+        mutate: (inout State) -> Void
+    ) {
+        let leadMinutes = TaskFormReminderLeadTime.matchedLeadMinutes(
+            eventDate: editReminderEventDate(for: state),
+            reminderAt: state.editReminderAt
+        )
+
+        mutate(&state)
+
+        guard let leadMinutes,
+              let eventDate = editReminderEventDate(for: state) else {
+            return
+        }
+
+        state.editReminderAt = TaskFormReminderLeadTime.reminderDate(
+            eventDate: eventDate,
+            leadMinutes: leadMinutes
+        )
+    }
+
     func moveStep(_ stepID: UUID, by offset: Int, state: inout State) {
         guard let index = state.editRoutineSteps.firstIndex(where: { $0.id == stepID }) else { return }
         let targetIndex = index + offset

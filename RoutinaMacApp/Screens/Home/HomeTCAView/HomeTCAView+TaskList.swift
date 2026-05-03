@@ -33,13 +33,6 @@ extension HomeTCAView {
         let metadataText = rowMetadataText(for: task)
 
         return HStack(alignment: .top, spacing: 10) {
-            if let color = task.color.swiftUIColor {
-                Capsule(style: .continuous)
-                    .fill(color)
-                    .frame(width: 3, height: 34)
-                    .accessibilityHidden(true)
-            }
-
             VStack(spacing: 4) {
                 taskIcon(for: task)
 
@@ -214,7 +207,10 @@ extension HomeTCAView {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(macTaskSourceRowStroke(for: task), lineWidth: 1)
+                    .stroke(
+                        macTaskSourceRowStroke(for: task),
+                        lineWidth: macTaskSourceRowStrokeWidth(for: task)
+                    )
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onTapGesture {
@@ -250,10 +246,17 @@ extension HomeTCAView {
     }
 
     private func macTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
+        if let color = task.color.swiftUIColor {
+            return color.opacity(store.selectedTaskID == task.taskID ? 0.95 : 0.72)
+        }
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.55)
         }
         return Color.primary.opacity(0.06)
+    }
+
+    private func macTaskSourceRowStrokeWidth(for task: HomeFeature.RoutineDisplay) -> CGFloat {
+        task.color.swiftUIColor == nil ? 1 : 1.5
     }
 
     func platformDeleteTasks(

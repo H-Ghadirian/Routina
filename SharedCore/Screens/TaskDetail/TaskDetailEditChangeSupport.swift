@@ -158,3 +158,157 @@ enum TaskDetailEditChangeDetector {
         }
     }
 }
+
+enum TaskFormReminderLeadTime: Int, CaseIterable, Identifiable {
+    case atEventTime = 0
+    case fiveMinutes = 5
+    case fifteenMinutes = 15
+    case thirtyMinutes = 30
+    case oneHour = 60
+    case twoHours = 120
+    case oneDay = 1_440
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .atEventTime:
+            return "At event time"
+        case .fiveMinutes:
+            return "5 minutes before"
+        case .fifteenMinutes:
+            return "15 minutes before"
+        case .thirtyMinutes:
+            return "30 minutes before"
+        case .oneHour:
+            return "1 hour before"
+        case .twoHours:
+            return "2 hours before"
+        case .oneDay:
+            return "1 day before"
+        }
+    }
+
+    static func matchedLeadMinutes(
+        eventDate: Date?,
+        reminderAt: Date?
+    ) -> Int? {
+        guard let eventDate, let reminderAt else { return nil }
+        let leadMinutes = Int((eventDate.timeIntervalSince(reminderAt) / 60).rounded())
+        return allCases.first { abs($0.rawValue - leadMinutes) <= 1 }?.rawValue
+    }
+
+    static func reminderDate(
+        eventDate: Date,
+        leadMinutes: Int
+    ) -> Date {
+        eventDate.addingTimeInterval(-Double(leadMinutes) * 60)
+    }
+
+    static func eventDate(
+        scheduleMode: RoutineScheduleMode,
+        deadline: Date?,
+        recurrenceRule: RoutineRecurrenceRule,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Date? {
+        if scheduleMode == .oneOff {
+            return deadline
+        }
+
+        guard scheduleMode == .fixedInterval,
+              let timeOfDay = recurrenceRule.timeOfDay else {
+            return nil
+        }
+
+        switch recurrenceRule.kind {
+        case .intervalDays:
+            return nil
+
+        case .dailyTime:
+            return nextDailyOccurrence(
+                after: referenceDate,
+                timeOfDay: timeOfDay,
+                calendar: calendar
+            )
+
+        case .weekly:
+            return nextWeeklyOccurrence(
+                after: referenceDate,
+                weekday: recurrenceRule.weekday ?? calendar.firstWeekday,
+                timeOfDay: timeOfDay,
+                calendar: calendar
+            )
+
+        case .monthlyDay:
+            return nextMonthlyOccurrence(
+                after: referenceDate,
+                dayOfMonth: recurrenceRule.dayOfMonth ?? 1,
+                timeOfDay: timeOfDay,
+                calendar: calendar
+            )
+        }
+    }
+
+    private static func nextDailyOccurrence(
+        after referenceDate: Date,
+        timeOfDay: RoutineTimeOfDay,
+        calendar: Calendar
+    ) -> Date {
+        let candidate = timeOfDay.date(on: referenceDate, calendar: calendar)
+        if candidate >= referenceDate {
+            return candidate
+        }
+
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: referenceDate) ?? referenceDate
+        return timeOfDay.date(on: tomorrow, calendar: calendar)
+    }
+
+    private static func nextWeeklyOccurrence(
+        after referenceDate: Date,
+        weekday: Int,
+        timeOfDay: RoutineTimeOfDay,
+        calendar: Calendar
+    ) -> Date {
+        var components = DateComponents()
+        components.weekday = min(max(weekday, 1), 7)
+        components.hour = timeOfDay.hour
+        components.minute = timeOfDay.minute
+
+        return calendar.nextDate(
+            after: referenceDate.addingTimeInterval(-1),
+            matching: components,
+            matchingPolicy: .nextTimePreservingSmallerComponents,
+            repeatedTimePolicy: .first,
+            direction: .forward
+        ) ?? nextDailyOccurrence(after: referenceDate, timeOfDay: timeOfDay, calendar: calendar)
+    }
+
+    private static func nextMonthlyOccurrence(
+        after referenceDate: Date,
+        dayOfMonth: Int,
+        timeOfDay: RoutineTimeOfDay,
+        calendar: Calendar
+    ) -> Date {
+        let resolvedDay = min(max(dayOfMonth, 1), 31)
+        let monthAnchor = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: referenceDate)
+        ) ?? referenceDate
+        var currentMonth = monthAnchor
+
+        while true {
+            let dayCount = calendar.range(of: .day, in: .month, for: currentMonth)?.count ?? 31
+            let safeDay = min(resolvedDay, dayCount)
+            var components = calendar.dateComponents([.year, .month], from: currentMonth)
+            components.day = safeDay
+            components.hour = timeOfDay.hour
+            components.minute = timeOfDay.minute
+
+            if let candidate = calendar.date(from: components), candidate >= referenceDate {
+                return candidate
+            }
+
+            currentMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+        }
+    }
+}

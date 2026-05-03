@@ -13,6 +13,7 @@ extension SettingsMacSection {
         case .iCloud:        return .cyan
         case .git:           return .indigo
         case .backup:        return .indigo
+        case .quickAdd:      return .mint
         case .shortcuts:     return .teal
         case .support:       return .green
         case .about:         return .gray

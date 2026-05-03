@@ -26,9 +26,27 @@ struct TaskFormIOSReminderSection: View {
         Section(header: Text("Reminder")) {
             Toggle("Set reminder", isOn: model.reminderEnabled)
             if model.reminderEnabled.wrappedValue {
-                DatePicker("Reminder", selection: model.reminderAt)
+                if let reminderEventDate = model.reminderEventDate {
+                    Picker("When", selection: model.reminderLeadMinutes) {
+                        Text("Custom time").tag(Optional<Int>.none)
+                        ForEach(TaskFormReminderLeadTime.allCases) { option in
+                            Text(option.title).tag(Optional(option.rawValue))
+                        }
+                    }
+
+                    Text("Event: \(reminderEventDate.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                DatePicker(
+                    model.reminderEventDate == nil ? "Reminder" : "Custom time",
+                    selection: model.reminderAt
+                )
             }
-            Text("Send one notification at an exact date and time.")
+            Text(model.reminderEventDate == nil
+                ? "Send one notification at an exact date and time."
+                : "Choose a lead time before the event, or set a custom notification time.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

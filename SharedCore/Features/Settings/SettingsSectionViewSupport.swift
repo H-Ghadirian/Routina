@@ -9,6 +9,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     case iCloud
     case git
     case backup
+    case quickAdd
     case shortcuts
     case support
     case about
@@ -38,6 +39,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .iCloud:        return "iCloud"
         case .git:           return "Git"
         case .backup:        return "Data Backup"
+        case .quickAdd:      return "Quick Add"
         case .shortcuts:     return "Shortcuts"
         case .support:       return "Support"
         case .about:         return "About"
@@ -54,6 +56,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .iCloud:        return "icloud.fill"
         case .git:           return "arrow.triangle.branch"
         case .backup:        return "externaldrive.fill"
+        case .quickAdd:      return "text.badge.plus"
         case .shortcuts:     return "keyboard.fill"
         case .support:       return "envelope.fill"
         case .about:         return "info.circle.fill"
@@ -111,6 +114,9 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .backup:
             return SettingsSectionRowPresentation(subtitle: state.dataTransfer.overviewSubtitle)
 
+        case .quickAdd:
+            return SettingsSectionRowPresentation(subtitle: "Supported syntax and examples")
+
         case .shortcuts:
             return SettingsSectionRowPresentation(subtitle: "Keyboard, Siri, and Apple Shortcuts")
 
@@ -131,6 +137,102 @@ struct SettingsSectionRowPresentation: Equatable {
         self.subtitle = subtitle
         self.value = value
     }
+}
+
+struct SettingsQuickAddExample: Identifiable, Equatable {
+    var phrase: String
+    var result: String
+
+    var id: String { phrase }
+}
+
+struct SettingsQuickAddSyntaxGroup: Identifiable, Equatable {
+    var title: String
+    var rows: [SettingsQuickAddSyntaxItem]
+
+    var id: String { title }
+}
+
+struct SettingsQuickAddSyntaxItem: Identifiable, Equatable {
+    var syntax: String
+    var detail: String
+
+    var id: String { syntax }
+}
+
+enum SettingsQuickAddSyntaxGuide {
+    static let examples: [SettingsQuickAddExample] = [
+        SettingsQuickAddExample(
+            phrase: "Water plants every Saturday at 9am #home",
+            result: "Creates a weekly routine on Saturday at 9:00 AM with #home."
+        ),
+        SettingsQuickAddExample(
+            phrase: "Submit report tomorrow at 5pm !high #work",
+            result: "Creates a high-priority todo due tomorrow at 5:00 PM."
+        ),
+        SettingsQuickAddExample(
+            phrase: "Clean desk every 2 days softly @Home",
+            result: "Creates a soft routine every 2 days and links it to Home."
+        ),
+        SettingsQuickAddExample(
+            phrase: "Pay rent monthly on 1st at 8am #finance",
+            result: "Creates a monthly routine on the 1st at 8:00 AM."
+        ),
+        SettingsQuickAddExample(
+            phrase: "Read for 25m today",
+            result: "Creates a todo due today and enables a 25-minute focus estimate."
+        )
+    ]
+
+    static let syntaxGroups: [SettingsQuickAddSyntaxGroup] = [
+        SettingsQuickAddSyntaxGroup(
+            title: "Dates",
+            rows: [
+                SettingsQuickAddSyntaxItem(syntax: "today", detail: "Due today."),
+                SettingsQuickAddSyntaxItem(syntax: "tomorrow", detail: "Due tomorrow."),
+                SettingsQuickAddSyntaxItem(syntax: "due Friday", detail: "Due on the next Friday."),
+                SettingsQuickAddSyntaxItem(syntax: "by Friday", detail: "Also sets the next Friday deadline.")
+            ]
+        ),
+        SettingsQuickAddSyntaxGroup(
+            title: "Times",
+            rows: [
+                SettingsQuickAddSyntaxItem(syntax: "at 9am", detail: "Sets a morning time."),
+                SettingsQuickAddSyntaxItem(syntax: "at 9:30pm", detail: "Sets an evening time."),
+                SettingsQuickAddSyntaxItem(syntax: "at 14:30", detail: "Uses 24-hour time.")
+            ]
+        ),
+        SettingsQuickAddSyntaxGroup(
+            title: "Routines",
+            rows: [
+                SettingsQuickAddSyntaxItem(syntax: "daily", detail: "Creates a daily routine."),
+                SettingsQuickAddSyntaxItem(syntax: "every day", detail: "Also creates a daily routine."),
+                SettingsQuickAddSyntaxItem(syntax: "every 2 days", detail: "Creates an interval routine."),
+                SettingsQuickAddSyntaxItem(syntax: "every Monday", detail: "Creates a weekly routine."),
+                SettingsQuickAddSyntaxItem(syntax: "weekly on Monday", detail: "Also creates a weekly routine."),
+                SettingsQuickAddSyntaxItem(syntax: "monthly on 15th", detail: "Creates a monthly routine.")
+            ]
+        ),
+        SettingsQuickAddSyntaxGroup(
+            title: "Metadata",
+            rows: [
+                SettingsQuickAddSyntaxItem(syntax: "#home", detail: "Adds a one-word tag."),
+                SettingsQuickAddSyntaxItem(syntax: "@Office", detail: "Links a one-word place when it exists."),
+                SettingsQuickAddSyntaxItem(syntax: "!urgent", detail: "Sets urgent priority."),
+                SettingsQuickAddSyntaxItem(syntax: "!high / !medium / !low", detail: "Sets priority."),
+                SettingsQuickAddSyntaxItem(syntax: "25m / 45 min / 1h", detail: "Adds an estimated focus duration."),
+                SettingsQuickAddSyntaxItem(syntax: "soft / softly", detail: "Creates a soft routine when used with recurrence.")
+            ]
+        )
+    ]
+
+    static let notes: [String] = [
+        "No date or recurrence creates a normal todo.",
+        "Recurrence phrases create routines.",
+        "Times apply to the due date or recurrence in the same phrase.",
+        "Tags and places stop at spaces, so use one-word names.",
+        "Optional starters like add, create, new, task, todo, routine, and remind me to are removed from the final title."
+    ]
 }
 
 extension SettingsNotificationsState {

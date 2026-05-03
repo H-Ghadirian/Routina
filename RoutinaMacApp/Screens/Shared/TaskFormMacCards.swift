@@ -403,13 +403,33 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     private var reminderControl: some View {
         TaskFormMacControlBlock(
             title: "Reminder",
-            caption: "Send one notification at an exact date and time."
+            caption: model.reminderEventDate == nil
+                ? "Send one notification at an exact date and time."
+                : "Choose a lead time before the event, or set a custom notification time."
         ) {
             VStack(alignment: .leading, spacing: 10) {
                 Toggle("Set reminder", isOn: model.reminderEnabled)
                 if model.reminderEnabled.wrappedValue {
-                    DatePicker("Reminder", selection: model.reminderAt)
-                        .labelsHidden()
+                    if let reminderEventDate = model.reminderEventDate {
+                        Picker("When", selection: model.reminderLeadMinutes) {
+                            Text("Custom time").tag(Optional<Int>.none)
+                            ForEach(TaskFormReminderLeadTime.allCases) { option in
+                                Text(option.title).tag(Optional(option.rawValue))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 180)
+
+                        Text("Event: \(reminderEventDate.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    DatePicker(
+                        model.reminderEventDate == nil ? "Reminder" : "Custom time",
+                        selection: model.reminderAt
+                    )
+                    .labelsHidden()
                 }
             }
         }
