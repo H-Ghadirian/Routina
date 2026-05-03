@@ -1001,76 +1001,16 @@ struct TaskDetailTCAView: View {
     }
 
     private var taskExtrasSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Details")
-                .font(.headline)
-
-            if let imageData = store.task.imageData {
-                TaskImageView(data: imageData)
-                    .frame(maxWidth: .infinity, maxHeight: 320)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            ForEach(store.taskAttachments) { item in
-                HStack(spacing: 10) {
-                    Image(systemName: "doc.fill")
-                        .foregroundStyle(Color.accentColor)
-                    Text(item.fileName)
-                        .font(.subheadline)
-                        .lineLimit(2)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Button {
-                        saveAttachment(item: item)
-                    } label: {
-                        Image(systemName: "arrow.down.doc")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Save to Files")
-                    Button {
-                        openAttachment(data: item.data, fileName: item.fileName)
-                    } label: {
-                        Image(systemName: "arrow.up.forward.square")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Open with…")
-                }
-                .padding(10)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-
-            if let notes = CalendarTaskImportSupport.displayNotes(from: store.task.notes) {
-                Text(notes)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let linkURL = store.task.resolvedLinkURL {
-                Link(destination: linkURL) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "link")
-                            .foregroundStyle(.blue)
-                        Text(store.task.link ?? linkURL.absoluteString)
-                            .font(.subheadline)
-                            .foregroundStyle(.blue)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-        }
-        .padding(12)
-        .background(routineLogsBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        TaskDetailExtrasSectionView(
+            imageData: store.task.imageData,
+            attachments: store.taskAttachments,
+            notes: CalendarTaskImportSupport.displayNotes(from: store.task.notes),
+            linkURL: store.task.resolvedLinkURL,
+            linkText: store.task.link,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            onSaveAttachment: saveAttachment(item:),
+            onOpenAttachment: { openAttachment(data: $0.data, fileName: $0.fileName) }
         )
     }
 
@@ -1388,27 +1328,13 @@ private struct RoutineLogSwipeRow: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(timestampText)
-                    .font(.subheadline)
-
-                Button {
-                    editTimeAction()
-                } label: {
-                    Label(timeSpentText, systemImage: "clock")
-                        .font(.caption.weight(.semibold))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text(statusText)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(statusColor)
-        }
-        .padding(.vertical, 8)
+        TaskDetailRoutineLogRowContent(
+            timestampText: timestampText,
+            timeSpentText: timeSpentText,
+            statusText: statusText,
+            statusColor: statusColor,
+            onEditTime: editTimeAction
+        )
     }
 
     private var currentOffset: CGFloat {

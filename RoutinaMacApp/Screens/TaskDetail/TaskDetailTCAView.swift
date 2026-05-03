@@ -1207,68 +1207,17 @@ struct TaskDetailTCAView: View {
     }
 
     private var taskExtrasSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Details")
-                .font(.headline)
-
-            if let imageData = store.task.imageData {
-                Button {
-                    openTaskImage(data: imageData)
-                } label: {
-                    TaskImageView(data: imageData)
-                        .frame(maxWidth: .infinity, maxHeight: 320)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .help("Open image in another app")
-            }
-            ForEach(store.taskAttachments) { item in
-                HStack(spacing: 10) {
-                    Image(systemName: "doc.fill")
-                        .foregroundStyle(Color.accentColor)
-                    Text(item.fileName)
-                        .font(.subheadline)
-                        .lineLimit(2)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Button {
-                        saveAttachment(item: item)
-                    } label: {
-                        Image(systemName: "arrow.down.doc")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Save to Files")
-                    Button {
-                        openAttachment(data: item.data, fileName: item.fileName)
-                    } label: {
-                        Image(systemName: "arrow.up.forward.square")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Open with…")
-                }
-                .padding(10)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-
-            if let notes = CalendarTaskImportSupport.displayNotes(from: store.task.notes) {
-                Text(notes)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(12)
-        .background(routineLogsBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        TaskDetailExtrasSectionView(
+            imageData: store.task.imageData,
+            attachments: store.taskAttachments,
+            notes: CalendarTaskImportSupport.displayNotes(from: store.task.notes),
+            linkURL: nil,
+            linkText: nil,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            onOpenImage: openTaskImage(data:),
+            onSaveAttachment: saveAttachment(item:),
+            onOpenAttachment: { openAttachment(data: $0.data, fileName: $0.fileName) }
         )
     }
 
@@ -1432,27 +1381,13 @@ struct TaskDetailTCAView: View {
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke
         ) { _, log, _ in
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(TaskDetailLogPresentation.timestampText(log.timestamp, showPersianDates: showPersianDates))
-                        .font(.subheadline)
-
-                    Button {
-                        beginEditingTime(for: log)
-                    } label: {
-                        Label(TaskDetailLogPresentation.timeSpentText(for: log, style: .full), systemImage: "clock")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text(log.kind == .completed ? "Done" : "Canceled")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(log.kind == .completed ? .green : .orange)
-            }
-            .padding(.vertical, 8)
+            TaskDetailRoutineLogRowContent(
+                timestampText: TaskDetailLogPresentation.timestampText(log.timestamp, showPersianDates: showPersianDates),
+                timeSpentText: TaskDetailLogPresentation.timeSpentText(for: log, style: .full),
+                statusText: log.kind == .completed ? "Done" : "Canceled",
+                statusColor: log.kind == .completed ? .green : .orange,
+                onEditTime: { beginEditingTime(for: log) }
+            )
             .contextMenu {
                 Button(log.actualDurationMinutes == nil ? "Add Time Spent" : "Edit Time Spent") {
                     beginEditingTime(for: log)
