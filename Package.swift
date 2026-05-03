@@ -298,6 +298,7 @@ let package = Package(
                 "SharedCore/Views/DayPlan/DayPlanPlannerState.swift",
                 "SharedCore/Views/DayPlan/DayPlanSupport.swift",
                 "SharedCore/Views/DayPlan/DayPlanCurrentTimeIndicator.swift",
+                "SharedCore/Views/DayPlan/DayPlanResizeHandle.swift",
                 "SharedCore/Views/DayPlan/DayPlanTaskAvatar.swift",
                 "SharedCore/Views/DayPlan/DayPlanWeekDayHeader.swift",
                 "SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift",
