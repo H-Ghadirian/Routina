@@ -15,6 +15,11 @@ struct TaskDetailHeaderBadgeItem: Identifiable {
 }
 
 enum TaskDetailHeaderBadgePresentation {
+    enum Layout {
+        case mobile
+        case desktop
+    }
+
     static func durationText(for minutes: Int) -> String {
         let hours = minutes / 60
         let remainingMinutes = minutes % 60
@@ -49,6 +54,102 @@ enum TaskDetailHeaderBadgePresentation {
         logs
             .filter { $0.kind == .completed }
             .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+    }
+
+    static func displayedActualDurationText(task: RoutineTask, logs: [RoutineLog]) -> String? {
+        let minutes = displayedActualDurationMinutes(task: task, logs: logs)
+        return minutes > 0 ? durationText(for: minutes) : nil
+    }
+
+    static func todoBadgeRows(
+        state: TaskDetailFeature.State,
+        summaryStatusColor: Color,
+        dueDateMetadataDisplayText: String?,
+        layout: Layout
+    ) -> [[TaskDetailHeaderBadgeItem]] {
+        var rows: [[TaskDetailHeaderBadgeItem]]
+
+        switch layout {
+        case .mobile:
+            rows = [[
+                TaskDetailHeaderBadgeItem(
+                    title: "Status",
+                    value: state.summaryStatusTitle,
+                    systemImage: nil,
+                    tint: summaryStatusColor
+                ),
+                TaskDetailHeaderBadgeItem(
+                    title: "Selected",
+                    value: state.selectedDateMetadataText,
+                    systemImage: nil,
+                    tint: .accentColor
+                )
+            ]]
+
+        case .desktop:
+            rows = []
+        }
+
+        if let locationRow = locationRow(for: state) {
+            rows.append(locationRow)
+        }
+
+        appendDueReminderAndEstimationRows(
+            to: &rows,
+            state: state,
+            dueDateMetadataDisplayText: dueDateMetadataDisplayText,
+            layout: layout
+        )
+
+        return rows
+    }
+
+    static func routineBadgeRows(
+        state: TaskDetailFeature.State,
+        summaryStatusColor: Color,
+        dueDateMetadataDisplayText: String?,
+        layout: Layout
+    ) -> [[TaskDetailHeaderBadgeItem]] {
+        var rows: [[TaskDetailHeaderBadgeItem]] = [[
+            TaskDetailHeaderBadgeItem(
+                title: "Status",
+                value: state.summaryStatusTitle,
+                systemImage: nil,
+                tint: summaryStatusColor
+            ),
+            TaskDetailHeaderBadgeItem(
+                title: "Frequency",
+                value: state.frequencyText,
+                systemImage: nil,
+                tint: .mint
+            )
+        ]]
+
+        switch layout {
+        case .mobile:
+            if let dueDateMetadataDisplayText {
+                rows.append([dueBadge(value: dueDateMetadataDisplayText)])
+            }
+
+            rows.append(mobileCompletedLocationRow(for: state))
+
+            if state.canceledLogCount > 0 {
+                rows.append([canceledBadge(for: state)])
+            }
+
+        case .desktop:
+            rows.append(desktopRoutineSecondRow(
+                for: state,
+                dueDateMetadataDisplayText: dueDateMetadataDisplayText
+            ))
+
+            if dueDateMetadataDisplayText != nil, let locationRow = locationRow(for: state) {
+                rows.append(locationRow)
+            }
+        }
+
+        appendReminderAndEstimationRows(to: &rows, state: state, layout: layout)
+        return rows
     }
 
     static func estimationBadges(
@@ -93,6 +194,120 @@ enum TaskDetailHeaderBadgePresentation {
         }
 
         return badges
+    }
+
+    private static func appendDueReminderAndEstimationRows(
+        to rows: inout [[TaskDetailHeaderBadgeItem]],
+        state: TaskDetailFeature.State,
+        dueDateMetadataDisplayText: String?,
+        layout: Layout
+    ) {
+        if let dueDateMetadataDisplayText {
+            rows.append([dueBadge(value: dueDateMetadataDisplayText)])
+        }
+
+        appendReminderAndEstimationRows(to: &rows, state: state, layout: layout)
+    }
+
+    private static func appendReminderAndEstimationRows(
+        to rows: inout [[TaskDetailHeaderBadgeItem]],
+        state: TaskDetailFeature.State,
+        layout: Layout
+    ) {
+        if let reminderMetadataText = state.reminderMetadataText {
+            rows.append([
+                TaskDetailHeaderBadgeItem(
+                    title: "Reminder",
+                    value: reminderMetadataText,
+                    systemImage: "bell.fill",
+                    tint: .indigo
+                )
+            ])
+        }
+
+        let estimationBadges = estimationBadges(
+            task: state.task,
+            displayedActualDurationMinutes: displayedActualDurationMinutes(
+                task: state.task,
+                logs: state.logs
+            ),
+            includeSpent: layout == .mobile,
+            includeStoryPoints: layout == .mobile
+        )
+        if !estimationBadges.isEmpty {
+            rows.append(estimationBadges)
+        }
+    }
+
+    private static func locationRow(for state: TaskDetailFeature.State) -> [TaskDetailHeaderBadgeItem]? {
+        guard let linkedPlace = state.linkedPlaceSummary else { return nil }
+        return [
+            TaskDetailHeaderBadgeItem(
+                title: "Location",
+                value: linkedPlace.name,
+                systemImage: nil,
+                tint: .blue
+            )
+        ]
+    }
+
+    private static func mobileCompletedLocationRow(for state: TaskDetailFeature.State) -> [TaskDetailHeaderBadgeItem] {
+        var row = locationRow(for: state) ?? []
+        row.append(completedBadge(for: state))
+        return row
+    }
+
+    private static func desktopRoutineSecondRow(
+        for state: TaskDetailFeature.State,
+        dueDateMetadataDisplayText: String?
+    ) -> [TaskDetailHeaderBadgeItem] {
+        var row = [completedBadge(for: state)]
+
+        if state.canceledLogCount > 0 {
+            row.append(canceledBadge(for: state))
+        }
+
+        if let dueDateMetadataDisplayText {
+            row.append(dueBadge(value: dueDateMetadataDisplayText))
+        } else if let linkedPlace = state.linkedPlaceSummary {
+            row.append(
+                TaskDetailHeaderBadgeItem(
+                    title: "Location",
+                    value: linkedPlace.name,
+                    systemImage: nil,
+                    tint: .blue
+                )
+            )
+        }
+
+        return row
+    }
+
+    private static func dueBadge(value: String) -> TaskDetailHeaderBadgeItem {
+        TaskDetailHeaderBadgeItem(
+            title: "Due",
+            value: value,
+            systemImage: nil,
+            tint: .orange
+        )
+    }
+
+    private static func completedBadge(for state: TaskDetailFeature.State) -> TaskDetailHeaderBadgeItem {
+        TaskDetailHeaderBadgeItem(
+            title: "Completed",
+            value: state.completedLogCountText,
+            systemImage: nil,
+            tint: .green
+        )
+    }
+
+    private static func canceledBadge(for state: TaskDetailFeature.State) -> TaskDetailHeaderBadgeItem {
+        TaskDetailHeaderBadgeItem(
+            title: "Canceled",
+            value: state.canceledLogCountText,
+            systemImage: nil,
+            tint: .orange
+        )
     }
 }
 

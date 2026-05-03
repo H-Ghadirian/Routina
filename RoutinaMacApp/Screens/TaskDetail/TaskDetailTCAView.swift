@@ -557,154 +557,28 @@ struct TaskDetailTCAView: View {
     }
 
     private var todoHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {
-        var rows: [[TaskDetailHeaderBadgeItem]] = []
-
-        if let linkedPlace = store.linkedPlaceSummary {
-            rows.append([
-                TaskDetailHeaderBadgeItem(
-                    title: "Location",
-                    value: linkedPlace.name,
-                    systemImage: nil,
-                    tint: .blue
-                )
-            ])
-        }
-
-        if let dueDateMetadataText = dueDateMetadataDisplayText {
-            rows.append([
-                TaskDetailHeaderBadgeItem(
-                    title: "Due",
-                    value: dueDateMetadataText,
-                    systemImage: nil,
-                    tint: .orange
-                )
-            ])
-        }
-
-        if let reminderMetadataText = store.reminderMetadataText {
-            rows.append([
-                TaskDetailHeaderBadgeItem(
-                    title: "Reminder",
-                    value: reminderMetadataText,
-                    systemImage: "bell.fill",
-                    tint: .indigo
-                )
-            ])
-        }
-
-        if !estimationHeaderBadges.isEmpty {
-            rows.append(estimationHeaderBadges)
-        }
-
-        return rows
-    }
-
-    private var routineHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {
-        var rows: [[TaskDetailHeaderBadgeItem]] = [
-            [
-                TaskDetailHeaderBadgeItem(
-                    title: "Status",
-                    value: store.summaryStatusTitle,
-                    systemImage: nil,
-                    tint: summaryStatusColor
-                ),
-                TaskDetailHeaderBadgeItem(
-                    title: "Frequency",
-                    value: store.frequencyText,
-                    systemImage: nil,
-                    tint: .mint
-                )
-            ]
-        ]
-
-        var secondRow: [TaskDetailHeaderBadgeItem] = [
-            TaskDetailHeaderBadgeItem(
-                title: "Completed",
-                value: store.completedLogCountText,
-                systemImage: nil,
-                tint: .green
-            )
-        ]
-        if store.canceledLogCount > 0 {
-            secondRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Canceled",
-                    value: store.canceledLogCountText,
-                    systemImage: nil,
-                    tint: .orange
-                )
-            )
-        }
-        if let dueDateMetadataText = dueDateMetadataDisplayText {
-            secondRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Due",
-                    value: dueDateMetadataText,
-                    systemImage: nil,
-                    tint: .orange
-                )
-            )
-        } else if let linkedPlace = store.linkedPlaceSummary {
-            secondRow.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Location",
-                    value: linkedPlace.name,
-                    systemImage: nil,
-                    tint: .blue
-                )
-            )
-        }
-        rows.append(secondRow)
-
-        if let linkedPlace = store.linkedPlaceSummary, store.dueDateMetadataText != nil {
-            rows.append([
-                TaskDetailHeaderBadgeItem(
-                    title: "Location",
-                    value: linkedPlace.name,
-                    systemImage: nil,
-                    tint: .blue
-                )
-            ])
-        }
-
-        if let reminderMetadataText = store.reminderMetadataText {
-            rows.append([
-                TaskDetailHeaderBadgeItem(
-                    title: "Reminder",
-                    value: reminderMetadataText,
-                    systemImage: "bell.fill",
-                    tint: .indigo
-                )
-            ])
-        }
-
-        if !estimationHeaderBadges.isEmpty {
-            rows.append(estimationHeaderBadges)
-        }
-
-        return rows
-    }
-
-    private var estimationHeaderBadges: [TaskDetailHeaderBadgeItem] {
-        TaskDetailHeaderBadgePresentation.estimationBadges(
-            task: store.task,
-            displayedActualDurationMinutes: displayedActualDurationMinutes,
-            includeSpent: false,
-            includeStoryPoints: false
+        TaskDetailHeaderBadgePresentation.todoBadgeRows(
+            state: store.state,
+            summaryStatusColor: summaryStatusColor,
+            dueDateMetadataDisplayText: dueDateMetadataDisplayText,
+            layout: .desktop
         )
     }
 
-    private var displayedActualDurationMinutes: Int {
-        TaskDetailHeaderBadgePresentation.displayedActualDurationMinutes(
-            task: store.task,
-            logs: store.logs
+    private var routineHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {
+        TaskDetailHeaderBadgePresentation.routineBadgeRows(
+            state: store.state,
+            summaryStatusColor: summaryStatusColor,
+            dueDateMetadataDisplayText: dueDateMetadataDisplayText,
+            layout: .desktop
         )
     }
 
     private var displayedActualDurationText: String? {
-        displayedActualDurationMinutes > 0
-            ? TaskDetailHeaderBadgePresentation.durationText(for: displayedActualDurationMinutes)
-            : nil
+        TaskDetailHeaderBadgePresentation.displayedActualDurationText(
+            task: store.task,
+            logs: store.logs
+        )
     }
 
     private var latestCompletedLog: RoutineLog? {

@@ -1,5 +1,6 @@
 import Foundation
 import ComposableArchitecture
+import SwiftUI
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -35,6 +36,96 @@ struct TaskDetailSharedViewSupportTests {
 
         #expect(TaskDetailHeaderBadgePresentation.displayedActualDurationMinutes(task: todo, logs: logs) == 15)
         #expect(TaskDetailHeaderBadgePresentation.displayedActualDurationMinutes(task: routine, logs: logs) == 45)
+    }
+
+    @Test
+    func headerBadgeRowsPreserveMobileAndDesktopTodoLayout() {
+        let placeID = UUID()
+        let task = RoutineTask(
+            name: "Ship report",
+            deadline: makeDate("2026-04-26T09:00:00Z"),
+            placeID: placeID,
+            scheduleMode: .oneOff,
+            estimatedDurationMinutes: 30,
+            actualDurationMinutes: 45,
+            storyPoints: 3
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.availablePlaces = [
+            RoutinePlaceSummary(id: placeID, name: "Office", radiusMeters: 150, linkedRoutineCount: 1)
+        ]
+
+        let mobileRows = TaskDetailHeaderBadgePresentation.todoBadgeRows(
+            state: state,
+            summaryStatusColor: .green,
+            dueDateMetadataDisplayText: "Tomorrow",
+            layout: .mobile
+        )
+        let desktopRows = TaskDetailHeaderBadgePresentation.todoBadgeRows(
+            state: state,
+            summaryStatusColor: .green,
+            dueDateMetadataDisplayText: "Tomorrow",
+            layout: .desktop
+        )
+
+        #expect(mobileRows.map { $0.map(\.title) } == [
+            ["Status", "Selected"],
+            ["Location"],
+            ["Due"],
+            ["Estimate", "Spent", "Points"]
+        ])
+        #expect(desktopRows.map { $0.map(\.title) } == [
+            ["Location"],
+            ["Due"],
+            ["Estimate"]
+        ])
+    }
+
+    @Test
+    func headerBadgeRowsPreserveMobileAndDesktopRoutineLayout() {
+        let placeID = UUID()
+        let task = RoutineTask(
+            name: "Practice piano",
+            placeID: placeID,
+            interval: 2,
+            estimatedDurationMinutes: 20,
+            storyPoints: 5
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.availablePlaces = [
+            RoutinePlaceSummary(id: placeID, name: "Studio", radiusMeters: 150, linkedRoutineCount: 1)
+        ]
+        state.logs = [
+            RoutineLog(taskID: task.id, kind: .completed, actualDurationMinutes: 25),
+            RoutineLog(taskID: task.id, kind: .canceled)
+        ]
+
+        let mobileRows = TaskDetailHeaderBadgePresentation.routineBadgeRows(
+            state: state,
+            summaryStatusColor: .green,
+            dueDateMetadataDisplayText: "Apr 26",
+            layout: .mobile
+        )
+        let desktopRows = TaskDetailHeaderBadgePresentation.routineBadgeRows(
+            state: state,
+            summaryStatusColor: .green,
+            dueDateMetadataDisplayText: "Apr 26",
+            layout: .desktop
+        )
+
+        #expect(mobileRows.map { $0.map(\.title) } == [
+            ["Status", "Frequency"],
+            ["Due"],
+            ["Location", "Completed"],
+            ["Canceled"],
+            ["Estimate", "Spent", "Points"]
+        ])
+        #expect(desktopRows.map { $0.map(\.title) } == [
+            ["Status", "Frequency"],
+            ["Completed", "Canceled", "Due"],
+            ["Location"],
+            ["Estimate"]
+        ])
     }
 
     @Test
