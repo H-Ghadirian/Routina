@@ -5,6 +5,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
     let onPreviousMonth: () -> Void
     let onNextMonth: () -> Void
     let showsAssumedLegend: Bool
+    let showsSoftDueLegend: Bool
     let showsPausedLegend: Bool
     let showsCreatedLegend: Bool
     let calendarContent: CalendarContent
@@ -14,6 +15,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         onPreviousMonth: @escaping () -> Void,
         onNextMonth: @escaping () -> Void,
         showsAssumedLegend: Bool,
+        showsSoftDueLegend: Bool,
         showsPausedLegend: Bool,
         showsCreatedLegend: Bool,
         @ViewBuilder calendarContent: () -> CalendarContent
@@ -22,6 +24,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         self.onPreviousMonth = onPreviousMonth
         self.onNextMonth = onNextMonth
         self.showsAssumedLegend = showsAssumedLegend
+        self.showsSoftDueLegend = showsSoftDueLegend
         self.showsPausedLegend = showsPausedLegend
         self.showsCreatedLegend = showsCreatedLegend
         self.calendarContent = calendarContent()
@@ -46,6 +49,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
 
             TaskDetailCalendarSectionLegendView(
                 showsAssumedLegend: showsAssumedLegend,
+                showsSoftDueLegend: showsSoftDueLegend,
                 showsPausedLegend: showsPausedLegend,
                 showsCreatedLegend: showsCreatedLegend
             )
@@ -81,11 +85,18 @@ private struct TaskDetailCalendarSectionHeaderView: View {
 
 private struct TaskDetailCalendarSectionLegendView: View {
     let showsAssumedLegend: Bool
+    let showsSoftDueLegend: Bool
     let showsPausedLegend: Bool
     let showsCreatedLegend: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        LazyVGrid(
+            columns: [
+                GridItem(.adaptive(minimum: 72), spacing: 10, alignment: .leading)
+            ],
+            alignment: .leading,
+            spacing: 8
+        ) {
             if showsCreatedLegend {
                 TaskDetailCalendarSectionLegendItemView(color: .purple, label: "Created")
             }
@@ -94,17 +105,13 @@ private struct TaskDetailCalendarSectionLegendView: View {
                 TaskDetailCalendarSectionLegendItemView(color: .mint, label: "Assumed")
             }
             TaskDetailCalendarSectionLegendItemView(color: .red, label: "Overdue")
+            if showsSoftDueLegend {
+                TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Soft due")
+            }
             if showsPausedLegend {
                 TaskDetailCalendarSectionLegendItemView(color: .teal, label: "Paused")
             }
-            HStack(spacing: 4) {
-                Circle()
-                    .stroke(Color.blue, lineWidth: 2)
-                    .frame(width: 10, height: 10)
-                Text("Today")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
+            TaskDetailCalendarSectionTodayLegendItemView()
         }
         .padding(.top, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -124,5 +131,20 @@ private struct TaskDetailCalendarSectionLegendItemView: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+private struct TaskDetailCalendarSectionTodayLegendItemView: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .stroke(Color.blue, lineWidth: 2)
+                .frame(width: 10, height: 10)
+            Text("Today")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .fixedSize(horizontal: true, vertical: false)
     }
 }

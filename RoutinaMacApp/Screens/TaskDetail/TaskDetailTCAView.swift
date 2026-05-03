@@ -487,6 +487,7 @@ struct TaskDetailTCAView: View {
                 displayedMonthStart = Calendar.current.date(byAdding: .month, value: 1, to: displayedMonthStart) ?? displayedMonthStart
             },
             showsAssumedLegend: store.task.autoAssumeDailyDone,
+            showsSoftDueLegend: store.resolvedSoftDueDate != nil,
             showsPausedLegend: store.task.pausedAt != nil,
             showsCreatedLegend: store.task.createdAt != nil
         ) {
@@ -495,6 +496,7 @@ struct TaskDetailTCAView: View {
                 doneDates: TaskDetailCalendarPresentation.doneDates(from: store.logs, task: store.task),
                 assumedDates: TaskDetailCalendarPresentation.assumedDates(from: store.logs, task: store.task),
                 dueDate: store.resolvedDueDate,
+                softDueDate: store.resolvedSoftDueDate,
                 createdAt: store.task.createdAt,
                 pausedAt: store.task.pausedAt,
                 isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),

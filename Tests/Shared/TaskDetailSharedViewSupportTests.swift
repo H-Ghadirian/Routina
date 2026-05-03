@@ -167,6 +167,29 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func calendarPresentationHighlightsSoftDueDateSeparatelyFromOverdueRange() {
+        let calendar = makeTestCalendar()
+        let softDueDate = makeDate("2026-04-20T10:00:00Z")
+        let presentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: softDueDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            softDueDate: softDueDate,
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: makeDate("2026-04-25T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(presentation.isSoftDueDate)
+        #expect(!presentation.isDueDate)
+        #expect(!presentation.isDueToTodayRangeDate)
+        #expect(presentation.isHighlightedDay)
+    }
+
+    @Test
     func checklistPresentationSortsAndSummarizesDueItems() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-04-25T10:00:00Z")
