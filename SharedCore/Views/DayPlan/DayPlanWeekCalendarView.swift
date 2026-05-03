@@ -78,6 +78,7 @@ struct DayPlanWeekCalendarView: View {
                                 )
                                 .animation(DayPlanMotion.dropPreview, value: dropPreview)
                             }
+                            currentTimeScrollAnchor()
                             SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
                                 DayPlanCurrentTimeIndicator(
                                     dates: dates,
@@ -178,6 +179,24 @@ struct DayPlanWeekCalendarView: View {
             .frame(width: CGFloat(dates.count) * dayWidth, height: 1)
             .offset(x: timeColumnWidth, y: CGFloat(hour) * hourHeight)
             .id(DayPlanScrollTarget.hour(hour))
+    }
+
+    @ViewBuilder
+    private func currentTimeScrollAnchor() -> some View {
+        if dates.contains(where: { calendar.isDateInToday($0) }) {
+            VStack(spacing: 0) {
+                Color.clear
+                    .frame(height: currentTimeYOffset(for: Date()))
+
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .id(DayPlanScrollTarget.currentTime)
+
+                Spacer(minLength: 0)
+            }
+            .frame(width: 1, height: hourHeight * 24)
+            .offset(x: timeColumnWidth)
+        }
     }
 
     private func hourLabelYOffset(for hour: Int) -> CGFloat {
@@ -334,13 +353,21 @@ struct DayPlanWeekCalendarView: View {
     private func scrollToCurrentTime(with proxy: ScrollViewProxy) {
         guard dates.contains(where: { calendar.isDateInToday($0) }) else { return }
 
-        let components = calendar.dateComponents([.hour], from: Date())
-        let hour = min(max(components.hour ?? 0, 0), 23)
         DispatchQueue.main.async {
             withAnimation(.easeInOut(duration: 0.2)) {
-                proxy.scrollTo(DayPlanScrollTarget.hour(hour), anchor: .center)
+                proxy.scrollTo(DayPlanScrollTarget.currentTime, anchor: .center)
             }
         }
+    }
+
+    private func currentTimeYOffset(for date: Date) -> CGFloat {
+        CGFloat(currentMinute(for: date)) / 60 * hourHeight
+    }
+
+    private func currentMinute(for date: Date) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        return min(max(minute, 0), DayPlanBlock.minutesPerDay)
     }
 }
 
@@ -352,6 +379,7 @@ private struct DayPlanDropPreview: Equatable {
 
 private enum DayPlanScrollTarget: Hashable {
     case hour(Int)
+    case currentTime
 }
 
 private enum DayPlanMotion {
