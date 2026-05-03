@@ -130,7 +130,7 @@ struct SettingsMacSidebarRow: View {
                     Text(section.title)
                         .foregroundStyle(.primary)
 
-                    Text(subtitle)
+                    Text(presentation.subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -138,7 +138,7 @@ struct SettingsMacSidebarRow: View {
 
                 Spacer(minLength: 8)
 
-                if let value, !value.isEmpty {
+                if let value = presentation.value, !value.isEmpty {
                     Text(value)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -148,58 +148,8 @@ struct SettingsMacSidebarRow: View {
         }
     }
 
-    private var subtitle: String {
-        switch section {
-        case .notifications:
-            return store.notifications.overviewSubtitle
-
-        case .calendar:
-            return store.appearance.showPersianDates
-                ? "Review tasks and show Persian dates"
-                : "Review tasks and date display"
-
-        case .places:
-            return store.places.overviewSubtitle
-
-        case .tags:
-            return store.tags.overviewSubtitle
-
-        case .appearance:
-            return store.appearance.overviewSubtitle
-
-        case .iCloud:
-            return store.cloud.overviewSubtitle
-        case .git:
-            let ghConnected = store.github.connectedRepository != nil
-            let glConnected = store.gitlab.isConnected
-            if ghConnected && glConnected { return "GitHub & GitLab connected" }
-            if glConnected { return store.gitlab.overviewSubtitle }
-            return store.github.overviewSubtitle
-
-        case .backup:
-            return store.dataTransfer.overviewSubtitle
-
-        case .support:
-            return "Contact us by email"
-
-        case .about:
-            return store.diagnostics.aboutOverviewSubtitle
-        }
-    }
-
-    private var value: String? {
-        switch section {
-        case .notifications:
-            return store.notifications.notificationsEnabled ? "On" : "Off"
-        case .calendar:
-            return store.appearance.showPersianDates ? "Persian" : nil
-        case .iCloud:
-            return store.cloud.cloudSyncAvailable ? nil : "Off"
-        case .git:
-            return (store.github.connectedRepository != nil || store.gitlab.isConnected) ? "Live" : nil
-        default:
-            return nil
-        }
+    private var presentation: SettingsSectionRowPresentation {
+        section.rowPresentation(in: store.state)
     }
 }
 

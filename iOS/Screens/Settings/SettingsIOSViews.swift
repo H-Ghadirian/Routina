@@ -229,76 +229,9 @@ private struct SettingsIPadSplitView: View {
     }
 }
 
-private enum SettingsIOSSection: String, CaseIterable, Identifiable, Hashable {
-    case notifications
-    case calendar
-    case places
-    case tags
-    case appearance
-    case iCloud
-    case git
-    case backup
-    case support
-    case about
+private typealias SettingsIOSSection = SettingsSectionID
 
-    var id: String { rawValue }
-
-    static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsIOSSection] {
-        allCases.filter { section in
-            section != .git || isGitFeaturesEnabled
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .notifications:
-            return "Notifications"
-        case .calendar:
-            return "Calendar"
-        case .places:
-            return "Places"
-        case .tags:
-            return "Tags"
-        case .appearance:
-            return "Appearance"
-        case .iCloud:
-            return "iCloud"
-        case .git:
-            return "Git"
-        case .backup:
-            return "Data Backup"
-        case .support:
-            return "Support"
-        case .about:
-            return "About"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .notifications:
-            return "bell.badge.fill"
-        case .calendar:
-            return "calendar.badge.plus"
-        case .places:
-            return "mappin.and.ellipse"
-        case .tags:
-            return "tag.fill"
-        case .appearance:
-            return "app.badge.fill"
-        case .iCloud:
-            return "icloud.fill"
-        case .git:
-            return "arrow.triangle.branch"
-        case .backup:
-            return "externaldrive.fill"
-        case .support:
-            return "envelope.fill"
-        case .about:
-            return "info.circle.fill"
-        }
-    }
-
+private extension SettingsIOSSection {
     var tint: Color {
         switch self {
         case .notifications:
@@ -333,56 +266,14 @@ private struct SettingsIPadSidebarRow: View {
                 icon: section.icon,
                 tint: section.tint,
                 title: section.title,
-                subtitle: subtitle,
-                value: value
+                subtitle: presentation.subtitle,
+                value: presentation.value
             )
         }
     }
 
-    private var subtitle: String {
-        switch section {
-        case .notifications:
-            return store.notifications.overviewSubtitle
-        case .calendar:
-            return store.appearance.showPersianDates
-                ? "Review tasks and show Persian dates"
-                : "Review tasks and date display"
-        case .places:
-            return store.places.overviewSubtitle
-        case .tags:
-            return store.tags.overviewSubtitle
-        case .appearance:
-            return store.appearance.overviewSubtitle
-        case .iCloud:
-            return store.cloud.overviewSubtitle
-        case .git:
-            let ghConnected = store.github.connectedRepository != nil
-            let glConnected = store.gitlab.isConnected
-            if ghConnected && glConnected { return "GitHub & GitLab connected" }
-            if glConnected { return store.gitlab.overviewSubtitle }
-            return store.github.overviewSubtitle
-        case .backup:
-            return store.dataTransfer.overviewSubtitle
-        case .support:
-            return "Contact us by email"
-        case .about:
-            return store.diagnostics.aboutOverviewSubtitle
-        }
-    }
-
-    private var value: String? {
-        switch section {
-        case .notifications:
-            return store.notifications.notificationsEnabled ? "On" : "Off"
-        case .calendar:
-            return store.appearance.showPersianDates ? "Persian" : nil
-        case .iCloud:
-            return store.cloud.cloudSyncAvailable ? nil : "Off"
-        case .git:
-            return (store.github.connectedRepository != nil || store.gitlab.isConnected) ? "Live" : nil
-        default:
-            return nil
-        }
+    private var presentation: SettingsSectionRowPresentation {
+        section.rowPresentation(in: store.state)
     }
 }
 

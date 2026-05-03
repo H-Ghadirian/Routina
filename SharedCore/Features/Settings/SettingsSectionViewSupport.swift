@@ -1,5 +1,125 @@
 import Foundation
 
+enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
+    case notifications
+    case calendar
+    case places
+    case tags
+    case appearance
+    case iCloud
+    case git
+    case backup
+    case support
+    case about
+
+    var id: String { rawValue }
+
+    static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsSectionID] {
+        allCases.filter { section in
+            section != .git || isGitFeaturesEnabled
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .notifications: return "Notifications"
+        case .calendar:      return "Calendar"
+        case .places:        return "Places"
+        case .tags:          return "Tags"
+        case .appearance:    return "Appearance"
+        case .iCloud:        return "iCloud"
+        case .git:           return "Git"
+        case .backup:        return "Data Backup"
+        case .support:       return "Support"
+        case .about:         return "About"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .notifications: return "bell.badge.fill"
+        case .calendar:      return "calendar.badge.plus"
+        case .places:        return "mappin.and.ellipse"
+        case .tags:          return "tag.fill"
+        case .appearance:    return "app.badge.fill"
+        case .iCloud:        return "icloud.fill"
+        case .git:           return "arrow.triangle.branch"
+        case .backup:        return "externaldrive.fill"
+        case .support:       return "envelope.fill"
+        case .about:         return "info.circle.fill"
+        }
+    }
+
+    func rowPresentation(in state: SettingsFeatureState) -> SettingsSectionRowPresentation {
+        switch self {
+        case .notifications:
+            return SettingsSectionRowPresentation(
+                subtitle: state.notifications.overviewSubtitle,
+                value: state.notifications.notificationsEnabled ? "On" : "Off"
+            )
+
+        case .calendar:
+            return SettingsSectionRowPresentation(
+                subtitle: state.appearance.showPersianDates
+                    ? "Review tasks and show Persian dates"
+                    : "Review tasks and date display",
+                value: state.appearance.showPersianDates ? "Persian" : nil
+            )
+
+        case .places:
+            return SettingsSectionRowPresentation(subtitle: state.places.overviewSubtitle)
+
+        case .tags:
+            return SettingsSectionRowPresentation(subtitle: state.tags.overviewSubtitle)
+
+        case .appearance:
+            return SettingsSectionRowPresentation(subtitle: state.appearance.overviewSubtitle)
+
+        case .iCloud:
+            return SettingsSectionRowPresentation(
+                subtitle: state.cloud.overviewSubtitle,
+                value: state.cloud.cloudSyncAvailable ? nil : "Off"
+            )
+
+        case .git:
+            let ghConnected = state.github.connectedRepository != nil
+            let glConnected = state.gitlab.isConnected
+            let subtitle: String
+            if ghConnected && glConnected {
+                subtitle = "GitHub & GitLab connected"
+            } else if glConnected {
+                subtitle = state.gitlab.overviewSubtitle
+            } else {
+                subtitle = state.github.overviewSubtitle
+            }
+
+            return SettingsSectionRowPresentation(
+                subtitle: subtitle,
+                value: (ghConnected || glConnected) ? "Live" : nil
+            )
+
+        case .backup:
+            return SettingsSectionRowPresentation(subtitle: state.dataTransfer.overviewSubtitle)
+
+        case .support:
+            return SettingsSectionRowPresentation(subtitle: "Contact us by email")
+
+        case .about:
+            return SettingsSectionRowPresentation(subtitle: state.diagnostics.aboutOverviewSubtitle)
+        }
+    }
+}
+
+struct SettingsSectionRowPresentation: Equatable {
+    var subtitle: String
+    var value: String?
+
+    init(subtitle: String, value: String? = nil) {
+        self.subtitle = subtitle
+        self.value = value
+    }
+}
+
 extension SettingsNotificationsState {
     var overviewSubtitle: String {
         if notificationsEnabled {
