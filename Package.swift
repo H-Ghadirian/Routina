@@ -293,6 +293,7 @@ let package = Package(
                 "SharedCore/Views/StatsDashboardScrollContainer.swift",
                 "SharedCore/Views/StatsDataRefreshModifier.swift",
                 "SharedCore/Views/StatsCompletionChartSection.swift",
+                "SharedCore/Views/StatsFocusChartSection.swift",
                 "SharedCore/Views/StatsHeroSectionView.swift",
                 "SharedCore/Views/TaskRelationshipsEditor.swift",
                 "SharedCore/Views/CalendarTaskImportSheet.swift",

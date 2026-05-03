@@ -616,90 +616,23 @@ struct StatsView: View {
     }
 
     private func focusChartSection(metrics: Metrics) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            StatsSectionHeader(
-                title: "Focus time per day",
-                subtitle: chartPresentation.focusChartSectionSubtitle(
+        StatsFocusChartSection(
+            subtitle: chartPresentation.focusChartSectionSubtitle(
                     totalFocusSeconds: metrics.totalFocusSeconds,
                     activeDayCount: metrics.focusActiveDayCount
-                )
-            ) {
-                smallHighlightBadge(
-                    title: "Peak",
-                    value: metrics.highlightedFocusDay.map { chartPresentation.focusDurationText($0.seconds) } ?? "0m"
-                )
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                Chart {
-                    ForEach(metrics.focusChartPoints) { point in
-                        let isHighlighted = point.date == metrics.highlightedFocusDay?.date
-
-                        BarMark(
-                            x: .value("Date", point.date, unit: .day),
-                            y: .value("Minutes", point.minutes)
-                        )
-                        .cornerRadius(7)
-                        .foregroundStyle(
-                            isHighlighted
-                                ? AnyShapeStyle(highlightBarFill)
-                                : AnyShapeStyle(StatsChartFill.focusBar(colorScheme: colorScheme))
-                        )
-                        .opacity(point.seconds == 0 ? 0.35 : 1)
-                    }
-
-                    if metrics.averageFocusSecondsPerDay > 0 {
-                        RuleMark(y: .value("Average", metrics.averageFocusSecondsPerDay / 60))
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
-                            .foregroundStyle(Color.secondary.opacity(0.65))
-                            .annotation(position: .topLeading, alignment: .leading) {
-                                Text("Avg \(chartPresentation.focusDurationText(metrics.averageFocusSecondsPerDay))")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(surfaceGradient, in: Capsule(style: .continuous))
-                            }
-                    }
-                }
-                .chartYScale(domain: 0...metrics.focusChartUpperBound)
-                .chartYAxis {
-                    AxisMarks(position: .leading) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
-                            .foregroundStyle(Color.secondary.opacity(0.2))
-                        AxisValueLabel {
-                            if let minutes = value.as(Double.self) {
-                                Text("\(Int(minutes.rounded()))m")
-                            }
-                        }
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks(values: metrics.xAxisDates) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
-                            .foregroundStyle(Color.secondary.opacity(0.12))
-                        AxisTick()
-                        AxisValueLabel {
-                            if let date = value.as(Date.self) {
-                                Text(chartPresentation.xAxisLabel(for: date))
-                            }
-                        }
-                    }
-                }
-                .chartPlotStyle { plotArea in
-                    plotArea.statsChartPlotBackground(colorScheme: colorScheme)
-                }
-                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 240)
-                .padding(.top, 4)
-            }
-            .defaultScrollAnchor(.trailing)
-
-            StatsChartInsightRow(
-                insights: focusChartInsights(metrics: metrics),
-                colorScheme: colorScheme
-            )
-        }
-        .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
+            ),
+            peakValue: metrics.highlightedFocusDay.map { chartPresentation.focusDurationText($0.seconds) } ?? "0m",
+            focusChartPoints: metrics.focusChartPoints,
+            highlightedFocusDay: metrics.highlightedFocusDay,
+            averageFocusSecondsPerDay: metrics.averageFocusSecondsPerDay,
+            focusChartUpperBound: metrics.focusChartUpperBound,
+            xAxisDates: metrics.xAxisDates,
+            chartPresentation: chartPresentation,
+            highlightBarFill: highlightBarFill,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme,
+            insights: focusChartInsights(metrics: metrics)
+        )
     }
 
     private func tagUsageSection(metrics: Metrics) -> some View {
