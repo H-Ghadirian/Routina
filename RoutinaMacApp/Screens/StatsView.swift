@@ -30,6 +30,13 @@ struct StatsView: View {
         )
     }
 
+    private var createdTasksPresentation: StatsCreatedTasksPresentation {
+        StatsCreatedTasksPresentation(
+            taskTypeFilter: selectedCreatedChartTaskTypeFilter,
+            selectedRange: selectedRange
+        )
+    }
+
     private var selectedRange: DoneChartRange {
         store.selectedRange
     }
@@ -445,7 +452,10 @@ struct StatsView: View {
                     Text("Tasks created per day")
                         .font(.title3.weight(.semibold))
 
-                    Text(createdTasksChartSubtitle(metrics: metrics))
+                    Text(createdTasksPresentation.chartSubtitle(
+                        totalCount: metrics.createdTotalCount,
+                        activeDayCount: metrics.createdActiveDayCount
+                    ))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -553,7 +563,7 @@ struct StatsView: View {
             HStack(spacing: 10) {
                 bottomInsightPill(
                     icon: "calendar.badge.plus",
-                    text: "\(createdTasksNoun(count: metrics.createdTotalCount).capitalized) created in \(selectedRange.periodDescription.lowercased())"
+                    text: createdTasksPresentation.createdInPeriodInsight(totalCount: metrics.createdTotalCount)
                 )
 
                 if let highlightedCreatedDay = metrics.highlightedCreatedDay {
@@ -564,7 +574,7 @@ struct StatsView: View {
                 } else {
                     bottomInsightPill(
                         icon: "plus.circle",
-                        text: "Waiting for created \(createdTasksNoun(count: 2))"
+                        text: createdTasksPresentation.waitingInsight
                     )
                 }
             }
@@ -1087,26 +1097,6 @@ struct StatsView: View {
 
     private func bottomInsightPill(icon: String, text: String) -> some View {
         StatsBottomInsightPill(icon: icon, text: text, colorScheme: colorScheme)
-    }
-
-    private func createdTasksChartSubtitle(metrics: Metrics) -> String {
-        let noun = createdTasksNoun(count: metrics.createdTotalCount)
-        if metrics.createdTotalCount == 0 {
-            return "New \(createdTasksNoun(count: 2)) will appear here as you add them."
-        }
-
-        return "\(metrics.createdTotalCount.formatted()) \(noun) created across \(metrics.createdActiveDayCount) \(metrics.createdActiveDayCount == 1 ? "day" : "days")."
-    }
-
-    private func createdTasksNoun(count: Int) -> String {
-        switch selectedCreatedChartTaskTypeFilter {
-        case .all:
-            return count == 1 ? "task" : "tasks"
-        case .routines:
-            return count == 1 ? "routine" : "routines"
-        case .todos:
-            return count == 1 ? "todo" : "todos"
-        }
     }
 
     private var rangeHeroLabel: String {
