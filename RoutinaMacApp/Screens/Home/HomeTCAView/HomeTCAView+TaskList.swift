@@ -21,30 +21,11 @@ extension HomeTCAView {
                 systemImage: emptyState.systemImage
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if macHomeDetailMode == .planner {
-            plannerTaskSourceList(presentation)
         } else {
-            List(selection: macSidebarSelectionBinding) {
-                ForEach(presentation.sections) { section in
-                    Section(section.title) {
-                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                            routineNavigationRow(
-                                for: task,
-                                rowNumber: section.rowNumber(forTaskAt: index),
-                                includeMarkDone: section.includeMarkDone,
-                                moveContext: section.moveContext
-                            )
-                        }
-                        .onDelete { offsets in
-                            deleteTasks(at: offsets, from: section.tasks)
-                        }
-                    }
-                }
-            }
-            .listStyle(.sidebar)
-            .navigationDestination(for: UUID.self) { taskID in
-                taskDetailDestination(taskID: taskID)
-            }
+            macTaskSourceList(
+                presentation,
+                allowsPlannerDrag: macHomeDetailMode == .planner
+            )
         }
     }
 
@@ -181,8 +162,9 @@ extension HomeTCAView {
         )
     }
 
-    private func plannerTaskSourceList(
-        _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    private func macTaskSourceList(
+        _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        allowsPlannerDrag: Bool
     ) -> some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
@@ -194,11 +176,12 @@ extension HomeTCAView {
                             .padding(.horizontal, 12)
 
                         ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                            plannerTaskSourceRow(
+                            macTaskSourceRow(
                                 for: task,
                                 rowNumber: section.rowNumber(forTaskAt: index),
                                 includeMarkDone: section.includeMarkDone,
-                                moveContext: section.moveContext
+                                moveContext: section.moveContext,
+                                allowsPlannerDrag: allowsPlannerDrag
                             )
                         }
                     }
@@ -208,33 +191,29 @@ extension HomeTCAView {
         }
     }
 
-    private func plannerTaskSourceRow(
+    @ViewBuilder
+    private func macTaskSourceRow(
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,
         includeMarkDone: Bool,
-        moveContext: HomeTaskListMoveContext?
+        moveContext: HomeTaskListMoveContext?,
+        allowsPlannerDrag: Bool
     ) -> some View {
-        routineRow(for: task, rowNumber: rowNumber)
+        let row = routineRow(for: task, rowNumber: rowNumber)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(plannerTaskSourceRowBackground(for: task))
+                    .fill(macTaskSourceRowBackground(for: task))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(plannerTaskSourceRowStroke(for: task), lineWidth: 1)
+                    .stroke(macTaskSourceRowStroke(for: task), lineWidth: 1)
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onTapGesture {
                 store.send(.macSidebarSelectionChanged(.task(task.taskID)))
             }
-            .onDrag({
-                store.send(.macSidebarSelectionChanged(.task(task.taskID)))
-                return NSItemProvider(object: task.taskID.uuidString as NSString)
-            }, preview: {
-                taskDragPreview(for: task)
-            })
             .contextMenu {
                 routineContextMenu(
                     for: task,
@@ -242,17 +221,29 @@ extension HomeTCAView {
                     moveContext: moveContext
                 )
             }
-            .help("Drag to place this task on the planner")
+
+        if allowsPlannerDrag {
+            row
+                .onDrag({
+                    store.send(.macSidebarSelectionChanged(.task(task.taskID)))
+                    return NSItemProvider(object: task.taskID.uuidString as NSString)
+                }, preview: {
+                    taskDragPreview(for: task)
+                })
+                .help("Drag to place this task on the planner")
+        } else {
+            row
+        }
     }
 
-    private func plannerTaskSourceRowBackground(for task: HomeFeature.RoutineDisplay) -> Color {
+    private func macTaskSourceRowBackground(for task: HomeFeature.RoutineDisplay) -> Color {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.18)
         }
         return Color.secondary.opacity(0.08)
     }
 
-    private func plannerTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
+    private func macTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.55)
         }
