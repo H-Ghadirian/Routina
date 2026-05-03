@@ -58,40 +58,15 @@ struct StatsView: View {
     }
 
     private var filteredTasksForCurrentStatsFilters: [RoutineTask] {
-        let tasksMatchingTypeFilter = tasks.filter { task in
-            switch selectedTaskTypeFilter {
-            case .all:
-                return true
-            case .routines:
-                return !task.isOneOffTask
-            case .todos:
-                return task.isOneOffTask
-            }
-        }
-
-        let tasksMatchingMatrixFilter = tasksMatchingTypeFilter.filter { task in
-            HomeFeature.matchesImportanceUrgencyFilter(
-                store.selectedImportanceUrgencyFilter,
-                importance: task.importance,
-                urgency: task.urgency
-            )
-        }
-
-        let includeFilteredTasks = tasksMatchingMatrixFilter.filter { task in
-            HomeFeature.matchesSelectedTags(
-                store.effectiveSelectedTags,
-                mode: store.includeTagMatchMode,
-                in: task.tags
-            )
-        }
-
-        return includeFilteredTasks.filter { task in
-            HomeFeature.matchesExcludedTags(
-                store.excludedTags,
-                mode: store.excludeTagMatchMode,
-                in: task.tags
-            )
-        }
+        StatsTaskFilterResolver(
+            taskTypeFilter: selectedTaskTypeFilter,
+            selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            selectedTags: store.effectiveSelectedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            excludedTags: store.excludedTags,
+            excludeTagMatchMode: store.excludeTagMatchMode
+        )
+        .filteredTasks(from: tasks)
     }
 
     private var gitHubConnection: GitHubConnectionStatus {

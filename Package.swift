@@ -195,6 +195,7 @@ let package = Package(
                 "SharedCore/Features/Home/StatsChartPresentation.swift",
                 "SharedCore/Features/Home/StatsActiveItemsBreakdown.swift",
                 "SharedCore/Features/Home/StatsFilterPresentation.swift",
+                "SharedCore/Features/Home/StatsTaskFilterResolver.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadEffectFactory.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadHandler.swift",
                 "SharedCore/Features/Home/HomeFeatureTemporaryViewStateSupport.swift",
