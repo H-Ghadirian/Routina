@@ -207,7 +207,11 @@ struct StatsView: View {
     var body: some View {
         WithPerceptionTracking {
             NavigationStack {
-                ScrollView(.vertical, showsIndicators: false) {
+                StatsDashboardScrollContainer(
+                    pageBackground: pageBackground,
+                    bottomPadding: contentBottomPadding,
+                    maxContentWidth: statsContentMaxWidth
+                ) {
                     VStack(alignment: .leading, spacing: 24) {
                         heroSection(metrics: metrics)
                         summaryCards(metrics: metrics)
@@ -223,13 +227,7 @@ struct StatsView: View {
                             gitHubSection
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, contentBottomPadding)
-                    .frame(maxWidth: statsContentMaxWidth, alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .top)
                 }
-                .background(pageBackground.ignoresSafeArea())
                 .navigationTitle("Stats")
             }
             .statsDataRefresh(

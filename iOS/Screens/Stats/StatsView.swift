@@ -295,7 +295,11 @@ struct StatsView: View {
     }
 
     private var statsDashboardContent: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        StatsDashboardScrollContainer(
+            pageBackground: pageBackground,
+            bottomPadding: contentBottomPadding,
+            maxContentWidth: statsContentMaxWidth
+        ) {
             let currentMetrics = metrics
             VStack(alignment: .leading, spacing: 24) {
                 AnyView(rangeSection)
@@ -315,13 +319,7 @@ struct StatsView: View {
                     AnyView(gitHubSection)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, contentBottomPadding)
-            .frame(maxWidth: statsContentMaxWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .background(pageBackground.ignoresSafeArea())
         .navigationTitle("Stats")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
