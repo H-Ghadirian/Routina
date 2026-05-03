@@ -21,58 +21,44 @@ extension HomeTCAView {
 
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarLeading) {
-            if areTaskListModeActionsExpanded {
-                iosTaskListModeButton(.all)
-                iosTaskListModeButton(.routines)
-                iosTaskListModeButton(.todos)
-            }
-            Button {
+        HomeIOSHomeToolbarContent(
+            taskListMode: store.taskListMode,
+            areTaskListModeActionsExpanded: areTaskListModeActionsExpanded,
+            areTopActionsExpanded: areTopActionsExpanded,
+            hasActiveOptionalFilters: hasActiveOptionalFilters,
+            onSelectTaskListMode: { mode in
+                store.send(.taskListModeChanged(mode))
+                collapseExpandedToolbarActions()
+            },
+            onToggleTaskListModeActions: {
                 withAnimation(.snappy(duration: 0.2)) {
                     areTaskListModeActionsExpanded.toggle()
                     if areTaskListModeActionsExpanded {
                         areTopActionsExpanded = false
                     }
                 }
-            } label: {
-                Label(
-                    areTaskListModeActionsExpanded ? "Collapse Task List Modes" : "Expand Task List Modes",
-                    systemImage: areTaskListModeActionsExpanded ? "chevron.left.circle" : store.taskListMode.systemImage
-                )
-            }
-        }
-
-        ToolbarItemGroup(placement: .primaryAction) {
-            platformRefreshButton
-            if areTopActionsExpanded {
-                Button {
-                    collapseExpandedToolbarActions()
-                    isQuickAddSheetPresented = true
-                } label: {
-                    Label("Quick Add", systemImage: "text.badge.plus")
-                }
-                filterSheetButton
-                Button {
-                    collapseExpandedToolbarActions()
-                    openAddTask()
-                } label: {
-                    Label("Add Task", systemImage: "plus")
-                }
-            }
-            Button {
+            },
+            onQuickAdd: {
+                collapseExpandedToolbarActions()
+                isQuickAddSheetPresented = true
+            },
+            onShowFilters: {
+                collapseExpandedToolbarActions()
+                store.send(.isFilterSheetPresentedChanged(true))
+            },
+            onAddTask: {
+                collapseExpandedToolbarActions()
+                openAddTask()
+            },
+            onToggleTopActions: {
                 withAnimation(.snappy(duration: 0.2)) {
                     areTopActionsExpanded.toggle()
                     if areTopActionsExpanded {
                         areTaskListModeActionsExpanded = false
                     }
                 }
-            } label: {
-                Label(
-                    areTopActionsExpanded ? "Collapse Actions" : "Expand Actions",
-                    systemImage: areTopActionsExpanded ? "chevron.right.circle" : "ellipsis.circle"
-                )
             }
-        }
+        )
     }
 
     var platformNavigationContent: some View {

@@ -162,22 +162,6 @@ struct HomeTCAView: View {
         platformCompactHomeHeader
     }
 
-    var filterSheetButton: some View {
-        Button {
-            collapseExpandedToolbarActions()
-            store.send(.isFilterSheetPresentedChanged(true))
-        } label: {
-            Image(
-                systemName: hasActiveOptionalFilters
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle"
-            )
-            .foregroundStyle(hasActiveOptionalFilters ? Color.accentColor : Color.secondary)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Filters")
-    }
-
     func routineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
         platformRoutineRow(for: task, rowNumber: rowNumber)
     }
@@ -275,27 +259,6 @@ struct HomeTCAView: View {
         } else if delta < -10, isCompactHeaderHidden {
             isCompactHeaderHidden = false
         }
-    }
-
-    @ViewBuilder
-    func iosTaskListModeButton(_ mode: HomeFeature.TaskListMode) -> some View {
-        let isSelected = store.taskListMode == mode
-
-        Button {
-            store.send(.taskListModeChanged(mode))
-            collapseExpandedToolbarActions()
-        } label: {
-            Image(systemName: mode.systemImage)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                .frame(width: 30, height: 30)
-                .background(
-                    Circle()
-                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.clear)
-                )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(mode.accessibilityLabel)
     }
 
     func collapseExpandedToolbarActions() {
