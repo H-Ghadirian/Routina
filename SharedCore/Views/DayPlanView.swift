@@ -45,6 +45,7 @@ struct DayPlanView: View {
 }
 struct DayPlanSidebarView: View {
     @Environment(\.calendar) private var calendar
+    @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
     @Query private var tasks: [RoutineTask]
     var usesPanelBackground = true
@@ -152,7 +153,7 @@ struct DayPlanSidebarView: View {
             HStack {
                 Button(planner.selectedBlock == nil ? "Add" : "Save") {
                     if let selectedTask {
-                        planner.commitBlock(task: selectedTask, calendar: calendar)
+                        planner.commitBlock(task: selectedTask, calendar: calendar, context: modelContext)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -160,7 +161,7 @@ struct DayPlanSidebarView: View {
 
                 if let selectedBlock = planner.selectedBlock {
                     Button("Delete", role: .destructive) {
-                        planner.deleteBlock(selectedBlock.id, calendar: calendar)
+                        planner.deleteBlock(selectedBlock.id, calendar: calendar, context: modelContext)
                     }
                 }
             }
@@ -238,24 +239,25 @@ struct DayPlanDetailView: View {
 
 private struct DayPlanHeaderView: View {
     @Environment(\.calendar) private var calendar
+    @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             Button("Today") {
-                planner.moveToToday(calendar: calendar)
+                planner.moveToToday(calendar: calendar, context: modelContext)
             }
             .buttonStyle(.bordered)
 
             HStack(spacing: 4) {
                 Button {
-                    planner.moveWeek(by: -1, calendar: calendar)
+                    planner.moveWeek(by: -1, calendar: calendar, context: modelContext)
                 } label: {
                     Image(systemName: "chevron.left")
                 }
 
                 Button {
-                    planner.moveWeek(by: 1, calendar: calendar)
+                    planner.moveWeek(by: 1, calendar: calendar, context: modelContext)
                 } label: {
                     Image(systemName: "chevron.right")
                 }
@@ -286,7 +288,7 @@ private struct DayPlanHeaderView: View {
                 planner.selectedDate
             },
             set: { date in
-                planner.showDate(date, calendar: calendar)
+                planner.showDate(date, calendar: calendar, context: modelContext)
             }
         )
     }
@@ -294,6 +296,7 @@ private struct DayPlanHeaderView: View {
 
 private struct DayPlanTimelinePanelView: View {
     @Environment(\.calendar) private var calendar
+    @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
     @Query private var tasks: [RoutineTask]
 
@@ -315,20 +318,20 @@ private struct DayPlanTimelinePanelView: View {
                 calendar: calendar,
                 dropDurationMinutes: planner.durationMinutes,
                 blocksForDate: { date in
-                    planner.blocks(on: date, calendar: calendar)
+                    planner.blocks(on: date, calendar: calendar, context: modelContext)
                 },
                 taskTint: taskTint(for:),
                 onSelectSlot: { date, minute in
-                    planner.selectSlot(on: date, startMinute: minute, calendar: calendar)
+                    planner.selectSlot(on: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
                 onSelectBlock: { block, date in
-                    planner.edit(block, on: date, calendar: calendar)
+                    planner.edit(block, on: date, calendar: calendar, context: modelContext)
                 },
                 onDeleteBlock: { block in
-                    planner.deleteBlock(block.id, calendar: calendar)
+                    planner.deleteBlock(block.id, calendar: calendar, context: modelContext)
                 },
                 onMoveBlock: { blockID, date, minute in
-                    planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar)
+                    planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
                 onResizeBlock: { blockID, date, startMinute, durationMinutes in
                     planner.resizeBlock(
@@ -336,7 +339,8 @@ private struct DayPlanTimelinePanelView: View {
                         on: date,
                         startMinute: startMinute,
                         durationMinutes: durationMinutes,
-                        calendar: calendar
+                        calendar: calendar,
+                        context: modelContext
                     )
                 },
                 onDropTask: { taskID, date, minute in
@@ -353,13 +357,14 @@ private struct DayPlanTimelinePanelView: View {
 
     private func dropTask(_ taskID: UUID, on date: Date, startMinute: Int) {
         guard let task = tasks.first(where: { $0.id == taskID }) else { return }
-        planner.selectSlot(on: date, startMinute: startMinute, calendar: calendar)
+        planner.selectSlot(on: date, startMinute: startMinute, calendar: calendar, context: modelContext)
         planner.selectTask(task)
-        planner.commitBlock(task: task, calendar: calendar)
+        planner.commitBlock(task: task, calendar: calendar, context: modelContext)
     }
 }
 
 private struct DayPlanLifecycleModifier: ViewModifier {
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var planner: DayPlanPlannerState
     var tasks: [RoutineTask]
@@ -368,22 +373,22 @@ private struct DayPlanLifecycleModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
-                planner.loadBlocks(calendar: calendar)
-                planner.showExactTimedTasks(from: tasks, calendar: calendar)
+                planner.loadBlocks(calendar: calendar, context: modelContext)
+                planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
                 planner.selectDefaultTaskIfNeeded(from: tasks)
             }
             .onChange(of: planner.selectedDate) { _, _ in
-                planner.handleSelectedDateChanged(calendar: calendar)
-                planner.showExactTimedTasks(from: tasks, calendar: calendar)
+                planner.handleSelectedDateChanged(calendar: calendar, context: modelContext)
+                planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
             }
             .onChange(of: tasks.map(\.id)) { _, _ in
-                planner.showExactTimedTasks(from: tasks, calendar: calendar)
+                planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
                 planner.selectDefaultTaskIfNeeded(from: tasks)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
-                    planner.loadBlocks(calendar: calendar)
-                    planner.showExactTimedTasks(from: tasks, calendar: calendar)
+                    planner.loadBlocks(calendar: calendar, context: modelContext)
+                    planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
                 }
             }
     }

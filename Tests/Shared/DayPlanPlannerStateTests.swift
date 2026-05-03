@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -8,10 +9,12 @@ import Testing
 @testable @preconcurrency import Routina
 #endif
 
+@MainActor
 struct DayPlanPlannerStateTests {
     @Test
     func editVisibleFutureBlockKeepsVisibleWeekAnchored() throws {
         let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
         let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
         let blockDate = try #require(date("2026-05-07T12:00:00Z"))
         let block = dayPlanBlock(on: blockDate, calendar: calendar)
@@ -22,7 +25,7 @@ struct DayPlanPlannerStateTests {
 
         let visibleDatesBefore = planner.weekDates(calendar: calendar)
 
-        planner.edit(block, on: blockDate, calendar: calendar)
+        planner.edit(block, on: blockDate, calendar: calendar, context: context)
 
         #expect(planner.selectedDate == blockDate)
         #expect(planner.weekDates(calendar: calendar) == visibleDatesBefore)
@@ -32,6 +35,7 @@ struct DayPlanPlannerStateTests {
     @Test
     func resizeVisibleFutureBlockKeepsVisibleWeekAnchored() throws {
         let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
         let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
         let blockDate = try #require(date("2026-05-07T12:00:00Z"))
         let block = dayPlanBlock(on: blockDate, calendar: calendar)
@@ -46,13 +50,34 @@ struct DayPlanPlannerStateTests {
             on: blockDate,
             startMinute: block.startMinute,
             durationMinutes: block.durationMinutes + 30,
-            calendar: calendar
+            calendar: calendar,
+            context: context
         )
 
         #expect(didResize)
         #expect(planner.selectedDate == blockDate)
         #expect(planner.weekDates(calendar: calendar) == visibleDatesBefore)
         #expect(planner.selectedBlock?.durationMinutes == block.durationMinutes + 30)
+    }
+
+    @Test
+    func persistsBlocksInSwiftData() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let blockDate = try #require(date("2026-05-07T12:00:00Z"))
+        let block = dayPlanBlock(on: blockDate, calendar: calendar)
+
+        DayPlanStorage.saveBlocks([block], forDayKey: block.dayKey, context: context)
+
+        let loaded = DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context)
+        #expect(loaded == [block])
+
+        var descriptor = FetchDescriptor<DayPlanBlockRecord>()
+        descriptor.predicate = #Predicate<DayPlanBlockRecord> { record in
+            record.id == block.id
+        }
+        let records = try context.fetch(descriptor)
+        #expect(records.count == 1)
     }
 }
 

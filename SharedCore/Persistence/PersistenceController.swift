@@ -22,6 +22,7 @@ public struct PersistenceController {
                 FocusSession.self,
                 RoutinePlace.self,
                 RoutineAttachment.self,
+                DayPlanBlockRecord.self,
                 configurations: primaryConfiguration
             )
         } catch {
@@ -56,6 +57,7 @@ public struct PersistenceController {
                         FocusSession.self,
                         RoutinePlace.self,
                         RoutineAttachment.self,
+                        DayPlanBlockRecord.self,
                         configurations: retriedConfiguration
                     )
                     return
@@ -75,6 +77,7 @@ public struct PersistenceController {
                     FocusSession.self,
                     RoutinePlace.self,
                     RoutineAttachment.self,
+                    DayPlanBlockRecord.self,
                     configurations: localFallback
                 )
             } catch {
@@ -89,6 +92,7 @@ public struct PersistenceController {
                         FocusSession.self,
                         RoutinePlace.self,
                         RoutineAttachment.self,
+                        DayPlanBlockRecord.self,
                         configurations: memoryFallback
                     )
                 } catch {
@@ -116,6 +120,7 @@ public struct PersistenceController {
             FocusSession.self,
             RoutinePlace.self,
             RoutineAttachment.self,
+            DayPlanBlockRecord.self,
             configurations: configuration
         )
     }

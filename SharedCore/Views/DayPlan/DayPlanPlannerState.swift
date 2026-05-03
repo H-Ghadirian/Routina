@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftData
 
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate: Date
@@ -46,25 +47,25 @@ final class DayPlanPlannerState: ObservableObject {
         conflict(startMinute: startMinute, durationMinutes: durationMinutes, ignoring: selectedBlockID)
     }
 
-    func loadBlocks(calendar: Calendar) {
+    func loadBlocks(calendar: Calendar, context: ModelContext) {
         let weekDates = visibleAndSelectedDates(calendar: calendar)
         var loadedBlocksByDayKey: [String: [DayPlanBlock]] = [:]
 
         for date in weekDates {
             let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-            loadedBlocksByDayKey[dayKey] = DayPlanStorage.loadBlocks(forDayKey: dayKey)
+            loadedBlocksByDayKey[dayKey] = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
         }
 
         let selectedDayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         if loadedBlocksByDayKey[selectedDayKey] == nil {
-            loadedBlocksByDayKey[selectedDayKey] = DayPlanStorage.loadBlocks(forDayKey: selectedDayKey)
+            loadedBlocksByDayKey[selectedDayKey] = DayPlanStorage.loadBlocks(forDayKey: selectedDayKey, context: context)
         }
 
         weekBlocksByDayKey = loadedBlocksByDayKey
-        syncSelectedDayBlocks(calendar: calendar)
+        syncSelectedDayBlocks(calendar: calendar, context: context)
     }
 
-    func showExactTimedTasks(from tasks: [RoutineTask], calendar: Calendar) {
+    func showExactTimedTasks(from tasks: [RoutineTask], calendar: Calendar, context: ModelContext) {
         let visibleDates = visibleAndSelectedDates(calendar: calendar)
         let availableTasks = DayPlanTaskSorting.availableTasks(from: tasks)
         let now = Date()
@@ -72,7 +73,7 @@ final class DayPlanPlannerState: ObservableObject {
 
         for date in visibleDates {
             let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-            var dayBlocks = updatedBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+            var dayBlocks = updatedBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
             var didChangeDay = false
 
             for task in availableTasks {
@@ -106,19 +107,19 @@ final class DayPlanPlannerState: ObservableObject {
             if didChangeDay {
                 let sortedBlocks = sortedDayBlocks(dayBlocks)
                 updatedBlocksByDayKey[dayKey] = sortedBlocks
-                DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey)
+                DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
             } else {
                 updatedBlocksByDayKey[dayKey] = dayBlocks
             }
         }
 
         weekBlocksByDayKey = updatedBlocksByDayKey
-        syncSelectedDayBlocks(calendar: calendar)
+        syncSelectedDayBlocks(calendar: calendar, context: context)
     }
 
-    func handleSelectedDateChanged(calendar: Calendar) {
+    func handleSelectedDateChanged(calendar: Calendar, context: ModelContext) {
         let blockIDToPreserve = selectedBlockID
-        loadBlocks(calendar: calendar)
+        loadBlocks(calendar: calendar, context: context)
 
         guard
             let blockIDToPreserve,
@@ -134,12 +135,12 @@ final class DayPlanPlannerState: ObservableObject {
         durationMinutes = preservedBlock.durationMinutes
     }
 
-    func persistBlocks(calendar: Calendar) {
+    func persistBlocks(calendar: Calendar, context: ModelContext) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         let sortedBlocks = blocks.sorted { $0.startMinute < $1.startMinute }
         blocks = sortedBlocks
         weekBlocksByDayKey[dayKey] = sortedBlocks
-        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey)
+        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
     }
 
     func selectDefaultTaskIfNeeded(from tasks: [RoutineTask]) {
@@ -156,18 +157,18 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
-    func selectSlot(on date: Date, startMinute: Int, calendar: Calendar) {
+    func selectSlot(on date: Date, startMinute: Int, calendar: Calendar, context: ModelContext) {
         selectedDate = date
         selectedBlockID = nil
-        syncSelectedDayBlocks(calendar: calendar)
+        syncSelectedDayBlocks(calendar: calendar, context: context)
         self.startMinute = DayPlanBlock.clampedStartMinute(startMinute)
         clampDurationForCurrentStart()
     }
 
-    func edit(_ block: DayPlanBlock, on date: Date? = nil, calendar: Calendar? = nil) {
+    func edit(_ block: DayPlanBlock, on date: Date? = nil, calendar: Calendar? = nil, context: ModelContext) {
         if let date, let calendar {
             selectedDate = date
-            syncSelectedDayBlocks(calendar: calendar)
+            syncSelectedDayBlocks(calendar: calendar, context: context)
         }
         selectedBlockID = block.id
         selectedTaskID = block.taskID
@@ -176,15 +177,15 @@ final class DayPlanPlannerState: ObservableObject {
         clampDurationForCurrentStart()
     }
 
-    func deleteBlock(_ id: DayPlanBlock.ID, calendar: Calendar) {
+    func deleteBlock(_ id: DayPlanBlock.ID, calendar: Calendar, context: ModelContext) {
         if let selectedDayIndex = blocks.firstIndex(where: { $0.id == id }) {
             blocks.remove(at: selectedDayIndex)
-            persistBlocks(calendar: calendar)
+            persistBlocks(calendar: calendar, context: context)
         } else if let dayKey = weekBlocksByDayKey.first(where: { $0.value.contains(where: { $0.id == id }) })?.key {
             var dayBlocks = weekBlocksByDayKey[dayKey] ?? []
             dayBlocks.removeAll { $0.id == id }
             weekBlocksByDayKey[dayKey] = dayBlocks
-            DayPlanStorage.saveBlocks(dayBlocks, forDayKey: dayKey)
+            DayPlanStorage.saveBlocks(dayBlocks, forDayKey: dayKey, context: context)
         }
 
         if selectedBlockID == id {
@@ -193,7 +194,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     @discardableResult
-    func moveBlock(_ id: DayPlanBlock.ID, to date: Date, startMinute: Int, calendar: Calendar) -> Bool {
+    func moveBlock(_ id: DayPlanBlock.ID, to date: Date, startMinute: Int, calendar: Calendar, context: ModelContext) -> Bool {
         guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
 
         let targetDayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
@@ -202,7 +203,7 @@ final class DayPlanPlannerState: ObservableObject {
             locatedBlock.block.durationMinutes,
             startMinute: targetStartMinute
         )
-        var targetBlocks = weekBlocksByDayKey[targetDayKey] ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey)
+        var targetBlocks = weekBlocksByDayKey[targetDayKey] ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
         let targetEndMinute = targetStartMinute + targetDuration
         let hasConflict = targetBlocks.contains { block in
             guard block.id != id else { return false }
@@ -222,24 +223,24 @@ final class DayPlanPlannerState: ObservableObject {
             createdAt: locatedBlock.block.createdAt,
             updatedAt: Date()
         )
-        var sourceBlocks = weekBlocksByDayKey[locatedBlock.dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: locatedBlock.dayKey)
+        var sourceBlocks = weekBlocksByDayKey[locatedBlock.dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: locatedBlock.dayKey, context: context)
         sourceBlocks.removeAll { $0.id == id }
 
         if locatedBlock.dayKey == targetDayKey {
             sourceBlocks.append(movedBlock)
             let sortedBlocks = sortedDayBlocks(sourceBlocks)
             weekBlocksByDayKey[targetDayKey] = sortedBlocks
-            DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: targetDayKey)
+            DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: targetDayKey, context: context)
         } else {
             let sortedSourceBlocks = sortedDayBlocks(sourceBlocks)
             weekBlocksByDayKey[locatedBlock.dayKey] = sortedSourceBlocks
-            DayPlanStorage.saveBlocks(sortedSourceBlocks, forDayKey: locatedBlock.dayKey)
+            DayPlanStorage.saveBlocks(sortedSourceBlocks, forDayKey: locatedBlock.dayKey, context: context)
 
             targetBlocks.removeAll { $0.id == id }
             targetBlocks.append(movedBlock)
             let sortedTargetBlocks = sortedDayBlocks(targetBlocks)
             weekBlocksByDayKey[targetDayKey] = sortedTargetBlocks
-            DayPlanStorage.saveBlocks(sortedTargetBlocks, forDayKey: targetDayKey)
+            DayPlanStorage.saveBlocks(sortedTargetBlocks, forDayKey: targetDayKey, context: context)
         }
 
         selectedDate = date
@@ -247,7 +248,7 @@ final class DayPlanPlannerState: ObservableObject {
         selectedTaskID = movedBlock.taskID
         self.startMinute = movedBlock.startMinute
         durationMinutes = movedBlock.durationMinutes
-        syncSelectedDayBlocks(calendar: calendar)
+        syncSelectedDayBlocks(calendar: calendar, context: context)
         return true
     }
 
@@ -257,7 +258,8 @@ final class DayPlanPlannerState: ObservableObject {
         on date: Date,
         startMinute: Int,
         durationMinutes: Int,
-        calendar: Calendar
+        calendar: Calendar,
+        context: ModelContext
     ) -> Bool {
         guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
 
@@ -268,7 +270,7 @@ final class DayPlanPlannerState: ObservableObject {
             startMinute: targetStartMinute
         )
         let targetEndMinute = targetStartMinute + targetDuration
-        var dayBlocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+        var dayBlocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
         let hasConflict = dayBlocks.contains { block in
             guard block.id != id else { return false }
             return max(targetStartMinute, block.startMinute) < min(targetEndMinute, block.endMinute)
@@ -292,18 +294,18 @@ final class DayPlanPlannerState: ObservableObject {
         dayBlocks.append(resizedBlock)
         let sortedBlocks = sortedDayBlocks(dayBlocks)
         weekBlocksByDayKey[dayKey] = sortedBlocks
-        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey)
+        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
 
         selectedDate = date
         selectedBlockID = resizedBlock.id
         selectedTaskID = resizedBlock.taskID
         self.startMinute = resizedBlock.startMinute
         self.durationMinutes = resizedBlock.durationMinutes
-        syncSelectedDayBlocks(calendar: calendar)
+        syncSelectedDayBlocks(calendar: calendar, context: context)
         return true
     }
 
-    func commitBlock(task: RoutineTask, calendar: Calendar) {
+    func commitBlock(task: RoutineTask, calendar: Calendar, context: ModelContext) {
         guard conflictingBlock == nil else { return }
 
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
@@ -339,40 +341,40 @@ final class DayPlanPlannerState: ObservableObject {
         }
 
         blocks.sort { $0.startMinute < $1.startMinute }
-        persistBlocks(calendar: calendar)
+        persistBlocks(calendar: calendar, context: context)
     }
 
-    func blocks(on date: Date, calendar: Calendar) -> [DayPlanBlock] {
+    func blocks(on date: Date, calendar: Calendar, context: ModelContext) -> [DayPlanBlock] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        return weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+        return weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
     }
 
     func weekDates(calendar: Calendar) -> [Date] {
         weekDates(containing: visibleDate, calendar: calendar)
     }
 
-    func moveWeek(by value: Int, calendar: Calendar) {
+    func moveWeek(by value: Int, calendar: Calendar, context: ModelContext) {
         let dayDelta = value * 7
         selectedDate = calendar.date(byAdding: .day, value: dayDelta, to: selectedDate) ?? selectedDate
         visibleDate = calendar.date(byAdding: .day, value: dayDelta, to: visibleDate) ?? visibleDate
         selectedBlockID = nil
-        loadBlocks(calendar: calendar)
+        loadBlocks(calendar: calendar, context: context)
     }
 
-    func moveToToday(calendar: Calendar) {
+    func moveToToday(calendar: Calendar, context: ModelContext) {
         let today = calendar.startOfDay(for: Date())
         selectedDate = today
         visibleDate = today
         selectedBlockID = nil
-        loadBlocks(calendar: calendar)
+        loadBlocks(calendar: calendar, context: context)
     }
 
-    func showDate(_ date: Date, calendar: Calendar) {
+    func showDate(_ date: Date, calendar: Calendar, context: ModelContext) {
         let selectedDay = calendar.startOfDay(for: date)
         selectedDate = selectedDay
         visibleDate = selectedDay
         selectedBlockID = nil
-        loadBlocks(calendar: calendar)
+        loadBlocks(calendar: calendar, context: context)
     }
 
     func weekTitle(calendar: Calendar) -> String {
@@ -405,9 +407,9 @@ final class DayPlanPlannerState: ObservableObject {
         durationMinutes = DayPlanBlock.clampedDuration(durationMinutes, startMinute: startMinute)
     }
 
-    private func syncSelectedDayBlocks(calendar: Calendar) {
+    private func syncSelectedDayBlocks(calendar: Calendar, context: ModelContext) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
-        blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+        blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
     }
 
     private func exactScheduledDate(
