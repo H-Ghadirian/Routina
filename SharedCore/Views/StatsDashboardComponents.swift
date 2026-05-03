@@ -216,6 +216,27 @@ struct StatsBottomInsightPill: View {
     }
 }
 
+struct StatsEmptyChartStateView: View {
+    let systemImage: String
+    let message: String
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 220)
+        .statsChartPlotBackground(colorScheme: colorScheme)
+    }
+}
+
 extension View {
     func statsChartCard(
         surfaceGradient: LinearGradient,

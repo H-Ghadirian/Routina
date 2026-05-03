@@ -843,20 +843,10 @@ struct StatsView: View {
             }
 
             if points.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "tag")
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    Text("Tags will appear here after matching routines are completed.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity, minHeight: 220)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
+                StatsEmptyChartStateView(
+                    systemImage: "tag",
+                    message: "Tags will appear here after matching routines are completed.",
+                    colorScheme: colorScheme
                 )
             } else {
                 Chart {
