@@ -22,8 +22,6 @@ struct TaskDetailTCAView: View {
     @State private var isCloudSharingPresented = false
     @State private var isRelationshipGraphPresented = false
     @State private var isMatrixExpanded = false
-    @State private var isTodoStatePickerPresented = false
-    @State private var isPressurePickerPresented = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -201,7 +199,7 @@ struct TaskDetailTCAView: View {
                 if shouldShowTodoCalendar {
                     calendarSection
                 }
-                todoPrimaryActionSection
+                TaskDetailTodoPrimaryActionSection(store: store)
                 todoStateTimingSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
@@ -580,115 +578,13 @@ struct TaskDetailTCAView: View {
         TaskDetailHeaderBadgePresentation.latestCompletedLog(in: store.logs)
     }
 
-    private var todoPrimaryActionSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) {
-                        todoStatePickerPill
-                        pressurePickerPill
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        todoStatePickerPill
-                        pressurePickerPill
-                    }
-                }
-            } else {
-                pressurePickerPill
-            }
-            primaryActionButton
-            cancelTodoButton
-
-            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff && !store.blockingRelationships.isEmpty {
-                Text(store.blockerSummaryText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(16)
-        .detailCardStyle()
-    }
-
-    private var pressurePickerPill: some View {
-        let pressure = store.task.pressure
-        return Button {
-            isPressurePickerPresented = true
-        } label: {
-            Label("Pressure: \(pressure.title)", systemImage: TaskDetailPriorityPresentation.pressureSystemImage(for: pressure))
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(TaskDetailPriorityPresentation.pressureTint(for: pressure, style: .compactPill))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(TaskDetailPriorityPresentation.pressureTint(for: pressure, style: .compactPill).opacity(0.12), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .confirmationDialog("Set Pressure", isPresented: $isPressurePickerPresented) {
-            ForEach(RoutineTaskPressure.allCases, id: \.self) { option in
-                if option != pressure {
-                    Button(option.title) {
-                        store.send(.pressureChanged(option))
-                    }
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Current: \(pressure.title)")
-        }
-    }
-
-    private var todoStatePickerPill: some View {
-        let currentState = store.task.todoState ?? .ready
-        return Button {
-            isTodoStatePickerPresented = true
-        } label: {
-            Label(currentState.displayTitle, systemImage: currentState.systemImage)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .compactPill))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .compactPill).opacity(0.12), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .confirmationDialog("Set State", isPresented: $isTodoStatePickerPresented) {
-            ForEach(TodoState.allCases, id: \.self) { state in
-                if state != currentState {
-                    Button(state.displayTitle) {
-                        if state == .done && store.hasActiveRelationshipBlocker {
-                            store.send(.setBlockedStateConfirmation(true))
-                        } else {
-                            store.send(.todoStateChanged(state))
-                        }
-                    }
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Current: \(currentState.displayTitle)")
-        }
-        .alert(
-            "Blocked Task",
-            isPresented: Binding(
-                get: { store.isBlockedStateConfirmationPresented },
-                set: { store.send(.setBlockedStateConfirmation($0)) }
-            )
-        ) {
-            Button("Mark Done Anyway", role: .destructive) {
-                store.send(.confirmBlockedStateCompletion)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(store.blockerSummaryText)
-        }
-    }
-
     private func routinePrimaryActionSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            pressurePickerPill
+            TaskDetailPressurePickerPill(store: store)
 
-            primaryActionButton
+            TaskDetailPrimaryActionButton(store: store)
 
             if store.shouldShowBulkConfirmAssumedDays {
                 Button(store.bulkConfirmAssumedDaysTitle) {
@@ -739,23 +635,6 @@ struct TaskDetailTCAView: View {
         }
         .padding(16)
         .detailCardStyle()
-    }
-
-    @ViewBuilder
-    private var primaryActionButton: some View {
-        Button {
-            store.send(store.completionButtonAction)
-        } label: {
-            TaskDetailCompletionButtonLabel(
-                title: store.completionButtonTitle,
-                systemImage: store.completionButtonSystemImage
-            )
-                .routinaPlatformPrimaryActionLabelLayout()
-        }
-        .buttonStyle(.borderedProminent)
-        .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
-        .routinaPlatformPrimaryActionButtonLayout()
-        .disabled(store.isCompletionButtonDisabled)
     }
 
     private func routineSecondaryActionControls(
@@ -858,23 +737,6 @@ struct TaskDetailTCAView: View {
             .tint(.cyan)
             .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: false)
             .routinaPlatformPrimaryActionButtonLayout()
-        }
-    }
-
-    @ViewBuilder
-    private var cancelTodoButton: some View {
-        if store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-            Button {
-                store.send(.cancelTodo)
-            } label: {
-                Label(store.cancelTodoButtonTitle, systemImage: "xmark.circle")
-                    .routinaPlatformPrimaryActionLabelLayout()
-            }
-            .buttonStyle(.bordered)
-            .tint(.orange)
-            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
-            .routinaPlatformPrimaryActionButtonLayout()
-            .disabled(store.isCancelTodoButtonDisabled)
         }
     }
 
