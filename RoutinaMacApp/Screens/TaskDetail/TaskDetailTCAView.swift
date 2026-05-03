@@ -301,97 +301,16 @@ struct TaskDetailTCAView: View {
     }
 
     private var priorityDisclosureBox: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isMatrixExpanded.toggle()
-                }
-            } label: {
-                HStack(alignment: .top, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("PRIORITY")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        prioritySummaryRow
-                    }
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isMatrixExpanded ? 180 : 0))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isMatrixExpanded {
-                Divider()
-                    .padding(.top, 10)
-                    .padding(.bottom, 12)
-                ImportanceUrgencyMatrixPicker(
-                    importance: Binding(
-                        get: { store.task.importance },
-                        set: { store.send(.importanceChanged($0)) }
-                    ),
-                    urgency: Binding(
-                        get: { store.task.urgency },
-                        set: { store.send(.urgencyChanged($0)) }
-                    ),
-                    showsSummaryChip: false
-                )
-                .frame(maxWidth: 420, alignment: .leading)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
-    }
-
-    private var prioritySummaryRow: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Label(store.task.priority.title, systemImage: "flag.fill")
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
-                .foregroundStyle(prioritySummaryColor)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(prioritySummaryColor.opacity(0.12), in: Capsule())
-
-            priorityMetadataChip(
-                title: "Importance",
-                value: store.task.importance.title,
-                tint: TaskDetailPriorityPresentation.importanceTint(for: store.task.importance)
-            )
-            priorityMetadataChip(
-                title: "Urgency",
-                value: store.task.urgency.title,
-                tint: TaskDetailPriorityPresentation.urgencyTint(for: store.task.urgency)
-            )
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func priorityMetadataChip(title: String, value: String, tint: Color) -> some View {
-        HStack(spacing: 4) {
-            Text(title.uppercased())
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(tint)
-        }
-        .lineLimit(1)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
-        .background(tint.opacity(0.10), in: Capsule())
-        .overlay(
-            Capsule()
-                .stroke(tint.opacity(0.18), lineWidth: 1)
+        TaskDetailPriorityDisclosureBox(
+            priority: store.task.priority,
+            importance: store.task.importance,
+            urgency: store.task.urgency,
+            isExpanded: $isMatrixExpanded,
+            summaryLayout: .horizontal,
+            matrixMaxWidth: 420,
+            onImportanceChanged: { store.send(.importanceChanged($0)) },
+            onUrgencyChanged: { store.send(.urgencyChanged($0)) }
         )
-    }
-
-    private var prioritySummaryColor: Color {
-        TaskDetailPriorityPresentation.priorityTint(for: store.task.priority)
     }
 
     private func headerTagsBox(minHeight: CGFloat? = nil) -> some View {
