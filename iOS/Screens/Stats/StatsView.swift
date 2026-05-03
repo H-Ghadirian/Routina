@@ -624,70 +624,16 @@ struct StatsView: View {
     }
 
     private func tagUsageSection(metrics: Metrics) -> some View {
-        let points = metrics.tagUsagePoints
-        let maxValue = max(points.map(\.bubbleValue).max() ?? 1, 1)
-        let columns = chartPresentation.tagUsageColumnCount(for: points.count)
-        let rows = max(Int(ceil(Double(max(points.count, 1)) / Double(columns))), 1)
-
-        return VStack(alignment: .leading, spacing: 18) {
-            StatsSectionHeader(
-                title: "Tag usage",
-                subtitle: chartPresentation.tagUsageSectionSubtitle(
+        StatsTagUsageSection(
+            points: metrics.tagUsagePoints,
+            subtitle: chartPresentation.tagUsageSectionSubtitle(
                     points: metrics.tagUsagePoints,
                     periodDescription: selectedRange.periodDescription
-                )
-            ) {
-                smallHighlightBadge(
-                    title: "Tags",
-                    value: points.count.formatted()
-                )
-            }
-
-            if points.isEmpty {
-                StatsEmptyChartStateView(
-                    systemImage: "tag",
-                    message: "Tags will appear here after matching routines are completed.",
-                    colorScheme: colorScheme
-                )
-            } else {
-                Chart {
-                    ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
-                        PointMark(
-                            x: .value("Column", chartPresentation.tagUsageColumn(for: index, columns: columns)),
-                            y: .value("Row", chartPresentation.tagUsageRow(for: index, columns: columns, rows: rows))
-                        )
-                        .symbolSize(chartPresentation.tagUsageSymbolSize(for: point, maxValue: maxValue))
-                        .foregroundStyle(tagUsageBubbleColor(for: point))
-                        .annotation(position: .overlay) {
-                            VStack(spacing: 2) {
-                                Text("#\(point.name)")
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-
-                                Text(chartPresentation.tagUsageValueText(for: point))
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.white.opacity(0.82))
-                            }
-                            .minimumScaleFactor(0.72)
-                            .frame(width: chartPresentation.tagUsageLabelWidth(for: point, maxValue: maxValue))
-                            .shadow(color: .black.opacity(0.22), radius: 1, x: 0, y: 1)
-                        }
-                    }
-                }
-                .chartXScale(domain: (-0.5)...(Double(columns) - 0.5))
-                .chartYScale(domain: (-0.5)...(Double(rows) - 0.5))
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .chartPlotStyle { plotArea in
-                    plotArea.statsChartPlotBackground(colorScheme: colorScheme)
-                }
-                .frame(minHeight: chartPresentation.tagUsageChartHeight(rows: rows))
-                .accessibilityLabel("Tag usage bubble chart")
-            }
-        }
-        .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
+            ),
+            chartPresentation: chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
     }
 
     private func summaryCard(
@@ -770,11 +716,6 @@ struct StatsView: View {
 
     private var contentBottomPadding: CGFloat {
         horizontalSizeClass == .compact ? 120 : 52
-    }
-
-    private func tagUsageBubbleColor(for point: TagUsageChartPoint) -> Color {
-        Color(routineTagHex: point.colorHex)
-            ?? Color.accentColor.opacity(colorScheme == .dark ? 0.78 : 0.68)
     }
 
 }
