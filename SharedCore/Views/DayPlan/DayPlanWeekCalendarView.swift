@@ -61,7 +61,29 @@ struct DayPlanWeekCalendarView: View {
                                 timeColumnWidth: timeColumnWidth,
                                 onSelectSlot: onSelectSlot
                             )
-                            weekBlocks(dayWidth: dayWidth)
+                            DayPlanBlockLayer(
+                                dates: dates,
+                                selectedBlockID: selectedBlockID,
+                                calendar: calendar,
+                                dayWidth: dayWidth,
+                                hourHeight: hourHeight,
+                                timeColumnWidth: timeColumnWidth,
+                                blockAnimationNamespace: blockAnimationNamespace,
+                                blocksForDate: blocksForDate,
+                                taskTint: taskTint,
+                                onSelectBlock: onSelectBlock,
+                                onDeleteBlock: onDeleteBlock,
+                                onResizeStarted: { block, date in
+                                    beginResize(block, date)
+                                },
+                                onResizeChanged: { block, date, edge, verticalDelta in
+                                    resize(block, date, edge: edge, verticalDelta: verticalDelta)
+                                },
+                                onResizeEnded: endResize,
+                                onDragProvider: { block, date in
+                                    dragProvider(for: block, on: date)
+                                }
+                            )
                             if let dropPreview, isDropTargeted, !isCompletingDrop {
                                 DayPlanDropIndicator(
                                     preview: dropPreview,
@@ -125,72 +147,7 @@ struct DayPlanWeekCalendarView: View {
         }
     }
 
-    private func weekBlocks(dayWidth: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
-                ForEach(blocksForDate(date)) { block in
-                    let blockHeight = blockHeight(for: block)
-                    DayPlanBlockCard(
-                        block: block,
-                        tint: taskTint(block),
-                        isSelected: block.id == selectedBlockID,
-                        renderedHeight: blockHeight,
-                        selectedDate: date,
-                        calendar: calendar,
-                        onSelect: {
-                            onSelectBlock(block, date)
-                        },
-                        onDelete: {
-                            onDeleteBlock(block)
-                        },
-                        onResizeStarted: {
-                            beginResize(block, on: date)
-                        },
-                        onResizeChanged: { edge, verticalDelta in
-                            resize(block, on: date, edge: edge, verticalDelta: verticalDelta)
-                        },
-                        onResizeEnded: {
-                            endResize()
-                        },
-                        onDragProvider: {
-                            isCompletingDrop = false
-                            clearDropState()
-                            endResize()
-                            draggedBlockID = block.id
-                            draggedBlockDurationMinutes = block.durationMinutes
-                            onSelectBlock(block, date)
-                            return NSItemProvider(object: DayPlanBlockDragPayload.text(for: block.id) as NSString)
-                        }
-                    )
-                    .frame(
-                        width: max(dayWidth - 10, 90),
-                        height: blockHeight
-                    )
-                    .offset(
-                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
-                        y: yOffset(for: block.startMinute)
-                    )
-                    .matchedGeometryEffect(
-                        id: block.id,
-                        in: blockAnimationNamespace,
-                        properties: .frame,
-                        anchor: .topLeading
-                    )
-                    .zIndex(block.id == selectedBlockID ? 2 : 1)
-                }
-            }
-        }
-    }
-
-    private func yOffset(for minute: Int) -> CGFloat {
-        CGFloat(minute) / 60 * hourHeight
-    }
-
-    private func blockHeight(for block: DayPlanBlock) -> CGFloat {
-        CGFloat(block.durationMinutes) / 60 * hourHeight
-    }
-
-    private func beginResize(_ block: DayPlanBlock, on date: Date) {
+    private func beginResize(_ block: DayPlanBlock, _ date: Date) {
         clearDropState()
         draggedBlockID = nil
         draggedBlockDurationMinutes = nil
@@ -204,7 +161,7 @@ struct DayPlanWeekCalendarView: View {
 
     private func resize(
         _ block: DayPlanBlock,
-        on date: Date,
+        _ date: Date,
         edge: DayPlanResizeEdge,
         verticalDelta: CGFloat
     ) {
@@ -251,6 +208,16 @@ struct DayPlanWeekCalendarView: View {
     private func clearDropState() {
         isDropTargeted = false
         dropPreview = nil
+    }
+
+    private func dragProvider(for block: DayPlanBlock, on date: Date) -> NSItemProvider {
+        isCompletingDrop = false
+        clearDropState()
+        endResize()
+        draggedBlockID = block.id
+        draggedBlockDurationMinutes = block.durationMinutes
+        onSelectBlock(block, date)
+        return NSItemProvider(object: DayPlanBlockDragPayload.text(for: block.id) as NSString)
     }
 
     private func scrollToCurrentTime(with proxy: ScrollViewProxy) {
