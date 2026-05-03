@@ -142,6 +142,8 @@ struct SettingsMacDetailView: View {
             SettingsMacGitDetailView(store: store)
         case .backup:
             SettingsMacBackupDetailView(store: store)
+        case .shortcuts:
+            SettingsMacShortcutsDetailView()
         case .support:
             SettingsMacSupportDetailView(store: store)
         case .about:

@@ -109,6 +109,87 @@ struct SettingsMacBackupDetailView: View {
     }
 }
 
+struct SettingsMacShortcutsDetailView: View {
+    private let keyboardShortcuts: [SettingsMacShortcutRowModel] = [
+        SettingsMacShortcutRowModel(title: "Add Task", detail: "Open quick task creation.", shortcut: "⌥⌘N"),
+        SettingsMacShortcutRowModel(title: "Routines", detail: "Switch the sidebar back to routines.", shortcut: "⌥⌘1"),
+        SettingsMacShortcutRowModel(title: "Stats", detail: "Open stats from anywhere in the app.", shortcut: "⌥⌘2"),
+        SettingsMacShortcutRowModel(title: "Timeline", detail: "Open the done timeline.", shortcut: "⌥⌘3"),
+        SettingsMacShortcutRowModel(title: "Save", detail: "Confirm supported edit sheets and dialogs.", shortcut: "Return"),
+        SettingsMacShortcutRowModel(title: "Cancel", detail: "Dismiss supported edit sheets and dialogs.", shortcut: "Esc"),
+        SettingsMacShortcutRowModel(title: "Quit", detail: "Quit Routina from the menu bar extra or app menu.", shortcut: "⌘Q")
+    ]
+
+    private let appShortcuts: [SettingsMacShortcutRowModel] = [
+        SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”", shortcut: "Shortcuts"),
+        SettingsMacShortcutRowModel(title: "Mark Done", detail: "“Mark task done in Routina” or “Complete a task in Routina”", shortcut: "Shortcuts"),
+        SettingsMacShortcutRowModel(title: "Start Focus", detail: "“Start focus in Routina” or “Focus with Routina”", shortcut: "Shortcuts"),
+        SettingsMacShortcutRowModel(title: "Today", detail: "“What's due in Routina” or “Today in Routina”", shortcut: "Shortcuts")
+    ]
+
+    var body: some View {
+        SettingsMacDetailShell(
+            title: "Shortcuts",
+            subtitle: "Review keyboard shortcuts and Apple Shortcuts that Routina exposes."
+        ) {
+            SettingsMacDetailCard(title: "Keyboard") {
+                ForEach(keyboardShortcuts) { shortcut in
+                    SettingsMacShortcutRow(shortcut: shortcut)
+                }
+            }
+
+            SettingsMacDetailCard(title: "Apple Shortcuts & Siri") {
+                ForEach(appShortcuts) { shortcut in
+                    SettingsMacShortcutRow(shortcut: shortcut)
+                }
+            }
+        }
+    }
+}
+
+private struct SettingsMacShortcutRowModel: Identifiable {
+    let id = UUID()
+    let title: String
+    let detail: String
+    let shortcut: String
+}
+
+private struct SettingsMacShortcutRow: View {
+    let shortcut: SettingsMacShortcutRowModel
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(shortcut.title)
+                    .font(.subheadline.weight(.semibold))
+
+                Text(shortcut.detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 16)
+
+            Text(shortcut.shortcut)
+                .font(.caption.weight(.semibold).monospaced())
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.secondary.opacity(0.12))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 4)
+    }
+}
+
 struct SettingsMacSupportDetailView: View {
     let store: StoreOf<SettingsFeature>
 

@@ -9,6 +9,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     case iCloud
     case git
     case backup
+    case shortcuts
     case support
     case about
 
@@ -16,7 +17,14 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsSectionID] {
         allCases.filter { section in
-            section != .git || isGitFeaturesEnabled
+            if section == .git {
+                return isGitFeaturesEnabled
+            }
+            #if os(macOS)
+            return true
+            #else
+            return section != .shortcuts
+            #endif
         }
     }
 
@@ -30,6 +38,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .iCloud:        return "iCloud"
         case .git:           return "Git"
         case .backup:        return "Data Backup"
+        case .shortcuts:     return "Shortcuts"
         case .support:       return "Support"
         case .about:         return "About"
         }
@@ -45,6 +54,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .iCloud:        return "icloud.fill"
         case .git:           return "arrow.triangle.branch"
         case .backup:        return "externaldrive.fill"
+        case .shortcuts:     return "keyboard.fill"
         case .support:       return "envelope.fill"
         case .about:         return "info.circle.fill"
         }
@@ -100,6 +110,9 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .backup:
             return SettingsSectionRowPresentation(subtitle: state.dataTransfer.overviewSubtitle)
+
+        case .shortcuts:
+            return SettingsSectionRowPresentation(subtitle: "Keyboard, Siri, and Apple Shortcuts")
 
         case .support:
             return SettingsSectionRowPresentation(subtitle: "Contact us by email")

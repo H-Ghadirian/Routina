@@ -221,6 +221,8 @@ private struct SettingsIPadSplitView: View {
             SettingsGitDetailView(store: store)
         case .backup:
             SettingsDataBackupDetailView(store: store)
+        case .shortcuts:
+            SettingsIOSShortcutsDetailView()
         case .support:
             SettingsSupportDetailView(store: store)
         case .about:
@@ -248,11 +250,47 @@ private extension SettingsIOSSection {
             return .cyan
         case .git, .backup:
             return .indigo
+        case .shortcuts:
+            return .teal
         case .support:
             return .green
         case .about:
             return .gray
         }
+    }
+}
+
+private struct SettingsIOSShortcutsDetailView: View {
+    var body: some View {
+        List {
+            Section("Apple Shortcuts & Siri") {
+                SettingsNavigationRow(
+                    icon: "text.badge.plus",
+                    tint: .teal,
+                    title: "Quick Add",
+                    subtitle: "Quick add in Routina"
+                )
+                SettingsNavigationRow(
+                    icon: "checkmark.circle",
+                    tint: .green,
+                    title: "Mark Done",
+                    subtitle: "Mark task done in Routina"
+                )
+                SettingsNavigationRow(
+                    icon: "timer",
+                    tint: .orange,
+                    title: "Start Focus",
+                    subtitle: "Start focus in Routina"
+                )
+                SettingsNavigationRow(
+                    icon: "calendar",
+                    tint: .blue,
+                    title: "Today",
+                    subtitle: "Today in Routina"
+                )
+            }
+        }
+        .navigationTitle("Shortcuts")
     }
 }
 
