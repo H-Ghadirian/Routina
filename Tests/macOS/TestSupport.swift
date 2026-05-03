@@ -29,7 +29,8 @@ func makeTask(
     scheduleAnchor: Date? = nil,
     pausedAt: Date? = nil,
     snoozedUntil: Date? = nil,
-    pinnedAt: Date? = nil
+    pinnedAt: Date? = nil,
+    createdAt: Date? = nil
 ) -> RoutineTask {
     let task = RoutineTask(
         name: name,
@@ -45,7 +46,8 @@ func makeTask(
         scheduleAnchor: scheduleAnchor,
         pausedAt: pausedAt,
         snoozedUntil: snoozedUntil,
-        pinnedAt: pinnedAt
+        pinnedAt: pinnedAt,
+        createdAt: createdAt
     )
     context.insert(task)
     do {

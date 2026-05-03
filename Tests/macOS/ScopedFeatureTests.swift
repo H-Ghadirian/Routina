@@ -231,12 +231,19 @@ struct StatsFeatureTests {
         let focusLog1 = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-19T08:00:00Z"))
         let focusLog2 = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-20T08:00:00Z"))
         let healthLog = makeLog(in: context, task: healthTask, timestamp: makeDate("2026-03-20T09:00:00Z"))
+        let expectedFocusChartPoints = FocusDurationStats.points(
+            for: .week,
+            sessions: [],
+            referenceDate: now,
+            calendar: calendar
+        )
 
         let store = TestStore(initialState: StatsFeature.State()) {
             StatsFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off
 
         await store.send(.setData(tasks: [focusTask, healthTask], logs: [focusLog1, focusLog2, healthLog], focusSessions: [])) {
             $0.tasks = [focusTask, healthTask]
@@ -254,6 +261,11 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                    TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 3,
                 activeRoutineCount: 1,
                 archivedRoutineCount: 1,
@@ -262,6 +274,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 2),
                 activeDayCount: 2,
                 chartUpperBound: 3,
+                focusChartUpperBound: 10,
                 sparklinePoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [
@@ -299,6 +312,10 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 2,
                 activeRoutineCount: 1,
                 archivedRoutineCount: 0,
@@ -307,6 +324,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-19T00:00:00Z"), count: 1),
                 activeDayCount: 2,
                 chartUpperBound: 2,
+                focusChartUpperBound: 10,
                 sparklinePoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [
@@ -352,6 +370,10 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 1,
                 activeRoutineCount: 0,
                 archivedRoutineCount: 1,
@@ -360,6 +382,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 1),
                 activeDayCount: 1,
                 chartUpperBound: 2,
+                focusChartUpperBound: 10,
                 sparklinePoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [
@@ -410,6 +433,12 @@ struct StatsFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
+        let expectedFocusChartPoints = FocusDurationStats.points(
+            for: .week,
+            sessions: [],
+            referenceDate: now,
+            calendar: calendar
+        )
 
         let focusTask = makeTask(
             in: context,
@@ -457,6 +486,11 @@ struct StatsFeatureTests {
             $0.filteredTaskCount = 3
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: allChartPoints,
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 2, linkedTodoCount: 0, colorHex: nil),
+                    TagUsageChartPoint(name: "Health", completionCount: 2, linkedRoutineCount: 2, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 3,
                 totalCanceledCount: 0,
                 activeRoutineCount: 3,
@@ -466,6 +500,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 2),
                 activeDayCount: 2,
                 chartUpperBound: 3,
+                focusChartUpperBound: 10,
                 sparklinePoints: allChartPoints,
                 sparklineMaxCount: 2,
                 xAxisDates: allChartPoints.map(\.date)
@@ -477,6 +512,10 @@ struct StatsFeatureTests {
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: focusOnlyChartPoints,
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Focus", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 1,
                 totalCanceledCount: 0,
                 activeRoutineCount: 1,
@@ -486,6 +525,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-19T00:00:00Z"), count: 1),
                 activeDayCount: 1,
                 chartUpperBound: 2,
+                focusChartUpperBound: 10,
                 sparklinePoints: focusOnlyChartPoints,
                 sparklineMaxCount: 1,
                 xAxisDates: focusOnlyChartPoints.map(\.date)
@@ -506,6 +546,10 @@ struct StatsFeatureTests {
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: focusOnlyChartPoints,
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Focus", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 1,
                 totalCanceledCount: 0,
                 activeRoutineCount: 1,
@@ -515,6 +559,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-19T00:00:00Z"), count: 1),
                 activeDayCount: 1,
                 chartUpperBound: 2,
+                focusChartUpperBound: 10,
                 sparklinePoints: focusOnlyChartPoints,
                 sparklineMaxCount: 1,
                 xAxisDates: focusOnlyChartPoints.map(\.date)

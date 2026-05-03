@@ -579,6 +579,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([log]))) {
@@ -618,7 +619,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(title: "Excel", intervalDays: 30, createdAt: now),
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         let detailTask = task.detachedCopy()
         let log = RoutineLog(timestamp: now, taskID: task.id)
@@ -722,6 +724,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([log]))) {
@@ -755,7 +758,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
 
         let store = TestStore(
@@ -802,6 +806,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -837,7 +842,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
 
         let detailTask = RoutineTask(
@@ -849,7 +855,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         _ = detailTask.markChecklistItemCompleted(completedItemID, completedAt: now, calendar: calendar)
 
@@ -911,7 +918,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
 
         let selectedDetailTask = RoutineTask(
@@ -923,7 +931,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: pendingItemID, title: "Excel", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         _ = selectedDetailTask.markChecklistItemCompleted(completedItemID, completedAt: now, calendar: calendar)
 
@@ -971,6 +980,7 @@ struct HomeFeatureTests {
         }
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1080,7 +1090,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
 
         let selectedDetailTask = RoutineTask(
@@ -1092,7 +1103,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         _ = selectedDetailTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
         _ = selectedDetailTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
@@ -1150,6 +1162,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1185,7 +1198,8 @@ struct HomeFeatureTests {
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
             lastDone: now,
-            scheduleAnchor: now
+            scheduleAnchor: now,
+            createdAt: nil
         )
 
         let initialState = HomeFeature.State(
@@ -1241,6 +1255,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1273,7 +1288,8 @@ struct HomeFeatureTests {
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
             lastDone: now,
-            scheduleAnchor: now
+            scheduleAnchor: now,
+            createdAt: nil
         )
 
         let stalePartialTask = RoutineTask(
@@ -1286,7 +1302,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         _ = stalePartialTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
 
@@ -1343,6 +1360,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1375,6 +1393,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1409,7 +1428,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         _ = completedTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
         _ = completedTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
@@ -1425,7 +1445,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         _ = staleOneOfThreeTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
 
@@ -1439,7 +1460,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: thirdItemID, title: "Payroll", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
         _ = staleTwoOfThreeTask.markChecklistItemCompleted(firstItemID, completedAt: now, calendar: calendar)
         _ = staleTwoOfThreeTask.markChecklistItemCompleted(secondItemID, completedAt: now, calendar: calendar)
@@ -1497,6 +1519,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1529,6 +1552,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1652,7 +1676,8 @@ struct HomeFeatureTests {
             scheduleMode: .fixedIntervalChecklist,
             interval: 30,
             lastDone: now,
-            scheduleAnchor: now
+            scheduleAnchor: now,
+            createdAt: nil
         )
 
         let selectedDetailTask = RoutineTask(
@@ -1664,7 +1689,8 @@ struct HomeFeatureTests {
                 RoutineChecklistItem(id: secondItemID, title: "Excel", intervalDays: 30, createdAt: now)
             ],
             scheduleMode: .fixedIntervalChecklist,
-            interval: 30
+            interval: 30,
+            createdAt: nil
         )
 
         let store = TestStore(
@@ -1720,6 +1746,7 @@ struct HomeFeatureTests {
         await store.receive(.taskDetail(.onAppear))
         await store.receive(.taskDetail(.availablePlacesLoaded([])))
         await store.receive(.taskDetail(.availableTagsLoaded([])))
+        await store.receive(.taskDetail(.availableGoalsLoaded([])))
         await store.receive(.taskDetail(.relatedTagRulesLoaded([])))
         await store.receive(.taskDetail(.availableRelationshipTasksLoaded([])))
         await store.receive(.taskDetail(.logsLoaded([])))
@@ -1856,6 +1883,7 @@ struct HomeFeatureTests {
         }
         await store.receive(.addRoutineSheet(.availableTagSummariesChanged([])))
         await store.receive(.addRoutineSheet(.availablePlacesChanged([])))
+        await store.receive(.addRoutineSheet(.availableGoalsChanged([])))
         await store.receive(.addRoutineSheet(.availableRelationshipTasksChanged([
             RoutineTaskRelationshipCandidate(
                 id: task.id,
@@ -2185,6 +2213,7 @@ struct HomeFeatureTests {
         #expect(store.state.routineTasks.count == 1)
         #expect(store.state.routineDisplays.count == 1)
         #expect(scheduledIDs.value == [task.id.uuidString])
+        await store.skipReceivedActions()
     }
 
     @Test
@@ -2222,6 +2251,7 @@ struct HomeFeatureTests {
             $0.isAddRoutineSheetPresented = false
             $0.addRoutineState = nil
         }
+        await store.skipReceivedActions()
     }
 
     @Test
@@ -2929,7 +2959,7 @@ struct HomeFeatureTests {
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, places, _goals, logs, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, _, logs, doneStats) = action else { return false }
             #expect(tasks.count == 1)
             #expect(places.isEmpty)
             #expect(logs.isEmpty)
@@ -3010,7 +3040,7 @@ struct HomeFeatureTests {
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, places, _goals, logs, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, _, logs, doneStats) = action else { return false }
             #expect(tasks.count == 1)
             #expect(places.count == 1)
             #expect(logs.isEmpty)
@@ -3084,7 +3114,7 @@ struct HomeFeatureTests {
 
         await store.send(.onAppear)
         await store.receive { action in
-            guard case let .tasksLoadedSuccessfully(tasks, places, _goals, logs, doneStats) = action else { return false }
+            guard case let .tasksLoadedSuccessfully(tasks, places, _, logs, doneStats) = action else { return false }
             #expect(tasks.count == 1)
             #expect(places.isEmpty)
             #expect(tasks.first?.id == task.id)
@@ -3603,6 +3633,100 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macNavigationRouter_settingsModeDefaultsSectionAndDismissesAddSheet() {
+        let persistedModes = LockIsolated<[HomeFeature.MacSidebarMode]>([])
+        let router = HomeFeatureMacNavigationRouter(
+            setHideUnavailableRoutines: { _ in },
+            persistTemporaryViewState: { state in
+                let mode = state.macSidebarMode
+                persistedModes.withValue { $0.append(mode) }
+            }
+        )
+        var state = HomeFeature.State(
+            selectedTaskID: UUID(),
+            isAddRoutineSheetPresented: true,
+            selectedSettingsSection: nil
+        )
+
+        _ = router.sidebarModeChanged(.settings, state: &state)
+
+        #expect(state.macSidebarMode == .settings)
+        #expect(state.selectedSettingsSection == .notifications)
+        #expect(state.selectedTaskID == nil)
+        #expect(state.macSidebarSelection == nil)
+        #expect(!state.isAddRoutineSheetPresented)
+        #expect(persistedModes.value == [.settings])
+    }
+
+    @Test
+    func macNavigationRouter_boardModeClearsRoutineSelection() {
+        let routine = RoutineTask(name: "Meditate", scheduleMode: .fixedInterval, createdAt: nil)
+        let router = HomeFeatureMacNavigationRouter(
+            setHideUnavailableRoutines: { _ in },
+            persistTemporaryViewState: { _ in }
+        )
+        var state = HomeFeature.State(
+            routineTasks: [routine],
+            selectedTaskID: routine.id,
+            taskDetailState: TaskDetailFeature.State(task: routine),
+            taskListMode: .routines,
+            macSidebarSelection: .task(routine.id)
+        )
+
+        _ = router.sidebarModeChanged(.board, state: &state)
+
+        #expect(state.macSidebarMode == .board)
+        #expect(state.selectedTaskID == nil)
+        #expect(state.taskDetailState == nil)
+        #expect(state.macSidebarSelection == nil)
+    }
+
+    @Test
+    func macBoardCommandRouterRoutesBoardScopeAndSprintDraftState() {
+        let sprintID = UUID()
+        let taskID = UUID()
+        let recorder = MacBoardCommandRouterRecorder()
+        let router = makeMacBoardCommandRouter(recorder: recorder)
+        var state = HomeFeature.State(
+            sprintBoardData: SprintBoardData(
+                sprints: [
+                    BoardSprint(id: sprintID, title: "Launch")
+                ]
+            ),
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(task: RoutineTask(id: taskID, name: "Todo", scheduleMode: .oneOff)),
+            macSidebarSelection: .task(taskID)
+        )
+
+        _ = router.selectedBoardScopeChanged(HomeFeature.BoardScope.sprint(sprintID), state: &state)
+        #expect(state.selectedBoardScope == HomeFeature.BoardScope.sprint(sprintID))
+        #expect(state.selectedTaskID == nil)
+        #expect(state.taskDetailState == nil)
+        #expect(state.macSidebarSelection == nil)
+
+        _ = router.createSprintTapped(state: &state)
+        #expect(state.creatingSprintTitle == "")
+
+        _ = router.createSprintTitleChanged("Refactor", state: &state)
+        _ = router.createSprintConfirmed(state: &state)
+        #expect(recorder.createdSprintTitles == ["Refactor"])
+
+        _ = router.renameSprintTapped(sprintID, state: &state)
+        #expect(state.renamingSprintID == sprintID)
+        #expect(state.renamingSprintTitle == "Launch")
+
+        _ = router.renamingSprintTitleChanged("Launch v2", state: &state)
+        _ = router.renameSprintConfirmed(state: &state)
+        #expect(recorder.renamedSprints == [MacBoardCommandRouterRecorder.RenamedSprint(id: sprintID, title: "Launch v2")])
+
+        _ = router.deleteSprintTapped(sprintID, state: &state)
+        #expect(state.deletingSprintID == sprintID)
+
+        _ = router.deleteSprintCanceled(state: &state)
+        #expect(state.deletingSprintID == nil)
+    }
+
+    @Test
     func taskListModeChanged_hidesMacFilterDetail() async {
         let context = makeInMemoryContext()
         let store = TestStore(
@@ -3733,5 +3857,80 @@ private func makeDisplay(
         doneCount: doneCount,
         assignedSprintID: assignedSprintID,
         assignedSprintTitle: assignedSprintTitle
+    )
+}
+
+private final class MacBoardCommandRouterRecorder {
+    struct RenamedSprint: Equatable {
+        let id: UUID
+        let title: String
+    }
+
+    var movedTodoStates: [(UUID, TodoState)] = []
+    var boardMoves: [(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])] = []
+    var createdBacklogTitles: [String] = []
+    var createdSprintTitles: [String] = []
+    var startedSprintIDs: [UUID] = []
+    var finishedSprintIDs: [UUID] = []
+    var backlogAssignments: [(taskID: UUID, backlogID: UUID?)] = []
+    var bulkBacklogAssignments: [(taskIDs: [UUID], backlogID: UUID?)] = []
+    var sprintAssignments: [(taskID: UUID, sprintID: UUID?)] = []
+    var bulkSprintAssignments: [(taskIDs: [UUID], sprintID: UUID?)] = []
+    var renamedSprints: [RenamedSprint] = []
+    var deletedSprintIDs: [UUID] = []
+}
+
+private func makeMacBoardCommandRouter(
+    recorder: MacBoardCommandRouterRecorder
+) -> HomeFeatureMacBoardCommandRouter {
+    HomeFeatureMacBoardCommandRouter(
+        moveTodoToState: { id, state, _ in
+            recorder.movedTodoStates.append((id, state))
+            return .none
+        },
+        moveTodoOnBoard: { taskID, targetState, orderedTaskIDs, _ in
+            recorder.boardMoves.append((taskID, targetState, orderedTaskIDs))
+            return .none
+        },
+        createBacklog: { title, _ in
+            recorder.createdBacklogTitles.append(title)
+            return .none
+        },
+        createSprint: { title, _ in
+            recorder.createdSprintTitles.append(title)
+            return .none
+        },
+        startSprint: { sprintID, _ in
+            recorder.startedSprintIDs.append(sprintID)
+            return .none
+        },
+        finishSprint: { sprintID, _ in
+            recorder.finishedSprintIDs.append(sprintID)
+            return .none
+        },
+        assignTodoToBacklog: { taskID, backlogID, _ in
+            recorder.backlogAssignments.append((taskID, backlogID))
+            return .none
+        },
+        assignTodosToBacklog: { taskIDs, backlogID, _ in
+            recorder.bulkBacklogAssignments.append((taskIDs, backlogID))
+            return .none
+        },
+        assignTodoToSprint: { taskID, sprintID, _ in
+            recorder.sprintAssignments.append((taskID, sprintID))
+            return .none
+        },
+        assignTodosToSprint: { taskIDs, sprintID, _ in
+            recorder.bulkSprintAssignments.append((taskIDs, sprintID))
+            return .none
+        },
+        renameSprint: { id, title, _ in
+            recorder.renamedSprints.append(.init(id: id, title: title))
+            return .none
+        },
+        deleteSprint: { id, _ in
+            recorder.deletedSprintIDs.append(id)
+            return .none
+        }
     )
 }

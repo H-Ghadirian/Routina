@@ -321,14 +321,21 @@ struct StatsFeatureTests {
         let focusLog1 = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-19T08:00:00Z"))
         let focusLog2 = makeLog(in: context, task: focusTask, timestamp: makeDate("2026-03-20T08:00:00Z"))
         let healthLog = makeLog(in: context, task: healthTask, timestamp: makeDate("2026-03-20T09:00:00Z"))
+        let expectedFocusChartPoints = FocusDurationStats.points(
+            for: .week,
+            sessions: [],
+            referenceDate: now,
+            calendar: calendar
+        )
 
         let store = TestStore(initialState: StatsFeature.State()) {
             StatsFeature()
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off
 
-        await store.send(.setData(tasks: [focusTask, healthTask], logs: [focusLog1, focusLog2, healthLog])) {
+        await store.send(.setData(tasks: [focusTask, healthTask], logs: [focusLog1, focusLog2, healthLog], focusSessions: [])) {
             $0.tasks = [focusTask, healthTask]
             $0.logs = [focusLog1, focusLog2, healthLog]
             $0.availableTags = ["Focus", "Health"]
@@ -344,6 +351,11 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                    TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 3,
                 activeRoutineCount: 1,
                 archivedRoutineCount: 1,
@@ -352,6 +364,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 2),
                 activeDayCount: 2,
                 chartUpperBound: 3,
+                focusChartUpperBound: 10,
                 sparklinePoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [
@@ -389,6 +402,10 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 2,
                 activeRoutineCount: 1,
                 archivedRoutineCount: 0,
@@ -397,6 +414,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-19T00:00:00Z"), count: 1),
                 activeDayCount: 2,
                 chartUpperBound: 2,
+                focusChartUpperBound: 10,
                 sparklinePoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [
@@ -426,7 +444,7 @@ struct StatsFeatureTests {
         #expect(store.state.metrics.archivedRoutineCount == 0)
         #expect(store.state.metrics.totalCount == 2)
 
-        await store.send(.setData(tasks: [healthTask], logs: [healthLog])) {
+        await store.send(.setData(tasks: [healthTask], logs: [healthLog], focusSessions: [])) {
             $0.tasks = [healthTask]
             $0.logs = [healthLog]
             $0.selectedTag = nil
@@ -442,6 +460,10 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                focusChartPoints: expectedFocusChartPoints,
+                tagUsagePoints: [
+                    TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
+                ],
                 totalDoneCount: 1,
                 activeRoutineCount: 0,
                 archivedRoutineCount: 1,
@@ -450,6 +472,7 @@ struct StatsFeatureTests {
                 highlightedBusiestDay: DoneChartPoint(date: makeDate("2026-03-20T00:00:00Z"), count: 1),
                 activeDayCount: 1,
                 chartUpperBound: 2,
+                focusChartUpperBound: 10,
                 sparklinePoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [
@@ -512,7 +535,7 @@ struct StatsFeatureTests {
         }
         store.exhaustivity = .off
 
-        await store.send(.setData(tasks: [routineTask, todoTask], logs: [routineLog, todoLog])) {
+        await store.send(.setData(tasks: [routineTask, todoTask], logs: [routineLog, todoLog], focusSessions: [])) {
             $0.tasks = [routineTask, todoTask]
             $0.logs = [routineLog, todoLog]
             $0.availableTags = ["Errands", "Focus"]

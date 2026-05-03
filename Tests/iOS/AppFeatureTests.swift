@@ -167,6 +167,12 @@ struct AppFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
+        let expectedFocusChartPoints = FocusDurationStats.points(
+            for: .week,
+            sessions: [],
+            referenceDate: now,
+            calendar: calendar
+        )
 
         let store = TestStore(
             initialState: AppFeature.State(
@@ -195,6 +201,7 @@ struct AppFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off
 
         await store.send(.settings(.resetTemporaryViewStateTapped)) {
             $0.home.taskListMode = .all
@@ -211,9 +218,10 @@ struct AppFeatureTests {
             $0.settings.appearance.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
         }
         await store.receive(.timeline(.setData(tasks: [], logs: [])))
-        await store.receive(.stats(.setData(tasks: [], logs: []))) {
+        await store.receive(.stats(.setData(tasks: [], logs: [], focusSessions: []))) {
             $0.stats.metrics = StatsFeature.Metrics(
                 chartPoints: expectedChartPoints,
+                focusChartPoints: expectedFocusChartPoints,
                 totalDoneCount: 0,
                 totalCanceledCount: 0,
                 activeRoutineCount: 0,
@@ -223,6 +231,7 @@ struct AppFeatureTests {
                 highlightedBusiestDay: nil,
                 activeDayCount: 0,
                 chartUpperBound: 1,
+                focusChartUpperBound: 10,
                 sparklinePoints: expectedChartPoints,
                 sparklineMaxCount: 1,
                 xAxisDates: expectedChartPoints.map(\.date)

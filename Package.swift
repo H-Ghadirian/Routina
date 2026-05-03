@@ -234,6 +234,7 @@ let package = Package(
                 "SharedCore/Persistence/PersistenceController.swift",
                 "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphLayout.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailSharedViewSupport.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
                 "SharedCore/Services/CalendarTaskImportService.swift",
                 "SharedCore/Services/MicrosoftGraphCalendarService.swift",

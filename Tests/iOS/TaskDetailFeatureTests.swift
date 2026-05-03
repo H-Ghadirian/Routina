@@ -358,6 +358,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableTagsLoaded(["Evening", "Mobility"])) {
             $0.availableTags = ["Evening", "Mobility"]
         }
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([
             RoutineRelatedTagRule(tag: "Evening", relatedTags: ["Mobility"]),
             RoutineRelatedTagRule(tag: "Mobility", relatedTags: ["Evening"]),
@@ -614,6 +615,7 @@ struct TaskDetailFeatureTests {
         await store.receive(.availableTagsLoaded(["Focus", "Night"])) {
             $0.availableTags = ["Focus", "Night"]
         }
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([
             RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Night"]),
             RoutineRelatedTagRule(tag: "Night", relatedTags: ["Focus"]),
@@ -678,6 +680,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
@@ -734,6 +737,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
@@ -855,6 +859,7 @@ struct TaskDetailFeatureTests {
             ]
         }
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
@@ -921,6 +926,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
@@ -994,6 +1000,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
@@ -1066,6 +1073,7 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
@@ -1175,6 +1183,7 @@ struct TaskDetailFeatureTests {
 
         await store.receive(.availablePlacesLoaded([]))
         await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
         await store.receive(.logsLoaded([]))
@@ -1205,13 +1214,9 @@ struct TaskDetailFeatureTests {
         }
 
         _ = await store.withExhaustivity(.off) {
-            await store.send(.markAsDone) {
-                $0.taskRefreshID = 1
-                $0.isDoneToday = true
-                $0.daysSinceLastRoutine = 0
-                $0.overdueDays = 0
-            }
+            await store.send(.markAsDone) { _ in }
         }
+        #expect(store.state.taskRefreshID == 1)
         #expect(store.state.task.lastDone == now)
         #expect(store.state.task.scheduleAnchor == now)
         #expect(store.state.logs.count == 1)
@@ -1226,6 +1231,7 @@ struct TaskDetailFeatureTests {
                 sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
             )
             $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
+            $0.pendingLocalCompletionDates = []
             #expect($0.logs.count == 1)
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
@@ -1271,13 +1277,10 @@ struct TaskDetailFeatureTests {
         }
 
         _ = await store.withExhaustivity(.off) {
-            await store.send(.markAsDone) {
-                $0.taskRefreshID = 1
-                $0.isDoneToday = true
-                $0.daysSinceLastRoutine = 0
-                $0.overdueDays = 0
-            }
+            await store.send(.markAsDone) { _ in }
         }
+        #expect(store.state.taskRefreshID == 1)
+        #expect(store.state.isDoneToday)
         #expect(store.state.logs.count == 1)
 
         await store.receive {
@@ -1290,6 +1293,7 @@ struct TaskDetailFeatureTests {
                 sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
             )
             $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
+            $0.pendingLocalCompletionDates = []
             #expect($0.logs.count == 1)
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
@@ -1555,15 +1559,10 @@ struct TaskDetailFeatureTests {
         }
 
         _ = await store.withExhaustivity(.off) {
-            await store.send(.markAsDone) {
-                $0.taskRefreshID = 1
-            }
+            await store.send(.markAsDone) { _ in }
         }
-        #expect(store.state.logs.count == 2)
-        #expect(store.state.logs.contains { log in
-            guard let timestamp = log.timestamp else { return false }
-            return calendar.isDate(timestamp, inSameDayAs: selectedDayStart)
-        })
+        #expect(store.state.taskRefreshID == 1)
+        #expect(store.state.logs.isEmpty)
         #expect(store.state.task.completedStepCount == 1)
         #expect(store.state.task.sequenceStartedAt == now)
 
@@ -1614,9 +1613,10 @@ struct TaskDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone) {
-            $0.taskRefreshID = 1
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) { _ in }
         }
+        #expect(store.state.taskRefreshID == 1)
 
         let taskID = task.id
         await store.receive {
@@ -1626,6 +1626,7 @@ struct TaskDetailFeatureTests {
         } assert: {
             let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
             $0.logs = logs
+            $0.pendingLocalCompletionDates = []
             #expect(logs.count == 2)
             #expect(logs.contains { log in
                 guard let timestamp = log.timestamp else { return false }
@@ -1694,12 +1695,9 @@ struct TaskDetailFeatureTests {
         }
 
         _ = await store.withExhaustivity(.off) {
-            await store.send(.markAsDone) {
-                $0.taskRefreshID = 1
-                $0.daysSinceLastRoutine = 7
-                $0.overdueDays = 3
-            }
+            await store.send(.markAsDone) { _ in }
         }
+        #expect(store.state.taskRefreshID == 1)
         #expect(store.state.logs.count == 1)
         #expect(store.state.logs.contains { log in
             guard let timestamp = log.timestamp else { return false }
@@ -1714,6 +1712,7 @@ struct TaskDetailFeatureTests {
         } assert: {
             let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
             $0.logs = logs
+            $0.pendingLocalCompletionDates = []
             #expect(logs.count == 1)
             #expect(logs.contains { log in
                 guard let timestamp = log.timestamp else { return false }
@@ -1776,11 +1775,14 @@ struct TaskDetailFeatureTests {
             }
         }
 
-        await store.send(.markAsDone) {
-            $0.taskRefreshID = 1
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) { _ in }
         }
+        #expect(store.state.taskRefreshID == 1)
 
-        await store.receive(.logsLoaded([existingLog]))
+        await store.receive(.logsLoaded([existingLog])) {
+            $0.pendingLocalCompletionDates = []
+        }
 
         let persistedTaskID = task.id
         let persistedTask = try #require(

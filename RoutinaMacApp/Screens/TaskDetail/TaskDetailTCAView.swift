@@ -501,7 +501,7 @@ struct TaskDetailTCAView: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                Text(storyPointsBadgeValue(for: storyPoints))
+                Text(TaskDetailHeaderBadgePresentation.storyPointsText(for: storyPoints))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1176,56 +1176,29 @@ struct TaskDetailTCAView: View {
     }
 
     private var estimationHeaderBadges: [TaskDetailHeaderBadgeItem] {
-        var badges: [TaskDetailHeaderBadgeItem] = []
-
-        if let estimatedDurationMinutes = store.task.estimatedDurationMinutes {
-            badges.append(
-                TaskDetailHeaderBadgeItem(
-                    title: "Estimate",
-                    value: estimatedDurationBadgeValue(for: estimatedDurationMinutes),
-                    systemImage: nil,
-                    tint: .teal
-                )
-            )
-        }
-
-        return badges
-    }
-
-    private var totalLoggedActualDurationMinutes: Int {
-        store.logs.reduce(0) { partialResult, log in
-            partialResult + (log.kind == .completed ? (log.actualDurationMinutes ?? 0) : 0)
-        }
+        TaskDetailHeaderBadgePresentation.estimationBadges(
+            task: store.task,
+            displayedActualDurationMinutes: displayedActualDurationMinutes,
+            includeSpent: false,
+            includeStoryPoints: false
+        )
     }
 
     private var displayedActualDurationMinutes: Int {
-        store.task.isOneOffTask ? (store.task.actualDurationMinutes ?? 0) : totalLoggedActualDurationMinutes
+        TaskDetailHeaderBadgePresentation.displayedActualDurationMinutes(
+            task: store.task,
+            logs: store.logs
+        )
+    }
+
+    private var displayedActualDurationText: String? {
+        displayedActualDurationMinutes > 0
+            ? TaskDetailHeaderBadgePresentation.durationText(for: displayedActualDurationMinutes)
+            : nil
     }
 
     private var latestCompletedLog: RoutineLog? {
-        store.logs
-            .filter { $0.kind == .completed }
-            .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
-    }
-
-    private func estimatedDurationBadgeValue(for minutes: Int) -> String {
-        let hours = minutes / 60
-        let remainingMinutes = minutes % 60
-
-        switch (hours, remainingMinutes) {
-        case (0, let minutes):
-            return minutes == 1 ? "1 minute" : "\(minutes) minutes"
-        case (let hours, 0):
-            return hours == 1 ? "1 hour" : "\(hours) hours"
-        case (let hours, let minutes):
-            let hourText = hours == 1 ? "1 hour" : "\(hours) hours"
-            let minuteText = minutes == 1 ? "1 minute" : "\(minutes) minutes"
-            return "\(hourText) \(minuteText)"
-        }
-    }
-
-    private func storyPointsBadgeValue(for points: Int) -> String {
-        points == 1 ? "1 story point" : "\(points) story points"
+        TaskDetailHeaderBadgePresentation.latestCompletedLog(in: store.logs)
     }
 
     @ViewBuilder
@@ -1533,73 +1506,14 @@ struct TaskDetailTCAView: View {
     }
 
     private func statusMetadataSection(showSelectedDate: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if !store.task.isOneOffTask {
-                TaskDetailStatusMetadataRow(label: "Frequency", value: store.frequencyText)
-            }
-
-            if shouldShowCompletionCount {
-                TaskDetailStatusMetadataRow(label: "Completed", value: store.completedLogCountText)
-            }
-
-            if displayedActualDurationMinutes > 0 {
-                TaskDetailStatusMetadataRow(
-                    label: "Time Spent",
-                    value: estimatedDurationBadgeValue(for: displayedActualDurationMinutes),
-                    systemImage: "clock"
-                )
-            }
-
-            if store.canceledLogCount > 0 {
-                TaskDetailStatusMetadataRow(label: "Canceled", value: store.canceledLogCountText, systemImage: "xmark.circle")
-            }
-
-            if let pausedAt = store.task.pausedAt {
-                TaskDetailStatusMetadataRow(
-                    label: "Paused",
-                    value: pausedAt.formatted(date: .abbreviated, time: .omitted)
-                )
-            } else if let dueDateMetadataText = dueDateMetadataDisplayText {
-                TaskDetailStatusMetadataRow(label: "Due", value: dueDateMetadataText)
-            }
-
-            if showSelectedDate && store.shouldShowSelectedDateMetadata {
-                TaskDetailStatusMetadataRow(label: "Selected", value: store.selectedDateMetadataText)
-            }
-
-            if store.task.hasImage || !store.taskAttachments.isEmpty {
-                let fileCount = store.taskAttachments.count
-                let parts: [String] = [
-                    store.task.hasImage ? "1 image" : nil,
-                    fileCount > 0 ? "\(fileCount) \(fileCount == 1 ? "file" : "files")" : nil
-                ].compactMap { $0 }
-                TaskDetailStatusMetadataRow(label: "Attachment", value: parts.joined(separator: ", "), systemImage: "paperclip")
-            }
-
-            if store.task.isChecklistDriven {
-                TaskDetailStatusMetadataRow(
-                    label: "Checklist",
-                    value: "\(store.task.checklistItems.count) \(store.task.checklistItems.count == 1 ? "item" : "items")"
-                )
-                if let nextDueChecklistItemTitle = store.task.nextDueChecklistItem(referenceDate: Date())?.title {
-                    TaskDetailStatusMetadataRow(label: "Next Due", value: nextDueChecklistItemTitle)
-                }
-            } else if store.task.isChecklistCompletionRoutine {
-                TaskDetailStatusMetadataRow(
-                    label: "Checklist",
-                    value: "\(store.task.totalChecklistItemCount) \(store.task.totalChecklistItemCount == 1 ? "item" : "items")"
-                )
-                TaskDetailStatusMetadataRow(label: "Progress", value: store.checklistProgressText)
-                if let nextPendingChecklistItemTitle = store.task.nextPendingChecklistItemTitle {
-                    TaskDetailStatusMetadataRow(label: "Next Item", value: nextPendingChecklistItemTitle)
-                }
-            } else if store.task.hasSequentialSteps {
-                TaskDetailStatusMetadataRow(label: "Progress", value: store.stepProgressText)
-                if let nextStepTitle = store.task.nextStepTitle {
-                    TaskDetailStatusMetadataRow(label: "Next Step", value: nextStepTitle)
-                }
-            }
-        }
+        TaskDetailStatusMetadataSectionView(
+            items: TaskDetailStatusMetadataPresentation.items(
+                for: store.state,
+                showSelectedDate: showSelectedDate,
+                displayedActualDurationText: displayedActualDurationText,
+                dueDateMetadataDisplayText: dueDateMetadataDisplayText
+            )
+        )
     }
 
     private func statusActionSection(
@@ -1751,10 +1665,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowCompletionCount: Bool {
-        if store.task.isOneOffTask {
-            return store.completedLogCount > 0 || store.canceledLogCount > 0
-        }
-        return true
+        TaskDetailStatusMetadataPresentation.shouldShowCompletionCount(for: store.state)
     }
 
     private var hasVisibleStatusMetadata: Bool {
@@ -1888,7 +1799,7 @@ struct TaskDetailTCAView: View {
 
     private func logTimeSpentText(_ log: RoutineLog) -> String {
         guard let duration = log.actualDurationMinutes else { return "Add time" }
-        return estimatedDurationBadgeValue(for: duration)
+        return TaskDetailHeaderBadgePresentation.durationText(for: duration)
     }
 
     private func beginEditingTime(for log: RoutineLog) {
@@ -1901,7 +1812,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var taskTimeSpentDisplayText: String {
-        store.task.actualDurationMinutes.map(estimatedDurationBadgeValue(for:)) ?? "Not logged"
+        store.task.actualDurationMinutes.map(TaskDetailHeaderBadgePresentation.durationText(for:)) ?? "Not logged"
     }
 
     private var taskTimeEntryTotalMinutes: Int {
@@ -1913,12 +1824,12 @@ struct TaskDetailTCAView: View {
     }
 
     private var taskTimeEntryPreviewText: String {
-        let totalText = estimatedDurationBadgeValue(for: max(taskTimeEntryPreviewMinutes, 1))
+        let totalText = TaskDetailHeaderBadgePresentation.durationText(for: max(taskTimeEntryPreviewMinutes, 1))
         return "Total \(totalText)"
     }
 
     private var taskTimeEntryApplyTitle: String {
-        let entryText = estimatedDurationBadgeValue(for: max(taskTimeEntryTotalMinutes, 1))
+        let entryText = TaskDetailHeaderBadgePresentation.durationText(for: max(taskTimeEntryTotalMinutes, 1))
         return "Add \(entryText)"
     }
 
