@@ -37,53 +37,12 @@ struct TaskDetailTCAView: View {
             detailBody
             .routinaInlineTitleDisplayMode()
             .toolbar {
-                if showsPrincipalToolbarTitle && !isInlineEditPresented {
-                    ToolbarItem(placement: .principal) {
-                        Text(store.routineEmoji)
-                            .font(TaskDetailPlatformStyle.principalTitleFont)
-                    }
-                }
-                if showsPrincipalToolbarTitle && isInlineEditPresented {
-                    ToolbarItem(placement: .principal) {
-                        HStack(spacing: 8) {
-                            Text("✏️")
-                            Text("Edit Task")
-                                .lineLimit(1)
-                        }
-                        .font(TaskDetailPlatformStyle.principalTitleFont)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 999, style: .continuous)
-                                .fill(.ultraThinMaterial)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 999, style: .continuous)
-                                .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                        )
-                    }
-                }
-                if isInlineEditPresented {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            store.send(.setEditSheet(false))
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            store.send(.editSaveTapped)
-                        }
-                        .disabled(!canSaveCurrentEdit)
-                    }
-                } else {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        toolbarActionButtons
-                        CloudSharingToolbarButton(task: store.task)
-                        Button("Edit") {
-                            store.send(.setEditSheet(true))
-                        }
-                    }
-                }
+                TaskDetailToolbarContent(
+                    store: store,
+                    showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
+                    isInlineEditPresented: isInlineEditPresented,
+                    canSaveCurrentEdit: canSaveCurrentEdit
+                )
             }
             .routinaPlatformEditPresentation(
                 isPresented: editSheetBinding,
@@ -965,44 +924,6 @@ struct TaskDetailTCAView: View {
         TaskDetailHeaderBadgePresentation.latestCompletedLog(in: store.logs)
     }
 
-    @ViewBuilder
-    private var toolbarActionButtons: some View {
-        Button {
-            store.send(store.completionButtonAction)
-        } label: {
-            TaskDetailCompletionButtonLabel(
-                title: store.completionButtonTitle,
-                systemImage: store.completionButtonSystemImage
-            )
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(toolbarCompletionTint)
-        .disabled(store.isCompletionButtonDisabled)
-
-        if store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-            Button {
-                store.send(.cancelTodo)
-            }
-            label: {
-                Label(store.cancelTodoButtonTitle, systemImage: "xmark.circle")
-            }
-            .buttonStyle(.bordered)
-            .tint(.orange)
-            .disabled(store.isCancelTodoButtonDisabled)
-        }
-
-        if !store.task.isOneOffTask {
-            Button {
-                store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
-            }
-            label: {
-                Label(toolbarPauseActionTitle, systemImage: toolbarPauseSystemImage)
-            }
-            .buttonStyle(.bordered)
-            .tint(toolbarPauseTint)
-        }
-    }
-
     private var todoPrimaryActionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             primaryActionButton
@@ -1497,22 +1418,6 @@ struct TaskDetailTCAView: View {
             overdueDays: store.overdueDays,
             task: store.task
         )
-    }
-
-    private var toolbarCompletionTint: Color {
-        store.canUndoSelectedDate ? .orange : .green
-    }
-
-    private var toolbarPauseActionTitle: String {
-        store.task.isArchived() ? "Resume" : "Pause"
-    }
-
-    private var toolbarPauseSystemImage: String {
-        store.task.isArchived() ? "play.fill" : "pause.fill"
-    }
-
-    private var toolbarPauseTint: Color {
-        store.task.isArchived() ? .teal : .orange
     }
 
     private var routineLogsBackground: Color {
