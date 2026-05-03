@@ -282,49 +282,14 @@ extension HomeTCAView {
     }
 
     var macPlaceFilterOptions: [MacPlaceFilterOption] {
-        let countableDisplays = (
-            store.routineDisplays
-            + store.awayRoutineDisplays
-            + store.archivedRoutineDisplays
+        MacPlaceFilterOptionFactory.options(
+            places: sortedRoutinePlaces,
+            displays: store.routineDisplays
+                + store.awayRoutineDisplays
+                + store.archivedRoutineDisplays,
+            taskListMode: store.taskListMode,
+            locationSnapshot: store.locationSnapshot
         )
-        let linkedRoutineCounts = HomeFeature.placeLinkedCounts(
-            from: countableDisplays,
-            taskListMode: store.taskListMode
-        )
-
-        return sortedRoutinePlaces.map { place in
-            let linkedRoutineCount = linkedRoutineCounts[place.id, default: 0]
-            let status: MacPlaceFilterOption.Status
-
-            if let coordinate = store.locationSnapshot.coordinate,
-               store.locationSnapshot.authorizationStatus.isAuthorized {
-                if place.contains(coordinate) {
-                    status = .here
-                } else {
-                    status = .away(distanceMeters: place.distance(to: coordinate))
-                }
-            } else {
-                status = .unknown
-            }
-
-            return MacPlaceFilterOption(
-                place: place,
-                linkedRoutineCount: linkedRoutineCount,
-                linkedItemText: placeFilterCountText(linkedRoutineCount),
-                status: status
-            )
-        }
-    }
-
-    func placeFilterCountText(_ count: Int) -> String {
-        switch store.taskListMode {
-        case .all:
-            return count == 1 ? "1 task" : "\(count) tasks"
-        case .routines:
-            return count == 1 ? "1 routine" : "\(count) routines"
-        case .todos:
-            return count == 1 ? "1 todo" : "\(count) todos"
-        }
     }
 
     var platformTimelineRangePicker: some View {
