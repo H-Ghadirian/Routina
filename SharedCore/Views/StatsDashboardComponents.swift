@@ -118,6 +118,39 @@ struct StatsSummaryCard<Accessory: View>: View {
     }
 }
 
+struct StatsSectionHeader<Accessory: View>: View {
+    let title: String
+    let subtitle: String
+    let accessory: () -> Accessory
+
+    init(
+        title: String,
+        subtitle: String,
+        @ViewBuilder accessory: @escaping () -> Accessory
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.accessory = accessory
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title3.weight(.semibold))
+
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            accessory()
+        }
+    }
+}
+
 extension StatsSummaryCard where Accessory == EmptyView {
     init(
         icon: String,

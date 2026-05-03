@@ -582,18 +582,14 @@ struct StatsView: View {
 
     private func chartSection(metrics: Metrics) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Completions per day")
-                        .font(.title3.weight(.semibold))
-
-                    Text(chartPresentation.chartSectionSubtitle(totalCount: metrics.totalCount, averagePerDay: metrics.averagePerDay, dayCount: metrics.chartPoints.count))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 0)
-
+            StatsSectionHeader(
+                title: "Completions per day",
+                subtitle: chartPresentation.chartSectionSubtitle(
+                    totalCount: metrics.totalCount,
+                    averagePerDay: metrics.averagePerDay,
+                    dayCount: metrics.chartPoints.count
+                )
+            ) {
                 smallHighlightBadge(
                     title: "Peak",
                     value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0"
@@ -700,18 +696,13 @@ struct StatsView: View {
 
     private func focusChartSection(metrics: Metrics) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Focus time per day")
-                        .font(.title3.weight(.semibold))
-
-                    Text(chartPresentation.focusChartSectionSubtitle(totalFocusSeconds: metrics.totalFocusSeconds, activeDayCount: metrics.focusActiveDayCount))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 0)
-
+            StatsSectionHeader(
+                title: "Focus time per day",
+                subtitle: chartPresentation.focusChartSectionSubtitle(
+                    totalFocusSeconds: metrics.totalFocusSeconds,
+                    activeDayCount: metrics.focusActiveDayCount
+                )
+            ) {
                 smallHighlightBadge(
                     title: "Peak",
                     value: metrics.highlightedFocusDay.map { chartPresentation.focusDurationText($0.seconds) } ?? "0m"
@@ -812,18 +803,13 @@ struct StatsView: View {
         let rows = max(Int(ceil(Double(max(points.count, 1)) / Double(columns))), 1)
 
         return VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Tag usage")
-                        .font(.title3.weight(.semibold))
-
-                    Text(chartPresentation.tagUsageSectionSubtitle(points: metrics.tagUsagePoints, periodDescription: selectedRange.periodDescription))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 0)
-
+            StatsSectionHeader(
+                title: "Tag usage",
+                subtitle: chartPresentation.tagUsageSectionSubtitle(
+                    points: metrics.tagUsagePoints,
+                    periodDescription: selectedRange.periodDescription
+                )
+            ) {
                 smallHighlightBadge(
                     title: "Tags",
                     value: points.count.formatted()
