@@ -2,7 +2,7 @@ import Combine
 import Foundation
 
 final class DayPlanPlannerState: ObservableObject {
-    @Published var selectedDate = Date()
+    @Published var selectedDate = DayPlanPlannerState.defaultSelectedDate()
     @Published var blocks: [DayPlanBlock] = []
     @Published var weekBlocksByDayKey: [String: [DayPlanBlock]] = [:]
     @Published var selectedTaskID: UUID?
@@ -345,7 +345,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func moveWeek(by value: Int, calendar: Calendar) {
-        selectedDate = calendar.date(byAdding: .day, value: value * 7, to: selectedDate) ?? selectedDate
+        selectedDate = calendar.date(byAdding: .day, value: value, to: selectedDate) ?? selectedDate
         selectedBlockID = nil
         loadBlocks(calendar: calendar)
     }
@@ -358,13 +358,11 @@ final class DayPlanPlannerState: ObservableObject {
 
     func weekTitle(calendar: Calendar) -> String {
         let dates = weekDates(calendar: calendar)
-        guard let first = dates.first, let last = dates.last else {
+        guard let first = dates.first else {
             return selectedDate.formatted(date: .abbreviated, time: .omitted)
         }
 
-        let firstText = first.formatted(.dateTime.month(.abbreviated).day())
-        let lastText = last.formatted(.dateTime.month(.abbreviated).day().year())
-        return "\(firstText) - \(lastText)"
+        return first.formatted(date: .abbreviated, time: .omitted)
     }
 
     func conflict(
@@ -449,10 +447,15 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     private func weekDates(containing date: Date, calendar: Calendar) -> [Date] {
-        let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: date)?.start
-            ?? calendar.startOfDay(for: date)
-        return (0..<7).compactMap { offset in
-            calendar.date(byAdding: .day, value: offset, to: startOfWeek)
-        }
+        [calendar.startOfDay(for: date)]
+    }
+
+    private static func defaultSelectedDate(
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Date {
+        calendar.date(byAdding: .day, value: -1, to: now).map {
+            calendar.startOfDay(for: $0)
+        } ?? calendar.startOfDay(for: now)
     }
 }
