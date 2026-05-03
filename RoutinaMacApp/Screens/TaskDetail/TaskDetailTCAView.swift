@@ -46,7 +46,7 @@ struct TaskDetailTCAView: View {
                 )
             }
             .routinaPlatformEditPresentation(
-                isPresented: editSheetBinding,
+                isPresented: presentationRouting.editSheet,
                 store: store,
                 isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
                 emojiOptions: emojiOptions,
@@ -54,10 +54,7 @@ struct TaskDetailTCAView: View {
             )
             .sheet(isPresented: $isEditEmojiPickerPresented) {
                 EmojiPickerSheet(
-                    selectedEmoji: Binding(
-                        get: { store.editRoutineEmoji },
-                        set: { store.send(.editRoutineEmojiChanged($0)) }
-                    ),
+                    selectedEmoji: presentationRouting.editRoutineEmoji,
                     emojis: allEmojiOptions
                 )
             }
@@ -89,34 +86,8 @@ struct TaskDetailTCAView: View {
                     }
                 )
             }
-            .alert(
-                "Delete routine?",
-                isPresented: Binding(
-                    get: { store.isDeleteConfirmationPresented },
-                    set: { store.send(.setDeleteConfirmation($0)) }
-                )
-            ) {
-                Button("Delete", role: .destructive) {
-                    store.send(.deleteRoutineConfirmed)
-                }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("This will permanently remove \(store.task.name ?? "this routine") and its logs.")
-            }
-            .alert(
-                "Undo log?",
-                isPresented: Binding(
-                    get: { store.isUndoCompletionConfirmationPresented },
-                    set: { store.send(.setUndoCompletionConfirmation($0)) }
-                )
-            ) {
-                Button("Undo", role: .destructive) {
-                    store.send(.confirmUndoCompletion)
-                }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("This will remove the selected log and may update the routine's schedule.")
-            }
+            .taskDetailDeleteConfirmationAlert(store: store)
+            .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
             .onAppear {
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
                 collapseDefaultSections()
@@ -135,7 +106,7 @@ struct TaskDetailTCAView: View {
             }
             .routinaAttachmentShareSheet(url: $attachmentTempURL)
             .fileExporter(
-                isPresented: fileExporterPresentationBinding,
+                isPresented: TaskDetailAttachmentExportPresentation.isPresentedBinding(fileToSave: $fileToSave),
                 document: fileToSave.map { RoutineAttachmentFileDocument(data: $0.data) },
                 contentType: .data,
                 defaultFilename: fileToSave?.fileName
@@ -143,17 +114,6 @@ struct TaskDetailTCAView: View {
                 fileToSave = nil
             }
         }
-    }
-
-    private var fileExporterPresentationBinding: Binding<Bool> {
-        Binding(
-            get: { fileToSave != nil },
-            set: { isPresented in
-                if !isPresented {
-                    fileToSave = nil
-                }
-            }
-        )
     }
 
     @ViewBuilder
@@ -459,11 +419,8 @@ struct TaskDetailTCAView: View {
         TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: store.state))
     }
 
-    var editSheetBinding: Binding<Bool> {
-        Binding(
-            get: { store.isEditSheetPresented },
-            set: { store.send(.setEditSheet($0)) }
-        )
+    private var presentationRouting: TaskDetailPresentationRouting {
+        store.taskDetailPresentationRouting
     }
 
     var isInlineEditPresented: Bool {
@@ -1017,10 +974,7 @@ struct TaskDetailTCAView: View {
     private var relationshipsSection: some View {
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
-            selectedRelationshipKind: Binding(
-                get: { store.addLinkedTaskRelationshipKind },
-                set: { store.send(.addLinkedTaskRelationshipKindChanged($0)) }
-            ),
+            selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,

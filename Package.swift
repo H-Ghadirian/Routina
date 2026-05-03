@@ -268,6 +268,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogsSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailSectionCardView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailSharedViewSupport.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailPresentationRoutingSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTaskChangesSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
