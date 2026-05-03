@@ -1371,18 +1371,12 @@ struct TaskDetailTCAView: View {
     }
 
     private func statusSummaryHeader(titleFont: Font) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(store.summaryStatusTitle)
-                .font(titleFont)
-                .foregroundColor(summaryStatusColor)
-
-            if let statusContextMessage {
-                Text(statusContextMessage)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
+        TaskDetailStatusSummaryHeaderView(
+            title: store.summaryStatusTitle,
+            titleColor: summaryStatusColor,
+            statusContextMessage: statusContextMessage,
+            titleFont: titleFont
+        )
     }
 
     private func statusMetadataSection(showSelectedDate: Bool) -> some View {
@@ -1400,84 +1394,31 @@ struct TaskDetailTCAView: View {
         pauseArchivePresentation: RoutinePauseArchivePresentation,
         useLargePrimaryControl: Bool = false
     ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button {
-                store.send(store.completionButtonAction)
-            } label: {
-                completionButtonLabel
-                    .routinaPlatformPrimaryActionLabelLayout()
-            }
-            .buttonStyle(.borderedProminent)
-            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: useLargePrimaryControl)
-            .routinaPlatformPrimaryActionButtonLayout(alignment: .leading)
-            .disabled(store.isCompletionButtonDisabled)
-
+        TaskDetailStatusActionSectionView(
+            pauseArchivePresentation: pauseArchivePresentation,
+            isOneOffTask: store.task.isOneOffTask,
+            isArchived: store.task.isArchived(),
+            isCompletionButtonDisabled: store.isCompletionButtonDisabled,
+            isStepRoutineOffToday: store.isStepRoutineOffToday,
+            isChecklistCompletionRoutine: store.task.isChecklistCompletionRoutine,
+            canUndoSelectedDate: store.canUndoSelectedDate,
+            shouldShowBulkConfirmAssumedDays: store.shouldShowBulkConfirmAssumedDays,
+            bulkConfirmAssumedDaysTitle: store.bulkConfirmAssumedDaysTitle,
+            hasBlockingRelationships: !store.blockingRelationships.isEmpty,
+            blockerSummaryText: store.blockerSummaryText,
+            useLargePrimaryControl: useLargePrimaryControl
+        ) {
+            completionButtonLabel
+        } timeSpentButton: {
             timeSpentActionButton
-
-            if !store.task.isOneOffTask {
-                Button(pauseArchivePresentation.actionTitle) {
-                    store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
-                }
-                .buttonStyle(.bordered)
-                .tint(store.task.isArchived() ? .teal : .orange)
-                .routinaPlatformSecondaryActionControlSize()
-                .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
-
-                if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
-                    Button(secondaryActionTitle) {
-                        store.send(.notTodayTapped)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.indigo)
-                    .routinaPlatformSecondaryActionControlSize()
-                    .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
-                }
-
-                if store.shouldShowBulkConfirmAssumedDays {
-                    Button(store.bulkConfirmAssumedDaysTitle) {
-                        store.send(.confirmAssumedPastDays)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.mint)
-                    .routinaPlatformSecondaryActionControlSize()
-                    .routinaPlatformSecondaryActionButtonLayout(alignment: .leading)
-                }
-            }
-
-            if store.isStepRoutineOffToday {
-                Text("Step-based routines can only be progressed for today.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if store.task.isChecklistCompletionRoutine && !store.canUndoSelectedDate {
-                Text("Complete checklist items below to finish this routine.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let pauseDescription = pauseArchivePresentation.description {
-                Text(pauseDescription)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let secondaryActionDescription = pauseArchivePresentation.secondaryActionDescription {
-                Text(secondaryActionDescription)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if !store.blockingRelationships.isEmpty {
-                Text(store.blockerSummaryText)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        } onComplete: {
+            store.send(store.completionButtonAction)
+        } onPauseResume: {
+            store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
+        } onNotToday: {
+            store.send(.notTodayTapped)
+        } onConfirmAssumedPastDays: {
+            store.send(.confirmAssumedPastDays)
         }
     }
 
