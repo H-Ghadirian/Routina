@@ -65,7 +65,6 @@ enum CloudKitSyncDiagnostics {
         defaults.set(summary, forKey: summaryKey)
         defaults.set(now, forKey: timestampKey)
 
-        NSLog("CloudKit event: \(summary)")
         NotificationCenter.default.post(name: didUpdateNotification, object: nil)
     }
 
