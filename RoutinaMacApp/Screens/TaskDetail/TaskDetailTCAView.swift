@@ -1323,7 +1323,7 @@ struct TaskDetailTCAView: View {
             return "This day is assumed done. Confirm it if you want it counted in history and stats."
         }
         if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
-            return "Today is selected. Pick another date to review its history."
+            return nil
         }
         let dateText = PersianDateDisplay.appendingSupplementaryDate(
             to: store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted),
