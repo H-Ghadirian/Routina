@@ -259,52 +259,33 @@ extension HomeTCAView {
             taskListKind: store.taskListMode.filterTaskListKind
         )
 
-        VStack(spacing: 0) {
-            if !isCompactHeaderHidden && hasActiveOptionalFilters {
-                compactHomeHeader
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-
-            if let emptyState = presentation.emptyState {
-                inlineEmptyStateRow(
-                    title: emptyState.title,
-                    message: emptyState.message,
-                    systemImage: emptyState.systemImage
-                )
-            } else {
-                List(selection: selectedTaskBinding) {
-                    ForEach(presentation.sections) { section in
-                        Section(section.title) {
-                            ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                                routineNavigationRow(
-                                    for: task,
-                                    rowNumber: section.rowNumber(forTaskAt: index),
-                                    includeMarkDone: section.includeMarkDone,
-                                    moveContext: section.moveContext
-                                )
-                            }
-                            .onDelete { offsets in
-                                deleteTasks(at: offsets, from: section.tasks)
-                            }
-                        }
-                    }
-                }
-                .listStyle(.sidebar)
-                .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                    max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
-                } action: { oldOffset, newOffset in
-                    handleCompactHeaderScroll(oldOffset: oldOffset, newOffset: newOffset)
-                }
-                .navigationDestination(for: UUID.self) { taskID in
-                    taskDetailDestination(taskID: taskID)
-                }
-            }
+        HomeIOSTaskListView(
+            presentation: presentation,
+            selectedTaskID: selectedTaskBinding,
+            isCompactHeaderHidden: isCompactHeaderHidden,
+            hasActiveOptionalFilters: hasActiveOptionalFilters
+        ) {
+            compactHomeHeader
+        } emptyRowContent: { emptyState in
+            inlineEmptyStateRow(
+                title: emptyState.title,
+                message: emptyState.message,
+                systemImage: emptyState.systemImage
+            )
+        } rowContent: { task, rowNumber, includeMarkDone, moveContext in
+            routineNavigationRow(
+                for: task,
+                rowNumber: rowNumber,
+                includeMarkDone: includeMarkDone,
+                moveContext: moveContext
+            )
+        } onDelete: { offsets, sectionTasks in
+            deleteTasks(at: offsets, from: sectionTasks)
+        } onScroll: { oldOffset, newOffset in
+            handleCompactHeaderScroll(oldOffset: oldOffset, newOffset: newOffset)
+        } destinationContent: { taskID in
+            taskDetailDestination(taskID: taskID)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .animation(.snappy(duration: 0.25), value: isCompactHeaderHidden)
     }
 
     func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
@@ -373,27 +354,26 @@ extension HomeTCAView {
 
     @ViewBuilder
     private var iosSidebarContent: some View {
-        Group {
-            if store.routineTasks.isEmpty {
-                emptyStateView(
-                    title: "No tasks yet",
-                    message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
-                    systemImage: "checklist"
-                ) {
-                    openAddTask()
-                }
-            } else {
-                listOfSortedTasksView(
-                    routineDisplays: store.routineDisplays,
-                    awayRoutineDisplays: store.awayRoutineDisplays,
-                    archivedRoutineDisplays: store.archivedRoutineDisplays
-                )
+        HomeIOSSidebarContent(
+            isEmpty: store.routineTasks.isEmpty,
+            navigationTitle: homeNavigationTitle
+        ) {
+            emptyStateView(
+                title: "No tasks yet",
+                message: "Add a routine or to-do, and the home list will organize what needs attention for you.",
+                systemImage: "checklist"
+            ) {
+                openAddTask()
             }
+        } taskListContent: {
+            listOfSortedTasksView(
+                routineDisplays: store.routineDisplays,
+                awayRoutineDisplays: store.awayRoutineDisplays,
+                archivedRoutineDisplays: store.archivedRoutineDisplays
+            )
+        } toolbarItems: {
+            homeToolbarContent
         }
-        .navigationTitle(homeNavigationTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { homeToolbarContent }
-        .routinaHomeSidebarColumnWidth()
     }
 }
 

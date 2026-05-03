@@ -60,62 +60,47 @@ extension HomeTCAView {
     }
 
     var platformNavigationContent: some View {
-        Group {
-            if isMacBoardMode {
-                NavigationSplitView {
-                    WithPerceptionTracking {
-                        macSidebarContent
-                    }
-                } detail: {
-                    macBoardCenterContent
-                        .navigationTitle(macSidebarNavigationTitle)
-                        .toolbar { macBoardDetailToolbarContent }
-                        .environment(\.addEditFormCoordinator, addEditFormCoordinator)
-                }
-                .inspector(isPresented: macBoardInspectorPresentedBinding) {
-                    macBoardTaskInspector
-                        .inspectorColumnWidth(min: 320, ideal: 400, max: 460)
-                        .environment(\.addEditFormCoordinator, addEditFormCoordinator)
-                }
-            } else if isMacGoalsMode {
-                NavigationSplitView {
-                    WithPerceptionTracking {
-                        macSidebarContent
-                    }
-                } detail: {
-                    MacGoalsDetailView(store: goalsStore)
-                }
-            } else {
-                NavigationSplitView {
-                    WithPerceptionTracking {
-                        macSidebarContent
-                    }
-                } detail: {
-                    MacDetailContainerView(
-                        store: store,
-                        isBoardPresented: isMacBoardMode,
-                        isTimelinePresented: isMacTimelineMode,
-                        isStatsPresented: isMacStatsMode,
-                        isSettingsPresented: isMacSettingsMode,
-                        settingsStore: settingsStore,
-                        statsStore: statsStore,
-                        selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
-                        dayPlanPlanner: dayPlanPlanner,
-                        mainDetailMode: $macHomeDetailMode,
-                        selectedTaskID: store.selectedTaskID,
-                        addRoutineStore: self.store.scope(
-                            state: \.addRoutineState,
-                            action: \.addRoutineSheet
-                        )
-                    ) {
-                        macActiveFiltersDetailView
-                    } boardView: {
-                        macTodoBoardDetailView
-                    }
-                    .navigationTitle(macDetailNavigationTitle)
-                    .environment(\.addEditFormCoordinator, addEditFormCoordinator)
-                }
+        HomeMacNavigationContent(
+            isBoardMode: isMacBoardMode,
+            isGoalsMode: isMacGoalsMode,
+            boardNavigationTitle: macSidebarNavigationTitle,
+            mainNavigationTitle: macDetailNavigationTitle,
+            isBoardInspectorPresented: macBoardInspectorPresentedBinding,
+            addEditFormCoordinator: addEditFormCoordinator
+        ) {
+            WithPerceptionTracking {
+                macSidebarContent
             }
+        } boardCenterContent: {
+            macBoardCenterContent
+        } boardInspectorContent: {
+            macBoardTaskInspector
+        } goalsDetailContent: {
+            MacGoalsDetailView(store: goalsStore)
+        } mainDetailContent: {
+            MacDetailContainerView(
+                store: store,
+                isBoardPresented: isMacBoardMode,
+                isTimelinePresented: isMacTimelineMode,
+                isStatsPresented: isMacStatsMode,
+                isSettingsPresented: isMacSettingsMode,
+                settingsStore: settingsStore,
+                statsStore: statsStore,
+                selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
+                dayPlanPlanner: dayPlanPlanner,
+                mainDetailMode: $macHomeDetailMode,
+                selectedTaskID: store.selectedTaskID,
+                addRoutineStore: self.store.scope(
+                    state: \.addRoutineState,
+                    action: \.addRoutineSheet
+                )
+            ) {
+                macActiveFiltersDetailView
+            } boardView: {
+                macTodoBoardDetailView
+            }
+        } boardToolbarContent: {
+            macBoardDetailToolbarContent
         }
     }
 
@@ -198,26 +183,20 @@ extension HomeTCAView {
     }
 
     func applyPlatformHomeObservers<Content: View>(to view: Content) -> some View {
-        view
-            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenRoutinesInSidebar)) { _ in
-                showRoutinesInSidebar()
+        HomeMacSidebarCommandRouter(
+            content: view,
+            mode: store.macSidebarMode,
+            onOpenRoutines: showRoutinesInSidebar,
+            onOpenAddTask: openAddTask,
+            onOpenTimeline: openTimelineInSidebar,
+            onOpenStats: openStatsInSidebar
+        ) { mode in
+            if mode == .settings {
+                settingsStore.send(.onAppear)
+            } else if mode == .goals {
+                goalsStore.send(.onAppear)
             }
-            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddTask)) { _ in
-                openAddTask()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenTimelineInSidebar)) { _ in
-                openTimelineInSidebar()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenStatsInSidebar)) { _ in
-                openStatsInSidebar()
-            }
-            .onChange(of: store.macSidebarMode) { _, mode in
-                if mode == .settings {
-                    settingsStore.send(.onAppear)
-                } else if mode == .goals {
-                    goalsStore.send(.onAppear)
-                }
-            }
+        }
     }
 
     var searchPlaceholderText: String {
