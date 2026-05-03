@@ -63,7 +63,7 @@ struct HomeMacBoardSidebarView: View {
     @ViewBuilder
     private var backlogCreationControl: some View {
         if let creatingBacklogTitle {
-            creationField(
+            HomeMacBoardCreationFieldView(
                 placeholder: "Backlog name...",
                 title: Binding(
                     get: { creatingBacklogTitle },
@@ -87,8 +87,8 @@ struct HomeMacBoardSidebarView: View {
     @ViewBuilder
     private var sprintCreationControl: some View {
         if let creatingSprintTitle {
-            creationField(
-                placeholder: "Sprint name…",
+            HomeMacBoardCreationFieldView(
+                placeholder: "Sprint name...",
                 title: Binding(
                     get: { creatingSprintTitle },
                     set: { send(.createSprintTitleChanged($0)) }
@@ -143,157 +143,26 @@ struct HomeMacBoardSidebarView: View {
         )
     }
 
-    private func creationField(
-        placeholder: String,
-        title: Binding<String>,
-        onConfirm: @escaping () -> Void,
-        onCancel: @escaping () -> Void,
-        focus: FocusState<Bool>.Binding
-    ) -> some View {
-        HStack(spacing: 6) {
-            TextField(
-                placeholder,
-                text: title
-            )
-            .textFieldStyle(.plain)
-            .font(.caption.weight(.semibold))
-            .focused(focus)
-            .onSubmit {
-                onConfirm()
-            }
-            .onAppear {
-                focus.wrappedValue = true
-            }
-
-            Button(action: onConfirm) {
-                Image(systemName: "checkmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.green)
-            }
-            .buttonStyle(.plain)
-            .disabled(title.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
-
-            Button(action: onCancel) {
-                Image(systemName: "xmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.secondary.opacity(0.1))
-        )
-    }
-
     @ViewBuilder
     private func sprintScopeRow(_ sprint: BoardSprint) -> some View {
-        let isRenaming = renamingSprintID == sprint.id
-
-        if isRenaming {
-            sprintRenameField
-        } else {
-            sprintScopeButton(sprint)
-        }
-    }
-
-    private var sprintRenameField: some View {
-        HStack(spacing: 6) {
-            TextField(
-                "Sprint name…",
-                text: Binding(
-                    get: { renamingSprintTitle },
-                    set: { send(.renamingSprintTitleChanged($0)) }
-                )
-            )
-            .textFieldStyle(.plain)
-            .font(.caption.weight(.semibold))
-            .focused(sprintRenameFocus)
-            .onSubmit { send(.renameSprintConfirmed) }
-            .onAppear {
-                sprintRenameFocus.wrappedValue = true
-            }
-
-            Button(action: { send(.renameSprintConfirmed) }) {
-                Image(systemName: "checkmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.green)
-            }
-            .buttonStyle(.plain)
-            .disabled(renamingSprintTitle.trimmingCharacters(in: .whitespaces).isEmpty)
-
-            Button(action: { send(.renameSprintCanceled) }) {
-                Image(systemName: "xmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.accentColor.opacity(0.1))
+        HomeMacBoardSprintScopeRow(
+            sprint: sprint,
+            dateSummary: presentation.sprintDateSummary(for: sprint),
+            isSelected: presentation.isSelectedScope(.sprint(sprint.id)),
+            isRenaming: renamingSprintID == sprint.id,
+            renameTitle: Binding(
+                get: { renamingSprintTitle },
+                set: { send(.renamingSprintTitleChanged($0)) }
+            ),
+            renameFocus: sprintRenameFocus,
+            onSelect: { send(.selectedBoardScopeChanged(.sprint(sprint.id))) },
+            onRename: { send(.renameSprintTapped(sprint.id)) },
+            onRenameTitleChanged: { send(.renamingSprintTitleChanged($0)) },
+            onRenameConfirm: { send(.renameSprintConfirmed) },
+            onRenameCancel: { send(.renameSprintCanceled) },
+            onStart: { send(.startSprintTapped(sprint.id)) },
+            onDelete: { send(.deleteSprintTapped(sprint.id)) }
         )
-    }
-
-    private func sprintScopeButton(_ sprint: BoardSprint) -> some View {
-        Button {
-            send(.selectedBoardScopeChanged(.sprint(sprint.id)))
-        } label: {
-            HStack(alignment: .top, spacing: 8) {
-                Circle()
-                    .fill(boardSprintTint(for: sprint.status))
-                    .frame(width: 8, height: 8)
-                    .padding(.top, 4)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(sprint.title)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.primary)
-
-                    if let dateSummary = presentation.sprintDateSummary(for: sprint) {
-                        Text(dateSummary)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
-                Text(sprint.status.displayTitle)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(presentation.isSelectedScope(.sprint(sprint.id)) ? Color.accentColor.opacity(0.14) : Color.clear)
-            )
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button("Rename") {
-                send(.renameSprintTapped(sprint.id))
-            }
-
-            if sprint.status != .active {
-                Button("Set as Active") {
-                    send(.startSprintTapped(sprint.id))
-                }
-            }
-
-            Divider()
-
-            Button("Delete", role: .destructive) {
-                send(.deleteSprintTapped(sprint.id))
-            }
-            .disabled(sprint.status == .active)
-        }
     }
 
     private var finishedSprintsDisclosure: some View {
@@ -331,31 +200,11 @@ struct HomeMacBoardSidebarView: View {
         title: String,
         scope: HomeFeature.BoardScope
     ) -> some View {
-        Button {
-            send(.selectedBoardScopeChanged(scope))
-        } label: {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(presentation.isSelectedScope(scope) ? Color.accentColor.opacity(0.14) : Color.clear)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func boardSprintTint(for status: SprintStatus) -> Color {
-        switch status {
-        case .planned:
-            return .orange
-        case .active:
-            return .green
-        case .finished:
-            return .secondary
-        }
+        HomeMacBoardScopeButton(
+            title: title,
+            isSelected: presentation.isSelectedScope(scope),
+            onSelect: { send(.selectedBoardScopeChanged(scope)) }
+        )
     }
 
     private func deleteSprintMessage(for sprintID: UUID) -> Text {
