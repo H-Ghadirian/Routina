@@ -274,10 +274,21 @@ private struct DayPlanHeaderView: View {
 
             Spacer(minLength: 16)
 
-            DatePicker("Selected day", selection: $planner.selectedDate, displayedComponents: [.date])
+            DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
                 .labelsHidden()
                 .datePickerStyle(.compact)
         }
+    }
+
+    private var selectedDateBinding: Binding<Date> {
+        Binding(
+            get: {
+                planner.selectedDate
+            },
+            set: { date in
+                planner.showDate(date, calendar: calendar)
+            }
+        )
     }
 }
 

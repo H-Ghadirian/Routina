@@ -2,7 +2,7 @@ import Combine
 import Foundation
 
 final class DayPlanPlannerState: ObservableObject {
-    @Published var selectedDate = DayPlanPlannerState.defaultSelectedDate()
+    @Published var selectedDate: Date
     @Published var blocks: [DayPlanBlock] = []
     @Published var weekBlocksByDayKey: [String: [DayPlanBlock]] = [:]
     @Published var selectedTaskID: UUID?
@@ -10,6 +10,13 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var searchText = ""
     @Published var startMinute = 9 * 60
     @Published var durationMinutes = 60
+
+    @Published private var visibleDate: Date
+
+    init(selectedDate: Date = DayPlanPlannerState.defaultSelectedDate()) {
+        self.selectedDate = selectedDate
+        self.visibleDate = selectedDate
+    }
 
     var selectedBlock: DayPlanBlock? {
         guard let selectedBlockID else { return nil }
@@ -40,7 +47,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func loadBlocks(calendar: Calendar) {
-        let weekDates = weekDates(containing: selectedDate, calendar: calendar)
+        let weekDates = visibleAndSelectedDates(calendar: calendar)
         var loadedBlocksByDayKey: [String: [DayPlanBlock]] = [:]
 
         for date in weekDates {
@@ -58,7 +65,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func showExactTimedTasks(from tasks: [RoutineTask], calendar: Calendar) {
-        let visibleDates = weekDates(containing: selectedDate, calendar: calendar)
+        let visibleDates = visibleAndSelectedDates(calendar: calendar)
         let availableTasks = DayPlanTaskSorting.availableTasks(from: tasks)
         let now = Date()
         var updatedBlocksByDayKey = weekBlocksByDayKey
@@ -341,17 +348,29 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func weekDates(calendar: Calendar) -> [Date] {
-        weekDates(containing: selectedDate, calendar: calendar)
+        weekDates(containing: visibleDate, calendar: calendar)
     }
 
     func moveWeek(by value: Int, calendar: Calendar) {
-        selectedDate = calendar.date(byAdding: .day, value: value * 7, to: selectedDate) ?? selectedDate
+        let dayDelta = value * 7
+        selectedDate = calendar.date(byAdding: .day, value: dayDelta, to: selectedDate) ?? selectedDate
+        visibleDate = calendar.date(byAdding: .day, value: dayDelta, to: visibleDate) ?? visibleDate
         selectedBlockID = nil
         loadBlocks(calendar: calendar)
     }
 
     func moveToToday(calendar: Calendar) {
-        selectedDate = Date()
+        let today = calendar.startOfDay(for: Date())
+        selectedDate = today
+        visibleDate = today
+        selectedBlockID = nil
+        loadBlocks(calendar: calendar)
+    }
+
+    func showDate(_ date: Date, calendar: Calendar) {
+        let selectedDay = calendar.startOfDay(for: date)
+        selectedDate = selectedDay
+        visibleDate = selectedDay
         selectedBlockID = nil
         loadBlocks(calendar: calendar)
     }
@@ -454,6 +473,15 @@ final class DayPlanPlannerState: ObservableObject {
         return (0..<7).compactMap { offset in
             calendar.date(byAdding: .day, value: offset, to: startDay)
         }
+    }
+
+    private func visibleAndSelectedDates(calendar: Calendar) -> [Date] {
+        let visibleDates = weekDates(calendar: calendar)
+        guard !visibleDates.contains(where: { calendar.isDate($0, inSameDayAs: selectedDate) }) else {
+            return visibleDates
+        }
+
+        return visibleDates + [selectedDate]
     }
 
     private static func defaultSelectedDate(
