@@ -32,44 +32,26 @@ extension HomeTCAView {
     func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
         let metadataText = rowMetadataText(for: task)
 
-        return HStack(alignment: .center, spacing: 12) {
-            Text("\(rowNumber)")
-                .font(.caption2.monospacedDigit())
-                .foregroundStyle(.tertiary)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
-                .frame(minWidth: sidebarRowNumberMinWidth, alignment: .trailing)
-
+        return HStack(alignment: .top, spacing: 10) {
             if let color = task.color.swiftUIColor {
                 Capsule(style: .continuous)
                     .fill(color)
-                    .frame(width: 3, height: 28)
+                    .frame(width: 3, height: 34)
                     .accessibilityHidden(true)
             }
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(rowIconBackgroundColor(for: task))
-                Text(task.emoji)
-                    .font(.title3)
-                if task.hasImage {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            Image(systemName: "photo.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.primary)
-                                .padding(4)
-                                .background(.ultraThinMaterial, in: Circle())
-                        }
-                    }
-                    .padding(2)
-                }
-            }
-            .frame(width: 36, height: 36)
+            VStack(spacing: 4) {
+                taskIcon(for: task)
 
-            VStack(alignment: .leading, spacing: 4) {
+                Text("\(rowNumber)")
+                    .font(.caption2.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .frame(width: 38)
+
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(task.name)
                         .font(.headline)
@@ -89,7 +71,7 @@ extension HomeTCAView {
                 }
 
                 if !task.tags.isEmpty {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         ForEach(task.tags, id: \.self) { tag in
                             sidebarTagChip(tag)
                         }
@@ -98,7 +80,7 @@ extension HomeTCAView {
                 }
 
                 if !task.goalTitles.isEmpty {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         ForEach(task.goalTitles, id: \.self) { goal in
                             Label(goal, systemImage: "target")
                                 .font(.caption2)
@@ -112,7 +94,31 @@ extension HomeTCAView {
 
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
+    }
+
+    private func taskIcon(for task: HomeFeature.RoutineDisplay) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(rowIconBackgroundColor(for: task))
+            Text(task.emoji)
+                .font(.body)
+            if task.hasImage {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Image(systemName: "photo.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.primary)
+                            .padding(3)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                }
+                .padding(2)
+            }
+        }
+        .frame(width: 34, height: 34)
     }
 
     private func tagColor(for tag: String) -> Color? {
@@ -167,13 +173,13 @@ extension HomeTCAView {
         allowsPlannerDrag: Bool
     ) -> some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
+            LazyVStack(alignment: .leading, spacing: 8, pinnedViews: []) {
                 ForEach(presentation.sections) { section in
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(section.title)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, 10)
 
                         ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
                             macTaskSourceRow(
@@ -187,7 +193,7 @@ extension HomeTCAView {
                     }
                 }
             }
-            .padding(12)
+            .padding(10)
         }
     }
 
@@ -200,8 +206,8 @@ extension HomeTCAView {
         allowsPlannerDrag: Bool
     ) -> some View {
         let row = routineRow(for: task, rowNumber: rowNumber)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(macTaskSourceRowBackground(for: task))
