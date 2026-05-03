@@ -23,6 +23,13 @@ struct StatsView: View {
 
     private typealias Metrics = StatsFeature.Metrics
 
+    private var chartPresentation: StatsChartPresentation {
+        StatsChartPresentation(
+            selectedRange: selectedRange,
+            isCompact: horizontalSizeClass == .compact
+        )
+    }
+
     private struct ActiveItemsBreakdown {
         let routineCount: Int
         let todoCount: Int
@@ -319,7 +326,7 @@ struct StatsView: View {
                     heroStatPill(
                         icon: "gauge.with.dots.needle.50percent",
                         title: "Daily avg",
-                        value: averagePerDayText(for: metrics)
+                        value: chartPresentation.averagePerDayText(for: metrics.averagePerDay)
                     )
 
                     heroStatPill(
@@ -348,7 +355,7 @@ struct StatsView: View {
 
                 Spacer()
 
-                Text(sparklineCaption(metrics: metrics))
+                Text(chartPresentation.sparklineCaption(highlightedBusiestDay: metrics.highlightedBusiestDay))
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.white.opacity(0.72))
             }
@@ -356,9 +363,9 @@ struct StatsView: View {
             HStack(alignment: .bottom, spacing: 6) {
                 ForEach(metrics.sparklinePoints) { point in
                     Capsule(style: .continuous)
-                        .fill(sparklineColor(for: point, metrics: metrics))
+                        .fill(chartPresentation.sparklineColor(for: point, highlightedBusiestDay: metrics.highlightedBusiestDay))
                         .frame(maxWidth: .infinity)
-                        .frame(height: sparklineBarHeight(for: point, metrics: metrics))
+                        .frame(height: chartPresentation.sparklineBarHeight(for: point, maxCount: metrics.sparklineMaxCount))
                 }
             }
             .frame(height: 74, alignment: .bottom)
@@ -383,7 +390,7 @@ struct StatsView: View {
                     icon: "gauge.with.dots.needle.50percent",
                     accent: .mint,
                     title: "Daily average",
-                    value: averagePerDayText(for: metrics),
+                    value: chartPresentation.averagePerDayText(for: metrics.averagePerDay),
                     caption: "Across \(metrics.chartPoints.count) days",
                     accessibilityIdentifier: "stats.summary.dailyAverage"
                 )
@@ -393,7 +400,7 @@ struct StatsView: View {
                 icon: "timer",
                 accent: .teal,
                 title: "Focus time",
-                value: focusDurationText(metrics.totalFocusSeconds),
+                value: chartPresentation.focusDurationText(metrics.totalFocusSeconds),
                 caption: "\(metrics.focusActiveDayCount) focused \(metrics.focusActiveDayCount == 1 ? "day" : "days")",
                 accessibilityIdentifier: "stats.summary.focusTime"
             )
@@ -403,7 +410,7 @@ struct StatsView: View {
                     icon: "stopwatch.fill",
                     accent: .purple,
                     title: "Focus average",
-                    value: focusDurationText(metrics.averageFocusSecondsPerDay),
+                    value: chartPresentation.focusDurationText(metrics.averageFocusSecondsPerDay),
                     caption: "Per day in this range",
                     accessibilityIdentifier: "stats.summary.focusAverage"
                 )
@@ -413,7 +420,7 @@ struct StatsView: View {
                     accent: .orange,
                     title: "Best day",
                     value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0",
-                    caption: metrics.highlightedBusiestDay.map(bestDayCaption(for:)) ?? "No peak day yet",
+                    caption: metrics.highlightedBusiestDay.map { chartPresentation.bestDayCaption(for: $0) } ?? "No peak day yet",
                     accessibilityIdentifier: "stats.summary.bestDay"
                 )
             }
@@ -595,7 +602,7 @@ struct StatsView: View {
                     Text("Completions per day")
                         .font(.title3.weight(.semibold))
 
-                    Text(chartSectionSubtitle(metrics: metrics))
+                    Text(chartPresentation.chartSectionSubtitle(totalCount: metrics.totalCount, averagePerDay: metrics.averagePerDay, dayCount: metrics.chartPoints.count))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -631,7 +638,7 @@ struct StatsView: View {
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
                             .foregroundStyle(Color.secondary.opacity(0.65))
                             .annotation(position: .topLeading, alignment: .leading) {
-                                Text("Avg \(averagePerDayText(for: metrics))")
+                                Text("Avg \(chartPresentation.averagePerDayText(for: metrics.averagePerDay))")
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 8)
@@ -671,7 +678,7 @@ struct StatsView: View {
                         AxisTick()
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
-                                Text(xAxisLabel(for: date))
+                                Text(chartPresentation.xAxisLabel(for: date))
                             }
                         }
                     }
@@ -683,7 +690,7 @@ struct StatsView: View {
                                 .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
                         )
                 }
-                .frame(minWidth: chartMinWidth, minHeight: 260)
+                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 260)
                 .padding(.top, 4)
             }
             .defaultScrollAnchor(.trailing)
@@ -697,7 +704,7 @@ struct StatsView: View {
                 if let highlightedBusiestDay = metrics.highlightedBusiestDay {
                     bottomInsightPill(
                         icon: "star.fill",
-                        text: "Best: \(bestDayCaption(for: highlightedBusiestDay))"
+                        text: "Best: \(chartPresentation.bestDayCaption(for: highlightedBusiestDay))"
                     )
                 } else {
                     bottomInsightPill(
@@ -722,7 +729,7 @@ struct StatsView: View {
                     Text("Focus time per day")
                         .font(.title3.weight(.semibold))
 
-                    Text(focusChartSectionSubtitle(metrics: metrics))
+                    Text(chartPresentation.focusChartSectionSubtitle(totalFocusSeconds: metrics.totalFocusSeconds, activeDayCount: metrics.focusActiveDayCount))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -731,7 +738,7 @@ struct StatsView: View {
 
                 smallHighlightBadge(
                     title: "Peak",
-                    value: metrics.highlightedFocusDay.map { focusDurationText($0.seconds) } ?? "0m"
+                    value: metrics.highlightedFocusDay.map { chartPresentation.focusDurationText($0.seconds) } ?? "0m"
                 )
             }
 
@@ -765,7 +772,7 @@ struct StatsView: View {
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
                             .foregroundStyle(Color.secondary.opacity(0.65))
                             .annotation(position: .topLeading, alignment: .leading) {
-                                Text("Avg \(focusDurationText(metrics.averageFocusSecondsPerDay))")
+                                Text("Avg \(chartPresentation.focusDurationText(metrics.averageFocusSecondsPerDay))")
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 8)
@@ -793,7 +800,7 @@ struct StatsView: View {
                         AxisTick()
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
-                                Text(xAxisLabel(for: date))
+                                Text(chartPresentation.xAxisLabel(for: date))
                             }
                         }
                     }
@@ -805,7 +812,7 @@ struct StatsView: View {
                                 .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
                         )
                 }
-                .frame(minWidth: chartMinWidth, minHeight: 240)
+                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 240)
                 .padding(.top, 4)
             }
             .defaultScrollAnchor(.trailing)
@@ -816,7 +823,7 @@ struct StatsView: View {
                 if let focusDay = metrics.highlightedFocusDay {
                     bottomInsightPill(
                         icon: "timer",
-                        text: "Best: \(focusDurationText(focusDay.seconds)) on \(xAxisLabel(for: focusDay.date))"
+                        text: "Best: \(chartPresentation.focusDurationText(focusDay.seconds)) on \(chartPresentation.xAxisLabel(for: focusDay.date))"
                     )
                 } else {
                     bottomInsightPill(icon: "stopwatch", text: "Waiting for your first focus session")
@@ -834,7 +841,7 @@ struct StatsView: View {
     private func tagUsageSection(metrics: Metrics) -> some View {
         let points = metrics.tagUsagePoints
         let maxValue = max(points.map(\.bubbleValue).max() ?? 1, 1)
-        let columns = tagUsageColumnCount(for: points.count)
+        let columns = chartPresentation.tagUsageColumnCount(for: points.count)
         let rows = max(Int(ceil(Double(max(points.count, 1)) / Double(columns))), 1)
 
         return VStack(alignment: .leading, spacing: 18) {
@@ -843,7 +850,7 @@ struct StatsView: View {
                     Text("Tag usage")
                         .font(.title3.weight(.semibold))
 
-                    Text(tagUsageSectionSubtitle(metrics: metrics))
+                    Text(chartPresentation.tagUsageSectionSubtitle(points: metrics.tagUsagePoints, periodDescription: selectedRange.periodDescription))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -876,10 +883,10 @@ struct StatsView: View {
                 Chart {
                     ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
                         PointMark(
-                            x: .value("Column", tagUsageColumn(for: index, columns: columns)),
-                            y: .value("Row", tagUsageRow(for: index, columns: columns, rows: rows))
+                            x: .value("Column", chartPresentation.tagUsageColumn(for: index, columns: columns)),
+                            y: .value("Row", chartPresentation.tagUsageRow(for: index, columns: columns, rows: rows))
                         )
-                        .symbolSize(tagUsageSymbolSize(for: point, maxValue: maxValue))
+                        .symbolSize(chartPresentation.tagUsageSymbolSize(for: point, maxValue: maxValue))
                         .foregroundStyle(tagUsageBubbleColor(for: point))
                         .annotation(position: .overlay) {
                             VStack(spacing: 2) {
@@ -889,12 +896,12 @@ struct StatsView: View {
                                     .lineLimit(2)
                                     .multilineTextAlignment(.center)
 
-                                Text(tagUsageValueText(for: point))
+                                Text(chartPresentation.tagUsageValueText(for: point))
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.white.opacity(0.82))
                             }
                             .minimumScaleFactor(0.72)
-                            .frame(width: tagUsageLabelWidth(for: point, maxValue: maxValue))
+                            .frame(width: chartPresentation.tagUsageLabelWidth(for: point, maxValue: maxValue))
                             .shadow(color: .black.opacity(0.22), radius: 1, x: 0, y: 1)
                         }
                     }
@@ -910,7 +917,7 @@ struct StatsView: View {
                                 .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
                         )
                 }
-                .frame(minHeight: tagUsageChartHeight(rows: rows))
+                .frame(minHeight: chartPresentation.tagUsageChartHeight(rows: rows))
                 .accessibilityLabel("Tag usage bubble chart")
             }
         }
@@ -1152,66 +1159,6 @@ struct StatsView: View {
         }
     }
 
-    private func sampledSparklinePoints(from chartPoints: [DoneChartPoint]) -> [DoneChartPoint] {
-        let targetCount: Int
-
-        switch selectedRange {
-        case .today:
-            targetCount = 1
-        case .week:
-            targetCount = 7
-        case .month:
-            targetCount = 15
-        case .year:
-            targetCount = 24
-        }
-
-        guard chartPoints.count > targetCount, targetCount > 1 else {
-            return chartPoints
-        }
-
-        let step = Double(chartPoints.count - 1) / Double(targetCount - 1)
-
-        return (0..<targetCount).map { index in
-            let pointIndex = min(Int((Double(index) * step).rounded()), chartPoints.count - 1)
-            return chartPoints[pointIndex]
-        }
-    }
-
-    private func sparklineCaption(metrics: Metrics) -> String {
-        guard let highlightedBusiestDay = metrics.highlightedBusiestDay else {
-            return "No peak yet"
-        }
-
-        return "Peak \(highlightedBusiestDay.count)"
-    }
-
-    private func sparklineColor(for point: DoneChartPoint, metrics: Metrics) -> Color {
-        if point.date == metrics.highlightedBusiestDay?.date {
-            return Color.white.opacity(0.96)
-        }
-
-        return Color.white.opacity(point.count == 0 ? 0.12 : 0.3)
-    }
-
-    private func sparklineBarHeight(for point: DoneChartPoint, metrics: Metrics) -> CGFloat {
-        let normalized = max(CGFloat(point.count) / CGFloat(metrics.sparklineMaxCount), 0.12)
-        return 16 + (normalized * 54)
-    }
-
-    private var chartMinWidth: CGFloat {
-        switch selectedRange {
-        case .today:
-            return 260
-        case .week:
-            return 340
-        case .month:
-            return 720
-        case .year:
-            return 2600
-        }
-    }
-
     private var statsContentMaxWidth: CGFloat? {
         horizontalSizeClass == .regular ? 980 : nil
     }
@@ -1220,124 +1167,9 @@ struct StatsView: View {
         36
     }
 
-    private func makeXAxisDates(from chartPoints: [DoneChartPoint]) -> [Date] {
-        switch selectedRange {
-        case .today:
-            return chartPoints.map(\.date)
-
-        case .week:
-            return chartPoints.map(\.date)
-
-        case .month:
-            return chartPoints.enumerated().compactMap { index, point in
-                if index == 0 || index == chartPoints.count - 1 || index.isMultiple(of: 5) {
-                    return point.date
-                }
-                return nil
-            }
-
-        case .year:
-            let firstDate = chartPoints.first?.date
-            let lastDate = chartPoints.last?.date
-
-            return chartPoints.compactMap { point in
-                let day = calendar.component(.day, from: point.date)
-                if point.date == firstDate || point.date == lastDate || day == 1 {
-                    return point.date
-                }
-                return nil
-            }
-        }
-    }
-
-    private func averagePerDayText(for metrics: Metrics) -> String {
-        metrics.averagePerDay.formatted(.number.precision(.fractionLength(1)))
-    }
-
-    private func focusDurationText(_ seconds: TimeInterval) -> String {
-        guard seconds > 0 else { return "0m" }
-        return FocusSessionFormatting.compactDurationText(seconds: seconds)
-    }
-
-    private func chartSectionSubtitle(metrics: Metrics) -> String {
-        if metrics.totalCount == 0 {
-            return "Your chart will fill in as you complete routines."
-        }
-
-        return "Average \(averagePerDayText(for: metrics)) per day across \(metrics.chartPoints.count) days."
-    }
-
-    private func focusChartSectionSubtitle(metrics: Metrics) -> String {
-        if metrics.totalFocusSeconds == 0 {
-            return "Your chart will fill in as you finish focus sessions."
-        }
-
-        return "\(focusDurationText(metrics.totalFocusSeconds)) focused across \(metrics.focusActiveDayCount) \(metrics.focusActiveDayCount == 1 ? "day" : "days")."
-    }
-
-    private func tagUsageSectionSubtitle(metrics: Metrics) -> String {
-        let completionTotal = metrics.tagUsagePoints.reduce(0) { $0 + $1.completionCount }
-        if completionTotal > 0 {
-            return "Bubbles scale by completions for matching tags in \(selectedRange.periodDescription.lowercased())."
-        }
-        if !metrics.tagUsagePoints.isEmpty {
-            return "No completions yet, so bubbles scale by matching routines per tag."
-        }
-        return "Complete tagged routines to see which themes are getting the most attention."
-    }
-
-    private func tagUsageValueText(for point: TagUsageChartPoint) -> String {
-        if point.completionCount > 0 {
-            return point.completionCount == 1 ? "1 done" : "\(point.completionCount) done"
-        }
-        return point.linkedRoutineCount == 1 ? "1 routine" : "\(point.linkedRoutineCount) routines"
-    }
-
     private func tagUsageBubbleColor(for point: TagUsageChartPoint) -> Color {
         Color(routineTagHex: point.colorHex)
             ?? Color.accentColor.opacity(colorScheme == .dark ? 0.78 : 0.68)
     }
 
-    private func tagUsageColumnCount(for count: Int) -> Int {
-        min(horizontalSizeClass == .compact ? 3 : 4, max(count, 1))
-    }
-
-    private func tagUsageColumn(for index: Int, columns: Int) -> Double {
-        Double(index % columns)
-    }
-
-    private func tagUsageRow(for index: Int, columns: Int, rows: Int) -> Double {
-        Double(rows - 1 - (index / columns))
-    }
-
-    private func tagUsageSymbolSize(for point: TagUsageChartPoint, maxValue: Int) -> CGFloat {
-        let normalized = sqrt(Double(point.bubbleValue) / Double(max(maxValue, 1)))
-        return 1_900 + CGFloat(normalized) * 5_900
-    }
-
-    private func tagUsageLabelWidth(for point: TagUsageChartPoint, maxValue: Int) -> CGFloat {
-        let normalized = sqrt(Double(point.bubbleValue) / Double(max(maxValue, 1)))
-        return 58 + CGFloat(normalized) * 36
-    }
-
-    private func tagUsageChartHeight(rows: Int) -> CGFloat {
-        CGFloat(rows) * 118 + 18
-    }
-
-    private func xAxisLabel(for date: Date) -> String {
-        switch selectedRange {
-        case .today:
-            return date.formatted(.dateTime.weekday(.abbreviated))
-        case .week:
-            return date.formatted(.dateTime.weekday(.abbreviated))
-        case .month:
-            return date.formatted(.dateTime.day())
-        case .year:
-            return date.formatted(.dateTime.month(.abbreviated))
-        }
-    }
-
-    private func bestDayCaption(for point: DoneChartPoint) -> String {
-        point.date.formatted(.dateTime.month(.abbreviated).day())
-    }
 }
