@@ -52,6 +52,10 @@ struct StatsView: View {
         store.taskTypeFilter
     }
 
+    private var selectedCreatedChartTaskTypeFilter: StatsTaskTypeFilter {
+        store.createdChartTaskTypeFilter
+    }
+
     private var metrics: Metrics {
         store.metrics
     }
@@ -223,6 +227,17 @@ struct StatsView: View {
         )
     }
 
+    private var createdBarFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.green.opacity(colorScheme == .dark ? 0.78 : 0.62),
+                Color.mint.opacity(colorScheme == .dark ? 0.58 : 0.48)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
     private var highlightBarFill: LinearGradient {
         LinearGradient(
             colors: [
@@ -241,6 +256,7 @@ struct StatsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         heroSection(metrics: metrics)
                         summaryCards(metrics: metrics)
+                        createdTasksChartSection(metrics: metrics)
                         if selectedRange != .today {
                             chartSection(metrics: metrics)
                         }
@@ -475,6 +491,145 @@ struct StatsView: View {
             colorScheme: colorScheme,
             calendar: calendar,
             onRefresh: { store.send(.gitHubStatsRefreshRequested) }
+        )
+    }
+
+    private func createdTasksChartSection(metrics: Metrics) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Tasks created per day")
+                        .font(.title3.weight(.semibold))
+
+                    Text(createdTasksChartSubtitle(metrics: metrics))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                VStack(alignment: .trailing, spacing: 10) {
+                    Picker("Created task type", selection: Binding(
+                        get: { selectedCreatedChartTaskTypeFilter },
+                        set: { store.send(.createdChartTaskTypeFilterChanged($0)) }
+                    )) {
+                        ForEach(StatsTaskTypeFilter.allCases) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 220)
+                    .accessibilityIdentifier("stats.createdTasks.typePicker")
+
+                    smallHighlightBadge(
+                        title: "Created",
+                        value: metrics.createdTotalCount.formatted()
+                    )
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                Chart {
+                    ForEach(metrics.createdChartPoints) { point in
+                        let isHighlighted = point.date == metrics.highlightedCreatedDay?.date
+
+                        BarMark(
+                            x: .value("Date", point.date, unit: .day),
+                            y: .value("Created", point.count)
+                        )
+                        .cornerRadius(7)
+                        .foregroundStyle(
+                            isHighlighted
+                                ? AnyShapeStyle(highlightBarFill)
+                                : AnyShapeStyle(createdBarFill)
+                        )
+                        .opacity(point.count == 0 ? 0.35 : 1)
+                    }
+
+                    if metrics.createdAveragePerDay > 0 {
+                        RuleMark(y: .value("Average", metrics.createdAveragePerDay))
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
+                            .foregroundStyle(Color.secondary.opacity(0.65))
+                            .annotation(position: .topLeading, alignment: .leading) {
+                                Text("Avg \(chartPresentation.averagePerDayText(for: metrics.createdAveragePerDay))")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(surfaceGradient, in: Capsule(style: .continuous))
+                            }
+                    }
+
+                    if let highlightedCreatedDay = metrics.highlightedCreatedDay {
+                        PointMark(
+                            x: .value("Date", highlightedCreatedDay.date, unit: .day),
+                            y: .value("Created", highlightedCreatedDay.count)
+                        )
+                        .symbolSize(selectedRange == .year ? 46 : 64)
+                        .foregroundStyle(Color.white)
+                    }
+                }
+                .chartYScale(domain: 0...metrics.createdChartUpperBound)
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
+                            .foregroundStyle(Color.secondary.opacity(0.2))
+                        AxisValueLabel {
+                            if let count = value.as(Int.self) {
+                                Text(count.formatted())
+                            }
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: metrics.xAxisDates) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
+                            .foregroundStyle(Color.secondary.opacity(0.12))
+                        AxisTick()
+                        AxisValueLabel {
+                            if let date = value.as(Date.self) {
+                                Text(chartPresentation.xAxisLabel(for: date))
+                            }
+                        }
+                    }
+                }
+                .chartPlotStyle { plotArea in
+                    plotArea
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
+                        )
+                }
+                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 240)
+                .padding(.top, 4)
+            }
+            .defaultScrollAnchor(.trailing)
+
+            HStack(spacing: 10) {
+                bottomInsightPill(
+                    icon: "calendar.badge.plus",
+                    text: "\(createdTasksNoun(count: metrics.createdTotalCount).capitalized) created in \(selectedRange.periodDescription.lowercased())"
+                )
+
+                if let highlightedCreatedDay = metrics.highlightedCreatedDay {
+                    bottomInsightPill(
+                        icon: "star.fill",
+                        text: "Most created: \(chartPresentation.bestDayCaption(for: highlightedCreatedDay))"
+                    )
+                } else {
+                    bottomInsightPill(
+                        icon: "plus.circle",
+                        text: "Waiting for created \(createdTasksNoun(count: 2))"
+                    )
+                }
+            }
+        }
+        .padding(20)
+        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
         )
     }
 
@@ -1053,6 +1208,26 @@ struct StatsView: View {
 
     private func bottomInsightPill(icon: String, text: String) -> some View {
         StatsBottomInsightPill(icon: icon, text: text, colorScheme: colorScheme)
+    }
+
+    private func createdTasksChartSubtitle(metrics: Metrics) -> String {
+        let noun = createdTasksNoun(count: metrics.createdTotalCount)
+        if metrics.createdTotalCount == 0 {
+            return "New \(createdTasksNoun(count: 2)) will appear here as you add them."
+        }
+
+        return "\(metrics.createdTotalCount.formatted()) \(noun) created across \(metrics.createdActiveDayCount) \(metrics.createdActiveDayCount == 1 ? "day" : "days")."
+    }
+
+    private func createdTasksNoun(count: Int) -> String {
+        switch selectedCreatedChartTaskTypeFilter {
+        case .all:
+            return count == 1 ? "task" : "tasks"
+        case .routines:
+            return count == 1 ? "routine" : "routines"
+        case .todos:
+            return count == 1 ? "todo" : "todos"
+        }
     }
 
     private var rangeHeroLabel: String {

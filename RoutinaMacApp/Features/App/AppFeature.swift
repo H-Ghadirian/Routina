@@ -423,21 +423,27 @@ struct TimelineFeature {
 struct StatsFeature {
     struct Metrics: Equatable {
         var chartPoints: [DoneChartPoint] = []
+        var createdChartPoints: [DoneChartPoint] = []
         var focusChartPoints: [FocusDurationChartPoint] = []
         var tagUsagePoints: [TagUsageChartPoint] = []
         var totalDoneCount: Int = 0
         var totalCanceledCount: Int = 0
+        var createdTotalCount: Int = 0
         var totalFocusSeconds: TimeInterval = 0
         var averageFocusSecondsPerDay: TimeInterval = 0
         var activeRoutineCount: Int = 0
         var archivedRoutineCount: Int = 0
         var totalCount: Int = 0
         var averagePerDay: Double = 0
+        var createdAveragePerDay: Double = 0
         var highlightedBusiestDay: DoneChartPoint?
+        var highlightedCreatedDay: DoneChartPoint?
         var highlightedFocusDay: FocusDurationChartPoint?
         var activeDayCount: Int = 0
+        var createdActiveDayCount: Int = 0
         var focusActiveDayCount: Int = 0
         var chartUpperBound: Double = 1
+        var createdChartUpperBound: Double = 1
         var focusChartUpperBound: Double = 1
         var sparklinePoints: [DoneChartPoint] = []
         var sparklineMaxCount: Int = 1
@@ -451,6 +457,7 @@ struct StatsFeature {
         var focusSessions: [FocusSession] = []
         var selectedRange: DoneChartRange = .week
         var taskTypeFilter: StatsTaskTypeFilter = .all
+        var createdChartTaskTypeFilter: StatsTaskTypeFilter = .all
         var selectedTag: String?
         var selectedTags: Set<String> = []
         var includeTagMatchMode: RoutineTagMatchMode = .all
@@ -499,6 +506,7 @@ struct StatsFeature {
         case onAppear
         case selectedRangeChanged(DoneChartRange)
         case taskTypeFilterChanged(StatsTaskTypeFilter)
+        case createdChartTaskTypeFilterChanged(StatsTaskTypeFilter)
         case selectedTagChanged(String?)
         case selectedTagsChanged(Set<String>)
         case includeTagMatchModeChanged(RoutineTagMatchMode)
@@ -568,6 +576,11 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .createdChartTaskTypeFilterChanged(filter):
+                state.createdChartTaskTypeFilter = filter
+                refreshDerivedState(&state)
+                return .none
+
             case let .selectedTagChanged(tag):
                 state.setSelectedTag(tag)
                 refreshDerivedState(&state)
@@ -634,6 +647,7 @@ struct StatsFeature {
             case .clearFilters:
                 state.selectedRange = .week
                 state.taskTypeFilter = .all
+                state.createdChartTaskTypeFilter = .all
                 state.setSelectedTag(nil)
                 state.includeTagMatchMode = .all
                 state.excludedTags = []
@@ -772,6 +786,11 @@ struct StatsFeature {
         let filteredTaskIDs = Set(filteredTasks.map(\.id))
         filteredLogs = state.logs.filter { filteredTaskIDs.contains($0.taskID) }
         let filteredFocusSessions = state.focusSessions.filter { filteredTaskIDs.contains($0.taskID) }
+        let createdChartFilteredTasks = filteredTasksForCreatedChart(
+            state: state,
+            query: query,
+            queryMetrics: queryMetrics
+        )
 
         let completionDates = filteredLogs
             .filter { $0.kind == .completed }
@@ -779,14 +798,23 @@ struct StatsFeature {
         let canceledDates = filteredLogs
             .filter { $0.kind == .canceled }
             .compactMap(\.timestamp)
+        let createdDates = createdChartFilteredTasks.compactMap(\.createdAt)
         let earliestActivityDate = [
             filteredTasks.compactMap(\.createdAt).min(),
+            createdChartFilteredTasks.compactMap(\.createdAt).min(),
             filteredLogs.compactMap(\.timestamp).min(),
             filteredFocusSessions.compactMap(\.startedAt).min()
         ].compactMap { $0 }.min()
         let chartPoints = RoutineCompletionStats.points(
             for: state.selectedRange,
             timestamps: completionDates,
+            earliestActivityDate: earliestActivityDate,
+            referenceDate: now,
+            calendar: calendar
+        )
+        let createdChartPoints = RoutineCompletionStats.points(
+            for: state.selectedRange,
+            timestamps: createdDates,
             earliestActivityDate: earliestActivityDate,
             referenceDate: now,
             calendar: calendar
@@ -808,6 +836,9 @@ struct StatsFeature {
         let totalCount = RoutineCompletionStats.totalCount(in: chartPoints)
         let averagePerDay = RoutineCompletionStats.averageCount(in: chartPoints)
         let busiestDay = RoutineCompletionStats.busiestDay(in: chartPoints)
+        let createdTotalCount = RoutineCompletionStats.totalCount(in: createdChartPoints)
+        let createdAveragePerDay = RoutineCompletionStats.averageCount(in: createdChartPoints)
+        let busiestCreatedDay = RoutineCompletionStats.busiestDay(in: createdChartPoints)
         let totalFocusSeconds = FocusDurationStats.totalSeconds(in: focusChartPoints)
         let averageFocusSecondsPerDay = FocusDurationStats.averageSeconds(in: focusChartPoints)
         let busiestFocusDay = FocusDurationStats.busiestDay(in: focusChartPoints)
@@ -816,31 +847,85 @@ struct StatsFeature {
             for: state.selectedRange
         )
         let maxCount = chartPoints.map(\.count).max() ?? 0
+        let maxCreatedCount = createdChartPoints.map(\.count).max() ?? 0
         let maxFocusMinutes = focusChartPoints.map(\.minutes).max() ?? 0
 
         state.filteredTaskCount = filteredTasks.count
         state.metrics = Metrics(
             chartPoints: chartPoints,
+            createdChartPoints: createdChartPoints,
             focusChartPoints: focusChartPoints,
             tagUsagePoints: tagUsagePoints,
             totalDoneCount: completionDates.count,
             totalCanceledCount: canceledDates.count,
+            createdTotalCount: createdTotalCount,
             totalFocusSeconds: totalFocusSeconds,
             averageFocusSecondsPerDay: averageFocusSecondsPerDay,
             activeRoutineCount: filteredTasks.filter { !$0.isArchived(referenceDate: now, calendar: calendar) }.count,
             archivedRoutineCount: filteredTasks.filter { $0.isArchived(referenceDate: now, calendar: calendar) }.count,
             totalCount: totalCount,
             averagePerDay: averagePerDay,
+            createdAveragePerDay: createdAveragePerDay,
             highlightedBusiestDay: (busiestDay?.count ?? 0) > 0 ? busiestDay : nil,
+            highlightedCreatedDay: (busiestCreatedDay?.count ?? 0) > 0 ? busiestCreatedDay : nil,
             highlightedFocusDay: (busiestFocusDay?.seconds ?? 0) > 0 ? busiestFocusDay : nil,
             activeDayCount: chartPoints.filter { $0.count > 0 }.count,
+            createdActiveDayCount: createdChartPoints.filter { $0.count > 0 }.count,
             focusActiveDayCount: focusChartPoints.filter { $0.seconds > 0 }.count,
             chartUpperBound: Double(max(maxCount, Int(ceil(averagePerDay))) + 1),
+            createdChartUpperBound: Double(max(maxCreatedCount, Int(ceil(createdAveragePerDay))) + 1),
             focusChartUpperBound: max(10, ceil(max(maxFocusMinutes, averageFocusSecondsPerDay / 60)) + 5),
             sparklinePoints: sparklinePoints,
             sparklineMaxCount: max(sparklinePoints.map(\.count).max() ?? 0, 1),
             xAxisDates: makeXAxisDates(from: chartPoints, for: state.selectedRange, calendar: calendar)
         )
+    }
+
+    private func filteredTasksForCreatedChart(
+        state: State,
+        query: HomeTaskAdvancedQuery<StatsTaskQueryDisplay>,
+        queryMetrics: HomeTaskListMetrics<StatsTaskQueryDisplay>
+    ) -> [RoutineTask] {
+        let tasksMatchingTypeFilter = state.tasks.filter { task in
+            switch state.createdChartTaskTypeFilter {
+            case .all:
+                return true
+            case .routines:
+                return !task.isOneOffTask
+            case .todos:
+                return task.isOneOffTask
+            }
+        }
+
+        let tasksMatchingMatrixFilter = tasksMatchingTypeFilter.filter { task in
+            HomeFeature.matchesImportanceUrgencyFilter(
+                state.selectedImportanceUrgencyFilter,
+                importance: task.importance,
+                urgency: task.urgency
+            )
+        }
+
+        let queryDisplays = tasksMatchingMatrixFilter.map {
+            StatsTaskQueryDisplay(task: $0, referenceDate: now, calendar: calendar)
+        }
+        let queryMatchedTaskIDs = Set(queryDisplays.filter { query.matches($0, metrics: queryMetrics) }.map(\.taskID))
+        let tasksMatchingQuery = tasksMatchingMatrixFilter.filter { queryMatchedTaskIDs.contains($0.id) }
+
+        let includeFilteredTasks = tasksMatchingQuery.filter { task in
+            HomeFeature.matchesSelectedTags(
+                state.effectiveSelectedTags,
+                mode: state.includeTagMatchMode,
+                in: task.tags
+            )
+        }
+
+        return includeFilteredTasks.filter { task in
+            HomeFeature.matchesExcludedTags(
+                state.excludedTags,
+                mode: state.excludeTagMatchMode,
+                in: task.tags
+            )
+        }
     }
 
     private func sampledSparklinePoints(
