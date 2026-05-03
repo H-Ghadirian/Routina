@@ -202,64 +202,6 @@ struct TaskDetailTCAView: View {
         }
     }
 
-    private var pressurePicker: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("PRESSURE")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 2)
-            TaskDetailColoredSegmentedControl(
-                options: RoutineTaskPressure.allCases,
-                selection: store.task.pressure,
-                title: { $0.title },
-                tint: { TaskDetailPriorityPresentation.pressureTint(for: $0, style: .segmentedControl) },
-                selectedForeground: { TaskDetailPriorityPresentation.pressureSelectedForeground(for: $0) },
-                action: { store.send(.pressureChanged($0)) }
-            )
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
-    }
-
-    private var todoStatePicker: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("STATE")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 2)
-            TaskDetailColoredSegmentedControl(
-                options: TodoState.allCases,
-                selection: store.task.todoState ?? .ready,
-                title: { $0.displayTitle },
-                tint: { TaskDetailPriorityPresentation.todoStateTint(for: $0, style: .segmentedControl) },
-                selectedForeground: { TaskDetailPriorityPresentation.todoStateSelectedForeground(for: $0) },
-                action: { newState in
-                    if newState == .done && store.hasActiveRelationshipBlocker {
-                        store.send(.setBlockedStateConfirmation(true))
-                    } else {
-                        store.send(.todoStateChanged(newState))
-                    }
-                }
-            )
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
-        .alert(
-            "Blocked Task",
-            isPresented: Binding(
-                get: { store.isBlockedStateConfirmationPresented },
-                set: { store.send(.setBlockedStateConfirmation($0)) }
-            )
-        ) {
-            Button("Mark Done Anyway", role: .destructive) {
-                store.send(.confirmBlockedStateCompletion)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(store.blockerSummaryText)
-        }
-    }
-
     @ViewBuilder
     private var todoStateTimingSection: some View {
         if let summary = TodoStateTiming.summary(
@@ -440,18 +382,18 @@ struct TaskDetailTCAView: View {
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .top, spacing: 8) {
                     if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                        todoStatePicker
+                        TaskDetailTodoStateSegmentedPicker(store: store)
                             .frame(minWidth: 380)
                     }
-                    pressurePicker
+                    TaskDetailPressureSegmentedPicker(store: store)
                         .frame(minWidth: 300)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                        todoStatePicker
+                        TaskDetailTodoStateSegmentedPicker(store: store)
                     }
-                    pressurePicker
+                    TaskDetailPressureSegmentedPicker(store: store)
                 }
             }
         }
@@ -475,7 +417,7 @@ struct TaskDetailTCAView: View {
     private var routineHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             priorityDisclosureBox
-            pressurePicker
+            TaskDetailPressureSegmentedPicker(store: store)
         }
     }
 
@@ -810,27 +752,6 @@ struct TaskDetailTCAView: View {
         TaskDetailHeaderBadgePresentation.latestCompletedLog(in: store.logs)
     }
 
-    private var todoPrimaryActionSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            primaryActionButton
-            cancelTodoButton
-
-            if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
-                Text("Select the logged date in the calendar if you want to undo it.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if !store.blockingRelationships.isEmpty {
-                Text(store.blockerSummaryText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(16)
-        .detailCardStyle()
-    }
-
     private func routinePrimaryActionSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
@@ -848,7 +769,7 @@ struct TaskDetailTCAView: View {
                 }
             }
 
-            primaryActionButton
+            TaskDetailPrimaryActionButton(store: store)
 
             if store.task.isSoftIntervalRoutine && !store.task.isOngoing && !store.task.isArchived() {
                 Button("Start ongoing") {
@@ -918,23 +839,6 @@ struct TaskDetailTCAView: View {
     }
 
     @ViewBuilder
-    private var primaryActionButton: some View {
-        Button {
-            store.send(store.completionButtonAction)
-        } label: {
-            TaskDetailCompletionButtonLabel(
-                title: store.completionButtonTitle,
-                systemImage: store.completionButtonSystemImage
-            )
-                .routinaPlatformPrimaryActionLabelLayout()
-        }
-        .buttonStyle(.borderedProminent)
-        .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
-        .routinaPlatformPrimaryActionButtonLayout()
-        .disabled(store.isCompletionButtonDisabled)
-    }
-
-    @ViewBuilder
     private var timeSpentActionButton: some View {
         if store.task.isOneOffTask {
             Button {
@@ -964,23 +868,6 @@ struct TaskDetailTCAView: View {
             .tint(.cyan)
             .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: false)
             .routinaPlatformPrimaryActionButtonLayout()
-        }
-    }
-
-    @ViewBuilder
-    private var cancelTodoButton: some View {
-        if store.task.isOneOffTask && !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-            Button {
-                store.send(.cancelTodo)
-            } label: {
-                Label(store.cancelTodoButtonTitle, systemImage: "xmark.circle")
-                    .routinaPlatformPrimaryActionLabelLayout()
-            }
-            .buttonStyle(.bordered)
-            .tint(.orange)
-            .routinaPlatformPrimaryActionControlSize(useLargePrimaryControl: true)
-            .routinaPlatformPrimaryActionButtonLayout()
-            .disabled(store.isCancelTodoButtonDisabled)
         }
     }
 
