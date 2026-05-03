@@ -934,12 +934,12 @@ private struct SettingsCloudDetailView: View {
                 }
 
                 Section("Estimated Usage") {
-                    infoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
-                    infoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
-                    infoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
-                    infoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
-                    infoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
-                    infoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
+                    SettingsInfoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
+                    SettingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
+                    SettingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
+                    SettingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
+                    SettingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
+                    SettingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
 
                     Text(store.cloud.usageSummaryText)
                         .foregroundStyle(.secondary)
@@ -980,16 +980,6 @@ private struct SettingsCloudDetailView: View {
         )
     }
 
-    @ViewBuilder
-    private func infoRow(title: String, value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(title)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.trailing)
-        }
-    }
 }
 
 private struct SettingsDataBackupDetailView: View {
@@ -1083,8 +1073,8 @@ private struct SettingsAboutDetailView: View {
 
                 if store.diagnostics.isDebugSectionVisible {
                     Section("Diagnostics") {
-                        infoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)
-                        infoRow(title: "iCloud Container", value: store.diagnostics.iCloudContainerDescription)
+                        SettingsInfoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)
+                        SettingsInfoRow(title: "iCloud Container", value: store.diagnostics.iCloudContainerDescription)
 
                         Text("Last CloudKit Event: \(store.diagnostics.cloudDiagnosticsTimestamp)")
                             .foregroundStyle(.secondary)
@@ -1101,16 +1091,6 @@ private struct SettingsAboutDetailView: View {
         }
     }
 
-    @ViewBuilder
-    private func infoRow(title: String, value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(title)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.trailing)
-        }
-    }
 }
 
 private struct SettingsNavigationRow: View {
@@ -1122,7 +1102,7 @@ private struct SettingsNavigationRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            SettingsGlyph(icon: icon, tint: tint)
+            SettingsSectionGlyphView(icon: icon, tint: tint)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -1145,22 +1125,6 @@ private struct SettingsNavigationRow: View {
             }
         }
         .padding(.vertical, 2)
-    }
-}
-
-private struct SettingsGlyph: View {
-    let icon: String
-    let tint: Color
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(tint)
-            .frame(width: 30, height: 30)
-            .overlay {
-                Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
     }
 }
 

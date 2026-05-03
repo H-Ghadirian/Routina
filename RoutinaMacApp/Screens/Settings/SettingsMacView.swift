@@ -124,7 +124,7 @@ struct SettingsMacSidebarRow: View {
     var body: some View {
         WithPerceptionTracking {
             HStack(spacing: 12) {
-                SettingsMacGlyph(icon: section.icon, tint: section.tint)
+                SettingsSectionGlyphView(icon: section.icon, tint: section.tint)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(section.title)
@@ -1109,92 +1109,6 @@ private struct SettingsMacAboutDetailView: View {
     }
 }
 
-struct SettingsMacDetailShell<Content: View>: View {
-    let title: String
-    let subtitle: String
-    let content: Content
-
-    init(
-        title: String,
-        subtitle: String,
-        @ViewBuilder content: () -> Content
-    ) {
-        self.title = title
-        self.subtitle = subtitle
-        self.content = content()
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .font(.largeTitle.weight(.semibold))
-
-                    Text(subtitle)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-
-                content
-            }
-            .padding(.horizontal, 28)
-            .padding(.vertical, 24)
-            .frame(maxWidth: 760, alignment: .topLeading)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-}
-
-struct SettingsMacDetailCard<Content: View>: View {
-    let title: String
-    let content: Content
-
-    init(
-        title: String,
-        @ViewBuilder content: () -> Content
-    ) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title)
-                .font(.headline.weight(.semibold))
-
-            content
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
-        )
-    }
-}
-
-private struct SettingsMacGlyph: View {
-    let icon: String
-    let tint: Color
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(tint)
-            .frame(width: 30, height: 30)
-            .overlay {
-                Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-    }
-}
-
 private struct SettingsMacAppIconButton: View {
     let option: AppIconOption
     let isSelected: Bool
@@ -1233,18 +1147,5 @@ private struct SettingsMacAppIconButton: View {
             )
         }
         .buttonStyle(.plain)
-    }
-}
-
-private func settingsInfoRow(title: String, value: String) -> some View {
-    HStack(alignment: .firstTextBaseline) {
-        Text(title)
-            .foregroundStyle(.secondary)
-
-        Spacer()
-
-        Text(value)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.trailing)
     }
 }
