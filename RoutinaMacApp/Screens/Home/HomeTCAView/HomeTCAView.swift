@@ -13,7 +13,6 @@ struct HomeTCAView: View {
     let settingsStore: StoreOf<SettingsFeature>
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>?
-    @Dependency(\.appSettingsClient) var appSettingsClient
     @State var addEditFormCoordinator = AddEditFormCoordinator()
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar

@@ -301,8 +301,8 @@ extension HomeTCAView {
     }
 
     private func tagColor(for tag: String) -> Color? {
-        let tagColors = appSettingsClient.tagColors().merging(store.tagColors) { _, storeColor in storeColor }
-        return Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: tagColors))
+        guard let normalizedTag = RoutineTag.normalized(tag) else { return nil }
+        return Color(routineTagHex: store.tagColors[normalizedTag])
     }
 
     func platformDeleteTasks(

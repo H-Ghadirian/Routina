@@ -115,7 +115,8 @@ extension HomeTCAView {
     }
 
     private func tagColor(for tag: String) -> Color? {
-        Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: appSettingsClient.tagColors()))
+        guard let normalizedTag = RoutineTag.normalized(tag) else { return nil }
+        return Color(routineTagHex: store.tagColors[normalizedTag])
     }
 
     private func tagTint(for tag: String) -> Color {

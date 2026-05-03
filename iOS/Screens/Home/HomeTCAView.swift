@@ -4,7 +4,6 @@ import SwiftUI
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let externalSearchText: Binding<String>?
-    @Dependency(\.appSettingsClient) var appSettingsClient
     @Environment(\.calendar) var calendar
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
