@@ -285,6 +285,7 @@ let package = Package(
                 "SharedCore/Views/FocusSessionCard.swift",
                 "SharedCore/Views/GoalsEditorSheet.swift",
                 "SharedCore/Views/ImportanceUrgencyMatrixPicker.swift",
+                "SharedCore/Views/StatsDashboardComponents.swift",
                 "SharedCore/Views/CalendarTaskImportSheet.swift",
                 "SharedCore/Views/DayPlan/DayPlanPlannerState.swift",
                 "SharedCore/Views/DayPlan/DayPlanSupport.swift",

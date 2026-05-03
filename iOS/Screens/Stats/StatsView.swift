@@ -1076,28 +1076,7 @@ struct StatsView: View {
     }
 
     private func heroStatPill(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
-                .background(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.24), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.72))
-
-                Text(value)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        StatsHeroStatPill(icon: icon, title: title, value: value, colorScheme: colorScheme)
     }
 
     private func summaryCard(
@@ -1108,74 +1087,29 @@ struct StatsView: View {
         caption: String,
         accessibilityIdentifier: String
     ) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Image(systemName: icon)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(accent)
-                .frame(width: 42, height: 42)
-                .background(accent.opacity(colorScheme == .dark ? 0.18 : 0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                Text(value)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-
-                Text(caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(surfaceGradient)
-                .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(accent.opacity(colorScheme == .dark ? 0.16 : 0.12))
-                        .frame(width: 110, height: 110)
-                        .blur(radius: 16)
-                        .offset(x: 28, y: -32)
-                }
+        StatsSummaryCard(
+            icon: icon,
+            accent: accent,
+            title: title,
+            value: value,
+            caption: caption,
+            accessibilityIdentifier: accessibilityIdentifier,
+            colorScheme: colorScheme,
+            surfaceGradient: surfaceGradient
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(title)
-        .accessibilityValue("\(value). \(caption)")
-        .accessibilityIdentifier(accessibilityIdentifier)
     }
 
     private func smallHighlightBadge(title: String, value: String) -> some View {
-        VStack(alignment: .trailing, spacing: 2) {
-            Text(title)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-
-            Text(value)
-                .font(.system(.title3, design: .rounded, weight: .bold))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.35), lineWidth: 1)
+        StatsSmallHighlightBadge(
+            title: title,
+            value: value,
+            colorScheme: colorScheme,
+            surfaceGradient: surfaceGradient
         )
     }
 
     private func bottomInsightPill(icon: String, text: String) -> some View {
-        Label(text, systemImage: icon)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.black.opacity(colorScheme == .dark ? 0.14 : 0.04), in: Capsule(style: .continuous))
+        StatsBottomInsightPill(icon: icon, text: text, colorScheme: colorScheme)
     }
 
     private var rangeHeroLabel: String {
