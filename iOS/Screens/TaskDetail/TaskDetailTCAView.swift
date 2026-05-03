@@ -115,96 +115,40 @@ struct TaskDetailTCAView: View {
                 )
             }
             .sheet(item: $editingTimeLog) { log in
-                NavigationStack {
-                    Form {
-                        Section("Actual Time") {
-                            Stepper(value: $editingTimeSpentMinutes, in: 1...1440) {
-                                HStack {
-                                    Text("Time spent")
-                                    Spacer()
-                                    Text(RoutineTimeSpentFormatting.compactMinutesText(editingTimeSpentMinutes))
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-
-                        if log.actualDurationMinutes != nil {
-                            Section {
-                                Button(role: .destructive) {
-                                    store.send(.updateLogDuration(log.id, nil))
-                                    editingTimeLog = nil
-                                } label: {
-                                    Label("Clear Time Spent", systemImage: "trash")
-                                }
-                            }
-                        }
+                TaskDetailTimeSpentSheet(
+                    title: "Time Spent",
+                    minutes: $editingTimeSpentMinutes,
+                    showsClearButton: log.actualDurationMinutes != nil,
+                    onClear: {
+                        store.send(.updateLogDuration(log.id, nil))
+                        editingTimeLog = nil
+                    },
+                    onCancel: {
+                        editingTimeLog = nil
+                    },
+                    onSave: {
+                        store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
+                        editingTimeLog = nil
                     }
-                    .navigationTitle("Time Spent")
-                    #if os(iOS)
-                    .navigationBarTitleDisplayMode(.inline)
-                    #endif
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                editingTimeLog = nil
-                            }
-                        }
-
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") {
-                                store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
-                                editingTimeLog = nil
-                            }
-                        }
-                    }
-                }
-                .presentationDetents([.medium])
+                )
             }
             .sheet(isPresented: $isEditingTaskTimeSpent) {
-                NavigationStack {
-                    Form {
-                        Section("Actual Time") {
-                            Stepper(value: $editingTimeSpentMinutes, in: 1...1440) {
-                                HStack {
-                                    Text("Time spent")
-                                    Spacer()
-                                    Text(RoutineTimeSpentFormatting.compactMinutesText(editingTimeSpentMinutes))
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-
-                        if store.task.actualDurationMinutes != nil {
-                            Section {
-                                Button(role: .destructive) {
-                                    store.send(.updateTaskDuration(nil))
-                                    isEditingTaskTimeSpent = false
-                                } label: {
-                                    Label("Clear Time Spent", systemImage: "trash")
-                                }
-                            }
-                        }
+                TaskDetailTimeSpentSheet(
+                    title: "Time Spent",
+                    minutes: $editingTimeSpentMinutes,
+                    showsClearButton: store.task.actualDurationMinutes != nil,
+                    onClear: {
+                        store.send(.updateTaskDuration(nil))
+                        isEditingTaskTimeSpent = false
+                    },
+                    onCancel: {
+                        isEditingTaskTimeSpent = false
+                    },
+                    onSave: {
+                        store.send(.updateTaskDuration(editingTimeSpentMinutes))
+                        isEditingTaskTimeSpent = false
                     }
-                    .navigationTitle("Time Spent")
-                    #if os(iOS)
-                    .navigationBarTitleDisplayMode(.inline)
-                    #endif
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                isEditingTaskTimeSpent = false
-                            }
-                        }
-
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") {
-                                store.send(.updateTaskDuration(editingTimeSpentMinutes))
-                                isEditingTaskTimeSpent = false
-                            }
-                        }
-                    }
-                }
-                .presentationDetents([.medium])
+                )
             }
             .alert(
                 "Delete routine?",
