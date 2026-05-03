@@ -468,11 +468,7 @@ struct StatsView: View {
                     }
                 }
                 .chartPlotStyle { plotArea in
-                    plotArea
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
-                        )
+                    plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
                 .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 240)
                 .padding(.top, 4)
@@ -707,11 +703,7 @@ struct StatsView: View {
                     }
                 }
                 .chartPlotStyle { plotArea in
-                    plotArea
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
-                        )
+                    plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
                 .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 260)
                 .padding(.top, 4)
@@ -824,11 +816,7 @@ struct StatsView: View {
                     }
                 }
                 .chartPlotStyle { plotArea in
-                    plotArea
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
-                        )
+                    plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
                 .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 240)
                 .padding(.top, 4)
@@ -924,11 +912,7 @@ struct StatsView: View {
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
                 .chartPlotStyle { plotArea in
-                    plotArea
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
-                        )
+                    plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
                 .frame(minHeight: chartPresentation.tagUsageChartHeight(rows: rows))
                 .accessibilityLabel("Tag usage bubble chart")

@@ -59,11 +59,7 @@ struct StatsGitHubChartView: View {
                 }
             }
             .chartPlotStyle { plotArea in
-                plotArea
-                    .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
-                    )
+                plotArea.statsChartPlotBackground(colorScheme: colorScheme)
             }
             .frame(minWidth: chartMinWidth, minHeight: 220)
             .padding(.top, 4)

@@ -195,4 +195,11 @@ extension View {
                     .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
             )
     }
+
+    func statsChartPlotBackground(colorScheme: ColorScheme) -> some View {
+        background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
+        )
+    }
 }
