@@ -216,6 +216,28 @@ struct StatsBottomInsightPill: View {
     }
 }
 
+struct StatsChartInsight {
+    let systemImage: String
+    let text: String
+}
+
+struct StatsChartInsightRow: View {
+    let insights: [StatsChartInsight]
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(Array(insights.enumerated()), id: \.offset) { _, insight in
+                StatsBottomInsightPill(
+                    icon: insight.systemImage,
+                    text: insight.text,
+                    colorScheme: colorScheme
+                )
+            }
+        }
+    }
+}
+
 struct StatsEmptyChartStateView: View {
     let systemImage: String
     let message: String

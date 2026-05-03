@@ -672,24 +672,10 @@ struct StatsView: View {
             }
             .defaultScrollAnchor(.trailing)
 
-            HStack(spacing: 10) {
-                bottomInsightPill(
-                    icon: "calendar",
-                    text: userActivityPeriodDescription(metrics: metrics)
-                )
-
-                if let highlightedBusiestDay = metrics.highlightedBusiestDay {
-                    bottomInsightPill(
-                        icon: "star.fill",
-                        text: "Best: \(chartPresentation.bestDayCaption(for: highlightedBusiestDay))"
-                    )
-                } else {
-                    bottomInsightPill(
-                        icon: "waveform.path.ecg",
-                        text: "Waiting for your first completion"
-                    )
-                }
-            }
+            StatsChartInsightRow(
+                insights: completionChartInsights(metrics: metrics),
+                colorScheme: colorScheme
+            )
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
     }
@@ -780,18 +766,10 @@ struct StatsView: View {
             }
             .defaultScrollAnchor(.trailing)
 
-            HStack(spacing: 10) {
-                bottomInsightPill(icon: "calendar", text: userActivityPeriodDescription(metrics: metrics))
-
-                if let focusDay = metrics.highlightedFocusDay {
-                    bottomInsightPill(
-                        icon: "timer",
-                        text: "Best: \(chartPresentation.focusDurationText(focusDay.seconds)) on \(chartPresentation.xAxisLabel(for: focusDay.date))"
-                    )
-                } else {
-                    bottomInsightPill(icon: "stopwatch", text: "Waiting for your first focus session")
-                }
-            }
+            StatsChartInsightRow(
+                insights: focusChartInsights(metrics: metrics),
+                colorScheme: colorScheme
+            )
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
     }
@@ -892,10 +870,6 @@ struct StatsView: View {
         )
     }
 
-    private func bottomInsightPill(icon: String, text: String) -> some View {
-        StatsBottomInsightPill(icon: icon, text: text, colorScheme: colorScheme)
-    }
-
     private func userActivityPeriodDescription(metrics: Metrics) -> String {
         if selectedRange == .year,
            metrics.chartPoints.count < selectedRange.trailingDayCount,
@@ -903,6 +877,42 @@ struct StatsView: View {
             return "Since \(firstDate.formatted(.dateTime.month(.abbreviated).day().year()))"
         }
         return selectedRange.periodDescription
+    }
+
+    private func completionChartInsights(metrics: Metrics) -> [StatsChartInsight] {
+        [
+            StatsChartInsight(
+                systemImage: "calendar",
+                text: userActivityPeriodDescription(metrics: metrics)
+            ),
+            metrics.highlightedBusiestDay.map {
+                StatsChartInsight(
+                    systemImage: "star.fill",
+                    text: "Best: \(chartPresentation.bestDayCaption(for: $0))"
+                )
+            } ?? StatsChartInsight(
+                systemImage: "waveform.path.ecg",
+                text: "Waiting for your first completion"
+            )
+        ]
+    }
+
+    private func focusChartInsights(metrics: Metrics) -> [StatsChartInsight] {
+        [
+            StatsChartInsight(
+                systemImage: "calendar",
+                text: userActivityPeriodDescription(metrics: metrics)
+            ),
+            metrics.highlightedFocusDay.map {
+                StatsChartInsight(
+                    systemImage: "timer",
+                    text: "Best: \(chartPresentation.focusDurationText($0.seconds)) on \(chartPresentation.xAxisLabel(for: $0.date))"
+                )
+            } ?? StatsChartInsight(
+                systemImage: "stopwatch",
+                text: "Waiting for your first focus session"
+            )
+        ]
     }
 
     private var statsContentMaxWidth: CGFloat? {
