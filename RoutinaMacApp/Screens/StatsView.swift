@@ -243,98 +243,19 @@ struct StatsView: View {
     }
 
     private func heroSection(metrics: Metrics) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label(rangeHeroLabel, systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.62), in: Capsule())
-
-                    Text(metrics.totalCount.formatted())
-                        .font(.system(size: 54, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-
-                    Text(metrics.totalCount == 1 ? "completion logged" : "completions logged")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.95))
-
-                    Text(userActivityPeriodDescription(metrics: metrics))
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-
-                Spacer(minLength: 0)
-
-                if selectedRange != .today {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(metrics.activeDayCount)")
-                            .font(.system(.title2, design: .rounded, weight: .bold))
-                            .foregroundStyle(.white)
-
-                        Text(metrics.activeDayCount == 1 ? "active day" : "active days")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
-            }
-
-            if selectedRange != .today {
-                sparklinePreview(metrics: metrics)
-
-                HStack(spacing: 12) {
-                    heroStatPill(
-                        icon: "gauge.with.dots.needle.50percent",
-                        title: "Daily avg",
-                        value: chartPresentation.averagePerDayText(for: metrics.averagePerDay)
-                    )
-
-                    heroStatPill(
-                        icon: "bolt.fill",
-                        title: "Best day",
-                        value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0"
-                    )
-                }
-            }
-        }
-        .padding(22)
-        .background(heroGradient, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.28), lineWidth: 1)
+        StatsHeroSectionView(
+            selectedRange: selectedRange,
+            totalCount: metrics.totalCount,
+            activeDayCount: metrics.activeDayCount,
+            averagePerDay: metrics.averagePerDay,
+            highlightedBusiestDay: metrics.highlightedBusiestDay,
+            sparklinePoints: metrics.sparklinePoints,
+            sparklineMaxCount: metrics.sparklineMaxCount,
+            periodDescription: userActivityPeriodDescription(metrics: metrics),
+            chartPresentation: chartPresentation,
+            colorScheme: colorScheme,
+            heroGradient: heroGradient
         )
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.32 : 0.08), radius: 22, y: 14)
-    }
-
-    private func sparklinePreview(metrics: Metrics) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Daily rhythm")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.95))
-
-                Spacer()
-
-                Text(chartPresentation.sparklineCaption(highlightedBusiestDay: metrics.highlightedBusiestDay))
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.72))
-            }
-
-            HStack(alignment: .bottom, spacing: 6) {
-                ForEach(metrics.sparklinePoints) { point in
-                    Capsule(style: .continuous)
-                        .fill(chartPresentation.sparklineColor(for: point, highlightedBusiestDay: metrics.highlightedBusiestDay))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: chartPresentation.sparklineBarHeight(for: point, maxCount: metrics.sparklineMaxCount))
-                }
-            }
-            .frame(height: 74, alignment: .bottom)
-        }
     }
 
     private func summaryCards(metrics: Metrics) -> some View {
@@ -1036,10 +957,6 @@ struct StatsView: View {
         )
     }
 
-    private func heroStatPill(icon: String, title: String, value: String) -> some View {
-        StatsHeroStatPill(icon: icon, title: title, value: value, colorScheme: colorScheme)
-    }
-
     private func summaryCard(
         icon: String,
         accent: Color,
@@ -1095,19 +1012,6 @@ struct StatsView: View {
 
     private func bottomInsightPill(icon: String, text: String) -> some View {
         StatsBottomInsightPill(icon: icon, text: text, colorScheme: colorScheme)
-    }
-
-    private var rangeHeroLabel: String {
-        switch selectedRange {
-        case .today:
-            return "Today"
-        case .week:
-            return "This week"
-        case .month:
-            return "This month"
-        case .year:
-            return "This year"
-        }
     }
 
     private func userActivityPeriodDescription(metrics: Metrics) -> String {
