@@ -270,6 +270,7 @@ let package = Package(
                 "SharedCore/Sync/CloudDataResetService.swift",
                 "SharedCore/Sync/CloudSharingService.swift",
                 "SharedCore/Sync/CloudKitDirectPullService.swift",
+                "SharedCore/Sync/CloudKitDirectPullSupport.swift",
                 "SharedCore/Sync/CloudKitPushSubscriptionService.swift",
                 "SharedCore/Sync/CloudKitSyncDiagnostics.swift",
                 "SharedCore/Sync/CloudSyncClient.swift",
