@@ -805,9 +805,9 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTime(for log: RoutineLog) {
-        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultEditMinutes(
-            currentMinutes: log.actualDurationMinutes,
-            estimatedMinutes: store.task.estimatedDurationMinutes
+        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultLogEditMinutes(
+            log: log,
+            task: store.task
         )
         editingTimeLog = log
     }
@@ -818,14 +818,20 @@ struct TaskDetailTCAView: View {
     }
 
     private func addCompletedFocusToTimeSpent(_ seconds: TimeInterval) {
-        let minutes = TaskDetailTimeSpentPresentation.focusSessionMinutes(from: seconds)
+        guard let update = TaskDetailTimeSpentPresentation.focusSessionUpdate(
+            task: store.task,
+            logs: store.logs,
+            seconds: seconds
+        ) else {
+            return
+        }
 
-        if store.task.isOneOffTask {
-            let currentMinutes = store.task.actualDurationMinutes ?? 0
-            store.send(.updateTaskDuration(TaskDetailTimeSpentPresentation.clampedMinutes(currentMinutes + minutes)))
-        } else if let latestCompletedLog {
-            let currentMinutes = latestCompletedLog.actualDurationMinutes ?? 0
-            store.send(.updateLogDuration(latestCompletedLog.id, TaskDetailTimeSpentPresentation.clampedMinutes(currentMinutes + minutes)))
+        switch update.target {
+        case .task:
+            store.send(.updateTaskDuration(update.minutes))
+
+        case let .log(id):
+            store.send(.updateLogDuration(id, update.minutes))
         }
     }
 
