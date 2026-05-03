@@ -145,23 +145,8 @@ struct DayPlanWeekCalendarView: View {
     private func weekGrid(dayWidth: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             ForEach(0..<24, id: \.self) { hour in
-                HStack(alignment: .top, spacing: 0) {
-                    Text(DayPlanFormatting.hourText(for: hour, on: selectedDate, calendar: calendar))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                        .frame(width: timeColumnWidth - 10, alignment: .trailing)
-                        .padding(.trailing, 10)
-                        .padding(.top, 8)
-
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.22))
-                        .frame(height: 1)
-                        .frame(maxWidth: .infinity, alignment: .top)
-                }
-                .frame(height: hourHeight)
-                .offset(y: CGFloat(hour) * hourHeight)
-                .id(DayPlanScrollTarget.hour(hour))
+                hourLabel(for: hour)
+                hourLine(for: hour, dayWidth: dayWidth)
             }
 
             ForEach(Array(dates.enumerated()), id: \.element) { index, date in
@@ -176,6 +161,27 @@ struct DayPlanWeekCalendarView: View {
                     .offset(x: timeColumnWidth + CGFloat(index) * dayWidth)
             }
         }
+    }
+
+    private func hourLabel(for hour: Int) -> some View {
+        Text(DayPlanFormatting.hourText(for: hour, on: selectedDate, calendar: calendar))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .frame(width: timeColumnWidth - 10, alignment: .trailing)
+            .offset(y: hourLabelYOffset(for: hour))
+    }
+
+    private func hourLine(for hour: Int, dayWidth: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.secondary.opacity(0.22))
+            .frame(width: CGFloat(dates.count) * dayWidth, height: 1)
+            .offset(x: timeColumnWidth, y: CGFloat(hour) * hourHeight)
+            .id(DayPlanScrollTarget.hour(hour))
+    }
+
+    private func hourLabelYOffset(for hour: Int) -> CGFloat {
+        max((CGFloat(hour) * hourHeight) - 8, 0)
     }
 
     private func selectionButtons(dayWidth: CGFloat) -> some View {
