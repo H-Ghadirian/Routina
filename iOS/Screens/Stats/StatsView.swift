@@ -35,13 +35,6 @@ struct StatsView: View {
         store.selectedRange
     }
 
-    private var selectedRangeBinding: Binding<DoneChartRange> {
-        Binding(
-            get: { store.selectedRange },
-            set: { store.send(.selectedRangeChanged($0)) }
-        )
-    }
-
     private var filterSheetBinding: Binding<Bool> {
         Binding(
             get: { store.isFilterSheetPresented },
@@ -240,33 +233,6 @@ struct StatsView: View {
         )
     }
 
-    private var selectorBackground: LinearGradient {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [
-                    Color.white.opacity(0.06),
-                    Color.white.opacity(0.03)
-                ]
-                : [
-                    Color.white.opacity(0.96),
-                    Color.white.opacity(0.82)
-                ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
-    private var selectorActiveFill: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color.accentColor.opacity(0.95),
-                Color.blue.opacity(0.75)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
     private var baseBarFill: LinearGradient {
         LinearGradient(
             colors: [
@@ -276,10 +242,6 @@ struct StatsView: View {
             startPoint: .top,
             endPoint: .bottom
         )
-    }
-
-    private var selectorOutlineOpacity: Double {
-        colorScheme == .dark ? 0.08 : 0.45
     }
 
     private var highlightBarFill: LinearGradient {
@@ -460,47 +422,9 @@ struct StatsView: View {
     }
 
     private var rangeSection: some View {
-        HStack(spacing: 10) {
-            ForEach(DoneChartRange.allCases) { range in
-                rangeButton(for: range)
-            }
+        StatsRangeSelectorView(selectedRange: selectedRange) { range in
+            _ = store.send(.selectedRangeChanged(range))
         }
-        .padding(6)
-        .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(selectorBackground)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white, lineWidth: 1)
-                .opacity(selectorOutlineOpacity)
-        )
-    }
-
-    private func rangeButton(for range: DoneChartRange) -> some View {
-        let isSelected = selectedRange == range
-
-        return Button {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                _ = store.send(.selectedRangeChanged(range))
-            }
-        } label: {
-            VStack(spacing: 4) {
-                Text(range.rawValue)
-                    .font(.subheadline.weight(.semibold))
-
-                Text(rangeButtonSubtitle(for: range))
-                    .font(.caption2.weight(.medium))
-                    .opacity(isSelected ? 0.9 : 0.7)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .foregroundStyle(isSelected ? Color.white : Color.primary)
-            .background {
-                rangeButtonBackground(isSelected: isSelected)
-            }
-        }
-        .buttonStyle(.plain)
     }
 
     private func heroSection(metrics: Metrics) -> some View {
@@ -1130,19 +1054,6 @@ struct StatsView: View {
         return selectedRange.periodDescription
     }
 
-    private func rangeButtonSubtitle(for range: DoneChartRange) -> String {
-        switch range {
-        case .today:
-            return "1 day"
-        case .week:
-            return "7 days"
-        case .month:
-            return "30 days"
-        case .year:
-            return "1 year"
-        }
-    }
-
     private var statsContentMaxWidth: CGFloat? {
         horizontalSizeClass == .regular ? 980 : nil
     }
@@ -1156,12 +1067,4 @@ struct StatsView: View {
             ?? Color.accentColor.opacity(colorScheme == .dark ? 0.78 : 0.68)
     }
 
-    @ViewBuilder
-    private func rangeButtonBackground(isSelected: Bool) -> some View {
-        if isSelected {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(selectorActiveFill)
-                .shadow(color: Color.accentColor.opacity(0.28), radius: 16, y: 8)
-        }
-    }
 }
