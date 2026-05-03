@@ -273,30 +273,8 @@ struct TaskFormContent: View {
     // MARK: Places
 
     private var placesCard: some View {
-        macSectionCard(
-            title: "Places"
-        ) {
-            VStack(alignment: .leading, spacing: 18) {
-                macControlBlock(title: "Place") {
-                    Picker("Place", selection: model.selectedPlaceID) {
-                        Text("Anywhere").tag(Optional<UUID>.none)
-                        ForEach(model.availablePlaces) { place in
-                            Text(place.name).tag(Optional(place.id))
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                }
-
-                macControlBlock(title: "") {
-                    Button {
-                        isPlaceManagerPresented = true
-                    } label: {
-                        Label("Manage Places", systemImage: "map")
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
+        TaskFormMacPlacesCard(model: model) {
+            isPlaceManagerPresented = true
         }
         .id(FormSection.places)
     }
