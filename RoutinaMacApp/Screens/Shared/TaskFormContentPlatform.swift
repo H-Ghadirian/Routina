@@ -640,7 +640,7 @@ struct TaskFormContent: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
-            TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(model.routineTags, id: \.self) { tag in
                     Button { model.onRemoveTag(tag) } label: {
                         HStack(spacing: 6) {
@@ -681,7 +681,7 @@ struct TaskFormContent: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
-            TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(model.selectedGoals) { goal in
                     Button { model.onRemoveGoal(goal.id) } label: {
                         HStack(spacing: 6) {
@@ -714,7 +714,7 @@ struct TaskFormContent: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
 
-                TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(suggestions, id: \.self) { tag in
                         Button { model.onToggleTagSelection(tag) } label: {
                             HStack(spacing: 6) {
@@ -751,7 +751,7 @@ struct TaskFormContent: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
 
-                TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(model.availableTags, id: \.self) { tag in
                         let isSelected = RoutineTag.contains(tag, in: model.routineTags)
                         let summary = model.availableTagSummaries.first(where: {
@@ -794,7 +794,7 @@ struct TaskFormContent: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
 
-                TagFlowLayout(itemSpacing: 8, lineSpacing: 8) {
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(model.availableGoals) { goal in
                         let isSelected = model.selectedGoals.contains(where: { $0.id == goal.id })
                         Button { model.onToggleGoalSelection(goal) } label: {
@@ -1254,82 +1254,5 @@ struct TaskFormContent: View {
         defer { url.stopAccessingSecurityScopedResource() }
         guard let data = try? Data(contentsOf: url), data.count <= maxSize else { return }
         model.onAttachmentPicked(data, url.lastPathComponent)
-    }
-}
-
-private struct TagFlowLayout: Layout {
-    let itemSpacing: CGFloat
-    let lineSpacing: CGFloat
-
-    init(itemSpacing: CGFloat = 8, lineSpacing: CGFloat = 8) {
-        self.itemSpacing = itemSpacing
-        self.lineSpacing = lineSpacing
-    }
-
-    func sizeThatFits(
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) -> CGSize {
-        let maxWidth = proposal.width ?? .greatestFiniteMagnitude
-        var currentX: CGFloat = 0
-        var currentLineHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-        var maxLineWidth: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            let requiredWidth = currentX == 0 ? size.width : currentX + itemSpacing + size.width
-
-            if requiredWidth > maxWidth && currentX > 0 {
-                totalHeight += currentLineHeight + lineSpacing
-                maxLineWidth = max(maxLineWidth, currentX)
-                currentX = size.width
-                currentLineHeight = size.height
-            } else {
-                currentX = requiredWidth
-                currentLineHeight = max(currentLineHeight, size.height)
-            }
-        }
-
-        if currentLineHeight > 0 {
-            totalHeight += currentLineHeight
-            maxLineWidth = max(maxLineWidth, currentX)
-        }
-
-        return CGSize(width: maxLineWidth, height: totalHeight)
-    }
-
-    func placeSubviews(
-        in bounds: CGRect,
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) {
-        var currentX = bounds.minX
-        var currentY = bounds.minY
-        var currentLineHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            let extraSpacing = currentX == bounds.minX ? 0 : itemSpacing
-            let proposedMaxX = currentX + extraSpacing + size.width
-
-            if proposedMaxX > bounds.maxX && currentX > bounds.minX {
-                currentX = bounds.minX
-                currentY += currentLineHeight + lineSpacing
-                currentLineHeight = 0
-            }
-
-            let placementX = currentX == bounds.minX ? currentX : currentX + itemSpacing
-            subview.place(
-                at: CGPoint(x: placementX, y: currentY),
-                anchor: .topLeading,
-                proposal: ProposedViewSize(size)
-            )
-
-            currentX = placementX + size.width
-            currentLineHeight = max(currentLineHeight, size.height)
-        }
     }
 }
