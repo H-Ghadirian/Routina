@@ -76,15 +76,7 @@ extension PlatformSupport {
 
     @MainActor
     private static func presentDataTransferPanel(_ panel: NSSavePanel) async -> URL? {
-        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else {
-            return panel.runModal() == .OK ? panel.url : nil
-        }
-
-        return await withCheckedContinuation { continuation in
-            panel.beginSheetModal(for: window) { response in
-                continuation.resume(returning: response == .OK ? panel.url : nil)
-            }
-        }
+        panel.runModal() == .OK ? panel.url : nil
     }
 
     @MainActor
