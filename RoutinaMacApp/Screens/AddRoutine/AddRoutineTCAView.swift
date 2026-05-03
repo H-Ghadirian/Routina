@@ -328,17 +328,11 @@ struct AddRoutineTCAView: View {
     }
 
     var tagComposer: some View {
-        HStack(spacing: 10) {
-            TextField("health, focus, morning", text: tagDraftBinding)
-                .onSubmit {
-                    store.send(.addTagTapped)
-                }
-
-            Button("Add") {
-                store.send(.addTagTapped)
-            }
-            .disabled(isAddTagDisabled)
-        }
+        AddRoutineTagComposerView(
+            tagDraft: tagDraftBinding,
+            isAddDisabled: isAddTagDisabled,
+            onAddTag: { store.send(.addTagTapped) }
+        )
     }
 
     var manageTagsButton: some View {
