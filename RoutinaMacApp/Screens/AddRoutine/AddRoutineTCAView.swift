@@ -445,32 +445,11 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var editableTagsContent: some View {
-        if store.organization.routineTags.isEmpty {
-            Text(store.organization.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
-                ForEach(store.organization.routineTags, id: \.self) { tag in
-                    Button {
-                        store.send(.removeTag(tag))
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text("#\(tag)")
-                                .lineLimit(1)
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.caption)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.14), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Remove tag \(tag)")
-                }
-            }
-            .padding(.vertical, 4)
-        }
+        AddRoutineSelectedTagsView(
+            selectedTags: store.organization.routineTags,
+            isAvailableTagsEmpty: store.organization.availableTags.isEmpty,
+            onRemoveTag: { store.send(.removeTag($0)) }
+        )
     }
 
     @ViewBuilder

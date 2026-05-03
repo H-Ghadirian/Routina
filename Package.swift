@@ -287,6 +287,7 @@ let package = Package(
                 "SharedCore/Views/HomeTodoStateFilterChips.swift",
                 "SharedCore/Screens/Home/HomeStatusAndEmptyViews.swift",
                 "SharedCore/Views/AddRoutineAvailableTagSuggestionsView.swift",
+                "SharedCore/Views/AddRoutineSelectedTagsView.swift",
                 "SharedCore/Views/QuickAddTaskSheet.swift",
                 "SharedCore/Views/FocusSessionCard.swift",
                 "SharedCore/Views/GoalsEditorSheet.swift",
