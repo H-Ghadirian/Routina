@@ -36,56 +36,12 @@ struct TaskDetailTCAView: View {
             detailBody
             .routinaInlineTitleDisplayMode()
             .toolbar {
-                if !isInlineEditPresented {
-                    ToolbarItem(placement: .principal) {
-                        Text(store.routineEmoji)
-                            .font(TaskDetailPlatformStyle.principalTitleFont)
-                    }
-                }
-                if isInlineEditPresented {
-                    ToolbarItem(placement: .principal) {
-                        HStack(spacing: 8) {
-                            Text("✏️")
-                            Text("Edit Task")
-                                .lineLimit(1)
-                        }
-                        .font(TaskDetailPlatformStyle.principalTitleFont)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 999, style: .continuous)
-                                .fill(.ultraThinMaterial)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 999, style: .continuous)
-                                .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                        )
-                    }
-                }
-                if isInlineEditPresented {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            store.send(.setEditSheet(false))
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            store.send(.editSaveTapped)
-                        }
-                        .disabled(!canSaveCurrentEdit)
-                    }
-                } else {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        Button {
-                            isCloudSharingPresented = true
-                        } label: {
-                            Label("Share", systemImage: "person.crop.circle.badge.plus")
-                        }
-                        Button("Edit") {
-                            store.send(.setEditSheet(true))
-                        }
-                    }
-                }
+                TaskDetailToolbarContent(
+                    store: store,
+                    isInlineEditPresented: isInlineEditPresented,
+                    canSaveCurrentEdit: canSaveCurrentEdit,
+                    onShare: { isCloudSharingPresented = true }
+                )
             }
             .routinaPlatformEditPresentation(
                 isPresented: editSheetBinding,
