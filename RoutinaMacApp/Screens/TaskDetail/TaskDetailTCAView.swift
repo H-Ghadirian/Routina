@@ -18,6 +18,7 @@ struct TaskDetailTCAView: View {
     @State private var editingTimeSpentMinutes = 25
     @State private var taskTimeEntryHours = 0
     @State private var taskTimeEntryMinutes = 25
+    @State private var taskTimeEntryResetToken = 0
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
@@ -457,132 +458,17 @@ struct TaskDetailTCAView: View {
     }
 
     private var todoTimeSpentHeaderBox: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isTimeSectionExpanded.toggle()
-                }
-            } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("TIME")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        Text(taskTimeSpentDisplayText)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(store.task.actualDurationMinutes == nil ? .secondary : .primary)
-                    }
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isTimeSectionExpanded ? 180 : 0))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isTimeSectionExpanded {
-                Divider()
-                    .opacity(0.35)
-
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .bottom, spacing: 10) {
-                        taskTimeEntryControls
-                        taskTimeEntryActions
-                    }
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        taskTimeEntryControls
-                        taskTimeEntryActions
-                    }
-                }
-
-                if store.task.focusModeEnabled {
-                    Divider()
-                        .opacity(0.35)
-
-                    FocusSessionCard(
-                        task: store.task,
-                        sessions: focusSessions,
-                        allTasks: focusSessionTasks,
-                        isEmbedded: true,
-                        onCompletedDuration: addCompletedFocusToTimeSpent
-                    )
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: isTimeSectionExpanded ? 120 : nil, alignment: .topLeading)
-        .detailHeaderBoxStyle(tint: .cyan)
-        .onAppear {
-            resetTaskTimeEntry()
-        }
-        .onChange(of: store.task.id) { _, _ in
-            resetTaskTimeEntry()
-        }
-        .onChange(of: store.task.actualDurationMinutes) { _, _ in
-            resetTaskTimeEntry()
-        }
-    }
-
-    private var taskTimeEntryControls: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            timeSpentNumberField("Hours", value: $taskTimeEntryHours, range: 0...24)
-            timeSpentNumberField("Minutes", value: $taskTimeEntryMinutes, range: 0...59)
-
-            HStack(spacing: 6) {
-                ForEach([15, 30, 60], id: \.self) { minutes in
-                    Button("+\(RoutineTimeSpentFormatting.compactMinutesText(minutes))") {
-                        setTaskTimeEntryTotal(minutes)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-        }
-    }
-
-    private var taskTimeEntryActions: some View {
-        HStack(alignment: .center, spacing: 10) {
-            Label(taskTimeEntryPreviewText, systemImage: "equal.circle")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-
-            Button {
-                applyTaskTimeEntry()
-            } label: {
-                Label(
-                    taskTimeEntryApplyTitle,
-                    systemImage: "plus.circle.fill"
-                )
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .tint(.cyan)
-            .disabled(!canApplyTaskTimeEntry)
-        }
-    }
-
-    private func timeSpentNumberField(
-        _ label: String,
-        value: Binding<Int>,
-        range: ClosedRange<Int>
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label.uppercased())
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            TextField(label, value: value, format: .number)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 64)
-                .onChange(of: value.wrappedValue) { _, newValue in
-                    value.wrappedValue = min(max(newValue, range.lowerBound), range.upperBound)
-                }
-        }
+        TaskDetailTimeSpentHeaderBox(
+            task: store.task,
+            focusSessions: focusSessions,
+            allTasks: focusSessionTasks,
+            resetToken: taskTimeEntryResetToken,
+            isExpanded: $isTimeSectionExpanded,
+            entryHours: $taskTimeEntryHours,
+            entryMinutes: $taskTimeEntryMinutes,
+            onApplyMinutes: { store.send(.updateTaskDuration($0)) },
+            onCompletedFocusDuration: addCompletedFocusToTimeSpent
+        )
     }
 
     @ViewBuilder
@@ -1293,64 +1179,8 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTaskTime() {
-        resetTaskTimeEntry()
-    }
-
-    private var taskTimeSpentDisplayText: String {
-        store.task.actualDurationMinutes.map(TaskDetailHeaderBadgePresentation.durationText(for:)) ?? "Not logged"
-    }
-
-    private var taskTimeEntryTotalMinutes: Int {
-        TaskDetailTimeSpentPresentation.entryTotalMinutes(
-            hours: taskTimeEntryHours,
-            minutes: taskTimeEntryMinutes
-        )
-    }
-
-    private var taskTimeEntryPreviewMinutes: Int {
-        TaskDetailTimeSpentPresentation.previewTotalMinutes(
-            currentMinutes: store.task.actualDurationMinutes,
-            entryMinutes: taskTimeEntryTotalMinutes
-        )
-    }
-
-    private var taskTimeEntryPreviewText: String {
-        TaskDetailTimeSpentPresentation.previewText(
-            currentMinutes: store.task.actualDurationMinutes,
-            entryMinutes: taskTimeEntryTotalMinutes
-        )
-    }
-
-    private var taskTimeEntryApplyTitle: String {
-        TaskDetailTimeSpentPresentation.applyTitle(entryMinutes: taskTimeEntryTotalMinutes)
-    }
-
-    private var canApplyTaskTimeEntry: Bool {
-        TaskDetailTimeSpentPresentation.canApplyEntry(
-            currentMinutes: store.task.actualDurationMinutes,
-            entryMinutes: taskTimeEntryTotalMinutes
-        )
-    }
-
-    private func setTaskTimeEntryTotal(_ minutes: Int) {
-        let clampedMinutes = TaskDetailTimeSpentPresentation.clampedMinutes(minutes)
-        taskTimeEntryHours = clampedMinutes / 60
-        taskTimeEntryMinutes = clampedMinutes % 60
-    }
-
-    private func resetTaskTimeEntry() {
-        setTaskTimeEntryTotal(
-            TaskDetailTimeSpentPresentation.defaultAdditionalEntryMinutes(
-                currentMinutes: store.task.actualDurationMinutes,
-                estimatedMinutes: store.task.estimatedDurationMinutes
-            )
-        )
-    }
-
-    private func applyTaskTimeEntry() {
-        guard canApplyTaskTimeEntry else { return }
-        store.send(.updateTaskDuration(taskTimeEntryPreviewMinutes))
-        setTaskTimeEntryTotal(25)
+        isTimeSectionExpanded = true
+        taskTimeEntryResetToken += 1
     }
 
     private func addCompletedFocusToTimeSpent(_ seconds: TimeInterval) {
