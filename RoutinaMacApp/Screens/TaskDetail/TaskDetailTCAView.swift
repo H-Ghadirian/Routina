@@ -1369,11 +1369,10 @@ struct TaskDetailTCAView: View {
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke
         ) { _, log, _ in
+            let presentation = TaskDetailRoutineLogRowPresentation(log: log, showPersianDates: showPersianDates)
             TaskDetailRoutineLogRowContent(
-                timestampText: TaskDetailLogPresentation.timestampText(log.timestamp, showPersianDates: showPersianDates),
-                timeSpentText: TaskDetailLogPresentation.timeSpentText(for: log, style: .full),
-                statusText: log.kind == .completed ? "Done" : "Canceled",
-                statusColor: log.kind == .completed ? .green : .orange,
+                presentation: presentation,
+                timeSpentStyle: .full,
                 onEditTime: { beginEditingTime(for: log) }
             )
             .contextMenu {
@@ -1381,7 +1380,7 @@ struct TaskDetailTCAView: View {
                     beginEditingTime(for: log)
                 }
                 if let timestamp = log.timestamp {
-                    Button(TaskDetailLogPresentation.actionTitle(for: log)) {
+                    Button(presentation.actionTitle) {
                         store.send(.requestRemoveLogEntry(timestamp))
                     }
                 }

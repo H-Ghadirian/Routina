@@ -1,22 +1,20 @@
 import SwiftUI
 
 struct TaskDetailRoutineLogRowContent: View {
-    let timestampText: String
-    let timeSpentText: String
-    let statusText: String
-    let statusColor: Color
+    let presentation: TaskDetailRoutineLogRowPresentation
+    let timeSpentStyle: TaskDetailDurationTextStyle
     let onEditTime: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(timestampText)
+                Text(presentation.timestampText)
                     .font(.subheadline)
 
                 Button {
                     onEditTime()
                 } label: {
-                    Label(timeSpentText, systemImage: "clock")
+                    Label(presentation.timeSpentText(style: timeSpentStyle), systemImage: "clock")
                         .font(.caption.weight(.semibold))
                 }
                 .buttonStyle(.plain)
@@ -24,9 +22,9 @@ struct TaskDetailRoutineLogRowContent: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(statusText)
+            Text(presentation.statusText)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(statusColor)
+                .foregroundStyle(presentation.statusColor)
         }
         .padding(.vertical, 8)
     }
