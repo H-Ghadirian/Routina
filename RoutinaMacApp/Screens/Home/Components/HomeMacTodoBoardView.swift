@@ -62,9 +62,24 @@ struct HomeMacTodoBoardView: View {
     var body: some View {
         Group {
             if isBoardEmpty {
-                boardEmptyState
+                HomeMacTodoBoardEmptyStateView()
             } else if layout == .backlogList {
-                backlogList
+                HomeMacTodoBoardBacklogListView(
+                    tasks: backlogTasks,
+                    isCompactLayout: isCompactLayout,
+                    selectedTaskID: selectedTaskID,
+                    availableBacklogs: availableBacklogs,
+                    availableSprints: availableSprints,
+                    activeSprints: activeSprints,
+                    onSelectTask: onSelectTask,
+                    onOpenTask: onOpenTask,
+                    onMoveTask: onMoveTask,
+                    onAssignTaskToBacklog: onAssignTaskToBacklog,
+                    onAssignTasksToBacklog: onAssignTasksToBacklog,
+                    onAssignTaskToSprint: onAssignTaskToSprint,
+                    onAssignTasksToSprint: onAssignTasksToSprint,
+                    selectedTaskIDs: $selectedBacklogTaskIDs
+                )
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 16) {
@@ -80,199 +95,6 @@ struct HomeMacTodoBoardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isCompactLayout)
-    }
-
-    private var backlogList: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                Section {
-                    ForEach(backlogTasks) { task in
-                        backlogRow(task)
-                        Divider()
-                            .padding(.leading, isCompactLayout ? 12 : 16)
-                    }
-                } header: {
-                    backlogHeader
-                }
-            }
-            .padding(.horizontal, isCompactLayout ? 12 : 20)
-            .padding(.vertical, isCompactLayout ? 12 : 18)
-        }
-        .onChange(of: backlogTasks.map(\.id)) { _, visibleTaskIDs in
-            selectedBacklogTaskIDs.formIntersection(Set(visibleTaskIDs))
-        }
-    }
-
-    private var backlogHeader: some View {
-        Grid(horizontalSpacing: 12, verticalSpacing: 0) {
-            GridRow {
-                backlogSelectionControl
-                    .frame(width: 28, alignment: .leading)
-                Text("Task")
-                    .gridCellColumns(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text("Status")
-                Text("Due")
-                Text("List")
-                Text("")
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, isCompactLayout ? 12 : 16)
-            .padding(.vertical, 9)
-        }
-        .background(.regularMaterial)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.primary.opacity(0.08))
-                .frame(height: 1)
-        }
-    }
-
-    private func backlogRow(_ task: HomeFeature.RoutineDisplay) -> some View {
-        let isSelectedForBulkAction = selectedBacklogTaskIDs.contains(task.id)
-
-        return Grid(horizontalSpacing: 12, verticalSpacing: 0) {
-            GridRow {
-                Button {
-                    toggleBacklogSelection(for: task.id)
-                } label: {
-                    Image(systemName: isSelectedForBulkAction ? "checkmark.square.fill" : "square")
-                        .foregroundStyle(isSelectedForBulkAction ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(isSelectedForBulkAction ? "Deselect \(task.name)" : "Select \(task.name)")
-                .frame(width: 28, alignment: .leading)
-
-                HStack(spacing: 10) {
-                    Text(task.emoji)
-                        .font(isCompactLayout ? .subheadline : .headline)
-                        .frame(width: 24)
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(task.name)
-                            .font((isCompactLayout ? Font.caption : Font.subheadline).weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-
-                        if let notes = task.notes, !notes.isEmpty {
-                            Text(notes)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .gridCellColumns(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                statusBadge(
-                    title: task.todoState == .paused ? "Paused" : (task.todoState ?? .ready).displayTitle,
-                    tint: tint(for: task.todoState ?? .ready)
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text(task.dueDate.map(dueLabel(for:)) ?? "No due date")
-                    .font(.caption)
-                    .foregroundStyle(task.dueDate == nil ? .tertiary : .secondary)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text(task.assignedSprintTitle ?? task.assignedBacklogTitle ?? "Backlog")
-                    .font(.caption)
-                    .foregroundStyle(task.assignedSprintTitle == nil && task.assignedBacklogTitle == nil ? .tertiary : .secondary)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Menu {
-                    moveMenuItems(for: task)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-            }
-            .padding(.horizontal, isCompactLayout ? 12 : 16)
-            .padding(.vertical, isCompactLayout ? 9 : 11)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(backlogRowBackground(isSelectedForBulkAction: isSelectedForBulkAction, taskID: task.id))
-            )
-            .contentShape(Rectangle())
-            .onTapGesture(count: 2) {
-                onOpenTask(task.id)
-            }
-            .onTapGesture {
-                onSelectTask(task.id)
-            }
-            .contextMenu {
-                moveMenuItems(for: task)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var backlogSelectionControl: some View {
-        if selectedBacklogTaskIDs.isEmpty {
-            Button {
-                selectedBacklogTaskIDs = Set(backlogTasks.map(\.id))
-            } label: {
-                Image(systemName: "square")
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Select all backlog rows")
-        } else {
-            Menu {
-                Button("Clear Selection") {
-                    selectedBacklogTaskIDs.removeAll()
-                }
-
-                Divider()
-
-                Button("Remove from Sprint") {
-                    assignSelectedBacklogTasks(to: nil)
-                }
-
-                if availableBacklogs.isEmpty {
-                    Button("Move to Backlog") {
-                        assignSelectedBacklogTasksToBacklog(nil)
-                    }
-                } else {
-                    Menu("Move to Backlog") {
-                        Button("Backlog") {
-                            assignSelectedBacklogTasksToBacklog(nil)
-                        }
-
-                        ForEach(availableBacklogs) { backlog in
-                            Button(backlog.title) {
-                                assignSelectedBacklogTasksToBacklog(backlog.id)
-                            }
-                        }
-                    }
-                }
-
-                selectedBacklogActiveSprintMenuItems
-
-                if !availableSprints.isEmpty {
-                    Menu("Assign to Sprint") {
-                        ForEach(availableSprints) { sprint in
-                            Button(sprint.title) {
-                                assignSelectedBacklogTasks(to: sprint.id)
-                            }
-                        }
-                    }
-                }
-            } label: {
-                Label("\(selectedBacklogTaskIDs.count)", systemImage: "checkmark.square.fill")
-                    .labelStyle(.iconOnly)
-                    .foregroundStyle(Color.accentColor)
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .accessibilityLabel("\(selectedBacklogTaskIDs.count) backlog rows selected")
-        }
     }
 
     @ViewBuilder
@@ -296,18 +118,30 @@ struct HomeMacTodoBoardView: View {
             ScrollView(.vertical, showsIndicators: true) {
                 LazyVStack(spacing: isCompactLayout ? 8 : 10) {
                     ForEach(Array(column.tasks.enumerated()), id: \.element.id) { index, task in
-                        boardCard(
-                            task,
+                        HomeMacTodoBoardCardView(
+                            task: task,
                             columnState: column.state,
                             orderedTaskIDs: column.tasks.map(\.id),
                             isSelected: selectedTaskID == task.id,
+                            isCompactLayout: isCompactLayout,
                             canMoveUp: index > 0,
                             canMoveDown: index < column.tasks.count - 1,
-                            showsInsertionIndicator: hoverTargetTaskID == task.id
+                            showsInsertionIndicator: hoverTargetTaskID == task.id,
+                            availableBacklogs: availableBacklogs,
+                            availableSprints: availableSprints,
+                            activeSprints: activeSprints,
+                            onSelectTask: onSelectTask,
+                            onOpenTask: onOpenTask,
+                            onMoveTask: onMoveTask,
+                            onAssignTaskToBacklog: onAssignTaskToBacklog,
+                            onAssignTaskToSprint: onAssignTaskToSprint,
+                            onMoveUp: onMoveUp,
+                            onMoveDown: onMoveDown,
+                            draggedTaskID: $draggedTaskID
                         )
                         .onDrop(
                             of: [.text],
-                            delegate: BoardCardDropDelegate(
+                            delegate: HomeMacTodoBoardCardDropDelegate(
                                 destinationTaskID: task.id,
                                 columnState: column.state,
                                 orderedTaskIDs: column.tasks.map(\.id),
@@ -320,16 +154,17 @@ struct HomeMacTodoBoardView: View {
                         )
                     }
 
-                    boardColumnDropSpacer(
-                        column,
-                        isHighlighted: trailingDropColumnState == column.state
+                    HomeMacTodoBoardColumnDropSpacer(
+                        column: column,
+                        isHighlighted: trailingDropColumnState == column.state,
+                        isCompactLayout: isCompactLayout
                     )
                 }
                 .padding(.bottom, 4)
             }
             .onDrop(
                 of: [.text],
-                delegate: BoardColumnDropDelegate(
+                delegate: HomeMacTodoBoardColumnDropDelegate(
                     columnState: column.state,
                     orderedTaskIDs: column.tasks.map(\.id),
                     draggedTaskID: $draggedTaskID,
@@ -354,326 +189,6 @@ struct HomeMacTodoBoardView: View {
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: trailingDropColumnState)
     }
 
-    @ViewBuilder
-    private func boardCard(
-        _ task: HomeFeature.RoutineDisplay,
-        columnState: TodoState,
-        orderedTaskIDs: [UUID],
-        isSelected: Bool,
-        canMoveUp: Bool,
-        canMoveDown: Bool,
-        showsInsertionIndicator: Bool
-    ) -> some View {
-        VStack(alignment: .leading, spacing: isCompactLayout ? 8 : 10) {
-            if showsInsertionIndicator {
-                insertionIndicator
-            }
-
-            HStack(alignment: .top, spacing: 10) {
-                Text(task.emoji)
-                    .font(isCompactLayout ? .headline : .title3)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(task.name)
-                        .font((isCompactLayout ? Font.caption : Font.subheadline).weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(isCompactLayout ? 1 : 2)
-
-                    if let notes = task.notes, !notes.isEmpty {
-                        Text(notes)
-                            .font(isCompactLayout ? .caption2 : .caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(isCompactLayout ? 1 : 2)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
-                if task.todoState != .done {
-                    Menu {
-                        moveMenuItems(for: task)
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(.secondary)
-                    }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
-                }
-            }
-
-            if task.todoState == .paused || task.canceledAt != nil || task.dueDate != nil {
-                HStack(spacing: 6) {
-                    if task.todoState == .paused {
-                        statusBadge(title: "Paused", tint: .orange)
-                    }
-                    if task.canceledAt != nil {
-                        statusBadge(title: "Canceled", tint: .secondary)
-                    } else if let dueDate = task.dueDate {
-                        statusBadge(title: dueLabel(for: dueDate), tint: .blue)
-                    }
-                }
-            }
-
-            if let assignedSprintTitle = task.assignedSprintTitle {
-                HStack(spacing: 6) {
-                    statusBadge(title: assignedSprintTitle, tint: .purple)
-                }
-            } else if let assignedBacklogTitle = task.assignedBacklogTitle {
-                HStack(spacing: 6) {
-                    statusBadge(title: assignedBacklogTitle, tint: .teal)
-                }
-            }
-
-            HStack(spacing: 8) {
-                Image(systemName: "line.3.horizontal")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-
-                Button {
-                    onMoveUp(task.id, columnState, orderedTaskIDs)
-                } label: {
-                    Image(systemName: "arrow.up")
-                }
-                .buttonStyle(.borderless)
-                .disabled(!canMoveUp)
-
-                Button {
-                    onMoveDown(task.id, columnState, orderedTaskIDs)
-                } label: {
-                    Image(systemName: "arrow.down")
-                }
-                .buttonStyle(.borderless)
-                .disabled(!canMoveDown)
-
-                Spacer(minLength: 0)
-
-                if task.todoState == .done {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                }
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-        }
-        .padding(isCompactLayout ? 10 : 12)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.14) : Color(nsColor: .controlBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isSelected ? Color.accentColor.opacity(0.65) : Color.primary.opacity(0.08), lineWidth: 1)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .onTapGesture(count: 2) {
-            onOpenTask(task.id)
-        }
-        .onTapGesture {
-            onSelectTask(task.id)
-        }
-        .onDrag {
-            draggedTaskID = task.id
-            onSelectTask(task.id)
-            return NSItemProvider(object: task.id.uuidString as NSString)
-        }
-        .contextMenu {
-            moveMenuItems(for: task)
-        }
-        .scaleEffect(showsInsertionIndicator ? 0.985 : 1)
-        .animation(.spring(response: 0.2, dampingFraction: 0.86), value: showsInsertionIndicator)
-    }
-
-    @ViewBuilder
-    private func moveMenuItems(for task: HomeFeature.RoutineDisplay) -> some View {
-        if task.todoState != .ready {
-            Button("Move to Ready") {
-                onMoveTask(task.id, .ready)
-            }
-        }
-        if task.todoState != .paused {
-            Button("Pause") {
-                onMoveTask(task.id, .paused)
-            }
-        }
-        if task.todoState != .inProgress {
-            Button("Move to In Progress") {
-                onMoveTask(task.id, .inProgress)
-            }
-        }
-        if task.todoState != .blocked {
-            Button("Move to Blocked") {
-                onMoveTask(task.id, .blocked)
-            }
-        }
-        if task.todoState != .done {
-            Button("Mark Done") {
-                onMoveTask(task.id, .done)
-            }
-        }
-
-        Divider()
-
-        if availableBacklogs.isEmpty {
-            Button("Move to Backlog") {
-                onAssignTaskToBacklog(task.id, nil)
-            }
-            .disabled(task.assignedSprintID == nil && task.assignedBacklogID == nil)
-        } else {
-            Menu("Move to Backlog") {
-                Button("Backlog") {
-                    onAssignTaskToBacklog(task.id, nil)
-                }
-                .disabled(task.assignedSprintID == nil && task.assignedBacklogID == nil)
-
-                ForEach(availableBacklogs) { backlog in
-                    Button(backlog.title) {
-                        onAssignTaskToBacklog(task.id, backlog.id)
-                    }
-                    .disabled(task.assignedSprintID == nil && task.assignedBacklogID == backlog.id)
-                }
-            }
-        }
-
-        activeSprintMenuItems(for: task)
-
-        if !availableSprints.isEmpty {
-            Menu("Assign to Sprint") {
-                ForEach(availableSprints) { sprint in
-                    Button(sprint.title) {
-                        onAssignTaskToSprint(task.id, sprint.id)
-                    }
-                    .disabled(task.assignedSprintID == sprint.id)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var selectedBacklogActiveSprintMenuItems: some View {
-        if activeSprints.count == 1, let activeSprint = activeSprints.first {
-            Button("Assign to \(activeSprint.title)") {
-                assignSelectedBacklogTasks(to: activeSprint.id)
-            }
-        } else if activeSprints.count > 1 {
-            Menu("Assign to Active Sprint") {
-                ForEach(activeSprints) { sprint in
-                    Button(sprint.title) {
-                        assignSelectedBacklogTasks(to: sprint.id)
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func activeSprintMenuItems(for task: HomeFeature.RoutineDisplay) -> some View {
-        if activeSprints.count == 1, let activeSprint = activeSprints.first, task.assignedSprintID != activeSprint.id {
-            Button("Assign to \(activeSprint.title)") {
-                onAssignTaskToSprint(task.id, activeSprint.id)
-            }
-        } else if activeSprints.count > 1 {
-            Menu("Assign to Active Sprint") {
-                ForEach(activeSprints) { sprint in
-                    Button(sprint.title) {
-                        onAssignTaskToSprint(task.id, sprint.id)
-                    }
-                    .disabled(task.assignedSprintID == sprint.id)
-                }
-            }
-        }
-    }
-
-    private func statusBadge(title: String, tint: Color) -> some View {
-        Text(title)
-            .font((isCompactLayout ? Font.system(size: 10) : Font.caption2).weight(.semibold))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 6)
-            .padding(.vertical, isCompactLayout ? 2 : 3)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(tint.opacity(0.12))
-            )
-    }
-
-    private func dueLabel(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
-    }
-
-    private func tint(for state: TodoState) -> Color {
-        switch state {
-        case .ready, .paused:
-            return .orange
-        case .inProgress:
-            return .blue
-        case .blocked:
-            return .red
-        case .done:
-            return .green
-        }
-    }
-
-    private func toggleBacklogSelection(for taskID: UUID) {
-        if selectedBacklogTaskIDs.contains(taskID) {
-            selectedBacklogTaskIDs.remove(taskID)
-        } else {
-            selectedBacklogTaskIDs.insert(taskID)
-        }
-    }
-
-    private func assignSelectedBacklogTasks(to sprintID: UUID?) {
-        let selectedIDs = Array(selectedBacklogTaskIDs)
-        guard !selectedIDs.isEmpty else { return }
-        onAssignTasksToSprint(selectedIDs, sprintID)
-        selectedBacklogTaskIDs.removeAll()
-    }
-
-    private func assignSelectedBacklogTasksToBacklog(_ backlogID: UUID?) {
-        let selectedIDs = Array(selectedBacklogTaskIDs)
-        guard !selectedIDs.isEmpty else { return }
-        onAssignTasksToBacklog(selectedIDs, backlogID)
-        selectedBacklogTaskIDs.removeAll()
-    }
-
-    private func backlogRowBackground(isSelectedForBulkAction: Bool, taskID: UUID) -> Color {
-        if isSelectedForBulkAction {
-            return Color.accentColor.opacity(0.18)
-        }
-        if selectedTaskID == taskID {
-            return Color.accentColor.opacity(0.12)
-        }
-        return Color.clear
-    }
-
-    @ViewBuilder
-    private func boardColumnDropSpacer(_ column: Column, isHighlighted: Bool) -> some View {
-        VStack(spacing: 8) {
-            if isHighlighted {
-                insertionIndicator
-            }
-
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(
-                    isHighlighted
-                        ? column.tint.opacity(0.14)
-                        : Color.clear
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(
-                            isHighlighted
-                                ? column.tint.opacity(0.45)
-                                : Color.primary.opacity(0.06),
-                            style: StrokeStyle(lineWidth: isHighlighted ? 1.5 : 1, dash: [6, 6])
-                        )
-                )
-                .frame(maxWidth: .infinity, minHeight: column.tasks.isEmpty ? 160 : (isCompactLayout ? 56 : 72))
-        }
-        .animation(.spring(response: 0.2, dampingFraction: 0.86), value: isHighlighted)
-    }
-
     private func backgroundFill(for state: TodoState) -> Color {
         if highlightedColumnState == state {
             return Color.accentColor.opacity(0.08)
@@ -686,157 +201,5 @@ struct HomeMacTodoBoardView: View {
             return Color.accentColor.opacity(0.5)
         }
         return Color.primary.opacity(0.06)
-    }
-
-    private var insertionIndicator: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(Color.accentColor)
-                .frame(width: 8, height: 8)
-
-            Rectangle()
-                .fill(Color.accentColor)
-                .frame(height: 3)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 4)
-        .transition(.opacity.combined(with: .scale(scale: 0.98)))
-    }
-
-    private var boardEmptyState: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "square.grid.3x3.topleft.filled")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 6) {
-                Text("Nothing on this board yet")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-
-                Text("Try another scope, change filters, or move a todo into this board.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(32)
-    }
-}
-
-private struct BoardCardDropDelegate: DropDelegate {
-    let destinationTaskID: UUID
-    let columnState: TodoState
-    let orderedTaskIDs: [UUID]
-    @Binding var draggedTaskID: UUID?
-    @Binding var highlightedColumnState: TodoState?
-    @Binding var hoverTargetTaskID: UUID?
-    @Binding var trailingDropColumnState: TodoState?
-    let onDropTask: (UUID, TodoState, [UUID]) -> Void
-
-    func validateDrop(info: DropInfo) -> Bool {
-        draggedTaskID != nil
-    }
-
-    func dropEntered(info: DropInfo) {
-        highlightedColumnState = columnState
-        hoverTargetTaskID = destinationTaskID
-        trailingDropColumnState = nil
-    }
-
-    func dropExited(info: DropInfo) {
-        if highlightedColumnState == columnState {
-            highlightedColumnState = nil
-        }
-        if hoverTargetTaskID == destinationTaskID {
-            hoverTargetTaskID = nil
-        }
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        defer {
-            clearDragState()
-        }
-
-        guard let draggedTaskID,
-              draggedTaskID != destinationTaskID,
-              let destinationIndex = orderedTaskIDs.firstIndex(of: destinationTaskID) else {
-            return false
-        }
-
-        let reorderedIDs = reorderedTaskIDs(
-            draggedTaskID: draggedTaskID,
-            destinationIndex: destinationIndex,
-            orderedTaskIDs: orderedTaskIDs
-        )
-        onDropTask(draggedTaskID, columnState, reorderedIDs)
-        return true
-    }
-
-    private func reorderedTaskIDs(
-        draggedTaskID: UUID,
-        destinationIndex: Int,
-        orderedTaskIDs: [UUID]
-    ) -> [UUID] {
-        var result = orderedTaskIDs.filter { $0 != draggedTaskID }
-        let boundedIndex = min(max(destinationIndex, 0), result.count)
-        result.insert(draggedTaskID, at: boundedIndex)
-        return result
-    }
-
-    private func clearDragState() {
-        highlightedColumnState = nil
-        hoverTargetTaskID = nil
-        trailingDropColumnState = nil
-        draggedTaskID = nil
-    }
-}
-
-private struct BoardColumnDropDelegate: DropDelegate {
-    let columnState: TodoState
-    let orderedTaskIDs: [UUID]
-    @Binding var draggedTaskID: UUID?
-    @Binding var highlightedColumnState: TodoState?
-    @Binding var hoverTargetTaskID: UUID?
-    @Binding var trailingDropColumnState: TodoState?
-    let onDropTask: (UUID, TodoState, [UUID]) -> Void
-
-    func validateDrop(info: DropInfo) -> Bool {
-        draggedTaskID != nil
-    }
-
-    func dropEntered(info: DropInfo) {
-        highlightedColumnState = columnState
-        hoverTargetTaskID = nil
-        trailingDropColumnState = columnState
-    }
-
-    func dropExited(info: DropInfo) {
-        if highlightedColumnState == columnState {
-            highlightedColumnState = nil
-        }
-        if trailingDropColumnState == columnState {
-            trailingDropColumnState = nil
-        }
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        defer {
-            clearDragState()
-        }
-
-        guard let draggedTaskID else { return false }
-        var reorderedIDs = orderedTaskIDs.filter { $0 != draggedTaskID }
-        reorderedIDs.append(draggedTaskID)
-        onDropTask(draggedTaskID, columnState, reorderedIDs)
-        return true
-    }
-
-    private func clearDragState() {
-        highlightedColumnState = nil
-        hoverTargetTaskID = nil
-        trailingDropColumnState = nil
-        draggedTaskID = nil
     }
 }

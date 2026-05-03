@@ -119,7 +119,7 @@ struct HomeFeature {
     }
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -1342,14 +1342,11 @@ struct HomeFeature {
     }
 
     private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {
-        let restoredState = HomeTemporaryViewStateMapper.restore(
-            from: persistedState,
+        let restoredState = HomeFeatureTemporaryViewStateSupport.applyBase(
+            persistedState,
+            to: &state,
             defaultHideUnavailableRoutines: appSettingsClient.hideUnavailableRoutines()
         )
-        state.hideUnavailableRoutines = restoredState.hideUnavailableRoutines
-        state.taskFilters = restoredState.taskFilters
-        state.timelineFilters = restoredState.timelineFilters
-        state.statsFilters = restoredState.statsFilters
 
         if let rawValue = restoredState.macSidebarModeRawValue,
            let mode = MacSidebarMode(rawValue: rawValue) {
@@ -1369,12 +1366,8 @@ struct HomeFeature {
         appSettingsClient.setTemporaryViewState(
             HomeTemporaryViewStateMapper.makeTemporaryViewState(
                 existing: appSettingsClient.temporaryViewState(),
-                values: HomeTemporaryViewStateValues(
-                    hideUnavailableRoutines: state.hideUnavailableRoutines,
-                    taskListModeRawValue: state.taskListMode.rawValue,
-                    taskFilters: state.taskFilters,
-                    timelineFilters: state.timelineFilters,
-                    statsFilters: state.statsFilters,
+                values: HomeFeatureTemporaryViewStateSupport.makeValues(
+                    from: state,
                     macSidebarModeRawValue: state.macSidebarMode.rawValue,
                     macSelectedSettingsSectionRawValue: state.selectedSettingsSection?.rawValue
                 )

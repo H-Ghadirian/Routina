@@ -1,80 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
 
-private struct WrappingHStack: Layout {
-    let horizontalSpacing: CGFloat
-    let verticalSpacing: CGFloat
-
-    init(horizontalSpacing: CGFloat = 8, verticalSpacing: CGFloat = 8) {
-        self.horizontalSpacing = horizontalSpacing
-        self.verticalSpacing = verticalSpacing
-    }
-
-    func sizeThatFits(
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var currentRowWidth: CGFloat = 0
-        var currentRowHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-        var maxRowWidth: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            let spacing = currentRowWidth == 0 ? 0 : horizontalSpacing
-
-            if currentRowWidth + spacing + size.width > maxWidth, currentRowWidth > 0 {
-                totalHeight += currentRowHeight + verticalSpacing
-                maxRowWidth = max(maxRowWidth, currentRowWidth)
-                currentRowWidth = size.width
-                currentRowHeight = size.height
-            } else {
-                currentRowWidth += spacing + size.width
-                currentRowHeight = max(currentRowHeight, size.height)
-            }
-        }
-
-        maxRowWidth = max(maxRowWidth, currentRowWidth)
-        totalHeight += currentRowHeight
-
-        return CGSize(width: maxRowWidth, height: totalHeight)
-    }
-
-    func placeSubviews(
-        in bounds: CGRect,
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            let proposedX = x == bounds.minX ? x : x + horizontalSpacing
-
-            if proposedX + size.width > bounds.maxX, x > bounds.minX {
-                x = bounds.minX
-                y += rowHeight + verticalSpacing
-                rowHeight = 0
-            } else if x > bounds.minX {
-                x += horizontalSpacing
-            }
-
-            subview.place(
-                at: CGPoint(x: x, y: y),
-                proposal: ProposedViewSize(width: size.width, height: size.height)
-            )
-
-            x += size.width
-            rowHeight = max(rowHeight, size.height)
-        }
-    }
-}
-
 extension View {
     func routinaHomeSidebarColumnWidth() -> some View {
         self
@@ -231,42 +157,15 @@ extension HomeTCAView {
     @ViewBuilder
     var locationFilterPanel: some View {
         if hasPlaceAwareContent {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    Label("Place Filtering", systemImage: "location.viewfinder")
-                        .font(.subheadline.weight(.semibold))
-
-                    Spacer(minLength: 0)
-
-                    if store.locationSnapshot.authorizationStatus.isAuthorized {
-                        Toggle("Hide unavailable", isOn: hideUnavailableRoutinesBinding)
-                            .labelsHidden()
-                    }
-                }
-
-                Picker("Place Filter", selection: manualPlaceFilterBinding) {
-                    Text(placeFilterAllTitle).tag(Optional<UUID>.none)
-                    ForEach(sortedRoutinePlaces) { place in
-                        Text(place.displayName).tag(Optional(place.id))
-                    }
-                }
-                .pickerStyle(.menu)
-
-                Text(manualPlaceFilterDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text(locationStatusText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.secondary.opacity(0.08))
+            HomeIOSLocationFilterPanel(
+                isLocationAuthorized: store.locationSnapshot.authorizationStatus.isAuthorized,
+                places: sortedRoutinePlaces,
+                placeFilterAllTitle: placeFilterAllTitle,
+                manualPlaceFilterDescription: manualPlaceFilterDescription,
+                locationStatusText: locationStatusText,
+                hideUnavailableRoutines: hideUnavailableRoutinesBinding,
+                selectedPlaceID: manualPlaceFilterBinding
             )
-            .padding(.horizontal)
         }
     }
 
@@ -423,93 +322,15 @@ extension HomeTCAView {
     }
 
     func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
-        let metadataText = rowMetadataText(for: task)
-
-        return HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(rowIconBackgroundColor(for: task))
-                Text(task.emoji)
-                    .font(.title3)
-                if task.hasImage {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            Image(systemName: "photo.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.primary)
-                                .padding(4)
-                                .background(.ultraThinMaterial, in: Circle())
-                        }
-                    }
-                    .padding(2)
-                }
-            }
-            .frame(width: 40, height: 40)
-            .overlay(alignment: .topLeading) {
-                Text("\(rowNumber)")
-                    .font(.caption2.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
-                    .offset(x: -10, y: -8)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.name)
-                    .font(.headline)
-                    .lineLimit(1)
-                    .layoutPriority(1)
-
-                HStack(spacing: 6) {
-                    if store.taskListMode == .all {
-                        taskTypeBadge(for: task)
-                    }
-                    statusBadge(for: task)
-                }
-
-                if let metadataText {
-                    Text(metadataText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                if !task.tags.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(task.tags, id: \.self) { tag in
-                            Text("#\(tag)")
-                                .font(.caption2)
-                                .foregroundStyle(tagColor(for: tag) ?? .secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .lineLimit(1)
-                }
-
-                if !task.goalTitles.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(task.goalTitles, id: \.self) { goal in
-                            Label(goal, systemImage: "target")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        HomeIOSRoutineRowView(
+            task: task,
+            rowNumber: rowNumber,
+            metadataText: rowMetadataText(for: task),
+            showTaskTypeBadge: store.taskListMode == .all,
+            statusBadgeStyle: badgeStyle(for: task).map { HomeStatusBadgeStyle($0) },
+            iconBackgroundColor: rowIconBackgroundColor(for: task),
+            tagColor: tagColor(for:)
+        )
     }
 
     private func tagColor(for tag: String) -> Color? {

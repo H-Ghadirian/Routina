@@ -190,6 +190,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeTaskListSorter.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadEffectFactory.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadHandler.swift",
+                "SharedCore/Features/Home/HomeFeatureTemporaryViewStateSupport.swift",
                 "SharedCore/Features/Home/HomeTaskLoadSupport.swift",
                 "SharedCore/Features/Home/HomeTaskOrderingSupport.swift",
                 "SharedCore/Features/Home/HomeTaskRowActionPresentation.swift",

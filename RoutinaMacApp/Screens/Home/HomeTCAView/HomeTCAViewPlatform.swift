@@ -25,32 +25,38 @@ extension HomeTCAView {
 
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
+        HomeMacHomeToolbarContent(
+            mode: homeToolbarMode,
+            goalsStore: goalsStore,
+            doneCount: store.doneStats.totalCount,
+            canceledCount: store.doneStats.canceledTotalCount,
+            routineCount: store.routineTasks.filter { !$0.isOneOffTask }.count,
+            todoCount: store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count,
+            boardOpenCount: boardPresentation.openTodoCount,
+            boardInProgressCount: boardPresentation.inProgressTodoCount,
+            boardBlockedCount: boardPresentation.blockedTodoCount,
+            boardDoneCount: boardPresentation.doneTodoCount,
+            isBoardBacklogScope: boardPresentation.isBacklogScope,
+            finishableSprints: store.isMacFilterDetailPresented ? [] : boardFinishableSprintsInCurrentScope,
+            isBoardInspectorPresented: isMacBoardTicketInspectorPresented,
+            onQuickAdd: {
+                isQuickAddSheetPresented = true
+            },
+            onToggleBoardInspector: toggleMacBoardTicketInspector,
+            onFinishSprint: { sprintID in
+                store.send(.finishSprintTapped(sprintID))
+            }
+        )
+    }
+
+    private var homeToolbarMode: HomeMacHomeToolbarContent.Mode {
         if isMacBoardMode {
-            ToolbarItemGroup(placement: .primaryAction) {
-                macBoardFinishSprintToolbarItem
-                macBoardOpenCountToolbarItem
-                macBoardInProgressCountToolbarItem
-                macBoardBlockedCountToolbarItem
-                if !boardPresentation.isBacklogScope {
-                    macBoardDoneCountToolbarItem
-                }
-            }
-        } else if isMacGoalsMode {
-            ToolbarItem(placement: .primaryAction) {
-                MacGoalsNewGoalButton(store: goalsStore)
-            }
-        } else {
-            ToolbarItemGroup(placement: .primaryAction) {
-                MacToolbarIconButton(title: "Quick Add", systemImage: "text.badge.plus") {
-                    isQuickAddSheetPresented = true
-                }
-                .help("Quick add")
-                macDoneCountToolbarItem
-                macCanceledCountToolbarItem
-                macRoutineCountToolbarItem
-                macTodoCountToolbarItem
-            }
+            return .board
         }
+        if isMacGoalsMode {
+            return .goals
+        }
+        return .standard
     }
 
     var platformNavigationContent: some View {
@@ -123,7 +129,16 @@ extension HomeTCAView {
     @ToolbarContentBuilder
     var macBoardDetailToolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            macBoardTicketInspectorToolbarItem
+            HomeMacBoardInspectorToolbarButton(
+                isPresented: isMacBoardTicketInspectorPresented,
+                onToggle: toggleMacBoardTicketInspector
+            )
+        }
+    }
+
+    private func toggleMacBoardTicketInspector() {
+        withAnimation(.easeInOut(duration: 0.22)) {
+            isMacBoardTicketInspectorPresented.toggle()
         }
     }
 
@@ -163,34 +178,9 @@ extension HomeTCAView {
 
     @ViewBuilder
     func platformSearchField(searchText: Binding<String>) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-
-            TextField(searchPlaceholderText, text: searchText)
-                .textFieldStyle(.plain)
-
-            if !searchText.wrappedValue.isEmpty {
-                Button {
-                    searchText.wrappedValue = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.quaternary.opacity(0.45))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(.white.opacity(0.06), lineWidth: 1)
+        HomeMacSearchField(
+            placeholder: searchPlaceholderText,
+            text: searchText
         )
     }
 
@@ -398,116 +388,6 @@ extension HomeTCAView {
         return "This will permanently remove \(routineName) and its logs."
     }
 
-    var macDoneCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(store.doneStats.totalCount) dones",
-            systemImage: "checkmark.seal.fill",
-            tintColor: .systemGreen
-        )
-        .help("\(store.doneStats.totalCount) total dones")
-    }
-
-    var macCanceledCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(store.doneStats.canceledTotalCount) cancels",
-            systemImage: "xmark.seal.fill",
-            tintColor: .systemOrange
-        )
-        .help("\(store.doneStats.canceledTotalCount) total cancels")
-    }
-
-    var macRoutineCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(store.routineTasks.filter { !$0.isOneOffTask }.count) routines",
-            systemImage: "arrow.clockwise",
-            tintColor: .secondaryLabelColor
-        )
-        .help("Total routines")
-    }
-
-    var macTodoCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(store.routineTasks.filter { $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count) todos",
-            systemImage: "checkmark.circle",
-            tintColor: .secondaryLabelColor
-        )
-        .help("Total todos")
-    }
-
-    var macBoardOpenCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(boardPresentation.openTodoCount) open",
-            systemImage: "square.grid.3x3.topleft.filled",
-            tintColor: .secondaryLabelColor
-        )
-        .help("Open todos in the current board view")
-    }
-
-    var macBoardTicketInspectorToolbarItem: some View {
-        MacToolbarIconButton(
-            title: isMacBoardTicketInspectorPresented ? "Hide Ticket Details" : "Show Ticket Details",
-            systemImage: "sidebar.right"
-        ) {
-            withAnimation(.easeInOut(duration: 0.22)) {
-                isMacBoardTicketInspectorPresented.toggle()
-            }
-        }
-        .help(isMacBoardTicketInspectorPresented ? "Hide ticket details" : "Show ticket details")
-    }
-
-    @ViewBuilder
-    var macBoardFinishSprintToolbarItem: some View {
-        if !store.isMacFilterDetailPresented {
-            let finishableSprints = boardFinishableSprintsInCurrentScope
-
-            if finishableSprints.count == 1, let sprint = finishableSprints.first {
-                Button {
-                    store.send(.finishSprintTapped(sprint.id))
-                } label: {
-                    Label("Finish Sprint", systemImage: "flag.checkered")
-                }
-                .help("Finish \(sprint.title)")
-            } else if finishableSprints.count > 1 {
-                Menu {
-                    ForEach(finishableSprints) { sprint in
-                        Button(sprint.title) {
-                            store.send(.finishSprintTapped(sprint.id))
-                        }
-                    }
-                } label: {
-                    Label("Finish Sprint", systemImage: "flag.checkered")
-                }
-                .help("Finish an active sprint")
-            }
-        }
-    }
-
-    var macBoardInProgressCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(boardPresentation.inProgressTodoCount) in progress",
-            systemImage: "arrow.clockwise.circle.fill",
-            tintColor: .systemBlue
-        )
-        .help("In-progress todos in the current board view")
-    }
-
-    var macBoardBlockedCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(boardPresentation.blockedTodoCount) blocked",
-            systemImage: "exclamationmark.circle.fill",
-            tintColor: .systemRed
-        )
-        .help("Blocked todos in the current board view")
-    }
-
-    var macBoardDoneCountToolbarItem: some View {
-        MacToolbarStatusBadge(
-            title: "\(boardPresentation.doneTodoCount) done",
-            systemImage: "checkmark.circle.fill",
-            tintColor: .systemGreen
-        )
-        .help("Done todos in the current board view")
-    }
 }
 
 struct HomeMacView: View {
