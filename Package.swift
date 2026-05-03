@@ -153,6 +153,7 @@ let package = Package(
                 "SharedCore/Domain/TimelineLogic.swift",
                 "SharedCore/Domain/TodoStateTiming.swift",
                 "SharedCore/Dependencies/RoutineDataTransferClient.swift",
+                "SharedCore/Features/Timeline/TimelineFeature.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineFeature.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineBasicsSupport.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineChecklistSupport.swift",
