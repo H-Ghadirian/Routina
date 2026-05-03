@@ -238,6 +238,19 @@ struct StatsChartInsightRow: View {
     }
 }
 
+enum StatsChartFill {
+    static func focusBar(colorScheme: ColorScheme) -> LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.teal.opacity(colorScheme == .dark ? 0.78 : 0.64),
+                Color.mint.opacity(colorScheme == .dark ? 0.6 : 0.5)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+}
+
 struct StatsEmptyChartStateView: View {
     let systemImage: String
     let message: String

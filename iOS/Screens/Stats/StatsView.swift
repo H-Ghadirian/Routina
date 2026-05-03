@@ -708,14 +708,7 @@ struct StatsView: View {
                         .foregroundStyle(
                             isHighlighted
                                 ? AnyShapeStyle(highlightBarFill)
-                                : AnyShapeStyle(LinearGradient(
-                                    colors: [
-                                        Color.teal.opacity(colorScheme == .dark ? 0.78 : 0.64),
-                                        Color.mint.opacity(colorScheme == .dark ? 0.6 : 0.5)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ))
+                                : AnyShapeStyle(StatsChartFill.focusBar(colorScheme: colorScheme))
                         )
                         .opacity(point.seconds == 0 ? 0.35 : 1)
                     }
