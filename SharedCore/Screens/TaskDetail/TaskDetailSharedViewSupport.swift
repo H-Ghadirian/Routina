@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
 import UniformTypeIdentifiers
 
 struct TaskDetailHeaderBadgeItem: Identifiable {
@@ -310,6 +315,29 @@ struct RoutineAttachmentFileDocument: FileDocument {
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         FileWrapper(regularFileWithContents: data)
+    }
+}
+
+private enum TaskDetailCopyTextSupport {
+    static func copy(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #elseif os(iOS)
+        UIPasteboard.general.string = text
+        #endif
+    }
+}
+
+extension View {
+    func taskDetailCopyableText(_ text: String) -> some View {
+        contextMenu {
+            Button {
+                TaskDetailCopyTextSupport.copy(text)
+            } label: {
+                Label("Copy", systemImage: "doc.on.doc")
+            }
+        }
     }
 }
 

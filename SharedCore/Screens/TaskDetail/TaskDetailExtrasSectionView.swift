@@ -34,14 +34,16 @@ struct TaskDetailExtrasSectionView: View {
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .taskDetailCopyableText(notes)
             }
 
             if let linkURL {
+                let displayText = linkText ?? linkURL.absoluteString
                 Link(destination: linkURL) {
                     HStack(spacing: 8) {
                         Image(systemName: "link")
                             .foregroundStyle(.blue)
-                        Text(linkText ?? linkURL.absoluteString)
+                        Text(displayText)
                             .font(.subheadline)
                             .foregroundStyle(.blue)
                             .lineLimit(2)
@@ -49,6 +51,7 @@ struct TaskDetailExtrasSectionView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .taskDetailCopyableText(displayText)
             }
         }
         .padding(12)

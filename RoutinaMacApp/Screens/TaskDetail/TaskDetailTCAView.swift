@@ -372,6 +372,7 @@ struct TaskDetailTCAView: View {
     @ViewBuilder
     private var headerLinkBox: some View {
         if let linkURL = store.task.resolvedLinkURL {
+            let displayText = store.task.link ?? linkURL.absoluteString
             VStack(alignment: .leading, spacing: 4) {
                 Text("DETAILS")
                     .font(.caption2.weight(.semibold))
@@ -381,7 +382,7 @@ struct TaskDetailTCAView: View {
                         Image(systemName: "link")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.blue)
-                        Text(store.task.link ?? linkURL.absoluteString)
+                        Text(displayText)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.blue)
                             .lineLimit(2)
@@ -389,6 +390,7 @@ struct TaskDetailTCAView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .taskDetailCopyableText(displayText)
             }
             .detailHeaderBoxStyle()
         }

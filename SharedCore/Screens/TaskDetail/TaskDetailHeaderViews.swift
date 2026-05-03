@@ -31,6 +31,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
                     .font(.title2.weight(.bold))
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .taskDetailCopyableText(title)
 
                 if let statusContextMessage {
                     Text(statusContextMessage)
