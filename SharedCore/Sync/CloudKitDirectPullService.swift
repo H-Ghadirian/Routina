@@ -1039,7 +1039,7 @@ enum CloudKitDirectPullService {
         )
 
         return try context.fetch(descriptor).first { log in
-            timestampsMatch(log.timestamp, payload.timestamp)
+            CloudKitDirectPullMergeSupport.timestampsMatch(log.timestamp, payload.timestamp)
         }
     }
 
@@ -1047,9 +1047,12 @@ enum CloudKitDirectPullService {
     private static func deduplicateLogs(in context: ModelContext) throws {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
 
-        var keptLogIDsByKey: [LogDeduplicationKey: UUID] = [:]
+        var keptLogIDsByKey: [CloudKitDirectPullMergeSupport.LogDeduplicationKey: UUID] = [:]
         for log in logs {
-            let key = LogDeduplicationKey(taskID: log.taskID, timestamp: log.timestamp)
+            let key = CloudKitDirectPullMergeSupport.LogDeduplicationKey(
+                taskID: log.taskID,
+                timestamp: log.timestamp
+            )
             if let keptLogID = keptLogIDsByKey[key], keptLogID != log.id {
                 context.delete(log)
             } else {
@@ -1078,7 +1081,10 @@ enum CloudKitDirectPullService {
         for sameNamedPlaces in placesByNormalizedName.values {
             guard sameNamedPlaces.count > 1 else { continue }
 
-            let keeper = preferredPlaceToKeep(from: sameNamedPlaces, linkedCounts: linkedCounts)
+            let keeper = CloudKitDirectPullMergeSupport.preferredPlaceToKeep(
+                from: sameNamedPlaces,
+                linkedCounts: linkedCounts
+            )
             mergedPlaceIDs[keeper.id] = keeper.id
             for place in sameNamedPlaces where place.id != keeper.id {
                 try migratePlaceReferences(from: place.id, to: keeper.id, in: context)
@@ -1180,27 +1186,6 @@ enum CloudKitDirectPullService {
         return place?.id ?? currentPlaceID
     }
 
-    private struct LogDeduplicationKey: Hashable {
-        let taskID: UUID
-        let timestampBucket: Int?
-
-        init(taskID: UUID, timestamp: Date?) {
-            self.taskID = taskID
-            self.timestampBucket = timestamp.map { Int($0.timeIntervalSince1970.rounded()) }
-        }
-    }
-
-    private static func timestampsMatch(_ lhs: Date?, _ rhs: Date?) -> Bool {
-        switch (lhs, rhs) {
-        case (nil, nil):
-            return true
-        case let (lhs?, rhs?):
-            return abs(lhs.timeIntervalSince1970 - rhs.timeIntervalSince1970) < 1
-        default:
-            return false
-        }
-    }
-
     @MainActor
     private static func clearPlaceReference(placeID: UUID, in context: ModelContext) throws {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -1256,33 +1241,9 @@ enum CloudKitDirectPullService {
         }
 
         guard !matchingPlaces.isEmpty else { return nil }
-        return preferredPlaceToKeep(from: matchingPlaces, linkedCounts: linkedCounts)
-    }
-
-    private static func preferredPlaceToKeep(
-        from places: [RoutinePlace],
-        linkedCounts: [UUID: Int]
-    ) -> RoutinePlace {
-        places.min { lhs, rhs in
-            placeSelectionKey(lhs, linkedCounts: linkedCounts) < placeSelectionKey(rhs, linkedCounts: linkedCounts)
-        } ?? places[0]
-    }
-
-    private static func placeSelectionKey(
-        _ place: RoutinePlace,
-        linkedCounts: [UUID: Int]
-    ) -> (Int, Int, Date, String, String) {
-        let rawName = place.name
-        let trimmedName = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let linkedCountPenalty = -linkedCounts[place.id, default: 0]
-        let whitespacePenalty = rawName == trimmedName ? 0 : 1
-        let foldedName = trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        return (
-            linkedCountPenalty,
-            whitespacePenalty,
-            place.createdAt,
-            foldedName,
-            place.id.uuidString.lowercased()
+        return CloudKitDirectPullMergeSupport.preferredPlaceToKeep(
+            from: matchingPlaces,
+            linkedCounts: linkedCounts
         )
     }
 }
