@@ -20,9 +20,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let boardDoneCount: Int
     let isBoardBacklogScope: Bool
     let finishableSprints: [BoardSprint]
-    let isBoardInspectorPresented: Bool
     let onQuickAdd: () -> Void
-    let onToggleBoardInspector: () -> Void
     let onFinishSprint: (UUID) -> Void
 
     var body: some ToolbarContent {
@@ -40,10 +38,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     private var boardToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             finishSprintControl
-            HomeMacBoardInspectorToolbarButton(
-                isPresented: isBoardInspectorPresented,
-                onToggle: onToggleBoardInspector
-            )
             MacToolbarStatusBadge(
                 title: "\(boardOpenCount) open",
                 systemImage: "square.grid.3x3.topleft.filled",

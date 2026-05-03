@@ -38,11 +38,9 @@ extension HomeTCAView {
             boardDoneCount: boardPresentation.doneTodoCount,
             isBoardBacklogScope: boardPresentation.isBacklogScope,
             finishableSprints: store.isMacFilterDetailPresented ? [] : boardFinishableSprintsInCurrentScope,
-            isBoardInspectorPresented: isMacBoardTicketInspectorPresented,
             onQuickAdd: {
                 isQuickAddSheetPresented = true
             },
-            onToggleBoardInspector: toggleMacBoardTicketInspector,
             onFinishSprint: { sprintID in
                 store.send(.finishSprintTapped(sprintID))
             }
