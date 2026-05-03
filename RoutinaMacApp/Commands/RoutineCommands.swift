@@ -9,17 +9,19 @@ extension Notification.Name {
 }
 
 struct RoutineCommands: Commands {
+    #if !SWIFT_PACKAGE
     @AppStorage(
         UserDefaultStringValueKey.macQuickAddShortcut.rawValue,
         store: SharedDefaults.app
     ) private var quickAddShortcutRawValue = MacQuickAddShortcut.defaultValue.rawValue
+    #endif
 
     var body: some Commands {
         CommandGroup(before: .appSettings) {
             Button("Quick Add") {
                 NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
             }
-            .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.eventModifiers)
+            .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.modifiers)
 
             Button("Routines") {
                 NotificationCenter.default.post(name: .routinaMacOpenRoutinesInSidebar, object: nil)
@@ -38,7 +40,14 @@ struct RoutineCommands: Commands {
         }
     }
 
-    private var quickAddShortcut: MacQuickAddShortcut {
-        MacQuickAddShortcut(rawValue: quickAddShortcutRawValue) ?? .defaultValue
+    private var quickAddShortcut: (keyEquivalent: KeyEquivalent, modifiers: EventModifiers) {
+        #if SWIFT_PACKAGE
+        ("n", [.option, .command])
+        #else
+        {
+            let shortcut = MacQuickAddShortcut(rawValue: quickAddShortcutRawValue) ?? .defaultValue
+            return (shortcut.keyEquivalent, shortcut.eventModifiers)
+        }()
+        #endif
     }
 }
