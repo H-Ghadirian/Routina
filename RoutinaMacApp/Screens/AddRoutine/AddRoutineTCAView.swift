@@ -248,83 +248,74 @@ struct AddRoutineTCAView: View {
         RoutineChecklistItem.normalizedTitle(store.checklist.checklistItemDraftTitle) == nil
     }
 
+    var formPresentation: TaskFormPresentation {
+        TaskFormPresentation(
+            taskType: store.taskType,
+            scheduleMode: store.schedule.scheduleMode,
+            recurrenceKind: store.schedule.recurrenceKind,
+            recurrenceHasExplicitTime: store.schedule.recurrenceHasExplicitTime,
+            recurrenceWeekday: store.schedule.recurrenceWeekday,
+            recurrenceDayOfMonth: store.schedule.recurrenceDayOfMonth,
+            importance: store.basics.importance,
+            urgency: store.basics.urgency,
+            hasAvailableTags: !store.organization.availableTags.isEmpty,
+            hasAvailableGoals: !store.organization.availableGoals.isEmpty,
+            goalDraft: store.organization.goalDraft,
+            selectedPlaceName: selectedPlaceName,
+            canAutoAssumeDailyDone: store.canAutoAssumeDailyDone
+        )
+    }
+
+    private var selectedPlaceName: String? {
+        guard let selectedPlaceID = store.basics.selectedPlaceID else { return nil }
+        return store.organization.availablePlaces.first { $0.id == selectedPlaceID }?.name
+    }
+
     var isStepBasedMode: Bool {
-        store.schedule.scheduleMode == .fixedInterval || store.schedule.scheduleMode == .softInterval || store.schedule.scheduleMode == .oneOff
+        formPresentation.isStepBasedMode
     }
 
     var showsRepeatControls: Bool {
-        store.schedule.scheduleMode != .derivedFromChecklist && store.schedule.scheduleMode != .oneOff
+        formPresentation.showsRepeatControls
     }
 
     var taskTypeDescription: String {
-        switch store.taskType {
-        case .routine:
-            return "Routines repeat on a schedule and stay in your rotation."
-        case .todo:
-            return "Todos are one-off tasks. Once you finish one, it stays completed."
-        }
+        formPresentation.taskTypeDescription
     }
 
     var scheduleModeDescription: String {
-        switch store.schedule.scheduleMode {
-        case .fixedInterval:
-            return "Use one overall repeat interval for the whole routine."
-        case .softInterval:
-            return "Keep this routine visible all the time and gently highlight it again after a while."
-        case .fixedIntervalChecklist:
-            return "Use one overall repeat interval and complete every checklist item to finish the routine."
-        case .derivedFromChecklist:
-            return "Use checklist item due dates to decide when the routine is due."
-        case .oneOff:
-            return "This task does not repeat."
-        }
+        formPresentation.scheduleModeDescription
     }
 
     var checklistSectionDescription: String {
-        switch store.schedule.scheduleMode {
-        case .fixedIntervalChecklist:
-            return "The routine is done when every checklist item is completed."
-        case .derivedFromChecklist:
-            return "Each item gets its own due date. The routine becomes due when the earliest item is due."
-        case .fixedInterval, .softInterval, .oneOff:
-            return ""
-        }
+        formPresentation.checklistSectionDescription(includesDerivedChecklistDueDetail: true)
     }
 
     var placeSelectionDescription: String {
-        if let selectedPlaceID = store.basics.selectedPlaceID,
-           let place = store.organization.availablePlaces.first(where: { $0.id == selectedPlaceID }) {
-            return "Show this task when you are at \(place.name)."
-        }
-        return "Anywhere means the task is always visible."
+        formPresentation.placeSelectionDescription
     }
 
     var importanceUrgencyDescription: String {
-        "\(store.basics.importance.title) importance and \(store.basics.urgency.title.lowercased()) urgency map to \(store.basics.priority.title.lowercased()) priority for sorting."
+        formPresentation.importanceUrgencyDescription(
+            includesDerivedPriority: true,
+            priority: store.basics.priority
+        )
     }
 
     var stepsSectionDescription: String {
-        if store.schedule.scheduleMode == .oneOff {
-            return "Steps run in order. Leave this empty for a single-step todo."
-        }
-        return "Steps run in order. Leave this empty for a one-step routine."
+        formPresentation.stepsSectionDescription
     }
 
     var tagSectionHelpText: String {
-        if store.organization.availableTags.isEmpty {
-            return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
-        }
-        return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
+        formPresentation.tagSectionHelpText
     }
 
     var notesHelpText: String {
-        store.taskType == .todo
-            ? "Capture extra context, links, or reminders for this todo."
-            : "Add any details you want to keep with this routine."
+        formPresentation.notesHelpText
     }
 
     var linkHelpText: String {
-        "Add a website to open from the task detail screen. If you skip the scheme, https will be used."
+        formPresentation.linkHelpText
     }
 
     var tagComposer: some View {
@@ -455,26 +446,20 @@ struct AddRoutineTCAView: View {
         frequency: AddRoutineFeature.Frequency,
         frequencyValue: Int
     ) -> String {
-        if frequencyValue == 1 {
-            switch frequency {
-            case .day:
-                return "Every day"
-            case .week:
-                return "Every week"
-            case .month:
-                return "Every month"
-            }
+        let unit: TaskFormFrequencyUnit
+        switch frequency {
+        case .day:
+            unit = .day
+        case .week:
+            unit = .week
+        case .month:
+            unit = .month
         }
-
-        let unit = frequency.singularLabel
-        return "Every \(frequencyValue) \(unit)s"
+        return TaskFormPresentation.stepperLabel(unit: unit, value: frequencyValue)
     }
 
     private func checklistIntervalLabel(for intervalDays: Int) -> String {
-        if intervalDays == 1 {
-            return "Runs out in 1 day"
-        }
-        return "Runs out in \(intervalDays) days"
+        TaskFormPresentation.checklistIntervalLabel(for: intervalDays)
     }
 
     @ViewBuilder
@@ -535,7 +520,7 @@ struct AddRoutineTCAView: View {
                     }
                 }
 
-                Text("Due every \(weekdayName(for: store.schedule.recurrenceWeekday)).")
+                Text(formPresentation.weeklyRecurrenceSummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -543,10 +528,10 @@ struct AddRoutineTCAView: View {
         case .monthlyDay:
             Section(header: Text("Day of Month")) {
                 Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
-                    Text("Every \(ordinalDay(store.schedule.recurrenceDayOfMonth))")
+                    Text("Every \(TaskFormPresentation.ordinalDay(store.schedule.recurrenceDayOfMonth))")
                 }
 
-                Text("Due on the \(ordinalDay(store.schedule.recurrenceDayOfMonth)) of each month.")
+                Text(formPresentation.monthlyRecurrenceSummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -554,16 +539,7 @@ struct AddRoutineTCAView: View {
     }
 
     var recurrencePatternDescription: String {
-        switch store.schedule.recurrenceKind {
-        case .intervalDays:
-            return "Repeat after a fixed number of days, weeks, or months."
-        case .dailyTime:
-            return "Repeat every day at a specific time."
-        case .weekly:
-            return "Repeat on the same weekday each week."
-        case .monthlyDay:
-            return "Repeat on the same calendar day each month."
-        }
+        formPresentation.recurrencePatternDescription(includesOptionalExactTimeDetail: false)
     }
 
     var weekdayOptions: [(id: Int, name: String)] {
@@ -571,33 +547,6 @@ struct AddRoutineTCAView: View {
         return symbols.enumerated().map { index, name in
             (id: index + 1, name: name)
         }
-    }
-
-    func weekdayName(for weekday: Int) -> String {
-        let symbols = Calendar.current.weekdaySymbols
-        let safeIndex = min(max(weekday - 1, 0), max(symbols.count - 1, 0))
-        return symbols[safeIndex]
-    }
-
-    func ordinalDay(_ day: Int) -> String {
-        let resolvedDay = min(max(day, 1), 31)
-        let suffix: String
-        switch resolvedDay % 100 {
-        case 11, 12, 13:
-            suffix = "th"
-        default:
-            switch resolvedDay % 10 {
-            case 1:
-                suffix = "st"
-            case 2:
-                suffix = "nd"
-            case 3:
-                suffix = "rd"
-            default:
-                suffix = "th"
-            }
-        }
-        return "\(resolvedDay)\(suffix)"
     }
 
     private func loadPickedImage(from item: PhotosPickerItem) {

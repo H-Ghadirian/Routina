@@ -54,16 +54,24 @@ struct TaskFormPresentation {
             : "Add any details you want to keep with this routine."
     }
 
-    func importanceUrgencyDescription(includesDerivedPriority: Bool) -> String {
+    func importanceUrgencyDescription(
+        includesDerivedPriority: Bool,
+        priority: RoutineTaskPriority? = nil
+    ) -> String {
         let base = "\(importance.title) importance and \(urgency.title.lowercased()) urgency"
         guard includesDerivedPriority else { return "\(base)." }
-        return "\(base) map to \(derivedPriority.title.lowercased()) priority for sorting."
+        let resolvedPriority = priority ?? derivedPriority
+        return "\(base) map to \(resolvedPriority.title.lowercased()) priority for sorting."
     }
 
     var estimationHelpText: String {
         taskType == .todo
             ? "Estimate is the plan. Actual time records what really happened."
             : "Estimate is the plan. Routines record actual time on each completion."
+    }
+
+    var linkHelpText: String {
+        "Add a website to open from the task detail screen. If you skip the scheme, https will be used."
     }
 
     var tagSectionHelpText: String {
@@ -123,11 +131,21 @@ struct TaskFormPresentation {
     }
 
     var recurrencePatternDescription: String {
+        recurrencePatternDescription(includesOptionalExactTimeDetail: true)
+    }
+
+    func recurrencePatternDescription(includesOptionalExactTimeDetail: Bool) -> String {
         switch recurrenceKind {
         case .intervalDays: return "Repeat after a fixed number of days, weeks, or months."
         case .dailyTime: return "Repeat every day at a specific time."
-        case .weekly: return "Repeat on the same weekday each week, with an optional exact time."
-        case .monthlyDay: return "Repeat on the same calendar day each month, with an optional exact time."
+        case .weekly:
+            return includesOptionalExactTimeDetail
+                ? "Repeat on the same weekday each week, with an optional exact time."
+                : "Repeat on the same weekday each week."
+        case .monthlyDay:
+            return includesOptionalExactTimeDetail
+                ? "Repeat on the same calendar day each month, with an optional exact time."
+                : "Repeat on the same calendar day each month."
         }
     }
 
