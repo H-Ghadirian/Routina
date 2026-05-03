@@ -463,40 +463,12 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var editableChecklistItemsContent: some View {
-        if store.checklist.routineChecklistItems.isEmpty {
-            Label("No checklist items yet", systemImage: "checklist")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
-            VStack(spacing: 8) {
-                ForEach(store.checklist.routineChecklistItems) { item in
-                    HStack(spacing: 10) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.title)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            if store.schedule.scheduleMode == .derivedFromChecklist {
-                                Text(checklistIntervalLabel(for: item.intervalDays))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        Button(role: .destructive) {
-                            store.send(.removeChecklistItem(item.id))
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.secondary.opacity(0.08))
-                    )
-                }
-            }
-            .padding(.vertical, 4)
-        }
+        AddRoutineChecklistItemsView(
+            items: store.checklist.routineChecklistItems,
+            showsInterval: store.schedule.scheduleMode == .derivedFromChecklist,
+            intervalLabel: checklistIntervalLabel(for:),
+            onRemoveItem: { store.send(.removeChecklistItem($0)) }
+        )
     }
 
     func stepperLabel(
