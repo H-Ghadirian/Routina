@@ -290,6 +290,7 @@ let package = Package(
                 "SharedCore/Views/GoalsEditorSheet.swift",
                 "SharedCore/Views/ImportanceUrgencyMatrixPicker.swift",
                 "SharedCore/Views/StatsDashboardComponents.swift",
+                "SharedCore/Views/StatsDashboardPalette.swift",
                 "SharedCore/Views/StatsDashboardScrollContainer.swift",
                 "SharedCore/Views/StatsDataRefreshModifier.swift",
                 "SharedCore/Views/StatsCompletionChartSection.swift",
