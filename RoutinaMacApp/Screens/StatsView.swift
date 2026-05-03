@@ -277,19 +277,15 @@ struct StatsView: View {
                 .background(pageBackground.ignoresSafeArea())
                 .navigationTitle("Stats")
             }
-            .task {
-                store.send(.onAppear)
-                store.send(.setData(tasks: tasks, logs: logs, focusSessions: focusSessions))
-            }
-            .onChange(of: tasks) { _, newValue in
-                store.send(.setData(tasks: newValue, logs: logs, focusSessions: focusSessions))
-            }
-            .onChange(of: logs) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: newValue, focusSessions: focusSessions))
-            }
-            .onChange(of: focusSessions) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: logs, focusSessions: newValue))
-            }
+            .statsDataRefresh(
+                tasks: tasks,
+                logs: logs,
+                focusSessions: focusSessions,
+                onAppear: { store.send(.onAppear) },
+                onDataChanged: { tasks, logs, focusSessions in
+                    store.send(.setData(tasks: tasks, logs: logs, focusSessions: focusSessions))
+                }
+            )
         }
     }
 
