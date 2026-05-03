@@ -26,10 +26,6 @@ struct TaskFormContent: View {
         store: SharedDefaults.app
     ) private var showPersianDates = false
 
-    private var sectionCardBackground: some ShapeStyle {
-        Color(nsColor: .controlBackgroundColor)
-    }
-
     private var sectionCardStroke: Color {
         Color.gray.opacity(0.18)
     }
@@ -133,83 +129,12 @@ struct TaskFormContent: View {
     // MARK: Identity
 
     private var identityCard: some View {
-        macSectionCard(
-            title: "Identity"
+        TaskFormMacIdentityCard(
+            model: model,
+            previewScheduleModeTitle: previewScheduleModeTitle,
+            previewPlaceSummary: previewPlaceSummary
         ) {
-            VStack(alignment: .leading, spacing: 18) {
-                if model.autofocusName {
-                    HStack(alignment: .top, spacing: 16) {
-                        Text(model.emoji.wrappedValue)
-                            .font(.system(size: 30))
-                            .frame(width: 60, height: 60)
-                            .background(Circle().fill(Color.accentColor.opacity(0.16)))
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            taskNameField
-
-                            if let msg = model.nameValidationMessage {
-                                Text(msg)
-                                    .font(.caption)
-                                    .foregroundStyle(.red)
-                            }
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    if let scheduleModeTitle = previewScheduleModeTitle {
-                                        macInfoPill(scheduleModeTitle, systemImage: "repeat")
-                                    }
-                                    if let previewPlaceSummary {
-                                        macInfoPill(previewPlaceSummary, systemImage: "mappin.and.ellipse")
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(minLength: 0)
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: 6) {
-                        taskNameField
-
-                        if let msg = model.nameValidationMessage {
-                            Text(msg)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                        }
-                    }
-                }
-
-                macControlBlock(title: "") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                Button("More Emoji") {
-                                    model.isEmojiPickerPresented.wrappedValue = true
-                                }
-                                .buttonStyle(.bordered)
-
-                                ForEach(Array(model.emojiOptions.prefix(8)), id: \.self) { emoji in
-                                    Button {
-                                        model.emoji.wrappedValue = emoji
-                                    } label: {
-                                        Text(emoji)
-                                            .font(.title3)
-                                            .frame(width: 34, height: 34)
-                                            .background(
-                                                Circle().fill(
-                                                    model.emoji.wrappedValue == emoji
-                                                        ? Color.accentColor.opacity(0.20)
-                                                        : Color.secondary.opacity(0.08)
-                                                )
-                                            )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            taskNameField
         }
         .id(FormSection.identity)
     }
@@ -306,240 +231,14 @@ struct TaskFormContent: View {
     // MARK: Behavior
 
     private var behaviorCard: some View {
-        macSectionCard(
-            title: "Behavior"
+        TaskFormMacBehaviorCard(
+            model: model,
+            presentation: presentation,
+            persianDeadlineText: persianDeadlineText
         ) {
-            VStack(alignment: .leading, spacing: 18) {
-                macControlBlock(title: "Type") {
-                    HStack(spacing: 0) {
-                        Picker("Task Type", selection: model.taskType) {
-                            Text("Routine").tag(RoutineTaskType.routine)
-                            Text("Todo").tag(RoutineTaskType.todo)
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .fixedSize()
-                        Spacer(minLength: 0)
-                    }
-                }
-
-                if model.taskType.wrappedValue == .routine {
-                    macControlBlock(title: "Schedule style") {
-                        HStack(spacing: 0) {
-                            Picker("Schedule Type", selection: model.scheduleMode) {
-                                Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                                Text("Soft").tag(RoutineScheduleMode.softInterval)
-                                Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                                Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                            .fixedSize()
-                            Spacer(minLength: 0)
-                        }
-                    }
-
-                    if !presentation.isStepBasedMode {
-                        macControlBlock(title: "Checklist") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                checklistItemComposer
-                                checklistItemsContent
-                            }
-                        }
-                    }
-                }
-
-                if presentation.showsRepeatControls {
-                    if model.scheduleMode.wrappedValue == .softInterval {
-                        macControlBlock(title: "Soft reminder") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(spacing: 10) {
-                                    Text("Highlight again after")
-                                        .foregroundStyle(.secondary)
-
-                                    Stepper(value: model.frequencyValue, in: 1...365) {
-                                        Text("\(model.frequencyValue.wrappedValue)")
-                                            .font(.body.monospacedDigit())
-                                            .frame(minWidth: 28, alignment: .trailing)
-                                    }
-                                    .fixedSize()
-
-                                    Picker("Unit", selection: model.frequencyUnit) {
-                                        ForEach(TaskFormFrequencyUnit.allCases, id: \.self) { unit in
-                                            Text(unit.rawValue).tag(unit)
-                                        }
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.segmented)
-                                    .frame(width: 220)
-
-                                    Spacer(minLength: 0)
-                                }
-
-                                Text("This routine stays visible and never becomes overdue. The app will just give it a softer nudge after this much time has passed.")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    } else {
-                        macControlBlock(title: "Repeat pattern") {
-                            HStack(spacing: 0) {
-                                Picker("Repeat Pattern", selection: model.recurrenceKind) {
-                                    ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                                        Text(kind.pickerTitle).tag(kind)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                                .fixedSize()
-                                Spacer(minLength: 0)
-                            }
-                        }
-
-                        switch model.recurrenceKind.wrappedValue {
-                        case .intervalDays:
-                            macControlBlock(title: "Repeat") {
-                                HStack(spacing: 10) {
-                                    Text("Every")
-                                        .foregroundStyle(.secondary)
-
-                                    Stepper(value: model.frequencyValue, in: 1...365) {
-                                        Text("\(model.frequencyValue.wrappedValue)")
-                                            .font(.body.monospacedDigit())
-                                            .frame(minWidth: 28, alignment: .trailing)
-                                    }
-                                    .fixedSize()
-
-                                    Picker("Unit", selection: model.frequencyUnit) {
-                                        ForEach(TaskFormFrequencyUnit.allCases, id: \.self) { unit in
-                                            Text(unit.rawValue).tag(unit)
-                                        }
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.segmented)
-                                    .frame(width: 220)
-
-                                    Spacer(minLength: 0)
-                                }
-                            }
-
-                        case .dailyTime:
-                            macControlBlock(title: "Time") {
-                                DatePicker(
-                                    "Time",
-                                    selection: model.recurrenceTimeOfDay,
-                                    displayedComponents: .hourAndMinute
-                                )
-                                .labelsHidden()
-                            }
-
-                        case .weekly:
-                            macControlBlock(title: "Weekday") {
-                                Picker("Weekday", selection: model.recurrenceWeekday) {
-                                    ForEach(presentation.weekdayOptions, id: \.id) { option in
-                                        Text(option.name).tag(option.id)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-                            }
-
-                            macControlBlock(title: "Time") {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
-                                    if model.recurrenceHasExplicitTime.wrappedValue {
-                                        DatePicker(
-                                            "Time",
-                                            selection: model.recurrenceTimeOfDay,
-                                            displayedComponents: .hourAndMinute
-                                        )
-                                        .labelsHidden()
-                                    }
-                                    Text(
-                                        presentation.weeklyRecurrenceTimeHelpText(
-                                            explicitTimeText: model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened)
-                                        )
-                                    )
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-
-                        case .monthlyDay:
-                            macControlBlock(title: "Month day") {
-                                Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                                    Text(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue))
-                                        .frame(minWidth: 40, alignment: .leading)
-                                }
-                                .fixedSize()
-                            }
-
-                            macControlBlock(title: "Time") {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
-                                    if model.recurrenceHasExplicitTime.wrappedValue {
-                                        DatePicker(
-                                            "Time",
-                                            selection: model.recurrenceTimeOfDay,
-                                            displayedComponents: .hourAndMinute
-                                        )
-                                        .labelsHidden()
-                                    }
-                                    Text(
-                                        presentation.monthlyRecurrenceTimeHelpText(
-                                            explicitTimeText: model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened)
-                                        )
-                                    )
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-
-                    macControlBlock(
-                        title: "Assumed done",
-                        caption: model.canAutoAssumeDailyDone
-                            ? "Show this simple daily routine as assumed done by default. You can still confirm it or mark it not done later."
-                            : "Available only for simple daily routines without steps or checklist items."
-                    ) {
-                        Toggle("Assume done automatically", isOn: model.autoAssumeDailyDone)
-                            .disabled(!model.canAutoAssumeDailyDone)
-                    }
-                }
-
-                if model.taskType.wrappedValue == .todo {
-                    macControlBlock(title: "Deadline") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Toggle("Set deadline", isOn: model.deadlineEnabled)
-                            if model.deadlineEnabled.wrappedValue {
-                                DatePicker("Deadline", selection: model.deadline)
-                                    .labelsHidden()
-                                if let persianDeadlineText {
-                                    Text(persianDeadlineText)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                macControlBlock(
-                    title: "Reminder",
-                    caption: "Send one notification at an exact date and time."
-                ) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Toggle("Set reminder", isOn: model.reminderEnabled)
-                        if model.reminderEnabled.wrappedValue {
-                            DatePicker("Reminder", selection: model.reminderAt)
-                                .labelsHidden()
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            checklistItemComposer
+        } checklistItemsContent: {
+            checklistItemsContent
         }
         .id(FormSection.behavior)
     }
@@ -875,37 +574,13 @@ struct TaskFormContent: View {
     // MARK: Danger Zone
 
     private var dangerZoneCard: some View {
-        macSectionCard(title: "Danger Zone") {
-            VStack(alignment: .leading, spacing: 10) {
-                if let pauseAction = model.pauseResumeAction,
-                   let pauseTitle = model.pauseResumeTitle {
-                    Button(pauseTitle) { pauseAction() }
-                        .buttonStyle(.bordered)
-                        .tint(model.pauseResumeTint)
-
-                    if let pauseDesc = model.pauseResumeDescription {
-                        Text(pauseDesc)
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Divider()
-                }
-
-                if let deleteAction = model.onDelete {
-                    Button(role: .destructive) {
-                        deleteAction()
-                    } label: {
-                        Text("Delete Task")
-                    }
-                    .buttonStyle(.borderless)
-
-                    Text("This action cannot be undone.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
+        TaskFormMacDangerZoneCard(
+            pauseResumeAction: model.pauseResumeAction,
+            pauseResumeTitle: model.pauseResumeTitle,
+            pauseResumeDescription: model.pauseResumeDescription,
+            pauseResumeTint: model.pauseResumeTint,
+            onDelete: model.onDelete
+        )
         .id(FormSection.dangerZone)
     }
 
@@ -1362,28 +1037,9 @@ struct TaskFormContent: View {
         subtitle: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
+        TaskFormMacSectionCard(title: title, subtitle: subtitle) {
             content()
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(sectionCardBackground)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(sectionCardStroke, lineWidth: 1)
-        )
     }
 
     @ViewBuilder
@@ -1392,26 +1048,9 @@ struct TaskFormContent: View {
         caption: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+        TaskFormMacControlBlock(title: title, caption: caption) {
             content()
-            if let caption {
-                Text(caption)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func macInfoPill(_ title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(Color.secondary.opacity(0.10)))
     }
 
     // MARK: - Computed helpers
