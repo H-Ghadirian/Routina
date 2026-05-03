@@ -58,55 +58,63 @@ struct DayPlanWeekCalendarView: View {
         VStack(spacing: 0) {
             dayHeaderRow
 
-            ScrollView(.vertical) {
-                GeometryReader { proxy in
-                    let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(max(dates.count, 1)), 120)
+            ScrollViewReader { scrollProxy in
+                ScrollView(.vertical) {
+                    GeometryReader { proxy in
+                        let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(max(dates.count, 1)), 120)
 
-                    ZStack(alignment: .topLeading) {
-                        weekGrid(dayWidth: dayWidth)
-                        selectionButtons(dayWidth: dayWidth)
-                        weekBlocks(dayWidth: dayWidth)
-                        if let dropPreview, isDropTargeted, !isCompletingDrop {
-                            DayPlanDropIndicator(
-                                preview: dropPreview,
-                                dates: dates,
-                                calendar: calendar,
-                                dayWidth: dayWidth,
-                                hourHeight: hourHeight,
-                                timeColumnWidth: timeColumnWidth
-                            )
-                            .animation(DayPlanMotion.dropPreview, value: dropPreview)
+                        ZStack(alignment: .topLeading) {
+                            weekGrid(dayWidth: dayWidth)
+                            selectionButtons(dayWidth: dayWidth)
+                            weekBlocks(dayWidth: dayWidth)
+                            if let dropPreview, isDropTargeted, !isCompletingDrop {
+                                DayPlanDropIndicator(
+                                    preview: dropPreview,
+                                    dates: dates,
+                                    calendar: calendar,
+                                    dayWidth: dayWidth,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth
+                                )
+                                .animation(DayPlanMotion.dropPreview, value: dropPreview)
+                            }
+                            SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
+                                DayPlanCurrentTimeIndicator(
+                                    dates: dates,
+                                    now: timeline.date,
+                                    calendar: calendar,
+                                    dayWidth: dayWidth,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth
+                                )
+                            }
                         }
-                        SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
-                            DayPlanCurrentTimeIndicator(
+                        .onDrop(
+                            of: [.text],
+                            delegate: DayPlanTaskDropDelegate(
                                 dates: dates,
-                                now: timeline.date,
-                                calendar: calendar,
                                 dayWidth: dayWidth,
+                                timeColumnWidth: timeColumnWidth,
                                 hourHeight: hourHeight,
-                                timeColumnWidth: timeColumnWidth
+                                dropDurationMinutes: dropDurationMinutes,
+                                draggedBlockID: $draggedBlockID,
+                                draggedBlockDurationMinutes: $draggedBlockDurationMinutes,
+                                isCompletingDrop: $isCompletingDrop,
+                                isDropTargeted: $isDropTargeted,
+                                dropPreview: $dropPreview,
+                                onMoveBlock: onMoveBlock,
+                                onDropTask: onDropTask
                             )
-                        }
-                    }
-                    .onDrop(
-                        of: [.text],
-                        delegate: DayPlanTaskDropDelegate(
-                            dates: dates,
-                            dayWidth: dayWidth,
-                            timeColumnWidth: timeColumnWidth,
-                            hourHeight: hourHeight,
-                            dropDurationMinutes: dropDurationMinutes,
-                            draggedBlockID: $draggedBlockID,
-                            draggedBlockDurationMinutes: $draggedBlockDurationMinutes,
-                            isCompletingDrop: $isCompletingDrop,
-                            isDropTargeted: $isDropTargeted,
-                            dropPreview: $dropPreview,
-                            onMoveBlock: onMoveBlock,
-                            onDropTask: onDropTask
                         )
-                    )
+                    }
+                    .frame(height: hourHeight * 24)
                 }
-                .frame(height: hourHeight * 24)
+                .onAppear {
+                    scrollToCurrentTime(with: scrollProxy)
+                }
+                .onChange(of: dates) { _, _ in
+                    scrollToCurrentTime(with: scrollProxy)
+                }
             }
         }
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -153,6 +161,7 @@ struct DayPlanWeekCalendarView: View {
                 }
                 .frame(height: hourHeight)
                 .offset(y: CGFloat(hour) * hourHeight)
+                .id(DayPlanScrollTarget.hour(hour))
             }
 
             ForEach(Array(dates.enumerated()), id: \.element) { index, date in
@@ -315,12 +324,28 @@ struct DayPlanWeekCalendarView: View {
         isDropTargeted = false
         dropPreview = nil
     }
+
+    private func scrollToCurrentTime(with proxy: ScrollViewProxy) {
+        guard dates.contains(where: { calendar.isDateInToday($0) }) else { return }
+
+        let components = calendar.dateComponents([.hour], from: Date())
+        let hour = min(max(components.hour ?? 0, 0), 23)
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                proxy.scrollTo(DayPlanScrollTarget.hour(hour), anchor: .center)
+            }
+        }
+    }
 }
 
 private struct DayPlanDropPreview: Equatable {
     let dayIndex: Int
     let startMinute: Int
     let durationMinutes: Int
+}
+
+private enum DayPlanScrollTarget: Hashable {
+    case hour(Int)
 }
 
 private enum DayPlanMotion {
