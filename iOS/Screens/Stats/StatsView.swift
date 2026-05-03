@@ -388,20 +388,20 @@ struct StatsView: View {
     }
 
     private func summaryCards(metrics: Metrics) -> some View {
-        LazyVGrid(
-            columns: [
-                GridItem(
-                    .adaptive(
-                        minimum: horizontalSizeClass == .compact ? 160 : 220,
-                        maximum: 280
-                    ),
-                    spacing: 14
-                )
-            ],
-            spacing: 14
-        ) {
-            if selectedRange != .today {
-                summaryCard(
+        StatsSummaryGrid(
+            items: summaryCardItems(metrics: metrics),
+            minimumCardWidth: horizontalSizeClass == .compact ? 160 : 220,
+            colorScheme: colorScheme,
+            surfaceGradient: surfaceGradient
+        )
+    }
+
+    private func summaryCardItems(metrics: Metrics) -> [StatsSummaryCardItem] {
+        var items: [StatsSummaryCardItem] = []
+
+        if selectedRange != .today {
+            items.append(
+                StatsSummaryCardItem(
                     icon: "gauge.with.dots.needle.50percent",
                     accent: .mint,
                     title: "Daily average",
@@ -409,9 +409,11 @@ struct StatsView: View {
                     caption: "Across \(metrics.chartPoints.count) days",
                     accessibilityIdentifier: "stats.summary.dailyAverage"
                 )
-            }
+            )
+        }
 
-            summaryCard(
+        items.append(
+            StatsSummaryCardItem(
                 icon: "timer",
                 accent: .teal,
                 title: "Focus time",
@@ -419,9 +421,11 @@ struct StatsView: View {
                 caption: "\(metrics.focusActiveDayCount) focused \(metrics.focusActiveDayCount == 1 ? "day" : "days")",
                 accessibilityIdentifier: "stats.summary.focusTime"
             )
+        )
 
-            if selectedRange != .today {
-                summaryCard(
+        if selectedRange != .today {
+            items.append(
+                StatsSummaryCardItem(
                     icon: "stopwatch.fill",
                     accent: .purple,
                     title: "Focus average",
@@ -429,8 +433,10 @@ struct StatsView: View {
                     caption: "Per day in this range",
                     accessibilityIdentifier: "stats.summary.focusAverage"
                 )
+            )
 
-                summaryCard(
+            items.append(
+                StatsSummaryCardItem(
                     icon: "bolt.fill",
                     accent: .orange,
                     title: "Best day",
@@ -438,9 +444,11 @@ struct StatsView: View {
                     caption: metrics.highlightedBusiestDay.map { chartPresentation.bestDayCaption(for: $0) } ?? "No peak day yet",
                     accessibilityIdentifier: "stats.summary.bestDay"
                 )
-            }
+            )
+        }
 
-            summaryCard(
+        items.append(
+            StatsSummaryCardItem(
                 icon: "checkmark.seal.fill",
                 accent: .blue,
                 title: "Total dones",
@@ -448,8 +456,10 @@ struct StatsView: View {
                 caption: "All recorded completions",
                 accessibilityIdentifier: "stats.summary.totalDones"
             )
+        )
 
-            summaryCard(
+        items.append(
+            StatsSummaryCardItem(
                 icon: "xmark.seal.fill",
                 accent: .orange,
                 title: "Total cancels",
@@ -457,8 +467,10 @@ struct StatsView: View {
                 caption: "Canceled todos kept in timeline",
                 accessibilityIdentifier: "stats.summary.totalCancels"
             )
+        )
 
-            summaryCard(
+        items.append(
+            StatsSummaryCardItem(
                 icon: "checklist.checked",
                 accent: .green,
                 title: "Active routines",
@@ -466,8 +478,10 @@ struct StatsView: View {
                 caption: activeRoutineCardCaption(metrics: metrics),
                 accessibilityIdentifier: "stats.summary.activeRoutines"
             )
+        )
 
-            summaryCard(
+        items.append(
+            StatsSummaryCardItem(
                 icon: "archivebox.fill",
                 accent: .teal,
                 title: "Archived routines",
@@ -475,7 +489,9 @@ struct StatsView: View {
                 caption: archivedRoutineCardCaption(metrics: metrics),
                 accessibilityIdentifier: "stats.summary.archivedRoutines"
             )
-        }
+        )
+
+        return items
     }
 
     private var gitHubSection: some View {
@@ -579,26 +595,6 @@ struct StatsView: View {
             chartPresentation: chartPresentation,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
-        )
-    }
-
-    private func summaryCard(
-        icon: String,
-        accent: Color,
-        title: String,
-        value: String,
-        caption: String,
-        accessibilityIdentifier: String
-    ) -> some View {
-        StatsSummaryCard(
-            icon: icon,
-            accent: accent,
-            title: title,
-            value: value,
-            caption: caption,
-            accessibilityIdentifier: accessibilityIdentifier,
-            colorScheme: colorScheme,
-            surfaceGradient: surfaceGradient
         )
     }
 
