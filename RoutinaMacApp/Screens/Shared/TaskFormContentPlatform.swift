@@ -414,7 +414,10 @@ struct TaskFormContent: View {
                 candidates: model.availableRelationshipTasks,
                 addRelationship: model.onAddRelationship,
                 removeRelationship: model.onRemoveRelationship
-            )
+            ) { searchText in
+                TextField("Search tasks", text: searchText)
+                    .routinaTaskRelationshipSearchFieldPlatform()
+            }
         }
         .id(FormSection.linkedTasks)
     }

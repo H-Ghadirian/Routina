@@ -482,7 +482,10 @@ struct TaskFormContent: View {
                 candidates: model.availableRelationshipTasks,
                 addRelationship: model.onAddRelationship,
                 removeRelationship: model.onRemoveRelationship
-            )
+            ) { searchText in
+                TextField("Search tasks", text: searchText)
+                    .routinaTaskRelationshipSearchFieldPlatform()
+            }
             Text("Link this task to another task as related work or a blocker.")
                 .font(.caption).foregroundStyle(.secondary)
         }
