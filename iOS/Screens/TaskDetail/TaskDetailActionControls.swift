@@ -36,6 +36,135 @@ struct TaskDetailTodoPrimaryActionSection: View {
     }
 }
 
+struct TaskDetailRoutinePrimaryActionSection: View {
+    let store: StoreOf<TaskDetailFeature>
+    let pauseArchivePresentation: RoutinePauseArchivePresentation
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TaskDetailPressurePickerPill(store: store)
+            TaskDetailPrimaryActionButton(store: store)
+
+            if store.shouldShowBulkConfirmAssumedDays {
+                Button(store.bulkConfirmAssumedDaysTitle) {
+                    store.send(.confirmAssumedPastDays)
+                }
+                .buttonStyle(.bordered)
+                .tint(.mint)
+                .routinaPlatformSecondaryActionControlSize()
+                .frame(maxWidth: .infinity)
+            }
+
+            secondaryActionControls
+            explanatoryMessages
+        }
+        .padding(16)
+        .detailCardStyle()
+    }
+
+    private var secondaryActionControls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                pauseResumeButton
+                notTodayButton
+                startOngoingButton
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                pauseResumeButton
+                notTodayButton
+                startOngoingButton
+            }
+        }
+    }
+
+    private var pauseResumeButton: some View {
+        Button {
+            store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
+        } label: {
+            Label(
+                pauseArchivePresentation.actionTitle,
+                systemImage: store.task.isArchived() ? "play.circle" : "pause.circle"
+            )
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(store.task.isArchived() ? .teal : .orange)
+        .routinaPlatformSecondaryActionControlSize()
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private var notTodayButton: some View {
+        if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
+            Button {
+                store.send(.notTodayTapped)
+            } label: {
+                Label(secondaryActionTitle, systemImage: "moon.zzz.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.indigo)
+            .routinaPlatformSecondaryActionControlSize()
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var startOngoingButton: some View {
+        if store.task.isSoftIntervalRoutine && !store.task.isOngoing && !store.task.isArchived() {
+            Button {
+                store.send(.startOngoingTapped)
+            } label: {
+                Label("Start ongoing", systemImage: "play.circle")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.teal)
+            .routinaPlatformSecondaryActionControlSize()
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var explanatoryMessages: some View {
+        if store.isStepRoutineOffToday {
+            Text("Step-based routines can only be progressed for today.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+
+        if store.task.isChecklistCompletionRoutine && !store.canUndoSelectedDate {
+            Text("Complete checklist items below to finish this routine.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+
+        if let pauseDescription = pauseArchivePresentation.description {
+            Text(pauseDescription)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+
+        if let secondaryActionDescription = pauseArchivePresentation.secondaryActionDescription {
+            Text(secondaryActionDescription)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+
+        if !store.blockingRelationships.isEmpty {
+            Text(store.blockerSummaryText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 struct TaskDetailPrimaryActionButton: View {
     let store: StoreOf<TaskDetailFeature>
     var useLargePrimaryControl = true

@@ -230,7 +230,10 @@ struct TaskDetailTCAView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                routinePrimaryActionSection(pauseArchivePresentation: pauseArchivePresentation)
+                TaskDetailRoutinePrimaryActionSection(
+                    store: store,
+                    pauseArchivePresentation: pauseArchivePresentation
+                )
                 calendarSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
@@ -576,135 +579,6 @@ struct TaskDetailTCAView: View {
 
     private var latestCompletedLog: RoutineLog? {
         TaskDetailHeaderBadgePresentation.latestCompletedLog(in: store.logs)
-    }
-
-    private func routinePrimaryActionSection(
-        pauseArchivePresentation: RoutinePauseArchivePresentation
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TaskDetailPressurePickerPill(store: store)
-
-            TaskDetailPrimaryActionButton(store: store)
-
-            if store.shouldShowBulkConfirmAssumedDays {
-                Button(store.bulkConfirmAssumedDaysTitle) {
-                    store.send(.confirmAssumedPastDays)
-                }
-                .buttonStyle(.bordered)
-                .tint(.mint)
-                .routinaPlatformSecondaryActionControlSize()
-                .frame(maxWidth: .infinity)
-            }
-
-            routineSecondaryActionControls(pauseArchivePresentation: pauseArchivePresentation)
-
-            if store.isStepRoutineOffToday {
-                Text("Step-based routines can only be progressed for today.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if store.task.isChecklistCompletionRoutine && !store.canUndoSelectedDate {
-                Text("Complete checklist items below to finish this routine.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let pauseDescription = pauseArchivePresentation.description {
-                Text(pauseDescription)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let secondaryActionDescription = pauseArchivePresentation.secondaryActionDescription {
-                Text(secondaryActionDescription)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if !store.blockingRelationships.isEmpty {
-                Text(store.blockerSummaryText)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(16)
-        .detailCardStyle()
-    }
-
-    private func routineSecondaryActionControls(
-        pauseArchivePresentation: RoutinePauseArchivePresentation
-    ) -> some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 10) {
-                routinePauseResumeButton(pauseArchivePresentation: pauseArchivePresentation)
-                routineNotTodayButton(pauseArchivePresentation: pauseArchivePresentation)
-                routineStartOngoingButton
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                routinePauseResumeButton(pauseArchivePresentation: pauseArchivePresentation)
-                routineNotTodayButton(pauseArchivePresentation: pauseArchivePresentation)
-                routineStartOngoingButton
-            }
-        }
-    }
-
-    private func routinePauseResumeButton(
-        pauseArchivePresentation: RoutinePauseArchivePresentation
-    ) -> some View {
-        Button {
-            store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
-        } label: {
-            Label(
-                pauseArchivePresentation.actionTitle,
-                systemImage: store.task.isArchived() ? "play.circle" : "pause.circle"
-            )
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
-        .tint(store.task.isArchived() ? .teal : .orange)
-        .routinaPlatformSecondaryActionControlSize()
-        .frame(maxWidth: .infinity)
-    }
-
-    @ViewBuilder
-    private func routineNotTodayButton(
-        pauseArchivePresentation: RoutinePauseArchivePresentation
-    ) -> some View {
-        if let secondaryActionTitle = pauseArchivePresentation.secondaryActionTitle {
-            Button {
-                store.send(.notTodayTapped)
-            } label: {
-                Label(secondaryActionTitle, systemImage: "moon.zzz.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .tint(.indigo)
-            .routinaPlatformSecondaryActionControlSize()
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    @ViewBuilder
-    private var routineStartOngoingButton: some View {
-        if store.task.isSoftIntervalRoutine && !store.task.isOngoing && !store.task.isArchived() {
-            Button {
-                store.send(.startOngoingTapped)
-            } label: {
-                Label("Start ongoing", systemImage: "play.circle")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .tint(.teal)
-            .routinaPlatformSecondaryActionControlSize()
-            .frame(maxWidth: .infinity)
-        }
     }
 
     @ViewBuilder
