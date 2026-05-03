@@ -130,12 +130,6 @@ extension HomeTCAView {
             }
 
             Spacer(minLength: 0)
-
-            Image(systemName: "line.3.horizontal")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 26, height: 30)
-                .accessibilityHidden(true)
         }
         .padding(.vertical, 4)
     }
