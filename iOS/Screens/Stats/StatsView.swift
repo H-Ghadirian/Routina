@@ -367,75 +367,23 @@ struct StatsView: View {
     }
 
     private var statsSidebarContent: some View {
-        List {
-            Section("Range") {
-                ForEach(DoneChartRange.allCases) { range in
-                    statsSidebarButton(
-                        title: range.rawValue,
-                        subtitle: range.periodDescription,
-                        systemImage: selectedRange == range ? "checkmark.circle.fill" : "circle"
-                    ) {
-                        store.send(.selectedRangeChanged(range))
-                    }
-                    .foregroundStyle(selectedRange == range ? Color.accentColor : Color.primary)
-                }
-            }
-
-            if tasks.contains(where: \.isOneOffTask) {
-                Section("Type") {
-                    ForEach(StatsTaskTypeFilter.allCases) { filter in
-                        statsSidebarButton(
-                            title: filter.rawValue,
-                            subtitle: statsSidebarTypeSubtitle(for: filter),
-                            systemImage: statsTaskTypeIcon(for: filter)
-                        ) {
-                            store.send(.taskTypeFilterChanged(filter))
-                        }
-                        .foregroundStyle(selectedTaskTypeFilter == filter ? Color.accentColor : Color.primary)
-                    }
-                }
-            }
-
-            Section("Filters") {
-                Button {
-                    store.send(.setFilterSheet(true))
-                } label: {
-                    Label(
-                        activeSheetFilterCount == 0 ? "Filter Stats" : "\(activeSheetFilterCount) active filters",
-                        systemImage: hasActiveSheetFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle"
-                    )
-                }
-
-                if hasActiveFilters {
-                    Button(role: .destructive) {
-                        store.send(.clearFilters)
-                    } label: {
-                        Label("Clear All", systemImage: "xmark.circle")
-                    }
-                }
-            }
-
-            if store.isGitFeaturesEnabled {
-                Section("Git") {
-                    HStack {
-                        Label("GitHub", systemImage: "arrow.triangle.branch")
-                        Spacer()
-                        Text(gitHubConnection.isConnected ? "Live" : "Off")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Button {
-                        store.send(.gitHubStatsRefreshRequested)
-                    } label: {
-                        Label("Refresh Activity", systemImage: "arrow.clockwise")
-                    }
-                    .disabled(!gitHubConnection.isConnected || isGitHubStatsLoading)
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .navigationTitle("Stats")
+        StatsSidebarContent(
+            selectedRange: selectedRange,
+            onSelectRange: { store.send(.selectedRangeChanged($0)) },
+            showsTaskTypeFilter: tasks.contains(where: \.isOneOffTask),
+            selectedTaskTypeFilter: selectedTaskTypeFilter,
+            filteredTaskCount: filteredTaskCount,
+            onSelectTaskTypeFilter: { store.send(.taskTypeFilterChanged($0)) },
+            activeSheetFilterCount: activeSheetFilterCount,
+            hasActiveSheetFilters: hasActiveSheetFilters,
+            hasActiveFilters: hasActiveFilters,
+            onShowFilters: { store.send(.setFilterSheet(true)) },
+            onClearFilters: { store.send(.clearFilters) },
+            isGitFeaturesEnabled: store.isGitFeaturesEnabled,
+            gitHubConnection: gitHubConnection,
+            isGitHubStatsLoading: isGitHubStatsLoading,
+            onRefreshGitHubStats: { store.send(.gitHubStatsRefreshRequested) }
+        )
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 filterSheetButton
@@ -443,193 +391,57 @@ struct StatsView: View {
         }
     }
 
-    private func statsSidebarButton(
-        title: String,
-        subtitle: String,
-        systemImage: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Label {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } icon: {
-                Image(systemName: systemImage)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func statsSidebarTypeSubtitle(for filter: StatsTaskTypeFilter) -> String {
-        switch filter {
-        case .all:
-            return "\(filteredTaskCount) matching items"
-        case .routines:
-            return "Routine completions"
-        case .todos:
-            return "Todo completions"
-        }
-    }
-
     @ViewBuilder
     private var activeFilterChipBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Button("Clear All") {
-                    store.send(.clearFilters)
-                }
-                .font(.caption.weight(.semibold))
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-
-                if selectedTaskTypeFilter != .all {
-                    compactFilterChip(
-                        title: selectedTaskTypeFilter.rawValue,
-                        systemImage: statsTaskTypeIcon(for: selectedTaskTypeFilter)
-                    ) {
-                        store.send(.taskTypeFilterChanged(.all))
-                    }
-                }
-
-                let trimmedAdvancedQuery = store.advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmedAdvancedQuery.isEmpty {
-                    compactFilterChip(title: trimmedAdvancedQuery, systemImage: "magnifyingglass") {
-                        store.send(.advancedQueryChanged(""))
-                    }
-                }
-
-                ForEach(store.effectiveSelectedTags.sorted(), id: \.self) { tag in
-                    compactFilterChip(title: "#\(tag)") {
-                        var selected = store.effectiveSelectedTags
-                        selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-                        store.send(.selectedTagsChanged(selected))
-                    }
-                }
-
-                if let selectedImportanceUrgencyFilterLabel {
-                    compactFilterChip(title: selectedImportanceUrgencyFilterLabel) {
-                        store.send(.selectedImportanceUrgencyFilterChanged(nil))
-                    }
-                }
-
-                ForEach(store.excludedTags.sorted(), id: \.self) { tag in
-                    compactFilterChip(title: "not #\(tag)", tintColor: .red) {
-                        store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
-                    }
-                }
+        StatsActiveFilterChipBar(
+            selectedTaskTypeFilter: selectedTaskTypeFilter,
+            advancedQuery: store.advancedQuery,
+            selectedTags: store.effectiveSelectedTags,
+            selectedImportanceUrgencyFilterLabel: selectedImportanceUrgencyFilterLabel,
+            excludedTags: store.excludedTags,
+            onClearAll: { store.send(.clearFilters) },
+            onClearTaskType: { store.send(.taskTypeFilterChanged(.all)) },
+            onClearAdvancedQuery: { store.send(.advancedQueryChanged("")) },
+            onRemoveSelectedTag: { tag in
+                var selected = store.effectiveSelectedTags
+                selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
+                store.send(.selectedTagsChanged(selected))
+            },
+            onClearImportanceUrgency: { store.send(.selectedImportanceUrgencyFilterChanged(nil)) },
+            onRemoveExcludedTag: { tag in
+                store.send(.excludedTagsChanged(store.excludedTags.filter { $0 != tag }))
             }
-        }
-    }
-
-    private func compactFilterChip(
-        title: String,
-        systemImage: String? = nil,
-        tintColor: Color = .secondary,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .font(.caption2)
-                }
-
-                Text(title)
-                    .font(.caption.weight(.medium))
-
-                Image(systemName: "xmark.circle.fill")
-                    .font(.caption2)
-            }
-            .foregroundStyle(tintColor)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(tintColor.opacity(0.12))
-            )
-        }
-        .buttonStyle(.plain)
+        )
     }
 
     private var filterSheetButton: some View {
-        Button {
-            store.send(.setFilterSheet(true))
-        } label: {
-            Image(
-                systemName: hasActiveFilters
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle"
-            )
-            .foregroundStyle(hasActiveFilters ? Color.accentColor : Color.secondary)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Filters")
+        StatsFilterButton(
+            hasActiveFilters: hasActiveFilters,
+            onShowFilters: { store.send(.setFilterSheet(true)) }
+        )
     }
 
     private var statsFiltersSheet: some View {
-        NavigationStack {
-            List {
-                Section("Query") {
-                    HomeAdvancedQueryBuilder(query: advancedQueryBinding, options: advancedQueryOptions)
-                }
-
-                if tasks.contains(where: \.isOneOffTask) {
-                    Section("Type") {
-                        Picker("Type", selection: taskTypeFilterBinding) {
-                            ForEach(StatsTaskTypeFilter.allCases) { filter in
-                                Label(filter.rawValue, systemImage: statsTaskTypeIcon(for: filter))
-                                    .tag(filter)
-                            }
-                        }
-                        .pickerStyle(.inline)
-                    }
-                }
-
-                HomeFiltersImportanceUrgencySection(
-                    selectedImportanceUrgencyFilter: Binding(
-                        get: { store.selectedImportanceUrgencyFilter },
-                        set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
-                    ),
-                    summary: importanceUrgencyFilterSummary
-                )
-
-                HomeFiltersTagRulesSection(
-                    bindings: tagRuleBindings,
-                    data: tagRuleData,
-                    actions: tagRuleActions,
-                    labels: HomeTagFilterSectionLabels(
-                        includedTitle: "Show stats with",
-                        includedPickerTitle: "Show stats with",
-                        excludedTitle: "Hide stats with",
-                        excludedPickerTitle: "Hide stats with"
-                    )
-                )
-
-                HomeFiltersClearSection(
-                    hasActiveOptionalFilters: hasActiveFilters,
-                    onClearOptionalFilters: { store.send(.clearFilters) }
-                )
-            }
-            .navigationTitle("Filters")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        store.send(.setFilterSheet(false))
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .onChange(of: availableTags) { _, newValue in
-            let selected = store.effectiveSelectedTags.filter { RoutineTag.contains($0, in: newValue) }
-            store.send(.selectedTagsChanged(selected))
-        }
+        StatsFiltersSheet(
+            advancedQuery: advancedQueryBinding,
+            advancedQueryOptions: advancedQueryOptions,
+            showsTaskTypeFilter: tasks.contains(where: \.isOneOffTask),
+            taskTypeFilter: taskTypeFilterBinding,
+            selectedImportanceUrgencyFilter: Binding(
+                get: { store.selectedImportanceUrgencyFilter },
+                set: { store.send(.selectedImportanceUrgencyFilterChanged($0)) }
+            ),
+            importanceUrgencyFilterSummary: importanceUrgencyFilterSummary,
+            tagRuleBindings: tagRuleBindings,
+            tagRuleData: tagRuleData,
+            tagRuleActions: tagRuleActions,
+            hasActiveFilters: hasActiveFilters,
+            selectedTags: store.effectiveSelectedTags,
+            availableTags: availableTags,
+            onClearFilters: { store.send(.clearFilters) },
+            onClose: { store.send(.setFilterSheet(false)) },
+            onSelectedTagsPruned: { store.send(.selectedTagsChanged($0)) }
+        )
     }
 
     private var selectedImportanceUrgencyFilterLabel: String? {
@@ -642,17 +454,6 @@ struct StatsView: View {
             return "Choose a cell to show stats only for tasks that meet or exceed that importance and urgency."
         }
         return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
-    }
-
-    private func statsTaskTypeIcon(for filter: StatsTaskTypeFilter) -> String {
-        switch filter {
-        case .all:
-            return "square.grid.2x2"
-        case .routines:
-            return "repeat"
-        case .todos:
-            return "checklist"
-        }
     }
 
     private var rangeSection: some View {
