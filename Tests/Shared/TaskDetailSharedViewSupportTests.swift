@@ -166,6 +166,64 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func statusContextCopyPreservesPlatformDifferences() {
+        let completedTodo = RoutineTask(
+            name: "Submit report",
+            scheduleMode: .oneOff,
+            lastDone: makeDate("2026-04-25T09:00:00Z")
+        )
+        let state = TaskDetailFeature.State(task: completedTodo)
+
+        #expect(TaskDetailStatusMetadataPresentation.statusContextMessage(
+            for: state,
+            showPersianDates: false,
+            style: .mobile,
+            referenceDate: makeDate("2026-04-25T10:00:00Z")
+        ) == nil)
+        #expect(TaskDetailStatusMetadataPresentation.statusContextMessage(
+            for: state,
+            showPersianDates: false,
+            style: .desktop,
+            referenceDate: makeDate("2026-04-25T10:00:00Z")
+        ) == "Select the logged date to undo it if needed.")
+    }
+
+    @Test
+    func statusContextAndDueDateCopyUseSharedPresentationRules() {
+        var state = TaskDetailFeature.State(task: RoutineTask(name: "Practice"))
+        state.selectedDate = makeDate("2026-04-22T08:00:00Z")
+
+        let message = TaskDetailStatusMetadataPresentation.statusContextMessage(
+            for: state,
+            showPersianDates: false,
+            style: .mobile,
+            referenceDate: makeDate("2026-04-25T10:00:00Z")
+        )
+
+        #expect(message?.hasPrefix("Reviewing ") == true)
+        #expect(message?.hasSuffix(".") == true)
+        #expect(TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
+            rawText: "Apr 26",
+            dueDate: nil,
+            showPersianDates: true
+        ) == "Apr 26")
+        #expect(TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
+            rawText: "Apr 26",
+            dueDate: makeDate("2026-04-26T09:00:00Z"),
+            showPersianDates: false
+        ) == "Apr 26")
+    }
+
+    @Test
+    func visibleStatusMetadataRecognizesRoutineAndPlainTodo() {
+        let todoState = TaskDetailFeature.State(task: RoutineTask(name: "Buy milk", scheduleMode: .oneOff))
+        let routineState = TaskDetailFeature.State(task: RoutineTask(name: "Practice"))
+
+        #expect(!TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: todoState))
+        #expect(TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: routineState))
+    }
+
+    @Test
     func editChangeDetectorTracksPristineChangedAndInvalidNames() {
         let task = RoutineTask(
             name: "Write report",

@@ -326,6 +326,84 @@ struct TaskDetailStatusMetadataItem: Identifiable, Equatable {
 }
 
 enum TaskDetailStatusMetadataPresentation {
+    enum ContextStyle {
+        case mobile
+        case desktop
+    }
+
+    static func statusContextMessage(
+        for state: TaskDetailFeature.State,
+        showPersianDates: Bool,
+        style: ContextStyle,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> String? {
+        if state.task.isArchived(referenceDate: referenceDate, calendar: calendar) {
+            return "Resume it anytime to put it back in rotation."
+        }
+
+        if state.task.isOneOffTask {
+            if state.task.isCompletedOneOff || state.task.isCanceledOneOff {
+                return style == .desktop ? "Select the logged date to undo it if needed." : nil
+            }
+            return nil
+        }
+
+        if state.isSelectedDateAssumedDone {
+            let isSelectedDateToday = calendar.isDate(state.resolvedSelectedDate, inSameDayAs: referenceDate)
+            switch (style, isSelectedDateToday) {
+            case (.mobile, true):
+                return "Today is assumed done. Confirm it to count it in your history, or use Not Today if plans changed."
+            case (.mobile, false):
+                return "This day is assumed done. Confirm it to count it in stats and history."
+            case (.desktop, true):
+                return "Today is assumed done. Confirm it if you want it counted in history and stats."
+            case (.desktop, false):
+                return "This day is assumed done. Confirm it if you want it counted in history and stats."
+            }
+        }
+
+        if calendar.isDate(state.resolvedSelectedDate, inSameDayAs: referenceDate) {
+            return nil
+        }
+
+        let dateText = PersianDateDisplay.appendingSupplementaryDate(
+            to: state.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted),
+            for: state.resolvedSelectedDate,
+            enabled: showPersianDates
+        )
+        return "Reviewing \(dateText)."
+    }
+
+    static func dueDateMetadataDisplayText(
+        rawText: String?,
+        dueDate: Date?,
+        showPersianDates: Bool
+    ) -> String? {
+        guard let rawText else { return nil }
+        guard let dueDate else { return rawText }
+        return PersianDateDisplay.appendingSupplementaryDate(
+            to: rawText,
+            for: dueDate,
+            enabled: showPersianDates
+        )
+    }
+
+    static func hasVisibleMetadata(for state: TaskDetailFeature.State) -> Bool {
+        !state.task.isOneOffTask
+            || shouldShowCompletionCount(for: state)
+            || state.linkedPlaceSummary != nil
+            || state.task.pausedAt != nil
+            || state.dueDateMetadataText != nil
+            || state.shouldShowSelectedDateMetadata
+            || !state.task.tags.isEmpty
+            || state.task.hasImage
+            || !state.taskAttachments.isEmpty
+            || state.task.isChecklistDriven
+            || state.task.isChecklistCompletionRoutine
+            || state.task.hasSequentialSteps
+    }
+
     static func items(
         for state: TaskDetailFeature.State,
         showSelectedDate: Bool,

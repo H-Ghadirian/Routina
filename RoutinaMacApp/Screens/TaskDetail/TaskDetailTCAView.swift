@@ -721,59 +721,23 @@ struct TaskDetailTCAView: View {
     }
 
     private var statusContextMessage: String? {
-        if store.task.isArchived() {
-            return "Resume it anytime to put it back in rotation."
-        }
-        if store.task.isOneOffTask {
-            if store.task.isCompletedOneOff || store.task.isCanceledOneOff {
-                return "Select the logged date to undo it if needed."
-            }
-            return nil
-        }
-        if store.isSelectedDateAssumedDone {
-            if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
-                return "Today is assumed done. Confirm it if you want it counted in history and stats."
-            }
-            return "This day is assumed done. Confirm it if you want it counted in history and stats."
-        }
-        if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
-            return nil
-        }
-        let dateText = PersianDateDisplay.appendingSupplementaryDate(
-            to: store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted),
-            for: store.resolvedSelectedDate,
-            enabled: showPersianDates
+        TaskDetailStatusMetadataPresentation.statusContextMessage(
+            for: store.state,
+            showPersianDates: showPersianDates,
+            style: .desktop
         )
-        return "Reviewing \(dateText)."
     }
 
     private var dueDateMetadataDisplayText: String? {
-        guard let dueDateMetadataText = store.dueDateMetadataText else { return nil }
-        guard let dueDate = store.resolvedDueDate else { return dueDateMetadataText }
-        return PersianDateDisplay.appendingSupplementaryDate(
-            to: dueDateMetadataText,
-            for: dueDate,
-            enabled: showPersianDates
+        TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
+            rawText: store.dueDateMetadataText,
+            dueDate: store.resolvedDueDate,
+            showPersianDates: showPersianDates
         )
     }
 
-    private var shouldShowCompletionCount: Bool {
-        TaskDetailStatusMetadataPresentation.shouldShowCompletionCount(for: store.state)
-    }
-
     private var hasVisibleStatusMetadata: Bool {
-        !store.task.isOneOffTask
-            || shouldShowCompletionCount
-            || store.linkedPlaceSummary != nil
-            || store.task.pausedAt != nil
-            || store.dueDateMetadataText != nil
-            || store.shouldShowSelectedDateMetadata
-            || !store.task.tags.isEmpty
-            || store.task.hasImage
-            || !store.taskAttachments.isEmpty
-            || store.task.isChecklistDriven
-            || store.task.isChecklistCompletionRoutine
-            || store.task.hasSequentialSteps
+        TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: store.state)
     }
 
     private var routineLogsSection: some View {
