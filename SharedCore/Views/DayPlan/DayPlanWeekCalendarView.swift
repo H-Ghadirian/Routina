@@ -228,10 +228,12 @@ struct DayPlanWeekCalendarView: View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
                 ForEach(blocksForDate(date)) { block in
+                    let blockHeight = blockHeight(for: block)
                     DayPlanBlockCard(
                         block: block,
                         tint: taskTint(block),
                         isSelected: block.id == selectedBlockID,
+                        renderedHeight: blockHeight,
                         selectedDate: date,
                         calendar: calendar,
                         onSelect: {
@@ -261,7 +263,7 @@ struct DayPlanWeekCalendarView: View {
                     )
                     .frame(
                         width: max(dayWidth - 10, 90),
-                        height: max(blockHeight(for: block), 34)
+                        height: blockHeight
                     )
                     .offset(
                         x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
@@ -446,14 +448,16 @@ private struct DayPlanDropIndicator: View {
                 .frame(width: indicatorWidth)
                 .offset(x: indicatorX, y: max(indicatorY - 2, 0))
 
-            Text(timeText)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
-                .monospacedDigit()
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(.ultraThickMaterial, in: Capsule(style: .continuous))
-                .offset(x: indicatorX + 8, y: indicatorY + 6)
+            if indicatorHeight >= 28 {
+                Text(timeText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .monospacedDigit()
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.ultraThickMaterial, in: Capsule(style: .continuous))
+                    .offset(x: indicatorX + 8, y: indicatorY + 6)
+            }
         }
         .allowsHitTesting(false)
         .zIndex(12)
@@ -478,7 +482,7 @@ private struct DayPlanDropIndicator: View {
     }
 
     private var indicatorHeight: CGFloat {
-        max(CGFloat(preview.durationMinutes) / 60 * hourHeight, 34)
+        CGFloat(preview.durationMinutes) / 60 * hourHeight
     }
 
     private var indicatorX: CGFloat {
@@ -785,6 +789,7 @@ private struct DayPlanBlockCard: View {
     var block: DayPlanBlock
     var tint: Color
     var isSelected: Bool
+    var renderedHeight: CGFloat
     var selectedDate: Date
     var calendar: Calendar
     var onSelect: () -> Void
@@ -796,34 +801,18 @@ private struct DayPlanBlockCard: View {
 
     var body: some View {
         Button(action: onSelect) {
-            HStack(alignment: .top, spacing: 10) {
-                DayPlanTaskAvatar(emoji: block.emojiSnapshot, tint: tint)
-                    .frame(width: 30, height: 30)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(block.titleSnapshot)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-
-                    Text(rangeText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                        .lineLimit(1)
+            cardContent
+                .padding(contentInsets)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(tint.opacity(isSelected ? 0.22 : 0.14))
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(tint.opacity(isSelected ? 0.75 : 0.35), lineWidth: isSelected ? 2 : 1)
                 }
-
-                Spacer(minLength: 6)
-            }
-            .padding(8)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(tint.opacity(isSelected ? 0.22 : 0.14))
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(tint.opacity(isSelected ? 0.75 : 0.35), lineWidth: isSelected ? 2 : 1)
-            }
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
         .onDrag(onDragProvider)
@@ -847,6 +836,86 @@ private struct DayPlanBlockCard: View {
         }
         .contextMenu {
             Button("Delete", role: .destructive, action: onDelete)
+        }
+    }
+
+    @ViewBuilder
+    private var cardContent: some View {
+        if renderedHeight < 36 {
+            HStack(spacing: 5) {
+                miniIcon
+
+                Text(block.titleSnapshot)
+                    .font(.caption2.weight(.semibold))
+                    .lineLimit(1)
+
+                Spacer(minLength: 4)
+
+                Text("\(block.durationMinutes)m")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+        } else if renderedHeight < 48 {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 5) {
+                    miniIcon
+
+                    Text(block.titleSnapshot)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                }
+
+                Text(rangeText)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+        } else {
+            HStack(alignment: .top, spacing: 10) {
+                DayPlanTaskAvatar(emoji: block.emojiSnapshot, tint: tint)
+                    .frame(width: 30, height: 30)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(block.titleSnapshot)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+
+                    Text(rangeText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 6)
+            }
+        }
+    }
+
+    private var miniIcon: some View {
+        Group {
+            if let emoji = CalendarTaskImportSupport.displayEmoji(for: block.emojiSnapshot) {
+                Text(emoji)
+            } else {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(tint)
+            }
+        }
+        .font(.caption2.weight(.semibold))
+        .frame(width: 13, height: 13)
+        .lineLimit(1)
+    }
+
+    private var contentInsets: EdgeInsets {
+        if renderedHeight < 36 {
+            EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6)
+        } else if renderedHeight < 48 {
+            EdgeInsets(top: 2, leading: 7, bottom: 2, trailing: 7)
+        } else {
+            EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8)
         }
     }
 
