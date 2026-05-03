@@ -203,6 +203,7 @@ extension HomeTCAView {
 
     var macTodoBoardContent: some View {
         let presentation = boardPresentation
+        let commands = HomeMacBoardViewCommandRouter { store.send($0) }
 
         return HomeMacTodoBoardView(
             columns: macTodoBoardColumns(from: presentation.columns),
@@ -212,54 +213,28 @@ extension HomeTCAView {
             availableBacklogs: presentation.backlogs,
             availableSprints: presentation.sprints,
             activeSprints: presentation.activeSprints,
-            onSelectTask: { taskID in
-                store.send(.setSelectedTask(taskID))
-            },
-            onOpenTask: { taskID in
-                store.send(.setSelectedTask(taskID))
-            },
-            onMoveTask: { taskID, state in
-                store.send(.moveTodoToState(taskID, state))
-            },
-            onAssignTaskToBacklog: { taskID, backlogID in
-                store.send(.assignTodoToBacklog(taskID: taskID, backlogID: backlogID))
-            },
-            onAssignTasksToBacklog: { taskIDs, backlogID in
-                store.send(.assignTodosToBacklog(taskIDs: taskIDs, backlogID: backlogID))
-            },
-            onAssignTaskToSprint: { taskID, sprintID in
-                store.send(.assignTodoToSprint(taskID: taskID, sprintID: sprintID))
-            },
-            onAssignTasksToSprint: { taskIDs, sprintID in
-                store.send(.assignTodosToSprint(taskIDs: taskIDs, sprintID: sprintID))
-            },
-            onDropTask: { taskID, state, orderedTaskIDs in
-                store.send(
-                    .moveTodoOnBoard(
-                        taskID: taskID,
-                        targetState: state,
-                        orderedTaskIDs: orderedTaskIDs
-                    )
-                )
-            },
+            onSelectTask: commands.selectTask,
+            onOpenTask: commands.selectTask,
+            onMoveTask: commands.moveTask(_:to:),
+            onAssignTaskToBacklog: commands.assignTaskToBacklog(taskID:backlogID:),
+            onAssignTasksToBacklog: commands.assignTasksToBacklog(taskIDs:backlogID:),
+            onAssignTaskToSprint: commands.assignTaskToSprint(taskID:sprintID:),
+            onAssignTasksToSprint: commands.assignTasksToSprint(taskIDs:sprintID:),
+            onDropTask: commands.dropTask(taskID:state:orderedTaskIDs:),
             onMoveUp: { taskID, state, orderedTaskIDs in
-                store.send(
-                    .moveTaskInSection(
-                        taskID: taskID,
-                        sectionKey: HomeFeature.boardSectionKey(for: state),
-                        orderedTaskIDs: orderedTaskIDs,
-                        direction: .up
-                    )
+                commands.moveTaskInBoardSection(
+                    taskID: taskID,
+                    state: state,
+                    orderedTaskIDs: orderedTaskIDs,
+                    direction: .up
                 )
             },
             onMoveDown: { taskID, state, orderedTaskIDs in
-                store.send(
-                    .moveTaskInSection(
-                        taskID: taskID,
-                        sectionKey: HomeFeature.boardSectionKey(for: state),
-                        orderedTaskIDs: orderedTaskIDs,
-                        direction: .down
-                    )
+                commands.moveTaskInBoardSection(
+                    taskID: taskID,
+                    state: state,
+                    orderedTaskIDs: orderedTaskIDs,
+                    direction: .down
                 )
             }
         )
@@ -304,171 +279,11 @@ extension HomeTCAView {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
             } else {
-                boardScopeInspector(presentation: presentation)
+                HomeMacBoardScopeInspectorView(presentation: presentation)
             }
         }
         .background(.regularMaterial)
         .clipped()
-    }
-
-    private func boardScopeInspector(presentation: HomeBoardPresentation) -> some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(alignment: .leading, spacing: 14) {
-                boardScopeSummaryCard(presentation: presentation)
-                boardScopeCountsCard(presentation: presentation)
-                boardScopeDateCard(presentation: presentation)
-            }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    @ViewBuilder
-    private func boardScopeSummaryCard(presentation: HomeBoardPresentation) -> some View {
-        boardInspectorCard {
-            VStack(alignment: .leading, spacing: 10) {
-                Label(presentation.scopeTitle, systemImage: presentation.scopeIcon)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-
-                Text(presentation.scopeDescription)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func boardScopeCountsCard(presentation: HomeBoardPresentation) -> some View {
-        boardInspectorCard(title: "Tasks") {
-            VStack(alignment: .leading, spacing: 8) {
-                boardInspectorStatRow("Open", presentation.openTodoCount, tint: .secondary)
-                boardInspectorStatRow("In Progress", presentation.inProgressTodoCount, tint: .blue)
-                boardInspectorStatRow("Blocked", presentation.blockedTodoCount, tint: .red)
-
-                if !presentation.isBacklogScope {
-                    boardInspectorStatRow("Done", presentation.doneTodoCount, tint: .green)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func boardScopeDateCard(presentation: HomeBoardPresentation) -> some View {
-        boardInspectorCard(title: presentation.scopeDateCardTitle) {
-            VStack(alignment: .leading, spacing: 8) {
-                switch presentation.selectedScope {
-                case .backlog:
-                    boardInspectorDateRow("Created", nil, presentation: presentation)
-                case let .namedBacklog(backlogID):
-                    let backlog = presentation.backlogs.first(where: { $0.id == backlogID })
-                    boardInspectorDateRow("Created", backlog?.createdAt, presentation: presentation)
-                case .currentSprint:
-                    if presentation.activeSprints.isEmpty {
-                        Text("No active sprint.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(presentation.activeSprints) { sprint in
-                            boardSprintInspectorDateSummary(sprint, presentation: presentation)
-                        }
-                    }
-                case let .sprint(sprintID):
-                    if let sprint = presentation.sprints.first(where: { $0.id == sprintID }) {
-                        boardSprintInspectorDateSummary(sprint, presentation: presentation)
-                    }
-                }
-            }
-        }
-    }
-
-    private func boardInspectorCard<Content: View>(
-        title: String? = nil,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if let title {
-                Text(title.uppercased())
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-
-            content()
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.secondary.opacity(0.08))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-        )
-    }
-
-    private func boardInspectorStatRow(_ title: String, _ value: Int, tint: Color) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(tint)
-                .frame(width: 8, height: 8)
-
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-
-            Spacer(minLength: 0)
-
-            Text("\(value)")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private func boardSprintInspectorDateSummary(
-        _ sprint: BoardSprint,
-        presentation: HomeBoardPresentation
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(sprint.title)
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
-
-            boardInspectorDateRow("Start", sprint.startedAt, presentation: presentation)
-            boardInspectorDateRow("Finish", sprint.finishedAt, presentation: presentation)
-
-            if let activeDayTitle = presentation.activeDayTitle(for: sprint) {
-                boardInspectorDetailRow("Day", activeDayTitle)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func boardInspectorDateRow(
-        _ title: String,
-        _ date: Date?,
-        presentation: HomeBoardPresentation
-    ) -> some View {
-        boardInspectorDetailRow(title, date.map(presentation.dateLabel(for:)) ?? "Not set")
-    }
-
-    private func boardInspectorDetailRow(_ title: String, _ value: String) -> some View {
-        HStack(spacing: 10) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 54, alignment: .leading)
-
-            Text(value)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-        }
     }
 
     @ViewBuilder

@@ -1,8 +1,4 @@
-import Combine
 import ComposableArchitecture
-import CoreData
-import MapKit
-import SwiftData
 import SwiftUI
 
 enum MacHomeDetailMode: String, CaseIterable, Identifiable {
@@ -36,7 +32,7 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var isQuickAddSheetPresented = false
-    @State private var isRefreshScheduled = false
+    @State var isRefreshScheduled = false
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
@@ -69,53 +65,28 @@ struct HomeTCAView: View {
     }
 
     private var homeContent: some View {
-        applyPlatformHomeObservers(
-            to: applyAddRoutinePresentation(
-                to: applyPlatformDeleteConfirmation(
-                    to: applyPlatformRefresh(
-                        to: applyPlatformSearchExperience(
-                            to: platformNavigationContent,
-                            searchText: searchTextBinding
+        applyHomeRefreshObservers(
+            to: applyPlatformHomeObservers(
+                to: applyAddRoutinePresentation(
+                    to: applyPlatformDeleteConfirmation(
+                        to: applyPlatformRefresh(
+                            to: applyPlatformSearchExperience(
+                                to: platformNavigationContent,
+                                searchText: searchTextBinding
+                            )
                         )
                     )
                 )
             )
-        )
-            .sheet(isPresented: isFilterSheetPresentedBinding) {
-                homeFiltersSheet
-            }
-            .sheet(isPresented: $isQuickAddSheetPresented) {
-                QuickAddTaskSheet {
-                    requestRefresh()
+                .sheet(isPresented: isFilterSheetPresentedBinding) {
+                    homeFiltersSheet
                 }
-            }
-            .onAppear {
-                requestRefresh()
-            }
-            .onReceive(
-                NotificationCenter.default.publisher(for: .routineDidUpdate)
-                    .receive(on: RunLoop.main)
-            ) { _ in
-                requestRefresh()
-            }
-            .onReceive(
-                NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
-                    .receive(on: RunLoop.main)
-            ) { _ in
-                requestRefresh()
-            }
-            .onReceive(
-                NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)
-                    .receive(on: RunLoop.main)
-            ) { _ in
-                requestRefresh()
-            }
-            .onReceive(
-                NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)
-                    .receive(on: RunLoop.main)
-            ) { _ in
-                requestRefresh()
-            }
+                .sheet(isPresented: $isQuickAddSheetPresented) {
+                    QuickAddTaskSheet {
+                        requestRefresh()
+                    }
+                }
+        )
     }
 
     @ViewBuilder
@@ -288,22 +259,7 @@ struct HomeTCAView: View {
            !task.isInProgress {
             EmptyView()
         } else {
-            let style = badgeStyle(for: task)
-
-            HStack(spacing: 4) {
-                Image(systemName: style.systemImage)
-                    .imageScale(.small)
-
-                Text(style.title)
-                    .lineLimit(1)
-            }
-            .font(.subheadline.weight(.semibold))
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(2)
-            .foregroundStyle(style.foregroundColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(style.backgroundColor, in: Capsule())
+            HomeStatusBadgeView(style: HomeStatusBadgeStyle(badgeStyle(for: task)))
         }
     }
 
@@ -314,27 +270,12 @@ struct HomeTCAView: View {
         systemImage: String,
         action: (() -> Void)? = nil
     ) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 34, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            Text(title)
-                .font(.title3.weight(.semibold))
-
-            Text(message)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
-
-            if let action {
-                Button("Add Task", action: action)
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
+        HomeEmptyStateView(
+            title: title,
+            message: message,
+            systemImage: systemImage,
+            action: action
+        )
     }
 
     func inlineEmptyStateRow(
@@ -342,23 +283,11 @@ struct HomeTCAView: View {
         message: String,
         systemImage: String
     ) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 30, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            Text(title)
-                .font(.title3.weight(.semibold))
-
-            Text(message)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 40)
+        HomeInlineEmptyStateRowView(
+            title: title,
+            message: message,
+            systemImage: systemImage
+        )
     }
 
     func handleCompactHeaderScroll(oldOffset: CGFloat, newOffset: CGFloat) {
@@ -398,17 +327,6 @@ struct HomeTCAView: View {
         .accessibilityLabel(mode.accessibilityLabel)
     }
 
-    @MainActor
-    private func requestRefresh() {
-        guard !isRefreshScheduled else { return }
-        isRefreshScheduled = true
-
-        Task { @MainActor in
-            defer { isRefreshScheduled = false }
-            await Task.yield()
-            store.send(.onAppear)
-        }
-    }
 }
 
 extension HomeFeature.TaskListMode {

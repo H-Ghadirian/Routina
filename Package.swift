@@ -114,6 +114,7 @@ let package = Package(
                 // Extends the per-app HomeTCAView type and is compiled by both
                 // Xcode app targets through the shared source folder.
                 "SharedCore/Screens/Home/HomeTCAView+ViewState.swift",
+                "SharedCore/Screens/Home/HomeTCAView+Refresh.swift",
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
@@ -271,6 +272,7 @@ let package = Package(
                 "SharedCore/Views/HomeFilterChipButton.swift",
                 "SharedCore/Views/HomeFilterFlowLayout.swift",
                 "SharedCore/Views/HomeTodoStateFilterChips.swift",
+                "SharedCore/Screens/Home/HomeStatusAndEmptyViews.swift",
                 "SharedCore/Views/QuickAddTaskSheet.swift",
                 "SharedCore/Views/FocusSessionCard.swift",
                 "SharedCore/Views/GoalsEditorSheet.swift",
