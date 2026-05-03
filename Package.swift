@@ -259,6 +259,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailSectionCardView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailSharedViewSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTaskChangesSectionView.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
                 "SharedCore/Services/CalendarTaskImportService.swift",
                 "SharedCore/Services/MicrosoftGraphCalendarService.swift",

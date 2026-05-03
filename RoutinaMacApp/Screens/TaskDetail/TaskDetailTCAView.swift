@@ -1607,7 +1607,10 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTime(for log: RoutineLog) {
-        editingTimeSpentMinutes = log.actualDurationMinutes ?? store.task.estimatedDurationMinutes ?? 25
+        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultEditMinutes(
+            currentMinutes: log.actualDurationMinutes,
+            estimatedMinutes: store.task.estimatedDurationMinutes
+        )
         editingTimeLog = log
     }
 
@@ -1620,37 +1623,50 @@ struct TaskDetailTCAView: View {
     }
 
     private var taskTimeEntryTotalMinutes: Int {
-        (taskTimeEntryHours * 60) + taskTimeEntryMinutes
+        TaskDetailTimeSpentPresentation.entryTotalMinutes(
+            hours: taskTimeEntryHours,
+            minutes: taskTimeEntryMinutes
+        )
     }
 
     private var taskTimeEntryPreviewMinutes: Int {
-        (store.task.actualDurationMinutes ?? 0) + taskTimeEntryTotalMinutes
+        TaskDetailTimeSpentPresentation.previewTotalMinutes(
+            currentMinutes: store.task.actualDurationMinutes,
+            entryMinutes: taskTimeEntryTotalMinutes
+        )
     }
 
     private var taskTimeEntryPreviewText: String {
-        let totalText = TaskDetailHeaderBadgePresentation.durationText(for: max(taskTimeEntryPreviewMinutes, 1))
-        return "Total \(totalText)"
+        TaskDetailTimeSpentPresentation.previewText(
+            currentMinutes: store.task.actualDurationMinutes,
+            entryMinutes: taskTimeEntryTotalMinutes
+        )
     }
 
     private var taskTimeEntryApplyTitle: String {
-        let entryText = TaskDetailHeaderBadgePresentation.durationText(for: max(taskTimeEntryTotalMinutes, 1))
-        return "Add \(entryText)"
+        TaskDetailTimeSpentPresentation.applyTitle(entryMinutes: taskTimeEntryTotalMinutes)
     }
 
     private var canApplyTaskTimeEntry: Bool {
-        taskTimeEntryTotalMinutes > 0
-            && taskTimeEntryPreviewMinutes >= 1
-            && taskTimeEntryPreviewMinutes <= 1440
+        TaskDetailTimeSpentPresentation.canApplyEntry(
+            currentMinutes: store.task.actualDurationMinutes,
+            entryMinutes: taskTimeEntryTotalMinutes
+        )
     }
 
     private func setTaskTimeEntryTotal(_ minutes: Int) {
-        let clampedMinutes = min(max(minutes, 1), 1440)
+        let clampedMinutes = TaskDetailTimeSpentPresentation.clampedMinutes(minutes)
         taskTimeEntryHours = clampedMinutes / 60
         taskTimeEntryMinutes = clampedMinutes % 60
     }
 
     private func resetTaskTimeEntry() {
-        setTaskTimeEntryTotal(store.task.actualDurationMinutes == nil ? (store.task.estimatedDurationMinutes ?? 25) : 25)
+        setTaskTimeEntryTotal(
+            TaskDetailTimeSpentPresentation.defaultAdditionalEntryMinutes(
+                currentMinutes: store.task.actualDurationMinutes,
+                estimatedMinutes: store.task.estimatedDurationMinutes
+            )
+        )
     }
 
     private func applyTaskTimeEntry() {
@@ -1660,14 +1676,14 @@ struct TaskDetailTCAView: View {
     }
 
     private func addCompletedFocusToTimeSpent(_ seconds: TimeInterval) {
-        let minutes = max(1, Int((seconds / 60).rounded()))
+        let minutes = TaskDetailTimeSpentPresentation.focusSessionMinutes(from: seconds)
 
         if store.task.isOneOffTask {
             let currentMinutes = store.task.actualDurationMinutes ?? 0
-            store.send(.updateTaskDuration(min(currentMinutes + minutes, 1440)))
+            store.send(.updateTaskDuration(TaskDetailTimeSpentPresentation.clampedMinutes(currentMinutes + minutes)))
         } else if let latestCompletedLog {
             let currentMinutes = latestCompletedLog.actualDurationMinutes ?? 0
-            store.send(.updateLogDuration(latestCompletedLog.id, min(currentMinutes + minutes, 1440)))
+            store.send(.updateLogDuration(latestCompletedLog.id, TaskDetailTimeSpentPresentation.clampedMinutes(currentMinutes + minutes)))
         }
     }
 

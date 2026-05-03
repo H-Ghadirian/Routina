@@ -1399,12 +1399,18 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTime(for log: RoutineLog) {
-        editingTimeSpentMinutes = log.actualDurationMinutes ?? store.task.estimatedDurationMinutes ?? 25
+        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultEditMinutes(
+            currentMinutes: log.actualDurationMinutes,
+            estimatedMinutes: store.task.estimatedDurationMinutes
+        )
         editingTimeLog = log
     }
 
     private func beginEditingTaskTime() {
-        editingTimeSpentMinutes = store.task.actualDurationMinutes ?? store.task.estimatedDurationMinutes ?? 25
+        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultEditMinutes(
+            currentMinutes: store.task.actualDurationMinutes,
+            estimatedMinutes: store.task.estimatedDurationMinutes
+        )
         isEditingTaskTimeSpent = true
     }
 
