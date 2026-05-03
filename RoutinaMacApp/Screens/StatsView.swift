@@ -593,103 +593,26 @@ struct StatsView: View {
     }
 
     private func chartSection(metrics: Metrics) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            StatsSectionHeader(
-                title: "Completions per day",
-                subtitle: chartPresentation.chartSectionSubtitle(
+        StatsCompletionChartSection(
+            subtitle: chartPresentation.chartSectionSubtitle(
                     totalCount: metrics.totalCount,
                     averagePerDay: metrics.averagePerDay,
                     dayCount: metrics.chartPoints.count
-                )
-            ) {
-                smallHighlightBadge(
-                    title: "Peak",
-                    value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0"
-                )
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                Chart {
-                    ForEach(metrics.chartPoints) { point in
-                        let isHighlighted = point.date == metrics.highlightedBusiestDay?.date
-
-                        BarMark(
-                            x: .value("Date", point.date, unit: .day),
-                            y: .value("Completions", point.count)
-                        )
-                        .cornerRadius(7)
-                        .foregroundStyle(
-                            isHighlighted
-                                ? AnyShapeStyle(highlightBarFill)
-                                : AnyShapeStyle(baseBarFill)
-                        )
-                        .opacity(point.count == 0 ? 0.35 : 1)
-                    }
-
-                    if metrics.averagePerDay > 0 {
-                        RuleMark(y: .value("Average", metrics.averagePerDay))
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
-                            .foregroundStyle(Color.secondary.opacity(0.65))
-                            .annotation(position: .topLeading, alignment: .leading) {
-                                Text("Avg \(chartPresentation.averagePerDayText(for: metrics.averagePerDay))")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(
-                                        surfaceGradient,
-                                        in: Capsule(style: .continuous)
-                                    )
-                            }
-                    }
-
-                    if let highlightedBusiestDay = metrics.highlightedBusiestDay {
-                        PointMark(
-                            x: .value("Date", highlightedBusiestDay.date, unit: .day),
-                            y: .value("Completions", highlightedBusiestDay.count)
-                        )
-                        .symbolSize(selectedRange == .year ? 46 : 64)
-                        .foregroundStyle(Color.white)
-                    }
-                }
-                .chartYScale(domain: 0...metrics.chartUpperBound)
-                .chartYAxis {
-                    AxisMarks(position: .leading) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
-                            .foregroundStyle(Color.secondary.opacity(0.2))
-                        AxisValueLabel {
-                            if let count = value.as(Int.self) {
-                                Text(count.formatted())
-                            }
-                        }
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks(values: metrics.xAxisDates) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
-                            .foregroundStyle(Color.secondary.opacity(0.12))
-                        AxisTick()
-                        AxisValueLabel {
-                            if let date = value.as(Date.self) {
-                                Text(chartPresentation.xAxisLabel(for: date))
-                            }
-                        }
-                    }
-                }
-                .chartPlotStyle { plotArea in
-                    plotArea.statsChartPlotBackground(colorScheme: colorScheme)
-                }
-                .frame(minWidth: chartPresentation.chartMinWidth, minHeight: 260)
-                .padding(.top, 4)
-            }
-            .defaultScrollAnchor(.trailing)
-
-            StatsChartInsightRow(
-                insights: completionChartInsights(metrics: metrics),
-                colorScheme: colorScheme
-            )
-        }
-        .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
+            ),
+            peakValue: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0",
+            chartPoints: metrics.chartPoints,
+            highlightedPoint: metrics.highlightedBusiestDay,
+            averagePerDay: metrics.averagePerDay,
+            chartUpperBound: metrics.chartUpperBound,
+            xAxisDates: metrics.xAxisDates,
+            highlightSymbolSize: selectedRange == .year ? 46 : 64,
+            chartPresentation: chartPresentation,
+            baseBarFill: baseBarFill,
+            highlightBarFill: highlightBarFill,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme,
+            insights: completionChartInsights(metrics: metrics)
+        )
     }
 
     private func focusChartSection(metrics: Metrics) -> some View {
