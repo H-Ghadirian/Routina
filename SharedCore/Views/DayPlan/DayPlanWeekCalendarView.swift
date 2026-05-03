@@ -33,7 +33,12 @@ struct DayPlanWeekCalendarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            dayHeaderRow
+            DayPlanWeekHeaderRow(
+                dates: dates,
+                selectedDate: selectedDate,
+                calendar: calendar,
+                timeColumnWidth: timeColumnWidth
+            )
 
             ScrollViewReader { scrollProxy in
                 ScrollView(.vertical) {
@@ -100,24 +105,6 @@ struct DayPlanWeekCalendarView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(isDropTargeted ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.18), lineWidth: isDropTargeted ? 1.5 : 1)
         }
-    }
-
-    private var dayHeaderRow: some View {
-        HStack(spacing: 0) {
-            Text("Time")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-                .frame(width: timeColumnWidth, height: 56)
-
-            ForEach(dates, id: \.self) { date in
-                DayPlanWeekDayHeader(
-                    date: date,
-                    isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                    isToday: calendar.isDateInToday(date)
-                )
-            }
-        }
-        .background(Color.secondary.opacity(0.08))
     }
 
     private func weekGrid(dayWidth: CGFloat) -> some View {
