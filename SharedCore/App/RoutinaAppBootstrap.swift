@@ -25,7 +25,8 @@ enum RoutinaAppBootstrap {
             .appSettingShowPersianDates: false
         ])
         SharedDefaults.app.register(defaults: [
-            UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue
+            UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
+            UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN"
         ])
         SharedDefaults.app.register(defaults: [
             NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,

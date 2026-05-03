@@ -80,11 +80,6 @@ struct HomeTCAView: View {
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
                 }
-                .sheet(isPresented: $isQuickAddSheetPresented) {
-                    QuickAddTaskSheet {
-                        requestRefresh()
-                    }
-                }
         )
     }
 

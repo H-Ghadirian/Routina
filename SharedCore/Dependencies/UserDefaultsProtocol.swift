@@ -64,6 +64,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingFastFilterTags
     case appSettingTemporaryViewState
     case macFormSectionOrder
+    case macQuickAddShortcut
 }
 
 public protocol UserDefaultsProtocol {

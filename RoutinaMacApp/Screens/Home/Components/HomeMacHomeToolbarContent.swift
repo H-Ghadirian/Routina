@@ -20,7 +20,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let boardDoneCount: Int
     let isBoardBacklogScope: Bool
     let finishableSprints: [BoardSprint]
-    let onQuickAdd: () -> Void
     let onFinishSprint: (UUID) -> Void
 
     var body: some ToolbarContent {
@@ -80,11 +79,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            MacToolbarIconButton(title: "Quick Add", systemImage: "text.badge.plus") {
-                onQuickAdd()
-            }
-            .help("Quick add")
-
             MacToolbarStatusBadge(
                 title: "\(doneCount) dones",
                 systemImage: "checkmark.seal.fill",

@@ -110,15 +110,10 @@ struct SettingsMacBackupDetailView: View {
 }
 
 struct SettingsMacShortcutsDetailView: View {
-    private let keyboardShortcuts: [SettingsMacShortcutRowModel] = [
-        SettingsMacShortcutRowModel(title: "Add Task", detail: "Open quick task creation.", shortcut: "⌥⌘N"),
-        SettingsMacShortcutRowModel(title: "Routines", detail: "Switch the sidebar back to routines.", shortcut: "⌥⌘1"),
-        SettingsMacShortcutRowModel(title: "Stats", detail: "Open stats from anywhere in the app.", shortcut: "⌥⌘2"),
-        SettingsMacShortcutRowModel(title: "Timeline", detail: "Open the done timeline.", shortcut: "⌥⌘3"),
-        SettingsMacShortcutRowModel(title: "Save", detail: "Confirm supported edit sheets and dialogs.", shortcut: "Return"),
-        SettingsMacShortcutRowModel(title: "Cancel", detail: "Dismiss supported edit sheets and dialogs.", shortcut: "Esc"),
-        SettingsMacShortcutRowModel(title: "Quit", detail: "Quit Routina from the menu bar extra or app menu.", shortcut: "⌘Q")
-    ]
+    @AppStorage(
+        UserDefaultStringValueKey.macQuickAddShortcut.rawValue,
+        store: SharedDefaults.app
+    ) private var quickAddShortcutRawValue = MacQuickAddShortcut.defaultValue.rawValue
 
     private let appShortcuts: [SettingsMacShortcutRowModel] = [
         SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”", shortcut: "Shortcuts"),
@@ -132,6 +127,20 @@ struct SettingsMacShortcutsDetailView: View {
             title: "Shortcuts",
             subtitle: "Review keyboard shortcuts and Apple Shortcuts that Routina exposes."
         ) {
+            SettingsMacDetailCard(title: "Quick Add") {
+                Picker("Shortcut", selection: quickAddShortcutBinding) {
+                    ForEach(MacQuickAddShortcut.allCases) { shortcut in
+                        Text("\(shortcut.title) · \(shortcut.detail)")
+                            .tag(shortcut.rawValue)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text("Opens the Spotlight-style Quick Add overlay.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             SettingsMacDetailCard(title: "Keyboard") {
                 ForEach(keyboardShortcuts) { shortcut in
                     SettingsMacShortcutRow(shortcut: shortcut)
@@ -144,6 +153,32 @@ struct SettingsMacShortcutsDetailView: View {
                 }
             }
         }
+    }
+
+    private var quickAddShortcut: MacQuickAddShortcut {
+        MacQuickAddShortcut(rawValue: quickAddShortcutRawValue) ?? .defaultValue
+    }
+
+    private var quickAddShortcutBinding: Binding<String> {
+        Binding(
+            get: { quickAddShortcutRawValue },
+            set: { rawValue in
+                quickAddShortcutRawValue = rawValue
+                RoutinaMacGlobalHotKeyManager.shared.registerQuickAddHotKey()
+            }
+        )
+    }
+
+    private var keyboardShortcuts: [SettingsMacShortcutRowModel] {
+        [
+            SettingsMacShortcutRowModel(title: "Quick Add", detail: "Open quick task creation.", shortcut: quickAddShortcut.title),
+            SettingsMacShortcutRowModel(title: "Routines", detail: "Switch the sidebar back to routines.", shortcut: "⌥⌘1"),
+            SettingsMacShortcutRowModel(title: "Stats", detail: "Open stats from anywhere in the app.", shortcut: "⌥⌘2"),
+            SettingsMacShortcutRowModel(title: "Timeline", detail: "Open the done timeline.", shortcut: "⌥⌘3"),
+            SettingsMacShortcutRowModel(title: "Save", detail: "Confirm supported edit sheets and dialogs.", shortcut: "Return"),
+            SettingsMacShortcutRowModel(title: "Cancel", detail: "Dismiss supported edit sheets and dialogs.", shortcut: "Esc"),
+            SettingsMacShortcutRowModel(title: "Quit", detail: "Quit Routina from the menu bar extra or app menu.", shortcut: "⌘Q")
+        ]
     }
 }
 

@@ -5,15 +5,21 @@ extension Notification.Name {
     static let routinaMacOpenTimelineInSidebar = Notification.Name("routina.mac.openTimelineInSidebar")
     static let routinaMacOpenStatsInSidebar = Notification.Name("routina.mac.openStatsInSidebar")
     static let routinaMacOpenAddTask = Notification.Name("routina.mac.openAddTask")
+    static let routinaMacOpenQuickAdd = Notification.Name("routina.mac.openQuickAdd")
 }
 
 struct RoutineCommands: Commands {
+    @AppStorage(
+        UserDefaultStringValueKey.macQuickAddShortcut.rawValue,
+        store: SharedDefaults.app
+    ) private var quickAddShortcutRawValue = MacQuickAddShortcut.defaultValue.rawValue
+
     var body: some Commands {
         CommandGroup(before: .appSettings) {
-            Button("Add Task") {
-                NotificationCenter.default.post(name: .routinaMacOpenAddTask, object: nil)
+            Button("Quick Add") {
+                NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
             }
-            .keyboardShortcut("n", modifiers: [.command, .option])
+            .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.eventModifiers)
 
             Button("Routines") {
                 NotificationCenter.default.post(name: .routinaMacOpenRoutinesInSidebar, object: nil)
@@ -30,5 +36,9 @@ struct RoutineCommands: Commands {
             }
             .keyboardShortcut("3", modifiers: [.command, .option])
         }
+    }
+
+    private var quickAddShortcut: MacQuickAddShortcut {
+        MacQuickAddShortcut(rawValue: quickAddShortcutRawValue) ?? .defaultValue
     }
 }

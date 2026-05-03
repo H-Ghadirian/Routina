@@ -22,12 +22,29 @@ final class RoutinaMacGlobalHotKeyManager {
 
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
+    private var defaultsObserver: NSObjectProtocol?
     private let hotKeyID = EventHotKeyID(signature: OSType(0x52544b31), id: 1)
 
     private init() {}
 
-    func registerAddTaskHotKey() {
-        guard hotKeyRef == nil else { return }
+    func startQuickAddHotKey() {
+        if defaultsObserver == nil {
+            defaultsObserver = NotificationCenter.default.addObserver(
+                forName: UserDefaults.didChangeNotification,
+                object: SharedDefaults.app,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.registerQuickAddHotKey()
+                }
+            }
+        }
+
+        registerQuickAddHotKey()
+    }
+
+    func registerQuickAddHotKey() {
+        unregisterHotKey()
 
         var eventSpec = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
@@ -57,7 +74,7 @@ final class RoutinaMacGlobalHotKeyManager {
 
             DispatchQueue.main.async {
                 RoutinaMacWindowRouter.shared.openHomeAndActivate()
-                NotificationCenter.default.post(name: .routinaMacOpenAddTask, object: nil)
+                NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
             }
 
             return noErr
@@ -77,10 +94,10 @@ final class RoutinaMacGlobalHotKeyManager {
             return
         }
 
-        let modifiers = UInt32(optionKey | cmdKey)
+        let shortcut = MacQuickAddShortcut.stored()
         let registerStatus = RegisterEventHotKey(
-            UInt32(kVK_ANSI_N),
-            modifiers,
+            shortcut.carbonKeyCode,
+            shortcut.carbonModifiers,
             hotKeyID,
             GetApplicationEventTarget(),
             0,
@@ -94,6 +111,15 @@ final class RoutinaMacGlobalHotKeyManager {
     }
 
     func unregister() {
+        unregisterHotKey()
+
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
+            self.defaultsObserver = nil
+        }
+    }
+
+    private func unregisterHotKey() {
         if let hotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
             self.hotKeyRef = nil

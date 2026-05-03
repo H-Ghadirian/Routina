@@ -9,7 +9,7 @@ public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegat
         guard !AppEnvironment.isAutomatedTestMode else { return }
         NotificationCoordinator.configureCurrentCenter(delegate: self)
         NSWindow.allowsAutomaticWindowTabbing = false
-        RoutinaMacGlobalHotKeyManager.shared.registerAddTaskHotKey()
+        RoutinaMacGlobalHotKeyManager.shared.startQuickAddHotKey()
     }
 
     public func application(

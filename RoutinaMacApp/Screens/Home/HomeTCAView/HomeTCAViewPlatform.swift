@@ -38,9 +38,6 @@ extension HomeTCAView {
             boardDoneCount: boardPresentation.doneTodoCount,
             isBoardBacklogScope: boardPresentation.isBacklogScope,
             finishableSprints: store.isMacFilterDetailPresented ? [] : boardFinishableSprintsInCurrentScope,
-            onQuickAdd: {
-                isQuickAddSheetPresented = true
-            },
             onFinishSprint: { sprintID in
                 store.send(.finishSprintTapped(sprintID))
             }
@@ -186,6 +183,7 @@ extension HomeTCAView {
             mode: store.macSidebarMode,
             onOpenRoutines: showRoutinesInSidebar,
             onOpenAddTask: openAddTask,
+            onOpenQuickAdd: showQuickAddSpotlight,
             onOpenTimeline: openTimelineInSidebar,
             onOpenStats: openStatsInSidebar
         ) { mode in
@@ -216,6 +214,18 @@ extension HomeTCAView {
 
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
+            .overlay {
+                if isQuickAddSheetPresented {
+                    MacQuickAddSpotlightOverlay(
+                        isPresented: $isQuickAddSheetPresented,
+                        onCreated: requestRefresh
+                    )
+                }
+            }
+    }
+
+    func showQuickAddSpotlight() {
+        isQuickAddSheetPresented = true
     }
 
     func openAddTask() {
