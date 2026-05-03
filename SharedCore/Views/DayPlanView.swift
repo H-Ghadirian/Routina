@@ -490,17 +490,21 @@ private struct DayPlanLifecycleModifier: ViewModifier {
         content
             .onAppear {
                 planner.loadBlocks(calendar: calendar)
+                planner.showExactTimedTasks(from: tasks, calendar: calendar)
                 planner.selectDefaultTaskIfNeeded(from: tasks)
             }
             .onChange(of: planner.selectedDate) { _, _ in
                 planner.handleSelectedDateChanged(calendar: calendar)
+                planner.showExactTimedTasks(from: tasks, calendar: calendar)
             }
             .onChange(of: tasks.map(\.id)) { _, _ in
+                planner.showExactTimedTasks(from: tasks, calendar: calendar)
                 planner.selectDefaultTaskIfNeeded(from: tasks)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     planner.loadBlocks(calendar: calendar)
+                    planner.showExactTimedTasks(from: tasks, calendar: calendar)
                 }
             }
     }

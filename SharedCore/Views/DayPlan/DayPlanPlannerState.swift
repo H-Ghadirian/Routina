@@ -57,6 +57,58 @@ final class DayPlanPlannerState: ObservableObject {
         syncSelectedDayBlocks(calendar: calendar)
     }
 
+    func showExactTimedTasks(from tasks: [RoutineTask], calendar: Calendar) {
+        let visibleDates = weekDates(containing: selectedDate, calendar: calendar)
+        let availableTasks = DayPlanTaskSorting.availableTasks(from: tasks)
+        let now = Date()
+        var updatedBlocksByDayKey = weekBlocksByDayKey
+
+        for date in visibleDates {
+            let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            var dayBlocks = updatedBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+            var didChangeDay = false
+
+            for task in availableTasks {
+                guard let scheduledDate = exactScheduledDate(for: task, on: date, calendar: calendar) else {
+                    continue
+                }
+                guard !task.isArchived(referenceDate: scheduledDate, calendar: calendar) else {
+                    continue
+                }
+                guard !dayBlocks.contains(where: { $0.taskID == task.id }) else {
+                    continue
+                }
+
+                let startMinute = startMinute(for: scheduledDate, calendar: calendar)
+                let durationMinutes = task.estimatedDurationMinutes ?? 60
+                dayBlocks.append(
+                    DayPlanBlock(
+                        taskID: task.id,
+                        dayKey: dayKey,
+                        startMinute: startMinute,
+                        durationMinutes: durationMinutes,
+                        titleSnapshot: DayPlanTaskSorting.title(for: task),
+                        emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                        createdAt: now,
+                        updatedAt: now
+                    )
+                )
+                didChangeDay = true
+            }
+
+            if didChangeDay {
+                let sortedBlocks = sortedDayBlocks(dayBlocks)
+                updatedBlocksByDayKey[dayKey] = sortedBlocks
+                DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey)
+            } else {
+                updatedBlocksByDayKey[dayKey] = dayBlocks
+            }
+        }
+
+        weekBlocksByDayKey = updatedBlocksByDayKey
+        syncSelectedDayBlocks(calendar: calendar)
+    }
+
     func handleSelectedDateChanged(calendar: Calendar) {
         let blockIDToPreserve = selectedBlockID
         loadBlocks(calendar: calendar)
@@ -337,6 +389,37 @@ final class DayPlanPlannerState: ObservableObject {
     private func syncSelectedDayBlocks(calendar: Calendar) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey)
+    }
+
+    private func exactScheduledDate(
+        for task: RoutineTask,
+        on date: Date,
+        calendar: Calendar
+    ) -> Date? {
+        if task.isOneOffTask {
+            guard let deadline = task.deadline,
+                  calendar.isDate(deadline, inSameDayAs: date),
+                  hasExplicitTime(deadline, calendar: calendar) else {
+                return nil
+            }
+            return deadline
+        }
+
+        return RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar)
+    }
+
+    private func hasExplicitTime(_ date: Date, calendar: Calendar) -> Bool {
+        let components = calendar.dateComponents([.hour, .minute, .second, .nanosecond], from: date)
+        return (components.hour ?? 0) != 0
+            || (components.minute ?? 0) != 0
+            || (components.second ?? 0) != 0
+            || (components.nanosecond ?? 0) != 0
+    }
+
+    private func startMinute(for date: Date, calendar: Calendar) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        return DayPlanBlock.clampedStartMinute(minute)
     }
 
     private func locatedBlock(
