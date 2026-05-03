@@ -209,7 +209,6 @@ struct DayPlanDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             DayPlanHeaderView(planner: planner)
-            DayPlanPlanningControlsView(planner: planner, selectedTask: selectedTask)
             DayPlanTimelinePanelView(planner: planner)
         }
         .padding(20)
@@ -224,11 +223,6 @@ struct DayPlanDetailView: View {
         }
     }
 
-    private var selectedTask: RoutineTask? {
-        guard let selectedTaskID = planner.selectedTaskID else { return nil }
-        return tasks.first { $0.id == selectedTaskID }
-    }
-
     private func syncSelectedTask() {
         guard
             let selectedTaskID,
@@ -239,132 +233,6 @@ struct DayPlanDetailView: View {
             planner.selectedBlockID = nil
         }
         planner.selectTask(task)
-    }
-}
-
-private struct DayPlanPlanningControlsView: View {
-    @Environment(\.calendar) private var calendar
-    @ObservedObject var planner: DayPlanPlannerState
-    var selectedTask: RoutineTask?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 14) {
-                selectedTaskSummary
-
-                Divider()
-                    .frame(height: 34)
-
-                HStack(spacing: 8) {
-                    Text("Start")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    DatePicker("Start", selection: startDateBinding, displayedComponents: [.hourAndMinute])
-                        .labelsHidden()
-                        .datePickerStyle(.compact)
-                }
-
-                Stepper(
-                    "Duration: \(DayPlanFormatting.durationText(planner.durationMinutes))",
-                    value: $planner.durationMinutes,
-                    in: DayPlanBlock.minimumDurationMinutes...planner.maximumDurationForStart,
-                    step: 15
-                )
-                .fixedSize()
-
-                Text("Ends \(endTimeText)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-
-                Spacer(minLength: 12)
-
-                if planner.selectedBlock != nil {
-                    Button("New") {
-                        planner.selectedBlockID = nil
-                    }
-                    .controlSize(.small)
-                }
-
-                Button(planner.selectedBlock == nil ? "Add" : "Save") {
-                    if let selectedTask {
-                        planner.commitBlock(task: selectedTask, calendar: calendar)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(!canCommitBlock)
-
-                if let selectedBlock = planner.selectedBlock {
-                    Button(role: .destructive) {
-                        planner.deleteBlock(selectedBlock.id, calendar: calendar)
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("Delete block")
-                }
-            }
-
-            if let conflictingBlock = planner.conflictingBlock {
-                Label("Overlaps \(conflictingBlock.titleSnapshot)", systemImage: "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
-        }
-        .padding(12)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-    }
-
-    private var selectedTaskSummary: some View {
-        HStack(spacing: 10) {
-            DayPlanTaskAvatar(
-                emoji: selectedTask?.emoji,
-                tint: selectedTask?.color.swiftUIColor ?? .accentColor
-            )
-            .frame(width: 32, height: 32)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(selectedTask.map { DayPlanTaskSorting.title(for: $0) } ?? "Select a task")
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-
-                Text(planner.selectedBlock == nil ? "Add to selected day" : "Edit selected block")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-        }
-        .frame(minWidth: 190, maxWidth: 280, alignment: .leading)
-    }
-
-    private var startDateBinding: Binding<Date> {
-        Binding(
-            get: {
-                let startOfDay = calendar.startOfDay(for: planner.selectedDate)
-                return calendar.date(byAdding: .minute, value: planner.startMinute, to: startOfDay) ?? startOfDay
-            },
-            set: { date in
-                let components = calendar.dateComponents([.hour, .minute], from: date)
-                let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
-                planner.startMinute = DayPlanBlock.clampedStartMinute(minute)
-                planner.clampDurationForCurrentStart()
-            }
-        )
-    }
-
-    private var endTimeText: String {
-        DayPlanFormatting.timeText(
-            for: planner.startMinute + planner.durationMinutes,
-            on: planner.selectedDate,
-            calendar: calendar
-        )
-    }
-
-    private var canCommitBlock: Bool {
-        selectedTask != nil && planner.conflictingBlock == nil
     }
 }
 
