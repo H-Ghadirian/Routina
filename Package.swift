@@ -303,6 +303,7 @@ let package = Package(
                 "SharedCore/Views/DayPlan/DayPlanDropIndicator.swift",
                 "SharedCore/Views/DayPlan/DayPlanResizeHandle.swift",
                 "SharedCore/Views/DayPlan/DayPlanScrollTarget.swift",
+                "SharedCore/Views/DayPlan/DayPlanSlotSelectionLayer.swift",
                 "SharedCore/Views/DayPlan/DayPlanTaskAvatar.swift",
                 "SharedCore/Views/DayPlan/DayPlanTaskDropSupport.swift",
                 "SharedCore/Views/DayPlan/DayPlanWeekDayHeader.swift",

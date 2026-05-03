@@ -54,7 +54,13 @@ struct DayPlanWeekCalendarView: View {
                                 hourHeight: hourHeight,
                                 timeColumnWidth: timeColumnWidth
                             )
-                            selectionButtons(dayWidth: dayWidth)
+                            DayPlanSlotSelectionLayer(
+                                dates: dates,
+                                dayWidth: dayWidth,
+                                hourHeight: hourHeight,
+                                timeColumnWidth: timeColumnWidth,
+                                onSelectSlot: onSelectSlot
+                            )
                             weekBlocks(dayWidth: dayWidth)
                             if let dropPreview, isDropTargeted, !isCompletingDrop {
                                 DayPlanDropIndicator(
@@ -116,27 +122,6 @@ struct DayPlanWeekCalendarView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(isDropTargeted ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.18), lineWidth: isDropTargeted ? 1.5 : 1)
-        }
-    }
-
-    private func selectionButtons(dayWidth: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
-                ForEach(0..<24, id: \.self) { hour in
-                    Button {
-                        onSelectSlot(date, hour * 60)
-                    } label: {
-                        Color.clear
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .frame(width: dayWidth, height: hourHeight)
-                    .offset(
-                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth,
-                        y: CGFloat(hour) * hourHeight
-                    )
-                }
-            }
         }
     }
 
