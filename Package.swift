@@ -162,6 +162,7 @@ let package = Package(
                 "SharedCore/Features/AddRoutine/AddRoutineSaveSupport.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineFeatureState.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineValidationSupport.swift",
+                "SharedCore/Features/AddRoutine/TaskFormPresentation.swift",
                 "SharedCore/Features/Goals/GoalsFeature.swift",
                 "SharedCore/Features/Home/HomeAddRoutineSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureAddRoutinePresentationRouter.swift",

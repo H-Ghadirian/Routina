@@ -45,13 +45,13 @@ struct TaskFormContent: View {
             if model.scheduleMode.wrappedValue.taskType == .routine {
                 scheduleTypeSection
             }
-            if isStepBasedMode {
+            if presentation.isStepBasedMode {
                 stepsSection
             } else {
                 checklistSection
             }
             placeSection
-            if showsRepeatControls {
+            if presentation.showsRepeatControls {
                 repeatPatternSections
             }
             if let onDelete = model.onDelete {
@@ -91,175 +91,30 @@ struct TaskFormContent: View {
 
     // MARK: - Helpers
 
-    private var isStepBasedMode: Bool {
-        let mode = model.scheduleMode.wrappedValue
-        return mode == .fixedInterval || mode == .softInterval || mode == .oneOff
+    private var presentation: TaskFormPresentation {
+        TaskFormPresentation(
+            taskType: model.taskType.wrappedValue,
+            scheduleMode: model.scheduleMode.wrappedValue,
+            recurrenceKind: model.recurrenceKind.wrappedValue,
+            recurrenceHasExplicitTime: model.recurrenceHasExplicitTime.wrappedValue,
+            recurrenceWeekday: model.recurrenceWeekday.wrappedValue,
+            recurrenceDayOfMonth: model.recurrenceDayOfMonth.wrappedValue,
+            importance: model.importance.wrappedValue,
+            urgency: model.urgency.wrappedValue,
+            hasAvailableTags: !model.availableTags.isEmpty,
+            hasAvailableGoals: !model.availableGoals.isEmpty,
+            goalDraft: model.goalDraft.wrappedValue,
+            selectedPlaceName: selectedPlaceName,
+            canAutoAssumeDailyDone: model.canAutoAssumeDailyDone
+        )
     }
 
-    private var showsRepeatControls: Bool {
-        let mode = model.scheduleMode.wrappedValue
-        return mode != .derivedFromChecklist && mode != .oneOff
-    }
-
-    private var derivedPriority: RoutineTaskPriority {
-        let score = model.importance.wrappedValue.sortOrder + model.urgency.wrappedValue.sortOrder
-        switch score {
-        case ..<4: return .low
-        case 4...5: return .medium
-        case 6...7: return .high
-        default: return .urgent
-        }
-    }
-
-    private var taskTypeDescription: String {
-        switch model.taskType.wrappedValue {
-        case .routine: return "Routines repeat on a schedule and stay in your rotation."
-        case .todo: return "Todos are one-off tasks. Once you finish one, it stays completed."
-        }
-    }
-
-    private var notesHelpText: String {
-        model.taskType.wrappedValue == .todo
-            ? "Capture extra context, links, or reminders for this todo."
-            : "Add any details you want to keep with this routine."
-    }
-
-    private var importanceUrgencyDescription: String {
-        "\(model.importance.wrappedValue.title) importance and \(model.urgency.wrappedValue.title.lowercased()) urgency map to \(derivedPriority.title.lowercased()) priority for sorting."
-    }
-
-    private var estimationHelpText: String {
-        model.taskType.wrappedValue == .todo
-            ? "Estimate is the plan. Actual time records what really happened."
-            : "Estimate is the plan. Routines record actual time on each completion."
-    }
-
-    private var tagSectionHelpText: String {
-        if model.availableTags.isEmpty {
-            return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
-        }
-        return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
-    }
-
-    private var goalSectionHelpText: String {
-        if model.availableGoals.isEmpty {
-            return "Press return or Add. Separate multiple goals with commas."
-        }
-        return "Tap an existing goal below, or press return/Add to create a new one. Separate multiple goals with commas."
-    }
-
-    private var canAddGoalDraft: Bool {
-        model.goalDraft.wrappedValue
-            .split(separator: ",")
-            .contains { RoutineGoal.cleanedTitle(String($0)) != nil }
-    }
-
-    private var scheduleModeDescription: String {
-        switch model.scheduleMode.wrappedValue {
-        case .fixedInterval: return "Use one overall repeat interval for the whole routine."
-        case .softInterval: return "Keep this routine visible all the time and gently highlight it again after a while."
-        case .fixedIntervalChecklist: return "Use one overall repeat interval and complete every checklist item to finish the routine."
-        case .derivedFromChecklist: return "Use checklist item due dates to decide when the routine is due."
-        case .oneOff: return "This task does not repeat."
-        }
-    }
-
-    private var stepsSectionDescription: String {
-        model.scheduleMode.wrappedValue == .oneOff
-            ? "Steps run in order. Leave this empty for a single-step todo."
-            : "Steps run in order. Leave this empty for a one-step routine."
-    }
-
-    private var checklistSectionDescription: String {
-        switch model.scheduleMode.wrappedValue {
-        case .fixedIntervalChecklist: return "The routine is done when every checklist item is completed."
-        case .derivedFromChecklist: return "The routine becomes due when the earliest checklist item is due."
-        case .fixedInterval, .softInterval, .oneOff: return ""
-        }
-    }
-
-    private var placeSelectionDescription: String {
+    private var selectedPlaceName: String? {
         if let id = model.selectedPlaceID.wrappedValue,
            let place = model.availablePlaces.first(where: { $0.id == id }) {
-            return "Show this task when you are at \(place.name)."
+            return place.name
         }
-        return "Anywhere means the task is always visible."
-    }
-
-    private var recurrencePatternDescription: String {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays: return "Repeat after a fixed number of days, weeks, or months."
-        case .dailyTime: return "Repeat every day at a specific time."
-        case .weekly: return "Repeat on the same weekday each week, with an optional exact time."
-        case .monthlyDay: return "Repeat on the same calendar day each month, with an optional exact time."
-        }
-    }
-
-    private var autoAssumeDailyDoneHelpText: String {
-        if model.canAutoAssumeDailyDone {
-            return "Show this simple daily routine as assumed done by default. You can still confirm it or mark it not done later."
-        }
-        return "Available only for simple daily routines without steps or checklist items."
-    }
-
-    private var weekdayOptions: [(id: Int, name: String)] {
-        Calendar.current.weekdaySymbols.enumerated().map { (id: $0.offset + 1, name: $0.element) }
-    }
-
-    private func weekdayName(for weekday: Int) -> String {
-        let symbols = Calendar.current.weekdaySymbols
-        return symbols[min(max(weekday - 1, 0), symbols.count - 1)]
-    }
-
-    private func ordinalDay(_ day: Int) -> String {
-        let d = min(max(day, 1), 31)
-        let suffix: String
-        switch d % 100 {
-        case 11, 12, 13: suffix = "th"
-        default:
-            switch d % 10 {
-            case 1: suffix = "st"
-            case 2: suffix = "nd"
-            case 3: suffix = "rd"
-            default: suffix = "th"
-            }
-        }
-        return "\(d)\(suffix)"
-    }
-
-    private func stepperLabel(unit: TaskFormFrequencyUnit, value: Int) -> String {
-        if value == 1 {
-            switch unit {
-            case .day: return "Every day"
-            case .week: return "Every week"
-            case .month: return "Every month"
-            }
-        }
-        return "Every \(value) \(unit.singularLabel)s"
-    }
-
-    private func checklistIntervalLabel(for days: Int) -> String {
-        days == 1 ? "Runs out in 1 day" : "Runs out in \(days) days"
-    }
-
-    private func estimatedDurationLabel(for minutes: Int) -> String {
-        let hours = minutes / 60
-        let remainingMinutes = minutes % 60
-
-        switch (hours, remainingMinutes) {
-        case (0, let remainingMinutes):
-            return remainingMinutes == 1 ? "1 minute" : "\(remainingMinutes) minutes"
-        case (let hours, 0):
-            return hours == 1 ? "1 hour" : "\(hours) hours"
-        default:
-            let hourText = hours == 1 ? "1 hour" : "\(hours) hours"
-            let minuteText = remainingMinutes == 1 ? "1 minute" : "\(remainingMinutes) minutes"
-            return "\(hourText) \(minuteText)"
-        }
-    }
-
-    private func storyPointsLabel(for points: Int) -> String {
-        points == 1 ? "1 story point" : "\(points) story points"
+        return nil
     }
 
     private var estimatedDurationEnabledBinding: Binding<Bool> {
@@ -317,28 +172,6 @@ struct TaskFormContent: View {
         )
     }
 
-    private var weeklyRecurrenceSummary: String {
-        "Due every \(weekdayName(for: model.recurrenceWeekday.wrappedValue))."
-    }
-
-    private var weeklyRecurrenceTimeHelpText: String {
-        if model.recurrenceHasExplicitTime.wrappedValue {
-            return weeklyRecurrenceSummary
-        }
-        return "Optional. Leave this off to keep the routine due any time on \(weekdayName(for: model.recurrenceWeekday.wrappedValue))."
-    }
-
-    private var monthlyRecurrenceSummary: String {
-        "Due on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) of each month."
-    }
-
-    private var monthlyRecurrenceTimeHelpText: String {
-        if model.recurrenceHasExplicitTime.wrappedValue {
-            return monthlyRecurrenceSummary
-        }
-        return "Optional. Leave this off to keep the routine due any time on the \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) of each month."
-    }
-
     private func loadPickedImage(from item: PhotosPickerItem) {
         _ = Task {
             let data = try? await item.loadTransferable(type: Data.self)
@@ -376,7 +209,7 @@ struct TaskFormContent: View {
                 Text("Todo").tag(RoutineTaskType.todo)
             }
             .pickerStyle(.segmented)
-            Text(taskTypeDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.taskTypeDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -493,7 +326,7 @@ struct TaskFormContent: View {
         Section(header: Text("Notes")) {
             TextField("Add notes", text: model.notes, axis: .vertical)
                 .lineLimit(4...8)
-            Text(notesHelpText).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.notesHelpText).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -542,7 +375,9 @@ struct TaskFormContent: View {
     private var importanceUrgencySection: some View {
         Section(header: Text("Importance & Urgency")) {
             ImportanceUrgencyMatrixPicker(importance: model.importance, urgency: model.urgency)
-            Text(importanceUrgencyDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.importanceUrgencyDescription(includesDerivedPriority: true))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -565,7 +400,7 @@ struct TaskFormContent: View {
             Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
             if estimatedDurationEnabledBinding.wrappedValue {
                 Stepper(value: estimatedDurationStepperBinding, in: 5...10_080, step: 5) {
-                    Text(estimatedDurationLabel(for: estimatedDurationStepperBinding.wrappedValue))
+                    Text(TaskFormPresentation.estimatedDurationLabel(for: estimatedDurationStepperBinding.wrappedValue))
                 }
             }
 
@@ -573,7 +408,7 @@ struct TaskFormContent: View {
                 Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
                 if actualDurationEnabledBinding.wrappedValue {
                     Stepper(value: actualDurationStepperBinding, in: 1...1_440, step: 5) {
-                        Text(estimatedDurationLabel(for: actualDurationStepperBinding.wrappedValue))
+                        Text(TaskFormPresentation.estimatedDurationLabel(for: actualDurationStepperBinding.wrappedValue))
                     }
                 }
             }
@@ -581,13 +416,13 @@ struct TaskFormContent: View {
             Toggle("Set story points", isOn: storyPointsEnabledBinding)
             if storyPointsEnabledBinding.wrappedValue {
                 Stepper(value: storyPointsStepperBinding, in: 1...100) {
-                    Text(storyPointsLabel(for: storyPointsStepperBinding.wrappedValue))
+                    Text(TaskFormPresentation.storyPointsLabel(for: storyPointsStepperBinding.wrappedValue))
                 }
             }
 
             Toggle("Show focus timer", isOn: model.focusModeEnabled)
 
-            Text(estimationHelpText).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.estimationHelpText).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -709,7 +544,7 @@ struct TaskFormContent: View {
                 }
                 .padding(.vertical, 4)
             }
-            Text(tagSectionHelpText).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.tagSectionHelpText).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -719,7 +554,7 @@ struct TaskFormContent: View {
                 TextField("Ship portfolio, improve health", text: model.goalDraft)
                     .onSubmit { model.onAddGoal() }
                 Button("Add") { model.onAddGoal() }
-                    .disabled(!canAddGoalDraft)
+                    .disabled(!presentation.canAddGoalDraft)
             }
             availableGoalSuggestionsContent
             if model.selectedGoals.isEmpty {
@@ -751,7 +586,7 @@ struct TaskFormContent: View {
                 }
                 .padding(.vertical, 4)
             }
-            Text(goalSectionHelpText).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.goalSectionHelpText).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -777,7 +612,7 @@ struct TaskFormContent: View {
                 Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
             }
             .pickerStyle(.segmented)
-            Text(scheduleModeDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.scheduleModeDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -824,7 +659,7 @@ struct TaskFormContent: View {
                 }
                 .padding(.vertical, 4)
             }
-            Text(stepsSectionDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.stepsSectionDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -835,7 +670,7 @@ struct TaskFormContent: View {
                     .onSubmit { model.onAddChecklistItem() }
                 if model.scheduleMode.wrappedValue == .derivedFromChecklist {
                     Stepper(value: model.checklistItemDraftInterval, in: 1...365) {
-                        Text(checklistIntervalLabel(for: model.checklistItemDraftInterval.wrappedValue))
+                        Text(TaskFormPresentation.checklistIntervalLabel(for: model.checklistItemDraftInterval.wrappedValue))
                     }
                 }
                 Button("Add Item") { model.onAddChecklistItem() }
@@ -851,7 +686,7 @@ struct TaskFormContent: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.title).frame(maxWidth: .infinity, alignment: .leading)
                                 if model.scheduleMode.wrappedValue == .derivedFromChecklist {
-                                    Text(checklistIntervalLabel(for: item.intervalDays))
+                                    Text(TaskFormPresentation.checklistIntervalLabel(for: item.intervalDays))
                                         .font(.caption).foregroundStyle(.secondary)
                                 }
                             }
@@ -869,7 +704,9 @@ struct TaskFormContent: View {
                 }
                 .padding(.vertical, 4)
             }
-            Text(checklistSectionDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.checklistSectionDescription(includesDerivedChecklistDueDetail: false))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -882,7 +719,7 @@ struct TaskFormContent: View {
                 }
             }
             managePlacesButton
-            Text(placeSelectionDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.placeSelectionDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -898,7 +735,7 @@ struct TaskFormContent: View {
                 .pickerStyle(.segmented)
 
                 Stepper(value: model.frequencyValue, in: 1...365) {
-                    Text("Highlight again after \(stepperLabel(unit: model.frequencyUnit.wrappedValue, value: model.frequencyValue.wrappedValue).lowercased())")
+                    Text("Highlight again after \(TaskFormPresentation.stepperLabel(unit: model.frequencyUnit.wrappedValue, value: model.frequencyValue.wrappedValue).lowercased())")
                 }
 
                 Text("This routine stays visible and never becomes overdue. The app will just give it a softer nudge after this much time has passed.")
@@ -913,7 +750,7 @@ struct TaskFormContent: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                Text(recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
+                Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
             }
 
             switch model.recurrenceKind.wrappedValue {
@@ -928,7 +765,7 @@ struct TaskFormContent: View {
                 }
                 Section(header: Text("Repeat")) {
                     Stepper(value: model.frequencyValue, in: 1...365) {
-                        Text(stepperLabel(unit: model.frequencyUnit.wrappedValue, value: model.frequencyValue.wrappedValue))
+                        Text(TaskFormPresentation.stepperLabel(unit: model.frequencyUnit.wrappedValue, value: model.frequencyValue.wrappedValue))
                     }
                 }
 
@@ -942,11 +779,11 @@ struct TaskFormContent: View {
             case .weekly:
                 Section(header: Text("Weekday")) {
                     Picker("Weekday", selection: model.recurrenceWeekday) {
-                        ForEach(weekdayOptions, id: \.id) { option in
+                        ForEach(presentation.weekdayOptions, id: \.id) { option in
                             Text(option.name).tag(option.id)
                         }
                     }
-                    Text(weeklyRecurrenceSummary)
+                    Text(presentation.weeklyRecurrenceSummary)
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section(header: Text("Time of Day")) {
@@ -954,16 +791,16 @@ struct TaskFormContent: View {
                     if model.recurrenceHasExplicitTime.wrappedValue {
                         DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
                     }
-                    Text(weeklyRecurrenceTimeHelpText)
+                    Text(presentation.weeklyRecurrenceTimeHelpText())
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
             case .monthlyDay:
                 Section(header: Text("Day of Month")) {
                     Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                        Text("Every \(ordinalDay(model.recurrenceDayOfMonth.wrappedValue))")
+                        Text("Every \(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue))")
                     }
-                    Text(monthlyRecurrenceSummary)
+                    Text(presentation.monthlyRecurrenceSummary)
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section(header: Text("Time of Day")) {
@@ -971,7 +808,7 @@ struct TaskFormContent: View {
                     if model.recurrenceHasExplicitTime.wrappedValue {
                         DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
                     }
-                    Text(monthlyRecurrenceTimeHelpText)
+                    Text(presentation.monthlyRecurrenceTimeHelpText())
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -981,7 +818,7 @@ struct TaskFormContent: View {
             Section(header: Text("Assumed Done")) {
                 Toggle("Assume done automatically", isOn: model.autoAssumeDailyDone)
                     .disabled(!model.canAutoAssumeDailyDone)
-                Text(autoAssumeDailyDoneHelpText)
+                Text(presentation.autoAssumeDailyDoneHelpText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

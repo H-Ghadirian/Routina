@@ -1,13 +1,5 @@
 import SwiftUI
 
-enum TaskFormFrequencyUnit: String, CaseIterable, Equatable {
-    case day = "Day"
-    case week = "Week"
-    case month = "Month"
-
-    var singularLabel: String { rawValue.lowercased() }
-}
-
 struct TaskFormModel {
     // MARK: Name
     var name: Binding<String>
