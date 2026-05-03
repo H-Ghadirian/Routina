@@ -699,12 +699,7 @@ struct StatsView: View {
                 }
             }
         }
-        .padding(20)
-        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
-        )
+        .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
     }
 
     private func focusChartSection(metrics: Metrics) -> some View {
@@ -815,12 +810,7 @@ struct StatsView: View {
                 }
             }
         }
-        .padding(20)
-        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
-        )
+        .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
     }
 
     private func tagUsageSection(metrics: Metrics) -> some View {
@@ -906,12 +896,7 @@ struct StatsView: View {
                 .accessibilityLabel("Tag usage bubble chart")
             }
         }
-        .padding(20)
-        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
-        )
+        .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
     }
 
     private func summaryCard(

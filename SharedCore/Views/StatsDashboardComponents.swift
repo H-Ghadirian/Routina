@@ -182,3 +182,17 @@ struct StatsBottomInsightPill: View {
             .background(Color.black.opacity(colorScheme == .dark ? 0.14 : 0.04), in: Capsule(style: .continuous))
     }
 }
+
+extension View {
+    func statsChartCard(
+        surfaceGradient: LinearGradient,
+        colorScheme: ColorScheme
+    ) -> some View {
+        padding(20)
+            .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
+            )
+    }
+}
