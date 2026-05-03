@@ -12,10 +12,6 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     }
 
     func regularTaskSort(_ lhs: Display, _ rhs: Display) -> Bool {
-        if let sortOrderComparison = taskListSortOrderResult(lhs, rhs) {
-            return sortOrderComparison
-        }
-
         if let manualOrderComparison = manualOrderSortResult(
             lhs,
             rhs,
@@ -23,6 +19,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             otherSectionKey: regularManualOrderSectionKey(for: rhs)
         ) {
             return manualOrderComparison
+        }
+
+        if let sortOrderComparison = taskListSortOrderResult(lhs, rhs) {
+            return sortOrderComparison
         }
 
         if configuration.selectedFilter == .onMyMind, lhs.pressure != rhs.pressure {

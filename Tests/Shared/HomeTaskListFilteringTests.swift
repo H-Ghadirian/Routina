@@ -176,6 +176,32 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func manualOrderWinsOverCreatedSortWithinRegularSection() {
+        let sectionKey = "onTrack"
+        let olderDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let newerDate = Date(timeIntervalSince1970: 1_710_000_000)
+        let tasks = [
+            TestTaskDisplay(
+                name: "Manual bottom",
+                createdAt: newerDate,
+                daysUntilDue: 4,
+                manualSectionOrders: [sectionKey: 1]
+            ),
+            TestTaskDisplay(
+                name: "Manual top",
+                createdAt: olderDate,
+                daysUntilDue: 4,
+                manualSectionOrders: [sectionKey: 0]
+            )
+        ]
+
+        let result = makeFiltering(taskListSortOrder: .createdNewestFirst)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Manual top", "Manual bottom"])
+    }
+
+    @Test
     func creationDateSortOrdersNewestAndOldestFirst() {
         let olderDate = Date(timeIntervalSince1970: 1_700_000_000)
         let newerDate = Date(timeIntervalSince1970: 1_710_000_000)
