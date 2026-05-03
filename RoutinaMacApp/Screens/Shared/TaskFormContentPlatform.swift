@@ -25,10 +25,6 @@ struct TaskFormContent: View {
         store: SharedDefaults.app
     ) private var showPersianDates = false
 
-    private var sectionCardStroke: Color {
-        Color.gray.opacity(0.18)
-    }
-
     private var nameFocusBinding: FocusState<Bool>.Binding {
         model.nameFocus ?? $fallbackNameFocused
     }
@@ -269,44 +265,14 @@ struct TaskFormContent: View {
     // MARK: Link URL
 
     private var linkURLCard: some View {
-        macSectionCard(
-            title: "Link URL"
-        ) {
-            TextField("https://example.com", text: model.link)
-                .textFieldStyle(.roundedBorder)
-                .routinaAddRoutinePlatformLinkField()
-        }
+        TaskFormMacLinkCard(model: model)
         .id(FormSection.linkURL)
     }
 
     // MARK: Notes
 
     private var notesCard: some View {
-        macSectionCard(
-            title: "Notes"
-        ) {
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: model.notes)
-                    .frame(minHeight: 120)
-                    .padding(6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(nsColor: .textBackgroundColor))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(sectionCardStroke, lineWidth: 1)
-                    )
-
-                if model.notes.wrappedValue.isEmpty {
-                    Text("Add notes, reminders, or context")
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 14)
-                        .allowsHitTesting(false)
-                }
-            }
-        }
+        TaskFormMacNotesCard(model: model)
         .id(FormSection.notes)
     }
 
