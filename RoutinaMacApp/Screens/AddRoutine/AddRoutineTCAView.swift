@@ -454,56 +454,12 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var editableStepsContent: some View {
-        if store.checklist.routineSteps.isEmpty {
-            Label("No steps yet", systemImage: "list.bullet")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
-            VStack(spacing: 8) {
-                ForEach(Array(store.checklist.routineSteps.enumerated()), id: \.element.id) { index, step in
-                    HStack(spacing: 10) {
-                        Text("\(index + 1).")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 22, alignment: .leading)
-
-                        Text(step.title)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        HStack(spacing: 6) {
-                            Button {
-                                store.send(.moveStepUp(step.id))
-                            } label: {
-                                Image(systemName: "arrow.up")
-                            }
-                            .buttonStyle(.borderless)
-                            .disabled(index == 0)
-
-                            Button {
-                                store.send(.moveStepDown(step.id))
-                            } label: {
-                                Image(systemName: "arrow.down")
-                            }
-                            .buttonStyle(.borderless)
-                            .disabled(index == store.checklist.routineSteps.count - 1)
-
-                            Button(role: .destructive) {
-                                store.send(.removeStep(step.id))
-                            } label: {
-                                Image(systemName: "trash")
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                    }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.secondary.opacity(0.08))
-                    )
-                }
-            }
-            .padding(.vertical, 4)
-        }
+        AddRoutineEditableStepsView(
+            steps: store.checklist.routineSteps,
+            onMoveStepUp: { store.send(.moveStepUp($0)) },
+            onMoveStepDown: { store.send(.moveStepDown($0)) },
+            onRemoveStep: { store.send(.removeStep($0)) }
+        )
     }
 
     @ViewBuilder
