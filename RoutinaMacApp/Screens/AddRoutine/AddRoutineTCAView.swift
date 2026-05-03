@@ -352,23 +352,14 @@ struct AddRoutineTCAView: View {
     }
 
     var checklistItemComposer: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TextField("Bread", text: checklistItemDraftTitleBinding)
-                .onSubmit {
-                    store.send(.addChecklistItemTapped)
-                }
-
-            if store.schedule.scheduleMode == .derivedFromChecklist {
-                Stepper(value: checklistItemDraftIntervalBinding, in: 1...365) {
-                    Text(checklistIntervalLabel(for: store.checklist.checklistItemDraftInterval))
-                }
-            }
-
-            Button("Add Item") {
-                store.send(.addChecklistItemTapped)
-            }
-            .disabled(isAddChecklistItemDisabled)
-        }
+        AddRoutineChecklistItemComposerView(
+            titleDraft: checklistItemDraftTitleBinding,
+            intervalDays: checklistItemDraftIntervalBinding,
+            showsInterval: store.schedule.scheduleMode == .derivedFromChecklist,
+            intervalLabel: checklistIntervalLabel(for:),
+            isAddDisabled: isAddChecklistItemDisabled,
+            onAddItem: { store.send(.addChecklistItemTapped) }
+        )
     }
 
     @ViewBuilder
