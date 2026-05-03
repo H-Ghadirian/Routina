@@ -50,11 +50,14 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         awayRoutineDisplays: [Display],
         archivedRoutineDisplays: [Display],
         hideUnavailableRoutines: Bool,
+        showArchivedTasks: Bool = true,
         taskListKind: HomeFilterTaskListKind
     ) -> Self {
         let regularSections = filtering.groupedRoutineSections(from: routineDisplays)
         let awayTasks = filtering.filteredAwayTasks(awayRoutineDisplays)
-        let archivedTasks = filtering.filteredArchivedTasks(archivedRoutineDisplays)
+        let archivedTasks = showArchivedTasks
+            ? filtering.filteredArchivedTasks(archivedRoutineDisplays)
+            : []
 
         var offset = 0
         var presentationSections = regularSections.map { section in
@@ -113,17 +116,19 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         routineDisplays: [Display],
         awayRoutineDisplays: [Display],
         archivedRoutineDisplays: [Display],
+        showArchivedTasks: Bool = true,
         emptyState: HomeTaskListEmptyState
     ) -> Self {
+        let visibleArchivedDisplays = showArchivedTasks ? archivedRoutineDisplays : []
         let pinnedTasks = filtering.filteredPinnedTasks(
             activeDisplays: routineDisplays,
             awayDisplays: awayRoutineDisplays,
-            archivedDisplays: archivedRoutineDisplays
+            archivedDisplays: visibleArchivedDisplays
         )
         let regularSections = filtering.groupedRoutineSections(
             from: (routineDisplays + awayRoutineDisplays).filter { !$0.isPinned }
         )
-        let archivedTasks = filtering.filteredArchivedTasks(archivedRoutineDisplays, includePinned: false)
+        let archivedTasks = filtering.filteredArchivedTasks(visibleArchivedDisplays, includePinned: false)
 
         var offset = 0
         var presentationSections: [HomeTaskListPresentationSection<Display>] = []

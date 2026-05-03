@@ -90,6 +90,7 @@ struct TabFilterStateManager {
         var taskListViewMode: HomeTaskListViewMode = .all
         var taskListSortOrder: HomeTaskListSortOrder = .smart
         var createdDateFilter: HomeTaskCreatedDateFilter = .all
+        var showArchivedTasks: Bool = true
 
         static var `default`: Snapshot {
             Snapshot(
@@ -106,7 +107,8 @@ struct TabFilterStateManager {
                 selectedPressureFilter: nil,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
-                createdDateFilter: .all
+                createdDateFilter: .all,
+                showArchivedTasks: true
             )
         }
 
@@ -124,7 +126,8 @@ struct TabFilterStateManager {
             selectedPressureFilter: RoutineTaskPressure? = nil,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
-            createdDateFilter: HomeTaskCreatedDateFilter = .all
+            createdDateFilter: HomeTaskCreatedDateFilter = .all,
+            showArchivedTasks: Bool = true
         ) {
             self.selectedTag = selectedTag
             self.selectedTags = selectedTags ?? selectedTag.map { [$0] } ?? []
@@ -140,6 +143,7 @@ struct TabFilterStateManager {
             self.taskListViewMode = taskListViewMode
             self.taskListSortOrder = taskListSortOrder
             self.createdDateFilter = createdDateFilter
+            self.showArchivedTasks = showArchivedTasks
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -157,6 +161,7 @@ struct TabFilterStateManager {
             case taskListViewMode
             case taskListSortOrder
             case createdDateFilter
+            case showArchivedTasks
         }
 
         init(from decoder: Decoder) throws {
@@ -176,6 +181,7 @@ struct TabFilterStateManager {
             taskListViewMode = try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .taskListViewMode) ?? .all
             taskListSortOrder = try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .taskListSortOrder) ?? .smart
             createdDateFilter = try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .createdDateFilter) ?? .all
+            showArchivedTasks = try container.decodeIfPresent(Bool.self, forKey: .showArchivedTasks) ?? true
         }
     }
 
@@ -214,6 +220,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeTaskListViewMode: HomeTaskListViewMode = .all
     var homeTaskListSortOrder: HomeTaskListSortOrder = .smart
     var homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all
+    var homeShowArchivedTasks: Bool = true
     var homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot]
     var hideUnavailableRoutines: Bool
     var homeSelectedTimelineRange: TimelineRange
@@ -261,6 +268,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeTaskListViewMode: HomeTaskListViewMode = .all,
         homeTaskListSortOrder: HomeTaskListSortOrder = .smart,
         homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all,
+        homeShowArchivedTasks: Bool = true,
         homeTabFilterSnapshots: [String: TabFilterStateManager.Snapshot],
         hideUnavailableRoutines: Bool,
         homeSelectedTimelineRange: TimelineRange,
@@ -307,6 +315,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeTaskListViewMode = homeTaskListViewMode
         self.homeTaskListSortOrder = homeTaskListSortOrder
         self.homeCreatedDateFilter = homeCreatedDateFilter
+        self.homeShowArchivedTasks = homeShowArchivedTasks
         self.homeTabFilterSnapshots = homeTabFilterSnapshots
         self.hideUnavailableRoutines = hideUnavailableRoutines
         self.homeSelectedTimelineRange = homeSelectedTimelineRange
@@ -355,6 +364,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeTaskListViewMode
         case homeTaskListSortOrder
         case homeCreatedDateFilter
+        case homeShowArchivedTasks
         case homeTabFilterSnapshots
         case hideUnavailableRoutines
         case homeSelectedTimelineRange
@@ -405,6 +415,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
             homeTaskListSortOrder: try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .homeTaskListSortOrder) ?? .smart,
             homeCreatedDateFilter: try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .homeCreatedDateFilter) ?? .all,
+            homeShowArchivedTasks: try container.decodeIfPresent(Bool.self, forKey: .homeShowArchivedTasks) ?? true,
             homeTabFilterSnapshots: try container.decodeIfPresent([String: TabFilterStateManager.Snapshot].self, forKey: .homeTabFilterSnapshots) ?? [:],
             hideUnavailableRoutines: try container.decodeIfPresent(Bool.self, forKey: .hideUnavailableRoutines) ?? false,
             homeSelectedTimelineRange: try container.decodeIfPresent(TimelineRange.self, forKey: .homeSelectedTimelineRange) ?? .all,
@@ -454,6 +465,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeTaskListViewMode: .all,
         homeTaskListSortOrder: .smart,
         homeCreatedDateFilter: .all,
+        homeShowArchivedTasks: true,
         homeTabFilterSnapshots: [:],
         hideUnavailableRoutines: false,
         homeSelectedTimelineRange: .all,

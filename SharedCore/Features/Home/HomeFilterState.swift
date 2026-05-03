@@ -15,6 +15,7 @@ struct HomeTaskFiltersState: Equatable {
     var taskListViewMode: HomeTaskListViewMode = .all
     var taskListSortOrder: HomeTaskListSortOrder = .smart
     var createdDateFilter: HomeTaskCreatedDateFilter = .all
+    var showArchivedTasks: Bool = true
     var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:]
     var isFilterSheetPresented: Bool = false
 
@@ -33,7 +34,8 @@ struct HomeTaskFiltersState: Equatable {
             selectedPressureFilter: selectedPressureFilter,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
-            createdDateFilter: createdDateFilter
+            createdDateFilter: createdDateFilter,
+            showArchivedTasks: showArchivedTasks
         )
     }
 
@@ -67,6 +69,7 @@ struct HomeTaskFiltersState: Equatable {
         taskListViewMode = snapshot.taskListViewMode
         taskListSortOrder = snapshot.taskListSortOrder
         createdDateFilter = snapshot.createdDateFilter
+        showArchivedTasks = snapshot.showArchivedTasks
     }
 }
 
@@ -149,6 +152,7 @@ enum HomeTemporaryViewStateMapper {
             taskListViewMode: persistedState.homeTaskListViewMode,
             taskListSortOrder: persistedState.homeTaskListSortOrder,
             createdDateFilter: persistedState.homeCreatedDateFilter,
+            showArchivedTasks: persistedState.homeShowArchivedTasks,
             tabFilterSnapshots: persistedState.homeTabFilterSnapshots,
             isFilterSheetPresented: false
         )
@@ -211,6 +215,7 @@ enum HomeTemporaryViewStateMapper {
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTaskListSortOrder: taskFilters.taskListSortOrder,
             homeCreatedDateFilter: taskFilters.createdDateFilter,
+            homeShowArchivedTasks: taskFilters.showArchivedTasks,
             homeTabFilterSnapshots: taskFilters.tabFilterSnapshots,
             hideUnavailableRoutines: values.hideUnavailableRoutines,
             homeSelectedTimelineRange: values.timelineFilters.selectedRange,

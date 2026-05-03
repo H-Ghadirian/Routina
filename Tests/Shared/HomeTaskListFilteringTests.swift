@@ -264,6 +264,22 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func iOSPresentationCanHideArchivedSection() {
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(),
+            routineDisplays: [TestTaskDisplay(name: "Active", daysUntilDue: 4)],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [TestTaskDisplay(name: "Archived")],
+            hideUnavailableRoutines: false,
+            showArchivedTasks: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.title) == ["On Track"])
+        #expect(presentation.visibleTaskCount == 1)
+    }
+
+    @Test
     func iOSPresentationReportsHiddenUnavailableEmptyState() {
         let presentation = HomeTaskListPresentation.iOS(
             filtering: makeFiltering(),
@@ -309,6 +325,29 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [pinnedID, regularID, archivedID])
         #expect(presentation.visibleTaskCount == 3)
         #expect(presentation.emptyState == nil)
+    }
+
+    @Test
+    func sidebarPresentationCanHideArchivedSectionAndArchivedPinnedTasks() {
+        let pinnedID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [
+                TestTaskDisplay(taskID: pinnedID, name: "Pinned Archived", isPinned: true),
+                TestTaskDisplay(name: "Archived")
+            ],
+            showArchivedTasks: false,
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.isEmpty)
+        #expect(presentation.visibleTaskCount == 0)
     }
 }
 

@@ -62,6 +62,22 @@ struct HomeFiltersCreatedSection: View {
     }
 }
 
+struct HomeFiltersArchivedSection: View {
+    @Binding var showArchivedTasks: Bool
+
+    var body: some View {
+        Section("Archived") {
+            Toggle("Show archived list", isOn: $showArchivedTasks)
+
+            Text(showArchivedTasks
+                ? "Archived routines and todos are shown in their own list."
+                : "Archived routines and todos are hidden from the task list.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 struct HomeFiltersStatusSection: View {
     let placeFilterPluralNoun: String
     let availableFilters: [RoutineListFilter]

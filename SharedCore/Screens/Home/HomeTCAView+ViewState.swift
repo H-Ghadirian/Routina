@@ -17,6 +17,7 @@ extension HomeTCAView {
             selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
             selectedPressureFilter: store.selectedPressureFilter,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
+            showArchivedTasks: store.showArchivedTasks,
             onClearAll: { store.send(.clearOptionalFilters) },
             onClearTaskListViewMode: { store.send(.taskListViewModeChanged(.all)) },
             onClearTaskListSortOrder: { store.send(.taskListSortOrderChanged(.smart)) },
@@ -41,6 +42,9 @@ extension HomeTCAView {
             },
             onShowUnavailableRoutines: {
                 store.send(.hideUnavailableRoutinesChanged(false))
+            },
+            onShowArchivedTasks: {
+                store.send(.showArchivedTasksChanged(true))
             }
         )
     }
@@ -62,6 +66,7 @@ extension HomeTCAView {
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             selectedPressureFilter: store.selectedPressureFilter,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
+            showArchivedTasks: store.showArchivedTasks,
             hasSavedPlaces: hasSavedPlaces,
             awayRoutineCount: store.awayRoutineDisplays.count,
             locationAuthorizationStatus: store.locationSnapshot.authorizationStatus
@@ -72,6 +77,13 @@ extension HomeTCAView {
         Binding(
             get: { store.hideUnavailableRoutines },
             set: { store.send(.hideUnavailableRoutinesChanged($0)) }
+        )
+    }
+
+    var showArchivedTasksBinding: Binding<Bool> {
+        Binding(
+            get: { store.showArchivedTasks },
+            set: { store.send(.showArchivedTasksChanged($0)) }
         )
     }
 
@@ -132,7 +144,8 @@ extension HomeTCAView {
                 set: { store.send(.excludeTagMatchModeChanged($0)) }
             ),
             selectedPlaceID: manualPlaceFilterBinding,
-            hideUnavailableRoutines: hideUnavailableRoutinesBinding
+            hideUnavailableRoutines: hideUnavailableRoutinesBinding,
+            showArchivedTasks: showArchivedTasksBinding
         )
     }
 

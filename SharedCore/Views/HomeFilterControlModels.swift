@@ -14,6 +14,7 @@ struct HomeFilterBindings {
     let excludeTagMatchMode: Binding<RoutineTagMatchMode>
     let selectedPlaceID: Binding<UUID?>
     let hideUnavailableRoutines: Binding<Bool>
+    let showArchivedTasks: Binding<Bool>
 
     var tagRules: HomeTagRuleBindings {
         HomeTagRuleBindings(

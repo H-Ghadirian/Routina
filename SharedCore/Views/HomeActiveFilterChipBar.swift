@@ -11,6 +11,7 @@ struct HomeActiveFilterChipBar: View {
     let selectedImportanceUrgencyFilterLabel: String?
     let selectedPressureFilter: RoutineTaskPressure?
     let hideUnavailableRoutines: Bool
+    let showArchivedTasks: Bool
     let onClearAll: () -> Void
     let onClearTaskListViewMode: () -> Void
     let onClearTaskListSortOrder: () -> Void
@@ -22,6 +23,7 @@ struct HomeActiveFilterChipBar: View {
     let onClearImportanceUrgency: () -> Void
     let onClearPressure: () -> Void
     let onShowUnavailableRoutines: () -> Void
+    let onShowArchivedTasks: () -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -105,6 +107,14 @@ struct HomeActiveFilterChipBar: View {
                         title: "Away hidden",
                         systemImage: "location.slash",
                         action: onShowUnavailableRoutines
+                    )
+                }
+
+                if !showArchivedTasks {
+                    HomeActiveFilterChip(
+                        title: "Archived hidden",
+                        systemImage: "archivebox",
+                        action: onShowArchivedTasks
                     )
                 }
             }

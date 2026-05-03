@@ -7,6 +7,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var taskListSortOrder: HomeTaskListSortOrder
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
+    @Binding var showArchivedTasks: Bool
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     let queryOptions: HomeAdvancedQueryOptions
@@ -32,6 +33,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             HomeMacSidebarSectionCard {
                 createdDatePicker
+            }
+
+            HomeMacSidebarSectionCard {
+                archivedToggle
             }
 
             HomeMacSidebarSectionCard {
@@ -213,6 +218,18 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     .buttonStyle(.plain)
                 }
             }
+        }
+    }
+
+    private var archivedToggle: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("Show archived list", isOn: $showArchivedTasks)
+
+            Text(showArchivedTasks
+                ? "Archived routines and todos are shown in their own list."
+                : "Archived routines and todos are hidden from the task list.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

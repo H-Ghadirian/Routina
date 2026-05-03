@@ -323,6 +323,7 @@ extension HomeTCAView {
                 taskListViewMode: homeFilterBindings.taskListViewMode,
                 taskListSortOrder: homeFilterBindings.taskListSortOrder,
                 createdDateFilter: homeFilterBindings.createdDateFilter,
+                showArchivedTasks: homeFilterBindings.showArchivedTasks,
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
                 queryOptions: HomeAdvancedQueryOptions(

@@ -44,6 +44,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let selectedPressureFilter: RoutineTaskPressure?
     let hideUnavailableRoutines: Bool
+    let showArchivedTasks: Bool
     let hasSavedPlaces: Bool
     let awayRoutineCount: Int
     let locationAuthorizationStatus: LocationAuthorizationStatus
@@ -64,6 +65,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         selectedPressureFilter: RoutineTaskPressure? = nil,
         hideUnavailableRoutines: Bool = false,
+        showArchivedTasks: Bool = true,
         hasSavedPlaces: Bool = false,
         awayRoutineCount: Int = 0,
         locationAuthorizationStatus: LocationAuthorizationStatus = .notDetermined
@@ -83,6 +85,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
         self.selectedPressureFilter = selectedPressureFilter
         self.hideUnavailableRoutines = hideUnavailableRoutines
+        self.showArchivedTasks = showArchivedTasks
         self.hasSavedPlaces = hasSavedPlaces
         self.awayRoutineCount = awayRoutineCount
         self.locationAuthorizationStatus = locationAuthorizationStatus
@@ -101,6 +104,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if taskListSortOrder != .smart { count += 1 }
         if createdDateFilter != .all { count += 1 }
         if hideUnavailableRoutines { count += 1 }
+        if !showArchivedTasks { count += 1 }
         return count
     }
 
@@ -162,6 +166,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if hideUnavailableRoutines {
             labels.append("Away hidden")
+        }
+
+        if !showArchivedTasks {
+            labels.append("Archived hidden")
         }
 
         return labels

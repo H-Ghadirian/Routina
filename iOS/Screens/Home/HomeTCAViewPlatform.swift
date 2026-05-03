@@ -256,6 +256,7 @@ extension HomeTCAView {
             awayRoutineDisplays: awayRoutineDisplays,
             archivedRoutineDisplays: archivedRoutineDisplays,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
+            showArchivedTasks: store.showArchivedTasks,
             taskListKind: store.taskListMode.filterTaskListKind
         )
 

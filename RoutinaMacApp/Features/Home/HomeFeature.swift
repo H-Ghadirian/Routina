@@ -187,6 +187,7 @@ struct HomeFeature {
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
+            showArchivedTasks: Bool = true,
             tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] = [:],
             isFilterSheetPresented: Bool = false,
             selectedTimelineRange: TimelineRange = .all,
@@ -251,6 +252,7 @@ struct HomeFeature {
                 taskListViewMode: taskListViewMode,
                 taskListSortOrder: taskListSortOrder,
                 createdDateFilter: createdDateFilter,
+                showArchivedTasks: showArchivedTasks,
                 tabFilterSnapshots: tabFilterSnapshots,
                 isFilterSheetPresented: isFilterSheetPresented
             )
@@ -402,6 +404,11 @@ struct HomeFeature {
         var createdDateFilter: HomeTaskCreatedDateFilter {
             get { taskFilters.createdDateFilter }
             set { taskFilters.createdDateFilter = newValue }
+        }
+
+        var showArchivedTasks: Bool {
+            get { taskFilters.showArchivedTasks }
+            set { taskFilters.showArchivedTasks = newValue }
         }
 
         var tabFilterSnapshots: [String: TabFilterStateManager.Snapshot] {
@@ -585,6 +592,7 @@ struct HomeFeature {
         case taskListViewModeChanged(HomeTaskListViewMode)
         case taskListSortOrderChanged(HomeTaskListSortOrder)
         case createdDateFilterChanged(HomeTaskCreatedDateFilter)
+        case showArchivedTasksChanged(Bool)
         case isFilterSheetPresentedChanged(Bool)
         case clearOptionalFilters
 
@@ -953,6 +961,9 @@ struct HomeFeature {
 
             case let .createdDateFilterChanged(filter):
                 return filterMutationHandler().applyTaskFilterMutation(.createdDateFilter(filter), state: &state)
+
+            case let .showArchivedTasksChanged(showArchivedTasks):
+                return filterMutationHandler().applyTaskFilterMutation(.showArchivedTasks(showArchivedTasks), state: &state)
 
             case let .isFilterSheetPresentedChanged(isPresented):
                 return filterMutationHandler().applyTaskFilterMutation(.isFilterSheetPresented(isPresented), state: &state)

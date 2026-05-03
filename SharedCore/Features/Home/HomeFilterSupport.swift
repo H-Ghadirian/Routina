@@ -20,6 +20,7 @@ enum HomeTaskFilterMutation: Equatable {
     case taskListViewMode(HomeTaskListViewMode)
     case taskListSortOrder(HomeTaskListSortOrder)
     case createdDateFilter(HomeTaskCreatedDateFilter)
+    case showArchivedTasks(Bool)
     case isFilterSheetPresented(Bool)
     case clearOptionalFilters
 }
@@ -80,6 +81,7 @@ enum HomeFilterEditor {
         taskFilters.taskListViewMode = .all
         taskFilters.taskListSortOrder = .smart
         taskFilters.createdDateFilter = .all
+        taskFilters.showArchivedTasks = true
 
         if hideUnavailableRoutines {
             hideUnavailableRoutines = false
@@ -137,6 +139,9 @@ enum HomeFilterEditor {
 
         case let .createdDateFilter(filter):
             taskFilters.createdDateFilter = filter
+
+        case let .showArchivedTasks(showArchivedTasks):
+            taskFilters.showArchivedTasks = showArchivedTasks
 
         case let .isFilterSheetPresented(isPresented):
             taskFilters.isFilterSheetPresented = isPresented
