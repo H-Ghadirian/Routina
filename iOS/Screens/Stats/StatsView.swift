@@ -68,14 +68,24 @@ struct StatsView: View {
         store.availableTags
     }
 
+    private var filterPresentation: StatsFilterPresentation {
+        StatsFilterPresentation(
+            taskTypeFilter: selectedTaskTypeFilter,
+            advancedQuery: store.advancedQuery,
+            selectedTags: store.effectiveSelectedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            excludedTags: store.excludedTags,
+            excludeTagMatchMode: store.excludeTagMatchMode,
+            selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            availableTags: availableTags,
+            relatedTagRules: store.relatedTagRules,
+            tagColors: store.tagColors
+        )
+    }
+
     private var suggestedRelatedFilterTags: [String] {
-        let selectedTags = store.effectiveSelectedTags
-        guard !selectedTags.isEmpty else { return [] }
-        let suggestionSource = relatedFilterTagSuggestionAnchor.map { [$0] } ?? Array(selectedTags)
-        return RoutineTagRelations.relatedTags(
-            for: suggestionSource,
-            rules: store.relatedTagRules,
-            availableTags: availableTags
+        filterPresentation.suggestedRelatedTags(
+            suggestionAnchor: relatedFilterTagSuggestionAnchor
         )
     }
 
@@ -84,32 +94,7 @@ struct StatsView: View {
     }
 
     private var availableExcludeTags: [String] {
-        let baseTasks = store.tasks.filter { task in
-            switch selectedTaskTypeFilter {
-            case .all:
-                return true
-            case .routines:
-                return !task.isOneOffTask
-            case .todos:
-                return task.isOneOffTask
-            }
-        }.filter { task in
-            HomeFeature.matchesImportanceUrgencyFilter(
-                store.selectedImportanceUrgencyFilter,
-                importance: task.importance,
-                urgency: task.urgency
-            )
-        }.filter { task in
-            HomeFeature.matchesSelectedTags(
-                store.effectiveSelectedTags,
-                mode: store.includeTagMatchMode,
-                in: task.tags
-            )
-        }
-
-        return RoutineTag.allTags(from: baseTasks.map(\.tags)).filter { tag in
-            !store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
-        }
+        filterPresentation.availableExcludeTags(from: store.tasks)
     }
 
     private var tagRuleBindings: HomeTagRuleBindings {
@@ -126,21 +111,9 @@ struct StatsView: View {
     }
 
     private var tagRuleData: HomeTagFilterData {
-        let tagColors = store.tagColors
-        return HomeTagFilterData(
-            selectedTags: store.effectiveSelectedTags,
-            excludedTags: store.excludedTags,
-            tagSummaries: RoutineTagColors.applying(
-                tagColors,
-                to: availableTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) }
-            ),
-            allTagTaskCount: 0,
+        filterPresentation.tagRuleData(
             suggestedRelatedTags: suggestedRelatedFilterTags,
-            availableExcludeTagSummaries: RoutineTagColors.applying(
-                tagColors,
-                to: availableExcludeTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) }
-            ),
-            showsTagCounts: false
+            availableExcludeTags: availableExcludeTags
         )
     }
 
@@ -161,59 +134,31 @@ struct StatsView: View {
     }
 
     private var hasActiveSheetFilters: Bool {
-        selectedTaskTypeFilter != .all
-            || !store.advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || !store.effectiveSelectedTags.isEmpty
-            || !store.excludedTags.isEmpty
-            || store.selectedImportanceUrgencyFilter != nil
+        filterPresentation.hasActiveSheetFilters
     }
 
     private var activeSheetFilterCount: Int {
-        var count = 0
-        if selectedTaskTypeFilter != .all { count += 1 }
-        if !store.advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
-        if !store.effectiveSelectedTags.isEmpty { count += 1 }
-        count += store.excludedTags.count
-        if store.selectedImportanceUrgencyFilter != nil { count += 1 }
-        return count
-    }
-
-    private func isIncludedTagSelected(_ tag: String) -> Bool {
-        store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+        filterPresentation.activeSheetFilterCount
     }
 
     private func toggleIncludedTag(_ tag: String) {
-        var selected = store.effectiveSelectedTags
-        if selected.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            selected.insert(tag)
-            relatedFilterTagSuggestionAnchor = tag
-        }
-        store.send(.selectedTagsChanged(selected))
-        if selected.isEmpty {
-            relatedFilterTagSuggestionAnchor = nil
-        }
+        let mutation = filterPresentation.toggledIncludedTag(
+            tag,
+            currentSuggestionAnchor: relatedFilterTagSuggestionAnchor
+        )
+        relatedFilterTagSuggestionAnchor = mutation.suggestionAnchor
+        store.send(.selectedTagsChanged(mutation.selectedTags))
     }
 
     private func addIncludedTag(_ tag: String) {
-        guard !isIncludedTagSelected(tag) else { return }
-        var selected = store.effectiveSelectedTags
-        selected.insert(tag)
-        store.send(.selectedTagsChanged(selected))
+        guard let mutation = filterPresentation.addedIncludedTag(tag) else { return }
+        store.send(.selectedTagsChanged(mutation.selectedTags))
     }
 
     private func toggleExcludedTag(_ tag: String) {
-        var excluded = store.excludedTags
-        if excluded.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            excluded = excluded.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            excluded.insert(tag)
-            var selected = store.effectiveSelectedTags
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-            store.send(.selectedTagsChanged(selected))
-        }
-        store.send(.excludedTagsChanged(excluded))
+        let mutation = filterPresentation.toggledExcludedTag(tag)
+        store.send(.selectedTagsChanged(mutation.selectedTags))
+        store.send(.excludedTagsChanged(mutation.excludedTags))
     }
 
     private var filteredTaskCount: Int {

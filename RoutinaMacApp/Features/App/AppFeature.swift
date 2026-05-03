@@ -1,14 +1,6 @@
 import ComposableArchitecture
 import Foundation
 
-enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatable, Codable {
-    case all = "All"
-    case routines = "Routines"
-    case todos = "Todos"
-
-    var id: Self { self }
-}
-
 @Reducer
 struct AppFeature {
 

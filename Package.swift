@@ -192,6 +192,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeRoutineMetadataDisplay.swift",
                 "SharedCore/Features/Home/HomeRoutineDisplayMetadataPresentation.swift",
                 "SharedCore/Features/Home/HomeRoutineDisplayBadgePresentation.swift",
+                "SharedCore/Features/Home/StatsFilterPresentation.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadEffectFactory.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadHandler.swift",
                 "SharedCore/Features/Home/HomeFeatureTemporaryViewStateSupport.swift",

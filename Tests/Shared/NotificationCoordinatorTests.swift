@@ -8,6 +8,7 @@ import Testing
 @testable @preconcurrency import Routina
 #endif
 
+@Suite(.serialized)
 struct NotificationCoordinatorTests {
     @Test
     func shouldScheduleNotification_returnsFalseForSoftRoutine() {

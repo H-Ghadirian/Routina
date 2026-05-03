@@ -38,9 +38,8 @@ extension HomeTCAView {
                 statsStore?.send(.includeTagMatchModeChanged(mode))
             },
             onSelectSuggestedTag: { tag in
-                var selected = selectedStatsTags
-                selected.insert(tag)
-                statsStore?.send(.selectedTagsChanged(selected))
+                guard let mutation = statsFilterPresentation.addedIncludedTag(tag) else { return }
+                statsStore?.send(.selectedTagsChanged(mutation.selectedTags))
             },
             selectedExcludedTags: selectedStatsExcludedTags,
             excludeTagMatchMode: statsStore?.excludeTagMatchMode ?? .any,
@@ -54,15 +53,25 @@ extension HomeTCAView {
                 statsTagCount(for: tag)
             },
             onToggleExcludedTag: { tag in
-                if selectedStatsExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-                    statsStore?.send(.excludedTagsChanged(selectedStatsExcludedTags.filter { $0 != tag }))
-                } else {
-                    var newTags = selectedStatsExcludedTags
-                    newTags.insert(tag)
-                    statsStore?.send(.excludedTagsChanged(newTags))
-                    statsStore?.send(.selectedTagsChanged(selectedStatsTags.filter { !RoutineTag.contains($0, in: [tag]) }))
-                }
+                let mutation = statsFilterPresentation.toggledExcludedTag(tag)
+                statsStore?.send(.selectedTagsChanged(mutation.selectedTags))
+                statsStore?.send(.excludedTagsChanged(mutation.excludedTags))
             }
+        )
+    }
+
+    private var statsFilterPresentation: StatsFilterPresentation {
+        StatsFilterPresentation(
+            taskTypeFilter: statsStore?.taskTypeFilter ?? .all,
+            advancedQuery: statsStore?.advancedQuery ?? "",
+            selectedTags: selectedStatsTags,
+            includeTagMatchMode: statsStore?.includeTagMatchMode ?? .all,
+            excludedTags: selectedStatsExcludedTags,
+            excludeTagMatchMode: statsStore?.excludeTagMatchMode ?? .any,
+            selectedImportanceUrgencyFilter: statsStore?.selectedImportanceUrgencyFilter,
+            availableTags: statsAllTags,
+            relatedTagRules: store.relatedTagRules,
+            tagColors: store.tagColors
         )
     }
 
@@ -83,60 +92,17 @@ extension HomeTCAView {
     }
 
     private var suggestedRelatedStatsTags: [String] {
-        guard !selectedStatsTags.isEmpty else { return [] }
-        let suggestionSource = relatedStatsTagSuggestionAnchor.map { [$0] } ?? Array(selectedStatsTags)
-        return RoutineTagRelations.relatedTags(
-            for: suggestionSource,
-            rules: store.relatedTagRules,
-            availableTags: statsAllTags
+        statsFilterPresentation.suggestedRelatedTags(
+            suggestionAnchor: relatedStatsTagSuggestionAnchor
         )
     }
 
     private var statsTagSummaries: [RoutineTagSummary] {
-        if let statsStore {
-            let filteredTasks = statsStore.tasks.filter { task in
-                switch statsStore.taskTypeFilter {
-                case .all:
-                    return true
-                case .routines:
-                    return !task.isOneOffTask
-                case .todos:
-                    return task.isOneOffTask
-                }
-            }.filter { task in
-                HomeFeature.matchesImportanceUrgencyFilter(
-                    statsStore.selectedImportanceUrgencyFilter,
-                    importance: task.importance,
-                    urgency: task.urgency
-                )
-            }
-            return RoutineTagColors.applying(store.tagColors, to: RoutineTag.summaries(from: filteredTasks))
-        }
-
-        return RoutineTagColors.applying(store.tagColors, to: RoutineTag.summaries(from: store.routineTasks))
+        statsFilterPresentation.tagSummaries(from: statsStore?.tasks ?? store.routineTasks)
     }
 
     private var statsTaskCountForSelectedTypeFilter: Int {
-        if let statsStore {
-            return statsStore.tasks.filter { task in
-                switch statsStore.taskTypeFilter {
-                case .all:
-                    return true
-                case .routines:
-                    return !task.isOneOffTask
-                case .todos:
-                    return task.isOneOffTask
-                }
-            }.filter { task in
-                HomeFeature.matchesImportanceUrgencyFilter(
-                    statsStore.selectedImportanceUrgencyFilter,
-                    importance: task.importance,
-                    urgency: task.urgency
-                )
-            }.count
-        }
-
-        return store.routineTasks.count
+        statsFilterPresentation.taskCountForSelectedTypeFilter(in: statsStore?.tasks ?? store.routineTasks)
     }
 
     private var selectedStatsTag: String? {
@@ -152,26 +118,15 @@ extension HomeTCAView {
     }
 
     private var statsTagSelectionSummary: String {
-        if !selectedStatsTags.isEmpty {
-            return "\((statsStore?.includeTagMatchMode ?? .all).rawValue) of \(selectedStatsTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-        }
-
-        let tagCount = statsTagSummaries.count
-        return "\(tagCount) \(tagCount == 1 ? "tag" : "tags") available"
+        statsFilterPresentation.tagSelectionSummary(tagCount: statsTagSummaries.count)
     }
 
     private var statsAvailableExcludeTags: [String] {
-        statsAllTags.filter { tag in
-            !selectedStatsTags.contains { RoutineTag.contains($0, in: [tag]) }
-        }
+        statsFilterPresentation.availableExcludeTags(from: statsStore?.tasks ?? store.routineTasks)
     }
 
     private var statsExcludedTagSummary: String {
-        if !selectedStatsExcludedTags.isEmpty {
-            return "Hiding tasks tagged: \(selectedStatsExcludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-        }
-
-        return "Select tags to hide tasks that have them."
+        statsFilterPresentation.excludedTagSummary
     }
 
     private var statsImportanceUrgencySummary: String {
