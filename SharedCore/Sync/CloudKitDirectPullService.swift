@@ -157,64 +157,119 @@ enum CloudKitDirectPullService {
             try migrateLogs(from: sourceTaskID, to: targetTaskID, in: context)
         }
 
-        for recordID in result.deletedRecordIDs {
-            guard let id = UUID(uuidString: recordID.recordName) else { continue }
-            if let targetTaskID = mergedTaskIDs[id], targetTaskID != id {
-                continue
-            }
-            if let targetPlaceID = mergedPlaceIDs[id], targetPlaceID != id {
-                continue
-            }
-            if let targetGoalID = mergedGoalIDs[id], targetGoalID != id {
-                continue
-            }
-
-            let goalDescriptor = FetchDescriptor<RoutineGoal>(
-                predicate: #Predicate { goal in
-                    goal.id == id
-                }
-            )
-            if let goal = try context.fetch(goalDescriptor).first {
-                context.delete(goal)
-                try clearGoalReference(goalID: id, in: context)
-                continue
-            }
-
-            let placeDescriptor = FetchDescriptor<RoutinePlace>(
-                predicate: #Predicate { place in
-                    place.id == id
-                }
-            )
-            if let place = try context.fetch(placeDescriptor).first {
-                context.delete(place)
-                try clearPlaceReference(placeID: id, in: context)
-                continue
-            }
-
-            let taskDescriptor = FetchDescriptor<RoutineTask>(
-                predicate: #Predicate { task in
-                    task.id == id
-                }
-            )
-            if let task = try context.fetch(taskDescriptor).first {
-                context.delete(task)
-            }
-
-            let logDescriptor = FetchDescriptor<RoutineLog>(
-                predicate: #Predicate { log in
-                    log.id == id
-                }
-            )
-            if let log = try context.fetch(logDescriptor).first {
-                context.delete(log)
-            }
-        }
+        try applyDeletedRecordIDs(
+            result.deletedRecordIDs,
+            mergedTaskIDs: mergedTaskIDs,
+            mergedPlaceIDs: mergedPlaceIDs,
+            mergedGoalIDs: mergedGoalIDs,
+            in: context
+        )
 
         try deduplicateLogs(in: context)
 
         if context.hasChanges {
             try context.save()
             NotificationCenter.default.postRoutineDidUpdate()
+        }
+    }
+
+    @MainActor
+    private static func applyDeletedRecordIDs(
+        _ recordIDs: [CKRecord.ID],
+        mergedTaskIDs: [UUID: UUID],
+        mergedPlaceIDs: [UUID: UUID],
+        mergedGoalIDs: [UUID: UUID],
+        in context: ModelContext
+    ) throws {
+        for recordID in recordIDs {
+            guard let id = UUID(uuidString: recordID.recordName) else { continue }
+            if shouldIgnoreDeletedRecord(
+                id,
+                mergedTaskIDs: mergedTaskIDs,
+                mergedPlaceIDs: mergedPlaceIDs,
+                mergedGoalIDs: mergedGoalIDs
+            ) {
+                continue
+            }
+
+            if try deleteGoal(id: id, in: context) {
+                continue
+            }
+
+            if try deletePlace(id: id, in: context) {
+                continue
+            }
+
+            try deleteTask(id: id, in: context)
+            try deleteLog(id: id, in: context)
+        }
+    }
+
+    private static func shouldIgnoreDeletedRecord(
+        _ id: UUID,
+        mergedTaskIDs: [UUID: UUID],
+        mergedPlaceIDs: [UUID: UUID],
+        mergedGoalIDs: [UUID: UUID]
+    ) -> Bool {
+        if let targetTaskID = mergedTaskIDs[id], targetTaskID != id {
+            return true
+        }
+        if let targetPlaceID = mergedPlaceIDs[id], targetPlaceID != id {
+            return true
+        }
+        if let targetGoalID = mergedGoalIDs[id], targetGoalID != id {
+            return true
+        }
+        return false
+    }
+
+    @MainActor
+    private static func deleteGoal(id: UUID, in context: ModelContext) throws -> Bool {
+        let descriptor = FetchDescriptor<RoutineGoal>(
+            predicate: #Predicate { goal in
+                goal.id == id
+            }
+        )
+        guard let goal = try context.fetch(descriptor).first else { return false }
+        context.delete(goal)
+        try clearGoalReference(goalID: id, in: context)
+        return true
+    }
+
+    @MainActor
+    private static func deletePlace(id: UUID, in context: ModelContext) throws -> Bool {
+        let descriptor = FetchDescriptor<RoutinePlace>(
+            predicate: #Predicate { place in
+                place.id == id
+            }
+        )
+        guard let place = try context.fetch(descriptor).first else { return false }
+        context.delete(place)
+        try clearPlaceReference(placeID: id, in: context)
+        return true
+    }
+
+    @MainActor
+    private static func deleteTask(id: UUID, in context: ModelContext) throws {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == id
+            }
+        )
+        if let task = try context.fetch(descriptor).first {
+            context.delete(task)
+        }
+    }
+
+    @MainActor
+    private static func deleteLog(id: UUID, in context: ModelContext) throws {
+        let descriptor = FetchDescriptor<RoutineLog>(
+            predicate: #Predicate { log in
+                log.id == id
+            }
+        )
+        if let log = try context.fetch(descriptor).first {
+            context.delete(log)
         }
     }
 
