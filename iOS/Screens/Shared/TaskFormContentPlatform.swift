@@ -154,20 +154,11 @@ struct TaskFormContent: View {
     }
 
     private var notesSection: some View {
-        Section(header: Text("Notes")) {
-            TextField("Add notes", text: model.notes, axis: .vertical)
-                .lineLimit(4...8)
-            Text(presentation.notesHelpText).font(.caption).foregroundStyle(.secondary)
-        }
+        TaskFormIOSNotesSection(model: model, presentation: presentation)
     }
 
     private var linkSection: some View {
-        Section(header: Text("Link")) {
-            TextField("https://example.com", text: model.link)
-                .routinaAddRoutinePlatformLinkField()
-            Text("Add a website to open from the detail screen. If you skip the scheme, https will be used.")
-                .font(.caption).foregroundStyle(.secondary)
-        }
+        TaskFormIOSLinkSection(model: model)
     }
 
     private var deadlineSection: some View {
