@@ -55,4 +55,28 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     static var defaultMovableOrder: [FormSection] {
         allCases.filter { $0 != .identity && $0 != .dangerZone }
     }
+
+    static func taskFormSections(
+        scheduleMode: RoutineScheduleMode,
+        includesIdentity: Bool,
+        includesDangerZone: Bool
+    ) -> [FormSection] {
+        var sections: [FormSection] = includesIdentity ? [.identity] : []
+        sections += [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
+        if scheduleMode.isTaskFormStepBased {
+            sections.append(.steps)
+        }
+        sections.append(.image)
+        sections.append(.attachment)
+        if includesDangerZone {
+            sections.append(.dangerZone)
+        }
+        return sections
+    }
+}
+
+extension RoutineScheduleMode {
+    var isTaskFormStepBased: Bool {
+        self == .fixedInterval || self == .softInterval || self == .oneOff
+    }
 }

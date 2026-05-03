@@ -84,14 +84,11 @@ struct TaskFormContent: View {
 
     /// All sections that are available given the current form state (excluding `.identity`).
     private var availableSections: [FormSection] {
-        var sections: [FormSection] = [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
-        if presentation.isStepBasedMode { sections.append(.steps) }
-        sections.append(.image)
-        sections.append(.attachment)
-        if model.onDelete != nil || model.pauseResumeAction != nil {
-            sections.append(.dangerZone)
-        }
-        return sections
+        FormSection.taskFormSections(
+            scheduleMode: model.scheduleMode.wrappedValue,
+            includesIdentity: false,
+            includesDangerZone: model.onDelete != nil || model.pauseResumeAction != nil
+        )
     }
 
     @ViewBuilder

@@ -223,25 +223,20 @@ extension HomeTCAView {
 
     var macAddFormSections: [FormSection] {
         let scheduleMode = store.addRoutineState?.schedule.scheduleMode ?? .fixedInterval
-        let isStepBased = scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff
-        var sections: [FormSection] = [.identity, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
-        if isStepBased { sections.append(.steps) }
-        sections.append(.image)
-        sections.append(.attachment)
-        return sections
+        return FormSection.taskFormSections(
+            scheduleMode: scheduleMode,
+            includesIdentity: true,
+            includesDangerZone: false
+        )
     }
 
     var macEditFormSections: [FormSection] {
         guard let detail = store.taskDetailState else { return [] }
-        let scheduleMode = detail.editScheduleMode
-        var sections: [FormSection] = [.identity, .color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
-        if scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff {
-            sections.append(.steps)
-        }
-        sections.append(.image)
-        sections.append(.attachment)
-        sections.append(.dangerZone)
-        return sections
+        return FormSection.taskFormSections(
+            scheduleMode: detail.editScheduleMode,
+            includesIdentity: true,
+            includesDangerZone: true
+        )
     }
 
     var macSidebarHeader: some View {
