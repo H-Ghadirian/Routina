@@ -7,21 +7,13 @@ extension HomeFeature {
         selectedScope: BoardScope,
         activeSprintIDs: Set<UUID>
     ) -> Bool {
-        switch selectedScope {
-        case .backlog:
-            return task.assignedSprintID == nil
-                && task.assignedBacklogID == nil
-                && task.todoState != .done
-        case let .namedBacklog(backlogID):
-            return task.assignedSprintID == nil
-                && task.assignedBacklogID == backlogID
-                && task.todoState != .done
-        case .currentSprint:
-            guard let assignedSprintID = task.assignedSprintID else { return false }
-            return activeSprintIDs.contains(assignedSprintID)
-        case let .sprint(sprintID):
-            return task.assignedSprintID == sprintID
-        }
+        HomeBoardMutationSupport.matchesScope(
+            assignedSprintID: task.assignedSprintID,
+            assignedBacklogID: task.assignedBacklogID,
+            todoState: task.todoState,
+            selectedScope: selectedScope,
+            activeSprintIDs: activeSprintIDs
+        )
     }
 
     func handleMoveTodoToState(
@@ -177,56 +169,60 @@ extension HomeFeature {
     }
 
     func handleCreateBacklogConfirmed(title: String, state: inout State) -> Effect<Action> {
-        let finalTitle = title.trimmingCharacters(in: .whitespaces)
         state.creatingBacklogTitle = nil
-        guard !finalTitle.isEmpty else { return .none }
-        let backlog = BoardBacklog(title: finalTitle, createdAt: now)
-        state.sprintBoardData.backlogs.insert(backlog, at: 0)
-        state.selectedBoardScope = .namedBacklog(backlog.id)
+        var sprintBoardData = state.sprintBoardData
+        var selectedBoardScope = state.selectedBoardScope
+        guard HomeBoardMutationSupport.createBacklog(
+            title: title,
+            now: now,
+            data: &sprintBoardData,
+            selectedScope: &selectedBoardScope
+        ) else { return .none }
+        state.sprintBoardData = sprintBoardData
+        state.selectedBoardScope = selectedBoardScope
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
 
     func handleCreateSprintConfirmed(title: String, state: inout State) -> Effect<Action> {
-        let finalTitle = title.trimmingCharacters(in: .whitespaces)
         state.creatingSprintTitle = nil
-        guard !finalTitle.isEmpty else { return .none }
-        state.sprintBoardData.sprints.insert(
-            BoardSprint(title: finalTitle, createdAt: now),
-            at: 0
-        )
-        if case .backlog = state.selectedBoardScope,
-           let createdSprintID = state.sprintBoardData.sprints.first?.id {
-            state.selectedBoardScope = .sprint(createdSprintID)
-        }
+        var sprintBoardData = state.sprintBoardData
+        var selectedBoardScope = state.selectedBoardScope
+        guard HomeBoardMutationSupport.createSprint(
+            title: title,
+            now: now,
+            data: &sprintBoardData,
+            selectedScope: &selectedBoardScope
+        ) else { return .none }
+        state.sprintBoardData = sprintBoardData
+        state.selectedBoardScope = selectedBoardScope
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
 
     func handleRenameSprint(id: UUID, title: String, state: inout State) -> Effect<Action> {
-        let finalTitle = title.trimmingCharacters(in: .whitespaces)
         state.renamingSprintID = nil
         state.renamingSprintTitle = ""
-        guard !finalTitle.isEmpty,
-              let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == id }) else {
-            return .none
-        }
-        state.sprintBoardData.sprints[index].title = finalTitle
+        guard HomeBoardMutationSupport.renameSprint(
+            id: id,
+            title: title,
+            data: &state.sprintBoardData
+        ) else { return .none }
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
 
     func handleDeleteSprint(id: UUID, state: inout State) -> Effect<Action> {
         state.deletingSprintID = nil
-        state.sprintBoardData.assignments.removeAll(where: { $0.sprintID == id })
-        state.sprintBoardData.sprints.removeAll(where: { $0.id == id })
-        if case .sprint(let selectedID) = state.selectedBoardScope, selectedID == id {
-            state.selectedBoardScope = .backlog
-        }
-        if case .currentSprint = state.selectedBoardScope,
-           state.sprintBoardData.activeSprints.isEmpty {
-            state.selectedBoardScope = .backlog
-        }
+        var sprintBoardData = state.sprintBoardData
+        var selectedBoardScope = state.selectedBoardScope
+        HomeBoardMutationSupport.deleteSprint(
+            id: id,
+            data: &sprintBoardData,
+            selectedScope: &selectedBoardScope
+        )
+        state.sprintBoardData = sprintBoardData
+        state.selectedBoardScope = selectedBoardScope
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
@@ -235,16 +231,16 @@ extension HomeFeature {
         _ sprintID: UUID,
         state: inout State
     ) -> Effect<Action> {
-        guard let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == sprintID }) else {
-            return .none
-        }
-
-        state.sprintBoardData.sprints[index].status = .active
-        if state.sprintBoardData.sprints[index].startedAt == nil {
-            state.sprintBoardData.sprints[index].startedAt = now
-        }
-        state.sprintBoardData.sprints[index].finishedAt = nil
-        state.selectedBoardScope = .currentSprint
+        var sprintBoardData = state.sprintBoardData
+        var selectedBoardScope = state.selectedBoardScope
+        guard HomeBoardMutationSupport.startSprint(
+            id: sprintID,
+            now: now,
+            data: &sprintBoardData,
+            selectedScope: &selectedBoardScope
+        ) else { return .none }
+        state.sprintBoardData = sprintBoardData
+        state.selectedBoardScope = selectedBoardScope
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
@@ -253,15 +249,16 @@ extension HomeFeature {
         _ sprintID: UUID,
         state: inout State
     ) -> Effect<Action> {
-        guard let index = state.sprintBoardData.sprints.firstIndex(where: { $0.id == sprintID }) else {
-            return .none
-        }
-        state.sprintBoardData.sprints[index].status = .finished
-        state.sprintBoardData.sprints[index].finishedAt = now
-        if case .currentSprint = state.selectedBoardScope,
-           state.sprintBoardData.activeSprints.isEmpty {
-            state.selectedBoardScope = .backlog
-        }
+        var sprintBoardData = state.sprintBoardData
+        var selectedBoardScope = state.selectedBoardScope
+        guard HomeBoardMutationSupport.finishSprint(
+            id: sprintID,
+            now: now,
+            data: &sprintBoardData,
+            selectedScope: &selectedBoardScope
+        ) else { return .none }
+        state.sprintBoardData = sprintBoardData
+        state.selectedBoardScope = selectedBoardScope
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
@@ -271,7 +268,11 @@ extension HomeFeature {
         sprintID: UUID?,
         state: inout State
     ) -> Effect<Action> {
-        applySprintAssignment(taskIDs: [taskID], sprintID: sprintID, state: &state)
+        HomeBoardMutationSupport.assignTodoToSprint(
+            taskID: taskID,
+            sprintID: sprintID,
+            data: &state.sprintBoardData
+        )
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
@@ -281,9 +282,11 @@ extension HomeFeature {
         sprintID: UUID?,
         state: inout State
     ) -> Effect<Action> {
-        let uniqueIDs = uniqueTaskIDs(taskIDs)
-        guard !uniqueIDs.isEmpty else { return .none }
-        applySprintAssignment(taskIDs: uniqueIDs, sprintID: sprintID, state: &state)
+        guard HomeBoardMutationSupport.assignTodosToSprint(
+            taskIDs: taskIDs,
+            sprintID: sprintID,
+            data: &state.sprintBoardData
+        ) else { return .none }
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
@@ -293,7 +296,11 @@ extension HomeFeature {
         backlogID: UUID?,
         state: inout State
     ) -> Effect<Action> {
-        applyBacklogAssignment(taskIDs: [taskID], backlogID: backlogID, state: &state)
+        HomeBoardMutationSupport.assignTodoToBacklog(
+            taskID: taskID,
+            backlogID: backlogID,
+            data: &state.sprintBoardData
+        )
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
     }
@@ -303,42 +310,12 @@ extension HomeFeature {
         backlogID: UUID?,
         state: inout State
     ) -> Effect<Action> {
-        let uniqueIDs = uniqueTaskIDs(taskIDs)
-        guard !uniqueIDs.isEmpty else { return .none }
-        applyBacklogAssignment(taskIDs: uniqueIDs, backlogID: backlogID, state: &state)
+        guard HomeBoardMutationSupport.assignTodosToBacklog(
+            taskIDs: taskIDs,
+            backlogID: backlogID,
+            data: &state.sprintBoardData
+        ) else { return .none }
         refreshDisplays(&state)
         return saveSprintBoardEffect(state.sprintBoardData)
-    }
-
-    private func applySprintAssignment(
-        taskIDs: [UUID],
-        sprintID: UUID?,
-        state: inout State
-    ) {
-        let taskIDSet = Set(taskIDs)
-        state.sprintBoardData.assignments.removeAll(where: { taskIDSet.contains($0.todoID) })
-        if sprintID != nil {
-            state.sprintBoardData.backlogAssignments.removeAll(where: { taskIDSet.contains($0.todoID) })
-        }
-        if let sprintID {
-            state.sprintBoardData.assignments.append(
-                contentsOf: taskIDs.map { SprintAssignment(todoID: $0, sprintID: sprintID) }
-            )
-        }
-    }
-
-    private func applyBacklogAssignment(
-        taskIDs: [UUID],
-        backlogID: UUID?,
-        state: inout State
-    ) {
-        let taskIDSet = Set(taskIDs)
-        state.sprintBoardData.assignments.removeAll(where: { taskIDSet.contains($0.todoID) })
-        state.sprintBoardData.backlogAssignments.removeAll(where: { taskIDSet.contains($0.todoID) })
-        if let backlogID {
-            state.sprintBoardData.backlogAssignments.append(
-                contentsOf: taskIDs.map { BacklogAssignment(todoID: $0, backlogID: backlogID) }
-            )
-        }
     }
 }

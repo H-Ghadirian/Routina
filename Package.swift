@@ -166,6 +166,7 @@ let package = Package(
                 "SharedCore/Features/AddRoutine/TaskFormPresentation.swift",
                 "SharedCore/Features/Goals/GoalsFeature.swift",
                 "SharedCore/Features/Home/AppFeatureTemporaryViewStateSupport.swift",
+                "SharedCore/Features/Home/HomeBoardMutationSupport.swift",
                 "SharedCore/Features/Home/HomeAddRoutineSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureAddRoutinePresentationRouter.swift",
                 "SharedCore/Features/Home/HomeDeduplicationSupport.swift",

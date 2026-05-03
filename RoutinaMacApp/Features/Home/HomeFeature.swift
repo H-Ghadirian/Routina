@@ -111,12 +111,7 @@ struct HomeFeature {
         var id: Self { self }
     }
 
-    enum BoardScope: Equatable, Sendable {
-        case backlog
-        case namedBacklog(UUID)
-        case currentSprint
-        case sprint(UUID)
-    }
+    typealias BoardScope = HomeBoardScope
 
     @ObservableState
     struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState {
@@ -867,16 +862,10 @@ struct HomeFeature {
 
             case let .sprintBoardLoaded(sprintBoardData):
                 state.sprintBoardData = sprintBoardData
-                if case .currentSprint = state.selectedBoardScope,
-                   sprintBoardData.activeSprints.isEmpty {
-                    state.selectedBoardScope = .backlog
-                } else if case let .namedBacklog(backlogID) = state.selectedBoardScope,
-                          !sprintBoardData.backlogs.contains(where: { $0.id == backlogID }) {
-                    state.selectedBoardScope = .backlog
-                } else if case let .sprint(sprintID) = state.selectedBoardScope,
-                          !sprintBoardData.sprints.contains(where: { $0.id == sprintID }) {
-                    state.selectedBoardScope = .backlog
-                }
+                state.selectedBoardScope = HomeBoardMutationSupport.validatedScope(
+                    state.selectedBoardScope,
+                    in: sprintBoardData
+                )
                 refreshDisplays(&state)
                 return .none
 
