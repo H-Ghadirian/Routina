@@ -344,17 +344,11 @@ struct AddRoutineTCAView: View {
     }
 
     var stepComposer: some View {
-        HStack(spacing: 10) {
-            TextField("Wash clothes", text: stepDraftBinding)
-                .onSubmit {
-                    store.send(.addStepTapped)
-                }
-
-            Button("Add") {
-                store.send(.addStepTapped)
-            }
-            .disabled(isAddStepDisabled)
-        }
+        AddRoutineStepComposerView(
+            stepDraft: stepDraftBinding,
+            isAddDisabled: isAddStepDisabled,
+            onAddStep: { store.send(.addStepTapped) }
+        )
     }
 
     var checklistItemComposer: some View {

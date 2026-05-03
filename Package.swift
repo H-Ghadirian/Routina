@@ -290,6 +290,7 @@ let package = Package(
                 "SharedCore/Views/AddRoutineChecklistItemsView.swift",
                 "SharedCore/Views/AddRoutineEditableStepsView.swift",
                 "SharedCore/Views/AddRoutineSelectedTagsView.swift",
+                "SharedCore/Views/AddRoutineStepComposerView.swift",
                 "SharedCore/Views/AddRoutineTagComposerView.swift",
                 "SharedCore/Views/QuickAddTaskSheet.swift",
                 "SharedCore/Views/FocusSessionCard.swift",
