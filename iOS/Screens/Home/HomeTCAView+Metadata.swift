@@ -1,379 +1,68 @@
 import SwiftUI
 import ComposableArchitecture
 
+extension HomeFeature.RoutineDisplay: HomeRoutineMetadataDisplay {}
+
 extension HomeTCAView {
+    private var routineMetadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay> {
+        HomeRoutineDisplayMetadataPresenter(
+            filtering: taskListFiltering(),
+            showPersianDates: showPersianDates,
+            badgeMode: .compact
+        )
+    }
+
     func rowMetadataText(for task: HomeFeature.RoutineDisplay) -> String? {
-        if task.isOneOffTask {
-            let items = todoRowMetadataItems(for: task)
-            return items.isEmpty ? nil : items.joined(separator: " • ")
-        }
-
-        let prioritySegment = task.priority.metadataLabel.map { "\($0) • " } ?? ""
-
-        if task.isPaused {
-            return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(pauseDescription(for: task))\(pressureMetadataSuffix(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
-        }
-        return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(completionDescription(for: task))\(pressureMetadataSuffix(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+        routineMetadataPresenter.rowMetadataText(for: task)
     }
 
     func todoRowMetadataItems(for task: HomeFeature.RoutineDisplay) -> [String] {
-        var items: [String] = []
-
-        if let deadlineText = conciseDeadlineText(for: task) {
-            items.append(deadlineText)
-        }
-
-        if let priorityText = task.priority.metadataLabel {
-            items.append(priorityText)
-        }
-
-        if let pressureText = task.pressure.metadataLabel {
-            items.append(pressureText)
-        }
-
-        if task.isPaused {
-            items.append(pauseDescription(for: task))
-        } else if task.isCompletedOneOff || task.isCanceledOneOff || task.isInProgress {
-            items.append(completionDescription(for: task))
-        }
-
-        if let stepText = conciseTodoStepText(for: task) {
-            items.append(stepText)
-        }
-
-        if let placeText = concisePlaceMetadataText(for: task) {
-            items.append(placeText)
-        }
-
-        return items
+        routineMetadataPresenter.todoRowMetadataItems(for: task)
     }
 
     func pressureMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
-        guard let pressureText = task.pressure.metadataLabel else { return "" }
-        return " • \(pressureText)"
+        routineMetadataPresenter.pressureMetadataSuffix(for: task)
     }
 
     func pauseDescription(for task: HomeFeature.RoutineDisplay) -> String {
-        if task.isSnoozed {
-            return "Not today"
-        }
-        guard let pausedAt = task.pausedAt else { return "Paused" }
-        let elapsedDays = RoutineDateMath.elapsedDaysSinceLastDone(from: pausedAt, referenceDate: Date())
-        if elapsedDays == 0 { return "Paused today" }
-        if elapsedDays == 1 { return "Paused yesterday" }
-        return "Paused \(elapsedDays) days ago"
+        routineMetadataPresenter.pauseDescription(for: task)
     }
 
     func doneCountDescription(for count: Int) -> String {
-        count == 1 ? "1 done" : "\(count) dones"
+        routineMetadataPresenter.doneCountDescription(for: count)
     }
 
     func cadenceDescription(for task: HomeFeature.RoutineDisplay) -> String {
-        if task.isOneOffTask {
-            return "One-off todo"
-        }
-        if task.isSoftIntervalRoutine {
-            return "Once in a while"
-        }
-        if task.scheduleMode == .derivedFromChecklist {
-            return "Checklist-driven"
-        }
-        return task.recurrenceRule.displayText()
+        routineMetadataPresenter.cadenceDescription(for: task)
     }
 
     func completionDescription(for task: HomeFeature.RoutineDisplay) -> String {
-        if task.isOneOffTask {
-            if task.isInProgress {
-                let totalSteps = max(task.steps.count, 1)
-                return "Step \(task.completedStepCount + 1) of \(totalSteps)"
-            }
-            if let canceledAt = task.canceledAt {
-                let elapsedDays = daysSince(canceledAt)
-                if elapsedDays == 0 { return "Canceled today" }
-                if elapsedDays == 1 { return "Canceled yesterday" }
-                return "Canceled \(elapsedDays) days ago"
-            }
-            guard task.lastDone != nil else { return "Not completed yet" }
-
-            let elapsedDays = daysSinceLastRoutine(task)
-            if elapsedDays == 0 { return "Completed today" }
-            if elapsedDays == 1 { return "Completed yesterday" }
-            return "Completed \(elapsedDays) days ago"
-        }
-        if task.isSoftIntervalRoutine {
-            if task.isOngoing {
-                return ongoingDescription(for: task)
-            }
-            if task.isDoneToday {
-                return "Done today"
-            }
-            guard task.lastDone != nil else { return "Ready whenever" }
-            return softElapsedDescription(for: task)
-        }
-        if task.scheduleMode == .derivedFromChecklist {
-            if task.isDoneToday && overdueDays(for: task) == 0 {
-                return "Updated today"
-            }
-            guard task.lastDone != nil else { return "Never updated" }
-
-            let elapsedDays = daysSinceLastRoutine(task)
-            if elapsedDays == 0 { return "Updated today" }
-            if elapsedDays == 1 { return "Updated yesterday" }
-            return "Updated \(elapsedDays) days ago"
-        }
-        if task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0 {
-            return "Checklist \(task.completedChecklistItemCount) of \(max(task.checklistItemCount, 1))"
-        }
-        if task.isAssumedDoneToday {
-            return "Assumed today"
-        }
-        if task.isInProgress {
-            let totalSteps = max(task.steps.count, 1)
-            return "Step \(task.completedStepCount + 1) of \(totalSteps)"
-        }
-        guard task.lastDone != nil else { return "Never completed" }
-
-        let elapsedDays = daysSinceLastRoutine(task)
-        if elapsedDays == 0 { return "Completed today" }
-        if elapsedDays == 1 { return "Completed yesterday" }
-        return "Completed \(elapsedDays) days ago"
-    }
-
-    private func daysSince(_ date: Date) -> Int {
-        let calendar = Calendar.current
-        return calendar.dateComponents(
-            [.day],
-            from: calendar.startOfDay(for: date),
-            to: calendar.startOfDay(for: Date())
-        ).day ?? 0
+        routineMetadataPresenter.completionDescription(for: task)
     }
 
     func badgeStyle(
         for task: HomeFeature.RoutineDisplay
     ) -> (title: String, systemImage: String, foregroundColor: Color, backgroundColor: Color)? {
-        if task.isPaused {
-            return task.isSnoozed
-                ? ("Not today", "moon.zzz.fill", .indigo, Color.indigo.opacity(0.16))
-                : ("Paused", "pause.circle.fill", .teal, Color.teal.opacity(0.16))
-        }
-        if case .away = task.locationAvailability {
-            return ("Away", "location.slash.fill", .blue, Color.blue.opacity(0.14))
-        }
-        if task.isSoftIntervalRoutine {
-            if task.isOngoing {
-                return ("Ongoing", "airplane.circle.fill", .teal, Color.teal.opacity(0.16))
-            }
-            if task.isDoneToday {
-                return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
-            }
-            if task.hasPassedSoftThreshold, task.lastDone != nil {
-                return (softElapsedBadgeTitle(for: task), "clock.arrow.circlepath", .teal, Color.teal.opacity(0.12))
-            }
-            return nil
-        }
-        if task.isInProgress {
-            return ("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))
-        }
-        if task.isOneOffTask {
-            if task.isCompletedOneOff {
-                return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
-            }
-            if task.isCanceledOneOff {
-                return ("Canceled", "xmark.circle.fill", .orange, Color.orange.opacity(0.14))
-            }
-            switch task.todoState {
-            case .inProgress:
-                return ("In Progress", "arrow.clockwise.circle.fill", .blue, Color.blue.opacity(0.14))
-            case .blocked:
-                return ("Blocked", "exclamationmark.circle.fill", .orange, Color.orange.opacity(0.14))
-            case .ready, .done, .paused, nil:
-                return nil
-            }
-        }
-        let dueIn = dueInDays(for: task)
-
-        if task.scheduleMode == .derivedFromChecklist {
-            if dueIn < 0 {
-                return ("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
-            }
-            if dueIn == 0 {
-                return ("Today", "clock.fill", .orange, Color.orange.opacity(0.16))
-            }
-            if task.isDoneToday {
-                return ("Updated", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
-            }
-            if dueIn == 1 {
-                return ("Tomorrow", "calendar", .orange, Color.orange.opacity(0.14))
-            }
-            return ("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
-        }
-
-        if task.scheduleMode == .fixedIntervalChecklist
-            && task.completedChecklistItemCount > 0
-            && !task.isDoneToday {
-            return (
-                "\(task.completedChecklistItemCount)/\(max(task.checklistItemCount, 1)) done",
-                "checklist.checked",
-                .orange,
-                Color.orange.opacity(0.16)
-            )
-        }
-
-        if task.isAssumedDoneToday {
-            return ("Assumed", "checkmark.circle", .mint, Color.mint.opacity(0.18))
-        }
-
-        if task.isDoneToday {
-            return ("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
-        }
-
-        if dueIn < 0 {
-            return ("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
-        }
-        if dueIn == 0 {
-            return ("Today", "clock.fill", .orange, Color.orange.opacity(0.16))
-        }
-        if dueIn == 1 {
-            return ("Tomorrow", "calendar", .orange, Color.orange.opacity(0.14))
-        }
-        if isYellowUrgency(task) {
-            return ("\(dueIn)d left", "calendar.badge.clock", .orange, Color.orange.opacity(0.12))
-        }
-
-        return ("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
-    }
-
-    private func ongoingDescription(for task: HomeFeature.RoutineDisplay) -> String {
-        guard let ongoingSince = task.ongoingSince else { return "Ongoing" }
-        let elapsedDays = daysSince(ongoingSince)
-        if elapsedDays == 0 { return "Started today" }
-        if elapsedDays == 1 { return "Started yesterday" }
-        return "Started \(elapsedDays) days ago"
-    }
-
-    private func softElapsedDescription(for task: HomeFeature.RoutineDisplay) -> String {
-        guard let lastDone = task.lastDone else { return "Ready whenever" }
-        let elapsedDays = daysSince(lastDone)
-        let elapsedText = softElapsedText(forDays: elapsedDays)
-        return "\(elapsedText) since last time"
-    }
-
-    private func softElapsedBadgeTitle(for task: HomeFeature.RoutineDisplay) -> String {
-        guard let lastDone = task.lastDone else { return "Ready whenever" }
-        return softElapsedText(forDays: daysSince(lastDone))
-    }
-
-    private func softElapsedText(forDays days: Int) -> String {
-        if days < 14 {
-            return days == 1 ? "1 day ago" : "\(days) days ago"
-        }
-        if days < 60 {
-            let weeks = max(days / 7, 1)
-            return weeks == 1 ? "1 week ago" : "\(weeks) weeks ago"
-        }
-        let months = max(days / 30, 1)
-        return months == 1 ? "1 month ago" : "\(months) months ago"
+        routineMetadataPresenter.badgeStyle(for: task)?.tuple
     }
 
     func stepMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
-        if task.scheduleMode == .derivedFromChecklist {
-            if let nextDueChecklistItemTitle = task.nextDueChecklistItemTitle {
-                if task.dueChecklistItemCount > 1 {
-                    return " • Due: \(nextDueChecklistItemTitle) +\(task.dueChecklistItemCount - 1)"
-                }
-                return " • Due: \(nextDueChecklistItemTitle)"
-            }
-            let totalItems = task.checklistItemCount
-            return totalItems == 0 ? "" : " • \(totalItems) \(totalItems == 1 ? "item" : "items")"
-        }
-        if task.scheduleMode == .fixedIntervalChecklist {
-            if let nextPendingChecklistItemTitle = task.nextPendingChecklistItemTitle,
-               task.completedChecklistItemCount < task.checklistItemCount {
-                return " • Next: \(nextPendingChecklistItemTitle)"
-            }
-            let totalItems = task.checklistItemCount
-            if totalItems == 0 { return "" }
-            return " • Checklist \(task.completedChecklistItemCount)/\(totalItems)"
-        }
-        guard !task.steps.isEmpty else { return "" }
-        if let nextStepTitle = task.nextStepTitle {
-            return " • Next: \(nextStepTitle)"
-        }
-        let totalSteps = task.steps.count
-        return " • \(totalSteps) \(totalSteps == 1 ? "step" : "steps")"
+        routineMetadataPresenter.stepMetadataSuffix(for: task)
     }
 
     func conciseTodoStepText(for task: HomeFeature.RoutineDisplay) -> String? {
-        guard !task.steps.isEmpty else { return nil }
-        if task.isCompletedOneOff || task.isCanceledOneOff { return nil }
-        if let nextStepTitle = task.nextStepTitle {
-            return "Next: \(nextStepTitle)"
-        }
-        if task.steps.count > 1 {
-            return "\(task.steps.count) steps"
-        }
-        return nil
+        routineMetadataPresenter.conciseTodoStepText(for: task)
     }
 
     func conciseDeadlineText(for task: HomeFeature.RoutineDisplay) -> String? {
-        guard task.isOneOffTask, let dueDate = task.dueDate else { return nil }
-        let calendar = Calendar.current
-        if calendar.isDateInToday(dueDate) {
-            return PersianDateDisplay.appendingSupplementaryDate(
-                to: "Due today",
-                for: dueDate,
-                enabled: showPersianDates
-            )
-        }
-        if calendar.isDateInTomorrow(dueDate) {
-            return PersianDateDisplay.appendingSupplementaryDate(
-                to: "Due tomorrow",
-                for: dueDate,
-                enabled: showPersianDates
-            )
-        }
-        if dueDate < Date() {
-            let days = max(
-                abs(calendar.dateComponents(
-                    [.day],
-                    from: calendar.startOfDay(for: dueDate),
-                    to: calendar.startOfDay(for: Date())
-                ).day ?? 0),
-                1
-            )
-            return "Overdue \(days)d"
-        }
-        let dueText = "Due \(dueDate.formatted(date: .abbreviated, time: .omitted))"
-        return PersianDateDisplay.appendingSupplementaryDate(
-            to: dueText,
-            for: dueDate,
-            enabled: showPersianDates
-        )
+        routineMetadataPresenter.conciseDeadlineText(for: task)
     }
 
     func placeMetadataSuffix(for task: HomeFeature.RoutineDisplay) -> String {
-        switch task.locationAvailability {
-        case .unrestricted:
-            return ""
-        case let .available(placeName):
-            return " • At \(placeName)"
-        case let .away(placeName, _):
-            return " • Away from \(placeName)"
-        case let .unknown(placeName):
-            return " • \(placeName) task"
-        }
+        routineMetadataPresenter.placeMetadataSuffix(for: task)
     }
 
     func concisePlaceMetadataText(for task: HomeFeature.RoutineDisplay) -> String? {
-        switch task.locationAvailability {
-        case .unrestricted:
-            return nil
-        case let .available(placeName):
-            return "At \(placeName)"
-        case let .away(placeName, _):
-            return "Away from \(placeName)"
-        case let .unknown(placeName):
-            return placeName
-        }
+        routineMetadataPresenter.concisePlaceMetadataText(for: task)
     }
 }
