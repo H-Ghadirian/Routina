@@ -67,7 +67,12 @@ struct DayPlanWeekCalendarView: View {
                                 )
                                 .animation(DayPlanMotion.dropPreview, value: dropPreview)
                             }
-                            currentTimeScrollAnchor()
+                            DayPlanCurrentTimeScrollAnchor(
+                                dates: dates,
+                                calendar: calendar,
+                                hourHeight: hourHeight,
+                                timeColumnWidth: timeColumnWidth
+                            )
                             SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
                                 DayPlanCurrentTimeIndicator(
                                     dates: dates,
@@ -111,24 +116,6 @@ struct DayPlanWeekCalendarView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(isDropTargeted ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.18), lineWidth: isDropTargeted ? 1.5 : 1)
-        }
-    }
-
-    @ViewBuilder
-    private func currentTimeScrollAnchor() -> some View {
-        if dates.contains(where: { calendar.isDateInToday($0) }) {
-            VStack(spacing: 0) {
-                Color.clear
-                    .frame(height: currentTimeYOffset(for: Date()))
-
-                Color.clear
-                    .frame(width: 1, height: 1)
-                    .id(DayPlanScrollTarget.currentTime)
-
-                Spacer(minLength: 0)
-            }
-            .frame(width: 1, height: hourHeight * 24)
-            .offset(x: timeColumnWidth)
         }
     }
 
@@ -291,15 +278,6 @@ struct DayPlanWeekCalendarView: View {
         }
     }
 
-    private func currentTimeYOffset(for date: Date) -> CGFloat {
-        CGFloat(currentMinute(for: date)) / 60 * hourHeight
-    }
-
-    private func currentMinute(for date: Date) -> Int {
-        let components = calendar.dateComponents([.hour, .minute], from: date)
-        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
-        return min(max(minute, 0), DayPlanBlock.minutesPerDay)
-    }
 }
 
 private struct DayPlanResizeSession: Equatable {

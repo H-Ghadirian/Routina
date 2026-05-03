@@ -299,6 +299,7 @@ let package = Package(
                 "SharedCore/Views/DayPlan/DayPlanSupport.swift",
                 "SharedCore/Views/DayPlan/DayPlanBlockCard.swift",
                 "SharedCore/Views/DayPlan/DayPlanCurrentTimeIndicator.swift",
+                "SharedCore/Views/DayPlan/DayPlanCurrentTimeScrollAnchor.swift",
                 "SharedCore/Views/DayPlan/DayPlanDropIndicator.swift",
                 "SharedCore/Views/DayPlan/DayPlanResizeHandle.swift",
                 "SharedCore/Views/DayPlan/DayPlanScrollTarget.swift",
