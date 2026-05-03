@@ -195,6 +195,12 @@ struct StatsView: View {
 
     private func summaryCardItems(metrics: Metrics) -> [StatsSummaryCardItem] {
         var items: [StatsSummaryCardItem] = []
+        let activeArchivePresentation = StatsActiveArchiveSummaryPresentation(
+            taskTypeFilter: selectedTaskTypeFilter,
+            filteredTaskCount: filteredTaskCount,
+            activeItemCount: metrics.activeRoutineCount,
+            archivedItemCount: metrics.archivedRoutineCount
+        )
 
         if selectedRange != .today {
             items.append(
@@ -270,9 +276,9 @@ struct StatsView: View {
             StatsSummaryCardItem(
                 icon: "checklist.checked",
                 accent: .green,
-                title: activeItemsCardTitle,
+                title: activeArchivePresentation.activeTitle,
                 value: metrics.activeRoutineCount.formatted(),
-                caption: activeRoutineCardCaption(metrics: metrics),
+                caption: activeArchivePresentation.activeCaption,
                 accessibilityIdentifier: "stats.summary.activeRoutines",
                 showsAccessory: true
             )
@@ -282,9 +288,9 @@ struct StatsView: View {
             StatsSummaryCardItem(
                 icon: "archivebox.fill",
                 accent: .teal,
-                title: archivedItemsCardTitle,
+                title: activeArchivePresentation.archivedTitle,
                 value: metrics.archivedRoutineCount.formatted(),
-                caption: archivedRoutineCardCaption(metrics: metrics),
+                caption: activeArchivePresentation.archivedCaption,
                 accessibilityIdentifier: "stats.summary.archivedRoutines"
             )
         )
@@ -415,123 +421,6 @@ struct StatsView: View {
             )
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
-    }
-
-    private var activeItemsCardTitle: String {
-        switch selectedTaskTypeFilter {
-        case .all:
-            return "Active items"
-        case .routines:
-            return "Active routines"
-        case .todos:
-            return "Active todos"
-        }
-    }
-
-    private var archivedItemsCardTitle: String {
-        switch selectedTaskTypeFilter {
-        case .all:
-            return "Archived items"
-        case .routines:
-            return "Archived routines"
-        case .todos:
-            return "Archived todos"
-        }
-    }
-
-    private func activeRoutineCardCaption(metrics: Metrics) -> String {
-        if filteredTaskCount == 0 {
-            switch selectedTaskTypeFilter {
-            case .all:
-                return "No items created yet"
-            case .routines:
-                return "No routines created yet"
-            case .todos:
-                return "No todos created yet"
-            }
-        }
-
-        if metrics.activeRoutineCount == 0 {
-            switch selectedTaskTypeFilter {
-            case .all:
-                return metrics.archivedRoutineCount == 1
-                    ? "Your only item is archived"
-                    : "All matching items are archived"
-            case .routines:
-                return metrics.archivedRoutineCount == 1
-                    ? "Your only routine is paused"
-                    : "All routines are currently paused"
-            case .todos:
-                return metrics.archivedRoutineCount == 1
-                    ? "Your only todo is archived"
-                    : "All todos are currently archived"
-            }
-        }
-
-        if metrics.archivedRoutineCount == 0 {
-            switch selectedTaskTypeFilter {
-            case .all:
-                return "Everything is currently active"
-            case .routines:
-                return "Everything is currently in rotation"
-            case .todos:
-                return "All matching todos are currently active"
-            }
-        }
-
-        switch selectedTaskTypeFilter {
-        case .all:
-            return metrics.archivedRoutineCount == 1
-                ? "1 archived item excluded"
-                : "\(metrics.archivedRoutineCount) archived items excluded"
-        case .routines:
-            return metrics.archivedRoutineCount == 1
-                ? "1 paused routine excluded"
-                : "\(metrics.archivedRoutineCount) paused routines excluded"
-        case .todos:
-            return metrics.archivedRoutineCount == 1
-                ? "1 archived todo excluded"
-                : "\(metrics.archivedRoutineCount) archived todos excluded"
-        }
-    }
-
-    private func archivedRoutineCardCaption(metrics: Metrics) -> String {
-        if filteredTaskCount == 0 {
-            switch selectedTaskTypeFilter {
-            case .all:
-                return "No items created yet"
-            case .routines:
-                return "No routines created yet"
-            case .todos:
-                return "No todos created yet"
-            }
-        }
-
-        if metrics.archivedRoutineCount == 0 {
-            switch selectedTaskTypeFilter {
-            case .all:
-                return "No archived items right now"
-            case .routines:
-                return "No archived routines right now"
-            case .todos:
-                return "No archived todos right now"
-            }
-        }
-
-        switch selectedTaskTypeFilter {
-        case .all:
-            return metrics.archivedRoutineCount == 1
-                ? "1 item is archived and hidden from Home"
-                : "\(metrics.archivedRoutineCount) items are archived and hidden from Home"
-        case .routines:
-            return metrics.archivedRoutineCount == 1
-                ? "1 routine is paused and hidden from Home"
-                : "\(metrics.archivedRoutineCount) routines are paused and hidden from Home"
-        case .todos:
-            return metrics.archivedRoutineCount == 1
-                ? "1 todo is archived and hidden from Home"
-                : "\(metrics.archivedRoutineCount) todos are archived and hidden from Home"
-        }
     }
 
     private func chartSection(metrics: Metrics) -> some View {

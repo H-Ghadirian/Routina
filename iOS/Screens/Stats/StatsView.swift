@@ -398,6 +398,12 @@ struct StatsView: View {
 
     private func summaryCardItems(metrics: Metrics) -> [StatsSummaryCardItem] {
         var items: [StatsSummaryCardItem] = []
+        let activeArchivePresentation = StatsActiveArchiveSummaryPresentation(
+            taskTypeFilter: .routines,
+            filteredTaskCount: filteredTaskCount,
+            activeItemCount: metrics.activeRoutineCount,
+            archivedItemCount: metrics.archivedRoutineCount
+        )
 
         if selectedRange != .today {
             items.append(
@@ -473,9 +479,9 @@ struct StatsView: View {
             StatsSummaryCardItem(
                 icon: "checklist.checked",
                 accent: .green,
-                title: "Active routines",
+                title: activeArchivePresentation.activeTitle,
                 value: metrics.activeRoutineCount.formatted(),
-                caption: activeRoutineCardCaption(metrics: metrics),
+                caption: activeArchivePresentation.activeCaption,
                 accessibilityIdentifier: "stats.summary.activeRoutines"
             )
         )
@@ -484,9 +490,9 @@ struct StatsView: View {
             StatsSummaryCardItem(
                 icon: "archivebox.fill",
                 accent: .teal,
-                title: "Archived routines",
+                title: activeArchivePresentation.archivedTitle,
                 value: metrics.archivedRoutineCount.formatted(),
-                caption: archivedRoutineCardCaption(metrics: metrics),
+                caption: activeArchivePresentation.archivedCaption,
                 accessibilityIdentifier: "stats.summary.archivedRoutines"
             )
         )
@@ -506,40 +512,6 @@ struct StatsView: View {
             calendar: calendar,
             onRefresh: { store.send(.gitHubStatsRefreshRequested) }
         )
-    }
-
-    private func activeRoutineCardCaption(metrics: Metrics) -> String {
-        if filteredTaskCount == 0 {
-            return "No routines created yet"
-        }
-
-        if metrics.activeRoutineCount == 0 {
-            return metrics.archivedRoutineCount == 1
-                ? "Your only routine is paused"
-                : "All routines are currently paused"
-        }
-
-        if metrics.archivedRoutineCount == 0 {
-            return "Everything is currently in rotation"
-        }
-
-        return metrics.archivedRoutineCount == 1
-            ? "1 paused routine excluded"
-            : "\(metrics.archivedRoutineCount) paused routines excluded"
-    }
-
-    private func archivedRoutineCardCaption(metrics: Metrics) -> String {
-        if filteredTaskCount == 0 {
-            return "No routines created yet"
-        }
-
-        if metrics.archivedRoutineCount == 0 {
-            return "No archived routines right now"
-        }
-
-        return metrics.archivedRoutineCount == 1
-            ? "1 routine is paused and hidden from Home"
-            : "\(metrics.archivedRoutineCount) routines are paused and hidden from Home"
     }
 
     private func chartSection(metrics: Metrics) -> some View {
