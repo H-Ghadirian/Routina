@@ -113,7 +113,21 @@ struct TaskDetailTCAView: View {
                 )
             }
             .sheet(item: $editingTimeLog) { log in
-                timeSpentSheet(for: log)
+                TaskDetailLogTimeSpentSheet(
+                    minutes: $editingTimeSpentMinutes,
+                    showsClearButton: log.actualDurationMinutes != nil,
+                    onClear: {
+                        store.send(.updateLogDuration(log.id, nil))
+                        editingTimeLog = nil
+                    },
+                    onCancel: {
+                        editingTimeLog = nil
+                    },
+                    onSave: {
+                        store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
+                        editingTimeLog = nil
+                    }
+                )
             }
             .alert(
                 "Delete routine?",
@@ -652,53 +666,6 @@ struct TaskDetailTCAView: View {
             allTasks: focusSessionTasks,
             onCompletedDuration: addCompletedFocusToTimeSpent
         )
-    }
-
-    private func timeSpentSheet(for log: RoutineLog) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Time Spent")
-                    .font(.title3.weight(.semibold))
-                Text("Record the actual time for this completion.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Stepper(value: $editingTimeSpentMinutes, in: 1...1440) {
-                HStack {
-                    Text("Time spent")
-                    Spacer()
-                    Text(RoutineTimeSpentFormatting.compactMinutesText(editingTimeSpentMinutes))
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            HStack {
-                if log.actualDurationMinutes != nil {
-                    Button(role: .destructive) {
-                        store.send(.updateLogDuration(log.id, nil))
-                        editingTimeLog = nil
-                    } label: {
-                        Label("Clear", systemImage: "trash")
-                    }
-                }
-
-                Spacer()
-
-                Button("Cancel") {
-                    editingTimeLog = nil
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button("Save") {
-                    store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
-                    editingTimeLog = nil
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-        }
-        .frame(width: 420)
-        .padding(24)
     }
 
     private var canSaveCurrentEdit: Bool {
