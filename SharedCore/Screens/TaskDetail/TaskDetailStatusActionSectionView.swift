@@ -22,6 +22,118 @@ struct TaskDetailStatusSummaryHeaderView: View {
     }
 }
 
+struct TaskDetailCompletionButtonLabel: View {
+    let title: String
+    let systemImage: String?
+
+    var body: some View {
+        if let systemImage {
+            Label(title, systemImage: systemImage)
+        } else {
+            Text(title)
+        }
+    }
+}
+
+struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
+    let title: String
+    let titleColor: Color
+    let statusContextMessage: String?
+    let titleFont: Font
+    let showsMetadata: Bool
+    let metadataItems: [TaskDetailStatusMetadataItem]
+    let pauseArchivePresentation: RoutinePauseArchivePresentation
+    let completionButtonTitle: String
+    let completionButtonSystemImage: String?
+    let isOneOffTask: Bool
+    let isArchived: Bool
+    let isCompletionButtonDisabled: Bool
+    let isStepRoutineOffToday: Bool
+    let isChecklistCompletionRoutine: Bool
+    let canUndoSelectedDate: Bool
+    let shouldShowBulkConfirmAssumedDays: Bool
+    let bulkConfirmAssumedDaysTitle: String
+    let hasBlockingRelationships: Bool
+    let blockerSummaryText: String
+    let useLargePrimaryControl: Bool
+    let contentPadding: CGFloat
+    let cardBackground: Color?
+    let cardStroke: Color?
+    let timeSpentButton: () -> TimeSpentButton
+    let onComplete: () -> Void
+    let onPauseResume: () -> Void
+    let onNotToday: () -> Void
+    let onConfirmAssumedPastDays: () -> Void
+
+    var body: some View {
+        styledContent
+    }
+
+    @ViewBuilder
+    private var styledContent: some View {
+        if let cardBackground {
+            content
+                .padding(contentPadding)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(cardStroke ?? .clear, lineWidth: 1)
+                )
+        } else {
+            content
+                .padding(contentPadding)
+        }
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            TaskDetailStatusSummaryHeaderView(
+                title: title,
+                titleColor: titleColor,
+                statusContextMessage: statusContextMessage,
+                titleFont: titleFont
+            )
+
+            if showsMetadata {
+                Divider()
+                TaskDetailStatusMetadataSectionView(items: metadataItems)
+                Divider()
+            }
+
+            TaskDetailStatusActionSectionView(
+                pauseArchivePresentation: pauseArchivePresentation,
+                isOneOffTask: isOneOffTask,
+                isArchived: isArchived,
+                isCompletionButtonDisabled: isCompletionButtonDisabled,
+                isStepRoutineOffToday: isStepRoutineOffToday,
+                isChecklistCompletionRoutine: isChecklistCompletionRoutine,
+                canUndoSelectedDate: canUndoSelectedDate,
+                shouldShowBulkConfirmAssumedDays: shouldShowBulkConfirmAssumedDays,
+                bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
+                hasBlockingRelationships: hasBlockingRelationships,
+                blockerSummaryText: blockerSummaryText,
+                useLargePrimaryControl: useLargePrimaryControl
+            ) {
+                TaskDetailCompletionButtonLabel(
+                    title: completionButtonTitle,
+                    systemImage: completionButtonSystemImage
+                )
+            } timeSpentButton: {
+                timeSpentButton()
+            } onComplete: {
+                onComplete()
+            } onPauseResume: {
+                onPauseResume()
+            } onNotToday: {
+                onNotToday()
+            } onConfirmAssumedPastDays: {
+                onConfirmAssumedPastDays()
+            }
+        }
+    }
+}
+
 struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton: View>: View {
     let pauseArchivePresentation: RoutinePauseArchivePresentation
     let isOneOffTask: Bool

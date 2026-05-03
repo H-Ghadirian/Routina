@@ -770,23 +770,13 @@ struct TaskDetailTCAView: View {
     func compactStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            statusSummaryHeader(titleFont: .title3.weight(.semibold))
-
-            if hasVisibleStatusMetadata {
-                Divider()
-                statusMetadataSection(showSelectedDate: true)
-                Divider()
-            }
-
-            statusActionSection(pauseArchivePresentation: pauseArchivePresentation)
-        }
-        .padding(16)
-        .background(TaskDetailPlatformStyle.summaryCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        statusSection(
+            pauseArchivePresentation: pauseArchivePresentation,
+            titleFont: .title3.weight(.semibold),
+            useLargePrimaryControl: false,
+            contentPadding: 16,
+            cardBackground: TaskDetailPlatformStyle.summaryCardBackground,
+            cardStroke: TaskDetailPlatformStyle.sectionCardStroke
         )
     }
 
@@ -1005,7 +995,10 @@ struct TaskDetailTCAView: View {
         Button {
             store.send(store.completionButtonAction)
         } label: {
-            completionButtonLabel
+            TaskDetailCompletionButtonLabel(
+                title: store.completionButtonTitle,
+                systemImage: store.completionButtonSystemImage
+            )
         }
         .buttonStyle(.borderedProminent)
         .tint(toolbarCompletionTint)
@@ -1147,7 +1140,10 @@ struct TaskDetailTCAView: View {
         Button {
             store.send(store.completionButtonAction)
         } label: {
-            completionButtonLabel
+            TaskDetailCompletionButtonLabel(
+                title: store.completionButtonTitle,
+                systemImage: store.completionButtonSystemImage
+            )
                 .routinaPlatformPrimaryActionLabelLayout()
         }
         .buttonStyle(.borderedProminent)
@@ -1224,46 +1220,37 @@ struct TaskDetailTCAView: View {
     func macStatusSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            statusSummaryHeader(titleFont: .title2.weight(.semibold))
-
-            if hasVisibleStatusMetadata {
-                Divider()
-                statusMetadataSection(showSelectedDate: true)
-                Divider()
-            }
-
-            statusActionSection(pauseArchivePresentation: pauseArchivePresentation, useLargePrimaryControl: true)
-        }
-        .padding(18)
+        statusSection(
+            pauseArchivePresentation: pauseArchivePresentation,
+            titleFont: .title2.weight(.semibold),
+            useLargePrimaryControl: true,
+            contentPadding: 18
+        )
     }
 
-    private func statusSummaryHeader(titleFont: Font) -> some View {
-        TaskDetailStatusSummaryHeaderView(
+    private func statusSection(
+        pauseArchivePresentation: RoutinePauseArchivePresentation,
+        titleFont: Font,
+        useLargePrimaryControl: Bool,
+        contentPadding: CGFloat,
+        cardBackground: Color? = nil,
+        cardStroke: Color? = nil
+    ) -> some View {
+        TaskDetailStatusSectionView(
             title: store.summaryStatusTitle,
             titleColor: summaryStatusColor,
             statusContextMessage: statusContextMessage,
-            titleFont: titleFont
-        )
-    }
-
-    private func statusMetadataSection(showSelectedDate: Bool) -> some View {
-        TaskDetailStatusMetadataSectionView(
-            items: TaskDetailStatusMetadataPresentation.items(
+            titleFont: titleFont,
+            showsMetadata: hasVisibleStatusMetadata,
+            metadataItems: TaskDetailStatusMetadataPresentation.items(
                 for: store.state,
-                showSelectedDate: showSelectedDate,
+                showSelectedDate: true,
                 displayedActualDurationText: displayedActualDurationText,
                 dueDateMetadataDisplayText: dueDateMetadataDisplayText
-            )
-        )
-    }
-
-    private func statusActionSection(
-        pauseArchivePresentation: RoutinePauseArchivePresentation,
-        useLargePrimaryControl: Bool = false
-    ) -> some View {
-        TaskDetailStatusActionSectionView(
+            ),
             pauseArchivePresentation: pauseArchivePresentation,
+            completionButtonTitle: store.completionButtonTitle,
+            completionButtonSystemImage: store.completionButtonSystemImage,
             isOneOffTask: store.task.isOneOffTask,
             isArchived: store.task.isArchived(),
             isCompletionButtonDisabled: store.isCompletionButtonDisabled,
@@ -1274,10 +1261,11 @@ struct TaskDetailTCAView: View {
             bulkConfirmAssumedDaysTitle: store.bulkConfirmAssumedDaysTitle,
             hasBlockingRelationships: !store.blockingRelationships.isEmpty,
             blockerSummaryText: store.blockerSummaryText,
-            useLargePrimaryControl: useLargePrimaryControl
+            useLargePrimaryControl: useLargePrimaryControl,
+            contentPadding: contentPadding,
+            cardBackground: cardBackground,
+            cardStroke: cardStroke
         ) {
-            completionButtonLabel
-        } timeSpentButton: {
             timeSpentActionButton
         } onComplete: {
             store.send(store.completionButtonAction)
@@ -1535,15 +1523,6 @@ struct TaskDetailTCAView: View {
             overdueDays: store.overdueDays,
             task: store.task
         )
-    }
-
-    @ViewBuilder
-    private var completionButtonLabel: some View {
-        if let systemImage = store.completionButtonSystemImage {
-            Label(store.completionButtonTitle, systemImage: systemImage)
-        } else {
-            Text(store.completionButtonTitle)
-        }
     }
 
     private var toolbarCompletionTint: Color {
