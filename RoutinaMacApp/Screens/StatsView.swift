@@ -1072,72 +1072,7 @@ struct StatsView: View {
         .help("Show active items calculation")
         .accessibilityLabel("Show active items calculation")
         .popover(isPresented: $isActiveItemsInfoPresented, arrowEdge: .top) {
-            activeItemsInfoPopover
-        }
-    }
-
-    private var activeItemsInfoPopover: some View {
-        let breakdown = activeItemsBreakdown
-
-        return VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Active items")
-                    .font(.headline.weight(.semibold))
-
-                Text("Calculated from the items matching the current Stats filters.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                formulaRow(
-                    title: "Matching items",
-                    formula: "\(breakdown.routineCount.formatted()) routines + \(breakdown.todoCount.formatted()) todos",
-                    result: breakdown.matchingCount.formatted()
-                )
-
-                formulaRow(
-                    title: "Active items",
-                    formula: "\(breakdown.matchingCount.formatted()) matching - \(breakdown.archivedCount.formatted()) archived",
-                    result: breakdown.activeCount.formatted()
-                )
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Todo breakdown")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                Text("\(breakdown.openTodoCount.formatted()) open + \(breakdown.completedTodoCount.formatted()) completed + \(breakdown.canceledTodoCount.formatted()) canceled = \(breakdown.todoCount.formatted()) todos")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(16)
-        .frame(width: 300, alignment: .leading)
-    }
-
-    private func formulaRow(title: String, formula: String, result: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                Spacer(minLength: 12)
-
-                Text(result)
-                    .font(.system(.subheadline, design: .rounded, weight: .bold))
-            }
-
-            Text(formula)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            StatsActiveItemsInfoPopover(breakdown: activeItemsBreakdown)
         }
     }
 
