@@ -278,35 +278,69 @@ private struct SettingsMacShortcutRow: View {
     let shortcut: SettingsMacShortcutRowModel
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(shortcut.title)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
 
                 Text(shortcut.detail)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .layoutPriority(1)
 
-            Spacer(minLength: 16)
+            Spacer(minLength: 12)
 
-            Text(shortcut.shortcut)
-                .font(.caption.weight(.semibold).monospaced())
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.secondary.opacity(0.12))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                )
+            SettingsMacShortcutKeyCluster(shortcut: shortcut.shortcut)
+                .frame(minWidth: 120, alignment: .trailing)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+    }
+}
+
+private struct SettingsMacShortcutKeyCluster: View {
+    let shortcut: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(tokens.indices, id: \.self) { index in
+                Text(tokens[index])
+                    .font(.callout.weight(.bold).monospaced())
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .padding(.horizontal, horizontalPadding(for: tokens[index]))
+                    .frame(minWidth: minimumWidth(for: tokens[index]), minHeight: 30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.16))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .stroke(Color.accentColor.opacity(0.42), lineWidth: 1)
+                    )
+            }
+        }
+        .accessibilityLabel(shortcut)
+    }
+
+    private var tokens: [String] {
+        switch shortcut {
+        case "Return", "Esc", "Shortcuts":
+            return [shortcut]
+        default:
+            return shortcut.map(String.init)
+        }
+    }
+
+    private func minimumWidth(for token: String) -> CGFloat {
+        token.count == 1 ? 30 : 74
+    }
+
+    private func horizontalPadding(for token: String) -> CGFloat {
+        token.count == 1 ? 0 : 10
     }
 }
 
