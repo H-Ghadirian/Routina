@@ -30,20 +30,6 @@ struct StatsView: View {
         )
     }
 
-    private struct ActiveItemsBreakdown {
-        let routineCount: Int
-        let todoCount: Int
-        let openTodoCount: Int
-        let completedTodoCount: Int
-        let canceledTodoCount: Int
-        let archivedCount: Int
-        let activeCount: Int
-
-        var matchingCount: Int {
-            routineCount + todoCount
-        }
-    }
-
     private var selectedRange: DoneChartRange {
         store.selectedRange
     }
@@ -64,23 +50,10 @@ struct StatsView: View {
         store.filteredTaskCount
     }
 
-    private var activeItemsBreakdown: ActiveItemsBreakdown {
-        let now = Date()
-        let filteredTasks = filteredTasksForCurrentStatsFilters
-        let routineCount = filteredTasks.filter { !$0.isOneOffTask }.count
-        let todoTasks = filteredTasks.filter(\.isOneOffTask)
-        let archivedCount = filteredTasks.filter {
-            $0.isArchived(referenceDate: now, calendar: calendar)
-        }.count
-
-        return ActiveItemsBreakdown(
-            routineCount: routineCount,
-            todoCount: todoTasks.count,
-            openTodoCount: todoTasks.filter { !$0.isCompletedOneOff && !$0.isCanceledOneOff }.count,
-            completedTodoCount: todoTasks.filter(\.isCompletedOneOff).count,
-            canceledTodoCount: todoTasks.filter(\.isCanceledOneOff).count,
-            archivedCount: archivedCount,
-            activeCount: filteredTasks.count - archivedCount
+    private var activeItemsBreakdown: StatsActiveItemsBreakdown {
+        StatsActiveItemsBreakdown(
+            tasks: filteredTasksForCurrentStatsFilters,
+            calendar: calendar
         )
     }
 
