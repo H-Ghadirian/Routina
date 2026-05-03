@@ -803,7 +803,7 @@ struct TaskDetailTCAView: View {
     }
 
     var calendarSection: some View {
-        TaskDetailCalendarCardView(
+        TaskDetailCalendarSectionView(
             displayedMonthStart: displayedMonthStart,
             onPreviousMonth: {
                 displayedMonthStart = Calendar.current.date(byAdding: .month, value: -1, to: displayedMonthStart) ?? displayedMonthStart
@@ -815,7 +815,8 @@ struct TaskDetailTCAView: View {
             showsPausedLegend: store.task.pausedAt != nil,
             showsCreatedLegend: store.task.createdAt != nil
         ) {
-            calendarGrid(
+            TaskDetailCalendarGridView(
+                displayedMonthStart: displayedMonthStart,
                 doneDates: TaskDetailCalendarPresentation.doneDates(from: store.logs, task: store.task),
                 assumedDates: TaskDetailCalendarPresentation.assumedDates(from: store.logs, task: store.task),
                 dueDate: store.resolvedDueDate,
@@ -826,6 +827,7 @@ struct TaskDetailTCAView: View {
                 onSelectDate: { store.send(.selectedDateChanged($0)) }
             )
         }
+        .routinaPlatformCalendarCardStyle()
     }
 
     func heightReader(id: String) -> some View {
@@ -1562,104 +1564,46 @@ struct TaskDetailTCAView: View {
     }
 
     private var routineLogsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isRoutineLogsExpanded.toggle()
-                }
-            } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Routine Logs")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
+        TaskDetailRoutineLogsSectionView(
+            logs: store.logs,
+            isExpanded: $isRoutineLogsExpanded,
+            isShowingAllLogs: $isShowingAllLogs,
+            createdAtBadgeValue: store.state.createdAtBadgeValue,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke
+        ) { _, log, _ in
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(TaskDetailLogPresentation.timestampText(log.timestamp, showPersianDates: showPersianDates))
+                        .font(.subheadline)
 
-                    Text(store.logs.count.formatted())
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.secondary.opacity(0.12), in: Capsule())
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isRoutineLogsExpanded ? 180 : 0))
+                    Button {
+                        beginEditingTime(for: log)
+                    } label: {
+                        Label(TaskDetailLogPresentation.timeSpentText(for: log, style: .full), systemImage: "clock")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+
+                Text(log.kind == .completed ? "Done" : "Canceled")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(log.kind == .completed ? .green : .orange)
             }
-            .buttonStyle(.plain)
-
-            if let createdAtBadgeValue = store.state.createdAtBadgeValue {
-                Label("Created \(createdAtBadgeValue)", systemImage: "calendar.badge.plus")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if isRoutineLogsExpanded {
-                if store.logs.isEmpty {
-                    Text("No logs yet")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                } else {
-                    let logs = TaskDetailLogPresentation.displayedLogs(store.logs, showingAll: isShowingAllLogs)
-                    ForEach(Array(logs.enumerated()), id: \.offset) { index, log in
-                        HStack(spacing: 8) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(TaskDetailLogPresentation.timestampText(log.timestamp, showPersianDates: showPersianDates))
-                                    .font(.subheadline)
-
-                                Button {
-                                    beginEditingTime(for: log)
-                                } label: {
-                                    Label(TaskDetailLogPresentation.timeSpentText(for: log, style: .full), systemImage: "clock")
-                                        .font(.caption.weight(.semibold))
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                            Text(log.kind == .completed ? "Done" : "Canceled")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(log.kind == .completed ? .green : .orange)
-                        }
-                        .padding(.vertical, 8)
-                        .contextMenu {
-                            Button(log.actualDurationMinutes == nil ? "Add Time Spent" : "Edit Time Spent") {
-                                beginEditingTime(for: log)
-                            }
-                            if let timestamp = log.timestamp {
-                                Button(TaskDetailLogPresentation.actionTitle(for: log)) {
-                                    store.send(.requestRemoveLogEntry(timestamp))
-                                }
-                            }
-                        }
-
-                        if index < logs.count - 1 {
-                            Divider()
-                        }
-                    }
-
-                    if store.logs.count > 3 {
-                        Button(isShowingAllLogs ? "Show less" : "See all (\(store.logs.count))") {
-                            isShowingAllLogs.toggle()
-                        }
-                        .font(.footnote.weight(.semibold))
-                        .padding(.top, 4)
+            .padding(.vertical, 8)
+            .contextMenu {
+                Button(log.actualDurationMinutes == nil ? "Add Time Spent" : "Edit Time Spent") {
+                    beginEditingTime(for: log)
+                }
+                if let timestamp = log.timestamp {
+                    Button(TaskDetailLogPresentation.actionTitle(for: log)) {
+                        store.send(.requestRemoveLogEntry(timestamp))
                     }
                 }
             }
         }
-        .padding(12)
-        .background(routineLogsBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-        )
     }
 
     private func beginEditingTime(for log: RoutineLog) {
@@ -1728,74 +1672,13 @@ struct TaskDetailTCAView: View {
     }
 
     private var taskChangesSection: some View {
-        let changes = store.task.changeLogEntries
-        return VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isTaskChangesExpanded.toggle()
-                }
-            } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Task Changes")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-
-                    Text(changes.count.formatted())
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.secondary.opacity(0.12), in: Capsule())
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isTaskChangesExpanded ? 180 : 0))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isTaskChangesExpanded {
-                if changes.isEmpty {
-                    Text("No changes yet")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(Array(changes.prefix(12).enumerated()), id: \.element.id) { index, change in
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: TaskDetailLogPresentation.taskChangeSystemImage(for: change))
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 18, height: 18)
-
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(TaskDetailLogPresentation.taskChangeTitle(for: change, relatedTaskName: relatedTaskName(for: change)))
-                                    .font(.subheadline.weight(.medium))
-                                Text(TaskDetailLogPresentation.timestampText(change.timestamp, showPersianDates: showPersianDates))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(.vertical, 7)
-
-                        if index < min(changes.count, 12) - 1 {
-                            Divider()
-                        }
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .background(routineLogsBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        TaskDetailTaskChangesSectionView(
+            changes: store.task.changeLogEntries,
+            isExpanded: $isTaskChangesExpanded,
+            showPersianDates: showPersianDates,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            relatedTaskName: relatedTaskName(for:)
         )
     }
 
@@ -1805,143 +1688,31 @@ struct TaskDetailTCAView: View {
     }
 
     private var relationshipsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Linked Tasks")
-                    .font(.headline)
-
-                Spacer(minLength: 0)
-
-                Button {
-                    isRelationshipGraphPresented = true
-                } label: {
-                    Label("Visualize", systemImage: "point.3.connected.trianglepath.dotted")
-                        .font(.caption.weight(.semibold))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(store.resolvedRelationships.isEmpty)
-            }
-
-            ForEach(store.groupedResolvedRelationships, id: \.kind) { group in
-                VStack(alignment: .leading, spacing: 6) {
-                    Label(group.kind.title, systemImage: group.kind.systemImage)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    ForEach(Array(group.items.enumerated()), id: \.element.id) { index, relationship in
-                        Button {
-                            store.send(.openLinkedTask(relationship.taskID))
-                        } label: {
-                            HStack(spacing: 12) {
-                                Text(relationship.taskEmoji)
-                                    .font(.title3)
-                                    .overlay(alignment: .topLeading) {
-                                        if group.items.count > 1 {
-                                            Text("\(index + 1)")
-                                                .fixedSize()
-                                                .font(.caption2.monospacedDigit().weight(.semibold))
-                                                .foregroundStyle(.secondary)
-                                                .padding(.horizontal, 5)
-                                                .padding(.vertical, 2)
-                                                .background(.ultraThinMaterial, in: Capsule())
-                                                .overlay(
-                                                    Capsule()
-                                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                                                )
-                                                .offset(x: -10, y: -8)
-                                        }
-                                    }
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(relationship.taskName)
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(.primary)
-
-                                    if relationship.status != .onTrack {
-                                        Label(relationship.status.title, systemImage: relationship.status.systemImage)
-                                            .font(.caption.weight(.medium))
-                                            .foregroundStyle(TaskDetailPresentation.statusColor(for: relationship.status))
-                                    }
-                                }
-
-                                Spacer(minLength: 0)
-
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-
-                        if index < group.items.count - 1 {
-                            Divider()
-                        }
-                    }
-                }
-
-                Divider()
-            }
-
-            HStack(spacing: 8) {
-                Picker(
-                    "",
-                    selection: Binding(
-                        get: { store.addLinkedTaskRelationshipKind },
-                        set: { store.send(.addLinkedTaskRelationshipKindChanged($0)) }
-                    )
-                ) {
-                    ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
-                        Label(kind.title, systemImage: kind.systemImage).tag(kind)
-                    }
-                }
-                .labelsHidden()
-                .fixedSize()
-
-                Button {
-                    store.send(.openAddLinkedTask)
-                } label: {
-                    Label("Add Linked Task", systemImage: "plus")
-                        .font(.subheadline)
-                }
-                .buttonStyle(.borderless)
-            }
-        }
-        .padding(12)
-        .background(routineLogsBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        TaskDetailRelationshipsSectionView(
+            groups: store.groupedResolvedRelationships,
+            selectedRelationshipKind: Binding(
+                get: { store.addLinkedTaskRelationshipKind },
+                set: { store.send(.addLinkedTaskRelationshipKindChanged($0)) }
+            ),
+            isVisualizeDisabled: store.resolvedRelationships.isEmpty,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            onVisualize: { isRelationshipGraphPresented = true },
+            onOpenTask: { store.send(.openLinkedTask($0)) },
+            onOpenAddLinkedTask: { store.send(.openAddLinkedTask) }
         )
     }
 
     private var checklistItemsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Checklist Items")
-                .font(.headline)
-
-            if store.task.checklistItems.isEmpty {
-                Text("No checklist items yet")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            } else {
-                ForEach(sortedChecklistItems, id: \.id) { item in
-                    checklistRow(for: item)
-
-                    if item.id != sortedChecklistItems.last?.id {
-                        Divider()
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .background(routineLogsBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+        TaskDetailChecklistSectionView(
+            task: store.task,
+            selectedDate: store.resolvedSelectedDate,
+            isDoneToday: store.isDoneToday,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            isMarkedDone: { store.state.isChecklistItemMarkedDone($0) },
+            onToggleCompletion: { store.send(.toggleChecklistItemCompletion($0)) },
+            onMarkPurchased: { store.send(.markChecklistItemPurchased($0)) }
         )
     }
 
@@ -1982,171 +1753,6 @@ struct TaskDetailTCAView: View {
 
     private var routineLogsBackground: Color {
         TaskDetailPlatformStyle.routineLogsBackground
-    }
-
-    private func calendarGrid(
-        doneDates: Set<Date>,
-        assumedDates: Set<Date>,
-        dueDate: Date?,
-        createdAt: Date?,
-        pausedAt: Date?,
-        isOrangeUrgencyToday: Bool,
-        selectedDate: Date,
-        onSelectDate: @escaping (Date) -> Void
-    ) -> some View {
-        let calendar = Calendar.current
-        let start = displayedMonthStart
-        let days = calendar.daysInMonthGrid(for: start)
-        let weekdaySymbols = calendar.orderedShortStandaloneWeekdaySymbols
-
-        return VStack(spacing: 6) {
-            HStack {
-                ForEach(weekdaySymbols, id: \.self) { symbol in
-                    Text(symbol)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 6) {
-                ForEach(Array(days.enumerated()), id: \.offset) { _, day in
-                    if let day {
-                        calendarDayCell(
-                            day: day,
-                            doneDates: doneDates,
-                            assumedDates: assumedDates,
-                            dueDate: dueDate,
-                            createdAt: createdAt,
-                            pausedAt: pausedAt,
-                            isOrangeUrgencyToday: isOrangeUrgencyToday,
-                            isSelected: calendar.isDate(day, inSameDayAs: selectedDate),
-                            onSelectDate: onSelectDate
-                        )
-                    } else {
-                        Color.clear
-                            .frame(height: 28)
-                    }
-                }
-            }
-        }
-    }
-
-    private func calendarDayCell(
-        day: Date,
-        doneDates: Set<Date>,
-        assumedDates: Set<Date>,
-        dueDate: Date?,
-        createdAt: Date?,
-        pausedAt: Date?,
-        isOrangeUrgencyToday: Bool,
-        isSelected: Bool,
-        onSelectDate: @escaping (Date) -> Void
-    ) -> some View {
-        let calendar = Calendar.current
-        let presentation = TaskDetailCalendarPresentation.dayPresentation(
-            day: day,
-            doneDates: doneDates,
-            assumedDates: assumedDates,
-            dueDate: dueDate,
-            createdAt: createdAt,
-            pausedAt: pausedAt,
-            isOrangeUrgencyToday: isOrangeUrgencyToday,
-            calendar: calendar
-        )
-
-        return Button {
-            onSelectDate(day)
-        } label: {
-            Text(day.formatted(.dateTime.day()))
-                .font(.subheadline)
-                .foregroundColor(presentation.foregroundColor)
-                .frame(maxWidth: .infinity)
-                .frame(height: 28)
-                .background(Circle().fill(presentation.backgroundColor))
-                .overlay(
-                    Circle()
-                        .stroke(
-                            TaskDetailPresentation.selectionStrokeColor(
-                                isSelected: isSelected,
-                                isToday: presentation.isToday,
-                                isHighlightedDay: presentation.isHighlightedDay
-                            ),
-                            lineWidth: isSelected ? 3 : 2
-                        )
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var sortedChecklistItems: [RoutineChecklistItem] {
-        TaskDetailChecklistPresentation.sortedItems(for: store.task)
-    }
-
-    @ViewBuilder
-    private func checklistRow(for item: RoutineChecklistItem) -> some View {
-        if store.task.isChecklistCompletionRoutine {
-            completionChecklistRow(for: item)
-        } else {
-            dueChecklistRow(for: item)
-        }
-    }
-
-    private func completionChecklistRow(for item: RoutineChecklistItem) -> some View {
-        let isDone = store.state.isChecklistItemMarkedDone(item)
-        let isInteractive = TaskDetailChecklistPresentation.canToggleItem(
-            item,
-            task: store.task,
-            selectedDate: store.resolvedSelectedDate,
-            isDoneToday: store.isDoneToday
-        )
-
-        return Button {
-            store.send(.toggleChecklistItemCompletion(item.id))
-        } label: {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(isDone ? .green : TaskDetailPresentation.checklistCompletionControlColor(isInteractive: isInteractive))
-                    .frame(width: 24, height: 24)
-
-                Text(item.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(isDone ? .secondary : .primary)
-                    .strikethrough(isDone, color: .secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!isInteractive)
-        .accessibilityLabel(item.title)
-        .accessibilityValue(isDone ? "Completed" : "Not completed")
-    }
-
-    private func dueChecklistRow(for item: RoutineChecklistItem) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.subheadline.weight(.semibold))
-                Text(TaskDetailChecklistPresentation.statusText(
-                    for: item,
-                    task: store.task,
-                    isMarkedDone: store.state.isChecklistItemMarkedDone(item)
-                ))
-                    .font(.caption)
-                    .foregroundStyle(TaskDetailPresentation.checklistStatusColor(for: item, task: store.task, isMarkedDone: store.state.isChecklistItemMarkedDone(item)))
-            }
-
-            Spacer(minLength: 0)
-
-            Button("Bought") {
-                store.send(.markChecklistItemPurchased(item.id))
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .disabled(store.task.isArchived() || !Calendar.current.isDateInToday(store.resolvedSelectedDate))
-        }
     }
 
     // MARK: - Attachment actions

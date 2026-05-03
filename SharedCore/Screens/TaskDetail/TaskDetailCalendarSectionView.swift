@@ -1,7 +1,9 @@
 import SwiftUI
 
-struct TaskDetailCalendarCardView<CalendarContent: View>: View {
-    let header: TaskDetailCalendarHeaderView
+struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
+    let displayedMonthStart: Date
+    let onPreviousMonth: () -> Void
+    let onNextMonth: () -> Void
     let showsAssumedLegend: Bool
     let showsPausedLegend: Bool
     let showsCreatedLegend: Bool
@@ -16,11 +18,9 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
         showsCreatedLegend: Bool,
         @ViewBuilder calendarContent: () -> CalendarContent
     ) {
-        self.header = TaskDetailCalendarHeaderView(
-            displayedMonthStart: displayedMonthStart,
-            onPreviousMonth: onPreviousMonth,
-            onNextMonth: onNextMonth
-        )
+        self.displayedMonthStart = displayedMonthStart
+        self.onPreviousMonth = onPreviousMonth
+        self.onNextMonth = onNextMonth
         self.showsAssumedLegend = showsAssumedLegend
         self.showsPausedLegend = showsPausedLegend
         self.showsCreatedLegend = showsCreatedLegend
@@ -29,8 +29,12 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header
-                .padding(.bottom, 8)
+            TaskDetailCalendarSectionHeaderView(
+                displayedMonthStart: displayedMonthStart,
+                onPreviousMonth: onPreviousMonth,
+                onNextMonth: onNextMonth
+            )
+            .padding(.bottom, 8)
 
             calendarContent
                 .padding(.bottom, 12)
@@ -40,18 +44,17 @@ struct TaskDetailCalendarCardView<CalendarContent: View>: View {
             Divider()
                 .padding(.bottom, 12)
 
-            TaskDetailCalendarLegendView(
+            TaskDetailCalendarSectionLegendView(
                 showsAssumedLegend: showsAssumedLegend,
                 showsPausedLegend: showsPausedLegend,
                 showsCreatedLegend: showsCreatedLegend
             )
         }
         .padding(12)
-        .routinaPlatformCalendarCardStyle()
     }
 }
 
-struct TaskDetailCalendarHeaderView: View {
+private struct TaskDetailCalendarSectionHeaderView: View {
     let displayedMonthStart: Date
     let onPreviousMonth: () -> Void
     let onNextMonth: () -> Void
@@ -76,7 +79,7 @@ struct TaskDetailCalendarHeaderView: View {
     }
 }
 
-struct TaskDetailCalendarLegendView: View {
+private struct TaskDetailCalendarSectionLegendView: View {
     let showsAssumedLegend: Bool
     let showsPausedLegend: Bool
     let showsCreatedLegend: Bool
@@ -84,15 +87,15 @@ struct TaskDetailCalendarLegendView: View {
     var body: some View {
         HStack(spacing: 12) {
             if showsCreatedLegend {
-                TaskDetailCalendarLegendItemView(color: .purple, label: "Created")
+                TaskDetailCalendarSectionLegendItemView(color: .purple, label: "Created")
             }
-            TaskDetailCalendarLegendItemView(color: .green, label: "Done")
+            TaskDetailCalendarSectionLegendItemView(color: .green, label: "Done")
             if showsAssumedLegend {
-                TaskDetailCalendarLegendItemView(color: .mint, label: "Assumed")
+                TaskDetailCalendarSectionLegendItemView(color: .mint, label: "Assumed")
             }
-            TaskDetailCalendarLegendItemView(color: .red, label: "Overdue")
+            TaskDetailCalendarSectionLegendItemView(color: .red, label: "Overdue")
             if showsPausedLegend {
-                TaskDetailCalendarLegendItemView(color: .teal, label: "Paused")
+                TaskDetailCalendarSectionLegendItemView(color: .teal, label: "Paused")
             }
             HStack(spacing: 4) {
                 Circle()
@@ -108,7 +111,7 @@ struct TaskDetailCalendarLegendView: View {
     }
 }
 
-struct TaskDetailCalendarLegendItemView: View {
+private struct TaskDetailCalendarSectionLegendItemView: View {
     let color: Color
     let label: String
 

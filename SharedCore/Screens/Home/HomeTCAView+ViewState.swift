@@ -1,5 +1,8 @@
 import SwiftUI
 
+// This extension is compiled into both app targets; it is excluded from SwiftPM
+// because `HomeTCAView` itself remains platform-owned.
+
 extension HomeTCAView {
     @ViewBuilder
     var activeFilterChipBar: some View {

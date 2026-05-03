@@ -9,22 +9,7 @@ enum TaskDetailPresentation {
     // MARK: - Relationship + checklist status colors
 
     static func statusColor(for status: RoutineTaskRelationshipStatus) -> Color {
-        switch status {
-        case .doneToday, .completedOneOff:
-            return .green
-        case .overdue:
-            return .red
-        case .dueToday:
-            return .orange
-        case .paused:
-            return .teal
-        case .pendingTodo:
-            return .blue
-        case .canceledOneOff:
-            return .secondary
-        case .onTrack:
-            return .secondary
-        }
+        TaskDetailRelationshipPresentation.statusColor(for: status)
     }
 
     static func checklistStatusColor(
@@ -34,23 +19,17 @@ enum TaskDetailPresentation {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> Color {
-        if task.isChecklistCompletionRoutine {
-            return isMarkedDone ? .green : .secondary
-        }
-        let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)
-        let daysUntilDue = calendar.dateComponents(
-            [.day],
-            from: calendar.startOfDay(for: referenceDate),
-            to: calendar.startOfDay(for: dueDate)
-        ).day ?? 0
-
-        if daysUntilDue < 0 { return .red }
-        if daysUntilDue == 0 { return .orange }
-        return .secondary
+        TaskDetailChecklistPresentation.statusColor(
+            for: item,
+            task: task,
+            isMarkedDone: isMarkedDone,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
     }
 
     static func checklistCompletionControlColor(isInteractive: Bool) -> Color {
-        isInteractive ? .secondary : .secondary.opacity(0.45)
+        TaskDetailChecklistPresentation.completionControlColor(isInteractive: isInteractive)
     }
 
     static func selectionStrokeColor(
@@ -58,9 +37,11 @@ enum TaskDetailPresentation {
         isToday: Bool,
         isHighlightedDay: Bool
     ) -> Color {
-        if isSelected { return .blue }
-        if isToday && isHighlightedDay { return .blue }
-        return .clear
+        TaskDetailCalendarPresentation.selectionStrokeColor(
+            isSelected: isSelected,
+            isToday: isToday,
+            isHighlightedDay: isHighlightedDay
+        )
     }
 
     // MARK: - Summary status color

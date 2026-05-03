@@ -34,6 +34,16 @@ struct TaskDetailCalendarDayPresentation: Equatable {
 }
 
 enum TaskDetailCalendarPresentation {
+    static func selectionStrokeColor(
+        isSelected: Bool,
+        isToday: Bool,
+        isHighlightedDay: Bool
+    ) -> Color {
+        if isSelected { return .blue }
+        if isToday && isHighlightedDay { return .blue }
+        return .clear
+    }
+
     static func doneDates(
         from logs: [RoutineLog],
         task: RoutineTask,

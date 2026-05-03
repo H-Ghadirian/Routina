@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum TaskDetailChecklistPresentation {
     static func sortedItems(
@@ -66,6 +67,32 @@ enum TaskDetailChecklistPresentation {
         }
 
         return true
+    }
+
+    static func statusColor(
+        for item: RoutineChecklistItem,
+        task: RoutineTask,
+        isMarkedDone: Bool,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Color {
+        if task.isChecklistCompletionRoutine {
+            return isMarkedDone ? .green : .secondary
+        }
+        let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)
+        let daysUntilDue = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: referenceDate),
+            to: calendar.startOfDay(for: dueDate)
+        ).day ?? 0
+
+        if daysUntilDue < 0 { return .red }
+        if daysUntilDue == 0 { return .orange }
+        return .secondary
+    }
+
+    static func completionControlColor(isInteractive: Bool) -> Color {
+        isInteractive ? .secondary : .secondary.opacity(0.45)
     }
 
     private static func dayWord(_ count: Int) -> String {

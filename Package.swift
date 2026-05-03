@@ -111,6 +111,9 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphSheet.swift",
                 // Not yet audited:
                 "SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift",
+                // Extends the per-app HomeTCAView type and is compiled by both
+                // Xcode app targets through the shared source folder.
+                "SharedCore/Screens/Home/HomeTCAView+ViewState.swift",
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
@@ -235,12 +238,20 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphLayout.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailAttachmentPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailCalendarGridView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailCalendarSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailChecklistPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailChecklistSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailEditChangeSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailLogPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailPriorityPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailRelationshipPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailRelationshipsSectionView.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogsSectionView.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailSectionCardView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailSharedViewSupport.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailTaskChangesSectionView.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
                 "SharedCore/Services/CalendarTaskImportService.swift",
                 "SharedCore/Services/MicrosoftGraphCalendarService.swift",
