@@ -383,31 +383,10 @@ struct TaskDetailTCAView: View {
     }
 
     private var todoTimeSpentHeaderBox: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("TIME SPENT")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(store.task.actualDurationMinutes.map(TaskDetailHeaderBadgePresentation.durationText(for:)) ?? "Not logged")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(store.task.actualDurationMinutes == nil ? .secondary : .primary)
-            }
-
-            Spacer(minLength: 8)
-
-            Button {
-                beginEditingTaskTime()
-            } label: {
-                Label(
-                    store.task.actualDurationMinutes == nil ? "Add Time" : "Edit Time",
-                    systemImage: "clock.badge"
-                )
-            }
-            .buttonStyle(.bordered)
-            .tint(.cyan)
-        }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle(tint: .cyan)
+        TaskDetailTimeSpentHeaderBox(
+            actualDurationMinutes: store.task.actualDurationMinutes,
+            onEdit: beginEditingTaskTime
+        )
     }
 
     private var priorityDisclosureBox: some View {
