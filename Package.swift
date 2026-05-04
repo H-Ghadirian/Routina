@@ -315,6 +315,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailEditChangeSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailFocusSessionSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailLogPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailOverviewHeightsPreferenceKey.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailPriorityPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRelationshipPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRelationshipsSectionView.swift",
