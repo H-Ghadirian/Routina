@@ -298,6 +298,7 @@ let package = Package(
                 "SharedCore/Services/SprintBoardClient.swift",
                 "SharedCore/Sync/CloudDataResetService.swift",
                 "SharedCore/Sync/CloudSharingService.swift",
+                "SharedCore/Sync/CloudKitDirectPullCanonicalIDResolver.swift",
                 "SharedCore/Sync/CloudKitDirectPullDeletionHandler.swift",
                 "SharedCore/Sync/CloudKitDirectPullEntityPayloadAppliers.swift",
                 "SharedCore/Sync/CloudKitDirectPullFetcher.swift",
