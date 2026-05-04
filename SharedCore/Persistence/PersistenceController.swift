@@ -23,6 +23,12 @@ public struct PersistenceController {
                 RoutinePlace.self,
                 RoutineAttachment.self,
                 DayPlanBlockRecord.self,
+                BoardSprintRecord.self,
+                SprintAssignmentRecord.self,
+                BoardBacklogRecord.self,
+                BacklogAssignmentRecord.self,
+                SprintFocusSessionRecord.self,
+                SprintFocusAllocationRecord.self,
                 configurations: primaryConfiguration
             )
         } catch {
@@ -58,6 +64,12 @@ public struct PersistenceController {
                         RoutinePlace.self,
                         RoutineAttachment.self,
                         DayPlanBlockRecord.self,
+                        BoardSprintRecord.self,
+                        SprintAssignmentRecord.self,
+                        BoardBacklogRecord.self,
+                        BacklogAssignmentRecord.self,
+                        SprintFocusSessionRecord.self,
+                        SprintFocusAllocationRecord.self,
                         configurations: retriedConfiguration
                     )
                     return
@@ -78,6 +90,12 @@ public struct PersistenceController {
                     RoutinePlace.self,
                     RoutineAttachment.self,
                     DayPlanBlockRecord.self,
+                    BoardSprintRecord.self,
+                    SprintAssignmentRecord.self,
+                    BoardBacklogRecord.self,
+                    BacklogAssignmentRecord.self,
+                    SprintFocusSessionRecord.self,
+                    SprintFocusAllocationRecord.self,
                     configurations: localFallback
                 )
             } catch {
@@ -93,6 +111,12 @@ public struct PersistenceController {
                         RoutinePlace.self,
                         RoutineAttachment.self,
                         DayPlanBlockRecord.self,
+                        BoardSprintRecord.self,
+                        SprintAssignmentRecord.self,
+                        BoardBacklogRecord.self,
+                        BacklogAssignmentRecord.self,
+                        SprintFocusSessionRecord.self,
+                        SprintFocusAllocationRecord.self,
                         configurations: memoryFallback
                     )
                 } catch {
@@ -121,6 +145,12 @@ public struct PersistenceController {
             RoutinePlace.self,
             RoutineAttachment.self,
             DayPlanBlockRecord.self,
+            BoardSprintRecord.self,
+            SprintAssignmentRecord.self,
+            BoardBacklogRecord.self,
+            BacklogAssignmentRecord.self,
+            SprintFocusSessionRecord.self,
+            SprintFocusAllocationRecord.self,
             configurations: configuration
         )
     }
