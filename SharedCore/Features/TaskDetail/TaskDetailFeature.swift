@@ -248,6 +248,28 @@ struct TaskDetailFeature: Reducer {
     @Dependency(\.appSettingsClient) var appSettingsClient
     @Dependency(\.urlOpenerClient) var urlOpenerClient
 
+    private func statusMutationHandler() -> TaskDetailStatusMutationHandler {
+        TaskDetailStatusMutationHandler(
+            now: { now },
+            matrixPriority: { importance, urgency in
+                matrixPriority(importance: importance, urgency: urgency)
+            },
+            appendLocalTodoStateChange: { task, previousStateTitle, newStateTitle in
+                appendLocalTodoStateChange(
+                    to: task,
+                    previousStateTitle: previousStateTitle,
+                    newStateTitle: newStateTitle
+                )
+            },
+            refreshTaskView: { state in
+                refreshTaskView(&state)
+            },
+            updateDerivedState: { state in
+                updateDerivedState(&state)
+            }
+        )
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
@@ -1085,89 +1107,50 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .todoStateChanged(newState):
-            guard state.task.isOneOffTask else { return .none }
-            guard !state.task.isCompletedOneOff, !state.task.isCanceledOneOff else { return .none }
-            let previousStateTitle = state.task.todoState?.displayTitle
-            switch newState {
-            case .done:
+            switch statusMutationHandler().applyTodoStateChange(newState, state: &state) {
+            case .none:
+                return .none
+
+            case .markAsDone:
                 return reduce(into: &state, action: .markAsDone)
-            case .paused:
-                let pauseDate = now
-                state.task.pausedAt = pauseDate
-                state.task.todoStateRawValue = nil
-                appendLocalTodoStateChange(
-                    to: state.task,
-                    previousStateTitle: previousStateTitle,
-                    newStateTitle: newState.displayTitle
-                )
-                refreshTaskView(&state)
-                updateDerivedState(&state)
+
+            case let .persist(request):
                 return handleTodoStateChanged(
-                    taskID: state.task.id,
-                    rawValue: nil,
-                    pausedAt: pauseDate,
-                    previousStateTitle: previousStateTitle,
-                    newStateTitle: newState.displayTitle
-                )
-            case .ready, .inProgress, .blocked:
-                state.task.pausedAt = nil
-                state.task.snoozedUntil = nil
-                state.task.todoStateRawValue = newState.rawValue
-                appendLocalTodoStateChange(
-                    to: state.task,
-                    previousStateTitle: previousStateTitle,
-                    newStateTitle: newState.displayTitle
-                )
-                refreshTaskView(&state)
-                updateDerivedState(&state)
-                return handleTodoStateChanged(
-                    taskID: state.task.id,
-                    rawValue: newState.rawValue,
-                    pausedAt: nil,
-                    clearSnoozed: true,
-                    previousStateTitle: previousStateTitle,
-                    newStateTitle: newState.displayTitle
+                    taskID: request.taskID,
+                    rawValue: request.rawValue,
+                    pausedAt: request.pausedAt,
+                    clearSnoozed: request.clearSnoozed,
+                    previousStateTitle: request.previousStateTitle,
+                    newStateTitle: request.newStateTitle
                 )
             }
 
         case let .pressureChanged(pressure):
-            guard state.task.pressure != pressure else { return .none }
-            state.task.pressure = pressure
-            state.editPressure = pressure
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handlePressureChanged(taskID: state.task.id, pressure: pressure)
+            guard let mutation = statusMutationHandler().applyPressureChange(pressure, state: &state) else {
+                return .none
+            }
+            return handlePressureChanged(taskID: mutation.taskID, pressure: mutation.pressure)
 
         case let .importanceChanged(importance):
-            guard state.task.importance != importance else { return .none }
-            state.task.importance = importance
-            state.editImportance = importance
-            let newPriority = matrixPriority(importance: importance, urgency: state.task.urgency)
-            state.task.priority = newPriority
-            state.editPriority = newPriority
-            refreshTaskView(&state)
-            updateDerivedState(&state)
+            guard let mutation = statusMutationHandler().applyImportanceChange(importance, state: &state) else {
+                return .none
+            }
             return handleMatrixPositionChanged(
-                taskID: state.task.id,
-                importance: importance,
-                urgency: state.task.urgency,
-                priority: newPriority
+                taskID: mutation.taskID,
+                importance: mutation.importance,
+                urgency: mutation.urgency,
+                priority: mutation.priority
             )
 
         case let .urgencyChanged(urgency):
-            guard state.task.urgency != urgency else { return .none }
-            state.task.urgency = urgency
-            state.editUrgency = urgency
-            let newPriority = matrixPriority(importance: state.task.importance, urgency: urgency)
-            state.task.priority = newPriority
-            state.editPriority = newPriority
-            refreshTaskView(&state)
-            updateDerivedState(&state)
+            guard let mutation = statusMutationHandler().applyUrgencyChange(urgency, state: &state) else {
+                return .none
+            }
             return handleMatrixPositionChanged(
-                taskID: state.task.id,
-                importance: state.task.importance,
-                urgency: urgency,
-                priority: newPriority
+                taskID: mutation.taskID,
+                importance: mutation.importance,
+                urgency: mutation.urgency,
+                priority: mutation.priority
             )
 
         case let .setBlockedStateConfirmation(isPresented):

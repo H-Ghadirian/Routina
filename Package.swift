@@ -255,6 +255,7 @@ let package = Package(
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Helpers.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Presentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+StateDerivation.swift",
+                "SharedCore/Features/TaskDetail/TaskDetailStatusMutationHandler.swift",
                 "SharedCore/Persistence/PersistenceController.swift",
                 "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphLayout.swift",
