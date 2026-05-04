@@ -297,6 +297,7 @@ let package = Package(
                 "SharedCore/Sync/CloudDataResetService.swift",
                 "SharedCore/Sync/CloudSharingService.swift",
                 "SharedCore/Sync/CloudKitDirectPullDeletionHandler.swift",
+                "SharedCore/Sync/CloudKitDirectPullFetcher.swift",
                 "SharedCore/Sync/CloudKitDirectPullMergeSupport.swift",
                 "SharedCore/Sync/CloudKitDirectPullTaskPayloadApplier.swift",
                 "SharedCore/Sync/CloudKitDirectPullRecordParser.swift",

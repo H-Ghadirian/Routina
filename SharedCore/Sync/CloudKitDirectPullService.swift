@@ -3,11 +3,6 @@ import Foundation
 import SwiftData
 
 enum CloudKitDirectPullService {
-    private static let zoneID = CKRecordZone.ID(
-        zoneName: "com.apple.coredata.cloudkit.zone",
-        ownerName: "__defaultOwner__"
-    )
-
     struct PullResult {
         var changedRecords: [CKRecord]
         var deletedRecordIDs: [CKRecord.ID]
@@ -18,7 +13,9 @@ enum CloudKitDirectPullService {
         containerIdentifier: String,
         modelContext: ModelContext
     ) async throws {
-        let result = try await fetchZoneChanges(containerIdentifier: containerIdentifier)
+        let result = try await CloudKitDirectPullFetcher.fetchZoneChanges(
+            containerIdentifier: containerIdentifier
+        )
         try merge(result: result, into: modelContext)
     }
 
@@ -28,68 +25,6 @@ enum CloudKitDirectPullService {
         into context: ModelContext
     ) throws {
         try merge(result: result, into: context)
-    }
-
-    private static func fetchZoneChanges(containerIdentifier: String) async throws -> PullResult {
-        let database = CKContainer(identifier: containerIdentifier).privateCloudDatabase
-        var changedRecords: [CKRecord] = []
-        var deletedRecordIDs: [CKRecord.ID] = []
-
-        return try await withCheckedThrowingContinuation { continuation in
-            var didResume = false
-            func resumeIfNeeded(_ result: Result<PullResult, Error>) {
-                guard !didResume else { return }
-                didResume = true
-                continuation.resume(with: result)
-            }
-
-            let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
-            config.previousServerChangeToken = nil
-            config.desiredKeys = nil
-
-            let operation = CKFetchRecordZoneChangesOperation(
-                recordZoneIDs: [zoneID],
-                configurationsByRecordZoneID: [zoneID: config]
-            )
-
-            operation.recordWasChangedBlock = { _, result in
-                switch result {
-                case .success(let record):
-                    changedRecords.append(record)
-                case .failure:
-                    // Keep going; one failed record should not abort the whole pull.
-                    break
-                }
-            }
-
-            operation.recordWithIDWasDeletedBlock = { recordID, _ in
-                deletedRecordIDs.append(recordID)
-            }
-
-            operation.recordZoneFetchResultBlock = { _, result in
-                if case .failure(let error) = result {
-                    resumeIfNeeded(.failure(error))
-                }
-            }
-
-            operation.fetchRecordZoneChangesResultBlock = { result in
-                switch result {
-                case .success:
-                    resumeIfNeeded(
-                        .success(
-                            PullResult(
-                                changedRecords: changedRecords,
-                                deletedRecordIDs: deletedRecordIDs
-                            )
-                        )
-                    )
-                case .failure(let error):
-                    resumeIfNeeded(.failure(error))
-                }
-            }
-
-            database.add(operation)
-        }
     }
 
     @MainActor
