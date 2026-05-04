@@ -1300,15 +1300,15 @@ extension HomeFeature {
     }
 
     static func availableTags(from routineDisplays: [RoutineDisplay]) -> [String] {
-        tagSummaries(from: routineDisplays).map(\.name)
+        HomeRoutineDisplayQuerySupport.availableTags(from: routineDisplays)
     }
 
     static func tagSummaries(from routineDisplays: [RoutineDisplay]) -> [RoutineTagSummary] {
-        HomeDisplayFilterSupport.tagSummaries(from: routineDisplays, tags: \.tags)
+        HomeRoutineDisplayQuerySupport.tagSummaries(from: routineDisplays)
     }
 
     static func matchesSelectedTag(_ selectedTag: String?, in tags: [String]) -> Bool {
-        HomeDisplayFilterSupport.matchesSelectedTag(selectedTag, in: tags)
+        HomeRoutineDisplayQuerySupport.matchesSelectedTag(selectedTag, in: tags)
     }
 
     static func matchesSelectedTags(
@@ -1316,11 +1316,11 @@ extension HomeFeature {
         mode: RoutineTagMatchMode,
         in tags: [String]
     ) -> Bool {
-        HomeDisplayFilterSupport.matchesSelectedTags(selectedTags, mode: mode, in: tags)
+        HomeRoutineDisplayQuerySupport.matchesSelectedTags(selectedTags, mode: mode, in: tags)
     }
 
     static func matchesExcludedTags(_ excludedTags: Set<String>, in tags: [String]) -> Bool {
-        HomeDisplayFilterSupport.matchesExcludedTags(excludedTags, in: tags)
+        HomeRoutineDisplayQuerySupport.matchesExcludedTags(excludedTags, in: tags)
     }
 
     static func matchesExcludedTags(
@@ -1328,7 +1328,7 @@ extension HomeFeature {
         mode: RoutineTagMatchMode,
         in tags: [String]
     ) -> Bool {
-        HomeDisplayFilterSupport.matchesExcludedTags(excludedTags, mode: mode, in: tags)
+        HomeRoutineDisplayQuerySupport.matchesExcludedTags(excludedTags, mode: mode, in: tags)
     }
 
     static func matchesImportanceUrgencyFilter(
@@ -1336,7 +1336,7 @@ extension HomeFeature {
         importance: RoutineTaskImportance,
         urgency: RoutineTaskUrgency
     ) -> Bool {
-        HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+        HomeRoutineDisplayQuerySupport.matchesImportanceUrgencyFilter(
             selectedFilter,
             importance: importance,
             urgency: urgency
@@ -1344,10 +1344,6 @@ extension HomeFeature {
     }
 
     static func matchesTodoStateFilter(_ filter: TodoState?, task: RoutineDisplay) -> Bool {
-        HomeDisplayFilterSupport.matchesTodoStateFilter(
-            filter,
-            isOneOffTask: task.isOneOffTask,
-            todoState: task.todoState
-        )
+        HomeRoutineDisplayQuerySupport.matchesTodoStateFilter(filter, task: task)
     }
 }
