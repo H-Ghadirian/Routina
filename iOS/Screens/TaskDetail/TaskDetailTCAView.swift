@@ -243,7 +243,7 @@ struct TaskDetailTCAView: View {
     }
 
     var calendarSection: some View {
-        TaskDetailCalendarSectionView(
+        TaskDetailCalendarCardContent(
             displayedMonthStart: displayedMonthStart,
             onPreviousMonth: {
                 displayedMonthStart = Calendar.current.date(byAdding: .month, value: -1, to: displayedMonthStart) ?? displayedMonthStart
@@ -251,24 +251,14 @@ struct TaskDetailTCAView: View {
             onNextMonth: {
                 displayedMonthStart = Calendar.current.date(byAdding: .month, value: 1, to: displayedMonthStart) ?? displayedMonthStart
             },
-            showsAssumedLegend: store.task.autoAssumeDailyDone,
-            showsSoftDueLegend: store.resolvedSoftDueDate != nil,
-            showsPausedLegend: store.task.pausedAt != nil,
-            showsCreatedLegend: store.task.createdAt != nil
-        ) {
-            TaskDetailCalendarGridView(
-                displayedMonthStart: displayedMonthStart,
-                doneDates: TaskDetailCalendarPresentation.doneDates(from: store.logs, task: store.task),
-                assumedDates: TaskDetailCalendarPresentation.assumedDates(from: store.logs, task: store.task),
-                dueDate: store.resolvedDueDate,
-                softDueDate: store.resolvedSoftDueDate,
-                createdAt: store.task.createdAt,
-                pausedAt: store.task.pausedAt,
-                isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
-                selectedDate: store.resolvedSelectedDate,
-                onSelectDate: { store.send(.selectedDateChanged($0)) }
-            )
-        }
+            logs: store.logs,
+            task: store.task,
+            dueDate: store.resolvedDueDate,
+            softDueDate: store.resolvedSoftDueDate,
+            isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
+            selectedDate: store.resolvedSelectedDate,
+            onSelectDate: { store.send(.selectedDateChanged($0)) }
+        )
         .routinaPlatformCalendarCardStyle()
     }
 
