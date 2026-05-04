@@ -4,29 +4,7 @@ import SwiftData
 
 @Reducer
 struct HomeFeature {
-    enum TaskListMode: String, CaseIterable, Equatable, Identifiable {
-        case all = "All"
-        case routines = "Routines"
-        case todos = "Todos"
-
-        var id: Self { self }
-
-        var systemImage: String {
-            switch self {
-            case .all: return "square.stack.3d.up"
-            case .routines: return "repeat"
-            case .todos: return "checklist"
-            }
-        }
-
-        var accessibilityLabel: String {
-            switch self {
-            case .all: return "Show all tasks"
-            case .routines: return "Show routines"
-            case .todos: return "Show todos"
-            }
-        }
-    }
+    typealias TaskListMode = HomeTaskListMode
 
     typealias SelectedTaskReloadGuard = HomeSelectedTaskReloadGuard
 
