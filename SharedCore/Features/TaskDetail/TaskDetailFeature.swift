@@ -273,6 +273,13 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func recurrenceEditActionHandler() -> TaskDetailRecurrenceEditActionHandler {
+        TaskDetailRecurrenceEditActionHandler(
+            now: { now },
+            calendar: calendar
+        )
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -629,35 +636,22 @@ struct TaskDetailFeature: Reducer {
             return basicEditActionHandler().editRoutineLinkChanged(link, state: &state)
 
         case let .editDeadlineEnabledChanged(isEnabled):
-            state.editDeadline = isEnabled ? (state.editDeadline ?? now) : nil
-            return .none
+            return recurrenceEditActionHandler().editDeadlineEnabledChanged(isEnabled, state: &state)
 
         case let .editDeadlineDateChanged(deadline):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editDeadline = deadline
-            }
-            return .none
+            return recurrenceEditActionHandler().editDeadlineDateChanged(deadline, state: &state)
 
         case let .editReminderEnabledChanged(isEnabled):
-            state.editReminderAt = isEnabled
-                ? (state.editReminderAt ?? editReminderEventDate(for: state) ?? now)
-                : nil
-            return .none
+            return recurrenceEditActionHandler().editReminderEnabledChanged(isEnabled, state: &state)
 
         case let .editReminderDateChanged(reminderDate):
-            state.editReminderAt = reminderDate
-            return .none
+            return recurrenceEditActionHandler().editReminderDateChanged(reminderDate, state: &state)
 
         case let .editReminderLeadMinutesChanged(leadMinutes):
-            guard let leadMinutes,
-                  let eventDate = editReminderEventDate(for: state) else {
-                return .none
-            }
-            state.editReminderAt = TaskFormReminderLeadTime.reminderDate(
-                eventDate: eventDate,
-                leadMinutes: leadMinutes
+            return recurrenceEditActionHandler().editReminderLeadMinutesChanged(
+                leadMinutes,
+                state: &state
             )
-            return .none
 
         case let .editPriorityChanged(priority):
             return basicEditActionHandler().editPriorityChanged(priority, state: &state)
@@ -729,20 +723,7 @@ struct TaskDetailFeature: Reducer {
             return tagGoalRelationshipEditActionHandler().editTagDeleted(tag, state: &state)
 
         case let .editScheduleModeChanged(mode):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editScheduleMode = mode
-                if mode != .oneOff {
-                    state.editDeadline = nil
-                }
-                if mode == .softInterval {
-                    state.editRecurrenceKind = .intervalDays
-                    state.editRecurrenceHasExplicitTime = false
-                }
-            }
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return recurrenceEditActionHandler().editScheduleModeChanged(mode, state: &state)
 
         case let .editStepDraftChanged(value):
             state.editStepDraft = value
@@ -873,71 +854,43 @@ struct TaskDetailFeature: Reducer {
             return basicEditActionHandler().editFocusModeEnabledChanged(isEnabled, state: &state)
 
         case let .editFrequencyChanged(frequency):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editFrequency = frequency
-            }
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return recurrenceEditActionHandler().editFrequencyChanged(frequency, state: &state)
 
         case let .editFrequencyValueChanged(value):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editFrequencyValue = value
-            }
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return recurrenceEditActionHandler().editFrequencyValueChanged(value, state: &state)
 
         case let .editRecurrenceKindChanged(kind):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                let previousHasExplicitTime = state.editRecurrenceHasExplicitTime
-                state.editRecurrenceKind = kind
-                switch kind {
-                case .intervalDays:
-                    state.editRecurrenceHasExplicitTime = false
-                case .dailyTime:
-                    state.editRecurrenceHasExplicitTime = true
-                case .weekly, .monthlyDay:
-                    state.editRecurrenceHasExplicitTime = previousHasExplicitTime
-                }
-            }
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return recurrenceEditActionHandler().editRecurrenceKindChanged(kind, state: &state)
 
         case let .editRecurrenceHasExplicitTimeChanged(hasExplicitTime):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editRecurrenceHasExplicitTime = hasExplicitTime
-            }
-            return .none
+            return recurrenceEditActionHandler().editRecurrenceHasExplicitTimeChanged(
+                hasExplicitTime,
+                state: &state
+            )
 
         case let .editRecurrenceTimeOfDayChanged(timeOfDay):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editRecurrenceTimeOfDay = timeOfDay
-            }
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return recurrenceEditActionHandler().editRecurrenceTimeOfDayChanged(
+                timeOfDay,
+                state: &state
+            )
 
         case let .editRecurrenceWeekdayChanged(weekday):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editRecurrenceWeekday = min(max(weekday, 1), 7)
-            }
-            return .none
+            return recurrenceEditActionHandler().editRecurrenceWeekdayChanged(
+                weekday,
+                state: &state
+            )
 
         case let .editRecurrenceDayOfMonthChanged(dayOfMonth):
-            rebaseEditReminderIfUsingLeadTime(&state) { state in
-                state.editRecurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
-            }
-            return .none
+            return recurrenceEditActionHandler().editRecurrenceDayOfMonthChanged(
+                dayOfMonth,
+                state: &state
+            )
 
         case let .editAutoAssumeDailyDoneChanged(isEnabled):
-            state.editAutoAssumeDailyDone = isEnabled && canAutoAssumeDailyDone(for: state)
-            return .none
+            return recurrenceEditActionHandler().editAutoAssumeDailyDoneChanged(
+                isEnabled,
+                state: &state
+            )
 
         case .editSaveTapped:
             guard let request = editSaveRequestBuilder().build(state: &state) else { return .none }
