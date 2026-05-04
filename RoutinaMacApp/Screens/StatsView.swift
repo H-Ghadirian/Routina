@@ -171,7 +171,10 @@ struct StatsView: View {
             highlightedBusiestDay: metrics.highlightedBusiestDay,
             sparklinePoints: metrics.sparklinePoints,
             sparklineMaxCount: metrics.sparklineMaxCount,
-            periodDescription: userActivityPeriodDescription(metrics: metrics),
+            periodDescription: StatsChartInsightBuilder.userActivityPeriodDescription(
+                selectedRange: selectedRange,
+                chartPoints: metrics.chartPoints
+            ),
             chartPresentation: chartPresentation,
             colorScheme: colorScheme,
             heroGradient: heroGradient
@@ -318,7 +321,11 @@ struct StatsView: View {
             .defaultScrollAnchor(.trailing)
 
             StatsChartInsightRow(
-                insights: createdTasksChartInsights(metrics: metrics),
+                insights: StatsChartInsightBuilder.createdTasksInsights(
+                    metrics: metrics,
+                    createdTasksPresentation: createdTasksPresentation,
+                    chartPresentation: chartPresentation
+                ),
                 colorScheme: colorScheme
             )
         }
@@ -344,7 +351,11 @@ struct StatsView: View {
             highlightBarFill: highlightBarFill,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme,
-            insights: completionChartInsights(metrics: metrics)
+            insights: StatsChartInsightBuilder.completionInsights(
+                metrics: metrics,
+                selectedRange: selectedRange,
+                chartPresentation: chartPresentation
+            )
         )
     }
 
@@ -364,7 +375,11 @@ struct StatsView: View {
             highlightBarFill: highlightBarFill,
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme,
-            insights: focusChartInsights(metrics: metrics)
+            insights: StatsChartInsightBuilder.focusInsights(
+                metrics: metrics,
+                selectedRange: selectedRange,
+                chartPresentation: chartPresentation
+            )
         )
     }
 
@@ -406,69 +421,6 @@ struct StatsView: View {
             colorScheme: colorScheme,
             surfaceGradient: surfaceGradient
         )
-    }
-
-    private func userActivityPeriodDescription(metrics: Metrics) -> String {
-        if selectedRange == .year,
-           metrics.chartPoints.count < selectedRange.trailingDayCount,
-           let firstDate = metrics.chartPoints.first?.date {
-            return "Since \(firstDate.formatted(.dateTime.month(.abbreviated).day().year()))"
-        }
-        return selectedRange.periodDescription
-    }
-
-    private func createdTasksChartInsights(metrics: Metrics) -> [StatsChartInsight] {
-        [
-            StatsChartInsight(
-                systemImage: "calendar.badge.plus",
-                text: createdTasksPresentation.createdInPeriodInsight(totalCount: metrics.createdTotalCount)
-            ),
-            metrics.highlightedCreatedDay.map {
-                StatsChartInsight(
-                    systemImage: "star.fill",
-                    text: "Most created: \(chartPresentation.bestDayCaption(for: $0))"
-                )
-            } ?? StatsChartInsight(
-                systemImage: "plus.circle",
-                text: createdTasksPresentation.waitingInsight
-            )
-        ]
-    }
-
-    private func completionChartInsights(metrics: Metrics) -> [StatsChartInsight] {
-        [
-            StatsChartInsight(
-                systemImage: "calendar",
-                text: userActivityPeriodDescription(metrics: metrics)
-            ),
-            metrics.highlightedBusiestDay.map {
-                StatsChartInsight(
-                    systemImage: "star.fill",
-                    text: "Best: \(chartPresentation.bestDayCaption(for: $0))"
-                )
-            } ?? StatsChartInsight(
-                systemImage: "waveform.path.ecg",
-                text: "Waiting for your first completion"
-            )
-        ]
-    }
-
-    private func focusChartInsights(metrics: Metrics) -> [StatsChartInsight] {
-        [
-            StatsChartInsight(
-                systemImage: "calendar",
-                text: userActivityPeriodDescription(metrics: metrics)
-            ),
-            metrics.highlightedFocusDay.map {
-                StatsChartInsight(
-                    systemImage: "timer",
-                    text: "Best: \(chartPresentation.focusDurationText($0.seconds)) on \(chartPresentation.xAxisLabel(for: $0.date))"
-                )
-            } ?? StatsChartInsight(
-                systemImage: "stopwatch",
-                text: "Waiting for your first focus session"
-            )
-        ]
     }
 
     private func rangeButtonSubtitle(for range: DoneChartRange) -> String {
