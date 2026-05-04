@@ -193,6 +193,8 @@ let package = Package(
                 "SharedCore/Features/Home/HomeTaskListPresentation.swift",
                 "SharedCore/Features/Home/HomeTaskListSectionBuilder.swift",
                 "SharedCore/Features/Home/HomeTaskListSorter.swift",
+                "SharedCore/Features/Home/HomeRoutineDisplayCore.swift",
+                "SharedCore/Features/Home/HomeRoutineDisplayFactory.swift",
                 "SharedCore/Features/Home/HomeRoutineMetadataDisplay.swift",
                 "SharedCore/Features/Home/HomeRoutineDisplayMetadataPresentation.swift",
                 "SharedCore/Features/Home/HomeRoutineDisplayBadgePresentation.swift",

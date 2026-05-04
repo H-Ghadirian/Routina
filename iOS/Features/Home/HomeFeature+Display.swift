@@ -10,112 +10,14 @@ extension HomeFeature {
         locationSnapshot: LocationSnapshot,
         doneStats: DoneStats
     ) -> RoutineDisplay {
-        let doneTodayFromLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
-        let assumedDoneToday = !doneTodayFromLastDone && RoutineAssumedCompletion.isAssumedDone(
+        let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
-            on: now,
-            referenceDate: now,
-            calendar: calendar
+            placesByID: placesByID,
+            goalsByID: goalsByID,
+            locationSnapshot: locationSnapshot,
+            doneStats: doneStats
         )
-        let linkedPlace = task.placeID.flatMap { placesByID[$0] }
-        let locationAvailability: RoutineLocationAvailability
-
-        if let linkedPlace {
-            if locationSnapshot.canDeterminePresence, let coordinate = locationSnapshot.coordinate {
-                let distance = linkedPlace.distance(to: coordinate)
-                if linkedPlace.contains(coordinate) {
-                    locationAvailability = .available(placeName: linkedPlace.displayName)
-                } else {
-                    locationAvailability = .away(
-                        placeName: linkedPlace.displayName,
-                        distanceMeters: distance
-                    )
-                }
-            } else {
-                locationAvailability = .unknown(placeName: linkedPlace.displayName)
-            }
-        } else {
-            locationAvailability = .unrestricted
-        }
-
-        let isArchived = task.isArchived(referenceDate: now, calendar: calendar)
-        let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
-        let goalTitles = task.goalIDs.compactMap { goalsByID[$0]?.displayTitle }
-        let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
-        let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
-        let dueDate: Date? = {
-            if task.isOneOffTask {
-                return task.deadline
-            }
-            guard !isArchived, !task.isChecklistDriven, task.recurrenceRule.isFixedCalendar else {
-                return nil
-            }
-            return RoutineDateMath.dueDate(for: task, referenceDate: now, calendar: calendar)
-        }()
-        let daysUntilDue = isArchived
-            ? 0
-            : (task.isCompletedOneOff || task.isCanceledOneOff)
-                ? Int.max
-                : RoutineDateMath.daysUntilDue(for: task, referenceDate: now, calendar: calendar)
-
-        return RoutineDisplay(
-            taskID: task.id,
-            name: task.name ?? "Unnamed task",
-            emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨",
-            notes: CalendarTaskImportSupport.displayNotes(from: task.notes),
-            hasImage: task.hasImage,
-            placeID: task.placeID,
-            placeName: linkedPlace?.displayName,
-            locationAvailability: locationAvailability,
-            tags: task.tags,
-            goalIDs: task.goalIDs,
-            goalTitles: goalTitles,
-            steps: task.steps.map(\.title),
-            interval: max(Int(task.interval), 1),
-            recurrenceRule: task.recurrenceRule,
-            scheduleMode: task.scheduleMode,
-            createdAt: task.createdAt,
-            isSoftIntervalRoutine: task.isSoftIntervalRoutine,
-            lastDone: task.lastDone,
-            canceledAt: task.canceledAt,
-            dueDate: dueDate,
-            priority: task.priority,
-            importance: task.importance,
-            urgency: task.urgency,
-            pressure: task.pressure,
-            scheduleAnchor: task.scheduleAnchor,
-            pausedAt: task.pausedAt,
-            snoozedUntil: task.snoozedUntil,
-            pinnedAt: task.pinnedAt,
-            daysUntilDue: daysUntilDue,
-            isOneOffTask: task.isOneOffTask,
-            isCompletedOneOff: task.isCompletedOneOff,
-            isCanceledOneOff: task.isCanceledOneOff,
-            isDoneToday: doneTodayFromLastDone || assumedDoneToday,
-            isAssumedDoneToday: assumedDoneToday,
-            isPaused: isArchived,
-            isSnoozed: isSnoozed,
-            isPinned: task.isPinned,
-            isOngoing: task.isOngoing,
-            ongoingSince: task.ongoingSince,
-            hasPassedSoftThreshold: RoutineDateMath.hasPassedSoftIntervalThreshold(
-                for: task,
-                referenceDate: now,
-                calendar: calendar
-            ),
-            completedStepCount: task.completedSteps,
-            isInProgress: task.isInProgress,
-            nextStepTitle: task.nextStepTitle,
-            checklistItemCount: task.checklistItems.count,
-            completedChecklistItemCount: task.completedChecklistItemCount,
-            dueChecklistItemCount: dueChecklistItems.count,
-            nextPendingChecklistItemTitle: task.nextPendingChecklistItemTitle,
-            nextDueChecklistItemTitle: nextDueChecklistItem?.title,
-            doneCount: doneStats.countsByTaskID[task.id, default: 0],
-            manualSectionOrders: task.manualSectionOrders,
-            color: task.color,
-            todoState: task.todoState
-        )
+        return RoutineDisplay(core: core)
     }
 
     func refreshDisplays(_ state: inout State) {
@@ -166,4 +68,63 @@ extension HomeFeature {
         HomeTaskSupport.existingRoutineNames(from: tasks)
     }
 
+}
+
+private extension HomeFeature.RoutineDisplay {
+    init(core: HomeRoutineDisplayCore) {
+        self.init(
+            taskID: core.taskID,
+            name: core.name,
+            emoji: core.emoji,
+            notes: core.notes,
+            hasImage: core.hasImage,
+            placeID: core.placeID,
+            placeName: core.placeName,
+            locationAvailability: core.locationAvailability,
+            tags: core.tags,
+            goalIDs: core.goalIDs,
+            goalTitles: core.goalTitles,
+            steps: core.steps,
+            interval: core.interval,
+            recurrenceRule: core.recurrenceRule,
+            scheduleMode: core.scheduleMode,
+            createdAt: core.createdAt,
+            isSoftIntervalRoutine: core.isSoftIntervalRoutine,
+            lastDone: core.lastDone,
+            canceledAt: core.canceledAt,
+            dueDate: core.dueDate,
+            priority: core.priority,
+            importance: core.importance,
+            urgency: core.urgency,
+            pressure: core.pressure,
+            scheduleAnchor: core.scheduleAnchor,
+            pausedAt: core.pausedAt,
+            snoozedUntil: core.snoozedUntil,
+            pinnedAt: core.pinnedAt,
+            daysUntilDue: core.daysUntilDue,
+            isOneOffTask: core.isOneOffTask,
+            isCompletedOneOff: core.isCompletedOneOff,
+            isCanceledOneOff: core.isCanceledOneOff,
+            isDoneToday: core.isDoneToday,
+            isAssumedDoneToday: core.isAssumedDoneToday,
+            isPaused: core.isPaused,
+            isSnoozed: core.isSnoozed,
+            isPinned: core.isPinned,
+            isOngoing: core.isOngoing,
+            ongoingSince: core.ongoingSince,
+            hasPassedSoftThreshold: core.hasPassedSoftThreshold,
+            completedStepCount: core.completedStepCount,
+            isInProgress: core.isInProgress,
+            nextStepTitle: core.nextStepTitle,
+            checklistItemCount: core.checklistItemCount,
+            completedChecklistItemCount: core.completedChecklistItemCount,
+            dueChecklistItemCount: core.dueChecklistItemCount,
+            nextPendingChecklistItemTitle: core.nextPendingChecklistItemTitle,
+            nextDueChecklistItemTitle: core.nextDueChecklistItemTitle,
+            doneCount: core.doneCount,
+            manualSectionOrders: core.manualSectionOrders,
+            color: core.color,
+            todoState: core.todoState
+        )
+    }
 }
