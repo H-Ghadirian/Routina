@@ -250,6 +250,17 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func editDraftMutationHandler() -> TaskDetailEditDraftMutationHandler {
+        TaskDetailEditDraftMutationHandler(
+            matrixPriority: { importance, urgency in
+                matrixPriority(importance: importance, urgency: urgency)
+            },
+            refreshTaskView: { state in
+                refreshTaskView(&state)
+            }
+        )
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
@@ -585,19 +596,19 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editRoutineNameChanged(name):
-            state.editRoutineName = name
+            editDraftMutationHandler().setName(name, state: &state)
             return .none
 
         case let .editRoutineEmojiChanged(emoji):
-            state.editRoutineEmoji = RoutineTask.sanitizedEmoji(emoji, fallback: state.editRoutineEmoji)
+            editDraftMutationHandler().setEmoji(emoji, state: &state)
             return .none
 
         case let .editRoutineNotesChanged(notes):
-            state.editRoutineNotes = notes
+            editDraftMutationHandler().setNotes(notes, state: &state)
             return .none
 
         case let .editRoutineLinkChanged(link):
-            state.editRoutineLink = link
+            editDraftMutationHandler().setLink(link, state: &state)
             return .none
 
         case let .editDeadlineEnabledChanged(isEnabled):
@@ -632,43 +643,35 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editPriorityChanged(priority):
-            state.editPriority = priority
+            editDraftMutationHandler().setPriority(priority, state: &state)
             return .none
 
         case let .editImportanceChanged(importance):
-            state.editImportance = importance
-            state.editPriority = matrixPriority(
-                importance: importance,
-                urgency: state.editUrgency
-            )
+            editDraftMutationHandler().setImportance(importance, state: &state)
             return .none
 
         case let .editUrgencyChanged(urgency):
-            state.editUrgency = urgency
-            state.editPriority = matrixPriority(
-                importance: state.editImportance,
-                urgency: urgency
-            )
+            editDraftMutationHandler().setUrgency(urgency, state: &state)
             return .none
 
         case let .editPressureChanged(pressure):
-            state.editPressure = pressure
+            editDraftMutationHandler().setPressure(pressure, state: &state)
             return .none
 
         case let .editImagePicked(data):
-            state.editImageData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
+            editDraftMutationHandler().setImage(data, state: &state)
             return .none
 
         case .editRemoveImageTapped:
-            state.editImageData = nil
+            editDraftMutationHandler().removeImage(state: &state)
             return .none
 
         case let .editAttachmentPicked(data, fileName):
-            state.editAttachments.append(AttachmentItem(fileName: fileName, data: data))
+            editDraftMutationHandler().addAttachment(data: data, fileName: fileName, state: &state)
             return .none
 
         case let .editRemoveAttachment(id):
-            state.editAttachments.removeAll { $0.id == id }
+            editDraftMutationHandler().removeAttachment(id, state: &state)
             return .none
 
         case let .attachmentsLoaded(items):
@@ -676,64 +679,43 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editTagDraftChanged(value):
-            state.editTagDraft = value
+            editDraftMutationHandler().setTagDraft(value, state: &state)
             return .none
 
         case let .editGoalDraftChanged(value):
-            state.editGoalDraft = value
+            editDraftMutationHandler().setGoalDraft(value, state: &state)
             return .none
 
         case .editAddTagTapped:
-            state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
-            state.editTagDraft = ""
+            editDraftMutationHandler().addTag(state: &state)
             return .none
 
         case .editAddGoalTapped:
-            state.editRoutineGoals = RoutineGoalSummary.appending(
-                state.editGoalDraft,
-                availableGoals: state.availableGoals,
-                to: state.editRoutineGoals
-            )
-            state.editGoalDraft = ""
+            editDraftMutationHandler().addGoal(state: &state)
             return .none
 
         case let .editRemoveTag(tag):
-            state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
+            editDraftMutationHandler().removeTag(tag, state: &state)
             return .none
 
         case let .editRemoveGoal(goalID):
-            state.editRoutineGoals = RoutineGoalSummary.removing(goalID, from: state.editRoutineGoals)
+            editDraftMutationHandler().removeGoal(goalID, state: &state)
             return .none
 
         case let .editAddRelationship(taskID, kind):
-            state.editRelationships = RoutineTaskRelationship.sanitized(
-                state.editRelationships + [RoutineTaskRelationship(targetTaskID: taskID, kind: kind)],
-                ownerID: state.task.id
-            )
+            editDraftMutationHandler().addRelationship(taskID: taskID, kind: kind, state: &state)
             return .none
 
         case let .editRemoveRelationship(taskID):
-            state.editRelationships.removeAll { $0.targetTaskID == taskID }
+            editDraftMutationHandler().removeRelationship(taskID, state: &state)
             return .none
 
         case let .editTagRenamed(oldName, newName):
-            state.availableTags = RoutineTag.replacing(oldName, with: newName, in: state.availableTags)
-            if RoutineTag.contains(oldName, in: state.editRoutineTags) {
-                state.editRoutineTags = RoutineTag.replacing(oldName, with: newName, in: state.editRoutineTags)
-            }
-            if RoutineTag.contains(oldName, in: state.task.tags) {
-                state.task.tags = RoutineTag.replacing(oldName, with: newName, in: state.task.tags)
-                refreshTaskView(&state)
-            }
+            editDraftMutationHandler().renameTag(oldName: oldName, newName: newName, state: &state)
             return .none
 
         case let .editTagDeleted(tag):
-            state.availableTags = RoutineTag.removing(tag, from: state.availableTags)
-            state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
-            if RoutineTag.contains(tag, in: state.task.tags) {
-                state.task.tags = RoutineTag.removing(tag, from: state.task.tags)
-                refreshTaskView(&state)
-            }
+            editDraftMutationHandler().deleteTag(tag, state: &state)
             return .none
 
         case let .editScheduleModeChanged(mode):
@@ -845,35 +827,31 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editSelectedPlaceChanged(placeID):
-            state.editSelectedPlaceID = placeID
+            editDraftMutationHandler().setSelectedPlace(placeID, state: &state)
             return .none
 
         case let .editToggleTagSelection(tag):
-            if RoutineTag.contains(tag, in: state.editRoutineTags) {
-                state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
-            } else {
-                state.editRoutineTags = RoutineTag.appending(tag, to: state.editRoutineTags)
-            }
+            editDraftMutationHandler().toggleTagSelection(tag, state: &state)
             return .none
 
         case let .editToggleGoalSelection(goal):
-            state.editRoutineGoals = RoutineGoalSummary.toggling(goal, in: state.editRoutineGoals)
+            editDraftMutationHandler().toggleGoalSelection(goal, state: &state)
             return .none
 
         case let .editEstimatedDurationChanged(estimatedDurationMinutes):
-            state.editEstimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
+            editDraftMutationHandler().setEstimatedDuration(estimatedDurationMinutes, state: &state)
             return .none
 
         case let .editActualDurationChanged(actualDurationMinutes):
-            state.editActualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+            editDraftMutationHandler().setActualDuration(actualDurationMinutes, state: &state)
             return .none
 
         case let .editStoryPointsChanged(storyPoints):
-            state.editStoryPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
+            editDraftMutationHandler().setStoryPoints(storyPoints, state: &state)
             return .none
 
         case let .editFocusModeEnabledChanged(isEnabled):
-            state.editFocusModeEnabled = isEnabled
+            editDraftMutationHandler().setFocusModeEnabled(isEnabled, state: &state)
             return .none
 
         case let .editFrequencyChanged(frequency):
@@ -1083,7 +1061,7 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editColorChanged(color):
-            state.editColor = color
+            editDraftMutationHandler().setColor(color, state: &state)
             return .none
 
         case let .todoStateChanged(newState):
