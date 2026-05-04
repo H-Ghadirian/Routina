@@ -29,7 +29,7 @@ enum CloudKitDirectPullService {
 
     @MainActor
     private static func merge(result: PullResult, into context: ModelContext) throws {
-        var mergedPlaceIDs = try deduplicatePlaces(in: context)
+        var mergedPlaceIDs = try CloudKitDirectPullMergeHousekeeping.deduplicatePlaces(in: context)
         var mergedGoalIDs: [UUID: UUID] = [:]
         var mergedTaskIDs: [UUID: UUID] = [:]
         let payloadBatch = CloudKitDirectPullPayloadBatch.make(from: result.changedRecords)
@@ -61,11 +61,19 @@ enum CloudKitDirectPullService {
         }
 
         for (sourcePlaceID, targetPlaceID) in mergedPlaceIDs where sourcePlaceID != targetPlaceID {
-            try migratePlaceReferences(from: sourcePlaceID, to: targetPlaceID, in: context)
+            try CloudKitDirectPullMergeHousekeeping.migratePlaceReferences(
+                from: sourcePlaceID,
+                to: targetPlaceID,
+                in: context
+            )
         }
 
         for (sourceTaskID, targetTaskID) in mergedTaskIDs where sourceTaskID != targetTaskID {
-            try migrateLogs(from: sourceTaskID, to: targetTaskID, in: context)
+            try CloudKitDirectPullMergeHousekeeping.migrateLogs(
+                from: sourceTaskID,
+                to: targetTaskID,
+                in: context
+            )
         }
 
         try CloudKitDirectPullDeletionHandler.applyDeletedRecordIDs(
@@ -76,7 +84,7 @@ enum CloudKitDirectPullService {
             in: context
         )
 
-        try deduplicateLogs(in: context)
+        try CloudKitDirectPullMergeHousekeeping.deduplicateLogs(in: context)
 
         if context.hasChanges {
             try context.save()
@@ -162,7 +170,11 @@ enum CloudKitDirectPullService {
                taskWithSameName.id != existing.id {
                 // Keep local uniqueness invariant if cloud data contains a duplicate name.
                 CloudKitDirectPullTaskPayloadApplier.apply(payload, to: taskWithSameName, updatesName: true)
-                try migrateLogs(from: existing.id, to: taskWithSameName.id, in: context)
+                try CloudKitDirectPullMergeHousekeeping.migrateLogs(
+                    from: existing.id,
+                    to: taskWithSameName.id,
+                    in: context
+                )
                 return taskWithSameName.id
             }
 
@@ -172,7 +184,11 @@ enum CloudKitDirectPullService {
             if let normalizedIncomingName,
                let taskWithSameName = try task(matchingNormalizedName: normalizedIncomingName, in: context) {
                 CloudKitDirectPullTaskPayloadApplier.apply(payload, to: taskWithSameName, updatesName: false)
-                try migrateLogs(from: payload.id, to: taskWithSameName.id, in: context)
+                try CloudKitDirectPullMergeHousekeeping.migrateLogs(
+                    from: payload.id,
+                    to: taskWithSameName.id,
+                    in: context
+                )
                 return taskWithSameName.id
             }
 
@@ -217,92 +233,6 @@ enum CloudKitDirectPullService {
 
         return try context.fetch(descriptor).first { log in
             CloudKitDirectPullMergeSupport.timestampsMatch(log.timestamp, payload.timestamp)
-        }
-    }
-
-    @MainActor
-    private static func deduplicateLogs(in context: ModelContext) throws {
-        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-
-        var keptLogIDsByKey: [CloudKitDirectPullMergeSupport.LogDeduplicationKey: UUID] = [:]
-        for log in logs {
-            let key = CloudKitDirectPullMergeSupport.LogDeduplicationKey(
-                taskID: log.taskID,
-                timestamp: log.timestamp
-            )
-            if let keptLogID = keptLogIDsByKey[key], keptLogID != log.id {
-                context.delete(log)
-            } else {
-                keptLogIDsByKey[key] = log.id
-            }
-        }
-    }
-
-    @MainActor
-    private static func deduplicatePlaces(in context: ModelContext) throws -> [UUID: UUID] {
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
-            guard let placeID = task.placeID else { return }
-            partialResult[placeID, default: 0] += 1
-        }
-
-        var placesByNormalizedName: [String: [RoutinePlace]] = [:]
-        var mergedPlaceIDs: [UUID: UUID] = [:]
-
-        for place in places {
-            guard let normalizedName = RoutinePlace.normalizedName(place.name) else { continue }
-            placesByNormalizedName[normalizedName, default: []].append(place)
-        }
-
-        for sameNamedPlaces in placesByNormalizedName.values {
-            guard sameNamedPlaces.count > 1 else { continue }
-
-            let keeper = CloudKitDirectPullMergeSupport.preferredPlaceToKeep(
-                from: sameNamedPlaces,
-                linkedCounts: linkedCounts
-            )
-            mergedPlaceIDs[keeper.id] = keeper.id
-            for place in sameNamedPlaces where place.id != keeper.id {
-                try migratePlaceReferences(from: place.id, to: keeper.id, in: context)
-                context.delete(place)
-                mergedPlaceIDs[place.id] = keeper.id
-            }
-        }
-
-        return mergedPlaceIDs
-    }
-
-    @MainActor
-    private static func migrateLogs(
-        from sourceTaskID: UUID,
-        to targetTaskID: UUID,
-        in context: ModelContext
-    ) throws {
-        guard sourceTaskID != targetTaskID else { return }
-
-        let descriptor = FetchDescriptor<RoutineLog>(
-            predicate: #Predicate { log in
-                log.taskID == sourceTaskID
-            }
-        )
-
-        for log in try context.fetch(descriptor) {
-            log.taskID = targetTaskID
-        }
-    }
-
-    @MainActor
-    private static func migratePlaceReferences(
-        from sourcePlaceID: UUID,
-        to targetPlaceID: UUID,
-        in context: ModelContext
-    ) throws {
-        guard sourcePlaceID != targetPlaceID else { return }
-
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        for task in tasks where task.placeID == sourcePlaceID {
-            task.placeID = targetPlaceID
         }
     }
 
