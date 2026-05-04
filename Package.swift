@@ -117,6 +117,7 @@ let package = Package(
                 "SharedCore/Screens/Home/HomeTCAView+Refresh.swift",
                 // Extends the per-app AddRoutineTCAView type.
                 "SharedCore/Screens/AddRoutine/AddRoutineTCAView+Bindings.swift",
+                "SharedCore/Screens/AddRoutine/AddRoutineTCAView+Presentation.swift",
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
