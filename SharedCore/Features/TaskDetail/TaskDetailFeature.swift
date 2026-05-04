@@ -267,6 +267,12 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func tagGoalRelationshipEditActionHandler() -> TaskDetailTagGoalRelationshipEditActionHandler {
+        TaskDetailTagGoalRelationshipEditActionHandler(
+            draftMutationHandler: editDraftMutationHandler()
+        )
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -685,44 +691,42 @@ struct TaskDetailFeature: Reducer {
             return basicEditActionHandler().attachmentsLoaded(items, state: &state)
 
         case let .editTagDraftChanged(value):
-            editDraftMutationHandler().setTagDraft(value, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editTagDraftChanged(value, state: &state)
 
         case let .editGoalDraftChanged(value):
-            editDraftMutationHandler().setGoalDraft(value, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editGoalDraftChanged(value, state: &state)
 
         case .editAddTagTapped:
-            editDraftMutationHandler().addTag(state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editAddTagTapped(state: &state)
 
         case .editAddGoalTapped:
-            editDraftMutationHandler().addGoal(state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editAddGoalTapped(state: &state)
 
         case let .editRemoveTag(tag):
-            editDraftMutationHandler().removeTag(tag, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editRemoveTag(tag, state: &state)
 
         case let .editRemoveGoal(goalID):
-            editDraftMutationHandler().removeGoal(goalID, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editRemoveGoal(goalID, state: &state)
 
         case let .editAddRelationship(taskID, kind):
-            editDraftMutationHandler().addRelationship(taskID: taskID, kind: kind, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editAddRelationship(
+                taskID: taskID,
+                kind: kind,
+                state: &state
+            )
 
         case let .editRemoveRelationship(taskID):
-            editDraftMutationHandler().removeRelationship(taskID, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editRemoveRelationship(taskID, state: &state)
 
         case let .editTagRenamed(oldName, newName):
-            editDraftMutationHandler().renameTag(oldName: oldName, newName: newName, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editTagRenamed(
+                oldName: oldName,
+                newName: newName,
+                state: &state
+            )
 
         case let .editTagDeleted(tag):
-            editDraftMutationHandler().deleteTag(tag, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editTagDeleted(tag, state: &state)
 
         case let .editScheduleModeChanged(mode):
             rebaseEditReminderIfUsingLeadTime(&state) { state in
@@ -833,16 +837,22 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editSelectedPlaceChanged(placeID):
-            editDraftMutationHandler().setSelectedPlace(placeID, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editSelectedPlaceChanged(
+                placeID,
+                state: &state
+            )
 
         case let .editToggleTagSelection(tag):
-            editDraftMutationHandler().toggleTagSelection(tag, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editToggleTagSelection(
+                tag,
+                state: &state
+            )
 
         case let .editToggleGoalSelection(goal):
-            editDraftMutationHandler().toggleGoalSelection(goal, state: &state)
-            return .none
+            return tagGoalRelationshipEditActionHandler().editToggleGoalSelection(
+                goal,
+                state: &state
+            )
 
         case let .editEstimatedDurationChanged(estimatedDurationMinutes):
             return basicEditActionHandler().editEstimatedDurationChanged(
@@ -997,8 +1007,10 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .addLinkedTaskRelationshipKindChanged(kind):
-            state.addLinkedTaskRelationshipKind = kind
-            return .none
+            return tagGoalRelationshipEditActionHandler().addLinkedTaskRelationshipKindChanged(
+                kind,
+                state: &state
+            )
 
         case .openAddLinkedTask:
             return .none
