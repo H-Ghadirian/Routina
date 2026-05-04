@@ -359,6 +359,7 @@ let package = Package(
                 "SharedCore/Views/StatsHeroSectionView.swift",
                 "SharedCore/Views/StatsTagUsageSection.swift",
                 "SharedCore/Views/StatsSummaryGrid.swift",
+                "SharedCore/Views/SettingsQuickAddSyntaxViews.swift",
                 "SharedCore/Views/TaskRelationshipsEditor.swift",
                 "SharedCore/Views/CalendarTaskImportSheet.swift",
                 "SharedCore/Views/DayPlan/DayPlanPlannerState.swift",

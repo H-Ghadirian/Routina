@@ -190,80 +190,24 @@ struct SettingsMacQuickAddDetailView: View {
         ) {
             SettingsMacDetailCard(title: "Examples") {
                 ForEach(SettingsQuickAddSyntaxGuide.examples) { example in
-                    SettingsMacQuickAddExampleRow(example: example)
+                    SettingsQuickAddExampleBlock(example: example)
                 }
             }
 
             ForEach(SettingsQuickAddSyntaxGuide.syntaxGroups) { group in
                 SettingsMacDetailCard(title: group.title) {
                     ForEach(group.rows) { row in
-                        SettingsMacQuickAddSyntaxRow(row: row)
+                        SettingsQuickAddSyntaxBlock(row: row, style: .badge)
                     }
                 }
             }
 
             SettingsMacDetailCard(title: "Notes") {
                 ForEach(SettingsQuickAddSyntaxGuide.notes, id: \.self) { note in
-                    Label(note, systemImage: "checkmark.circle")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+                    SettingsQuickAddNoteBlock(note: note, style: .labeled)
                 }
             }
         }
-    }
-}
-
-private struct SettingsMacQuickAddExampleRow: View {
-    let example: SettingsQuickAddExample
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(example.phrase)
-                .font(.subheadline.weight(.semibold).monospaced())
-                .textSelection(.enabled)
-
-            Text(example.result)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 5)
-    }
-}
-
-private struct SettingsMacQuickAddSyntaxRow: View {
-    let row: SettingsQuickAddSyntaxItem
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(row.syntax)
-                .font(.caption.weight(.semibold).monospaced())
-                .foregroundStyle(.primary)
-                .textSelection(.enabled)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.mint.opacity(0.14))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(Color.mint.opacity(0.28), lineWidth: 1)
-                )
-
-            Text(row.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 4)
     }
 }
 

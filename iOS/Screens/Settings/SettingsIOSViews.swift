@@ -167,43 +167,21 @@ private struct SettingsQuickAddDetailView: View {
         List {
             Section("Examples") {
                 ForEach(SettingsQuickAddSyntaxGuide.examples) { example in
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(example.phrase)
-                            .font(.subheadline.weight(.semibold).monospaced())
-                            .textSelection(.enabled)
-
-                        Text(example.result)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                    .padding(.vertical, 4)
+                    SettingsQuickAddExampleBlock(example: example)
                 }
             }
 
             ForEach(SettingsQuickAddSyntaxGuide.syntaxGroups) { group in
                 Section(group.title) {
                     ForEach(group.rows) { row in
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(row.syntax)
-                                .font(.subheadline.weight(.semibold).monospaced())
-                                .textSelection(.enabled)
-
-                            Text(row.detail)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .textSelection(.enabled)
-                        }
-                        .padding(.vertical, 4)
+                        SettingsQuickAddSyntaxBlock(row: row)
                     }
                 }
             }
 
             Section("Notes") {
                 ForEach(SettingsQuickAddSyntaxGuide.notes, id: \.self) { note in
-                    Text(note)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+                    SettingsQuickAddNoteBlock(note: note)
                 }
             }
         }
