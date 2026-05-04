@@ -48,4 +48,20 @@ enum HomeFeatureTemporaryViewStateSupport {
             macSelectedSettingsSectionRawValue: macSelectedSettingsSectionRawValue
         )
     }
+
+    static func makeTemporaryViewState<State: HomeFeatureTemporaryViewState>(
+        from state: State,
+        existing existingState: TemporaryViewState?,
+        macSidebarModeRawValue: String?,
+        macSelectedSettingsSectionRawValue: String?
+    ) -> TemporaryViewState {
+        HomeTemporaryViewStateMapper.makeTemporaryViewState(
+            existing: existingState,
+            values: makeValues(
+                from: state,
+                macSidebarModeRawValue: macSidebarModeRawValue,
+                macSelectedSettingsSectionRawValue: macSelectedSettingsSectionRawValue
+            )
+        )
+    }
 }

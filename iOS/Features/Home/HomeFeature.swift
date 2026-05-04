@@ -929,13 +929,11 @@ struct HomeFeature {
 
     private func persistTemporaryViewState(_ state: State) {
         appSettingsClient.setTemporaryViewState(
-            HomeTemporaryViewStateMapper.makeTemporaryViewState(
+            HomeFeatureTemporaryViewStateSupport.makeTemporaryViewState(
+                from: state,
                 existing: appSettingsClient.temporaryViewState(),
-                values: HomeFeatureTemporaryViewStateSupport.makeValues(
-                    from: state,
-                    macSidebarModeRawValue: nil,
-                    macSelectedSettingsSectionRawValue: nil
-                )
+                macSidebarModeRawValue: nil,
+                macSelectedSettingsSectionRawValue: nil
             )
         )
     }
