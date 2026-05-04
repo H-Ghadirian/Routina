@@ -970,8 +970,7 @@ struct TaskDetailFeature: Reducer {
             return statusActionHandler().setBlockedStateConfirmation(isPresented, state: &state)
 
         case .confirmBlockedStateCompletion:
-            state.isBlockedStateConfirmationPresented = false
-            return reduce(into: &state, action: .markAsDone)
+            return statusActionHandler().confirmBlockedStateCompletion(state: &state)
 
         case .notificationDisabledWarningTapped:
             return TaskDetailNotificationActionHandler.notificationDisabledWarningTapped(

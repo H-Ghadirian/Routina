@@ -55,4 +55,9 @@ struct TaskDetailStatusActionHandler {
         state.isBlockedStateConfirmationPresented = isPresented
         return .none
     }
+
+    func confirmBlockedStateCompletion(state: inout State) -> Effect<Action> {
+        state.isBlockedStateConfirmationPresented = false
+        return markAsDone(&state)
+    }
 }
