@@ -19,24 +19,7 @@ struct HomeFeatureTaskLoadEffectFactory<Action, CancelID: Hashable & Sendable> {
 
     @MainActor
     func loadTasks() throws -> HomeFeatureTaskLoadEffectResult {
-        let context = ModelContext(modelContext().container)
-        try HomeDeduplicationSupport.enforceUniqueRoutineNames(in: context)
-        try HomeDeduplicationSupport.enforceUniquePlaceNames(in: context)
-        _ = try RoutineLogHistory.deduplicateRedundantSameDayLogs(in: context, calendar: calendar)
-        _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
-
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
-
-        return HomeFeatureTaskLoadEffectResult(
-            tasks: tasks,
-            places: places,
-            goals: goals,
-            logs: logs,
-            doneStats: HomeTaskSupport.makeDoneStats(tasks: tasks, logs: logs)
-        )
+        try HomeFeatureTaskLoadQuery(calendar: calendar).load(from: modelContext())
     }
 
     func loadTasksEffect() -> Effect<Action> {

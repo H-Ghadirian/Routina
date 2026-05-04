@@ -224,6 +224,7 @@ let package = Package(
                 "SharedCore/Features/Home/StatsTaskFilterResolver.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadEffectFactory.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadHandler.swift",
+                "SharedCore/Features/Home/HomeFeatureTaskLoadQuery.swift",
                 "SharedCore/Features/Home/HomeFeatureTemporaryViewStateSupport.swift",
                 "SharedCore/Features/Home/HomeTaskLoadSupport.swift",
                 "SharedCore/Features/Home/HomeTaskOrderingSupport.swift",
