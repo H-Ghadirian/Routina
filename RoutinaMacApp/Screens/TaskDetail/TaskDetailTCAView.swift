@@ -857,11 +857,10 @@ struct TaskDetailTCAView: View {
     }
 
     func openAttachment(data: Data, fileName: String) {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("RoutineAttachments", isDirectory: true)
-        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        let fileURL = tempDir.appendingPathComponent(fileName)
-        try? data.write(to: fileURL)
+        guard let fileURL = TaskDetailAttachmentTempFileSupport.writeTemporaryAttachment(
+            data: data,
+            fileName: fileName
+        ) else { return }
         platformOpenAttachment(url: fileURL)
     }
 
