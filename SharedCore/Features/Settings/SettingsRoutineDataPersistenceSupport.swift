@@ -28,77 +28,17 @@ enum SettingsRoutineDataPersistence {
         let backup = Backup(
             schemaVersion: legacyJSONSchemaVersion,
             exportedAt: exportedAt,
-            places: places.map {
-                .init(
-                    id: $0.id,
-                    name: $0.displayName,
-                    latitude: $0.latitude,
-                    longitude: $0.longitude,
-                    radiusMeters: $0.radiusMeters,
-                    createdAt: $0.createdAt
-                )
-            },
-            goals: goals.map {
-                .init(
-                    id: $0.id,
-                    title: $0.displayTitle,
-                    emoji: $0.emoji,
-                    notes: $0.notes,
-                    targetDate: $0.targetDate,
-                    status: $0.status,
-                    color: $0.color,
-                    createdAt: $0.createdAt,
-                    sortOrder: $0.sortOrder
-                )
-            },
+            places: places.map(SettingsRoutineDataBackupMapping.place),
+            goals: goals.map(SettingsRoutineDataBackupMapping.goal),
             tasks: tasks.map {
-                .init(
-                    id: $0.id,
-                    name: $0.name,
-                    emoji: $0.emoji,
-                    notes: $0.notes,
-                    link: $0.link,
-                    deadline: $0.deadline,
-                    reminderAt: $0.reminderAt,
+                SettingsRoutineDataBackupMapping.task(
+                    $0,
                     imageData: $0.imageData,
                     imageAttachmentID: nil,
-                    placeID: $0.placeID,
-                    tags: $0.tags,
-                    goalIDs: $0.goalIDs,
-                    steps: $0.steps,
-                    checklistItems: $0.checklistItems,
-                    scheduleMode: $0.scheduleMode,
-                    interval: max(Int($0.interval), 1),
-                    recurrenceRule: $0.recurrenceRule,
-                    lastDone: $0.lastDone,
-                    canceledAt: $0.canceledAt,
-                    scheduleAnchor: $0.scheduleAnchor,
-                    pausedAt: $0.pausedAt,
-                    snoozedUntil: $0.snoozedUntil,
-                    pinnedAt: $0.pinnedAt,
-                    completedStepCount: $0.completedSteps,
-                    sequenceStartedAt: $0.sequenceStartedAt,
-                    createdAt: $0.createdAt,
-                    todoStateRawValue: $0.todoStateRawValue,
-                    activityStateRawValue: $0.activityStateRawValue,
-                    ongoingSince: $0.ongoingSince,
-                    autoAssumeDailyDone: $0.autoAssumeDailyDone,
-                    estimatedDurationMinutes: $0.estimatedDurationMinutes,
-                    actualDurationMinutes: $0.actualDurationMinutes,
-                    storyPoints: $0.storyPoints,
-                    pressure: $0.pressure,
-                    pressureUpdatedAt: $0.pressureUpdatedAt
+                    includesPressure: true
                 )
             },
-            logs: logs.map {
-                .init(
-                    id: $0.id,
-                    timestamp: $0.timestamp,
-                    taskID: $0.taskID,
-                    kind: $0.kind,
-                    actualDurationMinutes: $0.actualDurationMinutes
-                )
-            },
+            logs: logs.map(SettingsRoutineDataBackupMapping.log),
             attachments: nil
         )
 
@@ -210,75 +150,17 @@ enum SettingsRoutineDataPersistence {
         let backup = Backup(
             schemaVersion: currentSchemaVersion,
             exportedAt: exportedAt,
-            places: places.map {
-                .init(
-                    id: $0.id,
-                    name: $0.displayName,
-                    latitude: $0.latitude,
-                    longitude: $0.longitude,
-                    radiusMeters: $0.radiusMeters,
-                    createdAt: $0.createdAt
-                )
-            },
-            goals: goals.map {
-                .init(
-                    id: $0.id,
-                    title: $0.displayTitle,
-                    emoji: $0.emoji,
-                    notes: $0.notes,
-                    targetDate: $0.targetDate,
-                    status: $0.status,
-                    color: $0.color,
-                    createdAt: $0.createdAt,
-                    sortOrder: $0.sortOrder
-                )
-            },
+            places: places.map(SettingsRoutineDataBackupMapping.place),
+            goals: goals.map(SettingsRoutineDataBackupMapping.goal),
             tasks: tasks.map {
-                .init(
-                    id: $0.id,
-                    name: $0.name,
-                    emoji: $0.emoji,
-                    notes: $0.notes,
-                    link: $0.link,
-                    deadline: $0.deadline,
-                    reminderAt: $0.reminderAt,
+                SettingsRoutineDataBackupMapping.task(
+                    $0,
                     imageData: nil,
                     imageAttachmentID: taskImageAttachmentIDs[$0.id],
-                    placeID: $0.placeID,
-                    tags: $0.tags,
-                    goalIDs: $0.goalIDs,
-                    steps: $0.steps,
-                    checklistItems: $0.checklistItems,
-                    scheduleMode: $0.scheduleMode,
-                    interval: max(Int($0.interval), 1),
-                    recurrenceRule: $0.recurrenceRule,
-                    lastDone: $0.lastDone,
-                    canceledAt: $0.canceledAt,
-                    scheduleAnchor: $0.scheduleAnchor,
-                    pausedAt: $0.pausedAt,
-                    snoozedUntil: $0.snoozedUntil,
-                    pinnedAt: $0.pinnedAt,
-                    completedStepCount: $0.completedSteps,
-                    sequenceStartedAt: $0.sequenceStartedAt,
-                    createdAt: $0.createdAt,
-                    todoStateRawValue: $0.todoStateRawValue,
-                    activityStateRawValue: $0.activityStateRawValue,
-                    ongoingSince: $0.ongoingSince,
-                    autoAssumeDailyDone: $0.autoAssumeDailyDone,
-                    estimatedDurationMinutes: $0.estimatedDurationMinutes,
-                    actualDurationMinutes: $0.actualDurationMinutes,
-                    storyPoints: $0.storyPoints
+                    includesPressure: false
                 )
             },
-            logs: logs.map {
-                .init(
-                    id: $0.id,
-                    timestamp: $0.timestamp,
-                    taskID: $0.taskID,
-                    kind: $0.kind,
-                    actualDurationMinutes: $0.actualDurationMinutes
-                )
-            },
+            logs: logs.map(SettingsRoutineDataBackupMapping.log),
             attachments: attachmentManifests
         )
 

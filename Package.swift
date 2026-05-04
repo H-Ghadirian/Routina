@@ -263,6 +263,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsRefreshSupport.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataBackupCoding.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataBackupFileNaming.swift",
+                "SharedCore/Features/Settings/SettingsRoutineDataBackupMapping.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataBackupModels.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataPersistenceSupport.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataTransferActionExecutionSupport.swift",
