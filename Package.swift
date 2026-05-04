@@ -115,6 +115,8 @@ let package = Package(
                 // Xcode app targets through the shared source folder.
                 "SharedCore/Screens/Home/HomeTCAView+ViewState.swift",
                 "SharedCore/Screens/Home/HomeTCAView+Refresh.swift",
+                // Extends the per-app AddRoutineTCAView type.
+                "SharedCore/Screens/AddRoutine/AddRoutineTCAView+Bindings.swift",
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
