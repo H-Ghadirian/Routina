@@ -421,17 +421,16 @@ struct AddRoutineTCAView: View {
     }
 
     private func loadPickedImage(from item: PhotosPickerItem) {
-        _ = Task {
-            let data = try? await item.loadTransferable(type: Data.self)
-            _ = await MainActor.run {
-                store.send(.imagePicked(data))
-            }
-        }
+        AddRoutineImageImportSupport.loadPickedImage(
+            loadData: { try? await item.loadTransferable(type: Data.self) },
+            onImagePicked: { store.send(.imagePicked($0)) }
+        )
     }
 
     private func loadPickedImage(fromFileAt url: URL) {
-        let compressedData = TaskImageProcessor.compressedImageData(fromFileAt: url)
-        store.send(.imagePicked(compressedData))
+        AddRoutineImageImportSupport.loadPickedImage(fromFileAt: url) {
+            store.send(.imagePicked($0))
+        }
     }
 
 }
