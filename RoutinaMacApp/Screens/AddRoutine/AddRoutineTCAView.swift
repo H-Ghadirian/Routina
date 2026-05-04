@@ -387,22 +387,6 @@ struct AddRoutineTCAView: View {
         )
     }
 
-    func stepperLabel(
-        frequency: AddRoutineFeature.Frequency,
-        frequencyValue: Int
-    ) -> String {
-        let unit: TaskFormFrequencyUnit
-        switch frequency {
-        case .day:
-            unit = .day
-        case .week:
-            unit = .week
-        case .month:
-            unit = .month
-        }
-        return TaskFormPresentation.stepperLabel(unit: unit, value: frequencyValue)
-    }
-
     private func checklistIntervalLabel(for intervalDays: Int) -> String {
         TaskFormPresentation.checklistIntervalLabel(for: intervalDays)
     }
@@ -414,82 +398,19 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var repeatPatternSections: some View {
-        Section(header: Text("Repeat Pattern")) {
-            Picker("Repeat Pattern", selection: recurrenceKindBinding) {
-                ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                    Text(kind.pickerTitle).tag(kind)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            Text(recurrencePatternDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-
-        switch store.schedule.recurrenceKind {
-        case .intervalDays:
-            Section(header: Text("Frequency")) {
-                Picker("Frequency", selection: frequencyBinding) {
-                    ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
-                        Text(frequency.rawValue).tag(frequency)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            Section(header: Text("Repeat")) {
-                Stepper(value: frequencyValueBinding, in: 1...365) {
-                    Text(
-                        stepperLabel(
-                            frequency: store.schedule.frequency,
-                            frequencyValue: store.schedule.frequencyValue
-                        )
-                    )
-                }
-            }
-
-        case .dailyTime:
-            Section(header: Text("Time of Day")) {
-                DatePicker(
-                    "Time",
-                    selection: recurrenceTimeBinding,
-                    displayedComponents: .hourAndMinute
-                )
-
-                Text("Due every day at \(store.schedule.recurrenceTimeOfDay.formatted()).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-        case .weekly:
-            Section(header: Text("Weekday")) {
-                Picker("Weekday", selection: recurrenceWeekdayBinding) {
-                    ForEach(weekdayOptions, id: \.id) { option in
-                        Text(option.name).tag(option.id)
-                    }
-                }
-
-                Text(formPresentation.weeklyRecurrenceSummary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-        case .monthlyDay:
-            Section(header: Text("Day of Month")) {
-                Stepper(value: recurrenceDayOfMonthBinding, in: 1...31) {
-                    Text("Every \(TaskFormPresentation.ordinalDay(store.schedule.recurrenceDayOfMonth))")
-                }
-
-                Text(formPresentation.monthlyRecurrenceSummary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    var recurrencePatternDescription: String {
-        formPresentation.recurrencePatternDescription(includesOptionalExactTimeDetail: false)
+        AddRoutineRepeatPatternSections(
+            recurrenceKind: recurrenceKindBinding,
+            frequency: frequencyBinding,
+            frequencyValue: frequencyValueBinding,
+            recurrenceTime: recurrenceTimeBinding,
+            recurrenceWeekday: recurrenceWeekdayBinding,
+            recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
+            recurrencePatternDescription: formPresentation.recurrencePatternDescription(includesOptionalExactTimeDetail: false),
+            dailyTimeSummary: "Due every day at \(store.schedule.recurrenceTimeOfDay.formatted()).",
+            weeklyRecurrenceSummary: formPresentation.weeklyRecurrenceSummary,
+            monthlyRecurrenceSummary: formPresentation.monthlyRecurrenceSummary,
+            weekdayOptions: weekdayOptions
+        )
     }
 
     var weekdayOptions: [(id: Int, name: String)] {
