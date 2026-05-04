@@ -119,6 +119,7 @@ let package = Package(
                 "SharedCore/Screens/AddRoutine/AddRoutineTCAView+Bindings.swift",
                 "SharedCore/Screens/AddRoutine/AddRoutineTCAView+Presentation.swift",
                 "SharedCore/Screens/AddRoutine/AddRoutineTCAView+Composers.swift",
+                "SharedCore/Screens/AddRoutine/AddRoutineTCAView+MediaAndRepeat.swift",
             ],
             sources: [
                 "SharedCore/App/AppEnvironment.swift",
