@@ -9,9 +9,10 @@ enum SettingsRoutineDataPersistence {
     static let attachmentsDirectoryName = "attachments"
 
     static func defaultBackupFileName(now: Date = Date()) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-        return "routina-backup-\(formatter.string(from: now)).\(backupPackageExtension)"
+        SettingsRoutineDataBackupFileNaming.defaultBackupFileName(
+            now: now,
+            fileExtension: backupPackageExtension
+        )
     }
 
     @MainActor
@@ -192,7 +193,7 @@ enum SettingsRoutineDataPersistence {
 
         for attachment in storedAttachments {
             guard !attachment.data.isEmpty else { continue }
-            let fileName = packageAttachmentFileName(for: attachment)
+            let fileName = SettingsRoutineDataBackupFileNaming.packageAttachmentFileName(for: attachment)
             try writeAttachment(fileName, attachment.data)
             attachmentManifests.append(
                 .init(
@@ -518,18 +519,4 @@ enum SettingsRoutineDataPersistence {
         }
     }
 
-    private static func packageAttachmentFileName(for attachment: RoutineAttachment) -> String {
-        "\(attachment.id.uuidString)-\(sanitizedFileName(attachment.fileName, fallback: "attachment"))"
-    }
-
-    private static func sanitizedFileName(_ fileName: String, fallback: String) -> String {
-        let invalid = CharacterSet(charactersIn: "/\\:")
-            .union(.newlines)
-            .union(.controlCharacters)
-        let cleaned = fileName
-            .components(separatedBy: invalid)
-            .joined(separator: "-")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return cleaned.isEmpty ? fallback : cleaned
-    }
 }
