@@ -34,7 +34,7 @@ struct HomeFeature {
     typealias BoardScope = HomeBoardScope
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -665,6 +665,27 @@ struct HomeFeature {
         )
     }
 
+    private func addRoutineActionHandler() -> HomeFeatureAddRoutineActionHandler<State, Action> {
+        HomeFeatureAddRoutineActionHandler(
+            referenceDate: now,
+            calendar: calendar,
+            dismissSheet: { state in
+                addRoutinePresentationRouter().dismissSheet(state: &state)
+            },
+            modelContext: { self.modelContext() },
+            scheduleAnchor: { self.now },
+            scheduleNotification: { payload in
+                await self.notificationClient.schedule(payload)
+            },
+            savedAction: { .routineSavedSuccessfully($0) },
+            failedAction: { .routineSaveFailed },
+            finishMutation: { effect, state in
+                postMutationRefresher().finishMutation(effect, state: &state)
+            },
+            loadTasksEffect: { loadTasksEffect() }
+        )
+    }
+
     private func presentationRouter() -> HomeFeaturePresentationRouter<State> {
         HomeFeaturePresentationRouter()
     }
@@ -1096,41 +1117,16 @@ struct HomeFeature {
                 )
 
             case .addRoutineSheet(.delegate(.didCancel)):
-                addRoutinePresentationRouter().dismissSheet(state: &state)
-                return .none
+                return addRoutineActionHandler().cancel(state: &state)
 
             case let .addRoutineSheet(.delegate(.didSave(request))):
-                return HomeAddRoutineSupport.saveRoutine(
-                    from: request,
-                    scheduleAnchor: { self.now },
-                    modelContext: { self.modelContext() },
-                    savedAction: { .routineSavedSuccessfully($0) },
-                    failedAction: { .routineSaveFailed }
-                )
+                return addRoutineActionHandler().save(request)
 
             case let .routineSavedSuccessfully(task):
-                var routineTasks = state.routineTasks
-                var presentation = state.presentation
-                let effect: Effect<Action> = HomeAddRoutineSupport.applySavedRoutine(
-                    task,
-                    referenceDate: now,
-                    calendar: calendar,
-                    tasks: &routineTasks,
-                    presentation: &presentation,
-                    scheduleNotification: { payload in
-                        await self.notificationClient.schedule(payload)
-                    }
-                )
-                state.routineTasks = routineTasks
-                state.presentation = presentation
-                return postMutationRefresher().finishMutation(
-                    .merge(effect, loadTasksEffect()),
-                    state: &state
-                )
+                return addRoutineActionHandler().finishSave(task, state: &state)
 
             case .routineSaveFailed:
-                print("Failed to save routine.")
-                return .none
+                return addRoutineActionHandler().failSave()
 
             case let .taskDetail(action):
                 return taskDetailActionRouter().handle(action, state: &state) ?? .none

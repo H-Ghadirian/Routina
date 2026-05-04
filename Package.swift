@@ -170,6 +170,7 @@ let package = Package(
                 "SharedCore/Features/Goals/GoalsFeature.swift",
                 "SharedCore/Features/Home/AppFeatureTemporaryViewStateSupport.swift",
                 "SharedCore/Features/Home/HomeBoardMutationSupport.swift",
+                "SharedCore/Features/Home/HomeFeatureAddRoutineActionHandler.swift",
                 "SharedCore/Features/Home/HomeAddRoutineSupport.swift",
                 "SharedCore/Features/Home/HomeAdvancedQueryInputSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureAddRoutinePresentationRouter.swift",
