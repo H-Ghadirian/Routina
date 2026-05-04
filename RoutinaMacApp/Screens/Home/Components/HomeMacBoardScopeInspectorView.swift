@@ -71,6 +71,7 @@ struct HomeMacBoardScopeInspectorView: View {
                     .sorted { $0.startedAt > $1.startedAt }
                 let activeSession = sessions.first(where: \.isActive)
                 let activeTaskSession = activeTaskFocusSession
+                let completedSessions = sessions.filter { !$0.isActive }
 
                 VStack(alignment: .leading, spacing: 12) {
                     if let activeSession {
@@ -110,39 +111,9 @@ struct HomeMacBoardScopeInspectorView: View {
                         .disabled(sprint.status == .finished || sprintFocusSessions.contains(where: \.isActive))
                     }
 
-                    if let latestCompleted = sessions.first(where: { !$0.isActive }) {
+                    if !completedSessions.isEmpty {
                         Divider()
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(latestCompleted.startedAt.formatted(date: .abbreviated, time: .shortened))
-                                        .font(.caption.weight(.semibold))
-                                    Text("\(FocusSessionFormatting.compactDurationText(seconds: latestCompleted.durationSeconds)) recorded")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                }
-
-                                Spacer(minLength: 0)
-
-                                Button {
-                                    onReviewSprintFocusAllocation(latestCompleted.id)
-                                } label: {
-                                    Label(
-                                        latestCompleted.allocations.isEmpty ? "Allocate" : "Review",
-                                        systemImage: "slider.horizontal.3"
-                                    )
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
-                            }
-
-                            if latestCompleted.allocatedMinutes > 0 {
-                                Text("\(RoutineTimeSpentFormatting.compactMinutesText(latestCompleted.allocatedMinutes)) allocated to sprint tasks")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
+                        sprintFocusSessionHistory(completedSessions)
                     }
                 }
             }
@@ -273,6 +244,74 @@ struct HomeMacBoardScopeInspectorView: View {
 
     private func taskFocusTitle(for session: FocusSession) -> String {
         taskFocusSessionTasks.first(where: { $0.id == session.taskID })?.name ?? "a task"
+    }
+
+    private func sprintFocusSessionHistory(
+        _ completedSessions: [SprintFocusSession]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Completed Sessions")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text("\(allocationMinutesText(totalRecordedMinutes(in: completedSessions))) recorded")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Text("\(completedSessions.count)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(completedSessions) { session in
+                sprintFocusSessionRow(session)
+            }
+        }
+    }
+
+    private func sprintFocusSessionRow(_ session: SprintFocusSession) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(session.startedAt.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text(sprintFocusSessionSummary(session))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                onReviewSprintFocusAllocation(session.id)
+            } label: {
+                Label(
+                    session.allocations.isEmpty ? "Allocate" : "Review",
+                    systemImage: "slider.horizontal.3"
+                )
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func sprintFocusSessionSummary(_ session: SprintFocusSession) -> String {
+        let recorded = allocationMinutesText(session.roundedDurationMinutes)
+        guard session.allocatedMinutes > 0 else {
+            return "\(recorded) recorded"
+        }
+        return "\(recorded) recorded, \(allocationMinutesText(session.allocatedMinutes)) allocated"
+    }
+
+    private func totalRecordedMinutes(in sessions: [SprintFocusSession]) -> Int {
+        sessions.reduce(0) { $0 + $1.roundedDurationMinutes }
     }
 
     private var focusableSprint: BoardSprint? {
