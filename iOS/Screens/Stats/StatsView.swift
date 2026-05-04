@@ -389,115 +389,17 @@ struct StatsView: View {
 
     private func summaryCards(metrics: Metrics) -> some View {
         StatsSummaryGrid(
-            items: summaryCardItems(metrics: metrics),
+            items: StatsSummaryCardItemBuilder.items(
+                metrics: metrics,
+                selectedRange: selectedRange,
+                chartPresentation: chartPresentation,
+                taskTypeFilter: .routines,
+                filteredTaskCount: filteredTaskCount
+            ),
             minimumCardWidth: horizontalSizeClass == .compact ? 160 : 220,
             colorScheme: colorScheme,
             surfaceGradient: surfaceGradient
         )
-    }
-
-    private func summaryCardItems(metrics: Metrics) -> [StatsSummaryCardItem] {
-        var items: [StatsSummaryCardItem] = []
-        let activeArchivePresentation = StatsActiveArchiveSummaryPresentation(
-            taskTypeFilter: .routines,
-            filteredTaskCount: filteredTaskCount,
-            activeItemCount: metrics.activeRoutineCount,
-            archivedItemCount: metrics.archivedRoutineCount
-        )
-
-        if selectedRange != .today {
-            items.append(
-                StatsSummaryCardItem(
-                    icon: "gauge.with.dots.needle.50percent",
-                    accent: .mint,
-                    title: "Daily average",
-                    value: chartPresentation.averagePerDayText(for: metrics.averagePerDay),
-                    caption: "Across \(metrics.chartPoints.count) days",
-                    accessibilityIdentifier: "stats.summary.dailyAverage"
-                )
-            )
-        }
-
-        items.append(
-            StatsSummaryCardItem(
-                icon: "timer",
-                accent: .teal,
-                title: "Focus time",
-                value: chartPresentation.focusDurationText(metrics.totalFocusSeconds),
-                caption: "\(metrics.focusActiveDayCount) focused \(metrics.focusActiveDayCount == 1 ? "day" : "days")",
-                accessibilityIdentifier: "stats.summary.focusTime"
-            )
-        )
-
-        if selectedRange != .today {
-            items.append(
-                StatsSummaryCardItem(
-                    icon: "stopwatch.fill",
-                    accent: .purple,
-                    title: "Focus average",
-                    value: chartPresentation.focusDurationText(metrics.averageFocusSecondsPerDay),
-                    caption: "Per day in this range",
-                    accessibilityIdentifier: "stats.summary.focusAverage"
-                )
-            )
-
-            items.append(
-                StatsSummaryCardItem(
-                    icon: "bolt.fill",
-                    accent: .orange,
-                    title: "Best day",
-                    value: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0",
-                    caption: metrics.highlightedBusiestDay.map { chartPresentation.bestDayCaption(for: $0) } ?? "No peak day yet",
-                    accessibilityIdentifier: "stats.summary.bestDay"
-                )
-            )
-        }
-
-        items.append(
-            StatsSummaryCardItem(
-                icon: "checkmark.seal.fill",
-                accent: .blue,
-                title: "Total dones",
-                value: metrics.totalDoneCount.formatted(),
-                caption: "All recorded completions",
-                accessibilityIdentifier: "stats.summary.totalDones"
-            )
-        )
-
-        items.append(
-            StatsSummaryCardItem(
-                icon: "xmark.seal.fill",
-                accent: .orange,
-                title: "Total cancels",
-                value: metrics.totalCanceledCount.formatted(),
-                caption: "Canceled todos kept in timeline",
-                accessibilityIdentifier: "stats.summary.totalCancels"
-            )
-        )
-
-        items.append(
-            StatsSummaryCardItem(
-                icon: "checklist.checked",
-                accent: .green,
-                title: activeArchivePresentation.activeTitle,
-                value: metrics.activeRoutineCount.formatted(),
-                caption: activeArchivePresentation.activeCaption,
-                accessibilityIdentifier: "stats.summary.activeRoutines"
-            )
-        )
-
-        items.append(
-            StatsSummaryCardItem(
-                icon: "archivebox.fill",
-                accent: .teal,
-                title: activeArchivePresentation.archivedTitle,
-                value: metrics.archivedRoutineCount.formatted(),
-                caption: activeArchivePresentation.archivedCaption,
-                accessibilityIdentifier: "stats.summary.archivedRoutines"
-            )
-        )
-
-        return items
     }
 
     private var gitHubSection: some View {
