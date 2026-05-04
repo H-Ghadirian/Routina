@@ -291,6 +291,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphLayout.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailAttachmentPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailAttachmentActionRouter.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailAttachmentTempFileSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarGridView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarPresentation.swift",

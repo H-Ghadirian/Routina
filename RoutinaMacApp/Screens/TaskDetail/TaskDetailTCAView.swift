@@ -853,20 +853,23 @@ struct TaskDetailTCAView: View {
     // MARK: - Attachment actions
 
     func saveAttachment(item: AttachmentItem) {
-        fileToSave = item
+        attachmentActionRouter.saveAttachment(item)
     }
 
     func openAttachment(data: Data, fileName: String) {
-        guard let fileURL = TaskDetailAttachmentTempFileSupport.writeTemporaryAttachment(
-            data: data,
-            fileName: fileName
-        ) else { return }
-        platformOpenAttachment(url: fileURL)
+        attachmentActionRouter.openAttachment(data: data, fileName: fileName)
     }
 
     func openTaskImage(data: Data) {
-        let fileName = TaskDetailAttachmentPresentation.taskImageFileName(for: store.task, data: data)
-        openAttachment(data: data, fileName: fileName)
+        attachmentActionRouter.openTaskImage(data: data)
+    }
+
+    private var attachmentActionRouter: TaskDetailAttachmentActionRouter {
+        TaskDetailAttachmentActionRouter(
+            task: store.task,
+            saveFile: { fileToSave = $0 },
+            openURL: { platformOpenAttachment(url: $0) }
+        )
     }
 
 }
