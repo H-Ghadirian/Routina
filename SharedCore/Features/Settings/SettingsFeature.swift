@@ -100,101 +100,61 @@ struct SettingsFeature {
         Reduce { state, action in
             switch action {
             case let .appColorSchemeChanged(scheme):
-                SettingsAppearanceEditor.updateAppColorScheme(
+                return SettingsAppearanceActionHandler.appColorSchemeChanged(
                     scheme,
-                    state: &state.appearance
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
                 )
-                appSettingsClient.setAppColorScheme(scheme)
-                return .none
 
             case let .routineListSectioningModeChanged(mode):
-                SettingsAppearanceEditor.updateRoutineListSectioningMode(
+                return SettingsAppearanceActionHandler.routineListSectioningModeChanged(
                     mode,
-                    state: &state.appearance
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
                 )
-                appSettingsClient.setRoutineListSectioningMode(mode)
-                return .none
 
             case let .tagCounterDisplayModeChanged(mode):
-                SettingsAppearanceEditor.updateTagCounterDisplayMode(
+                return SettingsAppearanceActionHandler.tagCounterDisplayModeChanged(
                     mode,
-                    state: &state.appearance
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
                 )
-                appSettingsClient.setTagCounterDisplayMode(mode)
-                return .none
 
             case let .appLockToggled(isEnabled):
-                let authenticationStatus = deviceAuthenticationClient.status()
-                SettingsAppearanceEditor.beginAppLockToggle(
-                    enabling: isEnabled,
-                    deviceAuthenticationStatus: authenticationStatus,
-                    state: &state.appearance
+                return SettingsAppearanceActionHandler.appLockToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient,
+                    deviceAuthenticationClient: self.deviceAuthenticationClient
                 )
 
-                guard isEnabled else {
-                    appSettingsClient.setAppLockEnabled(false)
-                    SettingsAppearanceEditor.finishAppLockToggle(
-                        enabled: false,
-                        message: "",
-                        deviceAuthenticationStatus: authenticationStatus,
-                        state: &state.appearance
-                    )
-                    return .none
-                }
-
-                guard authenticationStatus.isAvailable else {
-                    SettingsAppearanceEditor.finishAppLockToggle(
-                        enabled: false,
-                        message: authenticationStatus.unavailableReason
-                            ?? "Device authentication is unavailable.",
-                        deviceAuthenticationStatus: authenticationStatus,
-                        state: &state.appearance
-                    )
-                    return .none
-                }
-
-                return .run { send in
-                    let result = await self.deviceAuthenticationClient.authenticate(
-                        "Enable app lock for Routina"
-                    )
-                    await send(.appLockEnableFinished(result))
-                }
-
             case let .appLockEnableFinished(result):
-                let authenticationStatus = deviceAuthenticationClient.status()
-                switch result {
-                case .success:
-                    appSettingsClient.setAppLockEnabled(true)
-                    SettingsAppearanceEditor.finishAppLockToggle(
-                        enabled: true,
-                        message: "App lock is on.",
-                        deviceAuthenticationStatus: authenticationStatus,
-                        state: &state.appearance
-                    )
-                case .failure(let message):
-                    SettingsAppearanceEditor.finishAppLockToggle(
-                        enabled: false,
-                        message: message,
-                        deviceAuthenticationStatus: authenticationStatus,
-                        state: &state.appearance
-                    )
-                }
-                return .none
+                return SettingsAppearanceActionHandler.appLockEnableFinished(
+                    result,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient,
+                    deviceAuthenticationClient: self.deviceAuthenticationClient
+                )
 
             case let .gitFeaturesToggled(isEnabled):
-                state.appearance.isGitFeaturesEnabled = isEnabled
-                appSettingsClient.setGitFeaturesEnabled(isEnabled)
-                return .none
+                return SettingsAppearanceActionHandler.gitFeaturesToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
 
             case let .showPersianDatesToggled(isEnabled):
-                state.appearance.showPersianDates = isEnabled
-                appSettingsClient.setShowPersianDates(isEnabled)
-                return .none
+                return SettingsAppearanceActionHandler.showPersianDatesToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
 
             case .resetTemporaryViewStateTapped:
-                appSettingsClient.resetTemporaryViewState()
-                SettingsAppearanceEditor.resetTemporaryViewState(state: &state.appearance)
-                return .none
+                return SettingsAppearanceActionHandler.resetTemporaryViewStateTapped(
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
 
             case .toggleNotifications(let isOn):
                 guard isOn else {

@@ -225,6 +225,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeTaskLifecycleExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsFeature.swift",
                 "SharedCore/Features/Settings/SettingsFeatureState.swift",
+                "SharedCore/Features/Settings/SettingsAppearanceActionSupport.swift",
                 "SharedCore/Features/Settings/SettingsAppearanceSupport.swift",
                 "SharedCore/Features/Settings/SettingsAppIconActionSupport.swift",
                 "SharedCore/Features/Settings/SettingsAppInteractionExecutionSupport.swift",
