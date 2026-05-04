@@ -250,6 +250,36 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func statusActionHandler() -> TaskDetailStatusActionHandler {
+        TaskDetailStatusActionHandler(
+            mutationHandler: statusMutationHandler(),
+            markAsDone: { state in
+                reduce(into: &state, action: .markAsDone)
+            },
+            persistTodoStateChange: { request in
+                handleTodoStateChanged(
+                    taskID: request.taskID,
+                    rawValue: request.rawValue,
+                    pausedAt: request.pausedAt,
+                    clearSnoozed: request.clearSnoozed,
+                    previousStateTitle: request.previousStateTitle,
+                    newStateTitle: request.newStateTitle
+                )
+            },
+            persistPressureChange: { mutation in
+                handlePressureChanged(taskID: mutation.taskID, pressure: mutation.pressure)
+            },
+            persistMatrixPositionChange: { mutation in
+                handleMatrixPositionChanged(
+                    taskID: mutation.taskID,
+                    importance: mutation.importance,
+                    urgency: mutation.urgency,
+                    priority: mutation.priority
+                )
+            }
+        )
+    }
+
     private func editDraftMutationHandler() -> TaskDetailEditDraftMutationHandler {
         TaskDetailEditDraftMutationHandler(
             matrixPriority: { importance, urgency in
@@ -933,55 +963,19 @@ struct TaskDetailFeature: Reducer {
             return basicEditActionHandler().editColorChanged(color, state: &state)
 
         case let .todoStateChanged(newState):
-            switch statusMutationHandler().applyTodoStateChange(newState, state: &state) {
-            case .none:
-                return .none
-
-            case .markAsDone:
-                return reduce(into: &state, action: .markAsDone)
-
-            case let .persist(request):
-                return handleTodoStateChanged(
-                    taskID: request.taskID,
-                    rawValue: request.rawValue,
-                    pausedAt: request.pausedAt,
-                    clearSnoozed: request.clearSnoozed,
-                    previousStateTitle: request.previousStateTitle,
-                    newStateTitle: request.newStateTitle
-                )
-            }
+            return statusActionHandler().todoStateChanged(newState, state: &state)
 
         case let .pressureChanged(pressure):
-            guard let mutation = statusMutationHandler().applyPressureChange(pressure, state: &state) else {
-                return .none
-            }
-            return handlePressureChanged(taskID: mutation.taskID, pressure: mutation.pressure)
+            return statusActionHandler().pressureChanged(pressure, state: &state)
 
         case let .importanceChanged(importance):
-            guard let mutation = statusMutationHandler().applyImportanceChange(importance, state: &state) else {
-                return .none
-            }
-            return handleMatrixPositionChanged(
-                taskID: mutation.taskID,
-                importance: mutation.importance,
-                urgency: mutation.urgency,
-                priority: mutation.priority
-            )
+            return statusActionHandler().importanceChanged(importance, state: &state)
 
         case let .urgencyChanged(urgency):
-            guard let mutation = statusMutationHandler().applyUrgencyChange(urgency, state: &state) else {
-                return .none
-            }
-            return handleMatrixPositionChanged(
-                taskID: mutation.taskID,
-                importance: mutation.importance,
-                urgency: mutation.urgency,
-                priority: mutation.priority
-            )
+            return statusActionHandler().urgencyChanged(urgency, state: &state)
 
         case let .setBlockedStateConfirmation(isPresented):
-            state.isBlockedStateConfirmationPresented = isPresented
-            return .none
+            return statusActionHandler().setBlockedStateConfirmation(isPresented, state: &state)
 
         case .confirmBlockedStateCompletion:
             state.isBlockedStateConfirmationPresented = false
