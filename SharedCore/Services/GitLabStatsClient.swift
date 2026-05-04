@@ -61,41 +61,21 @@ private struct StoredGitLabUser: Codable {
 }
 
 private func loadStoredUsername() -> String? {
-    guard let url = try? gitLabUserStoreURL(),
-          FileManager.default.fileExists(atPath: url.path),
-          let data = try? Data(contentsOf: url),
-          let stored = try? JSONDecoder().decode(StoredGitLabUser.self, from: data)
-    else {
-        return nil
-    }
-    return stored.username
+    GitStatsFileStore.load(
+        StoredGitLabUser.self,
+        filename: GitLabStore.usernameFilename
+    )?.username
 }
 
 private func saveStoredUsername(_ username: String) throws {
-    let url = try gitLabUserStoreURL()
-    try FileManager.default.createDirectory(
-        at: url.deletingLastPathComponent(),
-        withIntermediateDirectories: true
+    try GitStatsFileStore.save(
+        StoredGitLabUser(username: username),
+        filename: GitLabStore.usernameFilename
     )
-    let data = try JSONEncoder().encode(StoredGitLabUser(username: username))
-    try data.write(to: url, options: [.atomic])
 }
 
 private func clearStoredUsername() throws {
-    let url = try gitLabUserStoreURL()
-    guard FileManager.default.fileExists(atPath: url.path) else { return }
-    try FileManager.default.removeItem(at: url)
-}
-
-private func gitLabUserStoreURL() throws -> URL {
-    let applicationSupportDirectory = try FileManager.default.url(
-        for: .applicationSupportDirectory,
-        in: .userDomainMask,
-        appropriateFor: nil,
-        create: true
-    )
-    let storesDirectory = applicationSupportDirectory.appendingPathComponent("RoutinaData", isDirectory: true)
-    return storesDirectory.appendingPathComponent(GitLabStore.usernameFilename)
+    try GitStatsFileStore.clear(filename: GitLabStore.usernameFilename)
 }
 
 private func storedAccessToken() -> String? {

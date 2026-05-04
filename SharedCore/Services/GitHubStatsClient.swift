@@ -244,13 +244,7 @@ private func makeConnectionStatus(
 }
 
 private func loadStoredConfiguration() -> GitHubStatsConfiguration? {
-    guard
-        let url = try? gitHubRepositoryStoreURL(),
-        FileManager.default.fileExists(atPath: url.path),
-        let data = try? Data(contentsOf: url)
-    else {
-        return nil
-    }
+    guard let data = GitStatsFileStore.loadData(filename: GitHubStore.repositoryFilename) else { return nil }
 
     let decoder = JSONDecoder()
     if let configuration = try? decoder.decode(GitHubStatsConfiguration.self, from: data) {
@@ -265,30 +259,11 @@ private func loadStoredConfiguration() -> GitHubStatsConfiguration? {
 }
 
 private func saveStoredConfiguration(_ configuration: GitHubStatsConfiguration) throws {
-    let url = try gitHubRepositoryStoreURL()
-    try FileManager.default.createDirectory(
-        at: url.deletingLastPathComponent(),
-        withIntermediateDirectories: true
-    )
-    let data = try JSONEncoder().encode(configuration)
-    try data.write(to: url, options: [.atomic])
+    try GitStatsFileStore.save(configuration, filename: GitHubStore.repositoryFilename)
 }
 
 private func clearStoredConfiguration() throws {
-    let url = try gitHubRepositoryStoreURL()
-    guard FileManager.default.fileExists(atPath: url.path) else { return }
-    try FileManager.default.removeItem(at: url)
-}
-
-private func gitHubRepositoryStoreURL() throws -> URL {
-    let applicationSupportDirectory = try FileManager.default.url(
-        for: .applicationSupportDirectory,
-        in: .userDomainMask,
-        appropriateFor: nil,
-        create: true
-    )
-    let storesDirectory = applicationSupportDirectory.appendingPathComponent("RoutinaData", isDirectory: true)
-    return storesDirectory.appendingPathComponent(GitHubStore.repositoryFilename)
+    try GitStatsFileStore.clear(filename: GitHubStore.repositoryFilename)
 }
 
 private func storedAccessToken() -> String? {
