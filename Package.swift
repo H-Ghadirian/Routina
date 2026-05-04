@@ -260,6 +260,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsRefreshActionExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsRefreshExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsRefreshSupport.swift",
+                "SharedCore/Features/Settings/SettingsRoutineDataBackupModels.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataPersistenceSupport.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataTransferActionExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataTransferExecutionSupport.swift",
