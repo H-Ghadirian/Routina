@@ -21,20 +21,7 @@ struct AddRoutineTCAView: View {
         WithPerceptionTracking {
             NavigationStack {
                 addRoutineContent
-                .navigationTitle("Add Task")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            store.send(.cancelTapped)
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            store.send(.saveTapped)
-                        }
-                        .disabled(isSaveDisabled)
-                    }
-                }
+                .routinaAddRoutineNavigationChrome(store: store, isSaveDisabled: isSaveDisabled)
                 .routinaAddRoutineNameAutofocus(isRoutineNameFocused: $isRoutineNameFocused)
                 .routinaAddRoutineEmojiPicker(isPresented: $isEmojiPickerPresented) {
                     EmojiPickerSheet(
@@ -45,20 +32,7 @@ struct AddRoutineTCAView: View {
                 .sheet(isPresented: $isTagManagerPresented) {
                     SettingsTagManagerPresentationView(store: tagManagerStore)
                 }
-                .onReceive(
-                    NotificationCenter.default.publisher(for: .routineTagDidRename)
-                        .receive(on: RunLoop.main)
-                ) { notification in
-                    guard let payload = notification.routineTagRenamePayload else { return }
-                    store.send(.tagRenamed(oldName: payload.oldName, newName: payload.newName))
-                }
-                .onReceive(
-                    NotificationCenter.default.publisher(for: .routineTagDidDelete)
-                        .receive(on: RunLoop.main)
-                ) { notification in
-                    guard let tagName = notification.routineTagDeletedName else { return }
-                    store.send(.tagDeleted(tagName))
-                }
+                .routinaAddRoutineTagNotifications(store: store)
                 .routinaAddRoutineSheetFrame()
                 .onChange(of: selectedPhotoItem) { _, newItem in
                     guard let newItem else { return }
