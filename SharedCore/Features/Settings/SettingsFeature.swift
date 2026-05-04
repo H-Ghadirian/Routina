@@ -446,16 +446,22 @@ struct SettingsFeature {
                 )
 
             case let .tagColorsLoaded(colors):
-                SettingsTagEditor.loadedTagColors(colors, state: &state.tags)
-                return .none
+                return SettingsTagMetadataActionHandler.tagColorsLoaded(
+                    colors,
+                    state: &state.tags
+                )
 
             case let .relatedTagRulesLoaded(rules):
-                SettingsTagEditor.loadedRelatedTagRules(rules, state: &state.tags)
-                return .none
+                return SettingsTagMetadataActionHandler.relatedTagRulesLoaded(
+                    rules,
+                    state: &state.tags
+                )
 
             case let .learnedRelatedTagRulesLoaded(rules):
-                SettingsTagEditor.loadedLearnedRelatedTagRules(rules, state: &state.tags)
-                return .none
+                return SettingsTagMetadataActionHandler.learnedRelatedTagRulesLoaded(
+                    rules,
+                    state: &state.tags
+                )
 
             case let .locationSnapshotUpdated(snapshot):
                 SettingsPlaceEditor.applyLocationSnapshot(snapshot, state: &state.places)
@@ -470,8 +476,10 @@ struct SettingsFeature {
                 return .none
 
             case let .tagSearchQueryChanged(query):
-                state.tags.tagSearchQuery = query
-                return .none
+                return SettingsTagMetadataActionHandler.tagSearchQueryChanged(
+                    query,
+                    state: &state.tags
+                )
 
             case let .fastFilterTagToggled(tag):
                 return SettingsFastFilterActionHandler.fastFilterTagToggled(
@@ -481,53 +489,50 @@ struct SettingsFeature {
                 )
 
             case let .relatedTagDraftChanged(tagName, draft):
-                SettingsTagEditor.updateRelatedTagDraft(
+                return SettingsTagMetadataActionHandler.relatedTagDraftChanged(
                     tagName: tagName,
                     draft: draft,
                     state: &state.tags
                 )
-                return .none
 
             case let .tagColorChanged(tagName, colorHex):
-                let colors = SettingsTagEditor.updateTagColor(
+                return SettingsTagMetadataActionHandler.tagColorChanged(
                     tagName: tagName,
                     colorHex: colorHex,
-                    state: &state.tags
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
                 )
-                appSettingsClient.setTagColors(colors)
-                return .none
 
             case let .saveRelatedTagsTapped(tagName):
-                let rules = SettingsTagEditor.saveRelatedTags(for: tagName, state: &state.tags)
-                appSettingsClient.setRelatedTagRules(rules)
-                return .none
+                return SettingsTagMetadataActionHandler.saveRelatedTagsTapped(
+                    tagName,
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
+                )
 
             case let .addRelatedTagDraftSubmitted(tagName, draft):
-                let rules = SettingsTagEditor.appendRelatedTagDraft(
+                return SettingsTagMetadataActionHandler.addRelatedTagDraftSubmitted(
                     tagName: tagName,
                     draft: draft,
-                    state: &state.tags
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
                 )
-                appSettingsClient.setRelatedTagRules(rules)
-                return .none
 
             case let .appendRelatedTagSuggestionTapped(tagName, suggestion):
-                let rules = SettingsTagEditor.appendRelatedTagSuggestion(
+                return SettingsTagMetadataActionHandler.appendRelatedTagSuggestionTapped(
                     tagName: tagName,
                     suggestion: suggestion,
-                    state: &state.tags
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
                 )
-                appSettingsClient.setRelatedTagRules(rules)
-                return .none
 
             case let .removeRelatedTagTapped(tagName, relatedTag):
-                let rules = SettingsTagEditor.removeRelatedTag(
-                    relatedTag,
-                    from: tagName,
-                    state: &state.tags
+                return SettingsTagMetadataActionHandler.removeRelatedTagTapped(
+                    tagName: tagName,
+                    relatedTag: relatedTag,
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
                 )
-                appSettingsClient.setRelatedTagRules(rules)
-                return .none
 
             case let .placeDraftCoordinateChanged(coordinate):
                 SettingsPlaceEditor.updateDraftCoordinate(coordinate, state: &state.places)
