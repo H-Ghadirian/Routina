@@ -249,6 +249,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsTagExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagPersistenceSupport.swift",
                 "SharedCore/Features/TaskDetail/RoutinePauseArchivePresentation.swift",
+                "SharedCore/Features/TaskDetail/TaskDetailFetchDescriptors.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Effects.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+FormSync.swift",

@@ -10,7 +10,7 @@ extension TaskDetailFeature {
                 _ = try RoutineLogHistory.backfillMissingLastDoneLog(for: taskID, in: context)
                 let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(logs))
-                let attachments = try context.fetch(attachmentDescriptor(for: taskID))
+                let attachments = try context.fetch(TaskDetailFetchDescriptors.attachments(for: taskID))
                 let items = attachments
                     .sorted { $0.createdAt < $1.createdAt }
                     .map { AttachmentItem(id: $0.id, fileName: $0.fileName, data: $0.data) }
@@ -27,23 +27,6 @@ extension TaskDetailFeature {
                 print("Error loading logs: \(error)")
             }
         }
-    }
-
-    func sortedLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
-        FetchDescriptor<RoutineLog>(
-            predicate: #Predicate { log in
-                log.taskID == taskID
-            },
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
-    }
-
-    func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
-        FetchDescriptor<RoutineTask>(
-            predicate: #Predicate { task in
-                task.id == taskID
-            }
-        )
     }
 
     func timeSpentChangeEntry(
@@ -263,15 +246,10 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                let descriptor = FetchDescriptor<RoutineLog>(
-                    predicate: #Predicate { log in
-                        log.id == logID
-                    }
-                )
-                guard let log = try context.fetch(descriptor).first else { return }
+                guard let log = try context.fetch(TaskDetailFetchDescriptors.log(for: logID)).first else { return }
                 log.actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(durationMinutes)
                 if previousDurationMinutes != durationMinutes,
-                   let task = try context.fetch(taskDescriptor(for: taskID)).first {
+                   let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first {
                     task.appendChangeLogEntry(
                         timeSpentChangeEntry(
                             previousDurationMinutes: previousDurationMinutes,
@@ -296,7 +274,7 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(durationMinutes)
                 if previousDurationMinutes != durationMinutes {
                     task.appendChangeLogEntry(
@@ -347,7 +325,7 @@ extension TaskDetailFeature {
         .run { @MainActor send in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 if try hasDuplicateRoutineName(name, in: context, excludingID: taskID) {
                     return
                 }
@@ -367,7 +345,7 @@ extension TaskDetailFeature {
                 task.color = color
                 task.imageData = imageData
                 // Sync attachments by taskID
-                let existingAtts = try context.fetch(attachmentDescriptor(for: taskID))
+                let existingAtts = try context.fetch(TaskDetailFetchDescriptors.attachments(for: taskID))
                 let newIDs = Set(attachments.map(\.id))
                 for att in existingAtts where !newIDs.contains(att.id) {
                     context.delete(att)
@@ -494,7 +472,7 @@ extension TaskDetailFeature {
         .run { @MainActor send in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.startOngoing(at: startedAt)
                 try context.save()
                 await notificationClient.cancel(task.id.uuidString)
@@ -510,7 +488,7 @@ extension TaskDetailFeature {
         .run { @MainActor send in
             do {
                 let context = ModelContext(modelContext().container)
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 guard task.isOngoing else { return }
 
                 task.finishOngoing(at: finishedAt)
@@ -562,7 +540,7 @@ extension TaskDetailFeature {
         .run { @MainActor send in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else {
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else {
                     send(.routineDeleted)
                     return
                 }
@@ -571,15 +549,15 @@ extension TaskDetailFeature {
                 let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
                 RoutineTask.removeRelationships(targeting: Set([taskID]), from: allTasks)
                 context.delete(task)
-                let logs = try context.fetch(allLogsDescriptor(for: task.id))
+                let logs = try context.fetch(TaskDetailFetchDescriptors.allLogs(for: task.id))
                 for log in logs {
                     context.delete(log)
                 }
-                let focusSessions = try context.fetch(focusSessionsDescriptor(for: task.id))
+                let focusSessions = try context.fetch(TaskDetailFetchDescriptors.focusSessions(for: task.id))
                 for session in focusSessions {
                     context.delete(session)
                 }
-                let attachmentsToDelete = try context.fetch(attachmentDescriptor(for: task.id))
+                let attachmentsToDelete = try context.fetch(TaskDetailFetchDescriptors.attachments(for: task.id))
                 for att in attachmentsToDelete {
                     context.delete(att)
                 }
@@ -597,7 +575,7 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 if task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pausedAt)
                 }
@@ -616,7 +594,7 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.snoozedUntil = snoozedUntil
                 try context.save()
                 if NotificationCoordinator.shouldScheduleNotification(
@@ -647,7 +625,7 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 if let pausedAt = task.pausedAt, task.isChecklistDriven {
                     task.shiftChecklistItems(by: max(resumedAt.timeIntervalSince(pausedAt), 0))
                 }
@@ -784,7 +762,7 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.todoStateRawValue = rawValue
                 task.pausedAt = pausedAt
                 if clearSnoozed { task.snoozedUntil = nil }
@@ -810,7 +788,7 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.pressure = pressure
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -829,7 +807,7 @@ extension TaskDetailFeature {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
-                guard let task = try context.fetch(taskDescriptor(for: taskID)).first else { return }
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.importance = importance
                 task.urgency = urgency
                 task.priority = priority
@@ -841,27 +819,4 @@ extension TaskDetailFeature {
         }
     }
 
-    func allLogsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
-        FetchDescriptor<RoutineLog>(
-            predicate: #Predicate { log in
-                log.taskID == taskID
-            }
-        )
-    }
-
-    func focusSessionsDescriptor(for taskID: UUID) -> FetchDescriptor<FocusSession> {
-        FetchDescriptor<FocusSession>(
-            predicate: #Predicate { session in
-                session.taskID == taskID
-            }
-        )
-    }
-
-    func attachmentDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineAttachment> {
-        FetchDescriptor<RoutineAttachment>(
-            predicate: #Predicate { att in
-                att.taskID == taskID
-            }
-        )
-    }
 }
