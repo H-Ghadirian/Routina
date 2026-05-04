@@ -311,6 +311,7 @@ let package = Package(
                 "SharedCore/Sync/CloudKitDirectPullService.swift",
                 "SharedCore/Sync/CloudKitDirectPullSupport.swift",
                 "SharedCore/Sync/CloudKitDirectPullTaskRecordParser.swift",
+                "SharedCore/Sync/CloudKitDirectPullUpserter.swift",
                 "SharedCore/Sync/CloudKitPushSubscriptionService.swift",
                 "SharedCore/Sync/CloudKitSyncDiagnostics.swift",
                 "SharedCore/Sync/CloudSyncClient.swift",
