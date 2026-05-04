@@ -279,6 +279,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailPresentationRoutingSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTaskChangesSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift",
+                "SharedCore/Screens/Shared/AddRoutineTaskFormModelFactory.swift",
                 "SharedCore/Screens/Shared/TaskFormModel.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
                 "SharedCore/Services/CalendarTaskImportService.swift",

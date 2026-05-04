@@ -106,124 +106,13 @@ extension AddRoutineTCAView {
     }
 
     private func makeTaskFormModel() -> TaskFormModel {
-        TaskFormModel(
-            name: routineNameBinding,
-            nameValidationMessage: store.organization.nameValidationMessage,
-            taskType: taskTypeBinding,
-            emoji: routineEmojiBinding,
+        AddRoutineTaskFormModelFactory(
+            store: store,
             emojiOptions: emojiOptions,
             isEmojiPickerPresented: $isEmojiPickerPresented,
-            notes: routineNotesBinding,
-            link: routineLinkBinding,
-            deadlineEnabled: deadlineEnabledBinding,
-            deadline: deadlineBinding,
-            reminderEnabled: reminderEnabledBinding,
-            reminderAt: reminderBinding,
-            importance: importanceBinding,
-            urgency: urgencyBinding,
-            pressure: Binding(
-                get: { store.basics.pressure },
-                set: { store.send(.pressureChanged($0)) }
-            ),
-            estimatedDurationMinutes: Binding(
-                get: { store.basics.estimatedDurationMinutes },
-                set: { store.send(.estimatedDurationChanged($0)) }
-            ),
-            storyPoints: Binding(
-                get: { store.basics.storyPoints },
-                set: { store.send(.storyPointsChanged($0)) }
-            ),
-            imageData: store.basics.imageData,
-            onImagePicked: { store.send(.imagePicked($0)) },
-            onRemoveImage: { store.send(.removeImageTapped) },
-            attachments: store.basics.attachments,
-            onAttachmentPicked: { store.send(.attachmentPicked($0, $1)) },
-            onRemoveAttachment: { store.send(.removeAttachment($0)) },
-            tagDraft: tagDraftBinding,
-            routineTags: store.organization.routineTags,
-            availableTags: store.organization.availableTags,
-            availableTagSummaries: store.organization.availableTagSummaries,
-            relatedTagRules: store.organization.relatedTagRules,
-            tagCounterDisplayMode: store.organization.tagCounterDisplayMode,
-            onAddTag: { store.send(.addTagTapped) },
-            onRemoveTag: { store.send(.removeTag($0)) },
-            onToggleTagSelection: { store.send(.toggleTagSelection($0)) },
-            goalDraft: goalDraftBinding,
-            selectedGoals: store.organization.routineGoals,
-            availableGoals: store.organization.availableGoals,
-            onAddGoal: { store.send(.addGoalTapped) },
-            onRemoveGoal: { store.send(.removeGoal($0)) },
-            onToggleGoalSelection: { store.send(.toggleGoalSelection($0)) },
-            relationships: store.organization.relationships,
-            availableRelationshipTasks: store.organization.availableRelationshipTasks,
-            onAddRelationship: { store.send(.addRelationship($0, $1)) },
-            onRemoveRelationship: { store.send(.removeRelationship($0)) },
-            scheduleMode: scheduleModeBinding,
-            stepDraft: stepDraftBinding,
-            routineSteps: store.checklist.routineSteps,
-            onAddStep: { store.send(.addStepTapped) },
-            onRemoveStep: { store.send(.removeStep($0)) },
-            onMoveStepUp: { store.send(.moveStepUp($0)) },
-            onMoveStepDown: { store.send(.moveStepDown($0)) },
-            checklistItemDraftTitle: checklistItemDraftTitleBinding,
-            checklistItemDraftInterval: checklistItemDraftIntervalBinding,
-            routineChecklistItems: store.checklist.routineChecklistItems,
-            onAddChecklistItem: { store.send(.addChecklistItemTapped) },
-            onRemoveChecklistItem: { store.send(.removeChecklistItem($0)) },
-            availablePlaces: store.organization.availablePlaces,
-            selectedPlaceID: selectedPlaceBinding,
-            recurrenceKind: recurrenceKindBinding,
-            recurrenceHasExplicitTime: recurrenceHasExplicitTimeBinding,
-            recurrenceTimeOfDay: recurrenceTimeBinding,
-            recurrenceWeekday: recurrenceWeekdayBinding,
-            recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
-            frequencyUnit: frequencyUnitBinding,
-            frequencyValue: frequencyValueBinding,
-            autoAssumeDailyDone: Binding(
-                get: { store.schedule.autoAssumeDailyDone },
-                set: { store.send(.autoAssumeDailyDoneChanged($0)) }
-            ),
-            canAutoAssumeDailyDone: store.canAutoAssumeDailyDone,
-            focusModeEnabled: Binding(
-                get: { store.basics.focusModeEnabled },
-                set: { store.send(.focusModeEnabledChanged($0)) }
-            ),
-            color: Binding(
-                get: { store.basics.routineColor },
-                set: { store.send(.routineColorChanged($0)) }
-            ),
             nameFocus: $isRoutineNameFocused,
-            nameFocusRequestID: formCoordinator.nameFocusRequestID,
-            autofocusName: true,
-            onDelete: nil
+            nameFocusRequestID: formCoordinator.nameFocusRequestID
         )
-    }
-
-    private var frequencyUnitBinding: Binding<TaskFormFrequencyUnit> {
-        Binding(
-            get: { TaskFormFrequencyUnit(rawValue: store.schedule.frequency.rawValue) ?? .day },
-            set: { store.send(.frequencyChanged(AddRoutineFeature.Frequency(rawValue: $0.rawValue) ?? .day)) }
-        )
-    }
-
-    private var recurrenceHasExplicitTimeBinding: Binding<Bool> {
-        Binding(
-            get: { store.schedule.recurrenceHasExplicitTime },
-            set: { store.send(.recurrenceHasExplicitTimeChanged($0)) }
-        )
-    }
-
-    private var reminderEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { store.basics.reminderAt != nil },
-            set: { store.send(.reminderEnabledChanged($0)) }
-        )
-    }
-
-    private var reminderBinding: Binding<Date> {
-        Binding(
-            get: { store.basics.reminderAt ?? Date() },
-            set: { store.send(.reminderDateChanged($0)) }
-        )
+        .make()
     }
 }
