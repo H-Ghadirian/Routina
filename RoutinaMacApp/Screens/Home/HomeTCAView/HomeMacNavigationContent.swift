@@ -65,23 +65,24 @@ struct HomeMacNavigationContent<
         NavigationSplitView {
             sidebarContent()
         } detail: {
-            boardCenterContent()
-                .navigationTitle(boardNavigationTitle)
-                .toolbar { boardToolbarContent() }
-                .overlay(alignment: .trailing) {
-                    if isBoardInspectorPresented {
-                        boardInspectorContent()
-                            .frame(width: 400)
-                            .frame(maxHeight: .infinity)
-                            .overlay(alignment: .leading) {
-                                Divider()
-                            }
-                            .shadow(color: Color.black.opacity(0.18), radius: 18, x: -6, y: 0)
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
-                    }
+            HStack(spacing: 0) {
+                boardCenterContent()
+                    .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+
+                if isBoardInspectorPresented {
+                    boardInspectorContent()
+                        .frame(width: 400)
+                        .frame(maxHeight: .infinity)
+                        .overlay(alignment: .leading) {
+                            Divider()
+                        }
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
-                .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
-                .environment(\.addEditFormCoordinator, addEditFormCoordinator)
+            }
+            .navigationTitle(boardNavigationTitle)
+            .toolbar { boardToolbarContent() }
+            .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
+            .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
     }
 
