@@ -306,6 +306,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailAttachmentTempFileSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarCardContent.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarGridView.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailCalendarGridSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarNavigation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarSectionView.swift",
