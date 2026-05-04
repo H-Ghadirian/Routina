@@ -950,8 +950,6 @@ struct HomeFeature {
 
 }
 
-extension HomeFeature.RoutineDisplay: HomeTaskListDisplay, HomeTaskRowDisplay {}
-
 extension HomeFeature {
     @MainActor
     static func detailLogs(taskID: UUID, context: ModelContext) -> [RoutineLog] {

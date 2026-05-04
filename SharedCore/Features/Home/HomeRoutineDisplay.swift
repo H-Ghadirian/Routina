@@ -1,6 +1,6 @@
 import Foundation
 
-struct HomeRoutineDisplay: Equatable, Identifiable {
+struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTaskRowDisplay {
     let taskID: UUID
     var id: UUID { taskID }
     var name: String
