@@ -258,6 +258,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsSectionStyleSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagManagerRefreshActionSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagMetadataActionSupport.swift",
+                "SharedCore/Features/Settings/SettingsTagMutationActionSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagPersistenceSupport.swift",

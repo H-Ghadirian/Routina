@@ -422,12 +422,16 @@ struct SettingsFeature {
                 )
 
             case let .setDeleteTagConfirmation(isPresented):
-                SettingsTagEditor.setDeleteConfirmation(isPresented, state: &state.tags)
-                return .none
+                return SettingsTagMutationActionHandler.setDeleteTagConfirmation(
+                    isPresented,
+                    state: &state.tags
+                )
 
             case let .setTagRenameSheet(isPresented):
-                SettingsTagEditor.setRenameSheet(isPresented, state: &state.tags)
-                return .none
+                return SettingsTagMutationActionHandler.setTagRenameSheet(
+                    isPresented,
+                    state: &state.tags
+                )
 
             case let .placesLoaded(places):
                 return SettingsPlaceActionHandler.placesLoaded(
@@ -480,8 +484,10 @@ struct SettingsFeature {
                 )
 
             case let .tagRenameDraftChanged(name):
-                SettingsTagEditor.updateRenameDraft(name, state: &state.tags)
-                return .none
+                return SettingsTagMutationActionHandler.tagRenameDraftChanged(
+                    name,
+                    state: &state.tags
+                )
 
             case let .tagSearchQueryChanged(query):
                 return SettingsTagMetadataActionHandler.tagSearchQueryChanged(
@@ -555,10 +561,10 @@ struct SettingsFeature {
                 )
 
             case let .renameTagTapped(tagName):
-                guard SettingsTagEditor.beginRename(tagName: tagName, state: &state.tags) else {
-                    return .none
-                }
-                return .none
+                return SettingsTagMutationActionHandler.renameTagTapped(
+                    tagName,
+                    state: &state.tags
+                )
 
             case .savePlaceTapped:
                 return SettingsPlaceActionHandler.savePlaceTapped(
@@ -567,26 +573,9 @@ struct SettingsFeature {
                 )
 
             case .saveTagRenameTapped:
-                guard let request = SettingsTagEditor.prepareRename(state: &state.tags) else {
-                    return .none
-                }
-                let updatedRules = RoutineTagRelations.replacing(
-                    request.originalTagName,
-                    with: request.cleanedName,
-                    in: appSettingsClient.relatedTagRules()
-                )
-                appSettingsClient.setRelatedTagRules(updatedRules)
-                SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state.tags)
-                let updatedColors = RoutineTagColors.replacing(
-                    request.originalTagName,
-                    with: request.cleanedName,
-                    in: appSettingsClient.tagColors()
-                )
-                appSettingsClient.setTagColors(updatedColors)
-                SettingsTagEditor.loadedTagColors(updatedColors, state: &state.tags)
-
-                return SettingsTagExecution.rename(
-                    request,
+                return SettingsTagMutationActionHandler.saveTagRenameTapped(
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient,
                     modelContext: self.modelContext
                 )
 
@@ -597,10 +586,10 @@ struct SettingsFeature {
                 )
 
             case let .deleteTagTapped(tagName):
-                guard SettingsTagEditor.beginDelete(tagName: tagName, state: &state.tags) else {
-                    return .none
-                }
-                return .none
+                return SettingsTagMutationActionHandler.deleteTagTapped(
+                    tagName,
+                    state: &state.tags
+                )
 
             case .deletePlaceConfirmed:
                 return SettingsPlaceActionHandler.deletePlaceConfirmed(
@@ -609,24 +598,9 @@ struct SettingsFeature {
                 )
 
             case .deleteTagConfirmed:
-                guard let request = SettingsTagEditor.prepareDeleteConfirmation(state: &state.tags) else {
-                    return .none
-                }
-                let updatedRules = RoutineTagRelations.removing(
-                    request.tagName,
-                    from: appSettingsClient.relatedTagRules()
-                )
-                appSettingsClient.setRelatedTagRules(updatedRules)
-                SettingsTagEditor.loadedRelatedTagRules(updatedRules, state: &state.tags)
-                let updatedColors = RoutineTagColors.removing(
-                    request.tagName,
-                    from: appSettingsClient.tagColors()
-                )
-                appSettingsClient.setTagColors(updatedColors)
-                SettingsTagEditor.loadedTagColors(updatedColors, state: &state.tags)
-
-                return SettingsTagExecution.delete(
-                    request,
+                return SettingsTagMutationActionHandler.deleteTagConfirmed(
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient,
                     modelContext: self.modelContext
                 )
 
@@ -638,8 +612,10 @@ struct SettingsFeature {
                 )
 
             case let .tagOperationFinished(_, message):
-                SettingsTagEditor.finishOperation(message: message, state: &state.tags)
-                return .none
+                return SettingsTagMutationActionHandler.tagOperationFinished(
+                    message: message,
+                    state: &state.tags
+                )
 
             case .exportRoutineDataTapped:
                 return SettingsRoutineDataTransferActionExecution.beginExport(
