@@ -185,6 +185,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeDisplayFilterSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureFilterMutationHandler.swift",
                 "SharedCore/Features/Home/HomeFeatureLifecycleActionHandler.swift",
+                "SharedCore/Features/Home/HomeFeatureLifecycleEffectSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureLoadFailureSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureState.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskDetailActionRouter.swift",

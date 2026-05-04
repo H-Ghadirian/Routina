@@ -818,19 +818,12 @@ struct HomeFeature {
                 )
             },
             manualRefreshEffect: {
-                .run { @MainActor send in
-                    let context = self.modelContext()
-                    if context.hasChanges {
-                        try? context.save()
-                    }
-
-                    try? await self.cloudSyncClient.pullLatestIntoLocalStore(context)
-                    send(.onAppear)
-
-                    // CloudKit imports are asynchronous; do a second pass shortly after manual refresh.
-                    try? await self.clock.sleep(for: .seconds(2))
-                    send(.onAppear)
-                }
+                HomeFeatureLifecycleEffectSupport.manualRefreshEffect(
+                    modelContext: { self.modelContext() },
+                    pullLatestIntoLocalStore: { try await self.cloudSyncClient.pullLatestIntoLocalStore($0) },
+                    sleepBeforeSecondRefresh: { try await self.clock.sleep(for: .seconds(2)) },
+                    onAppearAction: { .onAppear }
+                )
             }
         )
     }
