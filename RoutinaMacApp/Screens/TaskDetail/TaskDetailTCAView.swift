@@ -437,10 +437,10 @@ struct TaskDetailTCAView: View {
         TaskDetailCalendarCardContent(
             displayedMonthStart: displayedMonthStart,
             onPreviousMonth: {
-                displayedMonthStart = Calendar.current.date(byAdding: .month, value: -1, to: displayedMonthStart) ?? displayedMonthStart
+                displayedMonthStart = TaskDetailCalendarNavigation.previousMonth(from: displayedMonthStart)
             },
             onNextMonth: {
-                displayedMonthStart = Calendar.current.date(byAdding: .month, value: 1, to: displayedMonthStart) ?? displayedMonthStart
+                displayedMonthStart = TaskDetailCalendarNavigation.nextMonth(from: displayedMonthStart)
             },
             logs: store.logs,
             task: store.task,
