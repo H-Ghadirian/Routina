@@ -380,6 +380,7 @@ let package = Package(
                 "SharedCore/Views/DayPlanView.swift",
                 "SharedCore/Views/RoutineTagColor.swift",
                 "SharedCore/Views/TodoStateTimingSectionView.swift",
+                "SharedCore/Services/GitStatsCredentialStore.swift",
                 "SharedCore/Services/GitHubStatsClient.swift",
                 "SharedCore/Services/GitHubWidgetService.swift",
                 "SharedCore/Services/GitLabStatsClient.swift",

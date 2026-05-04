@@ -1,5 +1,4 @@
 import Foundation
-import Security
 
 struct GitLabStatsClient: Sendable {
     var loadConnectionStatus: @Sendable () -> GitLabConnectionStatus
@@ -100,56 +99,33 @@ private func gitLabUserStoreURL() throws -> URL {
 }
 
 private func storedAccessToken() -> String? {
-    let query: [String: Any] = [
-        kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: GitLabStore.accessTokenService,
-        kSecAttrAccount as String: GitLabStore.accessTokenAccount,
-        kSecReturnData as String: true,
-        kSecMatchLimit as String: kSecMatchLimitOne
-    ]
-
-    var item: CFTypeRef?
-    let status = SecItemCopyMatching(query as CFDictionary, &item)
-    guard status != errSecItemNotFound else { return nil }
-    guard status == errSecSuccess,
-          let data = item as? Data,
-          let token = String(data: data, encoding: .utf8),
-          !token.isEmpty
-    else {
-        return nil
-    }
-    return token
+    GitStatsCredentialStore.storedAccessToken(
+        service: GitLabStore.accessTokenService,
+        account: GitLabStore.accessTokenAccount
+    )
 }
 
 private func storeAccessToken(_ accessToken: String) throws {
-    let data = Data(accessToken.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
-    let baseQuery: [String: Any] = [
-        kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: GitLabStore.accessTokenService,
-        kSecAttrAccount as String: GitLabStore.accessTokenAccount
-    ]
-
-    let attributes: [String: Any] = [kSecValueData as String: data]
-    let updateStatus = SecItemUpdate(baseQuery as CFDictionary, attributes as CFDictionary)
-    if updateStatus == errSecSuccess { return }
-
-    var addQuery = baseQuery
-    addQuery[kSecValueData as String] = data
-    let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-    guard addStatus == errSecSuccess else {
+    do {
+        try GitStatsCredentialStore.storeAccessToken(
+            accessToken,
+            service: GitLabStore.accessTokenService,
+            account: GitLabStore.accessTokenAccount,
+            failureMessage: "The GitLab token could not be stored securely."
+        )
+    } catch {
         throw GitLabStatsError.networkFailure("The GitLab token could not be stored securely.")
     }
 }
 
 private func clearAccessToken() throws {
-    let query: [String: Any] = [
-        kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: GitLabStore.accessTokenService,
-        kSecAttrAccount as String: GitLabStore.accessTokenAccount
-    ]
-
-    let status = SecItemDelete(query as CFDictionary)
-    guard status == errSecSuccess || status == errSecItemNotFound else {
+    do {
+        try GitStatsCredentialStore.clearAccessToken(
+            service: GitLabStore.accessTokenService,
+            account: GitLabStore.accessTokenAccount,
+            failureMessage: "The saved GitLab token could not be removed."
+        )
+    } catch {
         throw GitLabStatsError.networkFailure("The saved GitLab token could not be removed.")
     }
 }
