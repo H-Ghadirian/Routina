@@ -330,6 +330,37 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func routineLifecycleActionHandler() -> TaskDetailRoutineLifecycleActionHandler {
+        TaskDetailRoutineLifecycleActionHandler(
+            now: { now },
+            calendar: calendar,
+            refreshTaskView: { state in
+                refreshTaskView(&state)
+            },
+            updateDerivedState: { state in
+                updateDerivedState(&state)
+            },
+            upsertLocalLog: { date, state in
+                upsertLocalLog(at: date, in: &state)
+            },
+            persistPause: { taskID, pausedAt in
+                handlePauseRoutine(taskID: taskID, pausedAt: pausedAt)
+            },
+            persistNotToday: { taskID, snoozedUntil in
+                handleNotTodayRoutine(taskID: taskID, snoozedUntil: snoozedUntil)
+            },
+            persistResume: { taskID, resumedAt in
+                handleResumeRoutine(taskID: taskID, resumedAt: resumedAt)
+            },
+            persistStartOngoing: { taskID, startedAt in
+                handleStartOngoing(taskID: taskID, startedAt: startedAt)
+            },
+            persistFinishOngoing: { taskID, finishedAt in
+                handleFinishOngoing(taskID: taskID, finishedAt: finishedAt)
+            }
+        )
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -601,61 +632,19 @@ struct TaskDetailFeature: Reducer {
             return dialogLifecycleActionHandler().requestRemoveLogEntry(timestamp, state: &state)
 
         case .pauseTapped:
-            guard !state.task.isOneOffTask else { return .none }
-            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
-            let pauseDate = now
-            if state.task.scheduleAnchor == nil {
-                state.task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: state.task, referenceDate: pauseDate)
-            }
-            state.task.pausedAt = pauseDate
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handlePauseRoutine(taskID: state.task.id, pausedAt: pauseDate)
+            return routineLifecycleActionHandler().pauseTapped(state: &state)
 
         case .notTodayTapped:
-            guard !state.task.isOneOffTask else { return .none }
-            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
-            let tomorrowStart = calendar.date(
-                byAdding: .day,
-                value: 1,
-                to: calendar.startOfDay(for: now)
-            ) ?? now
-            state.task.snoozedUntil = tomorrowStart
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handleNotTodayRoutine(taskID: state.task.id, snoozedUntil: tomorrowStart)
+            return routineLifecycleActionHandler().notTodayTapped(state: &state)
 
         case .resumeTapped:
-            guard !state.task.isOneOffTask else { return .none }
-            guard state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
-            let resumeDate = now
-            if let pausedAt = state.task.pausedAt, state.task.isChecklistDriven {
-                state.task.shiftChecklistItems(by: max(resumeDate.timeIntervalSince(pausedAt), 0))
-            }
-            state.task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: state.task, resumedAt: resumeDate)
-            state.task.pausedAt = nil
-            state.task.snoozedUntil = nil
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handleResumeRoutine(taskID: state.task.id, resumedAt: resumeDate)
+            return routineLifecycleActionHandler().resumeTapped(state: &state)
 
         case .startOngoingTapped:
-            guard state.task.isSoftIntervalRoutine else { return .none }
-            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
-            guard !state.task.isOngoing else { return .none }
-            state.task.startOngoing(at: now)
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handleStartOngoing(taskID: state.task.id, startedAt: now)
+            return routineLifecycleActionHandler().startOngoingTapped(state: &state)
 
         case .finishOngoingTapped:
-            guard state.task.isSoftIntervalRoutine else { return .none }
-            guard state.task.isOngoing else { return .none }
-            state.task.finishOngoing(at: now)
-            refreshTaskView(&state)
-            upsertLocalLog(at: now, in: &state)
-            updateDerivedState(&state)
-            return handleFinishOngoing(taskID: state.task.id, finishedAt: now)
+            return routineLifecycleActionHandler().finishOngoingTapped(state: &state)
 
         case let .selectedDateChanged(date):
             return dialogLifecycleActionHandler().selectedDateChanged(date, state: &state)
