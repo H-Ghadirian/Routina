@@ -328,48 +328,19 @@ struct AddRoutineTCAView: View {
 
     @ViewBuilder
     var imageAttachmentContent: some View {
-        let imagePickerLabel = store.basics.imageData == nil ? "Choose Image" : "Replace Image"
-
-        VStack(alignment: .leading, spacing: 10) {
-            if let imageData = store.basics.imageData {
-                TaskImageView(data: imageData)
-                    .frame(height: 180)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
-                    )
-            } else {
-                Label("No image selected", systemImage: "photo")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack(spacing: 10) {
+        AddRoutineImageAttachmentContent(
+            imageData: store.basics.imageData,
+            onRemove: removeImage,
+            imagePreview: { TaskImageView(data: $0) },
+            photoPickerButton: { label in
                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                    Label(imagePickerLabel, systemImage: "photo.on.rectangle")
+                    Label(label, systemImage: "photo.on.rectangle")
                 }
                 .buttonStyle(.bordered)
-
-                platformImageImportButton
-
-                if store.basics.imageData != nil {
-                    Button("Remove") {
-                        selectedPhotoItem = nil
-                        store.send(.removeImageTapped)
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
-
-            Text("Images are resized and compressed before saving to keep iCloud usage low.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            platformImageDropHint
-        }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 2)
+            },
+            importButton: { platformImageImportButton },
+            dropHint: { platformImageDropHint }
+        )
         .routinaAddRoutineImageImportSupport(
             isDropTargeted: $isImageDropTargeted,
             isFileImporterPresented: $isImageFileImporterPresented,
@@ -433,6 +404,11 @@ struct AddRoutineTCAView: View {
 
     private func checklistIntervalLabel(for intervalDays: Int) -> String {
         TaskFormPresentation.checklistIntervalLabel(for: intervalDays)
+    }
+
+    private func removeImage() {
+        selectedPhotoItem = nil
+        store.send(.removeImageTapped)
     }
 
     @ViewBuilder

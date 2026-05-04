@@ -347,6 +347,7 @@ let package = Package(
                 "SharedCore/Views/AddRoutineChecklistItemComposerView.swift",
                 "SharedCore/Views/AddRoutineChecklistItemsView.swift",
                 "SharedCore/Views/AddRoutineEditableStepsView.swift",
+                "SharedCore/Views/AddRoutineImageAttachmentContent.swift",
                 "SharedCore/Views/AddRoutineSelectedTagsView.swift",
                 "SharedCore/Views/AddRoutineStepComposerView.swift",
                 "SharedCore/Views/AddRoutineTagComposerView.swift",
