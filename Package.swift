@@ -300,6 +300,7 @@ let package = Package(
                 "SharedCore/Sync/CloudSharingService.swift",
                 "SharedCore/Sync/CloudKitDirectPullCanonicalIDResolver.swift",
                 "SharedCore/Sync/CloudKitDirectPullDeletionHandler.swift",
+                "SharedCore/Sync/CloudKitDirectPullEntityLookup.swift",
                 "SharedCore/Sync/CloudKitDirectPullEntityPayloadAppliers.swift",
                 "SharedCore/Sync/CloudKitDirectPullFetcher.swift",
                 "SharedCore/Sync/CloudKitDirectPullMergeHousekeeping.swift",
