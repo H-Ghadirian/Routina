@@ -12,9 +12,7 @@ struct TaskDetailTCAView: View {
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = true
     @State private var isTaskChangesExpanded = true
-    @State private var editingTimeLog: RoutineLog?
-    @State private var editingTimeSpentMinutes = 25
-    @State private var isEditingTaskTimeSpent = false
+    @State private var timeEditing = TaskDetailTimeEditingState()
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
@@ -65,39 +63,39 @@ struct TaskDetailTCAView: View {
                     }
                 )
             }
-            .sheet(item: $editingTimeLog) { log in
+            .sheet(item: $timeEditing.editingLog) { log in
                 TaskDetailTimeSpentSheet(
                     title: "Time Spent",
-                    minutes: $editingTimeSpentMinutes,
+                    minutes: $timeEditing.editingMinutes,
                     showsClearButton: log.actualDurationMinutes != nil,
                     onClear: {
                         store.send(.updateLogDuration(log.id, nil))
-                        editingTimeLog = nil
+                        timeEditing.dismissLog()
                     },
                     onCancel: {
-                        editingTimeLog = nil
+                        timeEditing.dismissLog()
                     },
                     onSave: {
-                        store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
-                        editingTimeLog = nil
+                        store.send(.updateLogDuration(log.id, timeEditing.editingMinutes))
+                        timeEditing.dismissLog()
                     }
                 )
             }
-            .sheet(isPresented: $isEditingTaskTimeSpent) {
+            .sheet(isPresented: $timeEditing.isEditingTaskTimeSpent) {
                 TaskDetailTimeSpentSheet(
                     title: "Time Spent",
-                    minutes: $editingTimeSpentMinutes,
+                    minutes: $timeEditing.editingMinutes,
                     showsClearButton: store.task.actualDurationMinutes != nil,
                     onClear: {
                         store.send(.updateTaskDuration(nil))
-                        isEditingTaskTimeSpent = false
+                        timeEditing.dismissTask()
                     },
                     onCancel: {
-                        isEditingTaskTimeSpent = false
+                        timeEditing.dismissTask()
                     },
                     onSave: {
-                        store.send(.updateTaskDuration(editingTimeSpentMinutes))
-                        isEditingTaskTimeSpent = false
+                        store.send(.updateTaskDuration(timeEditing.editingMinutes))
+                        timeEditing.dismissTask()
                     }
                 )
             }
@@ -576,16 +574,11 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTime(for log: RoutineLog) {
-        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultLogEditMinutes(
-            log: log,
-            task: store.task
-        )
-        editingTimeLog = log
+        timeEditing.beginEditingLog(log, task: store.task)
     }
 
     private func beginEditingTaskTime() {
-        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultTaskEditMinutes(task: store.task)
-        isEditingTaskTimeSpent = true
+        timeEditing.beginEditingTask(store.task)
     }
 
     private var taskChangesSection: some View {

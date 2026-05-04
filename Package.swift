@@ -306,6 +306,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailSharedViewSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailPresentationRoutingSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTaskChangesSectionView.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailTimeEditingState.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift",
                 "SharedCore/Screens/Shared/AddRoutineTaskFormModelFactory.swift",
                 "SharedCore/Screens/Shared/TaskFormModel.swift",

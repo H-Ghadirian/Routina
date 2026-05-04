@@ -14,8 +14,7 @@ struct TaskDetailTCAView: View {
     @State private var isRoutineLogsExpanded = false
     @State private var isTaskChangesExpanded = false
     @State private var isTimeSectionExpanded = false
-    @State private var editingTimeLog: RoutineLog?
-    @State private var editingTimeSpentMinutes = 25
+    @State private var timeEditing = TaskDetailTimeEditingState()
     @State private var taskTimeEntryHours = 0
     @State private var taskTimeEntryMinutes = 25
     @State private var taskTimeEntryResetToken = 0
@@ -69,20 +68,20 @@ struct TaskDetailTCAView: View {
                     }
                 )
             }
-            .sheet(item: $editingTimeLog) { log in
+            .sheet(item: $timeEditing.editingLog) { log in
                 TaskDetailLogTimeSpentSheet(
-                    minutes: $editingTimeSpentMinutes,
+                    minutes: $timeEditing.editingMinutes,
                     showsClearButton: log.actualDurationMinutes != nil,
                     onClear: {
                         store.send(.updateLogDuration(log.id, nil))
-                        editingTimeLog = nil
+                        timeEditing.dismissLog()
                     },
                     onCancel: {
-                        editingTimeLog = nil
+                        timeEditing.dismissLog()
                     },
                     onSave: {
-                        store.send(.updateLogDuration(log.id, editingTimeSpentMinutes))
-                        editingTimeLog = nil
+                        store.send(.updateLogDuration(log.id, timeEditing.editingMinutes))
+                        timeEditing.dismissLog()
                     }
                 )
             }
@@ -769,11 +768,7 @@ struct TaskDetailTCAView: View {
     }
 
     private func beginEditingTime(for log: RoutineLog) {
-        editingTimeSpentMinutes = TaskDetailTimeSpentPresentation.defaultLogEditMinutes(
-            log: log,
-            task: store.task
-        )
-        editingTimeLog = log
+        timeEditing.beginEditingLog(log, task: store.task)
     }
 
     private func beginEditingTaskTime() {
