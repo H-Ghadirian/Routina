@@ -99,49 +99,18 @@ enum CloudKitDirectPullService {
             in: context,
             rank: { $0.createdAt ?? .distantPast }
         ) {
-            update(existing, with: payload)
+            CloudKitDirectPullGoalPayloadApplier.apply(payload, to: existing)
             return existing.id
         }
 
         if let normalizedIncomingTitle,
            let goalWithSameTitle = try goal(matchingNormalizedTitle: normalizedIncomingTitle, in: context) {
-            update(goalWithSameTitle, with: payload)
+            CloudKitDirectPullGoalPayloadApplier.apply(payload, to: goalWithSameTitle)
             return goalWithSameTitle.id
         }
 
-        context.insert(
-            RoutineGoal(
-                id: payload.id,
-                title: RoutineGoal.cleanedTitle(payload.title) ?? "Goal",
-                emoji: payload.emoji,
-                notes: payload.notes,
-                targetDate: payload.targetDate,
-                status: payload.status ?? .active,
-                color: payload.color ?? .none,
-                createdAt: payload.createdAt ?? Date(),
-                sortOrder: payload.sortOrder ?? 0
-            )
-        )
+        context.insert(CloudKitDirectPullGoalPayloadApplier.makeGoal(from: payload))
         return payload.id
-    }
-
-    private static func update(_ goal: RoutineGoal, with payload: GoalPayload) {
-        goal.title = RoutineGoal.cleanedTitle(payload.title) ?? goal.displayTitle
-        goal.emoji = RoutineGoal.cleanedEmoji(payload.emoji)
-        goal.notes = payload.notes?.trimmingCharacters(in: .whitespacesAndNewlines)
-        goal.targetDate = payload.targetDate
-        if let status = payload.status {
-            goal.status = status
-        }
-        if let color = payload.color {
-            goal.color = color
-        }
-        if let createdAt = payload.createdAt {
-            goal.createdAt = createdAt
-        }
-        if let sortOrder = payload.sortOrder {
-            goal.sortOrder = sortOrder
-        }
     }
 
     @MainActor
@@ -159,37 +128,17 @@ enum CloudKitDirectPullService {
             in: context,
             rank: { $0.createdAt }
         ) {
-            existing.name = RoutinePlace.cleanedName(payload.name) ?? existing.displayName
-            existing.latitude = payload.latitude
-            existing.longitude = payload.longitude
-            existing.radiusMeters = max(payload.radiusMeters, 25)
-            if let createdAt = payload.createdAt {
-                existing.createdAt = createdAt
-            }
+            CloudKitDirectPullPlacePayloadApplier.apply(payload, to: existing, updatesName: true)
             return existing.id
         }
 
         if let normalizedIncomingName,
            let placeWithSameName = try place(matchingNormalizedName: normalizedIncomingName, in: context) {
-            placeWithSameName.latitude = payload.latitude
-            placeWithSameName.longitude = payload.longitude
-            placeWithSameName.radiusMeters = max(payload.radiusMeters, 25)
-            if let createdAt = payload.createdAt {
-                placeWithSameName.createdAt = createdAt
-            }
+            CloudKitDirectPullPlacePayloadApplier.apply(payload, to: placeWithSameName, updatesName: false)
             return placeWithSameName.id
         }
 
-        context.insert(
-            RoutinePlace(
-                id: payload.id,
-                name: RoutinePlace.cleanedName(payload.name) ?? "Place",
-                latitude: payload.latitude,
-                longitude: payload.longitude,
-                radiusMeters: payload.radiusMeters,
-                createdAt: payload.createdAt ?? Date()
-            )
-        )
+        context.insert(CloudKitDirectPullPlacePayloadApplier.makePlace(from: payload))
         return payload.id
     }
 
@@ -246,25 +195,11 @@ enum CloudKitDirectPullService {
             in: context,
             rank: { $0.timestamp ?? .distantPast }
         ) {
-            existing.timestamp = payload.timestamp
-            existing.taskID = payload.taskID
-            existing.kind = payload.kind
-            existing.actualDurationMinutes = payload.actualDurationMinutes
+            CloudKitDirectPullLogPayloadApplier.apply(payload, to: existing)
         } else if let existing = try existingLog(matching: payload, in: context) {
-            existing.timestamp = payload.timestamp
-            existing.taskID = payload.taskID
-            existing.kind = payload.kind
-            existing.actualDurationMinutes = payload.actualDurationMinutes
+            CloudKitDirectPullLogPayloadApplier.apply(payload, to: existing)
         } else {
-            context.insert(
-                RoutineLog(
-                    id: payload.id,
-                    timestamp: payload.timestamp,
-                    taskID: payload.taskID,
-                    kind: payload.kind,
-                    actualDurationMinutes: payload.actualDurationMinutes
-                )
-            )
+            context.insert(CloudKitDirectPullLogPayloadApplier.makeLog(from: payload))
         }
     }
 
