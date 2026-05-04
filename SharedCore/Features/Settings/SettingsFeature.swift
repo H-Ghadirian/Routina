@@ -669,22 +669,18 @@ struct SettingsFeature {
                 )
 
             case let .appIconSelected(option):
-                SettingsAppearanceEditor.beginAppIconChange(state: &state.appearance)
-                return .run { send in
-                    let errorMessage = await SettingsAppInteractionExecution.requestAppIconChange(
-                        option,
-                        appIconClient: self.appIconClient
-                    )
-                    await send(.appIconChangeFinished(requestedOption: option, errorMessage: errorMessage))
-                }
+                return SettingsAppIconActionHandler.appIconSelected(
+                    option,
+                    state: &state.appearance,
+                    appIconClient: self.appIconClient
+                )
 
             case let .appIconChangeFinished(option, errorMessage):
-                SettingsAppearanceEditor.finishAppIconChange(
+                return SettingsAppIconActionHandler.appIconChangeFinished(
                     requestedOption: option,
                     errorMessage: errorMessage,
                     state: &state.appearance
                 )
-                return .none
 
             case let .routineDataTransferFinished(_, message):
                 SettingsRoutineDataTransferEditor.finish(
