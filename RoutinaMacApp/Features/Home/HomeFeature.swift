@@ -34,7 +34,7 @@ struct HomeFeature {
     typealias BoardScope = HomeBoardScope
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState, HomeFeatureTaskLifecycleCommandState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -761,8 +761,15 @@ struct HomeFeature {
         )
     }
 
-    private func taskLifecycleCommandRouter() -> HomeFeatureTaskLifecycleCommandRouter {
+    private func taskLifecycleCommandRouter() -> HomeFeatureTaskLifecycleCommandRouter<State, Action> {
         HomeFeatureTaskLifecycleCommandRouter(
+            markDone: { id, tasks, doneStats in
+                taskLifecycleCoordinator().markTaskDone(
+                    taskID: id,
+                    tasks: &tasks,
+                    doneStats: &doneStats
+                )
+            },
             pause: { id, tasks in
                 taskLifecycleCoordinator().pauseTask(taskID: id, tasks: &tasks)
             },
@@ -1000,18 +1007,7 @@ struct HomeFeature {
                 return handleDeleteTasks(ids, state: &state)
 
             case let .markTaskDone(id):
-                var routineTasks = state.routineTasks
-                var doneStats = state.doneStats
-                guard let effect = taskLifecycleCoordinator().markTaskDone(
-                    taskID: id,
-                    tasks: &routineTasks,
-                    doneStats: &doneStats
-                ) else {
-                    return .none
-                }
-                state.routineTasks = routineTasks
-                state.doneStats = doneStats
-                return postMutationRefresher().finishMutation(effect, state: &state)
+                return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
 
             case let .moveTodoToState(id, newState):
                 return macBoardCommandRouter().moveTodoToState(id, newState, &state)

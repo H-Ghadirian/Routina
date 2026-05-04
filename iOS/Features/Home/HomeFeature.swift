@@ -15,7 +15,7 @@ struct HomeFeature {
     typealias RoutineDisplay = HomeRoutineDisplay
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeatureAddRoutineActionState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState, HomeFeatureTaskLifecycleCommandState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -571,6 +571,36 @@ struct HomeFeature {
         )
     }
 
+    private func taskLifecycleCommandRouter() -> HomeFeatureTaskLifecycleCommandRouter<State, Action> {
+        HomeFeatureTaskLifecycleCommandRouter(
+            markDone: { id, tasks, doneStats in
+                taskLifecycleCoordinator().markTaskDone(
+                    taskID: id,
+                    tasks: &tasks,
+                    doneStats: &doneStats
+                )
+            },
+            pause: { id, tasks in
+                taskLifecycleCoordinator().pauseTask(taskID: id, tasks: &tasks)
+            },
+            resume: { id, tasks in
+                taskLifecycleCoordinator().resumeTask(taskID: id, tasks: &tasks)
+            },
+            notToday: { id, tasks in
+                taskLifecycleCoordinator().notTodayTask(taskID: id, tasks: &tasks)
+            },
+            pin: { id, tasks in
+                taskLifecycleCoordinator().pinTask(taskID: id, tasks: &tasks)
+            },
+            unpin: { id, tasks in
+                taskLifecycleCoordinator().unpinTask(taskID: id, tasks: &tasks)
+            },
+            finishMutation: { effect, state in
+                postMutationRefresher().finishMutation(effect, state: &state)
+            }
+        )
+    }
+
     private func lifecycleActionHandler() -> HomeFeatureLifecycleActionHandler<State, Action> {
         HomeFeatureLifecycleActionHandler(
             temporaryViewState: { appSettingsClient.temporaryViewState() },
@@ -786,63 +816,22 @@ struct HomeFeature {
                 return handleDeleteTasks(ids, state: &state)
 
             case let .markTaskDone(id):
-                var routineTasks = state.routineTasks
-                var doneStats = state.doneStats
-                guard let effect = taskLifecycleCoordinator().markTaskDone(
-                    taskID: id,
-                    tasks: &routineTasks,
-                    doneStats: &doneStats
-                ) else {
-                    return .none
-                }
-                state.routineTasks = routineTasks
-                state.doneStats = doneStats
-                return postMutationRefresher().finishMutation(effect, state: &state)
+                return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
 
             case let .pauseTask(id):
-                guard let effect = taskLifecycleCoordinator().pauseTask(
-                    taskID: id,
-                    tasks: &state.routineTasks
-                ) else {
-                    return .none
-                }
-                return postMutationRefresher().finishMutation(effect, state: &state)
+                return taskLifecycleCommandRouter().pauseTask(id, state: &state)
 
             case let .resumeTask(id):
-                guard let effect = taskLifecycleCoordinator().resumeTask(
-                    taskID: id,
-                    tasks: &state.routineTasks
-                ) else {
-                    return .none
-                }
-                return postMutationRefresher().finishMutation(effect, state: &state)
+                return taskLifecycleCommandRouter().resumeTask(id, state: &state)
 
             case let .notTodayTask(id):
-                guard let effect = taskLifecycleCoordinator().notTodayTask(
-                    taskID: id,
-                    tasks: &state.routineTasks
-                ) else {
-                    return .none
-                }
-                return postMutationRefresher().finishMutation(effect, state: &state)
+                return taskLifecycleCommandRouter().notTodayTask(id, state: &state)
 
             case let .pinTask(id):
-                guard let effect = taskLifecycleCoordinator().pinTask(
-                    taskID: id,
-                    tasks: &state.routineTasks
-                ) else {
-                    return .none
-                }
-                return postMutationRefresher().finishMutation(effect, state: &state)
+                return taskLifecycleCommandRouter().pinTask(id, state: &state)
 
             case let .unpinTask(id):
-                guard let effect = taskLifecycleCoordinator().unpinTask(
-                    taskID: id,
-                    tasks: &state.routineTasks
-                ) else {
-                    return .none
-                }
-                return postMutationRefresher().finishMutation(effect, state: &state)
+                return taskLifecycleCommandRouter().unpinTask(id, state: &state)
 
             case let .moveTaskInSection(taskID, sectionKey, orderedTaskIDs, direction):
                 return moveTaskInSection(
