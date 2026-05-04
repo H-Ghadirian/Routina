@@ -298,6 +298,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailChecklistPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailChecklistSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailEditChangeSupport.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailFocusSessionSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailLogPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailPriorityPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailRelationshipPresentation.swift",

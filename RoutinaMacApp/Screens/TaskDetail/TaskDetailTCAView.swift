@@ -406,7 +406,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var focusSessionSection: some View {
-        FocusSessionCard(
+        TaskDetailFocusSessionSectionView(
             task: store.task,
             sessions: focusSessions,
             allTasks: focusSessionTasks,
