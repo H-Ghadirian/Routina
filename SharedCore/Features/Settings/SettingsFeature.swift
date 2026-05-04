@@ -432,28 +432,18 @@ struct SettingsFeature {
                 return .none
 
             case let .tagsLoaded(tags):
-                SettingsTagEditor.loadedTags(tags, state: &state.tags)
-                let fastFilterTags = FastFilterTags.sanitized(
-                    state.tags.fastFilterTags.filter { tag in
-                        tags.contains { RoutineTag.contains($0.name, in: [tag]) }
-                    }
+                return SettingsFastFilterActionHandler.tagsLoaded(
+                    tags,
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
                 )
-                if fastFilterTags != state.tags.fastFilterTags {
-                    state.tags.fastFilterTags = fastFilterTags
-                    appSettingsClient.setFastFilterTags(fastFilterTags)
-                }
-                return .none
 
             case let .fastFilterTagsLoaded(tags):
-                let savedTags = state.tags.savedTags
-                let fastFilterTags = FastFilterTags.sanitized(tags).filter { tag in
-                    savedTags.isEmpty || savedTags.contains { RoutineTag.contains($0.name, in: [tag]) }
-                }
-                state.tags.fastFilterTags = fastFilterTags
-                if fastFilterTags != FastFilterTags.sanitized(tags) {
-                    appSettingsClient.setFastFilterTags(fastFilterTags)
-                }
-                return .none
+                return SettingsFastFilterActionHandler.fastFilterTagsLoaded(
+                    tags,
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
+                )
 
             case let .tagColorsLoaded(colors):
                 SettingsTagEditor.loadedTagColors(colors, state: &state.tags)
@@ -484,10 +474,11 @@ struct SettingsFeature {
                 return .none
 
             case let .fastFilterTagToggled(tag):
-                let updatedTags = FastFilterTags.toggling(tag, in: state.tags.fastFilterTags)
-                state.tags.fastFilterTags = updatedTags
-                appSettingsClient.setFastFilterTags(updatedTags)
-                return .none
+                return SettingsFastFilterActionHandler.fastFilterTagToggled(
+                    tag,
+                    state: &state.tags,
+                    appSettingsClient: self.appSettingsClient
+                )
 
             case let .relatedTagDraftChanged(tagName, draft):
                 SettingsTagEditor.updateRelatedTagDraft(
