@@ -85,6 +85,10 @@ struct AddRoutineFeature: Reducer {
         AddRoutineScheduleMutationHandler(now: { now })
     }
 
+    private func organizationMutationHandler() -> AddRoutineOrganizationMutationHandler {
+        AddRoutineOrganizationMutationHandler()
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .routineNameChanged(name):
@@ -203,116 +207,79 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .availableTagsChanged(tags):
-            AddRoutineOrganizationEditor.setAvailableTags(
-                tags,
-                organization: &state.organization
-            )
+            organizationMutationHandler().setAvailableTags(tags, state: &state)
             return .none
 
         case let .availableTagSummariesChanged(summaries):
-            AddRoutineOrganizationEditor.setAvailableTagSummaries(
-                summaries,
-                organization: &state.organization
-            )
+            organizationMutationHandler().setAvailableTagSummaries(summaries, state: &state)
             return .none
 
         case let .availableGoalsChanged(goals):
-            AddRoutineOrganizationEditor.setAvailableGoals(
-                goals,
-                organization: &state.organization
-            )
+            organizationMutationHandler().setAvailableGoals(goals, state: &state)
             return .none
 
         case let .relatedTagRulesChanged(rules):
-            AddRoutineOrganizationEditor.setRelatedTagRules(
-                rules,
-                organization: &state.organization
-            )
+            organizationMutationHandler().setRelatedTagRules(rules, state: &state)
             return .none
 
         case let .availableRelationshipTasksChanged(tasks):
-            AddRoutineOrganizationEditor.setAvailableRelationshipTasks(
-                tasks,
-                organization: &state.organization
-            )
+            organizationMutationHandler().setAvailableRelationshipTasks(tasks, state: &state)
             return .none
 
         case let .tagDraftChanged(value):
-            state.organization.tagDraft = value
+            organizationMutationHandler().setTagDraft(value, state: &state)
             return .none
 
         case let .goalDraftChanged(value):
-            state.organization.goalDraft = value
+            organizationMutationHandler().setGoalDraft(value, state: &state)
             return .none
 
         case .addTagTapped:
-            AddRoutineOrganizationEditor.commitDraftTag(
-                organization: &state.organization
-            )
+            organizationMutationHandler().commitDraftTag(state: &state)
             return .none
 
         case .addGoalTapped:
-            AddRoutineOrganizationEditor.commitDraftGoal(
-                organization: &state.organization
-            )
+            organizationMutationHandler().commitDraftGoal(state: &state)
             return .none
 
         case let .removeTag(tag):
-            AddRoutineOrganizationEditor.removeTag(
-                tag,
-                organization: &state.organization
-            )
+            organizationMutationHandler().removeTag(tag, state: &state)
             return .none
 
         case let .removeGoal(goalID):
-            AddRoutineOrganizationEditor.removeGoal(
-                goalID,
-                organization: &state.organization
-            )
+            organizationMutationHandler().removeGoal(goalID, state: &state)
             return .none
 
         case let .toggleTagSelection(tag):
-            AddRoutineOrganizationEditor.toggleTagSelection(
-                tag,
-                organization: &state.organization
-            )
+            organizationMutationHandler().toggleTagSelection(tag, state: &state)
             return .none
 
         case let .toggleGoalSelection(goal):
-            AddRoutineOrganizationEditor.toggleGoalSelection(
-                goal,
-                organization: &state.organization
-            )
+            organizationMutationHandler().toggleGoalSelection(goal, state: &state)
             return .none
 
         case let .addRelationship(taskID, kind):
-            AddRoutineOrganizationEditor.addRelationship(
+            organizationMutationHandler().addRelationship(
                 targetTaskID: taskID,
                 kind: kind,
-                organization: &state.organization
+                state: &state
             )
             return .none
 
         case let .removeRelationship(taskID):
-            AddRoutineOrganizationEditor.removeRelationship(
-                targetTaskID: taskID,
-                organization: &state.organization
-            )
+            organizationMutationHandler().removeRelationship(targetTaskID: taskID, state: &state)
             return .none
 
         case let .tagRenamed(oldName, newName):
-            AddRoutineOrganizationEditor.renameTag(
+            organizationMutationHandler().renameTag(
                 oldName: oldName,
                 newName: newName,
-                organization: &state.organization
+                state: &state
             )
             return .none
 
         case let .tagDeleted(tag):
-            AddRoutineOrganizationEditor.deleteTag(
-                tag,
-                organization: &state.organization
-            )
+            organizationMutationHandler().deleteTag(tag, state: &state)
             return .none
 
         case let .scheduleModeChanged(mode):
@@ -412,15 +379,7 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .availablePlacesChanged(places):
-            var basics = state.basics
-            var organization = state.organization
-            AddRoutineFormEditor.setAvailablePlaces(
-                places,
-                basics: &basics,
-                organization: &organization
-            )
-            state.basics = basics
-            state.organization = organization
+            organizationMutationHandler().setAvailablePlaces(places, state: &state)
             return .none
 
         case let .selectedPlaceChanged(placeID):
