@@ -8,27 +8,7 @@ struct TaskDetailFeature: Reducer {
         case loadContext
     }
 
-    enum EditFrequency: String, CaseIterable, Equatable {
-        case day = "Day"
-        case week = "Week"
-        case month = "Month"
-
-        var daysMultiplier: Int {
-            switch self {
-            case .day: return 1
-            case .week: return 7
-            case .month: return 30
-            }
-        }
-
-        var singularLabel: String {
-            switch self {
-            case .day: return "day"
-            case .week: return "week"
-            case .month: return "month"
-            }
-        }
-    }
+    typealias EditFrequency = TaskFormFrequencyUnit
 
     @ObservableState
     struct State: Equatable {

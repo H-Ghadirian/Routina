@@ -5,6 +5,14 @@ enum TaskFormFrequencyUnit: String, CaseIterable, Equatable, Sendable {
     case week = "Week"
     case month = "Month"
 
+    var daysMultiplier: Int {
+        switch self {
+        case .day: return 1
+        case .week: return 7
+        case .month: return 30
+        }
+    }
+
     var singularLabel: String { rawValue.lowercased() }
 }
 
