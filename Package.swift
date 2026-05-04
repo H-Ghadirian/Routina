@@ -294,6 +294,7 @@ let package = Package(
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+Presentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFeature+StateDerivation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailNotificationActionHandler.swift",
+                "SharedCore/Features/TaskDetail/TaskDetailNotificationWarningPresentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailRecurrenceEditActionHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailRoutineLifecycleActionHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailStatusActionHandler.swift",

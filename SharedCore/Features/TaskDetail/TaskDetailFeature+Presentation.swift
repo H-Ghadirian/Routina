@@ -249,20 +249,19 @@ extension TaskDetailFeature.State {
     }
 
     var notificationDisabledWarningText: String? {
-        guard hasLoadedNotificationStatus else { return nil }
-        guard expectsClockTimeNotification else { return nil }
-        if !appNotificationsEnabled {
-            return "Notifications are off in Routina. You won't be notified for this scheduled time."
-        }
-        if !systemNotificationsAuthorized {
-            return "Notifications are disabled in system settings. You won't be notified for this scheduled time."
-        }
-        return nil
+        TaskDetailNotificationWarningPresentation.warningText(
+            hasLoadedNotificationStatus: hasLoadedNotificationStatus,
+            expectsClockTimeNotification: expectsClockTimeNotification,
+            appNotificationsEnabled: appNotificationsEnabled,
+            systemNotificationsAuthorized: systemNotificationsAuthorized
+        )
     }
 
     var notificationDisabledWarningActionTitle: String? {
-        guard notificationDisabledWarningText != nil else { return nil }
-        return appNotificationsEnabled ? "Open System Settings" : "Turn On Notifications"
+        TaskDetailNotificationWarningPresentation.actionTitle(
+            warningText: notificationDisabledWarningText,
+            appNotificationsEnabled: appNotificationsEnabled
+        )
     }
 
     var expectsClockTimeNotification: Bool {
