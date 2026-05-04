@@ -280,6 +280,10 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func stepChecklistEditActionHandler() -> TaskDetailStepChecklistEditActionHandler {
+        TaskDetailStepChecklistEditActionHandler(now: { now })
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -726,60 +730,37 @@ struct TaskDetailFeature: Reducer {
             return recurrenceEditActionHandler().editScheduleModeChanged(mode, state: &state)
 
         case let .editStepDraftChanged(value):
-            state.editStepDraft = value
-            return .none
+            return stepChecklistEditActionHandler().editStepDraftChanged(value, state: &state)
 
         case .editAddStepTapped:
-            state.editRoutineSteps = appendStep(from: state.editStepDraft, to: state.editRoutineSteps)
-            state.editStepDraft = ""
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return stepChecklistEditActionHandler().editAddStepTapped(state: &state)
 
         case let .editRemoveStep(stepID):
-            state.editRoutineSteps.removeAll { $0.id == stepID }
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return stepChecklistEditActionHandler().editRemoveStep(stepID, state: &state)
 
         case let .editMoveStepUp(stepID):
-            moveStep(stepID, by: -1, state: &state)
-            return .none
+            return stepChecklistEditActionHandler().editMoveStepUp(stepID, state: &state)
 
         case let .editMoveStepDown(stepID):
-            moveStep(stepID, by: 1, state: &state)
-            return .none
+            return stepChecklistEditActionHandler().editMoveStepDown(stepID, state: &state)
 
         case let .editChecklistItemDraftTitleChanged(value):
-            state.editChecklistItemDraftTitle = value
-            return .none
+            return stepChecklistEditActionHandler().editChecklistItemDraftTitleChanged(
+                value,
+                state: &state
+            )
 
         case let .editChecklistItemDraftIntervalChanged(value):
-            state.editChecklistItemDraftInterval = RoutineChecklistItem.clampedIntervalDays(value)
-            return .none
+            return stepChecklistEditActionHandler().editChecklistItemDraftIntervalChanged(
+                value,
+                state: &state
+            )
 
         case .editAddChecklistItemTapped:
-            state.editRoutineChecklistItems = appendChecklistItem(
-                from: state.editChecklistItemDraftTitle,
-                intervalDays: state.editChecklistItemDraftInterval,
-                createdAt: now,
-                to: state.editRoutineChecklistItems
-            )
-            state.editChecklistItemDraftTitle = ""
-            state.editChecklistItemDraftInterval = 3
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return stepChecklistEditActionHandler().editAddChecklistItemTapped(state: &state)
 
         case let .editRemoveChecklistItem(itemID):
-            state.editRoutineChecklistItems.removeAll { $0.id == itemID }
-            if !canAutoAssumeDailyDone(for: state) {
-                state.editAutoAssumeDailyDone = false
-            }
-            return .none
+            return stepChecklistEditActionHandler().editRemoveChecklistItem(itemID, state: &state)
 
         case let .availablePlacesLoaded(places):
             state.availablePlaces = places
