@@ -109,10 +109,14 @@ struct TaskFormModel {
     // MARK: Color
     var color: Binding<RoutineTaskColor>
 
+    // MARK: Focus
+    var nameFocus: FocusState<Bool>.Binding? = nil
+    var nameFocusRequestID: Int = 0
+
     // MARK: Extras
     var autofocusName: Bool = false
     var onDelete: (() -> Void)? = nil
-    // macOS Edit only — Danger Zone pause/resume
+    // macOS Edit only - Danger Zone pause/resume.
     var pauseResumeAction: (() -> Void)? = nil
     var pauseResumeTitle: String? = nil
     var pauseResumeDescription: String? = nil
