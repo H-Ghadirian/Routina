@@ -982,40 +982,21 @@ struct TaskDetailFeature: Reducer {
             return reduce(into: &state, action: .markAsDone)
 
         case .notificationDisabledWarningTapped:
-            if !state.appNotificationsEnabled {
-                let notificationPayload = NotificationCoordinator.shouldScheduleNotification(
-                    for: state.task,
-                    referenceDate: now,
-                    calendar: calendar
-                )
-                    ? NotificationCoordinator.notificationPayload(
-                        for: state.task,
-                        referenceDate: now,
-                        calendar: calendar
-                    )
-                    : nil
-                return .run { @MainActor send in
-                    let granted = await notificationClient.requestAuthorizationIfNeeded()
-                    appSettingsClient.setNotificationsEnabled(granted)
-                    if granted, let notificationPayload {
-                        await notificationClient.schedule(notificationPayload)
-                    } else if let url = urlOpenerClient.notificationSettingsURL() {
-                        urlOpenerClient.open(url)
-                    }
-                    await send(.notificationStatusLoaded(appEnabled: granted, systemAuthorized: granted))
-                }
-            }
-            guard !state.systemNotificationsAuthorized else { return .none }
-            return .run { @MainActor _ in
-                guard let url = urlOpenerClient.notificationSettingsURL() else { return }
-                urlOpenerClient.open(url)
-            }
+            return TaskDetailNotificationActionHandler.notificationDisabledWarningTapped(
+                state: &state,
+                now: { now },
+                calendar: { calendar },
+                notificationClient: { self.notificationClient },
+                appSettingsClient: { self.appSettingsClient },
+                urlOpenerClient: { self.urlOpenerClient }
+            )
 
         case let .notificationStatusLoaded(appEnabled, systemAuthorized):
-            state.hasLoadedNotificationStatus = true
-            state.appNotificationsEnabled = appEnabled
-            state.systemNotificationsAuthorized = systemAuthorized
-            return .none
+            return TaskDetailNotificationActionHandler.notificationStatusLoaded(
+                appEnabled: appEnabled,
+                systemAuthorized: systemAuthorized,
+                state: &state
+            )
 
         case .onAppear:
             if state.selectedDate == nil {
