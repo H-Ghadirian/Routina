@@ -284,6 +284,10 @@ struct TaskDetailFeature: Reducer {
         TaskDetailStepChecklistEditActionHandler(now: { now })
     }
 
+    private func editContextActionHandler() -> TaskDetailEditContextActionHandler {
+        TaskDetailEditContextActionHandler()
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -763,40 +767,19 @@ struct TaskDetailFeature: Reducer {
             return stepChecklistEditActionHandler().editRemoveChecklistItem(itemID, state: &state)
 
         case let .availablePlacesLoaded(places):
-            state.availablePlaces = places
-            if let selectedPlaceID = state.editSelectedPlaceID,
-               !places.contains(where: { $0.id == selectedPlaceID }) {
-                state.editSelectedPlaceID = nil
-            }
-            return .none
+            return editContextActionHandler().availablePlacesLoaded(places, state: &state)
 
         case let .availableTagsLoaded(tags):
-            state.availableTags = RoutineTag.allTags(from: [tags])
-            return .none
+            return editContextActionHandler().availableTagsLoaded(tags, state: &state)
 
         case let .availableGoalsLoaded(goals):
-            state.availableGoals = RoutineGoalSummary.sanitized(goals).sorted {
-                $0.displayTitle.localizedCaseInsensitiveCompare($1.displayTitle) == .orderedAscending
-            }
-            state.editRoutineGoals = RoutineGoalSummary.summaries(
-                for: state.task.goalIDs,
-                in: state.availableGoals
-            )
-            return .none
+            return editContextActionHandler().availableGoalsLoaded(goals, state: &state)
 
         case let .relatedTagRulesLoaded(rules):
-            state.relatedTagRules = RoutineTagRelations.sanitized(rules)
-            return .none
+            return editContextActionHandler().relatedTagRulesLoaded(rules, state: &state)
 
         case let .availableRelationshipTasksLoaded(tasks):
-            state.availableRelationshipTasks = tasks
-            state.editRelationships = RoutineTaskRelationship.sanitized(
-                state.editRelationships.filter { relationship in
-                    tasks.contains(where: { $0.id == relationship.targetTaskID })
-                },
-                ownerID: state.task.id
-            )
-            return .none
+            return editContextActionHandler().availableRelationshipTasksLoaded(tasks, state: &state)
 
         case let .editSelectedPlaceChanged(placeID):
             return tagGoalRelationshipEditActionHandler().editSelectedPlaceChanged(
