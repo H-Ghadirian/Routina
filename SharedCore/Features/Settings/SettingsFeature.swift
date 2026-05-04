@@ -270,8 +270,12 @@ struct SettingsFeature {
                     ),
                     state: &state
                 )
-                return refreshSettingsContext(
-                    reconcileNotificationsIfEnabled: false
+                return SettingsRefreshActionExecution.refreshContext(
+                    reconcileNotificationsIfEnabled: false,
+                    modelContext: self.modelContext,
+                    notificationClient: self.notificationClient,
+                    locationClient: self.locationClient,
+                    appSettingsClient: self.appSettingsClient
                 )
 
             case let .gitHubScopeChanged(scope):
@@ -396,8 +400,12 @@ struct SettingsFeature {
                     deviceAuthenticationStatus: deviceAuthenticationClient.status(),
                     state: &state
                 )
-                return refreshSettingsContext(
-                    reconcileNotificationsIfEnabled: notificationsEnabled
+                return SettingsRefreshActionExecution.refreshContext(
+                    reconcileNotificationsIfEnabled: notificationsEnabled,
+                    modelContext: self.modelContext,
+                    notificationClient: self.notificationClient,
+                    locationClient: self.locationClient,
+                    appSettingsClient: self.appSettingsClient
                 )
 
             case .syncNowTapped:
@@ -695,35 +703,4 @@ struct SettingsFeature {
             }
         }
     }
-    private func refreshSettingsContext(
-        reconcileNotificationsIfEnabled notificationsEnabled: Bool
-    ) -> Effect<Action> {
-        .run { @MainActor send in
-            let result = await SettingsRefreshExecution.loadContext(
-                modelContext: self.modelContext,
-                notificationClient: self.notificationClient,
-                locationClient: self.locationClient
-            )
-            send(.systemNotificationPermissionChecked(result.systemNotificationsEnabled))
-            send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
-            send(.placesLoaded(result.placeSummaries))
-            send(.tagsLoaded(result.tagSummaries))
-            send(.fastFilterTagsLoaded(appSettingsClient.fastFilterTags()))
-            send(.tagColorsLoaded(appSettingsClient.tagColors()))
-            send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
-            send(.learnedRelatedTagRulesLoaded(
-                RoutineTagRelations.learnedRules(from: result.taskTagCollections)
-            ))
-            send(.locationSnapshotUpdated(result.locationSnapshot))
-
-            await SettingsRefreshExecution.reconcileNotificationsIfNeeded(
-                notificationsEnabled: notificationsEnabled,
-                systemNotificationsEnabled: result.systemNotificationsEnabled,
-                modelContext: self.modelContext,
-                appSettingsClient: self.appSettingsClient,
-                notificationClient: self.notificationClient
-            )
-        }
-    }
-
 }
