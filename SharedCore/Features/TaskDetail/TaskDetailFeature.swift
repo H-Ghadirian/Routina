@@ -261,6 +261,15 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
+        TaskDetailEditSaveRequestBuilder(
+            now: { now },
+            matrixPriority: { importance, urgency in
+                matrixPriority(importance: importance, urgency: urgency)
+            }
+        )
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
@@ -922,73 +931,8 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case .editSaveTapped:
-            state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
-            state.editTagDraft = ""
-            state.editRoutineGoals = RoutineGoalSummary.appending(
-                state.editGoalDraft,
-                availableGoals: state.availableGoals,
-                to: state.editRoutineGoals
-            )
-            state.editGoalDraft = ""
-            state.editRoutineSteps = appendStep(from: state.editStepDraft, to: state.editRoutineSteps)
-            state.editStepDraft = ""
-            state.editRoutineChecklistItems = appendChecklistItem(
-                from: state.editChecklistItemDraftTitle,
-                intervalDays: state.editChecklistItemDraftInterval,
-                createdAt: now,
-                to: state.editRoutineChecklistItems
-            )
-            state.editChecklistItemDraftTitle = ""
-            state.editChecklistItemDraftInterval = 3
-            let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedName.isEmpty else { return .none }
-            guard !scheduleModeRequiresChecklistItems(state.editScheduleMode) || !state.editRoutineChecklistItems.isEmpty else {
-                return .none
-            }
-            state.isEditSheetPresented = false
-            let frequencyInterval = state.editScheduleMode == .oneOff
-                ? 1
-                : state.editFrequencyValue * state.editFrequency.daysMultiplier
-            let recurrenceRule = selectedRecurrenceRule(
-                for: state,
-                fallbackInterval: frequencyInterval
-            )
-            return handleEditSave(
-                taskID: state.task.id,
-                name: trimmedName,
-                emoji: state.editRoutineEmoji,
-                notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
-                link: RoutineTask.sanitizedLink(state.editRoutineLink),
-                deadline: state.editScheduleMode == .oneOff ? state.editDeadline : nil,
-                reminderAt: state.editReminderAt,
-                priority: matrixPriority(
-                    importance: state.editImportance,
-                    urgency: state.editUrgency
-                ),
-                importance: state.editImportance,
-                urgency: state.editUrgency,
-                pressure: state.editPressure,
-                imageData: state.editImageData,
-                attachments: state.editAttachments,
-                placeID: state.editSelectedPlaceID,
-                tags: state.editRoutineTags,
-                goals: state.editRoutineGoals,
-                relationships: state.editRelationships,
-                steps: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
-                    ? state.editRoutineSteps
-                    : [],
-                checklistItems: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
-                    ? []
-                    : state.editRoutineChecklistItems,
-                scheduleMode: state.editScheduleMode,
-                recurrenceRule: recurrenceRule,
-                color: state.editColor,
-                autoAssumeDailyDone: state.editAutoAssumeDailyDone,
-                estimatedDurationMinutes: state.editEstimatedDurationMinutes,
-                actualDurationMinutes: state.editActualDurationMinutes,
-                storyPoints: state.editStoryPoints,
-                focusModeEnabled: state.editFocusModeEnabled
-            )
+            guard let request = editSaveRequestBuilder().build(state: &state) else { return .none }
+            return handleEditSave(request)
 
         case .confirmAssumedPastDays:
             let assumedDays = RoutineAssumedCompletion.assumedDates(

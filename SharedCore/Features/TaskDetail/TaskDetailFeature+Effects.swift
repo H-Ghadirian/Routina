@@ -294,6 +294,40 @@ extension TaskDetailFeature {
     }
 
     func handleEditSave(
+        _ request: TaskDetailEditSaveRequest
+    ) -> Effect<Action> {
+        handleEditSave(
+            taskID: request.taskID,
+            name: request.name,
+            emoji: request.emoji,
+            notes: request.notes,
+            link: request.link,
+            deadline: request.deadline,
+            reminderAt: request.reminderAt,
+            priority: request.priority,
+            importance: request.importance,
+            urgency: request.urgency,
+            pressure: request.pressure,
+            imageData: request.imageData,
+            attachments: request.attachments,
+            placeID: request.placeID,
+            tags: request.tags,
+            goals: request.goals,
+            relationships: request.relationships,
+            steps: request.steps,
+            checklistItems: request.checklistItems,
+            scheduleMode: request.scheduleMode,
+            recurrenceRule: request.recurrenceRule,
+            color: request.color,
+            autoAssumeDailyDone: request.autoAssumeDailyDone,
+            estimatedDurationMinutes: request.estimatedDurationMinutes,
+            actualDurationMinutes: request.actualDurationMinutes,
+            storyPoints: request.storyPoints,
+            focusModeEnabled: request.focusModeEnabled
+        )
+    }
+
+    func handleEditSave(
         taskID: UUID,
         name: String,
         emoji: String,
