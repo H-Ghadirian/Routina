@@ -360,6 +360,7 @@ let package = Package(
                 "SharedCore/Views/StatsDataRefreshModifier.swift",
                 "SharedCore/Views/StatsChartInsightBuilder.swift",
                 "SharedCore/Views/StatsCompletionChartSection.swift",
+                "SharedCore/Views/StatsCreatedTasksChartSection.swift",
                 "SharedCore/Views/StatsFocusChartSection.swift",
                 "SharedCore/Views/StatsHeroSectionView.swift",
                 "SharedCore/Views/StatsTagUsageSection.swift",
