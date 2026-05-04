@@ -559,6 +559,29 @@ struct HomeFeature {
         )
     }
 
+    private func taskDetailActionRouter() -> HomeFeatureTaskDetailActionRouter<State, Action> {
+        HomeFeatureTaskDetailActionRouter(
+            clearTaskSelection: { state in
+                selectionRouter().clearTaskSelection(&state)
+            },
+            updatePendingChecklistReloadGuard: { itemID, state in
+                selectionRouter().updatePendingChecklistReloadGuard(for: itemID, state: &state)
+            },
+            updatePendingChecklistUndoReloadGuard: { state in
+                selectionRouter().updatePendingChecklistUndoReloadGuard(&state)
+            },
+            syncSelectedTaskFromTaskDetail: { state in
+                selectionRouter().syncSelectedTaskFromTaskDetail(&state)
+            },
+            openLinkedTask: { taskID, state in
+                selectionRouter().openLinkedTask(taskID, state: &state)
+            },
+            openLinkedTaskSheet: { state in
+                addRoutinePresentationRouter().openLinkedTaskSheet(state: &state)
+            }
+        )
+    }
+
     private func addRoutinePresentationRouter() -> HomeFeatureAddRoutinePresentationRouter<State> {
         HomeFeatureAddRoutinePresentationRouter(
             tagCounterDisplayMode: { appSettingsClient.tagCounterDisplayMode() },
@@ -883,35 +906,8 @@ struct HomeFeature {
                 print("Failed to save routine.")
                 return .none
 
-            case .taskDetail(.routineDeleted):
-                selectionRouter().clearTaskSelection(&state)
-                return .none
-
-            case let .taskDetail(.toggleChecklistItemCompletion(itemID)):
-                selectionRouter().updatePendingChecklistReloadGuard(for: itemID, state: &state)
-                return .none
-
-            case let .taskDetail(.markChecklistItemCompleted(itemID)):
-                selectionRouter().updatePendingChecklistReloadGuard(for: itemID, state: &state)
-                return .none
-
-            case .taskDetail(.undoSelectedDateCompletion):
-                selectionRouter().updatePendingChecklistUndoReloadGuard(&state)
-                return .none
-
-            case .taskDetail(.logsLoaded):
-                selectionRouter().syncSelectedTaskFromTaskDetail(&state)
-                return .none
-
-            case let .taskDetail(.openLinkedTask(taskID)):
-                return selectionRouter().openLinkedTask(taskID, state: &state)
-
-            case .taskDetail(.openAddLinkedTask):
-                addRoutinePresentationRouter().openLinkedTaskSheet(state: &state)
-                return .none
-
-            case .taskDetail:
-                return .none
+            case let .taskDetail(action):
+                return taskDetailActionRouter().handle(action, state: &state) ?? .none
 
             case .addRoutineSheet:
                 return .none
