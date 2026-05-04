@@ -103,12 +103,12 @@ enum CloudKitDirectPullService {
         var logPayloads: [LogPayload] = []
 
         for record in result.changedRecords {
-            if let goalPayload = parseGoal(from: record) {
+            if let goalPayload = CloudKitDirectPullRecordParser.parseGoal(from: record) {
                 goalPayloads.append(goalPayload)
                 continue
             }
 
-            if let placePayload = parsePlace(from: record) {
+            if let placePayload = CloudKitDirectPullRecordParser.parsePlace(from: record) {
                 placePayloads.append(placePayload)
                 continue
             }
@@ -118,7 +118,7 @@ enum CloudKitDirectPullService {
                 continue
             }
 
-            if let logPayload = parseLog(from: record) {
+            if let logPayload = CloudKitDirectPullRecordParser.parseLog(from: record) {
                 logPayloads.append(logPayload)
             }
         }
@@ -271,113 +271,6 @@ enum CloudKitDirectPullService {
         if let log = try context.fetch(descriptor).first {
             context.delete(log)
         }
-    }
-
-    private static func parsePlace(from record: CKRecord) -> PlacePayload? {
-        guard isPlaceRecordType(record.recordType) else { return nil }
-        guard let id = UUID(uuidString: record.recordID.recordName) else { return nil }
-
-        let nameValue = stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
-        guard
-            let latitudeValue = doubleValue(in: record, keys: ["latitude", "LATITUDE", "zlatitude", "ZLATITUDE", "cd_latitude"]),
-            let longitudeValue = doubleValue(in: record, keys: ["longitude", "LONGITUDE", "zlongitude", "ZLONGITUDE", "cd_longitude"])
-        else {
-            return nil
-        }
-
-        let radiusValue = doubleValue(
-            in: record,
-            keys: ["radiusMeters", "RADIUSMETERS", "zradiusmeters", "ZRADIUSMETERS", "cd_radiusmeters"]
-        ) ?? 150
-        let createdAtValue = dateValue(
-            in: record,
-            keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"]
-        )
-
-        return PlacePayload(
-            id: id,
-            name: nameValue,
-            latitude: latitudeValue,
-            longitude: longitudeValue,
-            radiusMeters: radiusValue,
-            createdAt: createdAtValue
-        )
-    }
-
-    private static func parseGoal(from record: CKRecord) -> GoalPayload? {
-        guard isGoalRecordType(record.recordType) else { return nil }
-        guard let id = UUID(uuidString: record.recordID.recordName) else { return nil }
-
-        let titleValue = stringValue(in: record, keys: ["title", "TITLE", "ztitle", "ZTITLE", "cd_title"])
-        let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
-        let notesValue = stringValue(in: record, keys: ["notes", "NOTES", "znotes", "ZNOTES", "cd_notes"])
-        let targetDateValue = dateValue(in: record, keys: ["targetDate", "TARGETDATE", "ztargetdate", "ZTARGETDATE", "cd_targetdate"])
-        let statusValue = stringValue(
-            in: record,
-            keys: ["statusRawValue", "STATUSRAWVALUE", "zstatusrawvalue", "ZSTATUSRAWVALUE", "cd_statusrawvalue"]
-        ).flatMap(RoutineGoalStatus.init(rawValue:))
-        let colorValue = stringValue(
-            in: record,
-            keys: ["colorRawValue", "COLORRAWVALUE", "zcolorrawvalue", "ZCOLORRAWVALUE", "cd_colorrawvalue"]
-        ).flatMap(RoutineTaskColor.init(rawValue:))
-        let createdAtValue = dateValue(in: record, keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"])
-        let sortOrderValue = intValue(in: record, keys: ["sortOrder", "SORTORDER", "zsortorder", "ZSORTORDER", "cd_sortorder"])
-
-        guard
-            titleValue != nil
-                || emojiValue != nil
-                || notesValue != nil
-                || targetDateValue != nil
-                || statusValue != nil
-                || colorValue != nil
-                || createdAtValue != nil
-                || sortOrderValue != nil
-        else {
-            return nil
-        }
-
-        return GoalPayload(
-            id: id,
-            title: titleValue,
-            emoji: emojiValue,
-            notes: notesValue,
-            targetDate: targetDateValue,
-            status: statusValue,
-            color: colorValue,
-            createdAt: createdAtValue,
-            sortOrder: sortOrderValue
-        )
-    }
-
-    private static func parseLog(from record: CKRecord) -> LogPayload? {
-        guard isLogRecordType(record.recordType) else { return nil }
-        guard let id = UUID(uuidString: record.recordID.recordName) else {
-            return nil
-        }
-
-        guard let taskID = uuidValue(in: record, keys: ["taskID", "taskId", "TASKID", "ztaskid", "ZTASKID", "cd_taskid"]) else {
-            return nil
-        }
-
-        let timestamp = dateValue(in: record, keys: ["timestamp", "TIMESTAMP", "ztimestamp", "ZTIMESTAMP", "cd_timestamp"])
-        let kindRawValue = stringValue(in: record, keys: ["kindRawValue", "kind", "KINDRAWVALUE", "zkindrawvalue", "ZKINDRAWVALUE", "cd_kindrawvalue"])
-        let actualDurationMinutes = intValue(
-            in: record,
-            keys: [
-                "actualDurationMinutes",
-                "ACTUALDURATIONMINUTES",
-                "zactualdurationminutes",
-                "ZACTUALDURATIONMINUTES",
-                "cd_actualdurationminutes"
-            ]
-        )
-        return LogPayload(
-            id: id,
-            timestamp: timestamp,
-            taskID: taskID,
-            kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed,
-            actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
-        )
     }
 
     @MainActor
