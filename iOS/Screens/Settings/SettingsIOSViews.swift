@@ -28,142 +28,20 @@ struct SettingsIOSRootView: View {
     var body: some View {
         WithPerceptionTracking {
             List {
-                Section {
-                    NavigationLink {
-                        SettingsNotificationsDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "bell.badge.fill",
-                            tint: .red,
-                            title: "Notifications",
-                            subtitle: store.notifications.overviewSubtitle,
-                            value: store.notifications.notificationsEnabled ? "On" : "Off"
-                        )
-                    }
-
-                    NavigationLink {
-                        SettingsCalendarDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "calendar.badge.plus",
-                            tint: .purple,
-                            title: "Calendar",
-                            subtitle: store.appearance.showPersianDates
-                                ? "Review tasks and show Persian dates"
-                                : "Review tasks and date display",
-                            value: store.appearance.showPersianDates ? "Persian" : nil
-                        )
-                    }
-
-                    NavigationLink {
-                        SettingsPlacesDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "mappin.and.ellipse",
-                            tint: .blue,
-                            title: "Places",
-                            subtitle: store.places.overviewSubtitle
-                        )
-                    }
-
-                    NavigationLink {
-                        SettingsTagsDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "tag.fill",
-                            tint: .pink,
-                            title: "Tags",
-                            subtitle: store.tags.overviewSubtitle
-                        )
-                    }
-
-                    NavigationLink {
-                        SettingsAppearanceDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "app.badge.fill",
-                            tint: .orange,
-                            title: "Appearance",
-                            subtitle: store.appearance.overviewSubtitle
-                        )
-                    }
-
-                    NavigationLink {
-                        SettingsCloudDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "icloud.fill",
-                            tint: .cyan,
-                            title: "iCloud",
-                            subtitle: store.cloud.overviewSubtitle,
-                            value: store.cloud.cloudSyncAvailable ? nil : "Off"
-                        )
-                    }
-
-                    if store.appearance.isGitFeaturesEnabled {
-                        NavigationLink {
-                            SettingsGitDetailView(store: store)
-                        } label: {
-                            SettingsNavigationRow(
-                                icon: "arrow.triangle.branch",
-                                tint: .indigo,
-                                title: "Git",
-                                subtitle: {
-                                    let ghConnected = store.github.connectedRepository != nil
-                                    let glConnected = store.gitlab.isConnected
-                                    if ghConnected && glConnected { return "GitHub & GitLab connected" }
-                                    if glConnected { return store.gitlab.overviewSubtitle }
-                                    return store.github.overviewSubtitle
-                                }(),
-                                value: (store.github.connectedRepository != nil || store.gitlab.isConnected) ? "Live" : nil
-                            )
+                ForEach(
+                    SettingsIOSSection.compactSectionGroups(
+                        isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
+                    ),
+                    id: \.self
+                ) { sections in
+                    Section {
+                        ForEach(sections) { section in
+                            NavigationLink {
+                                SettingsIOSDetailView(section: section, store: store)
+                            } label: {
+                                SettingsIOSSectionRow(section: section, store: store)
+                            }
                         }
-                    }
-
-                    NavigationLink {
-                        SettingsQuickAddDetailView()
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "text.badge.plus",
-                            tint: .mint,
-                            title: "Quick Add",
-                            subtitle: "Supported syntax and examples"
-                        )
-                    }
-                }
-
-                Section {
-                    NavigationLink {
-                        SettingsDataBackupDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "externaldrive.fill",
-                            tint: .indigo,
-                            title: "Data Backup",
-                            subtitle: store.dataTransfer.overviewSubtitle
-                        )
-                    }
-
-                    NavigationLink {
-                        SettingsSupportDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "envelope.fill",
-                            tint: .green,
-                            title: "Support",
-                            subtitle: "Contact us by email"
-                        )
-                    }
-
-                    NavigationLink {
-                        SettingsAboutDetailView(store: store)
-                    } label: {
-                        SettingsNavigationRow(
-                            icon: "info.circle.fill",
-                            tint: .gray,
-                            title: "About",
-                            subtitle: store.diagnostics.aboutOverviewSubtitle
-                        )
                     }
                 }
             }
@@ -183,7 +61,7 @@ private struct SettingsIPadSplitView: View {
             NavigationSplitView {
                 List(selection: $selectedSection) {
                     ForEach(SettingsIOSSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
-                        SettingsIPadSidebarRow(
+                        SettingsIOSSectionRow(
                             section: section,
                             store: store
                         )
@@ -194,7 +72,7 @@ private struct SettingsIPadSplitView: View {
                 .navigationTitle("Settings")
                 .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 400)
             } detail: {
-                settingsDetail(for: selectedDetailSection)
+                SettingsIOSDetailView(section: selectedDetailSection, store: store)
             }
             .navigationSplitViewStyle(.balanced)
             .onChange(of: store.appearance.isGitFeaturesEnabled) { _, isEnabled in
@@ -212,9 +90,15 @@ private struct SettingsIPadSplitView: View {
         }
         return fallback
     }
+}
 
-    @ViewBuilder
-    private func settingsDetail(for section: SettingsIOSSection) -> some View {
+private typealias SettingsIOSSection = SettingsSectionID
+
+private struct SettingsIOSDetailView: View {
+    let section: SettingsIOSSection
+    let store: StoreOf<SettingsFeature>
+
+    var body: some View {
         switch section {
         case .notifications:
             SettingsNotificationsDetailView(store: store)
@@ -240,37 +124,6 @@ private struct SettingsIPadSplitView: View {
             SettingsSupportDetailView(store: store)
         case .about:
             SettingsAboutDetailView(store: store)
-        }
-    }
-}
-
-private typealias SettingsIOSSection = SettingsSectionID
-
-private extension SettingsIOSSection {
-    var tint: Color {
-        switch self {
-        case .notifications:
-            return .red
-        case .calendar:
-            return .purple
-        case .places:
-            return .blue
-        case .tags:
-            return .pink
-        case .appearance:
-            return .orange
-        case .iCloud:
-            return .cyan
-        case .git, .backup:
-            return .indigo
-        case .quickAdd:
-            return .mint
-        case .shortcuts:
-            return .teal
-        case .support:
-            return .green
-        case .about:
-            return .gray
         }
     }
 }
@@ -360,7 +213,7 @@ private struct SettingsQuickAddDetailView: View {
     }
 }
 
-private struct SettingsIPadSidebarRow: View {
+private struct SettingsIOSSectionRow: View {
     let section: SettingsIOSSection
     let store: StoreOf<SettingsFeature>
 

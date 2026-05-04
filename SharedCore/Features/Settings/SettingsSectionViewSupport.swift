@@ -29,6 +29,26 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    static func compactSectionGroups(isGitFeaturesEnabled: Bool) -> [[SettingsSectionID]] {
+        [
+            [
+                .notifications,
+                .calendar,
+                .places,
+                .tags,
+                .appearance,
+                .iCloud,
+                .git,
+                .quickAdd
+            ].filter { $0 != .git || isGitFeaturesEnabled },
+            [
+                .backup,
+                .support,
+                .about
+            ]
+        ]
+    }
+
     var title: String {
         switch self {
         case .notifications: return "Notifications"

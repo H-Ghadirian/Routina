@@ -245,6 +245,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsRoutineDataTransferExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsRoutineDataTransferSupport.swift",
                 "SharedCore/Features/Settings/SettingsSectionViewSupport.swift",
+                "SharedCore/Features/Settings/SettingsSectionStyleSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsTagPersistenceSupport.swift",
