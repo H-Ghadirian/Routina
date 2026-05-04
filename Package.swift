@@ -384,6 +384,7 @@ let package = Package(
                 "SharedCore/Services/GitStatsFileStore.swift",
                 "SharedCore/Services/GitHubStatsClient.swift",
                 "SharedCore/Services/GitHubStatsPayloads.swift",
+                "SharedCore/Services/GitHubStatsRESTSupport.swift",
                 "SharedCore/Services/GitHubWidgetService.swift",
                 "SharedCore/Services/GitLabStatsClient.swift",
                 "SharedCore/Services/GitLabWidgetService.swift",
