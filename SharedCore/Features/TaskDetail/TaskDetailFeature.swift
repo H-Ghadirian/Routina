@@ -361,6 +361,61 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func completionLogActionHandler() -> TaskDetailCompletionLogActionHandler {
+        TaskDetailCompletionLogActionHandler(
+            now: { now },
+            calendar: calendar,
+            resolvedSelectedDay: { selectedDate in
+                resolvedSelectedDay(for: selectedDate)
+            },
+            removePendingLocalCompletion: { day, state in
+                removePendingLocalCompletion(on: day, from: &state)
+            },
+            removeCompletion: { day, state in
+                removeCompletion(on: day, from: &state)
+            },
+            removeLogEntryLocally: { timestamp, state in
+                removeLogEntry(at: timestamp, from: &state)
+            },
+            logsPreservingPendingLocalCompletions: { logs, state in
+                logsPreservingPendingLocalCompletions(logs, in: &state)
+            },
+            upsertLocalLog: { date, state in
+                upsertLocalLog(at: date, in: &state)
+            },
+            refreshTaskView: { state in
+                refreshTaskView(&state)
+            },
+            updateDerivedState: { state in
+                updateDerivedState(&state)
+            },
+            persistUndoCompletion: { taskID, completedDay in
+                handleUndoCompletion(taskID: taskID, completedDay: completedDay)
+            },
+            persistRemoveLogEntry: { taskID, timestamp in
+                handleRemoveLogEntry(taskID: taskID, timestamp: timestamp)
+            },
+            persistLogDuration: { taskID, logID, previousDuration, duration in
+                handleUpdateLogDuration(
+                    taskID: taskID,
+                    logID: logID,
+                    previousDurationMinutes: previousDuration,
+                    durationMinutes: duration
+                )
+            },
+            persistTaskDuration: { taskID, previousDuration, duration in
+                handleUpdateTaskDuration(
+                    taskID: taskID,
+                    previousDurationMinutes: previousDuration,
+                    durationMinutes: duration
+                )
+            },
+            persistConfirmAssumedPastDays: { taskID, days in
+                handleConfirmAssumedPastDays(taskID: taskID, days: days)
+            }
+        )
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -585,48 +640,23 @@ struct TaskDetailFeature: Reducer {
             }
 
         case .undoSelectedDateCompletion:
-            if state.task.isChecklistDriven {
-                return .none
-            }
-            let selectedDay = resolvedSelectedDay(for: state.selectedDate)
-            removePendingLocalCompletion(on: selectedDay, from: &state)
-            removeCompletion(on: selectedDay, from: &state)
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handleUndoCompletion(taskID: state.task.id, completedDay: selectedDay)
+            return completionLogActionHandler().undoSelectedDateCompletion(state: &state)
 
         case .requestUndoSelectedDateCompletion:
             return dialogLifecycleActionHandler().requestUndoSelectedDateCompletion(state: &state)
 
         case let .removeLogEntry(timestamp):
-            removePendingLocalCompletion(on: timestamp, from: &state)
-            removeLogEntry(at: timestamp, from: &state)
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handleRemoveLogEntry(taskID: state.task.id, timestamp: timestamp)
+            return completionLogActionHandler().removeLogEntry(timestamp, state: &state)
 
         case let .updateLogDuration(logID, durationMinutes):
-            let sanitizedDuration = RoutineLog.sanitizedActualDurationMinutes(durationMinutes)
-            let previousDuration = state.logs.first(where: { $0.id == logID })?.actualDurationMinutes
-            if let index = state.logs.firstIndex(where: { $0.id == logID }) {
-                state.logs[index].actualDurationMinutes = sanitizedDuration
-            }
-            return handleUpdateLogDuration(
-                taskID: state.task.id,
+            return completionLogActionHandler().updateLogDuration(
                 logID: logID,
-                previousDurationMinutes: previousDuration,
-                durationMinutes: sanitizedDuration
+                durationMinutes: durationMinutes,
+                state: &state
             )
 
         case let .updateTaskDuration(durationMinutes):
-            let sanitizedDuration = RoutineTask.sanitizedActualDurationMinutes(durationMinutes)
-            let previousDuration = state.task.actualDurationMinutes
-            state.task.actualDurationMinutes = sanitizedDuration
-            return handleUpdateTaskDuration(
-                taskID: state.task.id,
-                previousDurationMinutes: previousDuration,
-                durationMinutes: sanitizedDuration
-            )
+            return completionLogActionHandler().updateTaskDuration(durationMinutes, state: &state)
 
         case let .requestRemoveLogEntry(timestamp):
             return dialogLifecycleActionHandler().requestRemoveLogEntry(timestamp, state: &state)
@@ -882,27 +912,7 @@ struct TaskDetailFeature: Reducer {
             return handleEditSave(request)
 
         case .confirmAssumedPastDays:
-            let assumedDays = RoutineAssumedCompletion.assumedDates(
-                for: state.task,
-                through: now,
-                logs: state.logs,
-                includeToday: true,
-                calendar: calendar
-            )
-            guard !assumedDays.isEmpty else { return .none }
-
-            for day in assumedDays {
-                let completionDate = RoutineAssumedCompletion.completionTimestamp(
-                    for: day,
-                    referenceDate: now,
-                    calendar: calendar
-                )
-                _ = state.task.advance(completedAt: completionDate, calendar: calendar)
-                upsertLocalLog(at: completionDate, in: &state)
-            }
-            refreshTaskView(&state)
-            updateDerivedState(&state)
-            return handleConfirmAssumedPastDays(taskID: state.task.id, days: assumedDays)
+            return completionLogActionHandler().confirmAssumedPastDays(state: &state)
 
         case let .setDeleteConfirmation(isPresented):
             return dialogLifecycleActionHandler().setDeleteConfirmation(isPresented, state: &state)
@@ -914,12 +924,7 @@ struct TaskDetailFeature: Reducer {
             )
 
         case .confirmUndoCompletion:
-            state.isUndoCompletionConfirmationPresented = false
-            if let timestamp = state.pendingLogRemovalTimestamp {
-                state.pendingLogRemovalTimestamp = nil
-                return reduce(into: &state, action: .removeLogEntry(timestamp))
-            }
-            return reduce(into: &state, action: .undoSelectedDateCompletion)
+            return completionLogActionHandler().confirmUndoCompletion(state: &state)
 
         case .deleteRoutineConfirmed:
             state.isDeleteConfirmationPresented = false
@@ -932,9 +937,7 @@ struct TaskDetailFeature: Reducer {
             return dialogLifecycleActionHandler().deleteDismissHandled(state: &state)
 
         case let .logsLoaded(logs):
-            state.logs = logsPreservingPendingLocalCompletions(logs, in: &state)
-            updateDerivedState(&state)
-            return .none
+            return completionLogActionHandler().logsLoaded(logs, state: &state)
 
         case .openLinkedTask:
             return .none
