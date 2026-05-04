@@ -77,12 +77,11 @@ struct TimelineView: View {
     }
 
     private func ensureTimelineSelection() {
-        guard usesSidebarLayout else { return }
-        let ids = visibleTimelineEntryIDs
-        if let selectedTimelineEntryID, ids.contains(selectedTimelineEntryID) {
-            return
-        }
-        selectedTimelineEntryID = ids.first
+        selectedTimelineEntryID = TimelineSelectionSupport.resolvedSelection(
+            currentSelection: selectedTimelineEntryID,
+            visibleEntryIDs: visibleTimelineEntryIDs,
+            usesSidebarLayout: usesSidebarLayout
+        )
     }
 
     private var filterSheetBinding: Binding<Bool> {
