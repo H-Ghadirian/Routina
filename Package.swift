@@ -242,6 +242,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsGitLabSupport.swift",
                 "SharedCore/Features/Settings/SettingsNotificationsExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsNotificationsSupport.swift",
+                "SharedCore/Features/Settings/SettingsPlaceActionSupport.swift",
                 "SharedCore/Features/Settings/SettingsPlaceSupport.swift",
                 "SharedCore/Features/Settings/SettingsPlaceExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsPlacesViewSupport.swift",

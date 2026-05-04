@@ -416,8 +416,10 @@ struct SettingsFeature {
                 )
 
             case let .setDeletePlaceConfirmation(isPresented):
-                SettingsPlaceEditor.setDeleteConfirmation(isPresented, state: &state.places)
-                return .none
+                return SettingsPlaceActionHandler.setDeletePlaceConfirmation(
+                    isPresented,
+                    state: &state.places
+                )
 
             case let .setDeleteTagConfirmation(isPresented):
                 SettingsTagEditor.setDeleteConfirmation(isPresented, state: &state.tags)
@@ -428,8 +430,10 @@ struct SettingsFeature {
                 return .none
 
             case let .placesLoaded(places):
-                SettingsPlaceEditor.loadedPlaces(places, state: &state.places)
-                return .none
+                return SettingsPlaceActionHandler.placesLoaded(
+                    places,
+                    state: &state.places
+                )
 
             case let .tagsLoaded(tags):
                 return SettingsFastFilterActionHandler.tagsLoaded(
@@ -464,12 +468,16 @@ struct SettingsFeature {
                 )
 
             case let .locationSnapshotUpdated(snapshot):
-                SettingsPlaceEditor.applyLocationSnapshot(snapshot, state: &state.places)
-                return .none
+                return SettingsPlaceActionHandler.locationSnapshotUpdated(
+                    snapshot,
+                    state: &state.places
+                )
 
             case let .placeDraftNameChanged(name):
-                SettingsPlaceEditor.updateDraftName(name, state: &state.places)
-                return .none
+                return SettingsPlaceActionHandler.placeDraftNameChanged(
+                    name,
+                    state: &state.places
+                )
 
             case let .tagRenameDraftChanged(name):
                 SettingsTagEditor.updateRenameDraft(name, state: &state.tags)
@@ -535,12 +543,16 @@ struct SettingsFeature {
                 )
 
             case let .placeDraftCoordinateChanged(coordinate):
-                SettingsPlaceEditor.updateDraftCoordinate(coordinate, state: &state.places)
-                return .none
+                return SettingsPlaceActionHandler.placeDraftCoordinateChanged(
+                    coordinate,
+                    state: &state.places
+                )
 
             case let .placeDraftRadiusChanged(radius):
-                SettingsPlaceEditor.updateDraftRadius(radius, state: &state.places)
-                return .none
+                return SettingsPlaceActionHandler.placeDraftRadiusChanged(
+                    radius,
+                    state: &state.places
+                )
 
             case let .renameTagTapped(tagName):
                 guard SettingsTagEditor.beginRename(tagName: tagName, state: &state.tags) else {
@@ -549,12 +561,8 @@ struct SettingsFeature {
                 return .none
 
             case .savePlaceTapped:
-                guard let request = SettingsPlaceEditor.prepareSave(state: &state.places) else {
-                    return .none
-                }
-
-                return SettingsPlaceExecution.save(
-                    request,
+                return SettingsPlaceActionHandler.savePlaceTapped(
+                    state: &state.places,
                     modelContext: self.modelContext
                 )
 
@@ -583,10 +591,10 @@ struct SettingsFeature {
                 )
 
             case let .deletePlaceTapped(placeID):
-                guard SettingsPlaceEditor.beginDelete(placeID: placeID, state: &state.places) else {
-                    return .none
-                }
-                return .none
+                return SettingsPlaceActionHandler.deletePlaceTapped(
+                    placeID,
+                    state: &state.places
+                )
 
             case let .deleteTagTapped(tagName):
                 guard SettingsTagEditor.beginDelete(tagName: tagName, state: &state.tags) else {
@@ -595,11 +603,8 @@ struct SettingsFeature {
                 return .none
 
             case .deletePlaceConfirmed:
-                guard let request = SettingsPlaceEditor.prepareDeleteConfirmation(state: &state.places) else {
-                    return .none
-                }
-                return SettingsPlaceExecution.delete(
-                    request,
+                return SettingsPlaceActionHandler.deletePlaceConfirmed(
+                    state: &state.places,
                     modelContext: self.modelContext
                 )
 
@@ -626,12 +631,11 @@ struct SettingsFeature {
                 )
 
             case let .placeOperationFinished(success, message):
-                SettingsPlaceEditor.finishOperation(
+                return SettingsPlaceActionHandler.placeOperationFinished(
                     success: success,
                     message: message,
                     state: &state.places
                 )
-                return .none
 
             case let .tagOperationFinished(_, message):
                 SettingsTagEditor.finishOperation(message: message, state: &state.tags)
