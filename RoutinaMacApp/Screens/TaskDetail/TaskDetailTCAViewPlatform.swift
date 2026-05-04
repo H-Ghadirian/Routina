@@ -136,7 +136,8 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
         }
     }
 
-    final class Coordinator: NSObject, NSSharingServicePickerDelegate, NSCloudSharingServiceDelegate {
+    @MainActor
+    final class Coordinator: NSObject, NSSharingServicePickerDelegate, @preconcurrency NSCloudSharingServiceDelegate {
         var task: RoutineTask?
         private var activeProvider: NSItemProvider?
         private weak var activeAnchorView: NSView?
@@ -204,6 +205,7 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
             return activeAnchorView
         }
 
+        @MainActor
         func sharingService(
             _ sharingService: NSSharingService,
             didCompleteForItems items: [Any],
@@ -224,6 +226,7 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
             activeCloudSharingService = nil
         }
 
+        @MainActor
         private func presentCloudSharingUnavailableAlert(from view: NSView) {
             let alert = NSAlert()
             alert.messageText = "Cloud Sharing Unavailable"
@@ -236,6 +239,7 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
             }
         }
 
+        @MainActor
         private func presentCloudSharingErrorAlert(_ error: Error, from view: NSView) {
             let alert = NSAlert(error: error)
             if let window = view.window {
