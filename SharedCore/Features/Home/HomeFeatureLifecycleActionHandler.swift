@@ -16,6 +16,7 @@ struct HomeFeatureLifecycleActionHandler<State: HomeFeatureLifecycleState, Actio
     var persistTemporaryViewState: (State) -> Void
     var loadOnAppearEffect: () -> Effect<Action>
     var manualRefreshEffect: () -> Effect<Action>
+    var loadFailureLogger: (String) -> Void = { print($0) }
 
     func onAppear(state: inout State) -> Effect<Action> {
         applyTemporaryViewState(temporaryViewState(), &state)
@@ -28,7 +29,7 @@ struct HomeFeatureLifecycleActionHandler<State: HomeFeatureLifecycleState, Actio
     }
 
     func tasksLoadFailed() -> Effect<Action> {
-        print("Failed to load tasks.")
+        HomeFeatureLoadFailureSupport.logFailure(using: loadFailureLogger)
         return .none
     }
 
