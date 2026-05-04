@@ -275,184 +275,72 @@ struct SettingsFeature {
                 )
 
             case let .gitHubScopeChanged(scope):
-                state.github.scope = scope
-                state.github.statusMessage = ""
-                return .none
+                return SettingsGitConnectionActionHandler.gitHubScopeChanged(
+                    scope,
+                    state: &state.github
+                )
 
             case let .gitHubOwnerChanged(owner):
-                state.github.repositoryOwner = owner
-                return .none
+                return SettingsGitConnectionActionHandler.gitHubOwnerChanged(
+                    owner,
+                    state: &state.github
+                )
 
             case let .gitHubRepositoryChanged(name):
-                state.github.repositoryName = name
-                return .none
+                return SettingsGitConnectionActionHandler.gitHubRepositoryChanged(
+                    name,
+                    state: &state.github
+                )
 
             case let .gitHubTokenChanged(token):
-                state.github.accessTokenDraft = token
-                return .none
+                return SettingsGitConnectionActionHandler.gitHubTokenChanged(
+                    token,
+                    state: &state.github
+                )
 
             case .saveGitHubConnectionTapped:
-                guard !state.github.isSaveDisabled else {
-                    if let validationMessage = state.github.saveValidationMessage {
-                        state.github.statusMessage = validationMessage
-                    }
-                    return .none
-                }
-
-                state.github.isOperationInProgress = true
-                state.github.statusMessage = ""
-
-                let configuration = GitHubStatsConfiguration(
-                    scope: state.github.scope,
-                    repository: state.github.scope == .repository
-                        ? GitHubRepositoryReference(
-                            owner: state.github.repositoryOwner,
-                            name: state.github.repositoryName
-                        )
-                        : nil,
-                    viewerLogin: nil
+                return SettingsGitConnectionActionHandler.saveGitHubConnectionTapped(
+                    state: &state.github,
+                    gitHubStatsClient: gitHubStatsClient
                 )
-                let accessToken = state.github.accessTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                return .run { send in
-                    do {
-                        let connection = try await self.gitHubStatsClient.saveConnection(
-                            configuration,
-                            accessToken.isEmpty ? nil : accessToken
-                        )
-                        let message: String = switch connection.scope {
-                        case .repository:
-                            "Connected to \(connection.repository?.fullName ?? "repository")."
-                        case .profile:
-                            "Connected to @\(connection.viewerLogin ?? "viewer") GitHub profile."
-                        }
-                        await send(
-                            .gitHubConnectionUpdateFinished(
-                                connection: connection,
-                                success: true,
-                                message: message
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .gitHubConnectionUpdateFinished(
-                                connection: self.gitHubStatsClient.loadConnectionStatus(),
-                                success: false,
-                                message: error.localizedDescription
-                            )
-                        )
-                    }
-                }
 
             case .clearGitHubConnectionTapped:
-                state.github.isOperationInProgress = true
-                state.github.statusMessage = ""
-                let draftScope = state.github.scope
-
-                return .run { send in
-                    do {
-                        try self.gitHubStatsClient.clearConnection()
-                        await send(
-                            .gitHubConnectionUpdateFinished(
-                                connection: .disconnected(scope: draftScope),
-                                success: true,
-                                message: "GitHub connection removed."
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .gitHubConnectionUpdateFinished(
-                                connection: self.gitHubStatsClient.loadConnectionStatus(),
-                                success: false,
-                                message: error.localizedDescription
-                            )
-                        )
-                    }
-                }
+                return SettingsGitConnectionActionHandler.clearGitHubConnectionTapped(
+                    state: &state.github,
+                    gitHubStatsClient: gitHubStatsClient
+                )
 
             case let .gitHubConnectionUpdateFinished(connection, _, message):
-                state.github.isOperationInProgress = false
-                state.github.scope = connection.scope
-                state.github.connectedScope = connection.scope
-                state.github.connectedRepository = connection.repository
-                state.github.connectedViewerLogin = connection.viewerLogin
-                state.github.hasSavedAccessToken = connection.hasAccessToken
-                state.github.statusMessage = message
-                state.github.accessTokenDraft = ""
-                state.github.repositoryOwner = connection.repository?.owner ?? ""
-                state.github.repositoryName = connection.repository?.name ?? ""
-                return .none
+                return SettingsGitConnectionActionHandler.gitHubConnectionUpdateFinished(
+                    connection: connection,
+                    message: message,
+                    state: &state.github
+                )
 
             case let .gitLabTokenChanged(token):
-                state.gitlab.accessTokenDraft = token
-                return .none
+                return SettingsGitConnectionActionHandler.gitLabTokenChanged(
+                    token,
+                    state: &state.gitlab
+                )
 
             case .saveGitLabConnectionTapped:
-                guard !state.gitlab.isSaveDisabled else {
-                    if let validationMessage = state.gitlab.saveValidationMessage {
-                        state.gitlab.statusMessage = validationMessage
-                    }
-                    return .none
-                }
-
-                state.gitlab.isOperationInProgress = true
-                state.gitlab.statusMessage = ""
-                let accessToken = state.gitlab.accessTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                return .run { send in
-                    do {
-                        let connection = try await self.gitLabStatsClient.saveConnection(accessToken)
-                        let message = "Connected to @\(connection.username ?? "viewer") GitLab profile."
-                        await send(
-                            .gitLabConnectionUpdateFinished(
-                                connection: connection,
-                                success: true,
-                                message: message
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .gitLabConnectionUpdateFinished(
-                                connection: self.gitLabStatsClient.loadConnectionStatus(),
-                                success: false,
-                                message: error.localizedDescription
-                            )
-                        )
-                    }
-                }
+                return SettingsGitConnectionActionHandler.saveGitLabConnectionTapped(
+                    state: &state.gitlab,
+                    gitLabStatsClient: gitLabStatsClient
+                )
 
             case .clearGitLabConnectionTapped:
-                state.gitlab.isOperationInProgress = true
-                state.gitlab.statusMessage = ""
-
-                return .run { send in
-                    do {
-                        try self.gitLabStatsClient.clearConnection()
-                        await send(
-                            .gitLabConnectionUpdateFinished(
-                                connection: .disconnected,
-                                success: true,
-                                message: "GitLab connection removed."
-                            )
-                        )
-                    } catch {
-                        await send(
-                            .gitLabConnectionUpdateFinished(
-                                connection: self.gitLabStatsClient.loadConnectionStatus(),
-                                success: false,
-                                message: error.localizedDescription
-                            )
-                        )
-                    }
-                }
+                return SettingsGitConnectionActionHandler.clearGitLabConnectionTapped(
+                    state: &state.gitlab,
+                    gitLabStatsClient: gitLabStatsClient
+                )
 
             case let .gitLabConnectionUpdateFinished(connection, _, message):
-                state.gitlab.isOperationInProgress = false
-                state.gitlab.connectedUsername = connection.username
-                state.gitlab.hasSavedAccessToken = connection.hasAccessToken
-                state.gitlab.statusMessage = message
-                state.gitlab.accessTokenDraft = ""
-                return .none
+                return SettingsGitConnectionActionHandler.gitLabConnectionUpdateFinished(
+                    connection: connection,
+                    message: message,
+                    state: &state.gitlab
+                )
 
             case .tagManagerAppeared:
                 return .run { @MainActor send in

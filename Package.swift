@@ -234,6 +234,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsDiagnosticsSupport.swift",
                 "SharedCore/Features/Settings/SettingsExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsFeedbackSupport.swift",
+                "SharedCore/Features/Settings/SettingsGitConnectionActionSupport.swift",
                 "SharedCore/Features/Settings/SettingsGitLabSupport.swift",
                 "SharedCore/Features/Settings/SettingsNotificationsExecutionSupport.swift",
                 "SharedCore/Features/Settings/SettingsNotificationsSupport.swift",
