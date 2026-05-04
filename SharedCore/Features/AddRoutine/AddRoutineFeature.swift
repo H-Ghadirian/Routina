@@ -81,6 +81,10 @@ struct AddRoutineFeature: Reducer {
     var onSave: (AddRoutineSaveRequest) -> Effect<Action>
     var onCancel: () -> Effect<Action>
 
+    private func scheduleMutationHandler() -> AddRoutineScheduleMutationHandler {
+        AddRoutineScheduleMutationHandler(now: { now })
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .routineNameChanged(name):
@@ -195,18 +199,7 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .taskTypeChanged(taskType):
-            var basics = state.basics
-            var schedule = state.schedule
-            AddRoutineFormEditor.setTaskType(
-                taskType,
-                basics: &basics,
-                schedule: &schedule
-            )
-            state.basics = basics
-            state.schedule = schedule
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().setTaskType(taskType, state: &state)
             return .none
 
         case let .availableTagsChanged(tags):
@@ -323,13 +316,7 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .scheduleModeChanged(mode):
-            AddRoutineScheduleEditor.setScheduleMode(
-                mode,
-                schedule: &state.schedule
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().setScheduleMode(mode, state: &state)
             return .none
 
         case let .stepDraftChanged(value):
@@ -340,22 +327,11 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case .addStepTapped:
-            AddRoutineChecklistEditor.addStep(
-                checklist: &state.checklist
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().addStep(state: &state)
             return .none
 
         case let .removeStep(stepID):
-            AddRoutineChecklistEditor.removeStep(
-                stepID,
-                checklist: &state.checklist
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().removeStep(stepID, state: &state)
             return .none
 
         case let .moveStepUp(stepID):
@@ -389,91 +365,43 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case .addChecklistItemTapped:
-            AddRoutineChecklistEditor.addChecklistItem(
-                createdAt: now,
-                checklist: &state.checklist
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().addChecklistItem(state: &state)
             return .none
 
         case let .removeChecklistItem(itemID):
-            AddRoutineChecklistEditor.removeChecklistItem(
-                itemID,
-                checklist: &state.checklist
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().removeChecklistItem(itemID, state: &state)
             return .none
 
         case let .frequencyChanged(freq):
-            AddRoutineScheduleEditor.setFrequency(
-                freq,
-                schedule: &state.schedule
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().setFrequency(freq, state: &state)
             return .none
 
         case let .frequencyValueChanged(value):
-            AddRoutineScheduleEditor.setFrequencyValue(
-                value,
-                schedule: &state.schedule
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().setFrequencyValue(value, state: &state)
             return .none
 
         case let .recurrenceKindChanged(kind):
-            AddRoutineScheduleEditor.setRecurrenceKind(
-                kind,
-                schedule: &state.schedule
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().setRecurrenceKind(kind, state: &state)
             return .none
 
         case let .recurrenceHasExplicitTimeChanged(hasExplicitTime):
-            AddRoutineScheduleEditor.setRecurrenceHasExplicitTime(
-                hasExplicitTime,
-                schedule: &state.schedule
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().setRecurrenceHasExplicitTime(hasExplicitTime, state: &state)
             return .none
 
         case let .recurrenceTimeOfDayChanged(timeOfDay):
-            AddRoutineScheduleEditor.setRecurrenceTimeOfDay(
-                timeOfDay,
-                schedule: &state.schedule
-            )
-            if !state.canAutoAssumeDailyDone {
-                state.schedule.autoAssumeDailyDone = false
-            }
+            scheduleMutationHandler().setRecurrenceTimeOfDay(timeOfDay, state: &state)
             return .none
 
         case let .recurrenceWeekdayChanged(weekday):
-            AddRoutineScheduleEditor.setRecurrenceWeekday(
-                weekday,
-                schedule: &state.schedule
-            )
+            scheduleMutationHandler().setRecurrenceWeekday(weekday, state: &state)
             return .none
 
         case let .recurrenceDayOfMonthChanged(dayOfMonth):
-            AddRoutineScheduleEditor.setRecurrenceDayOfMonth(
-                dayOfMonth,
-                schedule: &state.schedule
-            )
+            scheduleMutationHandler().setRecurrenceDayOfMonth(dayOfMonth, state: &state)
             return .none
 
         case let .autoAssumeDailyDoneChanged(isEnabled):
-            state.schedule.autoAssumeDailyDone = isEnabled && state.canAutoAssumeDailyDone
+            scheduleMutationHandler().setAutoAssumeDailyDone(isEnabled, state: &state)
             return .none
 
         case let .existingRoutineNamesChanged(names):

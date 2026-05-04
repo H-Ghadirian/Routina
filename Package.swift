@@ -160,6 +160,7 @@ let package = Package(
                 "SharedCore/Features/AddRoutine/AddRoutineFormSupport.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineOrganizationSupport.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineScheduleSupport.swift",
+                "SharedCore/Features/AddRoutine/AddRoutineScheduleMutationHandler.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineSaveSupport.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineFeatureState.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineValidationSupport.swift",
