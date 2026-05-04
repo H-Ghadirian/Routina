@@ -9,10 +9,14 @@ struct DayPlanWeekCalendarView: View {
     var dates: [Date]
     var selectedBlockID: DayPlanBlock.ID?
     var selectedDate: Date
+    var focusedUnplannedCompletedDate: Date?
     var calendar: Calendar
     var dropDurationMinutes: Int
+    var showsUnplannedCompletedBadges: Bool
     var blocksForDate: (Date) -> [DayPlanBlock]
+    var unplannedCompletedCount: (Date) -> Int
     var taskTint: (DayPlanBlock) -> Color
+    var onSelectUnplannedCompletedDate: (Date) -> Void
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onDeleteBlock: (DayPlanBlock) -> Void
@@ -36,8 +40,12 @@ struct DayPlanWeekCalendarView: View {
             DayPlanWeekHeaderRow(
                 dates: dates,
                 selectedDate: selectedDate,
+                focusedUnplannedCompletedDate: focusedUnplannedCompletedDate,
                 calendar: calendar,
-                timeColumnWidth: timeColumnWidth
+                timeColumnWidth: timeColumnWidth,
+                showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
+                unplannedCompletedCount: unplannedCompletedCount,
+                onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
             )
 
             ScrollViewReader { scrollProxy in

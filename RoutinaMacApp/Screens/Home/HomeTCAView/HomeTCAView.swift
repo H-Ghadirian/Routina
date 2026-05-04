@@ -17,6 +17,7 @@ struct HomeTCAView: View {
     @State var addEditFormCoordinator = AddEditFormCoordinator()
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
+    @Environment(\.modelContext) var modelContext
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
@@ -39,6 +40,7 @@ struct HomeTCAView: View {
     @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .details
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
+    @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var isFinishedSprintsExpanded = false
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool

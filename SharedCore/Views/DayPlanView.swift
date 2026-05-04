@@ -48,6 +48,7 @@ struct DayPlanSidebarView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
     @Query private var tasks: [RoutineTask]
+    @Query private var logs: [RoutineLog]
     var usesPanelBackground = true
 
     var body: some View {
@@ -58,8 +59,27 @@ struct DayPlanSidebarView: View {
     private var taskPanel: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Tasks")
-                    .font(.headline)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(sidebarTitle)
+                            .font(.headline)
+
+                        if let focusedDate = planner.focusedUnplannedCompletedDate {
+                            Text("Done on \(focusedDate.formatted(date: .abbreviated, time: .omitted)) and not in planner")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer(minLength: 8)
+
+                    if planner.focusedUnplannedCompletedDate != nil {
+                        Button("Clear") {
+                            planner.clearFocusedUnplannedCompletedTasks()
+                        }
+                        .controlSize(.small)
+                    }
+                }
 
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
@@ -76,9 +96,9 @@ struct DayPlanSidebarView: View {
                 LazyVStack(spacing: 8) {
                     if filteredTasks.isEmpty {
                         ContentUnavailableView(
-                            "No tasks found",
+                            emptyStateTitle,
                             systemImage: "tray",
-                            description: Text("Create or search for a task to add it to the plan.")
+                            description: Text(emptyStateDescription)
                         )
                         .padding(.vertical, 24)
                     } else {
@@ -184,7 +204,17 @@ struct DayPlanSidebarView: View {
     }
 
     private var availableTasks: [RoutineTask] {
-        DayPlanTaskSorting.availableTasks(from: tasks)
+        if let focusedDate = planner.focusedUnplannedCompletedDate {
+            return DayPlanUnplannedCompletedTasks.tasks(
+                on: focusedDate,
+                from: tasks,
+                logs: logs,
+                plannedBlocks: planner.blocks(on: focusedDate, calendar: calendar, context: modelContext),
+                calendar: calendar
+            )
+        }
+
+        return DayPlanTaskSorting.availableTasks(from: tasks)
     }
 
     private var filteredTasks: [RoutineTask] {
@@ -199,18 +229,36 @@ struct DayPlanSidebarView: View {
     private var canCommitBlock: Bool {
         selectedTask != nil && planner.conflictingBlock == nil
     }
+
+    private var sidebarTitle: String {
+        planner.focusedUnplannedCompletedDate == nil ? "Tasks" : "Unplanned Done"
+    }
+
+    private var emptyStateTitle: String {
+        planner.focusedUnplannedCompletedDate == nil ? "No tasks found" : "All done tasks are planned"
+    }
+
+    private var emptyStateDescription: String {
+        planner.focusedUnplannedCompletedDate == nil
+            ? "Create or search for a task to add it to the plan."
+            : "Completed tasks for this day are already placed in the planner."
+    }
 }
 
 struct DayPlanDetailView: View {
     @Environment(\.calendar) private var calendar
     @ObservedObject var planner: DayPlanPlannerState
     var selectedTaskID: UUID? = nil
+    var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             DayPlanHeaderView(planner: planner)
-            DayPlanTimelinePanelView(planner: planner)
+            DayPlanTimelinePanelView(
+                planner: planner,
+                onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
+            )
         }
         .padding(20)
         .onAppear {
@@ -298,7 +346,13 @@ private struct DayPlanTimelinePanelView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
+    var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
+    @Query private var logs: [RoutineLog]
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowDayPlanUnplannedDoneBadges.rawValue,
+        store: SharedDefaults.app
+    ) private var showsUnplannedCompletedBadges = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -315,12 +369,27 @@ private struct DayPlanTimelinePanelView: View {
                 dates: planner.weekDates(calendar: calendar),
                 selectedBlockID: planner.selectedBlockID,
                 selectedDate: planner.selectedDate,
+                focusedUnplannedCompletedDate: planner.focusedUnplannedCompletedDate,
                 calendar: calendar,
                 dropDurationMinutes: planner.durationMinutes,
+                showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
                 blocksForDate: { date in
                     planner.blocks(on: date, calendar: calendar, context: modelContext)
                 },
+                unplannedCompletedCount: { date in
+                    DayPlanUnplannedCompletedTasks.count(
+                        on: date,
+                        tasks: tasks,
+                        logs: logs,
+                        plannedBlocks: planner.blocks(on: date, calendar: calendar, context: modelContext),
+                        calendar: calendar
+                    )
+                },
                 taskTint: taskTint(for:),
+                onSelectUnplannedCompletedDate: { date in
+                    planner.focusUnplannedCompletedTasks(on: date, calendar: calendar)
+                    onSelectUnplannedCompletedDate?(date)
+                },
                 onSelectSlot: { date, minute in
                     planner.selectSlot(on: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
@@ -448,5 +517,8 @@ private struct DayPlanTaskCandidateRow: View {
             )
         }
         .buttonStyle(.plain)
+        .onDrag {
+            NSItemProvider(object: task.id.uuidString as NSString)
+        }
     }
 }

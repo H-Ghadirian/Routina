@@ -85,6 +85,9 @@ extension HomeTCAView {
                 dayPlanPlanner: dayPlanPlanner,
                 mainDetailMode: $macHomeDetailMode,
                 selectedTaskID: store.selectedTaskID,
+                onSelectDayPlanUnplannedCompletedDate: { date in
+                    focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
+                },
                 addRoutineStore: self.store.scope(
                     state: \.addRoutineState,
                     action: \.addRoutineSheet

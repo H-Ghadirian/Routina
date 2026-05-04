@@ -146,6 +146,89 @@ extension HomeTCAView {
         settingsStore.send(.onAppear)
     }
 
+    func focusMacSidebarOnDayPlanUnplannedCompletedTasks(on date: Date) {
+        dayPlanUnplannedCompletedFilterDate = calendar.startOfDay(for: date)
+        macHomeDetailMode = .planner
+        store.send(.macSidebarModeChanged(.routines))
+        store.send(.setMacFilterDetailPresented(false))
+    }
+
+    func clearDayPlanUnplannedCompletedFilter() {
+        dayPlanUnplannedCompletedFilterDate = nil
+        dayPlanPlanner.clearFocusedUnplannedCompletedTasks()
+    }
+
+    func dayPlanUnplannedCompletedDisplays(for date: Date) -> [HomeFeature.RoutineDisplay] {
+        let displays = uniqueDayPlanCandidateDisplays
+        let plannedBlocks = dayPlanPlanner.blocks(on: date, calendar: calendar, context: modelContext)
+        let matchingIDs = DayPlanUnplannedCompletedTasks.taskIDs(
+            on: date,
+            taskIDs: displays.map(\.taskID),
+            lastDoneForTaskID: Dictionary(uniqueKeysWithValues: displays.map { ($0.taskID, $0.lastDone) }),
+            logs: store.timelineLogs,
+            plannedBlocks: plannedBlocks,
+            calendar: calendar
+        )
+
+        return displays
+            .filter { matchingIDs.contains($0.taskID) && !$0.isCanceledOneOff }
+            .sorted { lhs, rhs in
+                let lhsDate = latestCompletionDate(for: lhs.taskID, fallbackLastDone: lhs.lastDone, on: date) ?? .distantPast
+                let rhsDate = latestCompletionDate(for: rhs.taskID, fallbackLastDone: rhs.lastDone, on: date) ?? .distantPast
+                if lhsDate != rhsDate {
+                    return lhsDate > rhsDate
+                }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+    }
+
+    func dayPlanUnplannedCompletedFilterTitle(for date: Date) -> String {
+        let dateText: String
+        if calendar.isDateInToday(date) {
+            dateText = "today"
+        } else if calendar.isDateInYesterday(date) {
+            dateText = "yesterday"
+        } else {
+            dateText = date.formatted(date: .abbreviated, time: .omitted)
+        }
+        return "Done \(dateText) · Not in planner"
+    }
+
+    private var uniqueDayPlanCandidateDisplays: [HomeFeature.RoutineDisplay] {
+        var seenIDs = Set<UUID>()
+        return (store.routineDisplays + store.awayRoutineDisplays + store.archivedRoutineDisplays + store.boardTodoDisplays)
+            .filter { display in
+                guard !seenIDs.contains(display.taskID) else { return false }
+                seenIDs.insert(display.taskID)
+                return true
+            }
+    }
+
+    private func latestCompletionDate(
+        for taskID: UUID,
+        fallbackLastDone: Date?,
+        on date: Date
+    ) -> Date? {
+        let logDate = store.timelineLogs
+            .filter { log in
+                guard log.taskID == taskID,
+                      log.kind == .completed,
+                      let timestamp = log.timestamp
+                else { return false }
+                return calendar.isDate(timestamp, inSameDayAs: date)
+            }
+            .compactMap(\.timestamp)
+            .max()
+
+        guard let fallbackLastDone,
+              calendar.isDate(fallbackLastDone, inSameDayAs: date)
+        else {
+            return logDate
+        }
+
+        return max(logDate ?? fallbackLastDone, fallbackLastDone)
+    }
+
     @ViewBuilder
     var macSidebarContent: some View {
         Group {

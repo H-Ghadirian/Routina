@@ -8,24 +8,28 @@ extension HomeTCAView {
         awayRoutineDisplays: [HomeFeature.RoutineDisplay],
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     ) -> some View {
-        let presentation = macTaskListPresentation(
-            routineDisplays: routineDisplays,
-            awayRoutineDisplays: awayRoutineDisplays,
-            archivedRoutineDisplays: archivedRoutineDisplays
-        )
-
-        if let emptyState = presentation.emptyState {
-            emptyStateView(
-                title: emptyState.title,
-                message: emptyState.message,
-                systemImage: emptyState.systemImage
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if let filterDate = dayPlanUnplannedCompletedFilterDate, macHomeDetailMode == .planner {
+            macDayPlanUnplannedCompletedTaskList(for: filterDate)
         } else {
-            macTaskSourceList(
-                presentation,
-                allowsPlannerDrag: macHomeDetailMode == .planner
+            let presentation = macTaskListPresentation(
+                routineDisplays: routineDisplays,
+                awayRoutineDisplays: awayRoutineDisplays,
+                archivedRoutineDisplays: archivedRoutineDisplays
             )
+
+            if let emptyState = presentation.emptyState {
+                emptyStateView(
+                    title: emptyState.title,
+                    message: emptyState.message,
+                    systemImage: emptyState.systemImage
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                macTaskSourceList(
+                    presentation,
+                    allowsPlannerDrag: macHomeDetailMode == .planner
+                )
+            }
         }
     }
 
@@ -188,6 +192,60 @@ extension HomeTCAView {
                 }
             }
             .padding(10)
+        }
+    }
+
+    private func macDayPlanUnplannedCompletedTaskList(for date: Date) -> some View {
+        let tasks = dayPlanUnplannedCompletedDisplays(for: date)
+        let section = HomeTaskListPresentationSection(
+            kind: .regular,
+            title: "Done on \(date.formatted(date: .abbreviated, time: .omitted))",
+            tasks: tasks,
+            rowNumberOffset: 0,
+            includeMarkDone: false,
+            moveContext: nil
+        )
+        let presentation = HomeTaskListPresentation(
+            sections: tasks.isEmpty ? [] : [section],
+            hiddenUnavailableTaskCount: 0,
+            emptyState: tasks.isEmpty
+                ? HomeTaskListEmptyState(
+                    title: "All done tasks are planned",
+                    message: "Completed tasks for this day are already placed in the planner.",
+                    systemImage: "calendar.badge.checkmark"
+                )
+                : nil
+        )
+
+        return VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 8) {
+                Label(dayPlanUnplannedCompletedFilterTitle(for: date), systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                Button("Clear") {
+                    clearDayPlanUnplannedCompletedFilter()
+                }
+                .controlSize(.small)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            Divider()
+
+            if let emptyState = presentation.emptyState {
+                emptyStateView(
+                    title: emptyState.title,
+                    message: emptyState.message,
+                    systemImage: emptyState.systemImage
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                macTaskSourceList(presentation, allowsPlannerDrag: true)
+            }
         }
     }
 

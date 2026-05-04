@@ -11,6 +11,7 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var searchText = ""
     @Published var startMinute = 9 * 60
     @Published var durationMinutes = 60
+    @Published var focusedUnplannedCompletedDate: Date?
 
     @Published private var visibleDate: Date
 
@@ -155,6 +156,15 @@ final class DayPlanPlannerState: ObservableObject {
         if selectedBlock == nil, let estimate = task.estimatedDurationMinutes {
             durationMinutes = DayPlanBlock.clampedDuration(estimate, startMinute: startMinute)
         }
+    }
+
+    func focusUnplannedCompletedTasks(on date: Date, calendar: Calendar) {
+        focusedUnplannedCompletedDate = calendar.startOfDay(for: date)
+        searchText = ""
+    }
+
+    func clearFocusedUnplannedCompletedTasks() {
+        focusedUnplannedCompletedDate = nil
     }
 
     func selectSlot(on date: Date, startMinute: Int, calendar: Calendar, context: ModelContext) {

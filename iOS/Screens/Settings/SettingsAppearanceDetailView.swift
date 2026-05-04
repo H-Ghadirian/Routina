@@ -4,6 +4,10 @@ import ComposableArchitecture
 struct SettingsAppearanceDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var resetFeedbackTrigger = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowDayPlanUnplannedDoneBadges.rawValue,
+        store: SharedDefaults.app
+    ) private var showsDayPlanUnplannedDoneBadges = true
 
     private let columns = [
         GridItem(.adaptive(minimum: 108), spacing: 12)
@@ -33,6 +37,13 @@ struct SettingsAppearanceDetailView: View {
                     .pickerStyle(.segmented)
 
                     Text(store.appearance.routineListSectioningSubtitle)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Day Planner") {
+                    Toggle("Show unplanned done badges", isOn: $showsDayPlanUnplannedDoneBadges)
+
+                    Text("Shows a small count on each planner day when completed tasks for that date are not yet placed in the day.")
                         .foregroundStyle(.secondary)
                 }
 
