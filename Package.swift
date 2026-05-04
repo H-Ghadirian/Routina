@@ -384,6 +384,7 @@ let package = Package(
                 "SharedCore/Views/TodoStateTimingSectionView.swift",
                 "SharedCore/Services/GitStatsCredentialStore.swift",
                 "SharedCore/Services/GitStatsFileStore.swift",
+                "SharedCore/Services/GitHubProfileStatsSupport.swift",
                 "SharedCore/Services/GitHubRepositoryStatsSupport.swift",
                 "SharedCore/Services/GitHubStatsClient.swift",
                 "SharedCore/Services/GitHubStatsGraphQLSupport.swift",
