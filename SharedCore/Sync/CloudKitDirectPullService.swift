@@ -32,41 +32,17 @@ enum CloudKitDirectPullService {
         var mergedPlaceIDs = try deduplicatePlaces(in: context)
         var mergedGoalIDs: [UUID: UUID] = [:]
         var mergedTaskIDs: [UUID: UUID] = [:]
-        var placePayloads: [PlacePayload] = []
-        var goalPayloads: [GoalPayload] = []
-        var taskPayloads: [TaskPayload] = []
-        var logPayloads: [LogPayload] = []
+        let payloadBatch = CloudKitDirectPullPayloadBatch.make(from: result.changedRecords)
 
-        for record in result.changedRecords {
-            if let goalPayload = CloudKitDirectPullRecordParser.parseGoal(from: record) {
-                goalPayloads.append(goalPayload)
-                continue
-            }
-
-            if let placePayload = CloudKitDirectPullRecordParser.parsePlace(from: record) {
-                placePayloads.append(placePayload)
-                continue
-            }
-
-            if let taskPayload = CloudKitDirectPullTaskRecordParser.parse(from: record) {
-                taskPayloads.append(taskPayload)
-                continue
-            }
-
-            if let logPayload = CloudKitDirectPullRecordParser.parseLog(from: record) {
-                logPayloads.append(logPayload)
-            }
-        }
-
-        for placePayload in placePayloads {
+        for placePayload in payloadBatch.placePayloads {
             mergedPlaceIDs[placePayload.id] = try upsertPlace(placePayload, in: context)
         }
 
-        for goalPayload in goalPayloads {
+        for goalPayload in payloadBatch.goalPayloads {
             mergedGoalIDs[goalPayload.id] = try upsertGoal(goalPayload, in: context)
         }
 
-        for taskPayload in taskPayloads {
+        for taskPayload in payloadBatch.taskPayloads {
             var canonicalPayload = taskPayload
             canonicalPayload.placeID = canonicalPayload.placeID.flatMap { placeID in
                 canonicalPlaceID(for: placeID, mergedPlaceIDs: mergedPlaceIDs, in: context)
@@ -77,7 +53,7 @@ enum CloudKitDirectPullService {
             mergedTaskIDs[taskPayload.id] = try upsertTask(canonicalPayload, in: context)
         }
 
-        for logPayload in logPayloads {
+        for logPayload in payloadBatch.logPayloads {
             var canonicalPayload = logPayload
             canonicalPayload.taskID = mergedTaskIDs[logPayload.taskID]
                 ?? canonicalTaskID(for: logPayload.taskID, in: context)
