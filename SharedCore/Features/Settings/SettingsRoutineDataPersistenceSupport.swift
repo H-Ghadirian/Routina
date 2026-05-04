@@ -101,10 +101,7 @@ enum SettingsRoutineDataPersistence {
             attachments: nil
         )
 
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(backup)
+        return try SettingsRoutineDataBackupCoding.encode(backup)
     }
 
     @MainActor
@@ -284,10 +281,7 @@ enum SettingsRoutineDataPersistence {
             attachments: attachmentManifests
         )
 
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(backup)
+        return try SettingsRoutineDataBackupCoding.encode(backup)
     }
 
     @MainActor
@@ -296,9 +290,7 @@ enum SettingsRoutineDataPersistence {
         in context: ModelContext,
         importDate: Date = Date()
     ) throws -> ImportSummary {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let backup = try decoder.decode(Backup.self, from: jsonData)
+        let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: jsonData)
 
         return try replaceAllRoutineData(
             with: backup,
@@ -322,9 +314,7 @@ enum SettingsRoutineDataPersistence {
         let manifestURL = packageURL.appendingPathComponent(manifestFileName)
         let attachmentsURL = packageURL.appendingPathComponent(attachmentsDirectoryName, isDirectory: true)
         let manifestData = try Data(contentsOf: manifestURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let backup = try decoder.decode(Backup.self, from: manifestData)
+        let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: manifestData)
 
         return try replaceAllRoutineData(
             with: backup,
