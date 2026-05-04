@@ -261,6 +261,12 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func basicEditActionHandler() -> TaskDetailBasicEditActionHandler {
+        TaskDetailBasicEditActionHandler(
+            draftMutationHandler: editDraftMutationHandler()
+        )
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -605,20 +611,16 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editRoutineNameChanged(name):
-            editDraftMutationHandler().setName(name, state: &state)
-            return .none
+            return basicEditActionHandler().editRoutineNameChanged(name, state: &state)
 
         case let .editRoutineEmojiChanged(emoji):
-            editDraftMutationHandler().setEmoji(emoji, state: &state)
-            return .none
+            return basicEditActionHandler().editRoutineEmojiChanged(emoji, state: &state)
 
         case let .editRoutineNotesChanged(notes):
-            editDraftMutationHandler().setNotes(notes, state: &state)
-            return .none
+            return basicEditActionHandler().editRoutineNotesChanged(notes, state: &state)
 
         case let .editRoutineLinkChanged(link):
-            editDraftMutationHandler().setLink(link, state: &state)
-            return .none
+            return basicEditActionHandler().editRoutineLinkChanged(link, state: &state)
 
         case let .editDeadlineEnabledChanged(isEnabled):
             state.editDeadline = isEnabled ? (state.editDeadline ?? now) : nil
@@ -652,40 +654,35 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editPriorityChanged(priority):
-            editDraftMutationHandler().setPriority(priority, state: &state)
-            return .none
+            return basicEditActionHandler().editPriorityChanged(priority, state: &state)
 
         case let .editImportanceChanged(importance):
-            editDraftMutationHandler().setImportance(importance, state: &state)
-            return .none
+            return basicEditActionHandler().editImportanceChanged(importance, state: &state)
 
         case let .editUrgencyChanged(urgency):
-            editDraftMutationHandler().setUrgency(urgency, state: &state)
-            return .none
+            return basicEditActionHandler().editUrgencyChanged(urgency, state: &state)
 
         case let .editPressureChanged(pressure):
-            editDraftMutationHandler().setPressure(pressure, state: &state)
-            return .none
+            return basicEditActionHandler().editPressureChanged(pressure, state: &state)
 
         case let .editImagePicked(data):
-            editDraftMutationHandler().setImage(data, state: &state)
-            return .none
+            return basicEditActionHandler().editImagePicked(data, state: &state)
 
         case .editRemoveImageTapped:
-            editDraftMutationHandler().removeImage(state: &state)
-            return .none
+            return basicEditActionHandler().editRemoveImageTapped(state: &state)
 
         case let .editAttachmentPicked(data, fileName):
-            editDraftMutationHandler().addAttachment(data: data, fileName: fileName, state: &state)
-            return .none
+            return basicEditActionHandler().editAttachmentPicked(
+                data: data,
+                fileName: fileName,
+                state: &state
+            )
 
         case let .editRemoveAttachment(id):
-            editDraftMutationHandler().removeAttachment(id, state: &state)
-            return .none
+            return basicEditActionHandler().editRemoveAttachment(id, state: &state)
 
         case let .attachmentsLoaded(items):
-            state.taskAttachments = items
-            return .none
+            return basicEditActionHandler().attachmentsLoaded(items, state: &state)
 
         case let .editTagDraftChanged(value):
             editDraftMutationHandler().setTagDraft(value, state: &state)
@@ -848,20 +845,22 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editEstimatedDurationChanged(estimatedDurationMinutes):
-            editDraftMutationHandler().setEstimatedDuration(estimatedDurationMinutes, state: &state)
-            return .none
+            return basicEditActionHandler().editEstimatedDurationChanged(
+                estimatedDurationMinutes,
+                state: &state
+            )
 
         case let .editActualDurationChanged(actualDurationMinutes):
-            editDraftMutationHandler().setActualDuration(actualDurationMinutes, state: &state)
-            return .none
+            return basicEditActionHandler().editActualDurationChanged(
+                actualDurationMinutes,
+                state: &state
+            )
 
         case let .editStoryPointsChanged(storyPoints):
-            editDraftMutationHandler().setStoryPoints(storyPoints, state: &state)
-            return .none
+            return basicEditActionHandler().editStoryPointsChanged(storyPoints, state: &state)
 
         case let .editFocusModeEnabledChanged(isEnabled):
-            editDraftMutationHandler().setFocusModeEnabled(isEnabled, state: &state)
-            return .none
+            return basicEditActionHandler().editFocusModeEnabledChanged(isEnabled, state: &state)
 
         case let .editFrequencyChanged(frequency):
             rebaseEditReminderIfUsingLeadTime(&state) { state in
@@ -1005,8 +1004,7 @@ struct TaskDetailFeature: Reducer {
             return .none
 
         case let .editColorChanged(color):
-            editDraftMutationHandler().setColor(color, state: &state)
-            return .none
+            return basicEditActionHandler().editColorChanged(color, state: &state)
 
         case let .todoStateChanged(newState):
             switch statusMutationHandler().applyTodoStateChange(newState, state: &state) {
