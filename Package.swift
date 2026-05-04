@@ -265,6 +265,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsTagPersistenceSupport.swift",
                 "SharedCore/Features/TaskDetail/RoutinePauseArchivePresentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailBasicEditActionHandler.swift",
+                "SharedCore/Features/TaskDetail/TaskDetailDialogLifecycleActionHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailFetchDescriptors.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailEditContextActionHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailEditDraftMutationHandler.swift",

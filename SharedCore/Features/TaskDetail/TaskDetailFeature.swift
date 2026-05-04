@@ -288,6 +288,18 @@ struct TaskDetailFeature: Reducer {
         TaskDetailEditContextActionHandler()
     }
 
+    private func dialogLifecycleActionHandler() -> TaskDetailDialogLifecycleActionHandler {
+        TaskDetailDialogLifecycleActionHandler(
+            calendar: calendar,
+            syncEditFormFromTask: { state in
+                syncEditFormFromTask(&state)
+            },
+            loadEditContext: { taskID in
+                loadEditContext(excluding: taskID)
+            }
+        )
+    }
+
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
@@ -523,9 +535,7 @@ struct TaskDetailFeature: Reducer {
             return handleUndoCompletion(taskID: state.task.id, completedDay: selectedDay)
 
         case .requestUndoSelectedDateCompletion:
-            state.pendingLogRemovalTimestamp = nil
-            state.isUndoCompletionConfirmationPresented = true
-            return .none
+            return dialogLifecycleActionHandler().requestUndoSelectedDateCompletion(state: &state)
 
         case let .removeLogEntry(timestamp):
             removePendingLocalCompletion(on: timestamp, from: &state)
@@ -558,9 +568,7 @@ struct TaskDetailFeature: Reducer {
             )
 
         case let .requestRemoveLogEntry(timestamp):
-            state.pendingLogRemovalTimestamp = timestamp
-            state.isUndoCompletionConfirmationPresented = true
-            return .none
+            return dialogLifecycleActionHandler().requestRemoveLogEntry(timestamp, state: &state)
 
         case .pauseTapped:
             guard !state.task.isOneOffTask else { return .none }
@@ -620,16 +628,10 @@ struct TaskDetailFeature: Reducer {
             return handleFinishOngoing(taskID: state.task.id, finishedAt: now)
 
         case let .selectedDateChanged(date):
-            state.selectedDate = calendar.startOfDay(for: date)
-            return .none
+            return dialogLifecycleActionHandler().selectedDateChanged(date, state: &state)
 
         case let .setEditSheet(isPresented):
-            state.isEditSheetPresented = isPresented
-            if isPresented {
-                syncEditFormFromTask(&state)
-                return loadEditContext(excluding: state.task.id)
-            }
-            return .none
+            return dialogLifecycleActionHandler().setEditSheet(isPresented, state: &state)
 
         case let .editRoutineNameChanged(name):
             return basicEditActionHandler().editRoutineNameChanged(name, state: &state)
@@ -884,15 +886,13 @@ struct TaskDetailFeature: Reducer {
             return handleConfirmAssumedPastDays(taskID: state.task.id, days: assumedDays)
 
         case let .setDeleteConfirmation(isPresented):
-            state.isDeleteConfirmationPresented = isPresented
-            return .none
+            return dialogLifecycleActionHandler().setDeleteConfirmation(isPresented, state: &state)
 
         case let .setUndoCompletionConfirmation(isPresented):
-            state.isUndoCompletionConfirmationPresented = isPresented
-            if !isPresented {
-                state.pendingLogRemovalTimestamp = nil
-            }
-            return .none
+            return dialogLifecycleActionHandler().setUndoCompletionConfirmation(
+                isPresented,
+                state: &state
+            )
 
         case .confirmUndoCompletion:
             state.isUndoCompletionConfirmationPresented = false
@@ -907,13 +907,10 @@ struct TaskDetailFeature: Reducer {
             return handleDeleteRoutine(taskID: state.task.id)
 
         case .routineDeleted:
-            state.isEditSheetPresented = false
-            state.shouldDismissAfterDelete = true
-            return .none
+            return dialogLifecycleActionHandler().routineDeleted(state: &state)
 
         case .deleteDismissHandled:
-            state.shouldDismissAfterDelete = false
-            return .none
+            return dialogLifecycleActionHandler().deleteDismissHandled(state: &state)
 
         case let .logsLoaded(logs):
             state.logs = logsPreservingPendingLocalCompletions(logs, in: &state)
