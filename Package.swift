@@ -383,6 +383,7 @@ let package = Package(
                 "SharedCore/Services/GitStatsCredentialStore.swift",
                 "SharedCore/Services/GitStatsFileStore.swift",
                 "SharedCore/Services/GitHubStatsClient.swift",
+                "SharedCore/Services/GitHubStatsGraphQLSupport.swift",
                 "SharedCore/Services/GitHubStatsPayloads.swift",
                 "SharedCore/Services/GitHubStatsRESTSupport.swift",
                 "SharedCore/Services/GitHubWidgetService.swift",
