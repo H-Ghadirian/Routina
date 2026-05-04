@@ -314,7 +314,7 @@ struct HomeMacBoardScopeInspectorView: View {
                 } else {
                     List {
                         ForEach(allocationDrafts) { draft in
-                            sprintFocusAllocationRow(draft)
+                            sprintFocusAllocationRow(draft, session: session)
                         }
                     }
                     .listStyle(.inset)
@@ -326,7 +326,7 @@ struct HomeMacBoardScopeInspectorView: View {
 
                         Spacer(minLength: 0)
 
-                        Text(allocationMinutesText(totalAllocatedDraftMinutes))
+                        Text("\(allocationMinutesText(totalAllocatedDraftMinutes)) of \(allocationMinutesText(session.roundedDurationMinutes))")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.primary)
                     }
@@ -351,7 +351,10 @@ struct HomeMacBoardScopeInspectorView: View {
         }
     }
 
-    private func sprintFocusAllocationRow(_ draft: SprintFocusAllocationDraft) -> some View {
+    private func sprintFocusAllocationRow(
+        _ draft: SprintFocusAllocationDraft,
+        session: SprintFocusSession
+    ) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(taskTitle(for: draft.taskID))
@@ -365,7 +368,11 @@ struct HomeMacBoardScopeInspectorView: View {
 
             Spacer(minLength: 8)
 
-            Stepper(value: allocationMinutesBinding(for: draft.taskID), in: 0...720, step: 5) {
+            Stepper(
+                value: allocationMinutesBinding(for: draft.taskID),
+                in: 0...maximumAllocationMinutes(for: draft, session: session),
+                step: 1
+            ) {
                 Text("\(draft.minutes)m")
                     .font(.subheadline.monospacedDigit().weight(.semibold))
                     .frame(width: 52, alignment: .trailing)
@@ -377,6 +384,16 @@ struct HomeMacBoardScopeInspectorView: View {
 
     private var totalAllocatedDraftMinutes: Int {
         allocationDrafts.reduce(0) { $0 + max(0, $1.minutes) }
+    }
+
+    private func maximumAllocationMinutes(
+        for draft: SprintFocusAllocationDraft,
+        session: SprintFocusSession
+    ) -> Int {
+        let otherAllocatedMinutes = allocationDrafts.reduce(0) { total, otherDraft in
+            otherDraft.taskID == draft.taskID ? total : total + max(0, otherDraft.minutes)
+        }
+        return max(0, session.roundedDurationMinutes - otherAllocatedMinutes + draft.minutes)
     }
 
     private func allocationMinutesText(_ minutes: Int) -> String {

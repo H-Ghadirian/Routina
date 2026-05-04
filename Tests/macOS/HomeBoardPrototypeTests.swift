@@ -766,7 +766,7 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
-    func sprintFocusTimer_startStopAndAllocationUpdatesTaskDurations() async throws {
+    func sprintFocusTimer_allocationIsCappedAndAddsToExistingTaskDurations() async throws {
         let context = makeInMemoryContext()
         let first = makeTask(
             in: context,
@@ -794,6 +794,18 @@ struct HomeBoardPrototypeTests {
             createdAt: makeDate("2026-03-19T09:00:00Z"),
             startedAt: makeDate("2026-03-19T09:00:00Z")
         )
+        let firstSession = SprintFocusSession(
+            id: UUID(uuidString: "22222222-3333-4444-5555-666666666666")!,
+            sprintID: sprint.id,
+            startedAt: makeDate("2026-03-20T09:00:00Z"),
+            stoppedAt: makeDate("2026-03-20T10:00:00Z")
+        )
+        let secondSession = SprintFocusSession(
+            id: UUID(uuidString: "33333333-4444-5555-6666-777777777777")!,
+            sprintID: sprint.id,
+            startedAt: makeDate("2026-03-20T10:30:00Z"),
+            stoppedAt: makeDate("2026-03-20T10:31:00Z")
+        )
 
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
@@ -814,31 +826,35 @@ struct HomeBoardPrototypeTests {
                     assignments: [
                         SprintAssignment(todoID: first.id, sprintID: sprint.id),
                         SprintAssignment(todoID: second.id, sprintID: sprint.id)
-                    ]
+                    ],
+                    focusSessions: [secondSession, firstSession]
                 )
             )
         )
 
-        await store.send(.startSprintFocusTapped(sprint.id))
+        await store.send(.reviewSprintFocusAllocationTapped(firstSession.id))
 
-        let activeSession = try #require(store.state.sprintBoardData.activeFocusSession)
-        #expect(activeSession.sprintID == sprint.id)
-
-        await store.send(.stopSprintFocusTapped(activeSession.id))
-
-        #expect(store.state.sprintBoardData.activeFocusSession == nil)
-        #expect(store.state.sprintFocusAllocationSessionID == activeSession.id)
+        #expect(store.state.sprintFocusAllocationSessionID == firstSession.id)
         #expect(Set(store.state.sprintFocusAllocationDrafts.map(\.taskID)) == Set([first.id, second.id]))
 
         await store.send(.sprintFocusAllocationMinutesChanged(taskID: first.id, minutes: 40))
-        await store.send(.sprintFocusAllocationMinutesChanged(taskID: second.id, minutes: 20))
+        await store.send(.sprintFocusAllocationMinutesChanged(taskID: second.id, minutes: 120))
         await store.send(.sprintFocusAllocationSaveTapped)
 
-        let savedSession = try #require(store.state.sprintBoardData.focusSessions.first(where: { $0.id == activeSession.id }))
+        let savedSession = try #require(store.state.sprintBoardData.focusSessions.first(where: { $0.id == firstSession.id }))
         #expect(savedSession.allocations.map(\.minutes).reduce(0, +) == 60)
         #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 50)
         #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == 20)
         #expect(store.state.sprintFocusAllocationSessionID == nil)
         #expect(store.state.sprintFocusAllocationDrafts.isEmpty)
+
+        await store.send(.reviewSprintFocusAllocationTapped(secondSession.id))
+        await store.send(.sprintFocusAllocationMinutesChanged(taskID: first.id, minutes: 90))
+        await store.send(.sprintFocusAllocationSaveTapped)
+
+        let cappedSession = try #require(store.state.sprintBoardData.focusSessions.first(where: { $0.id == secondSession.id }))
+        #expect(cappedSession.allocations.map(\.minutes).reduce(0, +) == 1)
+        #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 51)
+        #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == 20)
     }
 }

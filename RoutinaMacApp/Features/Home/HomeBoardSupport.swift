@@ -381,7 +381,8 @@ extension HomeFeature {
             return
         }
 
-        state.sprintFocusAllocationDrafts[index].minutes = max(0, minutes)
+        let maximumMinutes = maximumAllocationMinutes(for: taskID, state: state)
+        state.sprintFocusAllocationDrafts[index].minutes = min(max(0, minutes), maximumMinutes)
     }
 
     func handleSaveSprintFocusAllocations(state: inout State) -> Effect<Action> {
@@ -391,9 +392,10 @@ extension HomeFeature {
         }
 
         let previousAllocations = allocationMinutesByTask(session.allocations)
-        let allocations = state.sprintFocusAllocationDrafts
-            .filter { $0.minutes > 0 }
-            .map { SprintFocusAllocation(taskID: $0.taskID, minutes: $0.minutes) }
+        let allocations = cappedSprintFocusAllocations(
+            drafts: state.sprintFocusAllocationDrafts,
+            recordedMinutes: session.roundedDurationMinutes
+        )
         let updatedAllocations = allocationMinutesByTask(allocations)
         let allAllocatedTaskIDs = Set(previousAllocations.keys).union(updatedAllocations.keys)
         let deltas = allAllocatedTaskIDs.reduce(into: [UUID: Int]()) { result, taskID in
@@ -418,6 +420,42 @@ extension HomeFeature {
             saveSprintBoardEffect(state.sprintBoardData),
             persistSprintFocusAllocationDeltas(deltas)
         )
+    }
+
+    private func maximumAllocationMinutes(
+        for taskID: UUID,
+        state: State
+    ) -> Int {
+        guard let sessionID = state.sprintFocusAllocationSessionID,
+              let session = state.sprintBoardData.focusSessions.first(where: { $0.id == sessionID }) else {
+            return 720
+        }
+
+        let currentMinutes = state.sprintFocusAllocationDrafts
+            .first(where: { $0.taskID == taskID })?
+            .minutes ?? 0
+        let otherAllocatedMinutes = state.sprintFocusAllocationDrafts.reduce(0) { total, draft in
+            draft.taskID == taskID ? total : total + max(0, draft.minutes)
+        }
+        return max(0, session.roundedDurationMinutes - otherAllocatedMinutes + currentMinutes)
+    }
+
+    private func cappedSprintFocusAllocations(
+        drafts: [SprintFocusAllocationDraft],
+        recordedMinutes: Int
+    ) -> [SprintFocusAllocation] {
+        var remainingMinutes = max(0, recordedMinutes)
+        var allocations: [SprintFocusAllocation] = []
+
+        for draft in drafts where remainingMinutes > 0 {
+            let minutes = min(max(0, draft.minutes), remainingMinutes)
+            if minutes > 0 {
+                allocations.append(SprintFocusAllocation(taskID: draft.taskID, minutes: minutes))
+                remainingMinutes -= minutes
+            }
+        }
+
+        return allocations
     }
 
     private func applySprintFocusAllocationDeltas(
