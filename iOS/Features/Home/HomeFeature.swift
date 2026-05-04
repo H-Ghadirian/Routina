@@ -15,7 +15,7 @@ struct HomeFeature {
     typealias RoutineDisplay = HomeRoutineDisplay
 
     @ObservableState
-    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState {
+    struct State: Equatable, HomeFeatureFilterMutationState, HomeFeatureTaskLoadState, HomeFeaturePostMutationRefreshState, HomeFeatureSelectionRoutingState, HomeFeatureAddRoutinePresentationState, HomeFeaturePresentationRoutingState, HomeFeatureTaskListModeRoutingState, HomeFeatureTemporaryViewState, HomeFeatureLifecycleState {
         var routineTasks: [RoutineTask] = []
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
@@ -550,22 +550,33 @@ struct HomeFeature {
         )
     }
 
-    var body: some ReducerOf<Self> {
-        Reduce { state, action in
-            switch action {
-            case .onAppear:
-                applyTemporaryViewState(appSettingsClient.temporaryViewState(), to: &state)
-                state.tagColors = appSettingsClient.tagColors()
-                return .concatenate(
+    private func lifecycleActionHandler() -> HomeFeatureLifecycleActionHandler<State, Action> {
+        HomeFeatureLifecycleActionHandler(
+            temporaryViewState: { appSettingsClient.temporaryViewState() },
+            applyTemporaryViewState: { persistedState, state in
+                applyTemporaryViewState(persistedState, to: &state)
+            },
+            tagColors: { appSettingsClient.tagColors() },
+            refreshDisplays: { state in
+                refreshDisplays(&state)
+            },
+            setHideUnavailableRoutines: { isHidden in
+                appSettingsClient.setHideUnavailableRoutines(isHidden)
+            },
+            persistTemporaryViewState: { state in
+                persistTemporaryViewState(state)
+            },
+            loadOnAppearEffect: {
+                .concatenate(
                     loadTasksEffect(),
                     .run { @MainActor send in
                         let snapshot = await self.locationClient.snapshot(false)
                         send(.locationSnapshotUpdated(snapshot))
                     }
                 )
-
-            case .manualRefreshRequested:
-                return .run { @MainActor send in
+            },
+            manualRefreshEffect: {
+                .run { @MainActor send in
                     let context = self.modelContext()
                     if context.hasChanges {
                         try? context.save()
@@ -578,6 +589,18 @@ struct HomeFeature {
                     try? await self.clock.sleep(for: .seconds(2))
                     send(.onAppear)
                 }
+            }
+        )
+    }
+
+    var body: some ReducerOf<Self> {
+        Reduce { state, action in
+            switch action {
+            case .onAppear:
+                return lifecycleActionHandler().onAppear(state: &state)
+
+            case .manualRefreshRequested:
+                return lifecycleActionHandler().manualRefreshRequested()
 
             case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
                 return taskLoadHandler().applyLoadedTasks(
@@ -590,19 +613,13 @@ struct HomeFeature {
                 )
 
             case .tasksLoadFailed:
-                print("Failed to load tasks.")
-                return .none
+                return lifecycleActionHandler().tasksLoadFailed()
 
             case let .locationSnapshotUpdated(snapshot):
-                state.locationSnapshot = snapshot
-                refreshDisplays(&state)
-                return .none
+                return lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state)
 
             case let .hideUnavailableRoutinesChanged(isHidden):
-                state.hideUnavailableRoutines = isHidden
-                appSettingsClient.setHideUnavailableRoutines(isHidden)
-                persistTemporaryViewState(state)
-                return .none
+                return lifecycleActionHandler().hideUnavailableRoutinesChanged(isHidden, state: &state)
 
             case let .setSelectedTask(taskID):
                 return selectionRouter().setSelectedTask(taskID, state: &state)
