@@ -57,7 +57,7 @@ extension HomeFeature {
             return .run { @MainActor [id, pauseDate, targetSectionKey, nextOrder, previousStateTitle, newStateTitle] _ in
                 do {
                     let context = self.modelContext()
-                    guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                    guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: id)).first else { return }
                     task.pausedAt = pauseDate
                     task.snoozedUntil = nil
                     task.todoStateRawValue = nil
@@ -92,7 +92,7 @@ extension HomeFeature {
             return .run { @MainActor [id, rawValue = newState.rawValue, targetSectionKey, nextOrder, previousStateTitle, newStateTitle, timestamp = now] _ in
                 do {
                     let context = self.modelContext()
-                    guard let task = try context.fetch(taskDescriptor(for: id)).first else { return }
+                    guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: id)).first else { return }
                     task.pausedAt = nil
                     task.snoozedUntil = nil
                     task.todoStateRawValue = rawValue

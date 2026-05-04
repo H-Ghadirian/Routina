@@ -25,6 +25,11 @@ enum HomeTaskSupport {
         )
     }
 
+    @MainActor
+    static func detailLogs(taskID: UUID, context: ModelContext) -> [RoutineLog] {
+        RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+    }
+
     static func focusSessionsDescriptor(for taskID: UUID) -> FetchDescriptor<FocusSession> {
         FetchDescriptor<FocusSession>(
             predicate: #Predicate { session in

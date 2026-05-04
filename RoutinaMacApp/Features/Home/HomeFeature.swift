@@ -1201,14 +1201,6 @@ struct HomeFeature {
         )
     }
 
-    func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
-        HomeTaskSupport.taskDescriptor(for: taskID)
-    }
-
-    func logsDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineLog> {
-        HomeTaskSupport.logsDescriptor(for: taskID)
-    }
-
     static func boardSectionKey(for state: TodoState) -> String {
         switch state {
         case .ready, .paused:
@@ -1296,7 +1288,7 @@ struct HomeFeature {
 extension HomeFeature {
     @MainActor
     static func detailLogs(taskID: UUID, context: ModelContext) -> [RoutineLog] {
-        RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+        HomeTaskSupport.detailLogs(taskID: taskID, context: context)
     }
 
     static func availableTags(from routineDisplays: [RoutineDisplay]) -> [String] {
