@@ -31,39 +31,39 @@ struct StatsFilterPresentation {
     let tagColors: [String: String]
 
     var trimmedAdvancedQuery: String {
-        advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        StatsFilterSummarySupport.trimmedAdvancedQuery(advancedQuery)
     }
 
     var hasActiveSheetFilters: Bool {
-        taskTypeFilter != .all
-            || !trimmedAdvancedQuery.isEmpty
-            || !selectedTags.isEmpty
-            || !excludedTags.isEmpty
-            || selectedImportanceUrgencyFilter != nil
+        StatsFilterSummarySupport.hasActiveSheetFilters(
+            taskTypeFilter: taskTypeFilter,
+            advancedQuery: advancedQuery,
+            selectedTags: selectedTags,
+            excludedTags: excludedTags,
+            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
+        )
     }
 
     var activeSheetFilterCount: Int {
-        var count = 0
-        if taskTypeFilter != .all { count += 1 }
-        if !trimmedAdvancedQuery.isEmpty { count += 1 }
-        if !selectedTags.isEmpty { count += 1 }
-        count += excludedTags.count
-        if selectedImportanceUrgencyFilter != nil { count += 1 }
-        return count
+        StatsFilterSummarySupport.activeSheetFilterCount(
+            taskTypeFilter: taskTypeFilter,
+            advancedQuery: advancedQuery,
+            selectedTags: selectedTags,
+            excludedTags: excludedTags,
+            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
+        )
     }
 
     var excludedTagSummary: String {
-        if !excludedTags.isEmpty {
-            return "Hiding tasks tagged: \(excludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-        }
-        return "Select tags to hide tasks that have them."
+        StatsFilterSummarySupport.excludedTagSummary(excludedTags: excludedTags)
     }
 
     func tagSelectionSummary(tagCount: Int) -> String {
-        if !selectedTags.isEmpty {
-            return "\(includeTagMatchMode.rawValue) of \(selectedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-        }
-        return "\(tagCount) \(tagCount == 1 ? "tag" : "tags") available"
+        StatsFilterSummarySupport.tagSelectionSummary(
+            selectedTags: selectedTags,
+            includeTagMatchMode: includeTagMatchMode,
+            tagCount: tagCount
+        )
     }
 
     func suggestedRelatedTags(suggestionAnchor: String?) -> [String] {
