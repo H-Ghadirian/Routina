@@ -347,21 +347,10 @@ struct SettingsFeature {
                 )
 
             case .tagManagerAppeared:
-                return .run { @MainActor send in
-                    send(.tagsLoaded(SettingsRefreshExecution.loadTagSummaries(
-                        modelContext: self.modelContext
-                    )))
-                    send(.fastFilterTagsLoaded(appSettingsClient.fastFilterTags()))
-                    send(.tagColorsLoaded(appSettingsClient.tagColors()))
-                    send(.relatedTagRulesLoaded(appSettingsClient.relatedTagRules()))
-                    send(.learnedRelatedTagRulesLoaded(
-                        RoutineTagRelations.learnedRules(
-                            from: SettingsRefreshExecution.loadTaskTagCollections(
-                                modelContext: self.modelContext
-                            )
-                        )
-                    ))
-                }
+                return SettingsTagManagerRefreshActionExecution.tagManagerAppeared(
+                    modelContext: self.modelContext,
+                    appSettingsClient: self.appSettingsClient
+                )
 
             case .contactUsTapped:
                 return .run { @MainActor _ in
