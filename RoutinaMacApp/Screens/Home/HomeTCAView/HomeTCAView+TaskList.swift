@@ -199,33 +199,31 @@ extension HomeTCAView {
                 .padding(10)
             }
             .onAppear {
-                scrollMacTaskSourceListToSelectedTask(
+                handleMacTaskSourceScrollEvent(
+                    .listAppeared,
                     with: scrollProxy,
-                    visibleTaskIDs: visibleTaskIDs,
-                    anchor: .center
+                    visibleTaskIDs: visibleTaskIDs
                 )
             }
             .onChange(of: store.selectedTaskID) { _, _ in
-                scrollMacTaskSourceListToSelectedTask(
+                handleMacTaskSourceScrollEvent(
+                    .selectionChanged,
                     with: scrollProxy,
-                    visibleTaskIDs: visibleTaskIDs,
-                    anchor: .center
+                    visibleTaskIDs: visibleTaskIDs
                 )
             }
             .onChange(of: visibleTaskIDs) { _, _ in
-                scrollMacTaskSourceListToSelectedTask(
+                handleMacTaskSourceScrollEvent(
+                    .visibleTaskIDsChanged,
                     with: scrollProxy,
-                    visibleTaskIDs: visibleTaskIDs,
-                    anchor: .center
+                    visibleTaskIDs: visibleTaskIDs
                 )
             }
-            .onChange(of: macSidebarTaskScrollRequest) { _, request in
-                guard let request else { return }
-                scrollMacTaskSourceList(
-                    to: request.taskID,
+            .onChange(of: macSidebarTaskScrollRequest) { _, _ in
+                handleMacTaskSourceScrollEvent(
+                    .scrollRequestChanged,
                     with: scrollProxy,
-                    visibleTaskIDs: visibleTaskIDs,
-                    anchor: .center
+                    visibleTaskIDs: visibleTaskIDs
                 )
             }
         }
@@ -371,33 +369,43 @@ extension HomeTCAView {
         }
     }
 
-    private func scrollMacTaskSourceListToSelectedTask(
+    private func handleMacTaskSourceScrollEvent(
+        _ event: MacTaskSourceListScrollEvent,
         with proxy: ScrollViewProxy,
-        visibleTaskIDs: [UUID],
-        anchor: UnitPoint
+        visibleTaskIDs: [UUID]
     ) {
-        guard let selectedTaskID = store.selectedTaskID else { return }
-        scrollMacTaskSourceList(
-            to: selectedTaskID,
+        guard let taskID = MacTaskSourceListScrollPolicy.scrollTarget(
+            for: event,
+            selectedTaskID: store.selectedTaskID,
+            pendingRequest: macSidebarTaskScrollRequest,
+            visibleTaskIDs: visibleTaskIDs
+        ) else { return }
+
+        if scrollMacTaskSourceList(
+            to: taskID,
             with: proxy,
             visibleTaskIDs: visibleTaskIDs,
-            anchor: anchor
-        )
+            anchor: .center
+        ) {
+            macSidebarTaskScrollRequest = nil
+        }
     }
 
+    @discardableResult
     private func scrollMacTaskSourceList(
         to taskID: UUID,
         with proxy: ScrollViewProxy,
         visibleTaskIDs: [UUID],
         anchor: UnitPoint
-    ) {
-        guard visibleTaskIDs.contains(taskID) else { return }
+    ) -> Bool {
+        guard visibleTaskIDs.contains(taskID) else { return false }
 
         DispatchQueue.main.async {
             withAnimation(.easeInOut(duration: 0.2)) {
                 proxy.scrollTo(taskID, anchor: anchor)
             }
         }
+        return true
     }
 
     func platformDeleteTasks(
