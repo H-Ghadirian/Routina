@@ -18,6 +18,7 @@ struct HomeBoardState: Equatable {
     var deletingSprintID: UUID? = nil
     var sprintFocusAllocationSessionID: UUID? = nil
     var sprintFocusAllocationDrafts: [SprintFocusAllocationDraft] = []
+    var sprintBoardRevision: Int = 0
 }
 
 struct HomeMacNavigationState: Equatable {

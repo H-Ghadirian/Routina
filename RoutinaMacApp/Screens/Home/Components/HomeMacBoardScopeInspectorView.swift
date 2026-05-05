@@ -10,9 +10,11 @@ struct HomeMacBoardScopeInspectorView: View {
     let onStartSprintFocus: (UUID) -> Void
     let onStopSprintFocus: (UUID) -> Void
     let onReviewSprintFocusAllocation: (UUID) -> Void
+    let onDeleteSprintFocusSession: (UUID) -> Void
     let onAllocationMinutesChanged: (UUID, Int) -> Void
     let onSaveSprintFocusAllocation: () -> Void
     let onCancelSprintFocusAllocation: () -> Void
+    @State private var isSprintFocusHistoryExpanded = true
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
@@ -113,7 +115,7 @@ struct HomeMacBoardScopeInspectorView: View {
 
                     if !completedSessions.isEmpty {
                         Divider()
-                        sprintFocusSessionHistory(completedSessions)
+                        sprintFocusSessionHistory(completedSessions, isExpanded: $isSprintFocusHistoryExpanded)
                     }
                 }
             }
@@ -247,29 +249,45 @@ struct HomeMacBoardScopeInspectorView: View {
     }
 
     private func sprintFocusSessionHistory(
-        _ completedSessions: [SprintFocusSession]
+        _ completedSessions: [SprintFocusSession],
+        isExpanded: Binding<Bool>
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Completed Sessions")
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    isExpanded.wrappedValue.toggle()
+                }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Completed Sessions")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        Text("\(allocationMinutesText(totalRecordedMinutes(in: completedSessions))) recorded")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Text("\(completedSessions.count)")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    Text("\(allocationMinutesText(totalRecordedMinutes(in: completedSessions))) recorded")
-                        .font(.caption2)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded.wrappedValue ? 180 : 0))
                 }
-
-                Spacer(minLength: 0)
-
-                Text("\(completedSessions.count)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
             }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
 
-            ForEach(completedSessions) { session in
-                sprintFocusSessionRow(session)
+            if isExpanded.wrappedValue {
+                ForEach(completedSessions) { session in
+                    sprintFocusSessionRow(session)
+                }
             }
         }
     }
@@ -298,6 +316,16 @@ struct HomeMacBoardScopeInspectorView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+
+            Button(role: .destructive) {
+                onDeleteSprintFocusSession(session.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .accessibilityLabel("Delete sprint focus session")
         }
         .padding(.vertical, 2)
     }

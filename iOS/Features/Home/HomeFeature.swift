@@ -617,7 +617,7 @@ struct HomeFeature {
             persistTemporaryViewState: { state in
                 persistTemporaryViewState(state)
             },
-            loadOnAppearEffect: {
+            loadOnAppearEffect: { _ in
                 .concatenate(
                     loadTasksEffect(),
                     .run { @MainActor send in

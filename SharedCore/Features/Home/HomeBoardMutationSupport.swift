@@ -260,4 +260,17 @@ enum HomeBoardMutationSupport {
             }
         return true
     }
+
+    @discardableResult
+    static func deleteSprintFocusSession(
+        sessionID: UUID,
+        data: inout SprintBoardData
+    ) -> SprintFocusSession? {
+        guard let index = data.focusSessions.firstIndex(where: { $0.id == sessionID }),
+              !data.focusSessions[index].isActive else {
+            return nil
+        }
+
+        return data.focusSessions.remove(at: index)
+    }
 }

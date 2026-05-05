@@ -856,5 +856,33 @@ struct HomeBoardPrototypeTests {
         #expect(cappedSession.allocations.map(\.minutes).reduce(0, +) == 1)
         #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 51)
         #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == 20)
+
+        await store.send(.deleteSprintFocusSessionTapped(secondSession.id))
+
+        #expect(!store.state.sprintBoardData.focusSessions.contains(where: { $0.id == secondSession.id }))
+        #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 50)
+        #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == 20)
+
+        await store.send(
+            .sprintBoardLoadedFromStorage(
+                SprintBoardData(
+                    sprints: [sprint],
+                    assignments: [
+                        SprintAssignment(todoID: first.id, sprintID: sprint.id),
+                        SprintAssignment(todoID: second.id, sprintID: sprint.id)
+                    ],
+                    focusSessions: [secondSession, firstSession]
+                ),
+                revision: 0
+            )
+        )
+
+        #expect(!store.state.sprintBoardData.focusSessions.contains(where: { $0.id == secondSession.id }))
+
+        await store.send(.deleteSprintFocusSessionTapped(firstSession.id))
+
+        #expect(!store.state.sprintBoardData.focusSessions.contains(where: { $0.id == firstSession.id }))
+        #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 10)
+        #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == nil)
     }
 }

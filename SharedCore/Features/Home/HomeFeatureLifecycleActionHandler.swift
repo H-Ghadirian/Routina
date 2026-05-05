@@ -14,14 +14,14 @@ struct HomeFeatureLifecycleActionHandler<State: HomeFeatureLifecycleState, Actio
     var refreshDisplays: (inout State) -> Void
     var setHideUnavailableRoutines: (Bool) -> Void
     var persistTemporaryViewState: (State) -> Void
-    var loadOnAppearEffect: () -> Effect<Action>
+    var loadOnAppearEffect: (State) -> Effect<Action>
     var manualRefreshEffect: () -> Effect<Action>
     var loadFailureLogger: (String) -> Void = { print($0) }
 
     func onAppear(state: inout State) -> Effect<Action> {
         applyTemporaryViewState(temporaryViewState(), &state)
         state.tagColors = tagColors()
-        return loadOnAppearEffect()
+        return loadOnAppearEffect(state)
     }
 
     func manualRefreshRequested() -> Effect<Action> {

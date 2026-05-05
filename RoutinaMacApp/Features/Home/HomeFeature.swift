@@ -457,6 +457,7 @@ struct HomeFeature {
         case manualRefreshRequested
         case tasksLoadedSuccessfully([RoutineTask], [RoutinePlace], [RoutineGoal], [RoutineLog], DoneStats)
         case sprintBoardLoaded(SprintBoardData)
+        case sprintBoardLoadedFromStorage(SprintBoardData, revision: Int)
         case tasksLoadFailed
         case locationSnapshotUpdated(LocationSnapshot)
         case hideUnavailableRoutinesChanged(Bool)
@@ -497,6 +498,7 @@ struct HomeFeature {
         case startSprintFocusTapped(UUID)
         case stopSprintFocusTapped(UUID)
         case reviewSprintFocusAllocationTapped(UUID)
+        case deleteSprintFocusSessionTapped(UUID)
         case sprintFocusAllocationMinutesChanged(taskID: UUID, minutes: Int)
         case sprintFocusAllocationSaveTapped
         case sprintFocusAllocationCancelTapped
@@ -823,10 +825,10 @@ struct HomeFeature {
             persistTemporaryViewState: { state in
                 persistTemporaryViewState(state)
             },
-            loadOnAppearEffect: {
+            loadOnAppearEffect: { state in
                 .concatenate(
                     loadTasksEffect(),
-                    loadSprintBoardEffect(),
+                    loadSprintBoardEffect(revision: state.board.sprintBoardRevision),
                     .run { @MainActor send in
                         let snapshot = await self.locationClient.snapshot(false)
                         send(.locationSnapshotUpdated(snapshot))
@@ -871,6 +873,12 @@ struct HomeFeature {
                 )
                 refreshDisplays(&state)
                 return .none
+
+            case let .sprintBoardLoadedFromStorage(sprintBoardData, revision):
+                guard revision == state.board.sprintBoardRevision else {
+                    return .none
+                }
+                return reduce(into: &state, action: .sprintBoardLoaded(sprintBoardData))
 
             case .tasksLoadFailed:
                 return lifecycleActionHandler().tasksLoadFailed()
@@ -1100,6 +1108,9 @@ struct HomeFeature {
                 beginSprintFocusAllocationReview(sessionID: sessionID, state: &state)
                 return .none
 
+            case let .deleteSprintFocusSessionTapped(sessionID):
+                return handleDeleteSprintFocusSession(sessionID, state: &state)
+
             case let .sprintFocusAllocationMinutesChanged(taskID, minutes):
                 updateSprintFocusAllocationDraft(taskID: taskID, minutes: minutes, state: &state)
                 return .none
@@ -1259,14 +1270,14 @@ struct HomeFeature {
         return maxOrder + 1
     }
 
-    private func loadSprintBoardEffect() -> Effect<Action> {
+    private func loadSprintBoardEffect(revision: Int) -> Effect<Action> {
         .run { send in
             do {
                 let sprintBoardData = try await sprintBoardClient.load()
-                await send(.sprintBoardLoaded(sprintBoardData))
+                await send(.sprintBoardLoadedFromStorage(sprintBoardData, revision: revision))
             } catch {
                 print("Failed to load sprint board data: \(error)")
-                await send(.sprintBoardLoaded(SprintBoardData()))
+                await send(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: revision))
             }
         }
     }

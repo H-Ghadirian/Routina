@@ -422,6 +422,34 @@ extension HomeFeature {
         )
     }
 
+    func handleDeleteSprintFocusSession(
+        _ sessionID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let deletedSession = HomeBoardMutationSupport.deleteSprintFocusSession(
+            sessionID: sessionID,
+            data: &state.sprintBoardData
+        ) else { return .none }
+        state.board.sprintBoardRevision += 1
+
+        let deltas = allocationMinutesByTask(deletedSession.allocations)
+            .reduce(into: [UUID: Int]()) { result, item in
+                result[item.key] = -item.value
+            }
+
+        applySprintFocusAllocationDeltas(deltas, state: &state)
+        if state.sprintFocusAllocationSessionID == sessionID {
+            state.sprintFocusAllocationSessionID = nil
+            state.sprintFocusAllocationDrafts = []
+        }
+        refreshDisplays(&state)
+
+        return .merge(
+            saveSprintBoardEffect(state.sprintBoardData),
+            persistSprintFocusAllocationDeltas(deltas)
+        )
+    }
+
     private func maximumAllocationMinutes(
         for taskID: UUID,
         state: State
