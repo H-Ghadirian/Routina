@@ -294,6 +294,7 @@ extension HomeTCAView {
         allowsPlannerDrag: Bool
     ) -> some View {
         let row = routineRow(for: task, rowNumber: rowNumber)
+            .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task))
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
             .background(
@@ -307,6 +308,9 @@ extension HomeTCAView {
                         lineWidth: macTaskSourceRowStrokeWidth(for: task)
                     )
             )
+            .overlay(alignment: .topTrailing) {
+                macTaskSourceRowColorBadge(for: task)
+            }
             .id(task.taskID)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onTapGesture {
@@ -342,9 +346,6 @@ extension HomeTCAView {
     }
 
     private func macTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
-        if let color = task.color.swiftUIColor {
-            return color.opacity(store.selectedTaskID == task.taskID ? 0.95 : 0.72)
-        }
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.55)
         }
@@ -352,7 +353,22 @@ extension HomeTCAView {
     }
 
     private func macTaskSourceRowStrokeWidth(for task: HomeFeature.RoutineDisplay) -> CGFloat {
-        task.color.swiftUIColor == nil ? 1 : 1.5
+        1
+    }
+
+    private func macTaskSourceRowColorBadgeTrailingSpace(for task: HomeFeature.RoutineDisplay) -> CGFloat {
+        task.color.swiftUIColor == nil ? 0 : 15
+    }
+
+    @ViewBuilder
+    private func macTaskSourceRowColorBadge(for task: HomeFeature.RoutineDisplay) -> some View {
+        if let color = task.color.swiftUIColor {
+            MacTaskSourceRowColorBadgeShape()
+                .fill(color)
+                .frame(width: 10, height: 18)
+                .padding(.trailing, 18)
+                .accessibilityHidden(true)
+        }
     }
 
     private func scrollMacTaskSourceListToSelectedTask(
@@ -418,4 +434,19 @@ extension HomeTCAView {
             }
     }
 
+}
+
+private struct MacTaskSourceRowColorBadgeShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let notchDepth = min(rect.height * 0.24, 8)
+
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - notchDepth))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
 }
