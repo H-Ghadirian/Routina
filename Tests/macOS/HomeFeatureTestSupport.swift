@@ -58,7 +58,9 @@ func makeDisplay(
     nextDueChecklistItemTitle: String? = nil,
     doneCount: Int = 0,
     assignedSprintID: UUID? = nil,
-    assignedSprintTitle: String? = nil
+    assignedSprintTitle: String? = nil,
+    assignedBacklogID: UUID? = nil,
+    assignedBacklogTitle: String? = nil
 ) -> HomeFeature.RoutineDisplay {
     let resolvedScheduleAnchor = scheduleAnchor ?? lastDone
     let resolvedIsPaused = isPaused || pausedAt != nil || snoozedUntil != nil
@@ -112,6 +114,8 @@ func makeDisplay(
         nextDueChecklistItemTitle: nextDueChecklistItemTitle,
         doneCount: doneCount,
         assignedSprintID: assignedSprintID,
-        assignedSprintTitle: assignedSprintTitle
+        assignedSprintTitle: assignedSprintTitle,
+        assignedBacklogID: assignedBacklogID,
+        assignedBacklogTitle: assignedBacklogTitle
     )
 }

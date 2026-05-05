@@ -77,7 +77,14 @@ extension SprintBoardClient {
             .map { SprintAssignment(todoID: $0.todoID, sprintID: $0.sprintID) }
         let backlogs = backlogRecords
             .sorted { $0.createdAt > $1.createdAt }
-            .map { BoardBacklog(id: $0.id, title: $0.title, createdAt: $0.createdAt) }
+            .map {
+                BoardBacklog(
+                    id: $0.id,
+                    title: $0.title,
+                    createdAt: $0.createdAt,
+                    routingTags: $0.routingTags
+                )
+            }
         let backlogAssignments = backlogAssignmentRecords
             .sorted { $0.sortOrder < $1.sortOrder }
             .map { BacklogAssignment(todoID: $0.todoID, backlogID: $0.backlogID) }
@@ -146,7 +153,8 @@ extension SprintBoardClient {
                 BoardBacklogRecord(
                     id: backlog.id,
                     title: backlog.title,
-                    createdAt: backlog.createdAt
+                    createdAt: backlog.createdAt,
+                    routingTags: backlog.routingTags
                 )
             )
         }
@@ -207,6 +215,19 @@ extension SprintBoardClient {
         for record in try context.fetch(FetchDescriptor<BoardSprintRecord>()) {
             context.delete(record)
         }
+    }
+
+    @MainActor
+    static func routeNewTodoToMatchingBacklog(_ task: RoutineTask) throws {
+        var sprintBoardData = try loadLiveSnapshot()
+        guard HomeBoardMutationSupport.assignNewTodoToMatchingBacklog(
+            taskID: task.id,
+            tags: task.tags,
+            isOneOffTask: task.isOneOffTask,
+            data: &sprintBoardData
+        ) else { return }
+
+        try saveLiveSnapshot(sprintBoardData)
     }
 
     private static func loadLegacyJSONSnapshot() throws -> SprintBoardData? {

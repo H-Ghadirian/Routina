@@ -64,15 +64,35 @@ struct BoardBacklog: Codable, Equatable, Sendable, Identifiable {
     var id: UUID
     var title: String
     var createdAt: Date
+    var routingTags: [String]
 
     init(
         id: UUID = UUID(),
         title: String,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        routingTags: [String] = []
     ) {
         self.id = id
         self.title = title
         self.createdAt = createdAt
+        self.routingTags = RoutineTag.deduplicated(routingTags)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case createdAt
+        case routingTags
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        routingTags = RoutineTag.deduplicated(
+            try container.decodeIfPresent([String].self, forKey: .routingTags) ?? []
+        )
     }
 }
 

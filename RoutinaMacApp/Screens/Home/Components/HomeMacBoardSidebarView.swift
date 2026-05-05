@@ -8,6 +8,7 @@ struct HomeMacBoardSidebarView: View {
     let renamingSprintID: UUID?
     let renamingSprintTitle: String
     let deletingSprintID: UUID?
+    let availableRoutingTags: [String]
     let backlogCreationFocus: FocusState<Bool>.Binding
     let sprintCreationFocus: FocusState<Bool>.Binding
     let sprintRenameFocus: FocusState<Bool>.Binding
@@ -43,7 +44,7 @@ struct HomeMacBoardSidebarView: View {
                 boardScopeButton(title: "Backlog", scope: .backlog)
 
                 ForEach(presentation.backlogs) { backlog in
-                    boardScopeButton(title: backlog.title, scope: .namedBacklog(backlog.id))
+                    backlogScopeRow(backlog)
                 }
             }
         }
@@ -205,6 +206,29 @@ struct HomeMacBoardSidebarView: View {
             isSelected: presentation.isSelectedScope(scope),
             onSelect: { send(.selectedBoardScopeChanged(scope)) }
         )
+    }
+
+    @ViewBuilder
+    private func backlogScopeRow(_ backlog: BoardBacklog) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HomeMacBoardBacklogScopeRow(
+                backlog: backlog,
+                isSelected: presentation.isSelectedScope(.namedBacklog(backlog.id)),
+                onSelect: {
+                    send(.selectedBoardScopeChanged(.namedBacklog(backlog.id)))
+                }
+            )
+
+            if presentation.isSelectedScope(.namedBacklog(backlog.id)) {
+                HomeMacBacklogRoutingTagsEditor(
+                    backlog: backlog,
+                    availableTags: availableRoutingTags,
+                    onChange: { tags in
+                        send(.setBacklogRoutingTags(backlogID: backlog.id, tags: tags))
+                    }
+                )
+            }
+        }
     }
 
     private func deleteSprintMessage(for sprintID: UUID) -> Text {

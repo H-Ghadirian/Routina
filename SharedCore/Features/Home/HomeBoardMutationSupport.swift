@@ -67,6 +67,25 @@ enum HomeBoardMutationSupport {
     }
 
     @discardableResult
+    static func setBacklogRoutingTags(
+        backlogID: UUID,
+        tags: [String],
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard let index = data.backlogs.firstIndex(where: { $0.id == backlogID }) else {
+            return false
+        }
+
+        let sanitizedTags = RoutineTag.deduplicated(tags)
+        guard data.backlogs[index].routingTags != sanitizedTags else {
+            return false
+        }
+
+        data.backlogs[index].routingTags = sanitizedTags
+        return true
+    }
+
+    @discardableResult
     static func createSprint(
         title: String,
         now: Date,
@@ -187,6 +206,25 @@ enum HomeBoardMutationSupport {
     }
 
     @discardableResult
+    static func assignNewTodoToMatchingBacklog(
+        taskID: UUID,
+        tags: [String],
+        isOneOffTask: Bool,
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard isOneOffTask,
+              data.sprintID(for: taskID) == nil,
+              data.backlogID(for: taskID) == nil,
+              let backlogID = matchingBacklogID(for: tags, in: data)
+        else {
+            return false
+        }
+
+        assignTodoToBacklog(taskID: taskID, backlogID: backlogID, data: &data)
+        return true
+    }
+
+    @discardableResult
     static func assignTodosToBacklog(
         taskIDs: [UUID],
         backlogID: UUID?,
@@ -204,6 +242,21 @@ enum HomeBoardMutationSupport {
             )
         }
         return true
+    }
+
+    private static func matchingBacklogID(
+        for taskTags: [String],
+        in data: SprintBoardData
+    ) -> UUID? {
+        let normalizedTaskTags = Set(taskTags.compactMap(RoutineTag.normalized))
+        guard !normalizedTaskTags.isEmpty else { return nil }
+
+        return data.backlogs.first { backlog in
+            backlog.routingTags.contains { tag in
+                guard let normalizedTag = RoutineTag.normalized(tag) else { return false }
+                return normalizedTaskTags.contains(normalizedTag)
+            }
+        }?.id
     }
 
     @discardableResult

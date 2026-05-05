@@ -342,6 +342,59 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
+    func routineSavedSuccessfully_routesMatchingTodoToBacklog() async throws {
+        let context = makeInMemoryContext()
+        let todo = RoutineTask(
+            name: "Draft pitch",
+            tags: ["Writing"],
+            scheduleMode: .oneOff,
+            lastDone: nil
+        )
+        let backlog = BoardBacklog(
+            id: UUID(uuidString: "99999999-9999-9999-9999-999999999999")!,
+            title: "Writing",
+            createdAt: makeDate("2026-04-01T09:00:00Z"),
+            routingTags: ["writing"]
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                sprintBoardData: SprintBoardData(backlogs: [backlog])
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { @MainActor in context }
+            $0.notificationClient.schedule = { _ in }
+            $0.sprintBoardClient = .noop
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.routineSavedSuccessfully(todo)) {
+            $0.sprintBoardData.backlogAssignments = [
+                BacklogAssignment(todoID: todo.id, backlogID: backlog.id)
+            ]
+            $0.routineTasks = [todo]
+            $0.boardTodoDisplays = [
+                makeDisplay(
+                    taskID: todo.id,
+                    name: "Draft pitch",
+                    emoji: "✨",
+                    tags: ["Writing"],
+                    interval: 1,
+                    scheduleMode: .oneOff,
+                    lastDone: nil,
+                    isDoneToday: false,
+                    assignedBacklogID: backlog.id,
+                    assignedBacklogTitle: "Writing"
+                )
+            ]
+        }
+        await store.skipReceivedActions()
+    }
+
+    @Test
     func assignTodoToSprint_clearsNamedBacklogAssignment() async throws {
         let todo = RoutineTask(
             name: "Draft pitch",

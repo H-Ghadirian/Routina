@@ -35,6 +35,7 @@ extension HomeTCAView {
             renamingSprintID: store.renamingSprintID,
             renamingSprintTitle: store.renamingSprintTitle,
             deletingSprintID: store.deletingSprintID,
+            availableRoutingTags: RoutineTag.allTags(from: store.routineTasks.map(\.tags)),
             backlogCreationFocus: $isBacklogCreationFieldFocused,
             sprintCreationFocus: $isSprintCreationFieldFocused,
             sprintRenameFocus: $isSprintRenameFieldFocused,

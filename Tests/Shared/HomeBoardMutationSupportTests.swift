@@ -102,6 +102,56 @@ struct HomeBoardMutationSupportTests {
     }
 
     @Test
+    func backlogRoutingTagsAssignNewMatchingTodo() {
+        let matchingTodoID = UUID()
+        let routineID = UUID()
+        let firstBacklogID = UUID()
+        let secondBacklogID = UUID()
+        var data = SprintBoardData(
+            backlogs: [
+                BoardBacklog(id: firstBacklogID, title: "Writing", routingTags: ["Deep Work"]),
+                BoardBacklog(id: secondBacklogID, title: "Errands", routingTags: ["Home"])
+            ]
+        )
+
+        let didAssignTodo = HomeBoardMutationSupport.assignNewTodoToMatchingBacklog(
+            taskID: matchingTodoID,
+            tags: ["deep work"],
+            isOneOffTask: true,
+            data: &data
+        )
+        let didAssignRoutine = HomeBoardMutationSupport.assignNewTodoToMatchingBacklog(
+            taskID: routineID,
+            tags: ["Home"],
+            isOneOffTask: false,
+            data: &data
+        )
+
+        #expect(didAssignTodo)
+        #expect(!didAssignRoutine)
+        #expect(data.backlogAssignments == [
+            BacklogAssignment(todoID: matchingTodoID, backlogID: firstBacklogID)
+        ])
+    }
+
+    @Test
+    func setBacklogRoutingTagsSanitizesTags() {
+        let backlogID = UUID()
+        var data = SprintBoardData(
+            backlogs: [BoardBacklog(id: backlogID, title: "Writing")]
+        )
+
+        let didUpdate = HomeBoardMutationSupport.setBacklogRoutingTags(
+            backlogID: backlogID,
+            tags: [" Focus ", "focus", "Deep Work"],
+            data: &data
+        )
+
+        #expect(didUpdate)
+        #expect(data.backlogs[0].routingTags == ["Focus", "Deep Work"])
+    }
+
+    @Test
     func startFinishAndDeleteSprintUpdateStatusAndValidateScope() {
         let now = makeDate("2026-04-12T09:00:00Z")
         let later = makeDate("2026-04-20T09:00:00Z")

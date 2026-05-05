@@ -112,6 +112,129 @@ struct HomeMacBoardScopeButton: View {
     }
 }
 
+struct HomeMacBoardBacklogScopeRow: View {
+    let backlog: BoardBacklog
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(backlog.title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                if !backlog.routingTags.isEmpty {
+                    Text(backlog.routingTags.map { "#\($0)" }.joined(separator: " "))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct HomeMacBacklogRoutingTagsEditor: View {
+    let backlog: BoardBacklog
+    let availableTags: [String]
+    let onChange: ([String]) -> Void
+    @State private var draft = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                TextField("Route tags...", text: $draft)
+                    .textFieldStyle(.plain)
+                    .font(.caption)
+                    .onSubmit(addDraftTags)
+
+                Button(action: addDraftTags) {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(RoutineTag.parseDraft(draft).isEmpty)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.secondary.opacity(0.1))
+            )
+
+            if backlog.routingTags.isEmpty {
+                Text("Tagged new todos land here automatically.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else {
+                WrappingHStack(horizontalSpacing: 6, verticalSpacing: 6) {
+                    ForEach(backlog.routingTags, id: \.self) { tag in
+                        Button {
+                            onChange(RoutineTag.removing(tag, from: backlog.routingTags))
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("#\(tag)")
+                                    .lineLimit(1)
+
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 8, weight: .bold))
+                            }
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(Color.accentColor.opacity(0.12))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Remove routing tag \(tag)")
+                    }
+                }
+            }
+
+            if !suggestedTags.isEmpty {
+                Menu("Add existing tag") {
+                    ForEach(suggestedTags, id: \.self) { tag in
+                        Button("#\(tag)") {
+                            onChange(RoutineTag.deduplicated(backlog.routingTags + [tag]))
+                        }
+                    }
+                }
+                .font(.caption)
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.bottom, 4)
+    }
+
+    private var suggestedTags: [String] {
+        availableTags.filter { tag in
+            !RoutineTag.contains(tag, in: backlog.routingTags)
+        }
+    }
+
+    private func addDraftTags() {
+        let updatedTags = RoutineTag.appending(draft, to: backlog.routingTags)
+        guard updatedTags != backlog.routingTags else { return }
+        draft = ""
+        onChange(updatedTags)
+    }
+}
+
 struct HomeMacBoardSprintScopeRow: View {
     let sprint: BoardSprint
     let dateSummary: String?

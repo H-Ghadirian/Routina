@@ -319,6 +319,43 @@ extension HomeFeature {
         return saveSprintBoardEffect(state.sprintBoardData)
     }
 
+    func handleSetBacklogRoutingTags(
+        backlogID: UUID,
+        tags: [String],
+        state: inout State
+    ) -> Effect<Action> {
+        guard HomeBoardMutationSupport.setBacklogRoutingTags(
+            backlogID: backlogID,
+            tags: tags,
+            data: &state.sprintBoardData
+        ) else { return .none }
+
+        refreshDisplays(&state)
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func finishSaveAndRouteNewTodoToBacklog(
+        _ task: RoutineTask,
+        state: inout State
+    ) -> Effect<Action> {
+        let backlogSaveEffect: Effect<Action>
+        if HomeBoardMutationSupport.assignNewTodoToMatchingBacklog(
+            taskID: task.id,
+            tags: task.tags,
+            isOneOffTask: task.isOneOffTask,
+            data: &state.sprintBoardData
+        ) {
+            backlogSaveEffect = saveSprintBoardEffect(state.sprintBoardData)
+        } else {
+            backlogSaveEffect = .none
+        }
+
+        return .merge(
+            backlogSaveEffect,
+            addRoutineActionHandler().finishSave(task, state: &state)
+        )
+    }
+
     func handleStartSprintFocus(
         _ sprintID: UUID,
         state: inout State

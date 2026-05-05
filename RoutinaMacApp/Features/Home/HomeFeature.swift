@@ -488,6 +488,7 @@ struct HomeFeature {
         case assignTodosToBacklog(taskIDs: [UUID], backlogID: UUID?)
         case assignTodoToSprint(taskID: UUID, sprintID: UUID?)
         case assignTodosToSprint(taskIDs: [UUID], sprintID: UUID?)
+        case setBacklogRoutingTags(backlogID: UUID, tags: [String])
         case renameSprintTapped(UUID)
         case renamingSprintTitleChanged(String)
         case renameSprintConfirmed
@@ -683,7 +684,7 @@ struct HomeFeature {
         )
     }
 
-    private func addRoutineActionHandler() -> HomeFeatureAddRoutineActionHandler<State, Action> {
+    func addRoutineActionHandler() -> HomeFeatureAddRoutineActionHandler<State, Action> {
         HomeFeatureAddRoutineActionHandler(
             referenceDate: now,
             calendar: calendar,
@@ -1077,6 +1078,13 @@ struct HomeFeature {
             case let .assignTodosToSprint(taskIDs, sprintID):
                 return macBoardCommandRouter().assignTodosToSprint(taskIDs, sprintID, &state)
 
+            case let .setBacklogRoutingTags(backlogID, tags):
+                return handleSetBacklogRoutingTags(
+                    backlogID: backlogID,
+                    tags: tags,
+                    state: &state
+                )
+
             case let .renameSprintTapped(id):
                 return macBoardCommandRouter().renameSprintTapped(id, state: &state)
 
@@ -1161,7 +1169,7 @@ struct HomeFeature {
                 return addRoutineActionHandler().save(request)
 
             case let .routineSavedSuccessfully(task):
-                return addRoutineActionHandler().finishSave(task, state: &state)
+                return finishSaveAndRouteNewTodoToBacklog(task, state: &state)
 
             case .routineSaveFailed:
                 return addRoutineActionHandler().failSave()

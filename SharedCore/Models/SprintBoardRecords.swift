@@ -45,15 +45,23 @@ final class BoardBacklogRecord {
     var id: UUID = UUID()
     var title: String = ""
     var createdAt: Date = Date()
+    var routingTagsStorage: String = ""
 
     init(
         id: UUID = UUID(),
         title: String,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        routingTags: [String] = []
     ) {
         self.id = id
         self.title = title
         self.createdAt = createdAt
+        self.routingTagsStorage = RoutineTag.serialize(routingTags)
+    }
+
+    var routingTags: [String] {
+        get { RoutineTag.deserialize(routingTagsStorage) }
+        set { routingTagsStorage = RoutineTag.serialize(newValue) }
     }
 }
 
