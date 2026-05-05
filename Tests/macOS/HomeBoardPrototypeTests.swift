@@ -384,8 +384,11 @@ struct HomeBoardPrototypeTests {
                     tags: ["Writing"],
                     interval: 1,
                     scheduleMode: .oneOff,
+                    createdAt: todo.createdAt,
                     lastDone: nil,
+                    daysUntilDue: 0,
                     isDoneToday: false,
+                    todoState: .ready,
                     assignedBacklogID: backlog.id,
                     assignedBacklogTitle: "Writing"
                 )

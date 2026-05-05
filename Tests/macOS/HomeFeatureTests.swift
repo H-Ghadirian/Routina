@@ -183,7 +183,7 @@ struct HomeFeatureTests {
             $0.selectedTag = nil
             $0.excludedTags = []
         }
-        await store.receive(.sprintBoardLoaded(SprintBoardData()))
+        await store.receive(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: 0))
         await store.receive(.locationSnapshotUpdated(locationSnapshot)) {
             $0.locationSnapshot = locationSnapshot
         }
@@ -2727,6 +2727,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }
@@ -2791,7 +2792,7 @@ struct HomeFeatureTests {
                 makeDisplay(taskID: first.id, name: "Routine A", emoji: "🅰️", interval: 1, lastDone: nil, isDoneToday: false)
             ]
         }
-        await store.receive(.sprintBoardLoaded(SprintBoardData()))
+        await store.receive(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: 0))
         await store.receive(.locationSnapshotUpdated(
             LocationSnapshot(
                 authorizationStatus: .notDetermined,
@@ -2885,7 +2886,7 @@ struct HomeFeatureTests {
                 )
             ]
         }
-        await store.receive(.sprintBoardLoaded(SprintBoardData()))
+        await store.receive(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: 0))
         await store.receive(.locationSnapshotUpdated(
             LocationSnapshot(
                 authorizationStatus: .notDetermined,
@@ -2954,7 +2955,7 @@ struct HomeFeatureTests {
                 makeDisplay(taskID: task.id, name: "Shave Beard", emoji: "💪", interval: 4, lastDone: lastDone, isDoneToday: true, doneCount: 1)
             ]
         }
-        await store.receive(.sprintBoardLoaded(SprintBoardData()))
+        await store.receive(.sprintBoardLoadedFromStorage(SprintBoardData(), revision: 0))
         await store.receive(.locationSnapshotUpdated(
             LocationSnapshot(
                 authorizationStatus: .notDetermined,

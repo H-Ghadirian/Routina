@@ -2661,6 +2661,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: initialState) {
             HomeFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
         }

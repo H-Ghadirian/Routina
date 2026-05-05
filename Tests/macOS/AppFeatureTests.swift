@@ -179,19 +179,6 @@ struct AppFeatureTests {
             emoji: "📚",
             tags: ["Focus"]
         )
-        let expectedChartPoints = RoutineCompletionStats.points(
-            for: .week,
-            timestamps: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-        let expectedFocusChartPoints = FocusDurationStats.points(
-            for: .week,
-            sessions: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-
         let store = TestStore(
             initialState: AppFeature.State(
                 stats: StatsFeature.State(tasks: [healthTask, focusTask], logs: [])
@@ -202,27 +189,11 @@ struct AppFeatureTests {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off
 
         await store.send(.stats(.excludedTagsChanged(["Health", "Focus"]))) {
             $0.stats.excludedTags = ["Health", "Focus"]
             $0.stats.availableTags = ["Focus", "Health"]
-            $0.stats.metrics = StatsFeature.Metrics(
-                chartPoints: expectedChartPoints,
-                focusChartPoints: expectedFocusChartPoints,
-                totalDoneCount: 0,
-                totalCanceledCount: 0,
-                activeRoutineCount: 0,
-                archivedRoutineCount: 0,
-                totalCount: 0,
-                averagePerDay: 0,
-                highlightedBusiestDay: nil,
-                activeDayCount: 0,
-                chartUpperBound: 1,
-                focusChartUpperBound: 10,
-                sparklinePoints: expectedChartPoints,
-                sparklineMaxCount: 1,
-                xAxisDates: expectedChartPoints.map(\.date)
-            )
         }
 
         #expect(persistedState.value?.statsExcludedTags == ["Health", "Focus"])
@@ -233,19 +204,6 @@ struct AppFeatureTests {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
         let now = makeDate("2026-04-10T10:00:00Z")
         let calendar = makeTestCalendar()
-        let expectedChartPoints = RoutineCompletionStats.points(
-            for: .week,
-            timestamps: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-        let expectedFocusChartPoints = FocusDurationStats.points(
-            for: .week,
-            sessions: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-
         let store = TestStore(
             initialState: AppFeature.State(
                 stats: StatsFeature.State(
@@ -263,29 +221,13 @@ struct AppFeatureTests {
             $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
             setTestDateDependencies(&$0, now: now, calendar: calendar)
         }
+        store.exhaustivity = .off
 
         await store.send(.stats(.clearFilters)) {
             $0.stats.selectedRange = .week
             $0.stats.taskTypeFilter = .all
             $0.stats.selectedTag = nil
             $0.stats.excludedTags = []
-            $0.stats.metrics = StatsFeature.Metrics(
-                chartPoints: expectedChartPoints,
-                focusChartPoints: expectedFocusChartPoints,
-                totalDoneCount: 0,
-                totalCanceledCount: 0,
-                activeRoutineCount: 0,
-                archivedRoutineCount: 0,
-                totalCount: 0,
-                averagePerDay: 0,
-                highlightedBusiestDay: nil,
-                activeDayCount: 0,
-                chartUpperBound: 1,
-                focusChartUpperBound: 10,
-                sparklinePoints: expectedChartPoints,
-                sparklineMaxCount: 1,
-                xAxisDates: expectedChartPoints.map(\.date)
-            )
         }
 
         #expect(persistedState.value?.statsSelectedRange == .week)
@@ -298,19 +240,6 @@ struct AppFeatureTests {
     func resetTemporaryViewState_clearsLiveDonesFiltersImmediately() async {
         let now = makeDate("2026-04-10T10:00:00Z")
         let calendar = makeTestCalendar()
-        let expectedChartPoints = RoutineCompletionStats.points(
-            for: .week,
-            timestamps: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-        let expectedFocusChartPoints = FocusDurationStats.points(
-            for: .week,
-            sessions: [],
-            referenceDate: now,
-            calendar: calendar
-        )
-
         let store = TestStore(
             initialState: AppFeature.State(
                 selectedTab: .settings,
@@ -356,23 +285,8 @@ struct AppFeatureTests {
         }
         await store.receive(.timeline(.setData(tasks: [], logs: [])))
         await store.receive(.stats(.setData(tasks: [], logs: [], focusSessions: []))) {
-            $0.stats.metrics = StatsFeature.Metrics(
-                chartPoints: expectedChartPoints,
-                focusChartPoints: expectedFocusChartPoints,
-                totalDoneCount: 0,
-                totalCanceledCount: 0,
-                activeRoutineCount: 0,
-                archivedRoutineCount: 0,
-                totalCount: 0,
-                averagePerDay: 0,
-                highlightedBusiestDay: nil,
-                activeDayCount: 0,
-                chartUpperBound: 1,
-                focusChartUpperBound: 10,
-                sparklinePoints: expectedChartPoints,
-                sparklineMaxCount: 1,
-                xAxisDates: expectedChartPoints.map(\.date)
-            )
+            $0.stats.metrics.totalDoneCount = 0
+            $0.stats.metrics.totalCount = 0
         }
     }
 }

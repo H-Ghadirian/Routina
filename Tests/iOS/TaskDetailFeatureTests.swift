@@ -15,6 +15,7 @@ struct TaskDetailFeatureTests {
         let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
             TaskDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
@@ -71,6 +72,7 @@ struct TaskDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { identifier in
@@ -119,6 +121,7 @@ struct TaskDetailFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskDetailFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0)
             $0.modelContext = { context }
             $0.notificationClient.schedule = { _ in }
             $0.notificationClient.cancel = { _ in }
