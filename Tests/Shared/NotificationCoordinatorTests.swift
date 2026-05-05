@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UserNotifications
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
 #elseif os(macOS)
@@ -223,5 +224,19 @@ struct NotificationCoordinatorTests {
         #expect(trigger.dateComponents.day == expectedComponents.day)
         #expect(trigger.dateComponents.hour == expectedComponents.hour)
         #expect(trigger.dateComponents.minute == expectedComponents.minute)
+    }
+
+    @Test
+    @MainActor
+    func handleResponse_defaultNotificationTapQueuesTaskDeepLink() async {
+        let taskID = UUID()
+        _ = RoutinaDeepLinkDispatcher.consumePendingDeepLink()
+
+        await NotificationCoordinator.handleResponse(
+            actionIdentifier: UNNotificationDefaultActionIdentifier,
+            requestIdentifier: taskID.uuidString
+        )
+
+        #expect(RoutinaDeepLinkDispatcher.consumePendingDeepLink() == .task(taskID))
     }
 }

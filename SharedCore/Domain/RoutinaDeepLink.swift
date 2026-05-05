@@ -31,3 +31,41 @@ enum RoutinaDeepLink: Equatable {
         }
     }
 }
+
+extension Notification.Name {
+    static let routinaOpenDeepLink = Notification.Name("routinaOpenDeepLink")
+}
+
+enum RoutinaDeepLinkNotificationKey: String {
+    case deepLink
+}
+
+@MainActor
+enum RoutinaDeepLinkDispatcher {
+    private static var pendingDeepLink: RoutinaDeepLink?
+
+    static func open(_ deepLink: RoutinaDeepLink) {
+        pendingDeepLink = deepLink
+        NotificationCenter.default.post(
+            name: .routinaOpenDeepLink,
+            object: nil,
+            userInfo: [
+                RoutinaDeepLinkNotificationKey.deepLink.rawValue: deepLink
+            ]
+        )
+    }
+
+    static func deepLink(from notification: Notification) -> RoutinaDeepLink? {
+        notification.userInfo?[RoutinaDeepLinkNotificationKey.deepLink.rawValue] as? RoutinaDeepLink
+    }
+
+    static func consumePendingDeepLink() -> RoutinaDeepLink? {
+        defer { pendingDeepLink = nil }
+        return pendingDeepLink
+    }
+
+    static func markHandled(_ deepLink: RoutinaDeepLink) {
+        guard pendingDeepLink == deepLink else { return }
+        pendingDeepLink = nil
+    }
+}

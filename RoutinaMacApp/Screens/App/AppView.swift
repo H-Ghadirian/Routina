@@ -57,8 +57,12 @@ struct AppView: View {
                         }
                         .task {
                             store.send(.onAppear)
+                            handlePendingDeepLink()
                         }
                         .onOpenURL(perform: handleOpenURL)
+                        .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
+                            handleDeepLinkNotification(notification)
+                        }
                 } else {
                     tabView
                         .onReceive(NotificationCenter.default.publisher(for: CloudSettingsKeyValueSync.didChangeNotification)) { _ in
@@ -67,8 +71,12 @@ struct AppView: View {
                         }
                         .task {
                             store.send(.onAppear)
+                            handlePendingDeepLink()
                         }
                         .onOpenURL(perform: handleOpenURL)
+                        .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
+                            handleDeepLinkNotification(notification)
+                        }
                 }
             }
             .preferredColorScheme(appColorScheme.preferredColorScheme)
@@ -81,6 +89,19 @@ struct AppView: View {
 
     private func handleOpenURL(_ url: URL) {
         guard let deepLink = RoutinaDeepLink(url: url) else { return }
+        store.send(.openDeepLink(deepLink))
+    }
+
+    @MainActor
+    private func handleDeepLinkNotification(_ notification: Notification) {
+        guard let deepLink = RoutinaDeepLinkDispatcher.deepLink(from: notification) else { return }
+        RoutinaDeepLinkDispatcher.markHandled(deepLink)
+        store.send(.openDeepLink(deepLink))
+    }
+
+    @MainActor
+    private func handlePendingDeepLink() {
+        guard let deepLink = RoutinaDeepLinkDispatcher.consumePendingDeepLink() else { return }
         store.send(.openDeepLink(deepLink))
     }
 }

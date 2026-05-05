@@ -167,6 +167,9 @@ enum NotificationCoordinator {
             await markTaskDone(taskID: taskID)
         case snoozeActionIdentifier:
             await snoozeTask(taskID: taskID)
+        case UNNotificationDefaultActionIdentifier:
+            RoutinaDeepLinkDispatcher.open(.task(taskID))
+            NotificationCenter.default.postRoutineDidUpdate()
         default:
             NotificationCenter.default.postRoutineDidUpdate()
         }
