@@ -70,6 +70,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
             task.pressure = pressure
             task.pressureUpdatedAt = payload.pressureUpdatedAt
         }
+        if let comments = payload.comments {
+            task.comments = comments
+        }
     }
 
     static func makeTask(from payload: CloudKitDirectPullService.TaskPayload) -> RoutineTask {
@@ -107,7 +110,8 @@ enum CloudKitDirectPullTaskPayloadApplier {
             autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false,
             estimatedDurationMinutes: payload.estimatedDurationMinutes,
             actualDurationMinutes: payload.actualDurationMinutes,
-            storyPoints: payload.storyPoints
+            storyPoints: payload.storyPoints,
+            comments: payload.comments ?? []
         )
     }
 }

@@ -54,6 +54,7 @@ enum CloudSharingService {
         var actualDurationMinutes: Int?
         var storyPoints: Int?
         var focusModeEnabled: Bool
+        var comments: [RoutineTaskComment]?
     }
 
     static func prepareShare(
@@ -294,6 +295,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.actualDurationMinutes = task.actualDurationMinutes
         self.storyPoints = task.storyPoints
         self.focusModeEnabled = task.focusModeEnabled
+        self.comments = task.comments
     }
 
     var displayTitle: String {
@@ -345,6 +347,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
         task.focusModeEnabled = focusModeEnabled
+        task.comments = comments ?? []
     }
 }
 
@@ -390,7 +393,8 @@ private extension RoutineTask {
             estimatedDurationMinutes: payload.estimatedDurationMinutes,
             actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,
-            focusModeEnabled: payload.focusModeEnabled
+            focusModeEnabled: payload.focusModeEnabled,
+            comments: payload.comments ?? []
         )
     }
 }

@@ -69,7 +69,8 @@ enum SettingsRoutineDataBackupMapping {
             actualDurationMinutes: task.actualDurationMinutes,
             storyPoints: task.storyPoints,
             pressure: includesPressure ? task.pressure : nil,
-            pressureUpdatedAt: includesPressure ? task.pressureUpdatedAt : nil
+            pressureUpdatedAt: includesPressure ? task.pressureUpdatedAt : nil,
+            comments: task.comments
         )
     }
 

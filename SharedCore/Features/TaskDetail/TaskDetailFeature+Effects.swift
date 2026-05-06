@@ -293,6 +293,23 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleDetailCommentsChanged(
+        taskID: UUID,
+        comments: [RoutineTaskComment]
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                task.comments = comments
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error saving detail comments: \(error)")
+            }
+        }
+    }
+
     func handleEditSave(
         _ request: TaskDetailEditSaveRequest
     ) -> Effect<Action> {

@@ -45,6 +45,7 @@ final class RoutineTask {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
+    var commentsStorage: String = ""
     var changeLogStorage: String = ""
 
     var hasNotes: Bool {
@@ -167,6 +168,11 @@ final class RoutineTask {
         set { changeLogStorage = RoutineTaskChangeLogStorage.serialize(newValue) }
     }
 
+    var comments: [RoutineTaskComment] {
+        get { RoutineTaskCommentStorage.deserialize(commentsStorage) }
+        set { commentsStorage = RoutineTaskCommentStorage.serialize(newValue) }
+    }
+
     var scheduleMode: RoutineScheduleMode {
         get { RoutineScheduleMode(rawValue: scheduleModeRawValue) ?? .fixedInterval }
         set {
@@ -232,7 +238,8 @@ final class RoutineTask {
         estimatedDurationMinutes: Int? = nil,
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
-        focusModeEnabled: Bool = false
+        focusModeEnabled: Bool = false,
+        comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
@@ -280,6 +287,7 @@ final class RoutineTask {
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         self.focusModeEnabled = focusModeEnabled
+        self.commentsStorage = RoutineTaskCommentStorage.serialize(comments)
         var initialChanges = [
             RoutineTaskChangeLogEntry(
                 timestamp: createdAt ?? Date(),
@@ -386,10 +394,12 @@ final class RoutineTask {
             estimatedDurationMinutes: estimatedDurationMinutes,
             actualDurationMinutes: actualDurationMinutes,
             storyPoints: storyPoints,
-            focusModeEnabled: focusModeEnabled
+            focusModeEnabled: focusModeEnabled,
+            comments: comments
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage
+        copy.commentsStorage = commentsStorage
         copy.changeLogStorage = changeLogStorage
         copy.scheduleAnchor = scheduleAnchor
         return copy

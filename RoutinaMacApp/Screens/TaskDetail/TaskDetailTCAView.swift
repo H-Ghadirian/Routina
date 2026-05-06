@@ -180,6 +180,7 @@ struct TaskDetailTCAView: View {
                 todoHeaderSection
                 notificationDisabledWarningSection
                 todoStateTimingSection
+                commentsSection
                 routineLogsSection
                 taskChangesSection
                 if store.task.hasChecklistItems {
@@ -425,6 +426,7 @@ struct TaskDetailTCAView: View {
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
+                commentsSection
                 routineLogsSection
                 taskChangesSection
                 if store.task.hasChecklistItems {
@@ -447,6 +449,26 @@ struct TaskDetailTCAView: View {
             allTasks: focusSessionTasks,
             blockingFocusTitle: blockingFocusTitle,
             onCompletedDuration: addCompletedFocusToTimeSpent
+        )
+    }
+
+    private var commentsSection: some View {
+        TaskDetailCommentsSectionView(
+            comments: store.task.comments,
+            newCommentDraft: store.detailCommentDraft,
+            canAddComment: store.canAddDetailComment,
+            editingCommentID: store.editingDetailCommentID,
+            editingCommentDraft: store.editingDetailCommentDraft,
+            canSaveEditedComment: store.canSaveEditingDetailComment,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            onNewCommentDraftChanged: { store.send(.detailCommentDraftChanged($0)) },
+            onAddComment: { store.send(.detailCommentAddTapped) },
+            onEditComment: { store.send(.detailCommentEditTapped($0)) },
+            onEditCommentDraftChanged: { store.send(.detailCommentEditDraftChanged($0)) },
+            onCancelEditComment: { store.send(.detailCommentEditCancelTapped) },
+            onSaveEditComment: { store.send(.detailCommentEditSaveTapped($0)) },
+            onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
         )
     }
 

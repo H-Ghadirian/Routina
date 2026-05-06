@@ -67,6 +67,7 @@ extension SettingsRoutineDataPersistence {
             var storyPoints: Int?
             var pressure: RoutineTaskPressure?
             var pressureUpdatedAt: Date?
+            var comments: [RoutineTaskComment]? = nil
         }
 
         struct Log: Codable {

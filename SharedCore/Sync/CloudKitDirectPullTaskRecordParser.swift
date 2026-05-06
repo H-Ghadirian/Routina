@@ -13,6 +13,17 @@ enum CloudKitDirectPullTaskRecordParser {
         let nameValue = stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
         let emojiValue = stringValue(in: record, keys: ["emoji", "EMOJI", "zemoji", "ZEMOJI", "cd_emoji"])
         let notesValue = stringValue(in: record, keys: ["notes", "NOTES", "znotes", "ZNOTES", "cd_notes"])
+        let commentsStorageValue = stringValue(
+            in: record,
+            keys: [
+                "commentsStorage",
+                "commentsstorage",
+                "COMMENTSSTORAGE",
+                "zcommentsstorage",
+                "ZCOMMENTSSTORAGE",
+                "cd_commentsstorage"
+            ]
+        )
         let linkValue = stringValue(in: record, keys: ["link", "LINK", "zlink", "ZLINK", "cd_link"])
         let deadlineValue = dateValue(in: record, keys: ["deadline", "DEADLINE", "zdeadline", "ZDEADLINE", "cd_deadline"])
         let reminderAtValue = dateValue(in: record, keys: ["reminderAt", "REMINDERAT", "zreminderat", "ZREMINDERAT", "cd_reminderat"])
@@ -166,6 +177,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || nameValue != nil
                 || emojiValue != nil
                 || notesValue != nil
+                || commentsStorageValue != nil
                 || linkValue != nil
                 || deadlineValue != nil
                 || placeIDValue != nil
@@ -246,7 +258,8 @@ enum CloudKitDirectPullTaskRecordParser {
             actualDurationMinutes: RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutesValue),
             storyPoints: storyPointsValue,
             pressure: pressureValue,
-            pressureUpdatedAt: pressureUpdatedAtValue
+            pressureUpdatedAt: pressureUpdatedAtValue,
+            comments: commentsStorageValue.map(RoutineTaskCommentStorage.deserialize)
         )
     }
 

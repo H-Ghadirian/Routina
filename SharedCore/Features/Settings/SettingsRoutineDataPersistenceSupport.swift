@@ -341,7 +341,8 @@ enum SettingsRoutineDataPersistence {
                     autoAssumeDailyDone: task.autoAssumeDailyDone ?? false,
                     estimatedDurationMinutes: task.estimatedDurationMinutes,
                     actualDurationMinutes: task.actualDurationMinutes,
-                    storyPoints: task.storyPoints
+                    storyPoints: task.storyPoints,
+                    comments: task.comments ?? []
                 )
                 context.insert(importedTask)
                 importedTaskCount += 1

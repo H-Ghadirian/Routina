@@ -25,6 +25,9 @@ struct TaskDetailFeature: Reducer {
         var editRoutineName: String = ""
         var editRoutineEmoji: String = "✨"
         var editRoutineNotes: String = ""
+        var detailCommentDraft: String = ""
+        var editingDetailCommentID: UUID?
+        var editingDetailCommentDraft: String = ""
         var editRoutineLink: String = ""
         var editDeadline: Date?
         var editReminderAt: Date?
@@ -118,6 +121,19 @@ struct TaskDetailFeature: Reducer {
                 hasChecklistItems: !editRoutineChecklistItems.isEmpty
             )
         }
+
+        var canAddDetailComment: Bool {
+            RoutineTaskComment.sanitizedBody(detailCommentDraft) != nil
+        }
+
+        var canSaveEditingDetailComment: Bool {
+            guard let editingDetailCommentID,
+                  let comment = task.comments.first(where: { $0.id == editingDetailCommentID }),
+                  let body = RoutineTaskComment.sanitizedBody(editingDetailCommentDraft) else {
+                return false
+            }
+            return body != comment.body
+        }
     }
 
     enum Action: Equatable {
@@ -142,6 +158,13 @@ struct TaskDetailFeature: Reducer {
         case editRoutineNameChanged(String)
         case editRoutineEmojiChanged(String)
         case editRoutineNotesChanged(String)
+        case detailCommentDraftChanged(String)
+        case detailCommentAddTapped
+        case detailCommentEditTapped(UUID)
+        case detailCommentEditDraftChanged(String)
+        case detailCommentEditCancelTapped
+        case detailCommentEditSaveTapped(UUID)
+        case detailCommentDeleteTapped(UUID)
         case editRoutineLinkChanged(String)
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
@@ -690,6 +713,67 @@ struct TaskDetailFeature: Reducer {
 
         case let .editRoutineNotesChanged(notes):
             return basicEditActionHandler().editRoutineNotesChanged(notes, state: &state)
+
+        case let .detailCommentDraftChanged(comment):
+            state.detailCommentDraft = comment
+            return .none
+
+        case .detailCommentAddTapped:
+            guard let body = RoutineTaskComment.sanitizedBody(state.detailCommentDraft) else { return .none }
+            let comment = RoutineTaskComment(body: body, createdAt: now)
+            var comments = state.task.comments
+            comments.append(comment)
+            state.task.comments = comments
+            state.detailCommentDraft = ""
+            refreshTaskView(&state)
+            return handleDetailCommentsChanged(taskID: state.task.id, comments: state.task.comments)
+
+        case let .detailCommentEditTapped(commentID):
+            guard let comment = state.task.comments.first(where: { $0.id == commentID }) else { return .none }
+            state.editingDetailCommentID = commentID
+            state.editingDetailCommentDraft = comment.body
+            return .none
+
+        case let .detailCommentEditDraftChanged(comment):
+            state.editingDetailCommentDraft = comment
+            return .none
+
+        case .detailCommentEditCancelTapped:
+            state.editingDetailCommentID = nil
+            state.editingDetailCommentDraft = ""
+            return .none
+
+        case let .detailCommentEditSaveTapped(commentID):
+            guard state.editingDetailCommentID == commentID,
+                  let body = RoutineTaskComment.sanitizedBody(state.editingDetailCommentDraft),
+                  let index = state.task.comments.firstIndex(where: { $0.id == commentID }) else {
+                return .none
+            }
+            guard state.task.comments[index].body != body else {
+                state.editingDetailCommentID = nil
+                state.editingDetailCommentDraft = ""
+                return .none
+            }
+            var comments = state.task.comments
+            comments[index].body = body
+            comments[index].updatedAt = now
+            state.task.comments = comments
+            state.editingDetailCommentID = nil
+            state.editingDetailCommentDraft = ""
+            refreshTaskView(&state)
+            return handleDetailCommentsChanged(taskID: state.task.id, comments: state.task.comments)
+
+        case let .detailCommentDeleteTapped(commentID):
+            let currentComments = state.task.comments
+            let comments = currentComments.filter { $0.id != commentID }
+            guard comments.count != currentComments.count else { return .none }
+            state.task.comments = comments
+            if state.editingDetailCommentID == commentID {
+                state.editingDetailCommentID = nil
+                state.editingDetailCommentDraft = ""
+            }
+            refreshTaskView(&state)
+            return handleDetailCommentsChanged(taskID: state.task.id, comments: comments)
 
         case let .editRoutineLinkChanged(link):
             return basicEditActionHandler().editRoutineLinkChanged(link, state: &state)
