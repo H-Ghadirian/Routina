@@ -7,9 +7,24 @@ import UserNotifications
 public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
     public func applicationDidFinishLaunching(_ notification: Notification) {
         guard !AppEnvironment.isAutomatedTestMode else { return }
+        NSApp.setActivationPolicy(.regular)
         NotificationCoordinator.configureCurrentCenter(delegate: self)
         NSWindow.allowsAutomaticWindowTabbing = false
         RoutinaMacGlobalHotKeyManager.shared.startQuickAddHotKey()
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            NSApp.windows.first?.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    public func applicationShouldHandleReopen(
+        _ sender: NSApplication,
+        hasVisibleWindows flag: Bool
+    ) -> Bool {
+        if !flag {
+            RoutinaMacWindowRouter.shared.openHomeAndActivate()
+        }
+        return true
     }
 
     public func application(

@@ -506,10 +506,19 @@ struct FocusSessionCard: View {
     private func saveContext() {
         do {
             try modelContext.save()
+            syncFocusTimerSurfaces()
             NotificationCenter.default.postRoutineDidUpdate()
         } catch {
             NSLog("Focus session save failed: \(error.localizedDescription)")
         }
+    }
+
+    private func syncFocusTimerSurfaces() {
+#if os(iOS) && canImport(ActivityKit)
+        Task { @MainActor in
+            await FocusTimerLiveActivityService.sync(using: modelContext)
+        }
+#endif
     }
 }
 
