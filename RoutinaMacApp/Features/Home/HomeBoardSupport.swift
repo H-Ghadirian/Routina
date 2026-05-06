@@ -398,13 +398,17 @@ extension HomeFeature {
             .map(\.id)
 
         state.sprintFocusAllocationSessionID = sessionID
-        state.sprintFocusAllocationDrafts = HomeTaskSupport.uniqueTaskIDs(sprintTaskIDs)
+        let drafts = HomeTaskSupport.uniqueTaskIDs(sprintTaskIDs)
             .map { taskID in
                 SprintFocusAllocationDraft(
                     taskID: taskID,
                     minutes: existingAllocations[taskID] ?? 0
                 )
             }
+        state.sprintFocusAllocationDrafts = cappedSprintFocusAllocationDrafts(
+            drafts: drafts,
+            recordedMinutes: session.roundedDurationMinutes
+        )
     }
 
     func updateSprintFocusAllocationDraft(
@@ -519,6 +523,19 @@ extension HomeFeature {
         }
 
         return allocations
+    }
+
+    private func cappedSprintFocusAllocationDrafts(
+        drafts: [SprintFocusAllocationDraft],
+        recordedMinutes: Int
+    ) -> [SprintFocusAllocationDraft] {
+        var remainingMinutes = max(0, recordedMinutes)
+
+        return drafts.map { draft in
+            let minutes = min(max(0, draft.minutes), remainingMinutes)
+            remainingMinutes -= minutes
+            return SprintFocusAllocationDraft(taskID: draft.taskID, minutes: minutes)
+        }
     }
 
     private func applySprintFocusAllocationDeltas(

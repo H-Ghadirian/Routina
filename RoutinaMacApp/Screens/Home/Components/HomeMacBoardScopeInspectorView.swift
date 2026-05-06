@@ -1,6 +1,51 @@
 import SwiftUI
 
 struct HomeMacBoardScopeInspectorView: View {
+    private enum AllocationColumnFilter: String, CaseIterable, Identifiable {
+        case all
+        case ready
+        case inProgress
+        case blocked
+        case done
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .all: return "All"
+            case .ready: return "Ready / Paused"
+            case .inProgress: return "In Progress"
+            case .blocked: return "Blocked"
+            case .done: return "Done"
+            }
+        }
+
+        var pickerTitle: String {
+            switch self {
+            case .all: return "All"
+            case .ready: return "Ready"
+            case .inProgress: return "In Progress"
+            case .blocked: return "Blocked"
+            case .done: return "Done"
+            }
+        }
+
+        func includes(_ state: TodoState?) -> Bool {
+            switch self {
+            case .all:
+                return true
+            case .ready:
+                return state == .ready || state == .paused
+            case .inProgress:
+                return state == .inProgress
+            case .blocked:
+                return state == .blocked
+            case .done:
+                return state == .done
+            }
+        }
+    }
+
     let presentation: HomeBoardPresentation
     let finishableSprints: [BoardSprint]
     let sprintFocusSessions: [SprintFocusSession]
@@ -17,6 +62,7 @@ struct HomeMacBoardScopeInspectorView: View {
     let onSaveSprintFocusAllocation: () -> Void
     let onCancelSprintFocusAllocation: () -> Void
     @State private var isSprintFocusHistoryExpanded = true
+    @State private var allocationColumnFilter: AllocationColumnFilter = .all
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
@@ -369,10 +415,11 @@ struct HomeMacBoardScopeInspectorView: View {
 
     private func sprintFocusSessionSummary(_ session: SprintFocusSession) -> String {
         let recorded = allocationMinutesText(session.roundedDurationMinutes)
-        guard session.allocatedMinutes > 0 else {
+        let allocated = min(session.allocatedMinutes, session.roundedDurationMinutes)
+        guard allocated > 0 else {
             return "\(recorded) recorded"
         }
-        return "\(recorded) recorded, \(allocationMinutesText(session.allocatedMinutes)) allocated"
+        return "\(recorded) recorded, \(allocationMinutesText(allocated)) allocated"
     }
 
     private func totalRecordedMinutes(in sessions: [SprintFocusSession]) -> Int {
@@ -416,12 +463,30 @@ struct HomeMacBoardScopeInspectorView: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
-                    List {
-                        ForEach(allocationDrafts) { draft in
-                            sprintFocusAllocationRow(draft, session: session)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Picker("Column", selection: $allocationColumnFilter) {
+                            ForEach(AllocationColumnFilter.allCases) { filter in
+                                Text(filter.pickerTitle).tag(filter)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .controlSize(.small)
+
+                        if filteredAllocationDrafts.isEmpty {
+                            Text("No tasks in \(allocationColumnFilter.title).")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        } else {
+                            List {
+                                ForEach(filteredAllocationDrafts) { draft in
+                                    sprintFocusAllocationRow(draft, session: session)
+                                }
+                            }
+                            .listStyle(.inset)
                         }
                     }
-                    .listStyle(.inset)
 
                     HStack {
                         Text("Allocated")
@@ -452,6 +517,9 @@ struct HomeMacBoardScopeInspectorView: View {
                 }
             }
             .padding(24)
+            .onAppear {
+                allocationColumnFilter = .all
+            }
         }
     }
 
@@ -490,6 +558,12 @@ struct HomeMacBoardScopeInspectorView: View {
         allocationDrafts.reduce(0) { $0 + max(0, $1.minutes) }
     }
 
+    private var filteredAllocationDrafts: [SprintFocusAllocationDraft] {
+        allocationDrafts.filter { draft in
+            allocationColumnFilter.includes(todoState(for: draft.taskID))
+        }
+    }
+
     private func maximumAllocationMinutes(
         for draft: SprintFocusAllocationDraft,
         session: SprintFocusSession
@@ -516,7 +590,11 @@ struct HomeMacBoardScopeInspectorView: View {
     }
 
     private func taskSubtitle(for taskID: UUID) -> String {
-        presentation.boardTodoDisplays.first(where: { $0.id == taskID })?.todoState?.displayTitle ?? "Sprint task"
+        todoState(for: taskID)?.displayTitle ?? "Sprint task"
+    }
+
+    private func todoState(for taskID: UUID) -> TodoState? {
+        presentation.boardTodoDisplays.first(where: { $0.id == taskID })?.todoState
     }
 
     private func elapsedSeconds(for session: SprintFocusSession, now: Date) -> TimeInterval {

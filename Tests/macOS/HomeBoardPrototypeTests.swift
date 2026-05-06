@@ -941,4 +941,83 @@ struct HomeBoardPrototypeTests {
         #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 10)
         #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == nil)
     }
+
+    @Test
+    func sprintFocusTimer_existingOverAllocationIsCappedWhenReviewing() async throws {
+        let context = makeInMemoryContext()
+        let first = makeTask(
+            in: context,
+            name: "Implement allocation cap",
+            interval: 1,
+            lastDone: nil,
+            emoji: "A",
+            scheduleMode: .oneOff
+        )
+        first.actualDurationMinutes = 78
+        let second = makeTask(
+            in: context,
+            name: "Review allocation cap",
+            interval: 1,
+            lastDone: nil,
+            emoji: "B",
+            scheduleMode: .oneOff
+        )
+        try context.save()
+
+        let sprint = BoardSprint(
+            id: UUID(uuidString: "44444444-5555-6666-7777-888888888888")!,
+            title: "Allocation Cleanup",
+            status: .active,
+            createdAt: makeDate("2026-03-20T08:00:00Z"),
+            startedAt: makeDate("2026-03-20T08:00:00Z")
+        )
+        let overAllocatedSession = SprintFocusSession(
+            id: UUID(uuidString: "55555555-6666-7777-8888-999999999999")!,
+            sprintID: sprint.id,
+            startedAt: makeDate("2026-03-20T09:00:00Z"),
+            stoppedAt: makeDate("2026-03-20T10:07:00Z"),
+            allocations: [
+                SprintFocusAllocation(taskID: first.id, minutes: 78),
+                SprintFocusAllocation(taskID: second.id, minutes: 10)
+            ]
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { @MainActor in context }
+            $0.sprintBoardClient = .noop
+            setTestDateDependencies(&$0, now: makeDate("2026-03-20T10:07:00Z"))
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .tasksLoadedSuccessfully([first, second], [], [], [], HomeFeature.DoneStats())
+        )
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(
+                    sprints: [sprint],
+                    assignments: [
+                        SprintAssignment(todoID: first.id, sprintID: sprint.id),
+                        SprintAssignment(todoID: second.id, sprintID: sprint.id)
+                    ],
+                    focusSessions: [overAllocatedSession]
+                )
+            )
+        )
+
+        await store.send(.reviewSprintFocusAllocationTapped(overAllocatedSession.id))
+
+        #expect(store.state.sprintFocusAllocationDrafts.map(\.minutes).reduce(0, +) == 67)
+        #expect(store.state.sprintFocusAllocationDrafts.first(where: { $0.taskID == first.id })?.minutes == 67)
+        #expect(store.state.sprintFocusAllocationDrafts.first(where: { $0.taskID == second.id })?.minutes == 0)
+
+        await store.send(.sprintFocusAllocationSaveTapped)
+
+        let savedSession = try #require(store.state.sprintBoardData.focusSessions.first(where: { $0.id == overAllocatedSession.id }))
+        #expect(savedSession.allocations.map { $0.minutes }.reduce(0, +) == 67)
+        #expect(store.state.routineTasks.first(where: { $0.id == first.id })?.actualDurationMinutes == 67)
+        #expect(store.state.routineTasks.first(where: { $0.id == second.id })?.actualDurationMinutes == nil)
+    }
 }
