@@ -127,50 +127,41 @@ private struct CloudSharingController: UIViewControllerRepresentable {
         Coordinator(task: task)
     }
 
-    func makeUIViewController(context: Context) -> UICloudSharingController {
-        let controller = UICloudSharingController { _, completion in
-            let completionBox = CloudSharingCompletion(completion)
-            CloudSharingService.prepareShare(for: task) { share, container, error in
-                completionBox.call(share, container, error)
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let payload = CloudSharingService.SharedTaskPayload(task: task)
+        let itemProvider = NSItemProvider(object: context.coordinator.title as NSString)
+
+        if let containerIdentifier = AppEnvironment.cloudKitContainerIdentifier {
+            let container = CKContainer(identifier: containerIdentifier)
+            let allowedOptions = CKAllowedSharingOptions(
+                allowedParticipantPermissionOptions: .readOnly,
+                allowedParticipantAccessOptions: .specifiedRecipientsOnly
+            )
+
+            itemProvider.registerCKShare(
+                container: container,
+                allowedSharingOptions: allowedOptions
+            ) {
+                try await CloudSharingService.prepareShare(payload: payload, in: container)
             }
         }
-        controller.delegate = context.coordinator
-        controller.availablePermissions = UICloudSharingController.PermissionOptions(rawValue: (1 << 1) | (1 << 2))
-        return controller
+
+        let configuration = UIActivityItemsConfiguration(itemProviders: [itemProvider])
+        configuration.metadataProvider = { key in
+            key == .title ? context.coordinator.title : nil
+        }
+
+        return UIActivityViewController(activityItemsConfiguration: configuration)
     }
 
-    func updateUIViewController(_ uiViewController: UICloudSharingController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 
-    final class Coordinator: NSObject, UICloudSharingControllerDelegate {
+    final class Coordinator {
         let title: String
 
         init(task: RoutineTask) {
             let payload = CloudSharingService.SharedTaskPayload(task: task)
             self.title = payload.displayTitle
         }
-
-        func itemTitle(for csc: UICloudSharingController) -> String? {
-            title
-        }
-
-        func itemType(for csc: UICloudSharingController) -> String? {
-            "Routina Task"
-        }
-
-        func cloudSharingController(_ csc: UICloudSharingController, failedToSaveShareWithError error: Error) {
-            NSLog("Failed to save CloudKit share: \(error.localizedDescription)")
-        }
-    }
-}
-
-private final class CloudSharingCompletion: @unchecked Sendable {
-    private let completion: (CKShare?, CKContainer?, Error?) -> Void
-
-    init(_ completion: @escaping (CKShare?, CKContainer?, Error?) -> Void) {
-        self.completion = completion
-    }
-
-    func call(_ share: CKShare?, _ container: CKContainer?, _ error: Error?) {
-        completion(share, container, error)
     }
 }

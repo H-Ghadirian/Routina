@@ -784,7 +784,7 @@ struct HomeFeature {
         )
     }
 
-    private func taskLifecycleCommandRouter() -> HomeFeatureTaskLifecycleCommandRouter<State, Action> {
+    func taskLifecycleCommandRouter() -> HomeFeatureTaskLifecycleCommandRouter<State, Action> {
         HomeFeatureTaskLifecycleCommandRouter(
             markDone: { id, tasks, doneStats in
                 taskLifecycleCoordinator().markTaskDone(
@@ -875,19 +875,13 @@ struct HomeFeature {
                 )
 
             case let .sprintBoardLoaded(sprintBoardData):
-                state.sprintBoardData = sprintBoardData
-                state.selectedBoardScope = HomeBoardMutationSupport.validatedScope(
-                    state.selectedBoardScope,
-                    in: sprintBoardData
-                )
-                refreshDisplays(&state)
-                return .none
+                return applySprintBoardLoaded(sprintBoardData, state: &state)
 
             case let .sprintBoardLoadedFromStorage(sprintBoardData, revision):
                 guard revision == state.board.sprintBoardRevision else {
                     return .none
                 }
-                return reduce(into: &state, action: .sprintBoardLoaded(sprintBoardData))
+                return applySprintBoardLoaded(sprintBoardData, state: &state)
 
             case .tasksLoadFailed:
                 return lifecycleActionHandler().tasksLoadFailed()
@@ -1275,7 +1269,20 @@ struct HomeFeature {
         )
     }
 
-    private func setTaskOrderInSection(
+    private func applySprintBoardLoaded(
+        _ sprintBoardData: SprintBoardData,
+        state: inout State
+    ) -> Effect<Action> {
+        state.sprintBoardData = sprintBoardData
+        state.selectedBoardScope = HomeBoardMutationSupport.validatedScope(
+            state.selectedBoardScope,
+            in: sprintBoardData
+        )
+        refreshDisplays(&state)
+        return .none
+    }
+
+    func setTaskOrderInSection(
         sectionKey: String,
         orderedTaskIDs: [UUID],
         state: inout State

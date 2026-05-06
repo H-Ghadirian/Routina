@@ -27,7 +27,7 @@ extension HomeFeature {
         if newState == .done {
             guard !state.routineTasks[index].isCompletedOneOff,
                   !state.routineTasks[index].isCanceledOneOff else { return .none }
-            return reduce(into: &state, action: .markTaskDone(id))
+            return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
         }
 
         guard !state.routineTasks[index].isCompletedOneOff,
@@ -145,12 +145,10 @@ extension HomeFeature {
         let targetSectionKey = Self.boardSectionKey(for: targetState)
 
         if currentState == targetState {
-            return reduce(
-                into: &state,
-                action: .setTaskOrderInSection(
-                    sectionKey: targetSectionKey,
-                    orderedTaskIDs: orderedTaskIDs
-                )
+            return setTaskOrderInSection(
+                sectionKey: targetSectionKey,
+                orderedTaskIDs: orderedTaskIDs,
+                state: &state
             )
         }
 
@@ -158,7 +156,7 @@ extension HomeFeature {
             return .none
         }
 
-        let moveEffect = reduce(into: &state, action: .moveTodoToState(taskID, targetState))
+        let moveEffect = handleMoveTodoToState(taskID, newState: targetState, state: &state)
         let reorderEffect: Effect<Action> = .send(
             .setTaskOrderInSection(
                 sectionKey: targetSectionKey,

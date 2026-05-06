@@ -69,12 +69,26 @@ enum CloudSharingService {
         Task {
             let container = CKContainer(identifier: containerIdentifier)
             do {
-                let share = try await saveShare(payload: payload, in: container)
+                let share = try await prepareShare(payload: payload, in: container)
                 completion(share, container, nil)
             } catch {
                 completion(nil, container, error)
             }
         }
+    }
+
+    static func prepareShare(
+        for task: RoutineTask,
+        in container: CKContainer
+    ) async throws -> CKShare {
+        try await prepareShare(payload: SharedTaskPayload(task: task), in: container)
+    }
+
+    static func prepareShare(
+        payload: SharedTaskPayload,
+        in container: CKContainer
+    ) async throws -> CKShare {
+        try await saveShare(payload: payload, in: container)
     }
 
     @MainActor

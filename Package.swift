@@ -29,23 +29,23 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "1.24.1"
+            from: "1.25.5"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-dependencies",
-            from: "1.4.0"
+            from: "1.12.0"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-case-paths",
-            from: "1.5.4"
+            from: "1.7.3"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-perception",
-            from: "1.3.4"
+            from: "1.6.0"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-concurrency-extras",
-            from: "1.2.0"
+            from: "1.3.2"
         ),
     ],
     targets: [
@@ -68,6 +68,7 @@ let package = Package(
                 ".swiftpm",
                 ".xcresulttmp",
                 ".DS_Store",
+                "AGENTS.md",
                 "Package.resolved",
                 "Package.swift",
                 "Routina.xcworkspace",
@@ -111,6 +112,17 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphSheet.swift",
                 // Not yet audited:
                 "SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailPriorityDisclosureBox.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogRowContent.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailRoutineLogRowPresentation.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailStatusActionSectionView.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailExtrasSectionView.swift",
+                "SharedCore/Screens/Settings/SettingsTagPresentationViews.swift",
+                "SharedCore/Features/Settings/SettingsInfoRow.swift",
+                "SharedCore/Features/Settings/SettingsSectionGlyphView.swift",
+                "SharedCore/Views/RoutineTagPill.swift",
+                "SharedCore/Views/StatsGitHubChartView.swift",
+                "SharedCore/Views/StatsGitHubSummaryViews.swift",
                 // Extends the per-app HomeTCAView type and is compiled by both
                 // Xcode app targets through the shared source folder.
                 "SharedCore/Screens/Home/HomeTCAView+ViewState.swift",
@@ -441,9 +453,11 @@ let package = Package(
             exclude: [
                 "AddEditFormCoordinator.swift",
                 "Features",
+                "FormSection.swift",
                 "RoutinaMacApp.swift",
                 "Screens",
                 "Utilities/LocationProvider.swift",
+                "Utilities/MacQuickAddShortcut.swift",
                 "Utilities/PlatformClients.swift",
                 "Utilities/PlatformSupport+AppKit.swift",
                 "Utilities/PlatformSupportBase.swift",
