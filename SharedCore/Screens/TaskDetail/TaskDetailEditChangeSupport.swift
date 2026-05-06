@@ -18,8 +18,11 @@ struct TaskDetailEditChangeRequest {
     let taskAttachments: [AttachmentItem]
     let selectedPlaceID: UUID?
     let tags: [String]
+    let availableGoals: [RoutineGoalSummary]
+    let goals: [RoutineGoalSummary]
     let relationships: [RoutineTaskRelationship]
     let tagDraft: String
+    let goalDraft: String
     let scheduleMode: RoutineScheduleMode
     let steps: [RoutineStep]
     let stepDraft: String
@@ -56,8 +59,11 @@ struct TaskDetailEditChangeRequest {
         self.taskAttachments = state.taskAttachments
         self.selectedPlaceID = state.editSelectedPlaceID
         self.tags = state.editRoutineTags
+        self.availableGoals = state.availableGoals
+        self.goals = state.editRoutineGoals
         self.relationships = state.editRelationships
         self.tagDraft = state.editTagDraft
+        self.goalDraft = state.editGoalDraft
         self.scheduleMode = state.editScheduleMode
         self.steps = state.editRoutineSteps
         self.stepDraft = state.editStepDraft
@@ -89,9 +95,16 @@ enum TaskDetailEditChangeDetector {
         let currentNotes = CalendarTaskImportSupport.displayNotes(from: task.notes) ?? ""
         let currentLink = task.link ?? ""
         let currentTags = RoutineTag.deduplicated(task.tags)
+        let currentGoalIDs = task.goalIDs
         let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
         let candidateTags = RoutineTag.appending(request.tagDraft, to: request.tags)
+        let candidateGoals = RoutineGoalSummary.appending(
+            request.goalDraft,
+            availableGoals: request.availableGoals,
+            to: request.goals
+        )
+        let candidateGoalIDs = RoutineGoalSummary.sanitized(candidateGoals).map(\.id)
         let candidateRelationships = RoutineTaskRelationship.sanitized(request.relationships, ownerID: task.id)
         let currentSteps = RoutineStep.sanitized(task.steps)
         let candidateSteps = RoutineStep.normalizedTitle(request.stepDraft).map { title in
@@ -129,6 +142,7 @@ enum TaskDetailEditChangeDetector {
             || request.editAttachments != request.taskAttachments
             || request.selectedPlaceID != task.placeID
             || candidateTags != currentTags
+            || candidateGoalIDs != currentGoalIDs
             || candidateRelationships != currentRelationships
             || request.scheduleMode != task.scheduleMode
             || RoutineStep.sanitized(candidateSteps) != currentSteps

@@ -258,6 +258,36 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func editChangeDetectorTracksGoalSelectionAndDraftChanges() {
+        let goalID = UUID()
+        let existingGoal = RoutineGoalSummary(id: goalID, title: "Ship portfolio")
+        let task = RoutineTask(
+            name: "Write report",
+            goalIDs: [goalID]
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.availableGoals = [existingGoal]
+        withDependencies {
+            $0.date.now = makeDate("2026-04-25T10:00:00Z")
+        } operation: {
+            TaskDetailFeature().syncEditFormFromTask(&state)
+        }
+
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)) == false)
+
+        state.editRoutineGoals = []
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+
+        state.editRoutineGoals = [existingGoal]
+        state.editGoalDraft = "Improve health"
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+
+        state.editGoalDraft = ""
+        state.editRoutineGoals = [existingGoal, RoutineGoalSummary(title: "Improve health")]
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+    }
+
+    @Test
     func logPresentationBuildsSharedLogAndChangeText() {
         let timestamp = makeDate("2026-04-25T08:30:00Z")
         let log = RoutineLog(
