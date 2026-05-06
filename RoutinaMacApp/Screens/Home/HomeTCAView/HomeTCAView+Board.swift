@@ -84,7 +84,9 @@ extension HomeTCAView {
             availableSprints: presentation.sprints,
             activeSprints: presentation.activeSprints,
             onSelectTask: commands.selectTask,
-            onOpenTask: commands.selectTask,
+            onOpenTask: { taskID in
+                openBoardTaskDetails(taskID)
+            },
             onMoveTask: commands.moveTask(_:to:),
             onAssignTaskToBacklog: commands.assignTaskToBacklog(taskID:backlogID:),
             onAssignTasksToBacklog: commands.assignTasksToBacklog(taskIDs:backlogID:),

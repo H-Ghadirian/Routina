@@ -243,11 +243,22 @@ extension HomeTCAView {
     }
 
     func openDayPlanTaskDetails(_ taskID: UUID) {
+        openMacTaskDetails(taskID)
+    }
+
+    func openBoardTaskDetails(_ taskID: UUID) {
+        openMacTaskDetails(taskID)
+    }
+
+    private func openMacTaskDetails(_ taskID: UUID) {
         if shouldShowTaskInRegularSidebar(taskID) {
             clearDayPlanUnplannedCompletedFilter()
         }
         macHomeDetailMode = .details
         macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID)
+        if store.macSidebarMode == .board {
+            store.send(.macSidebarModeChanged(.routines))
+        }
         store.send(.macSidebarSelectionChanged(.task(taskID)))
     }
 
