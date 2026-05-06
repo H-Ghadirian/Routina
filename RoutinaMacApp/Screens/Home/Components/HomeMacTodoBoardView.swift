@@ -17,12 +17,10 @@ struct HomeMacTodoBoardView: View {
 
     let columns: [Column]
     let layout: Layout
-    let selectedTaskID: UUID?
     let isCompactLayout: Bool
     let availableBacklogs: [BoardBacklog]
     let availableSprints: [BoardSprint]
     let activeSprints: [BoardSprint]
-    let onSelectTask: (UUID) -> Void
     let onOpenTask: (UUID) -> Void
     let onMoveTask: (UUID, TodoState) -> Void
     let onAssignTaskToBacklog: (UUID, UUID?) -> Void
@@ -34,6 +32,7 @@ struct HomeMacTodoBoardView: View {
     let onMoveDown: (UUID, TodoState, [UUID]) -> Void
 
     @State private var draggedTaskID: UUID?
+    @State private var selectedTaskID: UUID?
     @State private var selectedBacklogTaskIDs: Set<UUID> = []
     @State private var highlightedColumnState: TodoState?
     @State private var hoverTargetTaskID: UUID?
@@ -71,7 +70,7 @@ struct HomeMacTodoBoardView: View {
                     availableBacklogs: availableBacklogs,
                     availableSprints: availableSprints,
                     activeSprints: activeSprints,
-                    onSelectTask: onSelectTask,
+                    onSelectTask: selectTask,
                     onOpenTask: onOpenTask,
                     onMoveTask: onMoveTask,
                     onAssignTaskToBacklog: onAssignTaskToBacklog,
@@ -130,7 +129,7 @@ struct HomeMacTodoBoardView: View {
                             availableBacklogs: availableBacklogs,
                             availableSprints: availableSprints,
                             activeSprints: activeSprints,
-                            onSelectTask: onSelectTask,
+                            onSelectTask: selectTask,
                             onOpenTask: onOpenTask,
                             onMoveTask: onMoveTask,
                             onAssignTaskToBacklog: onAssignTaskToBacklog,
@@ -201,5 +200,9 @@ struct HomeMacTodoBoardView: View {
             return Color.accentColor.opacity(0.5)
         }
         return Color.primary.opacity(0.06)
+    }
+
+    private func selectTask(_ taskID: UUID) {
+        selectedTaskID = taskID
     }
 }

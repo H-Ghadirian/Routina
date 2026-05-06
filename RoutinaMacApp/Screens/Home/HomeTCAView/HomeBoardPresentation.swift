@@ -101,10 +101,6 @@ struct HomeBoardPresentation: Equatable {
     }
 
     var inspectorTitle: String {
-        if selectedTaskID != nil {
-            return "Ticket Details"
-        }
-
         return isBacklogScope ? "Backlog Details" : "Sprint Details"
     }
 

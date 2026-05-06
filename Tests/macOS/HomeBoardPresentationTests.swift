@@ -112,6 +112,7 @@ struct HomeBoardPresentationTests {
         let backlogPresentation = makePresentation(
             sprintBoardData: SprintBoardData(sprints: [sprint], backlogs: [backlog]),
             selectedScope: .namedBacklog(backlog.id),
+            selectedTaskID: UUID(),
             referenceDate: referenceDate
         )
         let sprintPresentation = makePresentation(

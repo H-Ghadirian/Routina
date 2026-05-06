@@ -11,7 +11,7 @@ extension HomeTCAView {
             boardTodoDisplays: store.boardTodoDisplays,
             sprintBoardData: store.sprintBoardData,
             selectedScope: store.selectedBoardScope,
-            selectedTaskID: store.selectedTaskID,
+            selectedTaskID: nil,
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
@@ -78,12 +78,10 @@ extension HomeTCAView {
         return HomeMacTodoBoardView(
             columns: macTodoBoardColumns(from: presentation.columns),
             layout: presentation.isBacklogScope ? .backlogList : .board,
-            selectedTaskID: presentation.selectedTaskID,
             isCompactLayout: isMacTodoBoardCompactCards,
             availableBacklogs: presentation.backlogs,
             availableSprints: presentation.sprints,
             activeSprints: presentation.activeSprints,
-            onSelectTask: commands.selectTask,
             onOpenTask: { taskID in
                 openBoardTaskDetails(taskID)
             },
@@ -124,64 +122,34 @@ extension HomeTCAView {
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
-
-                if store.selectedTaskID != nil {
-                    Button {
-                        store.send(.setSelectedTask(nil))
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close ticket details")
-                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
 
             Divider()
 
-            if let selectedTaskID = store.selectedTaskID,
-               let detailStore = store.scope(
-                   state: \.taskDetailState,
-                   action: \.taskDetail
-               ) {
-                TaskDetailTCAView(
-                    store: detailStore,
-                    blockingFocusTitle: activeSprintBlockingFocusTitle
-                )
-                .id(selectedTaskID)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-            } else {
-                HomeMacBoardScopeInspectorView(
-                    presentation: presentation,
-                    finishableSprints: store.isMacFilterDetailPresented ? [] : boardFinishableSprintsInCurrentScope,
-                    sprintFocusSessions: store.sprintBoardData.focusSessions,
-                    taskFocusSessions: focusSessions,
-                    taskFocusSessionTasks: store.routineTasks,
-                    allocationSessionID: store.sprintFocusAllocationSessionID,
-                    allocationDrafts: store.sprintFocusAllocationDrafts,
-                    onFinishSprint: { store.send(.finishSprintTapped($0)) },
-                    onStartSprintFocus: { store.send(.startSprintFocusTapped($0)) },
-                    onStopSprintFocus: { store.send(.stopSprintFocusTapped($0)) },
-                    onReviewSprintFocusAllocation: { store.send(.reviewSprintFocusAllocationTapped($0)) },
-                    onDeleteSprintFocusSession: { store.send(.deleteSprintFocusSessionTapped($0)) },
-                    onAllocationMinutesChanged: { taskID, minutes in
-                        store.send(.sprintFocusAllocationMinutesChanged(taskID: taskID, minutes: minutes))
-                    },
-                    onSaveSprintFocusAllocation: { store.send(.sprintFocusAllocationSaveTapped) },
-                    onCancelSprintFocusAllocation: { store.send(.sprintFocusAllocationCancelTapped) }
-                )
-            }
+            HomeMacBoardScopeInspectorView(
+                presentation: presentation,
+                finishableSprints: store.isMacFilterDetailPresented ? [] : boardFinishableSprintsInCurrentScope,
+                sprintFocusSessions: store.sprintBoardData.focusSessions,
+                taskFocusSessions: focusSessions,
+                taskFocusSessionTasks: store.routineTasks,
+                allocationSessionID: store.sprintFocusAllocationSessionID,
+                allocationDrafts: store.sprintFocusAllocationDrafts,
+                onFinishSprint: { store.send(.finishSprintTapped($0)) },
+                onStartSprintFocus: { store.send(.startSprintFocusTapped($0)) },
+                onStopSprintFocus: { store.send(.stopSprintFocusTapped($0)) },
+                onReviewSprintFocusAllocation: { store.send(.reviewSprintFocusAllocationTapped($0)) },
+                onDeleteSprintFocusSession: { store.send(.deleteSprintFocusSessionTapped($0)) },
+                onAllocationMinutesChanged: { taskID, minutes in
+                    store.send(.sprintFocusAllocationMinutesChanged(taskID: taskID, minutes: minutes))
+                },
+                onSaveSprintFocusAllocation: { store.send(.sprintFocusAllocationSaveTapped) },
+                onCancelSprintFocusAllocation: { store.send(.sprintFocusAllocationCancelTapped) }
+            )
         }
         .background(.regularMaterial)
         .clipped()
-    }
-
-    private var activeSprintBlockingFocusTitle: String? {
-        guard let session = store.sprintBoardData.activeFocusSession else { return nil }
-        return store.sprintBoardData.sprints.first(where: { $0.id == session.sprintID })?.title ?? "a sprint"
     }
 
     private func boardTint(for state: TodoState) -> Color {

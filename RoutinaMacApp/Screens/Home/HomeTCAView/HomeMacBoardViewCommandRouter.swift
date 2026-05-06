@@ -3,10 +3,6 @@ import Foundation
 struct HomeMacBoardViewCommandRouter {
     let send: (HomeFeature.Action) -> Void
 
-    func selectTask(_ taskID: UUID) {
-        send(.setSelectedTask(taskID))
-    }
-
     func moveTask(_ taskID: UUID, to state: TodoState) {
         send(.moveTodoToState(taskID, state))
     }

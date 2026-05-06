@@ -113,11 +113,11 @@ struct HomeMacBoardInspectorToolbarButton: View {
 
     var body: some View {
         MacToolbarIconButton(
-            title: isPresented ? "Hide Ticket Details" : "Show Ticket Details",
+            title: isPresented ? "Hide Board Details" : "Show Board Details",
             systemImage: "sidebar.right"
         ) {
             onToggle()
         }
-        .help(isPresented ? "Hide ticket details" : "Show ticket details")
+        .help(isPresented ? "Hide board details" : "Show board details")
     }
 }
