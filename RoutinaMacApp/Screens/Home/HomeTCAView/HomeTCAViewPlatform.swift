@@ -56,7 +56,7 @@ extension HomeTCAView {
     }
 
     private var homeToolbarMode: HomeMacHomeToolbarContent.Mode {
-        if isMacBoardMode {
+        if isMacBoardSidebarPresented {
             return .board
         }
         if isMacGoalsMode {
@@ -94,7 +94,8 @@ extension HomeTCAView {
                 statsStore: statsStore,
                 selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
                 dayPlanPlanner: dayPlanPlanner,
-                mainDetailMode: $macHomeDetailMode,
+                mainDetailMode: mainDetailModeBinding,
+                isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                 selectedTaskID: store.selectedTaskID,
                 onSelectDayPlanUnplannedCompletedDate: { date in
                     focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
@@ -102,6 +103,7 @@ extension HomeTCAView {
                 onOpenDayPlanTaskDetails: { taskID in
                     openDayPlanTaskDetails(taskID)
                 },
+                onToggleBoardInspector: toggleMacBoardTicketInspector,
                 addRoutineStore: self.store.scope(
                     state: \.addRoutineState,
                     action: \.addRoutineSheet
@@ -110,6 +112,8 @@ extension HomeTCAView {
                 macActiveFiltersDetailView
             } boardView: {
                 macTodoBoardDetailView
+            } boardInspectorView: {
+                macBoardTaskInspector
             }
         } boardToolbarContent: {
             macBoardDetailToolbarContent
@@ -117,6 +121,9 @@ extension HomeTCAView {
     }
 
     private var macDetailNavigationTitle: String {
+        if isMacSegmentedBoardMode {
+            return macSidebarNavigationTitle
+        }
         if isMacRoutinesMode && !store.isMacFilterDetailPresented {
             return ""
         }
@@ -218,6 +225,9 @@ extension HomeTCAView {
         }
         if store.macSidebarMode == .timeline {
             return "Search dones"
+        }
+        if isMacBoardSidebarPresented {
+            return "Search todos"
         }
         switch store.taskListMode {
         case .all:

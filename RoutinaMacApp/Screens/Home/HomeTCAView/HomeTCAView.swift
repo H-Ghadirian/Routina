@@ -5,6 +5,7 @@ import SwiftUI
 enum MacHomeDetailMode: String, CaseIterable, Identifiable {
     case details = "Details"
     case planner = "Planner"
+    case board = "Board"
 
     var id: Self { self }
 }

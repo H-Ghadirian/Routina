@@ -9,10 +9,16 @@ extension HomeTCAView {
     var isMacBoardMode: Bool { store.macSidebarMode == .board }
     var isMacGoalsMode: Bool { store.macSidebarMode == .goals }
     var isMacAddTaskMode: Bool { store.macSidebarMode == .addTask }
+    var isMacSegmentedBoardMode: Bool { isMacRoutinesMode && macHomeDetailMode == .board }
+    var isMacBoardSidebarPresented: Bool { isMacBoardMode || isMacSegmentedBoardMode }
 
     var macSidebarNavigationTitle: String {
         if store.isMacFilterDetailPresented {
             return macFilterDetailNavigationTitle
+        }
+
+        if isMacSegmentedBoardMode {
+            return boardPresentation.scopeTitle
         }
 
         switch store.macSidebarMode {
@@ -56,6 +62,10 @@ extension HomeTCAView {
     }
 
     private var macFilterDetailNavigationTitle: String {
+        if isMacSegmentedBoardMode {
+            return "Filter Board"
+        }
+
         switch store.macSidebarMode {
         case .routines:
             return macTaskListFilterTitle
@@ -158,6 +168,18 @@ extension HomeTCAView {
                 case .stats:     openStatsInSidebar()
                 case .settings:  openSettingsInSidebar()
                 case .addTask:   openAddTask()
+                }
+            }
+        )
+    }
+
+    var mainDetailModeBinding: Binding<MacHomeDetailMode> {
+        Binding(
+            get: { macHomeDetailMode },
+            set: { mode in
+                macHomeDetailMode = mode
+                if mode == .board, store.taskListMode != .todos {
+                    store.send(.taskListModeChanged(.todos))
                 }
             }
         )
@@ -323,7 +345,7 @@ extension HomeTCAView {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            } else if isMacBoardMode && !store.routineTasks.contains(where: \.isOneOffTask) {
+            } else if isMacBoardSidebarPresented && !store.routineTasks.contains(where: \.isOneOffTask) {
                 VStack(spacing: 0) {
                     macSidebarHeader
                     Divider()
@@ -350,7 +372,7 @@ extension HomeTCAView {
                         macStatsSidebarView
                     } else if isMacSettingsMode {
                         macSettingsSidebarView
-                    } else if isMacBoardMode {
+                    } else if isMacBoardSidebarPresented {
                         macBoardSidebarView
                     } else {
                         listOfSortedTasksView(
@@ -402,8 +424,8 @@ extension HomeTCAView {
         HomeMacSidebarHeaderView(
             selectedSidebarMode: macSidebarModeBinding,
             selectedTaskListMode: store.taskListMode,
-            isRoutinesMode: isMacRoutinesMode,
-            isBoardMode: isMacBoardMode,
+            isRoutinesMode: isMacRoutinesMode && !isMacSegmentedBoardMode,
+            isBoardMode: isMacBoardSidebarPresented,
             isGoalsMode: isMacGoalsMode,
             isTimelineMode: isMacTimelineMode,
             onSelectTaskListMode: { mode in

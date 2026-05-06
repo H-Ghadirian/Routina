@@ -5,7 +5,7 @@ import SwiftUI
 /// Inline closures inside `NavigationSplitView.detail` on macOS can lose
 /// observation tracking after several view swaps, causing state changes
 /// (like toggling the filter panel) to stop updating the detail column.
-struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
+struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorView: View>: View {
     let store: StoreOf<HomeFeature>
     let isBoardPresented: Bool
     let isTimelinePresented: Bool
@@ -16,19 +16,22 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
     @Binding var mainDetailMode: MacHomeDetailMode
+    @Binding var isBoardInspectorPresented: Bool
     let selectedTaskID: UUID?
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
+    let onToggleBoardInspector: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let boardView: () -> BoardView
+    @ViewBuilder let boardInspectorView: () -> BoardInspectorView
 
     var body: some View {
         WithPerceptionTracking {
             if store.isMacFilterDetailPresented {
                 filterView()
             } else if isBoardPresented {
-                boardView()
+                boardDetailContent
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
             } else if isStatsPresented, let statsStore {
@@ -64,6 +67,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
                     onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenDayPlanTaskDetails
                 )
+            case .board:
+                boardDetailContent
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -71,7 +76,33 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
             ToolbarItem(placement: .principal) {
                 detailModePicker
             }
+            if mainDetailMode == .board {
+                ToolbarItem(placement: .primaryAction) {
+                    HomeMacBoardInspectorToolbarButton(
+                        isPresented: isBoardInspectorPresented,
+                        onToggle: onToggleBoardInspector
+                    )
+                }
+            }
         }
+    }
+
+    private var boardDetailContent: some View {
+        HStack(spacing: 0) {
+            boardView()
+                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+
+            if isBoardInspectorPresented {
+                boardInspectorView()
+                    .frame(width: 400)
+                    .frame(maxHeight: .infinity)
+                    .overlay(alignment: .leading) {
+                        Divider()
+                    }
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
     }
 
     private var detailModePicker: some View {
@@ -82,7 +113,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View>: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .frame(width: 220)
+        .frame(width: 320)
     }
 
     @ViewBuilder
