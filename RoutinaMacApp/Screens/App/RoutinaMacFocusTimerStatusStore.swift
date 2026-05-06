@@ -13,6 +13,10 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
         refresh()
     }
 
+    var statusUpdates: Published<RoutinaMacFocusTimerStatus>.Publisher {
+        $status
+    }
+
     func refresh() {
         do {
             status = try Self.activeStatus(in: persistence.container.mainContext)

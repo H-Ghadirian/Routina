@@ -89,7 +89,7 @@ extension HomeRoutineDisplayMetadataPresenter {
             && !task.isDoneToday {
             return badge(
                 "\(task.completedChecklistItemCount)/\(max(task.checklistItemCount, 1)) done",
-                "checklist.checked",
+                "checkmark.circle",
                 .orange,
                 Color.orange.opacity(0.16)
             )

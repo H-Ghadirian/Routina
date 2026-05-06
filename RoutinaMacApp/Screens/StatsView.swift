@@ -726,7 +726,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .totalCancels:
             return "xmark.seal.fill"
         case .activeItems:
-            return "checklist.checked"
+            return "checklist"
         case .archivedItems:
             return "archivebox.fill"
         case .createdTasksChart:

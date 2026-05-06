@@ -108,7 +108,7 @@ struct HomeTCAView: View {
         } else {
             ContentUnavailableView(
                 "Select a task",
-                systemImage: "checklist.checked",
+                systemImage: "checklist",
                 description: Text("Choose a routine or to-do from the sidebar to see its schedule, logs, and actions.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)

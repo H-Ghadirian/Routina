@@ -1,18 +1,126 @@
 import AppKit
 import Carbon
 import Foundation
+import OSLog
+
+private let routinaMacWindowLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "RoutinaMac",
+    category: "Windowing"
+)
 
 @MainActor
 final class RoutinaMacWindowRouter {
     static let shared = RoutinaMacWindowRouter()
 
     var openHomeWindow: (() -> Void)?
+    var openFallbackHomeWindow: (() -> Void)?
+    private var isHomeOpenPending = false
 
     private init() {}
 
+    func installHomeWindowOpener(_ opener: @escaping () -> Void) {
+        openHomeWindow = opener
+        routinaMacWindowLogger.info("Installed SwiftUI home window opener")
+        guard isHomeOpenPending else { return }
+        isHomeOpenPending = false
+        openHomeAndActivate()
+    }
+
+    func installFallbackHomeWindowOpener(_ opener: @escaping () -> Void) {
+        openFallbackHomeWindow = opener
+        routinaMacWindowLogger.info("Installed AppKit fallback home window opener")
+    }
+
+    func requestHomeOpenAndActivate() {
+        if openHomeWindow == nil {
+            isHomeOpenPending = true
+        }
+        routinaMacWindowLogger.info("Requested home open; app windows: \(NSApplication.shared.windows.count, privacy: .public)")
+        openHomeAndActivate()
+    }
+
     func openHomeAndActivate() {
-        openHomeWindow?()
+        NSApplication.shared.setActivationPolicy(.regular)
+
+        let shouldRequestSwiftUIWindow = !hasVisibleAppWindow
+        if shouldRequestSwiftUIWindow {
+            routinaMacWindowLogger.info("Requesting SwiftUI home window")
+            openHomeWindow?()
+        }
+
+        if openHomeWindow == nil {
+            routinaMacWindowLogger.info("Using immediate AppKit fallback because SwiftUI opener is not ready")
+            openFallbackHomeWindow?()
+        }
+
+        activateHomeWindow()
+
+        DispatchQueue.main.async {
+            if !self.hasVisibleAppWindow {
+                routinaMacWindowLogger.info("Using next-run-loop AppKit fallback because no visible app window exists")
+                self.openFallbackHomeWindow?()
+            }
+            self.activateHomeWindow()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            if !self.hasVisibleAppWindow {
+                routinaMacWindowLogger.info("Using delayed AppKit fallback because no visible app window exists")
+                self.openFallbackHomeWindow?()
+            }
+            self.activateHomeWindow()
+        }
+    }
+
+    func activateHomeWindow() {
+        NSApplication.shared.setActivationPolicy(.regular)
+        NSApplication.shared.unhide(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
+        NSRunningApplication.current.activate(options: .activateAllWindows)
+        focusVisibleWindow()
+        DispatchQueue.main.async {
+            self.focusVisibleWindow()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            self.focusVisibleWindow()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.focusVisibleWindow()
+        }
+    }
+
+    private func focusVisibleWindow() {
+        let window = visibleAppWindow ?? NSApplication.shared.windows.first { isAppContentWindow($0) }
+        window?.deminiaturize(nil)
+        window?.orderFrontRegardless()
+        window?.makeKeyAndOrderFront(nil)
+        window?.makeMain()
+    }
+
+    private var hasVisibleAppWindow: Bool {
+        visibleAppWindow != nil
+    }
+
+    private var visibleAppWindow: NSWindow? {
+        NSApplication.shared.windows.first { window in
+            isAppContentWindow(window)
+                && window.isVisible
+                && !window.isMiniaturized
+        }
+    }
+
+    private func isAppContentWindow(_ window: NSWindow) -> Bool {
+        let className = String(describing: type(of: window))
+        guard !className.contains("StatusBar"),
+              !className.contains("Menu"),
+              !className.contains("Popover")
+        else {
+            return false
+        }
+
+        return window.canBecomeKey
+            && window.frame.width >= 300
+            && window.frame.height >= 300
     }
 }
 

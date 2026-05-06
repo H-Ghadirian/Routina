@@ -12,10 +12,15 @@ struct RoutinaMacRootScene: Scene {
     @MainActor
     init() {
         let persistence = RoutinaAppSceneBootstrap.preparePersistence()
+        let homeRoot = RoutinaMacSceneFactory.makeHomeRoot(persistence: persistence)
         self.persistence = persistence
-        self.homeRoot = RoutinaMacSceneFactory.makeHomeRoot(persistence: persistence)
+        self.homeRoot = homeRoot
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
         self.focusTimerStatusStore = RoutinaMacFocusTimerStatusStore(persistence: persistence)
+        RoutinaMacFocusTimerStatusBarController.shared.configure(store: focusTimerStatusStore)
+        RoutinaMacWindowRouter.shared.installFallbackHomeWindowOpener {
+            RoutinaMacFallbackHomeWindowPresenter.shared.showHomeWindow(rootView: homeRoot)
+        }
     }
 
     var body: some Scene {
@@ -44,14 +49,9 @@ struct RoutinaMacRootScene: Scene {
             height: RoutinaMacWindowSizing.defaultHeight
         )
         .windowResizability(.contentMinSize)
+        .defaultLaunchBehavior(.presented)
         .commands {
             RoutineCommands()
-        }
-
-        MenuBarExtra {
-            RoutinaMacMenuBarContent(focusTimerStatusStore: focusTimerStatusStore)
-        } label: {
-            RoutinaMacMenuBarIcon(focusTimerStatusStore: focusTimerStatusStore)
         }
 
         Settings {
@@ -68,52 +68,12 @@ struct RoutinaMacRootScene: Scene {
 
     @MainActor
     private func activateHomeWindow() {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.windows.first?.makeKeyAndOrderFront(nil)
+        RoutinaMacWindowRouter.shared.activateHomeWindow()
     }
 }
 
 private enum RoutinaMacSceneID {
     static let home = "routina-home"
-}
-
-private struct RoutinaMacMenuBarContent: View {
-    @ObservedObject var focusTimerStatusStore: RoutinaMacFocusTimerStatusStore
-
-    var body: some View {
-        Group {
-            if focusTimerStatusStore.status.isActive {
-                RoutinaMacMenuBarFocusSummary(status: focusTimerStatusStore.status)
-                Divider()
-            }
-
-            Button("Add Task") {
-                openHomeWindow()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    NotificationCenter.default.post(name: .routinaMacOpenAddTask, object: nil)
-                }
-            }
-
-            Button("Open Routina") {
-                openHomeWindow()
-            }
-
-            Divider()
-
-            Button("Quit") {
-                NSApplication.shared.terminate(nil)
-            }
-            .keyboardShortcut("q")
-        }
-        .task {
-            focusTimerStatusStore.refresh()
-        }
-    }
-
-    private func openHomeWindow() {
-        RoutinaMacWindowRouter.shared.openHomeAndActivate()
-    }
 }
 
 private struct RoutinaMacWindowRouterInstaller: View {
@@ -123,71 +83,57 @@ private struct RoutinaMacWindowRouterInstaller: View {
         Color.clear
             .frame(width: 0, height: 0)
             .onAppear {
-                RoutinaMacWindowRouter.shared.openHomeWindow = {
+                RoutinaMacWindowRouter.shared.installHomeWindowOpener {
                     openWindow(id: RoutinaMacSceneID.home)
                 }
             }
     }
 }
 
-private struct RoutinaMacMenuBarIcon: View {
-    @ObservedObject var focusTimerStatusStore: RoutinaMacFocusTimerStatusStore
+@MainActor
+private final class RoutinaMacFallbackHomeWindowPresenter {
+    static let shared = RoutinaMacFallbackHomeWindowPresenter()
 
-    var body: some View {
-        Group {
-            if focusTimerStatusStore.status.isActive {
-                RoutinaMacActiveFocusMenuBarLabel(status: focusTimerStatusStore.status)
-            } else {
-                Image(systemName: "checklist.checked")
-                    .font(.system(size: 14, weight: .semibold))
-            }
+    private var window: NSWindow?
+
+    private init() {}
+
+    func showHomeWindow(rootView: AnyView) {
+        if let window {
+            show(window)
+            return
         }
-        .task {
-            focusTimerStatusStore.refresh()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-            focusTimerStatusStore.refresh()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-            focusTimerStatusStore.refresh()
-        }
+
+        let window = NSWindow(
+            contentRect: NSRect(
+                x: 0,
+                y: 0,
+                width: RoutinaMacWindowSizing.defaultWidth,
+                height: RoutinaMacWindowSizing.defaultHeight
+            ),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Routina"
+        window.minSize = NSSize(
+            width: RoutinaMacWindowSizing.minWidth,
+            height: RoutinaMacWindowSizing.minHeight
+        )
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: rootView)
+        window.center()
+        self.window = window
+        show(window)
     }
-}
 
-private struct RoutinaMacActiveFocusMenuBarLabel: View {
-    let status: RoutinaMacFocusTimerStatus
-
-    var body: some View {
-        SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
-            HStack(spacing: 5) {
-                Image(systemName: status.kind?.systemImage ?? "timer")
-                    .font(.system(size: 13, weight: .semibold))
-                Text(status.menuBarTimeText(at: context.date))
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-            }
-            .help("\(status.kind?.displayTitle ?? "Focus Timer"): \(status.shortTitle)")
-        }
-    }
-}
-
-private struct RoutinaMacMenuBarFocusSummary: View {
-    let status: RoutinaMacFocusTimerStatus
-
-    var body: some View {
-        SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
-            VStack(alignment: .leading, spacing: 4) {
-                Label(status.kind?.displayTitle ?? "Focus Timer", systemImage: status.kind?.systemImage ?? "timer")
-                    .font(.headline)
-
-                Text(status.shortTitle)
-                    .font(.subheadline)
-
-                Text("\(status.menuBarTimeText(at: context.date)) \(status.menuBarModeText(at: context.date))")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.vertical, 4)
-        }
+    private func show(_ window: NSWindow) {
+        NSApp.setActivationPolicy(.regular)
+        window.deminiaturize(nil)
+        window.level = .normal
+        window.orderFrontRegardless()
+        window.makeKeyAndOrderFront(nil)
+        window.makeMain()
+        NSApp.activate(ignoringOtherApps: true)
     }
 }

@@ -89,7 +89,7 @@ enum StatsSummaryCardItemBuilder {
 
         items.append(
             StatsSummaryCardItem(
-                icon: "checklist.checked",
+                icon: "checklist",
                 accent: .green,
                 title: activeArchivePresentation.activeTitle,
                 value: metrics.activeRoutineCount.formatted(),

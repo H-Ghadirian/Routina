@@ -5,6 +5,11 @@ import SwiftData
 import UserNotifications
 
 public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegate {
+    public func applicationWillFinishLaunching(_ notification: Notification) {
+        guard !AppEnvironment.isAutomatedTestMode else { return }
+        NSApp.setActivationPolicy(.regular)
+    }
+
     public func applicationDidFinishLaunching(_ notification: Notification) {
         guard !AppEnvironment.isAutomatedTestMode else { return }
         NSApp.setActivationPolicy(.regular)
@@ -12,8 +17,7 @@ public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegat
         NSWindow.allowsAutomaticWindowTabbing = false
         RoutinaMacGlobalHotKeyManager.shared.startQuickAddHotKey()
         DispatchQueue.main.async {
-            NSApp.activate(ignoringOtherApps: true)
-            NSApp.windows.first?.makeKeyAndOrderFront(nil)
+            RoutinaMacWindowRouter.shared.requestHomeOpenAndActivate()
         }
     }
 
@@ -22,7 +26,7 @@ public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegat
         hasVisibleWindows flag: Bool
     ) -> Bool {
         if !flag {
-            RoutinaMacWindowRouter.shared.openHomeAndActivate()
+            RoutinaMacWindowRouter.shared.requestHomeOpenAndActivate()
         }
         return true
     }
