@@ -9,6 +9,19 @@ import Testing
 @MainActor
 struct HomeFeatureTests {
     @Test
+    func macSidebarModeStripModes_excludesBoardMode() {
+        #expect(HomeFeature.MacSidebarMode.sidebarStripModes == [
+            .routines,
+            .goals,
+            .timeline,
+            .stats,
+            .settings,
+            .addTask
+        ])
+        #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.board))
+    }
+
+    @Test
     func staleTaskDetailLoadActionAfterDismissIsIgnored() async {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
@@ -226,7 +239,8 @@ struct HomeFeatureTests {
                 selectedTimelineFilterType: .routines,
                 selectedTimelineTag: "Chores",
                 statsSelectedRange: .month,
-                statsSelectedTag: "Focus"
+                statsSelectedTag: "Focus",
+                macSidebarMode: .board
             )
         ) {
             HomeFeature()

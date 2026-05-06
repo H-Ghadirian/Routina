@@ -5,7 +5,7 @@ struct HomeMacSidebarModeStripView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(HomeFeature.MacSidebarMode.allCases) { mode in
+            ForEach(HomeFeature.MacSidebarMode.sidebarStripModes) { mode in
                 Button {
                     selectedMode = mode
                 } label: {

@@ -33,6 +33,15 @@ struct HomeFeature {
         case addTask  = "Add Task"
 
         var id: Self { self }
+
+        static let sidebarStripModes: [Self] = [
+            .routines,
+            .goals,
+            .timeline,
+            .stats,
+            .settings,
+            .addTask
+        ]
     }
 
     typealias BoardScope = HomeBoardScope
@@ -1362,7 +1371,7 @@ struct HomeFeature {
 
         if let rawValue = restoredState.macSidebarModeRawValue,
            let mode = MacSidebarMode(rawValue: rawValue) {
-            state.macSidebarMode = mode
+            state.macSidebarMode = normalizedMacSidebarMode(mode)
         }
         if let rawValue = restoredState.macSelectedSettingsSectionRawValue {
             state.selectedSettingsSection = SettingsMacSection(rawValue: rawValue)
@@ -1379,10 +1388,14 @@ struct HomeFeature {
             HomeFeatureTemporaryViewStateSupport.makeTemporaryViewState(
                 from: state,
                 existing: appSettingsClient.temporaryViewState(),
-                macSidebarModeRawValue: state.macSidebarMode.rawValue,
+                macSidebarModeRawValue: normalizedMacSidebarMode(state.macSidebarMode).rawValue,
                 macSelectedSettingsSectionRawValue: state.selectedSettingsSection?.rawValue
             )
         )
+    }
+
+    private func normalizedMacSidebarMode(_ mode: MacSidebarMode) -> MacSidebarMode {
+        mode == .board ? .routines : mode
     }
 
 }
