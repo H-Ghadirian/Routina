@@ -14,9 +14,11 @@ struct TimelineView: View {
         WithPerceptionTracking {
             NavigationStack {
                 content
-                    .navigationTitle("Timeline")
+                    .navigationTitle("")
                     .routinaTimelineNavigationTitleDisplayMode()
                     .toolbar {
+                        RoutinaMacFocusTimerToolbarItem()
+
                         ToolbarItem(placement: .primaryAction) {
                             filterSheetButton
                         }

@@ -487,6 +487,8 @@ struct HomeFeature {
         case moveTodoToState(UUID, TodoState)
         case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
         case selectedBoardScopeChanged(BoardScope)
+        case openTaskDeepLink(UUID)
+        case openSprintDeepLink(UUID)
         case createBacklogTapped
         case createBacklogTitleChanged(String)
         case createBacklogConfirmed
@@ -1047,6 +1049,12 @@ struct HomeFeature {
             case let .selectedBoardScopeChanged(scope):
                 return macBoardCommandRouter().selectedBoardScopeChanged(scope, state: &state)
 
+            case let .openTaskDeepLink(taskID):
+                return openTaskDeepLink(taskID, state: &state)
+
+            case let .openSprintDeepLink(sprintID):
+                return openSprintDeepLink(sprintID, state: &state)
+
             case .createSprintTapped:
                 return macBoardCommandRouter().createSprintTapped(state: &state)
 
@@ -1360,6 +1368,37 @@ struct HomeFeature {
 
     func syncSelectedTaskDetailState(_ state: inout State) {
         selectionRouter().refreshSelectedTaskDetailState(&state)
+    }
+
+    private func openTaskDeepLink(
+        _ taskID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard state.routineTasks.contains(where: { $0.id == taskID }) else {
+            return .none
+        }
+
+        state.macSidebarMode = .routines
+        state.presentation.isMacFilterDetailPresented = false
+        return .send(.macSidebarSelectionChanged(.task(taskID)))
+    }
+
+    private func openSprintDeepLink(
+        _ sprintID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard state.sprintBoardData.sprints.contains(where: { $0.id == sprintID }) else {
+            return .none
+        }
+
+        state.macSidebarMode = .board
+        state.macSidebarSelection = nil
+        state.presentation.isMacFilterDetailPresented = false
+        HomeSelectionEditor.clearTaskSelection(&state.selection)
+        state.selectedBoardScope = .sprint(sprintID)
+
+        guard state.taskListMode != .todos else { return .none }
+        return .send(.taskListModeChanged(.todos))
     }
 
     private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {

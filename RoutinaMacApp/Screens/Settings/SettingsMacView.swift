@@ -44,6 +44,9 @@ struct SettingsMacView: View {
                     store: store,
                     isPlacePickerPresented: $isPlacePickerPresented
                 )
+                .toolbar {
+                    RoutinaMacFocusTimerToolbarItem()
+                }
             }
             .navigationSplitViewStyle(.balanced)
             .onChange(of: store.appearance.isGitFeaturesEnabled) { _, isEnabled in

@@ -56,6 +56,7 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
 
         return RoutinaMacFocusTimerStatus(
             id: session.id,
+            targetID: session.taskID,
             kind: .task,
             title: normalizedTitle(tasks.first { $0.id == session.taskID }?.name, fallback: "Task focus"),
             startedAt: startedAt,
@@ -76,6 +77,7 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
 
         return RoutinaMacFocusTimerStatus(
             id: session.id,
+            targetID: session.sprintID,
             kind: .sprint,
             title: normalizedTitle(sprints.first { $0.id == session.sprintID }?.title, fallback: "Sprint focus"),
             startedAt: session.startedAt,
@@ -114,6 +116,7 @@ struct RoutinaMacFocusTimerStatus: Equatable {
     }
 
     var id: UUID?
+    var targetID: UUID?
     var kind: Kind?
     var title: String
     var startedAt: Date
@@ -129,6 +132,7 @@ struct RoutinaMacFocusTimerStatus: Equatable {
 
     static let inactive = RoutinaMacFocusTimerStatus(
         id: nil,
+        targetID: nil,
         kind: nil,
         title: "No focus timer",
         startedAt: .distantPast,
@@ -164,5 +168,15 @@ struct RoutinaMacFocusTimerStatus: Equatable {
     var shortTitle: String {
         guard title.count > 30 else { return title }
         return String(title.prefix(27)) + "..."
+    }
+
+    var deepLink: RoutinaDeepLink? {
+        guard let targetID, let kind else { return nil }
+        switch kind {
+        case .task:
+            return .task(targetID)
+        case .sprint:
+            return .sprint(targetID)
+        }
     }
 }

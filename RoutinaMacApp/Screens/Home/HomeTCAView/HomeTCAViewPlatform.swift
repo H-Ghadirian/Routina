@@ -69,8 +69,6 @@ extension HomeTCAView {
         HomeMacNavigationContent(
             isBoardMode: isMacBoardMode,
             isGoalsMode: isMacGoalsMode,
-            boardNavigationTitle: macSidebarNavigationTitle,
-            mainNavigationTitle: macDetailNavigationTitle,
             isBoardInspectorPresented: macBoardInspectorPresentedBinding,
             addEditFormCoordinator: addEditFormCoordinator
         ) {
@@ -118,16 +116,6 @@ extension HomeTCAView {
         } boardToolbarContent: {
             macBoardDetailToolbarContent
         }
-    }
-
-    private var macDetailNavigationTitle: String {
-        if isMacSegmentedBoardMode {
-            return macSidebarNavigationTitle
-        }
-        if isMacRoutinesMode && !store.isMacFilterDetailPresented {
-            return ""
-        }
-        return macSidebarNavigationTitle
     }
 
     @ToolbarContentBuilder
@@ -216,6 +204,19 @@ extension HomeTCAView {
             } else if mode == .goals {
                 goalsStore.send(.onAppear)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
+            alignMacDetailModeForDeepLinkNotification(notification)
+        }
+    }
+
+    private func alignMacDetailModeForDeepLinkNotification(_ notification: Notification) {
+        guard let deepLink = RoutinaDeepLinkDispatcher.deepLink(from: notification) else { return }
+        switch deepLink {
+        case .task:
+            macHomeDetailMode = .details
+        case .sprint:
+            macHomeDetailMode = .board
         }
     }
 
@@ -385,6 +386,11 @@ struct HomeMacView: View {
         )
         .task {
             appStore.send(.onAppear)
+            handlePendingDeepLink()
+        }
+        .onOpenURL(perform: handleOpenURL)
+        .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
+            handleDeepLinkNotification(notification)
         }
         .onReceive(
             NotificationCenter.default.publisher(for: PlatformSupport.didBecomeActiveNotification)
@@ -405,5 +411,23 @@ struct HomeMacView: View {
             appStore.send(.cloudSettingsChanged)
             store.send(.onAppear)
         }
+    }
+
+    private func handleOpenURL(_ url: URL) {
+        guard let deepLink = RoutinaDeepLink(url: url) else { return }
+        RoutinaDeepLinkDispatcher.open(deepLink)
+    }
+
+    @MainActor
+    private func handleDeepLinkNotification(_ notification: Notification) {
+        guard let deepLink = RoutinaDeepLinkDispatcher.deepLink(from: notification) else { return }
+        RoutinaDeepLinkDispatcher.markHandled(deepLink)
+        appStore.send(.openDeepLink(deepLink))
+    }
+
+    @MainActor
+    private func handlePendingDeepLink() {
+        guard let deepLink = RoutinaDeepLinkDispatcher.consumePendingDeepLink() else { return }
+        appStore.send(.openDeepLink(deepLink))
     }
 }

@@ -35,7 +35,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
             } else if isStatsPresented, let statsStore {
-                StatsViewWrapper(store: statsStore)
+                StatsViewWrapper(
+                    store: statsStore,
+                    showsFocusTimerToolbarItem: false
+                )
             } else if isStatsPresented {
                 ContentUnavailableView(
                     "Stats unavailable",
@@ -51,6 +54,24 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 timelineDetailContent
             } else {
                 mainDetailContent
+            }
+        }
+        .toolbar {
+            RoutinaMacFocusTimerToolbarItem()
+
+            if shouldShowDetailModePicker {
+                ToolbarItem(placement: .principal) {
+                    detailModePicker
+                }
+            }
+
+            if shouldShowBoardInspectorToolbarButton {
+                ToolbarItem(placement: .primaryAction) {
+                    HomeMacBoardInspectorToolbarButton(
+                        isPresented: isBoardInspectorPresented,
+                        onToggle: onToggleBoardInspector
+                    )
+                }
             }
         }
     }
@@ -72,19 +93,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                detailModePicker
-            }
-            if mainDetailMode == .board {
-                ToolbarItem(placement: .primaryAction) {
-                    HomeMacBoardInspectorToolbarButton(
-                        isPresented: isBoardInspectorPresented,
-                        onToggle: onToggleBoardInspector
-                    )
-                }
-            }
-        }
     }
 
     private var boardDetailContent: some View {
@@ -114,6 +122,19 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         .pickerStyle(.segmented)
         .labelsHidden()
         .frame(width: 320)
+    }
+
+    private var shouldShowDetailModePicker: Bool {
+        !store.isMacFilterDetailPresented
+            && !isBoardPresented
+            && !isTimelinePresented
+            && !isStatsPresented
+            && !isSettingsPresented
+            && addRoutineStore == nil
+    }
+
+    private var shouldShowBoardInspectorToolbarButton: Bool {
+        shouldShowDetailModePicker && mainDetailMode == .board
     }
 
     @ViewBuilder

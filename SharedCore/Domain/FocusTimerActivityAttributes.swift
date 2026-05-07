@@ -3,6 +3,11 @@ import ActivityKit
 import Foundation
 
 struct FocusTimerActivityAttributes: ActivityAttributes {
+    enum FocusKind: String, Codable, Hashable {
+        case task
+        case sprint
+    }
+
     struct ContentState: Codable, Hashable {
         let startedAt: Date
         let plannedDurationSeconds: TimeInterval
@@ -19,6 +24,8 @@ struct FocusTimerActivityAttributes: ActivityAttributes {
     }
 
     let sessionID: UUID
+    let focusKind: FocusKind?
+    let targetID: UUID?
     let taskID: UUID?
     let taskName: String
     let taskEmoji: String

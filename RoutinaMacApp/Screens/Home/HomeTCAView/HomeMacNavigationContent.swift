@@ -10,8 +10,6 @@ struct HomeMacNavigationContent<
 >: View {
     let isBoardMode: Bool
     let isGoalsMode: Bool
-    let boardNavigationTitle: String
-    let mainNavigationTitle: String
     let addEditFormCoordinator: AddEditFormCoordinator
     @Binding var isBoardInspectorPresented: Bool
     let sidebarContent: () -> SidebarContent
@@ -24,8 +22,6 @@ struct HomeMacNavigationContent<
     init(
         isBoardMode: Bool,
         isGoalsMode: Bool,
-        boardNavigationTitle: String,
-        mainNavigationTitle: String,
         isBoardInspectorPresented: Binding<Bool>,
         addEditFormCoordinator: AddEditFormCoordinator,
         @ViewBuilder sidebarContent: @escaping () -> SidebarContent,
@@ -37,8 +33,6 @@ struct HomeMacNavigationContent<
     ) {
         self.isBoardMode = isBoardMode
         self.isGoalsMode = isGoalsMode
-        self.boardNavigationTitle = boardNavigationTitle
-        self.mainNavigationTitle = mainNavigationTitle
         self._isBoardInspectorPresented = isBoardInspectorPresented
         self.addEditFormCoordinator = addEditFormCoordinator
         self.sidebarContent = sidebarContent
@@ -79,8 +73,11 @@ struct HomeMacNavigationContent<
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .navigationTitle(boardNavigationTitle)
-            .toolbar { boardToolbarContent() }
+            .navigationTitle("")
+            .toolbar {
+                RoutinaMacFocusTimerToolbarItem()
+                boardToolbarContent()
+            }
             .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
             .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
@@ -99,7 +96,7 @@ struct HomeMacNavigationContent<
             sidebarContent()
         } detail: {
             mainDetailContent()
-                .navigationTitle(mainNavigationTitle)
+                .navigationTitle("")
                 .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
     }

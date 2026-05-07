@@ -10,6 +10,7 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
     private weak var statusStore: RoutinaMacFocusTimerStatusStore?
     private var statusCancellable: AnyCancellable?
     private var displayTimer: Timer?
+    private var currentStatus: RoutinaMacFocusTimerStatus = .inactive
 
     private override init() {
         super.init()
@@ -53,6 +54,7 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
         }
 
         let status = statusStore?.status ?? .inactive
+        currentStatus = status
         let now = Date()
         let title = status.isActive ? status.menuBarTimeText(at: now) : "R"
         let font = status.isActive
@@ -76,12 +78,14 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
         let menu = NSMenu()
 
         if status.isActive {
+            let openTitle = status.kind == .sprint ? "Open Sprint" : "Open Task Details"
             let summaryItem = NSMenuItem(
-                title: "\(status.kind?.displayTitle ?? "Focus Timer"): \(status.shortTitle)",
-                action: nil,
+                title: "\(openTitle): \(status.shortTitle)",
+                action: status.deepLink == nil ? nil : #selector(openRunningFocus),
                 keyEquivalent: ""
             )
-            summaryItem.isEnabled = false
+            summaryItem.target = self
+            summaryItem.isEnabled = status.deepLink != nil
             menu.addItem(summaryItem)
 
             let timeItem = NSMenuItem(
@@ -121,6 +125,18 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
 
     @objc private func openRoutina() {
         RoutinaMacWindowRouter.shared.openHomeAndActivate()
+    }
+
+    @objc private func openRunningFocus() {
+        guard let deepLink = currentStatus.deepLink else {
+            openRoutina()
+            return
+        }
+
+        RoutinaMacWindowRouter.shared.openHomeAndActivate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            RoutinaDeepLinkDispatcher.open(deepLink)
+        }
     }
 
     @objc private func quit() {

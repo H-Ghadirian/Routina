@@ -12,20 +12,26 @@ struct RoutinaMacRootScene: Scene {
     @MainActor
     init() {
         let persistence = RoutinaAppSceneBootstrap.preparePersistence()
+        let focusTimerStatusStore = RoutinaMacFocusTimerStatusStore(persistence: persistence)
         let homeRoot = RoutinaMacSceneFactory.makeHomeRoot(persistence: persistence)
         self.persistence = persistence
         self.homeRoot = homeRoot
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
-        self.focusTimerStatusStore = RoutinaMacFocusTimerStatusStore(persistence: persistence)
+        self.focusTimerStatusStore = focusTimerStatusStore
         RoutinaMacFocusTimerStatusBarController.shared.configure(store: focusTimerStatusStore)
         RoutinaMacWindowRouter.shared.installFallbackHomeWindowOpener {
-            RoutinaMacFallbackHomeWindowPresenter.shared.showHomeWindow(rootView: homeRoot)
+            RoutinaMacFallbackHomeWindowPresenter.shared.showHomeWindow(
+                rootView: AnyView(
+                    homeRoot.environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
+                )
+            )
         }
     }
 
     var body: some Scene {
         WindowGroup("Routina", id: RoutinaMacSceneID.home) {
             homeRoot
+                .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
                 .background(RoutinaMacWindowRouterInstaller())
                 .onAppear {
                     MacMenuCleanup.removeUnneededMenus()
@@ -56,6 +62,7 @@ struct RoutinaMacRootScene: Scene {
 
         Settings {
             settingsRoot
+                .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
         }
     }
 

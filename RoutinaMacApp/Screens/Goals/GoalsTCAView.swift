@@ -146,7 +146,10 @@ struct MacGoalsDetailView: View {
                 systemImage: "target"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle("Goals")
+            .navigationTitle("")
+            .toolbar {
+                RoutinaMacFocusTimerToolbarItem()
+            }
         }
     }
 
@@ -248,8 +251,10 @@ private struct GoalDetailPane: View {
             .frame(maxWidth: 720, alignment: .leading)
             .padding(32)
         }
-        .navigationTitle(goal.displayTitle)
+        .navigationTitle("")
         .toolbar {
+            RoutinaMacFocusTimerToolbarItem()
+
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
                     store.send(.editGoalTapped(goal.id))

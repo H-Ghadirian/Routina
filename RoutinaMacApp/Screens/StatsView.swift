@@ -4,9 +4,13 @@ import SwiftUI
 
 struct StatsViewWrapper: View {
     let store: StoreOf<StatsFeature>
+    var showsFocusTimerToolbarItem = true
 
     var body: some View {
-        StatsView(store: store)
+        StatsView(
+            store: store,
+            showsFocusTimerToolbarItem: showsFocusTimerToolbarItem
+        )
             .background {
                 StatsDataObserver(store: store)
                     .frame(width: 0, height: 0)
@@ -48,6 +52,7 @@ private struct StatsDataObserver: View {
 
 struct StatsView: View {
     let store: StoreOf<StatsFeature>
+    var showsFocusTimerToolbarItem = true
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -238,8 +243,12 @@ struct StatsView: View {
                     }
                 }
             }
-            .navigationTitle("Stats")
+            .navigationTitle("")
             .toolbar {
+                if showsFocusTimerToolbarItem {
+                    RoutinaMacFocusTimerToolbarItem()
+                }
+
                 ToolbarItemGroup(placement: .primaryAction) {
                     dashboardEditButton
                 }

@@ -30,18 +30,29 @@ struct RoutinaFocusTimerLiveActivity: Widget {
                     .font(.caption2.weight(.bold))
                     .monospacedDigit()
             } minimal: {
-                Image(systemName: "timer")
+                Image(systemName: focusKind(context).systemImage)
             }
             .widgetURL(deepLinkURL(context))
         }
     }
 
-    private func deepLinkURL(_ taskID: UUID) -> URL {
-        URL(string: "routina://task/\(taskID.uuidString)")!
+    private func deepLinkURL(
+        _ kind: FocusTimerActivityAttributes.FocusKind,
+        targetID: UUID
+    ) -> URL {
+        URL(string: "routina://\(kind.deepLinkPath)/\(targetID.uuidString)")!
     }
 
     private func deepLinkURL(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> URL? {
-        context.attributes.taskID.map(deepLinkURL)
+        let kind = focusKind(context)
+        guard let targetID = context.attributes.targetID ?? context.attributes.taskID else { return nil }
+        return deepLinkURL(kind, targetID: targetID)
+    }
+
+    private func focusKind(
+        _ context: ActivityViewContext<FocusTimerActivityAttributes>
+    ) -> FocusTimerActivityAttributes.FocusKind {
+        context.attributes.focusKind ?? .task
     }
 
     private func focusTitle(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> some View {
@@ -84,14 +95,14 @@ private struct FocusTimerLiveActivityLockScreenView: View {
             ZStack {
                 Circle()
                     .fill(.teal.opacity(0.16))
-                Image(systemName: "timer")
+                Image(systemName: focusKind.systemImage)
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.teal)
             }
             .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Focus")
+                Text(focusKind.lockScreenTitle)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
@@ -139,6 +150,39 @@ private struct FocusTimerLiveActivityLockScreenView: View {
         } else {
             ProgressView()
                 .tint(.teal)
+        }
+    }
+
+    private var focusKind: FocusTimerActivityAttributes.FocusKind {
+        context.attributes.focusKind ?? .task
+    }
+}
+
+private extension FocusTimerActivityAttributes.FocusKind {
+    var deepLinkPath: String {
+        switch self {
+        case .task:
+            return "task"
+        case .sprint:
+            return "sprint"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .task:
+            return "timer"
+        case .sprint:
+            return "flag.checkered"
+        }
+    }
+
+    var lockScreenTitle: String {
+        switch self {
+        case .task:
+            return "Focus"
+        case .sprint:
+            return "Sprint Focus"
         }
     }
 }

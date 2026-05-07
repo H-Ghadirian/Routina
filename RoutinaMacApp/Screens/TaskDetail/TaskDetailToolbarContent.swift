@@ -9,6 +9,8 @@ struct TaskDetailToolbarContent: ToolbarContent {
 
     var body: some ToolbarContent {
         if showsPrincipalToolbarTitle {
+            RoutinaMacFocusTimerToolbarItem()
+
             ToolbarItem(placement: .principal) {
                 if isInlineEditPresented {
                     editTitle

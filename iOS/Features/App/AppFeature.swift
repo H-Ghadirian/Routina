@@ -166,6 +166,11 @@ struct AppFeature {
 
             state.pendingDeepLinkedTaskID = nil
             return .send(.home(.setSelectedTask(taskID)))
+        case .sprint:
+            state.selectedTab = .home
+            state.pendingDeepLinkedTaskID = nil
+            persistTemporaryViewState(state)
+            return .send(.home(.onAppear))
         }
     }
 }

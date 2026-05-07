@@ -9,6 +9,7 @@ struct AppFeature {
         var selectedTab: Tab = .home
         var hasRestoredTemporaryViewState = false
         var pendingDeepLinkedTaskID: UUID?
+        var pendingDeepLinkedSprintID: UUID?
         var home = HomeFeature.State()
         var goals = GoalsFeature.State()
         var timeline = TimelineFeature.State()
@@ -63,7 +64,11 @@ struct AppFeature {
                 state.pendingDeepLinkedTaskID = nil
                 state.selectedTab = .home
                 persistTemporaryViewState(state)
-                return .send(.home(.setSelectedTask(taskID)))
+                return .send(.home(.openTaskDeepLink(taskID)))
+            case let .home(.sprintBoardLoaded(sprintBoardData)):
+                return openPendingSprintDeepLinkIfPossible(sprintBoardData, state: &state)
+            case let .home(.sprintBoardLoadedFromStorage(sprintBoardData, _)):
+                return openPendingSprintDeepLinkIfPossible(sprintBoardData, state: &state)
             case .onAppear:
                 guard !state.hasRestoredTemporaryViewState else { return .none }
                 state.hasRestoredTemporaryViewState = true
@@ -148,6 +153,7 @@ struct AppFeature {
         switch deepLink {
         case let .task(taskID):
             state.selectedTab = .home
+            state.pendingDeepLinkedSprintID = nil
             persistTemporaryViewState(state)
 
             guard state.home.routineTasks.contains(where: { $0.id == taskID }) else {
@@ -156,8 +162,35 @@ struct AppFeature {
             }
 
             state.pendingDeepLinkedTaskID = nil
-            return .send(.home(.setSelectedTask(taskID)))
+            return .send(.home(.openTaskDeepLink(taskID)))
+        case let .sprint(sprintID):
+            state.selectedTab = .home
+            state.pendingDeepLinkedTaskID = nil
+            persistTemporaryViewState(state)
+
+            guard state.home.sprintBoardData.sprints.contains(where: { $0.id == sprintID }) else {
+                state.pendingDeepLinkedSprintID = sprintID
+                return .send(.home(.onAppear))
+            }
+
+            state.pendingDeepLinkedSprintID = nil
+            return .send(.home(.openSprintDeepLink(sprintID)))
         }
+    }
+
+    private func openPendingSprintDeepLinkIfPossible(
+        _ sprintBoardData: SprintBoardData,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let sprintID = state.pendingDeepLinkedSprintID,
+              sprintBoardData.sprints.contains(where: { $0.id == sprintID }) else {
+            return .none
+        }
+
+        state.pendingDeepLinkedSprintID = nil
+        state.selectedTab = .home
+        persistTemporaryViewState(state)
+        return .send(.home(.openSprintDeepLink(sprintID)))
     }
 }
 

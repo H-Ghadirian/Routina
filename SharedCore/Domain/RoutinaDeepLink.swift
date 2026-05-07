@@ -2,23 +2,40 @@ import Foundation
 
 enum RoutinaDeepLink: Equatable {
     case task(UUID)
+    case sprint(UUID)
 
     init?(url: URL) {
         guard url.scheme?.lowercased() == "routina" else { return nil }
 
         let components = url.pathComponents.filter { $0 != "/" }
-        if url.host?.lowercased() == "task",
-           let rawTaskID = components.first,
-           let taskID = UUID(uuidString: rawTaskID) {
+        if let taskID = Self.targetID(for: "task", url: url, components: components) {
             self = .task(taskID)
             return
         }
 
-        if components.first?.lowercased() == "task",
-           components.count > 1,
-           let taskID = UUID(uuidString: components[1]) {
-            self = .task(taskID)
+        if let sprintID = Self.targetID(for: "sprint", url: url, components: components) {
+            self = .sprint(sprintID)
             return
+        }
+
+        return nil
+    }
+
+    private static func targetID(
+        for kind: String,
+        url: URL,
+        components: [String]
+    ) -> UUID? {
+        if url.host?.lowercased() == kind,
+           let rawID = components.first,
+           let id = UUID(uuidString: rawID) {
+            return id
+        }
+
+        if components.first?.lowercased() == kind,
+           components.count > 1,
+           let id = UUID(uuidString: components[1]) {
+            return id
         }
 
         return nil
@@ -28,6 +45,8 @@ enum RoutinaDeepLink: Equatable {
         switch self {
         case let .task(taskID):
             return URL(string: "routina://task/\(taskID.uuidString)")!
+        case let .sprint(sprintID):
+            return URL(string: "routina://sprint/\(sprintID.uuidString)")!
         }
     }
 }
