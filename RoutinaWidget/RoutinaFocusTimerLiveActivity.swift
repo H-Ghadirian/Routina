@@ -7,7 +7,7 @@ struct RoutinaFocusTimerLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusTimerActivityAttributes.self) { context in
             FocusTimerLiveActivityLockScreenView(context: context)
-                .activityBackgroundTint(Color(.systemBackground))
+                .activityBackgroundTint(Color(red: 0.025, green: 0.031, blue: 0.04))
                 .activitySystemActionForegroundColor(.teal)
                 .widgetURL(deepLinkURL(context))
         } dynamicIsland: { context in
@@ -83,12 +83,8 @@ struct RoutinaFocusTimerLiveActivity: Widget {
 
     @ViewBuilder
     private func focusProgress(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> some View {
-        if let endDate = context.state.endDate {
-            ProgressView(timerInterval: context.state.startedAt...endDate, countsDown: false)
-                .tint(.teal)
-        } else {
-            ProgressView()
-                .tint(.teal)
+        if !context.state.isCountUp, let endDate = context.state.endDate {
+            FocusTimerProgressBar(startedAt: context.state.startedAt, endDate: endDate)
         }
     }
 }
@@ -97,54 +93,41 @@ private struct FocusTimerLiveActivityLockScreenView: View {
     let context: ActivityViewContext<FocusTimerActivityAttributes>
 
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(.teal.opacity(0.16))
-                Image(systemName: focusKind.systemImage)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.teal)
-            }
-            .frame(width: 44, height: 44)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(focusKind.lockScreenTitle)
+        VStack(alignment: .leading, spacing: 13) {
+            VStack(alignment: .leading, spacing: 7) {
+                Text("Focusing on")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
 
-                HStack(spacing: 5) {
-                    Text(context.attributes.taskEmoji)
-                    Text(context.attributes.taskName)
-                        .lineLimit(1)
-                }
-                .font(.headline)
+                Text(context.attributes.taskName)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 0)
+            liveTimer
+                .font(.system(.title, design: .rounded).weight(.bold))
+                .monospacedDigit()
+                .foregroundStyle(.teal)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
 
-            VStack(alignment: .trailing, spacing: 5) {
-                liveTimer
-                    .font(.system(.title2, design: .rounded).weight(.bold))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                progress
-                    .frame(width: 96)
-
-                if let deepLinkURL {
-                    Link(destination: deepLinkURL) {
-                        Label("Details", systemImage: "arrow.up.forward.app")
-                            .font(.caption2.weight(.semibold))
-                            .labelStyle(.titleAndIcon)
-                    }
-                    .foregroundStyle(.teal)
-                }
+            if !context.state.isCountUp {
+                progressLine
             }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 2)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
         .widgetURL(deepLinkURL)
+    }
+
+    @ViewBuilder
+    private var progressLine: some View {
+        if let endDate = context.state.endDate {
+            FocusTimerProgressBar(startedAt: context.state.startedAt, endDate: endDate)
+        }
     }
 
     @ViewBuilder
@@ -158,17 +141,6 @@ private struct FocusTimerLiveActivityLockScreenView: View {
         }
     }
 
-    @ViewBuilder
-    private var progress: some View {
-        if let endDate = context.state.endDate {
-            ProgressView(timerInterval: context.state.startedAt...endDate, countsDown: false)
-                .tint(.teal)
-        } else {
-            ProgressView()
-                .tint(.teal)
-        }
-    }
-
     private var focusKind: FocusTimerActivityAttributes.FocusKind {
         context.attributes.focusKind ?? .task
     }
@@ -177,6 +149,46 @@ private struct FocusTimerLiveActivityLockScreenView: View {
         let targetID = context.attributes.targetID ?? context.attributes.taskID
         guard let targetID else { return nil }
         return URL(string: "routina://\(focusKind.deepLinkPath)/\(targetID.uuidString)")
+    }
+}
+
+private struct FocusTimerProgressBar: View {
+    let startedAt: Date
+    let endDate: Date
+
+    var body: some View {
+        TimelineView(.periodic(from: startedAt, by: 1)) { timeline in
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.white.opacity(0.13))
+
+                    Capsule()
+                        .fill(.teal)
+                        .frame(width: filledWidth(in: proxy.size.width, at: timeline.date))
+                }
+            }
+        }
+        .frame(height: 4)
+        .accessibilityLabel("Focus progress")
+        .accessibilityValue(progressAccessibilityValue(at: .now))
+    }
+
+    private func filledWidth(in width: CGFloat, at date: Date) -> CGFloat {
+        let progress = progress(at: date)
+        guard progress > 0 else { return 0 }
+        return max(4, width * progress)
+    }
+
+    private func progress(at date: Date) -> CGFloat {
+        let duration = max(endDate.timeIntervalSince(startedAt), 1)
+        let elapsed = min(max(date.timeIntervalSince(startedAt), 0), duration)
+        return CGFloat(elapsed / duration)
+    }
+
+    private func progressAccessibilityValue(at date: Date) -> String {
+        let percent = Int((progress(at: date) * 100).rounded())
+        return "\(percent)%"
     }
 }
 
@@ -196,15 +208,6 @@ private extension FocusTimerActivityAttributes.FocusKind {
             return "timer"
         case .sprint:
             return "flag.checkered"
-        }
-    }
-
-    var lockScreenTitle: String {
-        switch self {
-        case .task:
-            return "Focus"
-        case .sprint:
-            return "Sprint Focus"
         }
     }
 }
