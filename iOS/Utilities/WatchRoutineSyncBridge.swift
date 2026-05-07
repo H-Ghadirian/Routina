@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import UIKit
+import UserNotifications
 import WatchConnectivity
 
 @MainActor
@@ -17,6 +18,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     private let session: WCSession? = WCSession.isSupported() ? WCSession.default : nil
     private var modelContextProvider: (@MainActor () -> ModelContext)?
     private var hasStarted = false
+    private var lastBackgroundOpenNotification: (deepLink: RoutinaDeepLink, date: Date)?
 
     private override init() {
         super.init()
@@ -236,9 +238,54 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     }
 
     private func openDeepLink(_ deepLink: RoutinaDeepLink) {
+        NSLog("Watch open-on-iPhone request received: \(deepLink.url.absoluteString), appState: \(UIApplication.shared.applicationState.rawValue)")
         RoutinaDeepLinkDispatcher.open(deepLink)
         guard UIApplication.shared.applicationState != .active else { return }
-        UIApplication.shared.open(deepLink.url, options: [:], completionHandler: nil)
+        scheduleBackgroundOpenNotification(for: deepLink)
+    }
+
+    private func scheduleBackgroundOpenNotification(for deepLink: RoutinaDeepLink) {
+        let now = Date()
+        if
+            let lastBackgroundOpenNotification,
+            lastBackgroundOpenNotification.deepLink == deepLink,
+            now.timeIntervalSince(lastBackgroundOpenNotification.date) < 5
+        {
+            return
+        }
+        lastBackgroundOpenNotification = (deepLink, now)
+
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            guard Self.canPresentOpenOnPhoneNotification(authorizationStatus: settings.authorizationStatus) else {
+                NSLog("Watch open-on-iPhone notification skipped: notifications are not authorized")
+                return
+            }
+
+            let content = UNMutableNotificationContent()
+            content.title = Self.openOnPhoneNotificationTitle(for: deepLink)
+            content.body = "Tap to open the running timer in Routina."
+            content.sound = .default
+            content.userInfo = deepLink.notificationUserInfo
+            if #available(iOS 15.0, *) {
+                content.interruptionLevel = .timeSensitive
+                content.relevanceScore = 1.0
+            }
+
+            let request = UNNotificationRequest(
+                identifier: Self.openOnPhoneNotificationIdentifier(for: deepLink),
+                content: content,
+                trigger: nil
+            )
+
+            do {
+                try await center.add(request)
+                NSLog("Watch open-on-iPhone notification scheduled: \(deepLink.url.absoluteString)")
+            } catch {
+                NSLog("Watch open-on-iPhone notification failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     nonisolated private static func parseIncomingAction(_ payload: [String: Any]) -> IncomingAction {
@@ -279,6 +326,37 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         }
 
         return .ignore
+    }
+
+    nonisolated private static func canPresentOpenOnPhoneNotification(
+        authorizationStatus: UNAuthorizationStatus
+    ) -> Bool {
+        switch authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .notDetermined, .denied:
+            return false
+        @unknown default:
+            return false
+        }
+    }
+
+    nonisolated private static func openOnPhoneNotificationIdentifier(for deepLink: RoutinaDeepLink) -> String {
+        switch deepLink {
+        case let .task(taskID):
+            return "watch-open-task-\(taskID.uuidString)"
+        case let .sprint(sprintID):
+            return "watch-open-sprint-\(sprintID.uuidString)"
+        }
+    }
+
+    nonisolated private static func openOnPhoneNotificationTitle(for deepLink: RoutinaDeepLink) -> String {
+        switch deepLink {
+        case .task:
+            return "Open task timer on iPhone"
+        case .sprint:
+            return "Open sprint timer on iPhone"
+        }
     }
 
     @MainActor

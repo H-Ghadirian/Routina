@@ -13,10 +13,17 @@ struct TaskDetailTimeSpentHeaderBox: View {
     let onCompletedFocusDuration: (TimeInterval) -> Void
 
     var body: some View {
+        let isForcedExpanded = hasActiveFocusForTask
+        let isContentExpanded = isExpanded || isForcedExpanded
+
         VStack(alignment: .leading, spacing: 12) {
             Button {
                 withAnimation(.easeInOut(duration: 0.16)) {
-                    isExpanded.toggle()
+                    if isForcedExpanded {
+                        isExpanded = true
+                    } else {
+                        isExpanded.toggle()
+                    }
                 }
             } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -34,18 +41,18 @@ struct TaskDetailTimeSpentHeaderBox: View {
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            if isExpanded {
+            if isContentExpanded {
                 expandedContent
             }
         }
-        .frame(maxWidth: .infinity, minHeight: isExpanded ? 120 : nil, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: isContentExpanded ? 120 : nil, alignment: .topLeading)
         .detailHeaderBoxStyle(tint: .cyan)
         .onAppear(perform: resetEntry)
         .onChange(of: task.id) { _, _ in resetEntry() }
@@ -174,6 +181,12 @@ struct TaskDetailTimeSpentHeaderBox: View {
             currentMinutes: task.actualDurationMinutes,
             entryMinutes: entryTotalMinutes
         )
+    }
+
+    private var hasActiveFocusForTask: Bool {
+        focusSessions.contains { session in
+            session.taskID == task.id && session.state == .active
+        }
     }
 
     private func setEntryTotal(_ minutes: Int) {

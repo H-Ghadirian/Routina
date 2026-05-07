@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import SwiftData
 import SwiftUI
 
 extension View {
@@ -375,6 +376,16 @@ extension HomeTCAView {
         } toolbarItems: {
             homeToolbarContent
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HomePinnedFocusTimerBanner { deepLink in
+                switch deepLink {
+                case let .task(taskID):
+                    openTask(taskID)
+                case .sprint:
+                    RoutinaDeepLinkDispatcher.open(deepLink)
+                }
+            }
+        }
     }
 }
 
@@ -395,5 +406,165 @@ struct HomeIOSView: View {
             store: store,
             searchText: searchText
         )
+    }
+}
+
+private struct HomePinnedFocusTimerBanner: View {
+    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
+    @Query private var tasks: [RoutineTask]
+    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query private var sprints: [BoardSprintRecord]
+    let onOpen: (RoutinaDeepLink) -> Void
+
+    var body: some View {
+        if let status = activeStatus {
+            Button {
+                onOpen(status.deepLink)
+            } label: {
+                SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+                    HStack(spacing: 10) {
+                        Image(systemName: status.systemImage)
+                            .font(.subheadline.weight(.semibold))
+
+                        Text(status.title)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+
+                        Spacer(minLength: 8)
+
+                        Text(status.timeText(at: context.date))
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 14)
+                    .frame(maxWidth: .infinity, minHeight: 42)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(.teal.opacity(0.35), lineWidth: 1)
+                    )
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
+            .background(.bar)
+            .accessibilityLabel("Open running timer for \(status.title)")
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
+    private var activeStatus: HomePinnedFocusTimerStatus? {
+        let taskStatus = activeTaskStatus
+        let sprintStatus = activeSprintStatus
+
+        switch (taskStatus, sprintStatus) {
+        case let (.some(task), .some(sprint)):
+            return task.startedAt >= sprint.startedAt ? task : sprint
+        case let (.some(task), nil):
+            return task
+        case let (nil, .some(sprint)):
+            return sprint
+        case (nil, nil):
+            return nil
+        }
+    }
+
+    private var activeTaskStatus: HomePinnedFocusTimerStatus? {
+        guard let session = focusSessions.first(where: { $0.state == .active && $0.startedAt != nil }),
+              let startedAt = session.startedAt
+        else {
+            return nil
+        }
+
+        let taskTitle = tasks.first { $0.id == session.taskID }?.name
+        return HomePinnedFocusTimerStatus(
+            id: session.id,
+            targetID: session.taskID,
+            kind: .task,
+            title: normalizedTitle(taskTitle, fallback: "Task focus"),
+            startedAt: startedAt,
+            plannedDurationSeconds: session.plannedDurationSeconds
+        )
+    }
+
+    private var activeSprintStatus: HomePinnedFocusTimerStatus? {
+        guard let session = sprintFocusSessions.first(where: { $0.stoppedAt == nil }) else {
+            return nil
+        }
+
+        let sprintTitle = sprints.first { $0.id == session.sprintID }?.title
+        return HomePinnedFocusTimerStatus(
+            id: session.id,
+            targetID: session.sprintID,
+            kind: .sprint,
+            title: normalizedTitle(sprintTitle, fallback: "Sprint focus"),
+            startedAt: session.startedAt,
+            plannedDurationSeconds: 0
+        )
+    }
+
+    private func normalizedTitle(_ title: String?, fallback: String) -> String {
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedTitle.isEmpty ? fallback : trimmedTitle
+    }
+}
+
+private struct HomePinnedFocusTimerStatus: Equatable {
+    enum Kind: Equatable {
+        case task
+        case sprint
+    }
+
+    let id: UUID
+    let targetID: UUID
+    let kind: Kind
+    let title: String
+    let startedAt: Date
+    let plannedDurationSeconds: TimeInterval
+
+    var systemImage: String {
+        switch kind {
+        case .task:
+            return "timer"
+        case .sprint:
+            return "flag.checkered"
+        }
+    }
+
+    var deepLink: RoutinaDeepLink {
+        switch kind {
+        case .task:
+            return .task(targetID)
+        case .sprint:
+            return .sprint(targetID)
+        }
+    }
+
+    private var isCountUp: Bool {
+        plannedDurationSeconds <= 0
+    }
+
+    func timeText(at date: Date) -> String {
+        if overtimeSeconds(at: date) > 0 {
+            return "+\(FocusSessionFormatting.durationText(seconds: overtimeSeconds(at: date)))"
+        }
+        return FocusSessionFormatting.durationText(seconds: displaySeconds(at: date))
+    }
+
+    private func displaySeconds(at date: Date) -> TimeInterval {
+        let elapsed = max(0, date.timeIntervalSince(startedAt))
+        guard !isCountUp else { return elapsed }
+        return max(0, plannedDurationSeconds - elapsed)
+    }
+
+    private func overtimeSeconds(at date: Date) -> TimeInterval {
+        guard !isCountUp else { return 0 }
+        let elapsed = max(0, date.timeIntervalSince(startedAt))
+        return max(0, elapsed - plannedDurationSeconds)
     }
 }

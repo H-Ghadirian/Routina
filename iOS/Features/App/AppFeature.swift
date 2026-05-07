@@ -154,6 +154,8 @@ struct AppFeature {
     }
 
     private func handleDeepLink(_ deepLink: RoutinaDeepLink, state: inout State) -> Effect<Action> {
+        state.hasRestoredTemporaryViewState = true
+
         switch deepLink {
         case let .task(taskID):
             state.selectedTab = .home

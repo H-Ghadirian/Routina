@@ -1,9 +1,15 @@
 import SwiftUI
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 import ComposableArchitecture
+import SwiftData
 import UIKit
+import WidgetKit
 
 struct AppView: View {
     let store: StoreOf<AppFeature>
+    @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
@@ -64,10 +70,6 @@ struct AppView: View {
                                 store.send(.onAppear)
                                 handlePendingDeepLink()
                             }
-                            .onOpenURL(perform: handleOpenURL)
-                            .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
-                                handleDeepLinkNotification(notification)
-                            }
                     }
                 } else {
                     AppLockGate {
@@ -80,14 +82,20 @@ struct AppView: View {
                                 store.send(.onAppear)
                                 handlePendingDeepLink()
                             }
-                            .onOpenURL(perform: handleOpenURL)
-                            .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
-                                handleDeepLinkNotification(notification)
-                            }
                     }
                 }
             }
             .preferredColorScheme(appColorScheme.preferredColorScheme)
+            .onOpenURL(perform: handleOpenURL)
+            .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
+                handleDeepLinkNotification(notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaOpenActiveFocus)) { _ in
+                handleActiveFocusOpenRequest()
+            }
+            .onContinueUserActivity(NSUserActivityTypeLiveActivity) { userActivity in
+                handleLiveActivityContinuation(userActivity)
+            }
             .background {
                 HomeTabFastFilterMenuBridge(
                     fastFilters: fastFilterTags,
@@ -117,20 +125,52 @@ struct AppView: View {
 
     private func handleOpenURL(_ url: URL) {
         guard let deepLink = RoutinaDeepLink(url: url) else { return }
+        NSLog("Routina AppView deep link URL received: \(url.absoluteString)")
         openDeepLink(deepLink)
     }
 
     @MainActor
     private func handleDeepLinkNotification(_ notification: Notification) {
         guard let deepLink = RoutinaDeepLinkDispatcher.deepLink(from: notification) else { return }
+        NSLog("Routina AppView deep link notification received")
         RoutinaDeepLinkDispatcher.markHandled(deepLink)
         openDeepLink(deepLink)
     }
 
     @MainActor
-    private func handlePendingDeepLink() {
-        guard let deepLink = RoutinaDeepLinkDispatcher.consumePendingDeepLink() else { return }
+    @discardableResult
+    private func handlePendingDeepLink() -> Bool {
+        guard let deepLink = RoutinaDeepLinkDispatcher.consumePendingDeepLink() else { return false }
         openDeepLink(deepLink)
+        return true
+    }
+
+    @MainActor
+    private func handleLiveActivityContinuation(_ userActivity: NSUserActivity) {
+        NSLog("Routina Live Activity SwiftUI continuation received: \(userActivity.activityType)")
+        RoutinaActiveFocusOpenDispatcher.consumePendingRequest()
+        handleActiveFocusOpenRequest()
+    }
+
+    @MainActor
+    private func handleActiveFocusOpenRequest() {
+        do {
+            guard let deepLink = try activeFocusDeepLink() else { return }
+            openDeepLink(deepLink)
+        } catch {
+            NSLog("Failed to resolve Live Activity deep link: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func handleActivationRouting() {
+        if handlePendingDeepLink() {
+            return
+        }
+
+        if RoutinaActiveFocusOpenDispatcher.consumePendingRequest() {
+            handleActiveFocusOpenRequest()
+        }
     }
 
     @MainActor
@@ -143,6 +183,96 @@ struct AppView: View {
         }
         store.send(.openDeepLink(deepLink))
     }
+
+    @MainActor
+    private func activeFocusDeepLink(includeRecordedFallback: Bool = true) throws -> RoutinaDeepLink? {
+        if let activityFocus = activeLiveActivityDeepLink() {
+            return activityFocus.deepLink
+        }
+
+        let taskFocus = try activeTaskFocusDeepLink()
+        let sprintFocus = try activeSprintFocusDeepLink()
+
+        switch (taskFocus, sprintFocus) {
+        case let (.some(task), .some(sprint)):
+            return task.startedAt >= sprint.startedAt ? task.deepLink : sprint.deepLink
+        case let (.some(task), nil):
+            return task.deepLink
+        case let (nil, .some(sprint)):
+            return sprint.deepLink
+        case (nil, nil):
+            guard includeRecordedFallback else { return nil }
+            return RoutinaActiveFocusOpenDispatcher.recordedActiveFocusDeepLink()
+        }
+    }
+
+    @MainActor
+    private func activeLiveActivityDeepLink() -> ActiveFocusDeepLink? {
+        #if canImport(ActivityKit)
+        let deepLinks: [ActiveFocusDeepLink] = Activity<FocusTimerActivityAttributes>.activities
+            .compactMap { (activity: Activity<FocusTimerActivityAttributes>) -> ActiveFocusDeepLink? in
+                let kind = activity.attributes.focusKind ?? .task
+                guard let targetID = activity.attributes.targetID ?? activity.attributes.taskID else {
+                    return nil
+                }
+
+                let deepLink: RoutinaDeepLink
+                switch kind {
+                case .task:
+                    deepLink = .task(targetID)
+                case .sprint:
+                    deepLink = .sprint(targetID)
+                }
+
+                return ActiveFocusDeepLink(
+                    deepLink: deepLink,
+                    startedAt: activity.content.state.startedAt
+                )
+            }
+        return deepLinks.sorted { $0.startedAt > $1.startedAt }.first
+        #else
+        return nil
+        #endif
+    }
+
+    @MainActor
+    private func activeTaskFocusDeepLink() throws -> ActiveFocusDeepLink? {
+        let sessions = try modelContext.fetch(FetchDescriptor<FocusSession>())
+        guard let session = sessions
+            .filter({ $0.state == .active })
+            .sorted(by: { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) })
+            .first
+        else {
+            return nil
+        }
+
+        return ActiveFocusDeepLink(
+            deepLink: .task(session.taskID),
+            startedAt: session.startedAt ?? .distantPast
+        )
+    }
+
+    @MainActor
+    private func activeSprintFocusDeepLink() throws -> ActiveFocusDeepLink? {
+        let sessions = try modelContext.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+        guard let session = sessions
+            .filter({ $0.stoppedAt == nil })
+            .sorted(by: { $0.startedAt > $1.startedAt })
+            .first
+        else {
+            return nil
+        }
+
+        return ActiveFocusDeepLink(
+            deepLink: .sprint(session.sprintID),
+            startedAt: session.startedAt
+        )
+    }
+}
+
+private struct ActiveFocusDeepLink {
+    let deepLink: RoutinaDeepLink
+    let startedAt: Date
 }
 
 private struct SprintFocusDeepLinkPresentation: Identifiable, Equatable {

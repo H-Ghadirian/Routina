@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import ConcurrencyExtras
+import Foundation
 import Testing
 @testable @preconcurrency import Routina
 
@@ -93,6 +94,53 @@ struct AppFeatureTests {
 
         await store.send(.tabSelected(.search)) {
             $0.selectedTab = .search
+        }
+
+        await store.send(.onAppear)
+    }
+
+    @Test
+    func deepLinkBeforeOnAppearPreventsPersistedTabRestore() async {
+        let taskID = UUID()
+        let persistedState = TemporaryViewState(
+            selectedAppTabRawValue: Tab.stats.rawValue,
+            homeTaskListModeRawValue: HomeFeature.TaskListMode.all.rawValue,
+            homeSelectedFilter: .all,
+            homeSelectedTag: nil,
+            homeExcludedTags: [],
+            homeSelectedManualPlaceFilterID: nil,
+            homeTabFilterSnapshots: [:],
+            hideUnavailableRoutines: false,
+            homeSelectedTimelineRange: .all,
+            homeSelectedTimelineFilterType: .all,
+            homeSelectedTimelineTag: nil,
+            macHomeSidebarModeRawValue: nil,
+            macSelectedSettingsSectionRawValue: nil,
+            timelineSelectedRange: .all,
+            timelineFilterType: .all,
+            timelineSelectedTag: nil,
+            statsSelectedRange: .year,
+            statsSelectedTag: nil,
+            statsExcludedTags: [],
+            statsTaskTypeFilterRawValue: StatsTaskTypeFilter.all.rawValue
+        )
+        let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
+
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .timeline,
+                home: HomeFeature.State(routineTasks: [task])
+            )
+        ) {
+            AppFeature()
+        } withDependencies: {
+            $0.appSettingsClient.temporaryViewState = { persistedState }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.openDeepLink(.task(taskID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .home
         }
 
         await store.send(.onAppear)

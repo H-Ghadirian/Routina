@@ -299,7 +299,10 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         WKExtension.shared().openSystemURL(url)
 
-        guard let session else { return }
+        guard let session else {
+            NSLog("Watch open-on-iPhone used URL fallback only: session is unavailable")
+            return
+        }
         var payload: [String: Any] = [
             "action": "openDeepLink",
             "url": url.absoluteString,
@@ -307,8 +310,16 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         ]
         payload["targetID"] = focus.deepLinkTargetID?.uuidString
 
+        guard session.activationState == .activated else {
+            NSLog("Watch open-on-iPhone skipped: session is not activated")
+            return
+        }
+
         if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
+            session.sendMessage(payload, replyHandler: nil) { error in
+                NSLog("Watch open-on-iPhone message failed: \(error.localizedDescription)")
+                session.transferUserInfo(payload)
+            }
         } else {
             session.transferUserInfo(payload)
         }

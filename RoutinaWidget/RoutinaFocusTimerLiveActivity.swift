@@ -14,23 +14,29 @@ struct RoutinaFocusTimerLiveActivity: Widget {
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     focusTitle(context)
+                        .widgetURL(deepLinkURL(context))
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     liveTimer(context)
                         .font(.system(.title3, design: .rounded).weight(.bold))
                         .monospacedDigit()
+                        .widgetURL(deepLinkURL(context))
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     focusProgress(context)
+                        .widgetURL(deepLinkURL(context))
                 }
             } compactLeading: {
                 Text(context.attributes.taskEmoji)
+                    .widgetURL(deepLinkURL(context))
             } compactTrailing: {
                 liveTimer(context)
                     .font(.caption2.weight(.bold))
                     .monospacedDigit()
+                    .widgetURL(deepLinkURL(context))
             } minimal: {
                 Image(systemName: focusKind(context).systemImage)
+                    .widgetURL(deepLinkURL(context))
             }
             .widgetURL(deepLinkURL(context))
         }
@@ -125,10 +131,20 @@ private struct FocusTimerLiveActivityLockScreenView: View {
 
                 progress
                     .frame(width: 96)
+
+                if let deepLinkURL {
+                    Link(destination: deepLinkURL) {
+                        Label("Details", systemImage: "arrow.up.forward.app")
+                            .font(.caption2.weight(.semibold))
+                            .labelStyle(.titleAndIcon)
+                    }
+                    .foregroundStyle(.teal)
+                }
             }
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
+        .widgetURL(deepLinkURL)
     }
 
     @ViewBuilder
@@ -155,6 +171,12 @@ private struct FocusTimerLiveActivityLockScreenView: View {
 
     private var focusKind: FocusTimerActivityAttributes.FocusKind {
         context.attributes.focusKind ?? .task
+    }
+
+    private var deepLinkURL: URL? {
+        let targetID = context.attributes.targetID ?? context.attributes.taskID
+        guard let targetID else { return nil }
+        return URL(string: "routina://\(focusKind.deepLinkPath)/\(targetID.uuidString)")
     }
 }
 

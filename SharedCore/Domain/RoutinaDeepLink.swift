@@ -53,18 +53,80 @@ enum RoutinaDeepLink: Equatable, Sendable {
 
 extension Notification.Name {
     static let routinaOpenDeepLink = Notification.Name("routinaOpenDeepLink")
+    static let routinaOpenActiveFocus = Notification.Name("routinaOpenActiveFocus")
 }
 
 enum RoutinaDeepLinkNotificationKey: String {
     case deepLink
 }
 
+enum RoutinaDeepLinkUserInfoKey: String {
+    case url = "routinaDeepLinkURL"
+}
+
+extension RoutinaDeepLink {
+    init?(notificationUserInfo userInfo: [AnyHashable: Any]) {
+        guard
+            let rawURL = userInfo[RoutinaDeepLinkUserInfoKey.url.rawValue] as? String,
+            let url = URL(string: rawURL)
+        else {
+            return nil
+        }
+        self.init(url: url)
+    }
+
+    var notificationUserInfo: [String: String] {
+        [
+            RoutinaDeepLinkUserInfoKey.url.rawValue: url.absoluteString
+        ]
+    }
+}
+
+@MainActor
+enum RoutinaActiveFocusOpenDispatcher {
+    private static let pendingOpenActiveFocusDefaultsKey = "routina.pendingOpenActiveFocus"
+    private static let activeFocusDeepLinkDefaultsKey = "routina.activeFocusDeepLinkURL"
+
+    static func requestOpen() {
+        SharedDefaults.app.set(true, forKey: pendingOpenActiveFocusDefaultsKey)
+        NotificationCenter.default.post(name: .routinaOpenActiveFocus, object: nil)
+    }
+
+    @discardableResult
+    static func consumePendingRequest() -> Bool {
+        let isPending = SharedDefaults.app.bool(forKey: pendingOpenActiveFocusDefaultsKey)
+        SharedDefaults.app.removeObject(forKey: pendingOpenActiveFocusDefaultsKey)
+        return isPending
+    }
+
+    static func recordActiveFocusDeepLink(_ deepLink: RoutinaDeepLink) {
+        SharedDefaults.app.set(deepLink.url.absoluteString, forKey: activeFocusDeepLinkDefaultsKey)
+    }
+
+    static func clearActiveFocusDeepLink() {
+        SharedDefaults.app.removeObject(forKey: activeFocusDeepLinkDefaultsKey)
+    }
+
+    static func recordedActiveFocusDeepLink() -> RoutinaDeepLink? {
+        guard
+            let rawURL = SharedDefaults.app.string(forKey: activeFocusDeepLinkDefaultsKey),
+            let url = URL(string: rawURL)
+        else {
+            return nil
+        }
+        return RoutinaDeepLink(url: url)
+    }
+
+}
+
 @MainActor
 enum RoutinaDeepLinkDispatcher {
+    private static let pendingDeepLinkDefaultsKey = "routina.pendingDeepLinkURL"
     private static var pendingDeepLink: RoutinaDeepLink?
 
     static func open(_ deepLink: RoutinaDeepLink) {
         pendingDeepLink = deepLink
+        SharedDefaults.app.set(deepLink.url.absoluteString, forKey: pendingDeepLinkDefaultsKey)
         NotificationCenter.default.post(
             name: .routinaOpenDeepLink,
             object: nil,
@@ -79,12 +141,37 @@ enum RoutinaDeepLinkDispatcher {
     }
 
     static func consumePendingDeepLink() -> RoutinaDeepLink? {
-        defer { pendingDeepLink = nil }
-        return pendingDeepLink
+        defer { clearPendingDeepLink() }
+        if let pendingDeepLink {
+            return pendingDeepLink
+        }
+        guard
+            let rawURL = SharedDefaults.app.string(forKey: pendingDeepLinkDefaultsKey),
+            let url = URL(string: rawURL)
+        else {
+            return nil
+        }
+        return RoutinaDeepLink(url: url)
     }
 
     static func markHandled(_ deepLink: RoutinaDeepLink) {
-        guard pendingDeepLink == deepLink else { return }
+        if pendingDeepLink == deepLink {
+            clearPendingDeepLink()
+            return
+        }
+
+        guard
+            let rawURL = SharedDefaults.app.string(forKey: pendingDeepLinkDefaultsKey),
+            let url = URL(string: rawURL),
+            RoutinaDeepLink(url: url) == deepLink
+        else {
+            return
+        }
+        clearPendingDeepLink()
+    }
+
+    private static func clearPendingDeepLink() {
         pendingDeepLink = nil
+        SharedDefaults.app.removeObject(forKey: pendingDeepLinkDefaultsKey)
     }
 }

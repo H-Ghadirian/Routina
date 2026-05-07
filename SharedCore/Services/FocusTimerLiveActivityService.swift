@@ -22,13 +22,27 @@ enum FocusTimerLiveActivityService {
 
     private static func sync(_ focus: ActiveFocusTimerActivity?) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            await MainActor.run {
+                RoutinaActiveFocusOpenDispatcher.clearActiveFocusDeepLink()
+            }
             await endAll()
             return
         }
 
         guard let focus else {
+            await MainActor.run {
+                RoutinaActiveFocusOpenDispatcher.clearActiveFocusDeepLink()
+            }
             await endAll()
             return
+        }
+
+        await MainActor.run {
+            if let deepLink = focus.deepLink {
+                RoutinaActiveFocusOpenDispatcher.recordActiveFocusDeepLink(deepLink)
+            } else {
+                RoutinaActiveFocusOpenDispatcher.clearActiveFocusDeepLink()
+            }
         }
 
         let attributes = FocusTimerActivityAttributes(
@@ -177,5 +191,15 @@ private struct ActiveFocusTimerActivity {
     let startedAt: Date
     let plannedDurationSeconds: TimeInterval
     let lastUpdated: Date
+
+    var deepLink: RoutinaDeepLink? {
+        guard let targetID = targetID ?? taskID else { return nil }
+        switch kind {
+        case .task:
+            return .task(targetID)
+        case .sprint:
+            return .sprint(targetID)
+        }
+    }
 }
 #endif

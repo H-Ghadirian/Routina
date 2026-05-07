@@ -41,11 +41,17 @@ struct FocusSessionCard: View {
 
     var body: some View {
         let snapshot = FocusSessionCardSnapshot(taskID: task.id, sessions: sessions)
+        let isForcedExpanded = snapshot.activeSessionForTask != nil
+        let isContentExpanded = isExpanded || isForcedExpanded
 
         VStack(alignment: .leading, spacing: 14) {
             Button {
                 withAnimation(.easeInOut(duration: 0.16)) {
-                    isExpanded.toggle()
+                    if isForcedExpanded {
+                        isExpanded = true
+                    } else {
+                        isExpanded.toggle()
+                    }
                 }
             } label: {
                 HStack(alignment: .top, spacing: 12) {
@@ -70,7 +76,7 @@ struct FocusSessionCard: View {
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
                         .padding(.top, 6)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -78,7 +84,7 @@ struct FocusSessionCard: View {
             }
             .buttonStyle(.plain)
 
-            if isExpanded {
+            if isContentExpanded {
                 if let activeSessionForTask = snapshot.activeSessionForTask {
                     activeSessionContent(activeSessionForTask)
                 } else if let activeSessionForAnotherTask = snapshot.activeSessionForAnotherTask {

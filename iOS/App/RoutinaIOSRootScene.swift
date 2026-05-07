@@ -15,6 +15,11 @@ struct RoutinaIOSRootScene: Scene {
             using: persistence,
             platformClients: .iOSLive
         )
+        if !AppEnvironment.isAutomatedTestMode {
+            WatchRoutineSyncBridge.shared.startIfNeeded {
+                persistence.container.mainContext
+            }
+        }
     }
 
     var body: some Scene {
@@ -30,9 +35,6 @@ struct RoutinaIOSRootScene: Scene {
                         await CloudKitPushSubscriptionService.ensureSubscriptionIfNeeded(
                             containerIdentifier: AppEnvironment.cloudKitContainerIdentifier
                         )
-                    }
-                    WatchRoutineSyncBridge.shared.startIfNeeded {
-                        persistence.container.mainContext
                     }
                 }
         }
