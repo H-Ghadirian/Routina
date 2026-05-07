@@ -1,5 +1,6 @@
 import Foundation
 import WatchConnectivity
+import WatchKit
 
 @MainActor
 final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate {
@@ -161,13 +162,53 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
     }
 
+    enum WatchFocusKind: String, Sendable, Codable {
+        case task
+        case sprint
+
+        var deepLinkPath: String { rawValue }
+
+        var displayTitle: String {
+            switch self {
+            case .task:
+                return "Focus"
+            case .sprint:
+                return "Sprint Focus"
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .task:
+                return "timer"
+            case .sprint:
+                return "flag.checkered"
+            }
+        }
+    }
+
     struct WatchFocusSession: Identifiable, Equatable, Sendable, Codable {
         let id: UUID
-        let taskID: UUID
+        let focusKind: WatchFocusKind?
+        let targetID: UUID?
+        let taskID: UUID?
         let taskName: String
         let taskEmoji: String
         let startedAt: Date
         let plannedDurationSeconds: TimeInterval
+
+        var resolvedFocusKind: WatchFocusKind {
+            focusKind ?? .task
+        }
+
+        var deepLinkTargetID: UUID? {
+            targetID ?? taskID
+        }
+
+        var deepLinkURL: URL? {
+            guard let deepLinkTargetID else { return nil }
+            return URL(string: "routina://\(resolvedFocusKind.deepLinkPath)/\(deepLinkTargetID.uuidString)")
+        }
 
         var isCountUp: Bool {
             plannedDurationSeconds <= 0
@@ -245,6 +286,26 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "taskID": id.uuidString,
             "completedAt": completionDate.timeIntervalSince1970
         ]
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    func openOnPhone(_ focus: WatchFocusSession) {
+        guard let url = focus.deepLinkURL else { return }
+
+        WKExtension.shared().openSystemURL(url)
+
+        guard let session else { return }
+        var payload: [String: Any] = [
+            "action": "openDeepLink",
+            "url": url.absoluteString,
+            "focusKind": focus.resolvedFocusKind.rawValue
+        ]
+        payload["targetID"] = focus.deepLinkTargetID?.uuidString
 
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -448,10 +509,18 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         guard
             let sessionIDString = rawFocus["sessionID"] as? String,
             let sessionID = UUID(uuidString: sessionIDString),
-            let taskIDString = rawFocus["taskID"] as? String,
-            let taskID = UUID(uuidString: taskIDString),
             let startedAtTimestamp = rawFocus["startedAt"] as? TimeInterval
         else {
+            return FocusPayloadUpdate(wasPresent: true, focus: nil)
+        }
+
+        let focusKind = WatchFocusKind(rawValue: (rawFocus["focusKind"] as? String) ?? "") ?? .task
+        let taskID = (rawFocus["taskID"] as? String).flatMap(UUID.init(uuidString:))
+        let targetID = ((rawFocus["targetID"] as? String) ?? (rawFocus["sprintID"] as? String))
+            .flatMap(UUID.init(uuidString:))
+            ?? taskID
+
+        guard targetID != nil else {
             return FocusPayloadUpdate(wasPresent: true, focus: nil)
         }
 
@@ -465,6 +534,8 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             wasPresent: true,
             focus: WatchFocusSession(
                 id: sessionID,
+                focusKind: focusKind,
+                targetID: targetID,
                 taskID: taskID,
                 taskName: taskName.isEmpty ? "Focus session" : taskName,
                 taskEmoji: taskEmoji,

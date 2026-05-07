@@ -8,6 +8,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     private enum IncomingAction: Sendable {
         case requestSync
         case markDone(UUID, Date)
+        case openDeepLink(RoutinaDeepLink)
         case ignore
     }
 
@@ -70,9 +71,19 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             let descriptor = FetchDescriptor<RoutineTask>()
 
             do {
+                let referenceDate = Date()
                 let tasks = try context.fetch(descriptor)
                 let sessions = try context.fetch(FetchDescriptor<FocusSession>())
-                let focus = FocusTimerWidgetDataComputer.compute(tasks: tasks, sessions: sessions)
+                let focus = FocusTimerWidgetDataComputer.compute(
+                    tasks: tasks,
+                    sessions: sessions,
+                    referenceDate: referenceDate
+                )
+                let focusPayload = try Self.focusPayload(
+                    from: focus,
+                    context: context,
+                    referenceDate: referenceDate
+                )
                 let payload: [String: Any] = [
                     "routines": tasks.compactMap { task -> [String: Any]? in
                         guard !task.isArchived(), !task.isCompletedOneOff, !task.isCanceledOneOff else { return nil }
@@ -89,9 +100,9 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                             "checklistItemCount": task.totalChecklistItemCount,
                             "completedChecklistItemCount": task.completedChecklistItemCount,
                             "nextPendingChecklistItemTitle": task.nextPendingChecklistItemTitle as Any,
-                            "dueDate": task.isOneOffTask ? Date().timeIntervalSince1970 : RoutineDateMath.dueDate(for: task, referenceDate: Date()).timeIntervalSince1970,
-                            "dueChecklistItemCount": task.dueChecklistItems(referenceDate: Date()).count,
-                            "nextDueChecklistItemTitle": task.nextDueChecklistItem(referenceDate: Date())?.title as Any
+                            "dueDate": task.isOneOffTask ? referenceDate.timeIntervalSince1970 : RoutineDateMath.dueDate(for: task, referenceDate: referenceDate).timeIntervalSince1970,
+                            "dueChecklistItemCount": task.dueChecklistItems(referenceDate: referenceDate).count,
+                            "nextDueChecklistItemTitle": task.nextDueChecklistItem(referenceDate: referenceDate)?.title as Any
                         ]
 
                         if let lastDone = task.lastDone {
@@ -100,7 +111,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
 
                         return routinePayload
                     },
-                    "focus": Self.focusPayload(from: focus)
+                    "focus": focusPayload
                 ]
 
                 try session.updateApplicationContext(payload)
@@ -179,6 +190,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             pushLatestSnapshot()
         case let .markDone(taskID, date):
             markRoutineDone(taskID: taskID, completedAt: date)
+        case let .openDeepLink(deepLink):
+            openDeepLink(deepLink)
         case .ignore:
             return
         }
@@ -222,6 +235,12 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         }
     }
 
+    private func openDeepLink(_ deepLink: RoutinaDeepLink) {
+        RoutinaDeepLinkDispatcher.open(deepLink)
+        guard UIApplication.shared.applicationState != .active else { return }
+        UIApplication.shared.open(deepLink.url, options: [:], completionHandler: nil)
+    }
+
     nonisolated private static func parseIncomingAction(_ payload: [String: Any]) -> IncomingAction {
         if
             let action = payload["action"] as? String,
@@ -233,6 +252,28 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             return .markDone(taskID, timestamp)
         }
 
+        if let action = payload["action"] as? String, action == "openDeepLink" {
+            if
+                let rawURL = payload["url"] as? String,
+                let url = URL(string: rawURL),
+                let deepLink = RoutinaDeepLink(url: url)
+            {
+                return .openDeepLink(deepLink)
+            }
+
+            let kind = (payload["focusKind"] as? String) ?? "task"
+            let rawTargetID = (payload["targetID"] as? String) ?? (payload["taskID"] as? String)
+            guard let rawTargetID, let targetID = UUID(uuidString: rawTargetID) else {
+                return .ignore
+            }
+
+            if kind == "sprint" {
+                return .openDeepLink(.sprint(targetID))
+            }
+
+            return .openDeepLink(.task(targetID))
+        }
+
         if let requestSync = payload["requestSync"] as? Bool, requestSync {
             return .requestSync
         }
@@ -240,19 +281,78 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         return .ignore
     }
 
-    nonisolated private static func focusPayload(from focus: FocusTimerWidgetData) -> [String: Any] {
-        guard focus.isActive, let sessionID = focus.sessionID, let taskID = focus.taskID, let startedAt = focus.startedAt else {
+    @MainActor
+    private static func focusPayload(
+        from taskFocus: FocusTimerWidgetData,
+        context: ModelContext,
+        referenceDate: Date
+    ) throws -> [String: Any] {
+        let taskPayload = taskFocusPayload(from: taskFocus)
+        let sprintPayload = try sprintFocusPayload(in: context, referenceDate: referenceDate)
+
+        switch (taskPayload, sprintPayload) {
+        case let (.some(task), .some(sprint)):
+            return payloadStartedAt(task) >= payloadStartedAt(sprint) ? task : sprint
+        case let (.some(task), nil):
+            return task
+        case let (nil, .some(sprint)):
+            return sprint
+        case (nil, nil):
             return ["isActive": false]
+        }
+    }
+
+    nonisolated private static func taskFocusPayload(from focus: FocusTimerWidgetData) -> [String: Any]? {
+        guard focus.isActive, let sessionID = focus.sessionID, let taskID = focus.taskID, let startedAt = focus.startedAt else {
+            return nil
         }
 
         return [
             "isActive": true,
             "sessionID": sessionID.uuidString,
+            "focusKind": "task",
+            "targetID": taskID.uuidString,
             "taskID": taskID.uuidString,
             "taskName": focus.taskName,
             "taskEmoji": focus.taskEmoji,
             "startedAt": startedAt.timeIntervalSince1970,
             "plannedDurationSeconds": focus.plannedDurationSeconds
         ]
+    }
+
+    @MainActor
+    private static func sprintFocusPayload(in context: ModelContext, referenceDate: Date) throws -> [String: Any]? {
+        let sessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+        guard let session = sessions
+            .filter({ $0.stoppedAt == nil })
+            .sorted(by: { $0.startedAt > $1.startedAt })
+            .first
+        else {
+            return nil
+        }
+
+        let sprints = try context.fetch(FetchDescriptor<BoardSprintRecord>())
+        let title = sprints
+            .first { $0.id == session.sprintID }?
+            .title
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayTitle = title.map { $0.isEmpty ? "Sprint focus" : $0 } ?? "Sprint focus"
+
+        return [
+            "isActive": true,
+            "sessionID": session.id.uuidString,
+            "focusKind": "sprint",
+            "targetID": session.sprintID.uuidString,
+            "sprintID": session.sprintID.uuidString,
+            "taskName": displayTitle,
+            "taskEmoji": "🏁",
+            "startedAt": session.startedAt.timeIntervalSince1970,
+            "plannedDurationSeconds": 0,
+            "lastUpdated": referenceDate.timeIntervalSince1970
+        ]
+    }
+
+    nonisolated private static func payloadStartedAt(_ payload: [String: Any]) -> TimeInterval {
+        payload["startedAt"] as? TimeInterval ?? .leastNonzeroMagnitude
     }
 }

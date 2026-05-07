@@ -1,6 +1,6 @@
 import Foundation
 
-enum RoutinaDeepLink: Equatable {
+enum RoutinaDeepLink: Equatable, Sendable {
     case task(UUID)
     case sprint(UUID)
 

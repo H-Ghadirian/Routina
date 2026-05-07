@@ -5,6 +5,7 @@ import UIKit
 struct AppView: View {
     let store: StoreOf<AppFeature>
     @State private var searchText = ""
+    @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
     @AppStorage(UserDefaultStringValueKey.appSettingFastFilterTags.rawValue, store: SharedDefaults.app)
@@ -100,6 +101,9 @@ struct AppView: View {
                 )
                 .frame(width: 0, height: 0)
             }
+            .sheet(item: $presentedSprintFocusDeepLink) { presentation in
+                SprintFocusDeepLinkView(sprintID: presentation.id)
+            }
         }
     }
 
@@ -113,21 +117,36 @@ struct AppView: View {
 
     private func handleOpenURL(_ url: URL) {
         guard let deepLink = RoutinaDeepLink(url: url) else { return }
-        store.send(.openDeepLink(deepLink))
+        openDeepLink(deepLink)
     }
 
     @MainActor
     private func handleDeepLinkNotification(_ notification: Notification) {
         guard let deepLink = RoutinaDeepLinkDispatcher.deepLink(from: notification) else { return }
         RoutinaDeepLinkDispatcher.markHandled(deepLink)
-        store.send(.openDeepLink(deepLink))
+        openDeepLink(deepLink)
     }
 
     @MainActor
     private func handlePendingDeepLink() {
         guard let deepLink = RoutinaDeepLinkDispatcher.consumePendingDeepLink() else { return }
+        openDeepLink(deepLink)
+    }
+
+    @MainActor
+    private func openDeepLink(_ deepLink: RoutinaDeepLink) {
+        switch deepLink {
+        case .task:
+            presentedSprintFocusDeepLink = nil
+        case let .sprint(sprintID):
+            presentedSprintFocusDeepLink = SprintFocusDeepLinkPresentation(id: sprintID)
+        }
         store.send(.openDeepLink(deepLink))
     }
+}
+
+private struct SprintFocusDeepLinkPresentation: Identifiable, Equatable {
+    let id: UUID
 }
 
 private extension AppColorScheme {

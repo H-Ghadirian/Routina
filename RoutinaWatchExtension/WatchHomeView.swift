@@ -90,9 +90,9 @@ struct WatchHomeView: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             VStack(alignment: .leading, spacing: 7) {
                 HStack(spacing: 6) {
-                    Image(systemName: "timer")
+                    Image(systemName: session.resolvedFocusKind.systemImage)
                         .foregroundStyle(.teal)
-                    Text("Focus")
+                    Text(session.resolvedFocusKind.displayTitle)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 0)
@@ -114,6 +114,15 @@ struct WatchHomeView: View {
                     ProgressView(value: focusProgress(for: session, now: context.date))
                         .tint(.teal)
                 }
+
+                Button {
+                    syncStore.openOnPhone(session)
+                } label: {
+                    Label("Open on iPhone", systemImage: "iphone")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(!syncStore.isCompanionAppInstalled || session.deepLinkURL == nil)
             }
             .padding(.vertical, 4)
         }
