@@ -233,19 +233,15 @@ extension TaskDetailFeature.State {
     }
 
     var dueDateMetadataText: String? {
-        guard let dueDate = resolvedDueDate else {
-            return nil
-        }
-        if task.isOneOffTask || task.recurrenceRule.usesExplicitTimeOfDay {
-            return dueDate.formatted(date: .abbreviated, time: .shortened)
-        }
-        guard !Calendar.current.isDateInToday(dueDate) else { return nil }
-        return dueDate.formatted(date: .abbreviated, time: .omitted)
+        TaskDetailDateMetadataPresentation.dueDateMetadataText(
+            dueDate: resolvedDueDate,
+            isOneOffTask: task.isOneOffTask,
+            usesExplicitTimeOfDay: task.recurrenceRule.usesExplicitTimeOfDay
+        )
     }
 
     var reminderMetadataText: String? {
-        guard let reminderAt = task.reminderAt else { return nil }
-        return reminderAt.formatted(date: .abbreviated, time: .shortened)
+        TaskDetailDateMetadataPresentation.reminderMetadataText(reminderAt: task.reminderAt)
     }
 
     var notificationDisabledWarningText: String? {
@@ -276,23 +272,18 @@ extension TaskDetailFeature.State {
     }
 
     var shouldShowSelectedDateMetadata: Bool {
-        !Calendar.current.isDateInToday(resolvedSelectedDate)
-            && !task.isCompletedOneOff
-            && !task.isCanceledOneOff
+        TaskDetailDateMetadataPresentation.shouldShowSelectedDateMetadata(
+            selectedDate: resolvedSelectedDate,
+            task: task
+        )
     }
 
     var selectedDateMetadataText: String {
-        if Calendar.current.isDateInToday(resolvedSelectedDate) {
-            return "Today"
-        }
-        return resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted)
+        TaskDetailDateMetadataPresentation.selectedDateMetadataText(selectedDate: resolvedSelectedDate)
     }
 
     var cancelTodoButtonTitle: String {
-        if Calendar.current.isDateInToday(resolvedSelectedDate) {
-            return "Cancel todo"
-        }
-        return "Cancel for \(resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted))"
+        TaskDetailDateMetadataPresentation.cancelTodoButtonTitle(selectedDate: resolvedSelectedDate)
     }
 
     var isCancelTodoButtonDisabled: Bool {
