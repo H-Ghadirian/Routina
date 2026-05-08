@@ -39,7 +39,7 @@ struct AppView: View {
                     )
                 }
 
-                SwiftUI.Tab("Dones", systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
+                SwiftUI.Tab("Timeline", systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
                     TimelineView(
                         store: store.scope(state: \.timeline, action: \.timeline)
                     )

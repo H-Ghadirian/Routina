@@ -33,6 +33,7 @@ extension HomeTCAView {
             goalsStore: goalsStore,
             doneCount: store.doneStats.totalCount,
             canceledCount: store.doneStats.canceledTotalCount,
+            missedCount: store.doneStats.missedTotalCount,
             routineCount: homeToolbarRoutineCount,
             todoCount: homeToolbarTodoCount,
             boardOpenCount: boardToolbarPresentation?.openTodoCount ?? 0,
@@ -225,7 +226,7 @@ extension HomeTCAView {
             return "Search goals"
         }
         if store.macSidebarMode == .timeline {
-            return "Search dones"
+            return "Search timeline"
         }
         if isMacBoardSidebarPresented {
             return "Search todos"

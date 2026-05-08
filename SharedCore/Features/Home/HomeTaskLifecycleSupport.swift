@@ -35,6 +35,18 @@ struct HomeUnpinTaskUpdate: Equatable {
     var taskID: UUID
 }
 
+struct HomeMarkTaskMissedUpdate: Equatable {
+    var taskID: UUID
+    var missedDate: Date
+    var referenceDate: Date
+}
+
+struct HomeMarkTaskCanceledUpdate: Equatable {
+    var taskID: UUID
+    var canceledDate: Date
+    var referenceDate: Date
+}
+
 enum HomeMarkTaskDoneUpdate: Equatable {
     case checklist(HomeChecklistPurchaseUpdate)
     case advance(HomeAdvanceTaskUpdate)
@@ -97,7 +109,13 @@ enum HomeTaskLifecycleSupport {
         }
 
         let completionDate: Date
-        if let exactTimedTarget = RoutineDateMath.completionTargetDate(
+        if let missedDate = RoutineDateMath.missedExactTimedOccurrenceDate(
+            for: tasks[index],
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) {
+            completionDate = missedDate
+        } else if let exactTimedTarget = RoutineDateMath.completionTargetDate(
             for: tasks[index],
             selectedDay: referenceDate,
             referenceDate: referenceDate,
@@ -146,6 +164,76 @@ enum HomeTaskLifecycleSupport {
                 previousTodoStateTitle: previousTodoStateTitle
             )
         )
+    }
+
+    static func markTaskMissed(
+        taskID: UUID,
+        referenceDate: Date,
+        calendar: Calendar,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> HomeMarkTaskMissedUpdate? {
+        guard let task = tasks.first(where: {
+            $0.id == taskID && !$0.isArchived(referenceDate: referenceDate, calendar: calendar)
+        }) else {
+            return nil
+        }
+        guard let missedDate = RoutineDateMath.missedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) else {
+            return nil
+        }
+
+        let hadCanceledResolution = doneStats.canceledDatesByTaskID[taskID]?.contains {
+            calendar.isDate($0, inSameDayAs: missedDate)
+        } ?? false
+        doneStats.missedDatesByTaskID[taskID, default: []].insert(missedDate)
+        removeDate(missedDate, for: taskID, from: &doneStats.canceledDatesByTaskID, calendar: calendar)
+        if hadCanceledResolution {
+            doneStats.canceledTotalCount = max(doneStats.canceledTotalCount - 1, 0)
+            let updatedTaskCount = max(doneStats.canceledCountsByTaskID[taskID, default: 0] - 1, 0)
+            if updatedTaskCount == 0 {
+                doneStats.canceledCountsByTaskID.removeValue(forKey: taskID)
+            } else {
+                doneStats.canceledCountsByTaskID[taskID] = updatedTaskCount
+            }
+        }
+        return HomeMarkTaskMissedUpdate(taskID: taskID, missedDate: missedDate, referenceDate: referenceDate)
+    }
+
+    static func markTaskCanceled(
+        taskID: UUID,
+        referenceDate: Date,
+        calendar: Calendar,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> HomeMarkTaskCanceledUpdate? {
+        guard let task = tasks.first(where: {
+            $0.id == taskID && !$0.isArchived(referenceDate: referenceDate, calendar: calendar)
+        }) else {
+            return nil
+        }
+        guard let canceledDate = RoutineDateMath.missedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) else {
+            return nil
+        }
+
+        let alreadyCanceled = doneStats.canceledDatesByTaskID[taskID]?.contains {
+            calendar.isDate($0, inSameDayAs: canceledDate)
+        } ?? false
+        if !alreadyCanceled {
+            doneStats.canceledTotalCount += 1
+            doneStats.canceledCountsByTaskID[taskID, default: 0] += 1
+        }
+        doneStats.canceledDatesByTaskID[taskID, default: []].insert(canceledDate)
+        removeDate(canceledDate, for: taskID, from: &doneStats.missedDatesByTaskID, calendar: calendar)
+
+        return HomeMarkTaskCanceledUpdate(taskID: taskID, canceledDate: canceledDate, referenceDate: referenceDate)
     }
 
     static func pauseTask(
@@ -227,5 +315,20 @@ enum HomeTaskLifecycleSupport {
 
         tasks[index].pinnedAt = nil
         return HomeUnpinTaskUpdate(taskID: taskID)
+    }
+
+    private static func removeDate(
+        _ date: Date,
+        for taskID: UUID,
+        from datesByTaskID: inout [UUID: Set<Date>],
+        calendar: Calendar
+    ) {
+        guard var dates = datesByTaskID[taskID] else { return }
+        dates = dates.filter { !calendar.isDate($0, inSameDayAs: date) }
+        if dates.isEmpty {
+            datesByTaskID.removeValue(forKey: taskID)
+        } else {
+            datesByTaskID[taskID] = dates
+        }
     }
 }

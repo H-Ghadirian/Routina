@@ -20,11 +20,14 @@ The default Done action on a later day must not silently backfill the missed occ
 
 Missed exact-time occurrences consume their scheduled slot for forward-looking scheduling, similar to completed occurrences, but they do not create completion logs, increase completion counts, or use Done styling.
 
+The initial missed state is an assumption. Users can resolve that assumption from the missed row either by confirming the scheduled occurrence was actually done, which records a normal completion for the scheduled timestamp, or by acknowledging that it was missed, which records a missed log for that occurrence without changing completion statistics.
+
 ## Consequences
 
 - Exact-time routines use "Missed" presentation instead of "Overdue by N days" after the scheduled day passes.
 - Calendar highlighting marks the missed scheduled day only; today keeps its normal today treatment, and the next scheduled occurrence remains visible as the due date.
 - Home grouping and badges can distinguish missed exact-time routines from ordinary overdue interval/checklist routines.
+- Acknowledged missed occurrences leave the Missed section and return to normal list placement based on the next due date.
 - Notifications must not be scheduled for the missed occurrence; future notifications target the next scheduled occurrence.
 - Missed styling must not use red, because red is reserved for true overdue states.
 - Rolling interval and checklist-driven routines keep their existing overdue behavior.

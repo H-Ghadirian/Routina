@@ -3,6 +3,7 @@ import Foundation
 enum RoutineLogKind: String, Codable, Equatable, Sendable {
     case completed
     case canceled
+    case missed
 }
 
 enum RoutineTaskChangeKind: String, Codable, Equatable, Sendable {

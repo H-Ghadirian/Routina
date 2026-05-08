@@ -52,6 +52,7 @@ enum TaskDetailPresentation {
         isAssumedDoneToday: Bool,
         overdueDays: Int,
         task: RoutineTask,
+        hasUnresolvedMissedExactTimedOccurrence: Bool? = nil,
         referenceDate: Date = Date()
     ) -> Color {
         if task.isSnoozed(referenceDate: referenceDate) { return .indigo }
@@ -83,7 +84,9 @@ enum TaskDetailPresentation {
         if task.isInProgress { return .orange }
         if isDoneToday { return .green }
         if isAssumedDoneToday { return .mint }
-        if RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: referenceDate) != nil {
+        let hasUnresolvedMissed = hasUnresolvedMissedExactTimedOccurrence
+            ?? (RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: referenceDate) != nil)
+        if hasUnresolvedMissed {
             return .yellow
         }
         if overdueDays > 0 { return .red }

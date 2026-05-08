@@ -33,7 +33,7 @@ enum StatsChartInsightBuilder {
                 )
             } ?? StatsChartInsight(
                 systemImage: "waveform.path.ecg",
-                text: "Waiting for your first completion"
+                text: "Waiting for your first timeline entry"
             )
         ]
     }

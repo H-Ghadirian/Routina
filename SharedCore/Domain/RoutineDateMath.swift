@@ -216,6 +216,44 @@ enum RoutineDateMath {
         return due
     }
 
+    static func isExactTimedMissedOccurrenceAcknowledged(
+        for task: RoutineTask,
+        missedDate: Date,
+        logs: [RoutineLog],
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard usesExactTimedOccurrenceTracking(for: task) else { return false }
+        return logs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            guard log.kind == .missed || log.kind == .completed else { return false }
+            return calendar.isDate(timestamp, inSameDayAs: missedDate)
+        }
+    }
+
+    static func unresolvedMissedExactTimedOccurrenceDate(
+        for task: RoutineTask,
+        referenceDate: Date,
+        logs: [RoutineLog],
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard let missedDate = missedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) else {
+            return nil
+        }
+        guard !isExactTimedMissedOccurrenceAcknowledged(
+            for: task,
+            missedDate: missedDate,
+            logs: logs,
+            calendar: calendar
+        ) else {
+            return nil
+        }
+        return missedDate
+    }
+
     static func nextDueDateAfterMissedExactTimedOccurrence(
         for task: RoutineTask,
         referenceDate: Date,

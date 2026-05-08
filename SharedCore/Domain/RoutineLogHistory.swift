@@ -152,11 +152,130 @@ enum RoutineLogHistory {
             return (task, result)
 
         case .completedRoutine:
+            deleteNonCompletionResolutionLogs(on: completedAt, from: existingLogs, context: context, calendar: calendar)
             context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
             _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(for: task, at: completedAt)
             try context.save()
             return (task, result)
         }
+    }
+
+    @MainActor
+    static func markExactTimedOccurrenceMissed(
+        taskID: UUID,
+        missedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> RoutineTask? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+        guard RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) else {
+            return task
+        }
+        guard let occurrence = RoutineDateMath.scheduledOccurrence(
+            for: task,
+            on: missedAt,
+            calendar: calendar
+        ) else {
+            return task
+        }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        let hasCompletedLog = existingLogs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+        }
+        guard !hasCompletedLog else {
+            return task
+        }
+
+        deleteResolutionLogs(
+            on: occurrence,
+            matchingKinds: [.canceled],
+            from: existingLogs,
+            context: context,
+            calendar: calendar
+        )
+
+        if let existingMissedLog = existingLogs.first(where: { log in
+            guard let timestamp = log.timestamp else { return false }
+            return log.kind == .missed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+        }) {
+            if occurrence > (existingMissedLog.timestamp ?? .distantPast) {
+                existingMissedLog.timestamp = occurrence
+            }
+        } else {
+            context.insert(RoutineLog(timestamp: occurrence, taskID: taskID, kind: .missed))
+        }
+
+        try context.save()
+        return task
+    }
+
+    @MainActor
+    static func markExactTimedOccurrenceCanceled(
+        taskID: UUID,
+        canceledAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current
+    ) throws -> RoutineTask? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+        guard RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) else {
+            return task
+        }
+        guard let occurrence = RoutineDateMath.scheduledOccurrence(
+            for: task,
+            on: canceledAt,
+            calendar: calendar
+        ) else {
+            return task
+        }
+
+        let existingLogs = detailLogs(taskID: taskID, context: context)
+        let hasCompletedLog = existingLogs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+        }
+        guard !hasCompletedLog else {
+            return task
+        }
+
+        deleteResolutionLogs(
+            on: occurrence,
+            matchingKinds: [.missed],
+            from: existingLogs,
+            context: context,
+            calendar: calendar
+        )
+
+        if let existingCanceledLog = existingLogs.first(where: { log in
+            guard let timestamp = log.timestamp else { return false }
+            return log.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: occurrence)
+        }) {
+            if occurrence > (existingCanceledLog.timestamp ?? .distantPast) {
+                existingCanceledLog.timestamp = occurrence
+            }
+        } else {
+            context.insert(RoutineLog(timestamp: occurrence, taskID: taskID, kind: .canceled))
+        }
+
+        try context.save()
+        return task
     }
 
     @MainActor
@@ -519,6 +638,35 @@ enum RoutineLogHistory {
     private static func isSameCompletion(_ lhs: Date?, as rhs: Date) -> Bool {
         guard let lhs else { return false }
         return Calendar.current.isDate(lhs, inSameDayAs: rhs)
+    }
+
+    private static func deleteNonCompletionResolutionLogs(
+        on completedAt: Date,
+        from logs: [RoutineLog],
+        context: ModelContext,
+        calendar: Calendar
+    ) {
+        deleteResolutionLogs(
+            on: completedAt,
+            matchingKinds: [.missed, .canceled],
+            from: logs,
+            context: context,
+            calendar: calendar
+        )
+    }
+
+    private static func deleteResolutionLogs(
+        on date: Date,
+        matchingKinds: [RoutineLogKind],
+        from logs: [RoutineLog],
+        context: ModelContext,
+        calendar: Calendar
+    ) {
+        for log in logs {
+            guard matchingKinds.contains(log.kind), let timestamp = log.timestamp else { continue }
+            guard calendar.isDate(timestamp, inSameDayAs: date) else { continue }
+            context.delete(log)
+        }
     }
 }
 

@@ -12,6 +12,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let goalsStore: StoreOf<GoalsFeature>
     let doneCount: Int
     let canceledCount: Int
+    let missedCount: Int
     let routineCount: Int
     let todoCount: Int
     let boardOpenCount: Int
@@ -77,18 +78,25 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     private var standardToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             MacToolbarStatusBadge(
-                title: "\(doneCount) dones",
+                title: "\(doneCount) done",
                 systemImage: "checkmark.seal.fill",
                 tintColor: .systemGreen
             )
-            .help("\(doneCount) total dones")
+            .help("\(doneCount) total done")
 
             MacToolbarStatusBadge(
-                title: "\(canceledCount) cancels",
+                title: "\(canceledCount) canceled",
                 systemImage: "xmark.seal.fill",
                 tintColor: .systemOrange
             )
-            .help("\(canceledCount) total cancels")
+            .help("\(canceledCount) total canceled")
+
+            MacToolbarStatusBadge(
+                title: "\(missedCount) missed",
+                systemImage: "exclamationmark.triangle.fill",
+                tintColor: .systemYellow
+            )
+            .help("\(missedCount) total missed")
 
             MacToolbarStatusBadge(
                 title: "\(routineCount) routines",

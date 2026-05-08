@@ -6,6 +6,8 @@ extension HomeTCAView {
             open: { openTask($0) },
             resume: { store.send(.resumeTask($0)) },
             markDone: { store.send(.markTaskDone($0)) },
+            markMissed: { store.send(.markTaskMissed($0)) },
+            markCanceled: { store.send(.markTaskCanceled($0)) },
             notToday: { store.send(.notTodayTask($0)) },
             pause: { store.send(.pauseTask($0)) },
             moveTaskInSection: { taskID, sectionKey, orderedTaskIDs, direction in

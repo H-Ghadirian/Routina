@@ -95,6 +95,88 @@ enum HomeTaskLifecycleExecutionSupport {
         }
     }
 
+    static func markTaskMissed<Action>(
+        _ update: HomeMarkTaskMissedUpdate,
+        calendar: Calendar,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void,
+        scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let task = try RoutineLogHistory.markExactTimedOccurrenceMissed(
+                    taskID: update.taskID,
+                    missedAt: update.missedDate,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: update.referenceDate,
+                    calendar: calendar
+                ) {
+                    await cancelNotification(update.taskID.uuidString)
+                } else {
+                    await scheduleNotification(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            referenceDate: update.referenceDate,
+                            calendar: calendar
+                        )
+                    )
+                }
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to mark exact-time routine as missed from home list: \(error)")
+            }
+        }
+    }
+
+    static func markTaskCanceled<Action>(
+        _ update: HomeMarkTaskCanceledUpdate,
+        calendar: Calendar,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void,
+        scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = ModelContext(modelContext().container)
+                guard let task = try RoutineLogHistory.markExactTimedOccurrenceCanceled(
+                    taskID: update.taskID,
+                    canceledAt: update.canceledDate,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: update.referenceDate,
+                    calendar: calendar
+                ) {
+                    await cancelNotification(update.taskID.uuidString)
+                } else {
+                    await scheduleNotification(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            referenceDate: update.referenceDate,
+                            calendar: calendar
+                        )
+                    )
+                }
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to mark exact-time routine occurrence as canceled from home list: \(error)")
+            }
+        }
+    }
+
     static func pauseTask<Action>(
         _ update: HomePauseTaskUpdate,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,

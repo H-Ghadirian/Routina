@@ -7,6 +7,7 @@ struct StatsFeatureMetrics: Equatable {
     var tagUsagePoints: [TagUsageChartPoint] = []
     var totalDoneCount: Int = 0
     var totalCanceledCount: Int = 0
+    var totalMissedCount: Int = 0
     var createdTotalCount: Int = 0
     var totalFocusSeconds: TimeInterval = 0
     var averageFocusSecondsPerDay: TimeInterval = 0
@@ -155,6 +156,10 @@ enum StatsFeatureDerivedStateBuilder {
         let canceledDates = filteredLogs
             .filter { $0.kind == .canceled }
             .compactMap(\.timestamp)
+        let missedDates = filteredLogs
+            .filter { $0.kind == .missed }
+            .compactMap(\.timestamp)
+        let activityDates = completionDates + canceledDates + missedDates
         let createdDates = createdChartFilteredTasks.compactMap(\.createdAt)
         let earliestActivityDate = [
             filteredTasks.compactMap(\.createdAt).min(),
@@ -165,7 +170,7 @@ enum StatsFeatureDerivedStateBuilder {
 
         let chartPoints: [DoneChartPoint] = RoutineCompletionStats.points(
             for: selectedRange,
-            timestamps: completionDates,
+            timestamps: activityDates,
             earliestActivityDate: earliestActivityDate,
             referenceDate: referenceDate,
             calendar: calendar
@@ -233,6 +238,7 @@ enum StatsFeatureDerivedStateBuilder {
                 tagUsagePoints: tagUsagePoints,
                 totalDoneCount: completionDates.count,
                 totalCanceledCount: canceledDates.count,
+                totalMissedCount: missedDates.count,
                 createdTotalCount: createdTotalCount,
                 totalFocusSeconds: totalFocusSeconds,
                 averageFocusSecondsPerDay: averageFocusSecondsPerDay,

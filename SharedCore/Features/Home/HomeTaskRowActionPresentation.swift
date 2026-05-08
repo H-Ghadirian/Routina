@@ -35,6 +35,9 @@ enum HomeTaskRowCompletionPresentation {
         if task.scheduleMode == .fixedIntervalChecklist {
             return true
         }
+        if task.hasMissedExactTimedOccurrence {
+            return false
+        }
         if task.recurrenceRule.isFixedCalendar,
            let dueDate = task.dueDate,
            dueDate > referenceDate {
@@ -48,6 +51,8 @@ enum HomeTaskRowCommand: Equatable {
     case open(UUID)
     case resume(UUID)
     case markDone(UUID)
+    case markMissed(UUID)
+    case markCanceled(UUID)
     case notToday(UUID)
     case pause(UUID)
     case moveTaskInSection(taskID: UUID, sectionKey: String, orderedTaskIDs: [UUID], direction: HomeTaskMoveDirection)
@@ -60,6 +65,8 @@ struct HomeTaskRowCommandHandler {
     var open: (UUID) -> Void
     var resume: (UUID) -> Void
     var markDone: (UUID) -> Void
+    var markMissed: (UUID) -> Void
+    var markCanceled: (UUID) -> Void
     var notToday: (UUID) -> Void
     var pause: (UUID) -> Void
     var moveTaskInSection: (UUID, String, [UUID], HomeTaskMoveDirection) -> Void
@@ -75,6 +82,10 @@ struct HomeTaskRowCommandHandler {
             resume(taskID)
         case let .markDone(taskID):
             markDone(taskID)
+        case let .markMissed(taskID):
+            markMissed(taskID)
+        case let .markCanceled(taskID):
+            markCanceled(taskID)
         case let .notToday(taskID):
             notToday(taskID)
         case let .pause(taskID):
@@ -94,6 +105,8 @@ struct HomeTaskRowCommandHandler {
 enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
     case resume
     case markDone(title: String, isDisabled: Bool)
+    case markMissed
+    case markCanceled
     case notToday
     case pause
 
@@ -103,6 +116,10 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "resume"
         case .markDone:
             return "markDone"
+        case .markMissed:
+            return "markMissed"
+        case .markCanceled:
+            return "markCanceled"
         case .notToday:
             return "notToday"
         case .pause:
@@ -116,6 +133,10 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "Resume"
         case let .markDone(title, _):
             return title
+        case .markMissed:
+            return "Mark Missed"
+        case .markCanceled:
+            return "Canceled"
         case .notToday:
             return "Not today!"
         case .pause:
@@ -129,6 +150,10 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "play.circle"
         case .markDone:
             return "checkmark.circle"
+        case .markMissed:
+            return "exclamationmark.triangle"
+        case .markCanceled:
+            return "xmark.circle"
         case .notToday:
             return "moon.zzz"
         case .pause:
@@ -147,6 +172,10 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return .resume(taskID)
         case .markDone:
             return .markDone(taskID)
+        case .markMissed:
+            return .markMissed(taskID)
+        case .markCanceled:
+            return .markCanceled(taskID)
         case .notToday:
             return .notToday(taskID)
         case .pause:
@@ -243,13 +272,22 @@ struct HomeTaskRowActionPresentation: Equatable {
         if includeMarkDone {
             actions.append(
                 .markDone(
-                    title: HomeTaskRowCompletionPresentation.markDoneLabel(for: task),
+                    title: task.hasMissedExactTimedOccurrence
+                        ? "I did it"
+                        : HomeTaskRowCompletionPresentation.markDoneLabel(for: task),
                     isDisabled: HomeTaskRowCompletionPresentation.isMarkDoneDisabled(
                         task,
                         referenceDate: referenceDate
                     )
                 )
             )
+        }
+
+        if task.hasMissedExactTimedOccurrence {
+            actions.append(.markMissed)
+            actions.append(.markCanceled)
+            actions.append(.pause)
+            return actions
         }
 
         if !task.isOneOffTask {

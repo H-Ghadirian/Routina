@@ -6,6 +6,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
     let onNextMonth: () -> Void
     let showsAssumedLegend: Bool
     let showsMissedLegend: Bool
+    let showsCanceledLegend: Bool
     let showsDueLegend: Bool
     let showsOverdueLegend: Bool
     let showsSoftDueLegend: Bool
@@ -19,6 +20,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         onNextMonth: @escaping () -> Void,
         showsAssumedLegend: Bool,
         showsMissedLegend: Bool = false,
+        showsCanceledLegend: Bool = false,
         showsDueLegend: Bool = false,
         showsOverdueLegend: Bool = true,
         showsSoftDueLegend: Bool,
@@ -31,6 +33,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         self.onNextMonth = onNextMonth
         self.showsAssumedLegend = showsAssumedLegend
         self.showsMissedLegend = showsMissedLegend
+        self.showsCanceledLegend = showsCanceledLegend
         self.showsDueLegend = showsDueLegend
         self.showsOverdueLegend = showsOverdueLegend
         self.showsSoftDueLegend = showsSoftDueLegend
@@ -59,6 +62,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
             TaskDetailCalendarSectionLegendView(
                 showsAssumedLegend: showsAssumedLegend,
                 showsMissedLegend: showsMissedLegend,
+                showsCanceledLegend: showsCanceledLegend,
                 showsDueLegend: showsDueLegend,
                 showsOverdueLegend: showsOverdueLegend,
                 showsSoftDueLegend: showsSoftDueLegend,
@@ -98,6 +102,7 @@ private struct TaskDetailCalendarSectionHeaderView: View {
 private struct TaskDetailCalendarSectionLegendView: View {
     let showsAssumedLegend: Bool
     let showsMissedLegend: Bool
+    let showsCanceledLegend: Bool
     let showsDueLegend: Bool
     let showsOverdueLegend: Bool
     let showsSoftDueLegend: Bool
@@ -121,6 +126,9 @@ private struct TaskDetailCalendarSectionLegendView: View {
             }
             if showsMissedLegend {
                 TaskDetailCalendarSectionLegendItemView(color: .yellow, label: "Missed")
+            }
+            if showsCanceledLegend {
+                TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Canceled")
             }
             if showsDueLegend {
                 TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Due")

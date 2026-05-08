@@ -261,6 +261,177 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func markExactTimedOccurrenceMissed_recordsMissedLogWithoutCompletion() throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let missedDate = makeDate("2026-05-07T18:30:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Class",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+
+        let updatedTask = try #require(
+            try RoutineLogHistory.markExactTimedOccurrenceMissed(
+                taskID: task.id,
+                missedAt: missedDate,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(updatedTask.lastDone == nil)
+        #expect(logs.count == 1)
+        #expect(logs.first?.kind == .missed)
+        #expect(logs.first?.timestamp == missedDate)
+    }
+
+    @Test
+    func advanceTask_replacesMissedLogWhenUserConfirmsDone() throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let missedDate = makeDate("2026-05-07T18:30:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Class",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+        _ = makeLog(in: context, task: task, timestamp: missedDate, kind: .missed)
+        try context.save()
+
+        let result = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: missedDate,
+                referenceDate: makeDate("2026-05-08T10:00:00Z"),
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(result.result == .completedRoutine)
+        #expect(result.task.lastDone == missedDate)
+        #expect(logs.count == 1)
+        #expect(logs.first?.kind == .completed)
+        #expect(logs.first?.timestamp == missedDate)
+    }
+
+    @Test
+    func markExactTimedOccurrenceCanceled_recordsCanceledLogWithoutCancelingRoutine() throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let canceledDate = makeDate("2026-05-07T18:30:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Class",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+
+        let updatedTask = try #require(
+            try RoutineLogHistory.markExactTimedOccurrenceCanceled(
+                taskID: task.id,
+                canceledAt: canceledDate,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(updatedTask.lastDone == nil)
+        #expect(updatedTask.canceledAt == nil)
+        #expect(logs.count == 1)
+        #expect(logs.first?.kind == .canceled)
+        #expect(logs.first?.timestamp == canceledDate)
+    }
+
+    @Test
+    func markExactTimedOccurrenceCanceled_replacesMissedResolutionForSameOccurrence() throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let occurrenceDate = makeDate("2026-05-07T18:30:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Class",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+        _ = makeLog(in: context, task: task, timestamp: occurrenceDate, kind: .missed)
+        try context.save()
+
+        _ = try #require(
+            try RoutineLogHistory.markExactTimedOccurrenceCanceled(
+                taskID: task.id,
+                canceledAt: occurrenceDate,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(logs.count == 1)
+        #expect(logs.first?.kind == .canceled)
+        #expect(logs.first?.timestamp == occurrenceDate)
+    }
+
+    @Test
+    func advanceTask_replacesCanceledOccurrenceLogWhenUserConfirmsDone() throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let occurrenceDate = makeDate("2026-05-07T18:30:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Class",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+        _ = makeLog(in: context, task: task, timestamp: occurrenceDate, kind: .canceled)
+        try context.save()
+
+        let result = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: occurrenceDate,
+                referenceDate: makeDate("2026-05-08T10:00:00Z"),
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(result.result == .completedRoutine)
+        #expect(result.task.lastDone == occurrenceDate)
+        #expect(result.task.canceledAt == nil)
+        #expect(logs.count == 1)
+        #expect(logs.first?.kind == .completed)
+        #expect(logs.first?.timestamp == occurrenceDate)
+    }
+
+    @Test
     func cancelTask_marksTodoCanceledWithoutRecordingCompletion() throws {
         let context = makeInMemoryContext()
         let task = makeTask(

@@ -380,7 +380,7 @@ struct TaskDetailSharedViewSupportTests {
             doneDates: [],
             assumedDates: [],
             dueDate: nextDueDate,
-            missedDate: missedDate,
+            missedDates: [calendar.startOfDay(for: missedDate)],
             createdAt: nil,
             pausedAt: nil,
             isOrangeUrgencyToday: false,
@@ -392,7 +392,7 @@ struct TaskDetailSharedViewSupportTests {
             doneDates: [],
             assumedDates: [],
             dueDate: nextDueDate,
-            missedDate: missedDate,
+            missedDates: [calendar.startOfDay(for: missedDate)],
             createdAt: nil,
             pausedAt: nil,
             isOrangeUrgencyToday: false,
@@ -404,7 +404,7 @@ struct TaskDetailSharedViewSupportTests {
             doneDates: [],
             assumedDates: [],
             dueDate: nextDueDate,
-            missedDate: missedDate,
+            missedDates: [calendar.startOfDay(for: missedDate)],
             createdAt: nil,
             pausedAt: nil,
             isOrangeUrgencyToday: false,
@@ -419,6 +419,29 @@ struct TaskDetailSharedViewSupportTests {
         #expect(todayPresentation.isToday)
         #expect(nextDuePresentation.isDueDate)
         #expect(nextDuePresentation.isHighlightedDay)
+    }
+
+    @Test
+    func calendarPresentationMarksCanceledOccurrenceSeparatelyFromMissed() {
+        let calendar = makeTestCalendar()
+        let canceledDate = makeDate("2026-05-07T18:30:00Z")
+        let presentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: canceledDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            missedDates: [],
+            canceledDates: [calendar.startOfDay(for: canceledDate)],
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: makeDate("2026-05-08T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(presentation.isCanceledDate)
+        #expect(!presentation.isMissedDate)
+        #expect(presentation.isHighlightedDay)
     }
 
     @Test

@@ -45,7 +45,7 @@ struct StatsHeroSectionView: View {
                     .font(.system(size: 54, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text(totalCount == 1 ? "completion logged" : "completions logged")
+                Text(totalCount == 1 ? "activity logged" : "activities logged")
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.95))
 

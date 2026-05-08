@@ -65,6 +65,7 @@ struct HomeFeatureTaskLoadEffectFactoryTests {
         #expect(result.doneStats.countsByTaskID[taskID] == 1)
         #expect(result.doneStats.canceledTotalCount == 1)
         #expect(result.doneStats.canceledCountsByTaskID[taskID] == 1)
+        #expect(result.doneStats.canceledDatesByTaskID[taskID] == [makeDate("2026-03-21T08:00:00Z")])
     }
 }
 

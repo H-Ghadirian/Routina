@@ -28,7 +28,11 @@ extension TaskDetailFeature.State {
     }
 
     var missedExactTimedOccurrenceDate: Date? {
-        RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: Date())
+        RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: Date(),
+            logs: logs
+        )
     }
 
     var isSelectedDateDone: Bool {
@@ -473,7 +477,8 @@ extension TaskDetailFeature.State {
             shouldUseBulkConfirmAsPrimaryAction: shouldUseBulkConfirmAsPrimaryAction,
             bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
             isSelectedDateAssumedDone: isSelectedDateAssumedDone,
-            completionTargetDate: completionTargetDate
+            completionTargetDate: completionTargetDate,
+            hasUnresolvedMissedExactTimedOccurrence: missedExactTimedOccurrenceDate != nil
         ).title
     }
 

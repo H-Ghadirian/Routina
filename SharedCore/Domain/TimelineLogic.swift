@@ -12,6 +12,9 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case done = "Done"
+    case missed = "Missed"
+    case canceled = "Canceled"
     var id: Self { self }
 }
 
@@ -82,6 +85,9 @@ enum TimelineLogic {
             case .all: break
             case .routines: if isOneOff { return nil }
             case .todos: if !isOneOff { return nil }
+            case .done: if log.kind != .completed { return nil }
+            case .missed: if log.kind != .missed { return nil }
+            case .canceled: if log.kind != .canceled { return nil }
             }
 
             return TimelineEntry(

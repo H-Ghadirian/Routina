@@ -18,7 +18,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if groupedEntries.isEmpty {
                 ContentUnavailableView(
-                    "No matching dones",
+                    "No matching timeline entries",
                     systemImage: "line.3.horizontal.decrease.circle",
                     description: Text("Try a different search, time range, or done type.")
                 )

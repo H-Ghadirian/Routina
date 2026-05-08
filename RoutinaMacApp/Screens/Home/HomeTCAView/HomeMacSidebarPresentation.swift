@@ -34,7 +34,7 @@ struct HomeMacSidebarPresentation {
         case .goals:
             return "Goals"
         case .timeline:
-            return "Dones"
+            return "Timeline"
         case .stats:
             return "Stats"
         case .settings:
@@ -66,7 +66,7 @@ struct HomeMacSidebarPresentation {
         case .goals:
             return "Goals"
         case .timeline:
-            return "Filter Dones"
+            return "Filter Timeline"
         case .stats:
             return "Stats"
         case .settings:

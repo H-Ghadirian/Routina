@@ -370,23 +370,39 @@ struct TimelineView: View {
 
                 Spacer(minLength: 0)
 
-                Text(entry.kind == .canceled ? "Canceled" : (entry.isOneOff ? "Todo" : "Routine"))
+                Text(timelineKindLabel(for: entry))
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(
                         Capsule()
-                            .fill(
-                                entry.kind == .canceled
-                                    ? Color.orange.opacity(0.15)
-                                    : (entry.isOneOff
-                                        ? Color.purple.opacity(0.15)
-                                        : Color.accentColor.opacity(0.15))
-                            )
+                            .fill(timelineKindColor(for: entry).opacity(0.15))
                     )
-                    .foregroundStyle(entry.kind == .canceled ? .orange : (entry.isOneOff ? .purple : .accentColor))
+                    .foregroundStyle(timelineKindColor(for: entry))
             }
             .padding(.vertical, 2)
+        }
+    }
+
+    private func timelineKindLabel(for entry: TimelineEntry) -> String {
+        switch entry.kind {
+        case .completed:
+            return entry.isOneOff ? "Todo" : "Routine"
+        case .canceled:
+            return "Canceled"
+        case .missed:
+            return "Missed"
+        }
+    }
+
+    private func timelineKindColor(for entry: TimelineEntry) -> Color {
+        switch entry.kind {
+        case .completed:
+            return entry.isOneOff ? .purple : .accentColor
+        case .canceled:
+            return .orange
+        case .missed:
+            return .yellow
         }
     }
 

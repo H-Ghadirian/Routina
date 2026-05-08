@@ -8,6 +8,8 @@ protocol HomeFeatureTaskLifecycleCommandState {
 
 struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleCommandState, Action> {
     var markDone: (UUID, inout [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
+    var markMissed: (UUID, [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
+    var markCanceled: (UUID, [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
     var pause: (UUID, inout [RoutineTask]) -> Effect<Action>?
     var resume: (UUID, inout [RoutineTask]) -> Effect<Action>?
     var notToday: (UUID, inout [RoutineTask]) -> Effect<Action>?
@@ -22,6 +24,24 @@ struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleComm
             return .none
         }
         state.routineTasks = routineTasks
+        state.doneStats = doneStats
+        return finishMutation(effect, &state)
+    }
+
+    func markTaskMissed(_ id: UUID, state: inout State) -> Effect<Action> {
+        var doneStats = state.doneStats
+        guard let effect = markMissed(id, state.routineTasks, &doneStats) else {
+            return .none
+        }
+        state.doneStats = doneStats
+        return finishMutation(effect, &state)
+    }
+
+    func markTaskCanceled(_ id: UUID, state: inout State) -> Effect<Action> {
+        var doneStats = state.doneStats
+        guard let effect = markCanceled(id, state.routineTasks, &doneStats) else {
+            return .none
+        }
         state.doneStats = doneStats
         return finishMutation(effect, &state)
     }

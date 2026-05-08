@@ -633,6 +633,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case bestDay
     case totalDones
     case totalCancels
+    case totalMissed
     case activeItems
     case archivedItems
     case createdTasksChart
@@ -657,6 +658,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             self = .totalDones
         case "stats.summary.totalCancels":
             self = .totalCancels
+        case "stats.summary.totalMissed":
+            self = .totalMissed
         case "stats.summary.activeRoutines":
             self = .activeItems
         case "stats.summary.archivedRoutines":
@@ -679,9 +682,11 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .bestDay:
             return "Best day"
         case .totalDones:
-            return "Total dones"
+            return "Done"
         case .totalCancels:
-            return "Total cancels"
+            return "Canceled"
+        case .totalMissed:
+            return "Missed"
         case .activeItems:
             return "Active items"
         case .archivedItems:
@@ -689,7 +694,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .createdTasksChart:
             return "Tasks created chart"
         case .completionChart:
-            return "Completions chart"
+            return "Activity chart"
         case .tagUsage:
             return "Tag usage"
         case .focusChart:
@@ -703,12 +708,12 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .focusTime, .focusAverage, .bestDay, .totalDones, .totalCancels, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .createdTasksChart:
             return "A bar chart of routines and todos created over time."
         case .completionChart:
-            return "A bar chart of completed routines over time."
+            return "A bar chart of done, missed, and canceled activity over time."
         case .tagUsage:
             return "A bubble chart of tag activity."
         case .focusChart:
@@ -734,6 +739,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "checkmark.seal.fill"
         case .totalCancels:
             return "xmark.seal.fill"
+        case .totalMissed:
+            return "exclamationmark.triangle.fill"
         case .activeItems:
             return "checklist"
         case .archivedItems:

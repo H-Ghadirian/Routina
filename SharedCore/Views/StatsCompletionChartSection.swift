@@ -20,7 +20,7 @@ struct StatsCompletionChartSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
-                title: "Completions per day",
+                title: "Timeline activity per day",
                 subtitle: subtitle
             ) {
                 StatsSmallHighlightBadge(
@@ -38,7 +38,7 @@ struct StatsCompletionChartSection: View {
 
                         BarMark(
                             x: .value("Date", point.date, unit: .day),
-                            y: .value("Completions", point.count)
+                            y: .value("Activity", point.count)
                         )
                         .cornerRadius(7)
                         .foregroundStyle(
@@ -69,7 +69,7 @@ struct StatsCompletionChartSection: View {
                     if let highlightedPoint {
                         PointMark(
                             x: .value("Date", highlightedPoint.date, unit: .day),
-                            y: .value("Completions", highlightedPoint.count)
+                            y: .value("Activity", highlightedPoint.count)
                         )
                         .symbolSize(highlightSymbolSize)
                         .foregroundStyle(Color.white)

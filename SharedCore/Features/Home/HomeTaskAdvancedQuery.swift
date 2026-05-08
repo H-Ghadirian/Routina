@@ -106,6 +106,8 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
             return task.isDoneToday
         case "canceled", "cancelled":
             return task.isCanceledOneOff
+        case "missed":
+            return task.hasMissedExactTimedOccurrence
         case "paused":
             return task.isPaused || task.todoState == .paused
         case "pinned":

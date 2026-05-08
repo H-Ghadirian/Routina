@@ -952,7 +952,8 @@ struct TaskDetailTCAView: View {
             isDoneToday: store.isDoneToday,
             isAssumedDoneToday: store.isAssumedDoneToday,
             overdueDays: store.overdueDays,
-            task: store.task
+            task: store.task,
+            hasUnresolvedMissedExactTimedOccurrence: store.missedExactTimedOccurrenceDate != nil
         )
     }
 

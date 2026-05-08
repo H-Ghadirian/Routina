@@ -184,6 +184,46 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_outcomeFiltersMatchLogKind() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Routine")
+        let doneLog = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"), kind: .completed)
+        let missedLog = makeLog(taskID: task.id, timestamp: makeDate("2026-03-19T08:00:00Z"), kind: .missed)
+        let canceledLog = makeLog(taskID: task.id, timestamp: makeDate("2026-03-18T08:00:00Z"), kind: .canceled)
+        let logs = [doneLog, missedLog, canceledLog]
+
+        let doneEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: [task],
+            range: .all,
+            filterType: .done,
+            now: now,
+            calendar: calendar
+        )
+        let missedEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: [task],
+            range: .all,
+            filterType: .missed,
+            now: now,
+            calendar: calendar
+        )
+        let canceledEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: [task],
+            range: .all,
+            filterType: .canceled,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(doneEntries.map(\.id) == [doneLog.id])
+        #expect(missedEntries.map(\.id) == [missedLog.id])
+        #expect(canceledEntries.map(\.id) == [canceledLog.id])
+    }
+
+    @Test
     func filteredEntries_skipsLogsWithNilTimestamp() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

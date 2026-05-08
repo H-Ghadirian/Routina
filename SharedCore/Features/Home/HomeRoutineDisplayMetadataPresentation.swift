@@ -67,7 +67,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
     }
 
     func doneCountDescription(for count: Int) -> String {
-        count == 1 ? "1 done" : "\(count) dones"
+        count == 1 ? "1 completion" : "\(count) completions"
     }
 
     func cadenceDescription(for task: Display) -> String {

@@ -1,0 +1,103 @@
+import Foundation
+import Testing
+#if SWIFT_PACKAGE
+@testable @preconcurrency import RoutinaAppSupport
+#elseif os(macOS)
+@testable @preconcurrency import RoutinaMacOSDev
+#else
+@testable @preconcurrency import Routina
+#endif
+
+struct HomeTaskLifecycleSupportTests {
+    @Test
+    func markTaskDone_forMissedExactTimeRoutineCompletesMissedOccurrence() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = RoutineTask(
+            name: "Class",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+        var tasks = [task]
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.markTaskDone(
+            taskID: task.id,
+            referenceDate: makeDate("2026-05-08T10:00:00Z"),
+            calendar: calendar,
+            tasks: &tasks,
+            doneStats: &doneStats
+        )
+
+        #expect(update == .advance(HomeAdvanceTaskUpdate(
+            taskID: task.id,
+            completionDate: makeDate("2026-05-07T18:30:00Z"),
+            previousTodoStateTitle: nil
+        )))
+        #expect(tasks[0].lastDone == makeDate("2026-05-07T18:30:00Z"))
+        #expect(doneStats.totalCount == 1)
+        #expect(doneStats.countsByTaskID[task.id] == 1)
+    }
+
+    @Test
+    func markTaskMissed_acknowledgesMissedOccurrenceWithoutCompletionCount() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = RoutineTask(
+            name: "Class",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.markTaskMissed(
+            taskID: task.id,
+            referenceDate: makeDate("2026-05-08T10:00:00Z"),
+            calendar: calendar,
+            tasks: [task],
+            doneStats: &doneStats
+        )
+
+        #expect(update == HomeMarkTaskMissedUpdate(
+            taskID: task.id,
+            missedDate: makeDate("2026-05-07T18:30:00Z"),
+            referenceDate: makeDate("2026-05-08T10:00:00Z")
+        ))
+        #expect(task.lastDone == nil)
+        #expect(doneStats.totalCount == 0)
+        #expect(doneStats.countsByTaskID.isEmpty)
+        #expect(doneStats.missedDatesByTaskID[task.id] == [makeDate("2026-05-07T18:30:00Z")])
+    }
+
+    @Test
+    func markTaskCanceled_acknowledgesMissedOccurrenceAsCanceledWithoutCompletionCount() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = RoutineTask(
+            name: "Class",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.markTaskCanceled(
+            taskID: task.id,
+            referenceDate: makeDate("2026-05-08T10:00:00Z"),
+            calendar: calendar,
+            tasks: [task],
+            doneStats: &doneStats
+        )
+
+        #expect(update == HomeMarkTaskCanceledUpdate(
+            taskID: task.id,
+            canceledDate: makeDate("2026-05-07T18:30:00Z"),
+            referenceDate: makeDate("2026-05-08T10:00:00Z")
+        ))
+        #expect(task.lastDone == nil)
+        #expect(doneStats.totalCount == 0)
+        #expect(doneStats.countsByTaskID.isEmpty)
+        #expect(doneStats.canceledTotalCount == 1)
+        #expect(doneStats.canceledCountsByTaskID[task.id] == 1)
+        #expect(doneStats.canceledDatesByTaskID[task.id] == [makeDate("2026-05-07T18:30:00Z")])
+    }
+}

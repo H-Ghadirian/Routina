@@ -45,6 +45,54 @@ struct HomeTaskLifecycleCoordinator<Action> {
         }
     }
 
+    func markTaskMissed(
+        taskID: UUID,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> Effect<Action>? {
+        guard let update = HomeTaskLifecycleSupport.markTaskMissed(
+            taskID: taskID,
+            referenceDate: referenceDate(),
+            calendar: calendar,
+            tasks: tasks,
+            doneStats: &doneStats
+        ) else {
+            return nil
+        }
+
+        return HomeTaskLifecycleExecutionSupport.markTaskMissed(
+            update,
+            calendar: calendar,
+            modelContext: modelContext,
+            cancelNotification: cancelNotification,
+            scheduleNotification: scheduleNotification
+        )
+    }
+
+    func markTaskCanceled(
+        taskID: UUID,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> Effect<Action>? {
+        guard let update = HomeTaskLifecycleSupport.markTaskCanceled(
+            taskID: taskID,
+            referenceDate: referenceDate(),
+            calendar: calendar,
+            tasks: tasks,
+            doneStats: &doneStats
+        ) else {
+            return nil
+        }
+
+        return HomeTaskLifecycleExecutionSupport.markTaskCanceled(
+            update,
+            calendar: calendar,
+            modelContext: modelContext,
+            cancelNotification: cancelNotification,
+            scheduleNotification: scheduleNotification
+        )
+    }
+
     func pauseTask(
         taskID: UUID,
         tasks: inout [RoutineTask]

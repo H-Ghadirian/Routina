@@ -8,13 +8,14 @@ struct TaskDetailCalendarDayPresentation: Equatable {
     let isDoneDate: Bool
     let isAssumedDate: Bool
     let isMissedDate: Bool
+    let isCanceledDate: Bool
     let isToday: Bool
     let isDueToTodayRangeDate: Bool
     let isPausedDate: Bool
     let isOrangeUrgencyToday: Bool
 
     var isHighlightedDay: Bool {
-        isDoneDate || isAssumedDate || isMissedDate || isDueToTodayRangeDate || isDueDate || isSoftDueDate || isPausedDate || isCreatedDate
+        isDoneDate || isAssumedDate || isMissedDate || isCanceledDate || isDueToTodayRangeDate || isDueDate || isSoftDueDate || isPausedDate || isCreatedDate
     }
 
     var backgroundColor: Color {
@@ -22,6 +23,7 @@ struct TaskDetailCalendarDayPresentation: Equatable {
         if isAssumedDate { return .mint }
         if isPausedDate { return .teal }
         if isMissedDate { return .yellow }
+        if isCanceledDate { return .orange }
         if isDueToTodayRangeDate { return .red }
         if isDueDate { return .orange }
         if isSoftDueDate { return .orange }
@@ -33,7 +35,7 @@ struct TaskDetailCalendarDayPresentation: Equatable {
 
     var foregroundColor: Color {
         if isMissedDate { return .black }
-        return isDueDate || isSoftDueDate || isDoneDate || isAssumedDate || isDueToTodayRangeDate || isPausedDate || isCreatedDate || isToday
+        return isDueDate || isSoftDueDate || isDoneDate || isAssumedDate || isCanceledDate || isDueToTodayRangeDate || isPausedDate || isCreatedDate || isToday
             ? .white
             : .primary
     }
@@ -87,7 +89,8 @@ enum TaskDetailCalendarPresentation {
         assumedDates: Set<Date>,
         dueDate: Date?,
         softDueDate: Date? = nil,
-        missedDate: Date? = nil,
+        missedDates: Set<Date> = [],
+        canceledDates: Set<Date> = [],
         createdAt: Date?,
         pausedAt: Date?,
         isOrangeUrgencyToday: Bool,
@@ -99,7 +102,8 @@ enum TaskDetailCalendarPresentation {
         let isCreatedDate = createdAt.map { calendar.isDate($0, inSameDayAs: day) } ?? false
         let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isAssumedDate = !isDoneDate && assumedDates.contains { calendar.isDate($0, inSameDayAs: day) }
-        let isMissedDate = !isDoneDate && (missedDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false)
+        let isMissedDate = !isDoneDate && missedDates.contains { calendar.isDate($0, inSameDayAs: day) }
+        let isCanceledDate = !isDoneDate && canceledDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isToday = calendar.isDate(day, inSameDayAs: referenceDate)
         let isDueToTodayRangeDate = isInDueToTodayRange(
             day: day,
@@ -121,6 +125,7 @@ enum TaskDetailCalendarPresentation {
             isDoneDate: isDoneDate,
             isAssumedDate: isAssumedDate,
             isMissedDate: isMissedDate,
+            isCanceledDate: isCanceledDate,
             isToday: isToday,
             isDueToTodayRangeDate: isDueToTodayRangeDate,
             isPausedDate: isPausedDate,

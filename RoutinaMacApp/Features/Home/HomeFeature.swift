@@ -484,6 +484,8 @@ struct HomeFeature {
         case deleteTasksConfirmed
         case deleteTasks([UUID])
         case markTaskDone(UUID)
+        case markTaskMissed(UUID)
+        case markTaskCanceled(UUID)
         case moveTodoToState(UUID, TodoState)
         case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
         case selectedBoardScopeChanged(BoardScope)
@@ -804,6 +806,20 @@ struct HomeFeature {
                     doneStats: &doneStats
                 )
             },
+            markMissed: { id, tasks, doneStats in
+                taskLifecycleCoordinator().markTaskMissed(
+                    taskID: id,
+                    tasks: tasks,
+                    doneStats: &doneStats
+                )
+            },
+            markCanceled: { id, tasks, doneStats in
+                taskLifecycleCoordinator().markTaskCanceled(
+                    taskID: id,
+                    tasks: tasks,
+                    doneStats: &doneStats
+                )
+            },
             pause: { id, tasks in
                 taskLifecycleCoordinator().pauseTask(taskID: id, tasks: &tasks)
             },
@@ -1039,6 +1055,12 @@ struct HomeFeature {
 
             case let .markTaskDone(id):
                 return taskLifecycleCommandRouter().markTaskDone(id, state: &state)
+
+            case let .markTaskMissed(id):
+                return taskLifecycleCommandRouter().markTaskMissed(id, state: &state)
+
+            case let .markTaskCanceled(id):
+                return taskLifecycleCommandRouter().markTaskCanceled(id, state: &state)
 
             case let .moveTodoToState(id, newState):
                 return macBoardCommandRouter().moveTodoToState(id, newState, &state)

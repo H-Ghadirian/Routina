@@ -27,11 +27,14 @@ struct HomeRoutineDisplayFactory {
         let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
-        let hasMissedExactTimedOccurrence = RoutineDateMath.missedExactTimedOccurrenceDate(
+        let missedExactTimedOccurrenceDate = RoutineDateMath.missedExactTimedOccurrenceDate(
             for: task,
             referenceDate: now,
             calendar: calendar
-        ) != nil
+        )
+        let hasMissedExactTimedOccurrence = missedExactTimedOccurrenceDate.map {
+            !doneStats.hasResolvedMissedDate(taskID: task.id, missedDate: $0, calendar: calendar)
+        } ?? false
 
         return HomeRoutineDisplayCore(
             taskID: task.id,

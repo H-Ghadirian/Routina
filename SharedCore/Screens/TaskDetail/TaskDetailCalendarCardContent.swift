@@ -18,7 +18,8 @@ struct TaskDetailCalendarCardContent: View {
             onPreviousMonth: onPreviousMonth,
             onNextMonth: onNextMonth,
             showsAssumedLegend: task.autoAssumeDailyDone,
-            showsMissedLegend: missedDate != nil,
+            showsMissedLegend: !missedDates.isEmpty,
+            showsCanceledLegend: !canceledDates.isEmpty,
             showsDueLegend: dueDate != nil,
             showsOverdueLegend: isOverdueRangeVisible,
             showsSoftDueLegend: softDueDate != nil,
@@ -31,7 +32,8 @@ struct TaskDetailCalendarCardContent: View {
                 assumedDates: TaskDetailCalendarPresentation.assumedDates(from: logs, task: task),
                 dueDate: dueDate,
                 softDueDate: softDueDate,
-                missedDate: missedDate,
+                missedDates: missedDates,
+                canceledDates: canceledDates,
                 createdAt: task.createdAt,
                 pausedAt: task.pausedAt,
                 isOrangeUrgencyToday: isOrangeUrgencyToday,
@@ -41,8 +43,32 @@ struct TaskDetailCalendarCardContent: View {
         }
     }
 
-    private var missedDate: Date? {
-        RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: Date())
+    private var missedDates: Set<Date> {
+        let loggedMissedDates: [Date] = logs.compactMap { log in
+            guard log.kind == .missed, let timestamp = log.timestamp else { return nil }
+            return Calendar.current.startOfDay(for: timestamp)
+        }
+        var dates = Set(loggedMissedDates)
+        if let unresolvedMissedDate = RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: Date(),
+            logs: logs
+        ) {
+            dates.insert(Calendar.current.startOfDay(for: unresolvedMissedDate))
+        }
+        return dates
+    }
+
+    private var canceledDates: Set<Date> {
+        let loggedCanceledDates: [Date] = logs.compactMap { log in
+            guard log.kind == .canceled, let timestamp = log.timestamp else { return nil }
+            return Calendar.current.startOfDay(for: timestamp)
+        }
+        var dates = Set(loggedCanceledDates)
+        if let canceledAt = task.canceledAt {
+            dates.insert(Calendar.current.startOfDay(for: canceledAt))
+        }
+        return dates
     }
 
     private var isOverdueRangeVisible: Bool {

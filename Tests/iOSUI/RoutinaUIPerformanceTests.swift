@@ -31,7 +31,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
         measureInteraction {
             tapTab("Stats", in: app)
             tapTab("Settings", in: app)
-            tapTab("Dones", in: app)
+            tapTab("Timeline", in: app)
             tapTab("Search", in: app)
             tapTab("Home", in: app)
         }
@@ -192,7 +192,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     private func warmUpTabs(in app: XCUIApplication) {
         tapTab("Stats", in: app)
         tapTab("Settings", in: app)
-        tapTab("Dones", in: app)
+        tapTab("Timeline", in: app)
         tapTab("Search", in: app)
         tapTab("Home", in: app)
     }

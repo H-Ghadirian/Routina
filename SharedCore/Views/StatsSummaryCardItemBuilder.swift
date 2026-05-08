@@ -69,9 +69,9 @@ enum StatsSummaryCardItemBuilder {
             StatsSummaryCardItem(
                 icon: "checkmark.seal.fill",
                 accent: .blue,
-                title: "Total dones",
+                title: "Done",
                 value: metrics.totalDoneCount.formatted(),
-                caption: "All recorded completions",
+                caption: "Recorded completions",
                 accessibilityIdentifier: "stats.summary.totalDones"
             )
         )
@@ -80,10 +80,21 @@ enum StatsSummaryCardItemBuilder {
             StatsSummaryCardItem(
                 icon: "xmark.seal.fill",
                 accent: .orange,
-                title: "Total cancels",
+                title: "Canceled",
                 value: metrics.totalCanceledCount.formatted(),
-                caption: "Canceled todos kept in timeline",
+                caption: "Resolved cancellations",
                 accessibilityIdentifier: "stats.summary.totalCancels"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
+                icon: "exclamationmark.triangle.fill",
+                accent: .yellow,
+                title: "Missed",
+                value: metrics.totalMissedCount.formatted(),
+                caption: "Confirmed missed occurrences",
+                accessibilityIdentifier: "stats.summary.totalMissed"
             )
         )
 

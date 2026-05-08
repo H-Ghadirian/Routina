@@ -9,6 +9,7 @@ struct TaskDetailCompletionButtonTitlePresentation {
     let bulkConfirmAssumedDaysTitle: String
     let isSelectedDateAssumedDone: Bool
     let completionTargetDate: Date?
+    var hasUnresolvedMissedExactTimedOccurrence: Bool? = nil
     var referenceDate: Date = Date()
     var calendar: Calendar = .current
 
@@ -88,11 +89,13 @@ struct TaskDetailCompletionButtonTitlePresentation {
             return "Done for \(completionTargetDate.formatted(date: .abbreviated, time: .shortened))"
         }
 
-        if RoutineDateMath.missedExactTimedOccurrenceDate(
-            for: task,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) != nil, calendar.isDate(selectedDate, inSameDayAs: referenceDate) {
+        let hasUnresolvedMissed = hasUnresolvedMissedExactTimedOccurrence
+            ?? (RoutineDateMath.missedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) != nil)
+        if hasUnresolvedMissed, calendar.isDate(selectedDate, inSameDayAs: referenceDate) {
             return "Missed"
         }
 

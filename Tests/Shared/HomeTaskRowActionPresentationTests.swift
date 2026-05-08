@@ -71,6 +71,30 @@ struct HomeTaskRowActionPresentationTests {
     }
 
     @Test
+    func missedExactTimeRoutineOffersDoneMissedOrCanceledResolution() {
+        let referenceDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let presentation = HomeTaskRowActionPresentation.make(
+            for: TestTaskRowDisplay(
+                recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+                dueDate: referenceDate.addingTimeInterval(86_400),
+                hasMissedExactTimedOccurrence: true
+            ),
+            includeMarkDone: true,
+            allowsPinning: false,
+            referenceDate: referenceDate
+        )
+
+        #expect(presentation.lifecycleActions == [
+            .markDone(title: "I did it", isDisabled: false),
+            .markMissed,
+            .markCanceled,
+            .pause
+        ])
+        #expect(presentation.lifecycleActions.map { $0.command(taskID: presentation.taskID) }.contains(.markMissed(presentation.taskID)))
+        #expect(presentation.lifecycleActions.map { $0.command(taskID: presentation.taskID) }.contains(.markCanceled(presentation.taskID)))
+    }
+
+    @Test
     func moveActionsDisableAtSectionBoundaries() {
         let taskID = UUID()
         let context = HomeTaskListMoveContext(
@@ -132,6 +156,7 @@ private struct TestTaskRowDisplay: HomeTaskRowDisplay, Equatable {
     var pausedAt: Date?
     var pinnedAt: Date?
     var daysUntilDue: Int = 7
+    var hasMissedExactTimedOccurrence: Bool = false
     var isOneOffTask: Bool = false
     var isCompletedOneOff: Bool = false
     var isCanceledOneOff: Bool = false

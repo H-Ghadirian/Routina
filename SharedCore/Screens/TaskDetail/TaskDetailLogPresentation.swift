@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum TaskDetailDurationTextStyle {
     case compact
@@ -8,6 +9,28 @@ enum TaskDetailDurationTextStyle {
 enum TaskDetailLogPresentation {
     static func actionTitle(for log: RoutineLog) -> String {
         log.kind == .completed ? "Undo" : "Remove"
+    }
+
+    static func statusText(for kind: RoutineLogKind) -> String {
+        switch kind {
+        case .completed:
+            return "Done"
+        case .canceled:
+            return "Canceled"
+        case .missed:
+            return "Missed"
+        }
+    }
+
+    static func statusColor(for kind: RoutineLogKind) -> Color {
+        switch kind {
+        case .completed:
+            return .green
+        case .canceled:
+            return .orange
+        case .missed:
+            return .yellow
+        }
     }
 
     static func timestampText(

@@ -171,13 +171,17 @@ struct HomeTCAView: View {
 
     var overallDoneCountSummary: some View {
         HStack(spacing: 12) {
-            Label("\(store.doneStats.totalCount) dones", systemImage: "checkmark.seal.fill")
+            Label("\(store.doneStats.totalCount) done", systemImage: "checkmark.seal.fill")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.green)
 
-            Label("\(store.doneStats.canceledTotalCount) cancels", systemImage: "xmark.seal.fill")
+            Label("\(store.doneStats.canceledTotalCount) canceled", systemImage: "xmark.seal.fill")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.orange)
+
+            Label("\(store.doneStats.missedTotalCount) missed", systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.yellow)
 
             Label("\(store.routineTasks.filter { !$0.isOneOffTask }.count) routines", systemImage: "arrow.clockwise")
                 .font(.subheadline.weight(.semibold))

@@ -6,6 +6,28 @@ struct HomeDoneStats: Equatable {
     var countsByTaskID: [UUID: Int] = [:]
     var canceledTotalCount: Int = 0
     var canceledCountsByTaskID: [UUID: Int] = [:]
+    var canceledDatesByTaskID: [UUID: Set<Date>] = [:]
+    var missedDatesByTaskID: [UUID: Set<Date>] = [:]
+
+    var missedTotalCount: Int {
+        missedDatesByTaskID.values.reduce(0) { $0 + $1.count }
+    }
+
+    func hasResolvedMissedDate(
+        taskID: UUID,
+        missedDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        if let missedDates = missedDatesByTaskID[taskID],
+           missedDates.contains(where: { calendar.isDate($0, inSameDayAs: missedDate) }) {
+            return true
+        }
+        if let canceledDates = canceledDatesByTaskID[taskID],
+           canceledDates.contains(where: { calendar.isDate($0, inSameDayAs: missedDate) }) {
+            return true
+        }
+        return false
+    }
 }
 
 enum HomeTaskSupport {
@@ -131,11 +153,23 @@ enum HomeTaskSupport {
             guard log.kind == .canceled else { return }
             partialResult[log.taskID, default: 0] += 1
         }
+        let canceledDatesByTaskID = logs.reduce(into: [UUID: Set<Date>]()) { partialResult, log in
+            guard taskIDs.contains(log.taskID) else { return }
+            guard log.kind == .canceled, let timestamp = log.timestamp else { return }
+            partialResult[log.taskID, default: []].insert(timestamp)
+        }
+        let missedDatesByTaskID = logs.reduce(into: [UUID: Set<Date>]()) { partialResult, log in
+            guard taskIDs.contains(log.taskID) else { return }
+            guard log.kind == .missed, let timestamp = log.timestamp else { return }
+            partialResult[log.taskID, default: []].insert(timestamp)
+        }
         return HomeDoneStats(
             totalCount: countsByTaskID.values.reduce(0, +),
             countsByTaskID: countsByTaskID,
             canceledTotalCount: canceledCountsByTaskID.values.reduce(0, +),
-            canceledCountsByTaskID: canceledCountsByTaskID
+            canceledCountsByTaskID: canceledCountsByTaskID,
+            canceledDatesByTaskID: canceledDatesByTaskID,
+            missedDatesByTaskID: missedDatesByTaskID
         )
     }
 }

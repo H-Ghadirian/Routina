@@ -109,9 +109,9 @@ struct StatsSidebarContent: View {
         case .all:
             return "\(filteredTaskCount) matching items"
         case .routines:
-            return "Routine completions"
+            return "Routine activity"
         case .todos:
-            return "Todo completions"
+            return "Todo activity"
         }
     }
 }

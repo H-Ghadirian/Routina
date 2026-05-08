@@ -17,10 +17,10 @@ struct TaskDetailRoutineLogRowPresentation {
         )
         self.compactTimeSpentText = TaskDetailLogPresentation.timeSpentText(for: log, style: .compact)
         self.fullTimeSpentText = TaskDetailLogPresentation.timeSpentText(for: log, style: .full)
-        self.statusText = log.kind == .completed ? "Done" : "Canceled"
-        self.statusColor = log.kind == .completed ? .green : .orange
+        self.statusText = TaskDetailLogPresentation.statusText(for: log.kind)
+        self.statusColor = TaskDetailLogPresentation.statusColor(for: log.kind)
         self.actionTitle = TaskDetailLogPresentation.actionTitle(for: log)
-        self.actionColor = log.kind == .completed ? .green : .orange
+        self.actionColor = TaskDetailLogPresentation.statusColor(for: log.kind)
         self.isActionEnabled = log.timestamp != nil
     }
 
