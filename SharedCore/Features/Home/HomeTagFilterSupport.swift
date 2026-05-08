@@ -1,15 +1,5 @@
 import Foundation
 
-struct HomeIncludedTagMutation: Equatable {
-    let selectedTags: Set<String>
-    let suggestionAnchor: String?
-}
-
-struct HomeExcludedTagMutation: Equatable {
-    let selectedTags: Set<String>
-    let excludedTags: Set<String>
-}
-
 struct HomeTagFilterSupport<Display> {
     let allDisplays: [Display]
     let matchesCurrentTaskListMode: (Display) -> Bool
@@ -46,7 +36,7 @@ struct HomeTagFilterSupport<Display> {
 
         return HomeDisplayFilterSupport.tagSummaries(from: includeScopedDisplays, tags: tags)
             .filter { summary in
-                !selectedTags.contains { RoutineTag.contains($0, in: [summary.name]) }
+                !HomeTagFilterMutationSupport.contains(summary.name, in: selectedTags)
             }
     }
 
@@ -61,51 +51,30 @@ struct HomeTagFilterSupport<Display> {
     }
 
     func clearedIncludedTags() -> HomeIncludedTagMutation {
-        HomeIncludedTagMutation(selectedTags: [], suggestionAnchor: nil)
+        HomeTagFilterMutationSupport.clearedIncludedTags()
     }
 
     func toggledIncludedTag(_ tag: String) -> HomeIncludedTagMutation {
-        var updatedTags = selectedTags
-        var updatedAnchor = suggestionAnchor
-
-        if updatedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            updatedTags = updatedTags.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            updatedTags.insert(tag)
-            updatedAnchor = tag
-        }
-
-        if updatedTags.isEmpty {
-            updatedAnchor = nil
-        }
-
-        return HomeIncludedTagMutation(selectedTags: updatedTags, suggestionAnchor: updatedAnchor)
+        HomeTagFilterMutationSupport.toggledIncludedTag(
+            tag,
+            selectedTags: selectedTags,
+            suggestionAnchor: suggestionAnchor
+        )
     }
 
     func addedIncludedTag(_ tag: String) -> HomeIncludedTagMutation? {
-        guard !selectedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) else {
-            return nil
-        }
-
-        var updatedTags = selectedTags
-        updatedTags.insert(tag)
-        return HomeIncludedTagMutation(selectedTags: updatedTags, suggestionAnchor: suggestionAnchor)
+        HomeTagFilterMutationSupport.addedIncludedTag(
+            tag,
+            selectedTags: selectedTags,
+            suggestionAnchor: suggestionAnchor
+        )
     }
 
     func toggledExcludedTag(_ tag: String, excludedTags: Set<String>) -> HomeExcludedTagMutation {
-        var updatedExcludedTags = excludedTags
-        var updatedSelectedTags = selectedTags
-
-        if updatedExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            updatedExcludedTags = updatedExcludedTags.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            updatedExcludedTags.insert(tag)
-            updatedSelectedTags = updatedSelectedTags.filter { !RoutineTag.contains($0, in: [tag]) }
-        }
-
-        return HomeExcludedTagMutation(
-            selectedTags: updatedSelectedTags,
-            excludedTags: updatedExcludedTags
+        HomeTagFilterMutationSupport.toggledExcludedTag(
+            tag,
+            selectedTags: selectedTags,
+            excludedTags: excludedTags
         )
     }
 }

@@ -8,15 +8,8 @@ enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatabl
     var id: Self { self }
 }
 
-struct StatsIncludedTagMutation: Equatable {
-    let selectedTags: Set<String>
-    let suggestionAnchor: String?
-}
-
-struct StatsTagFilterMutation: Equatable {
-    let selectedTags: Set<String>
-    let excludedTags: Set<String>
-}
+typealias StatsIncludedTagMutation = HomeIncludedTagMutation
+typealias StatsTagFilterMutation = HomeExcludedTagMutation
 
 struct StatsFilterPresentation {
     let taskTypeFilter: StatsTaskTypeFilter
@@ -119,7 +112,7 @@ struct StatsFilterPresentation {
         }
 
         return RoutineTag.allTags(from: baseTasks.map(\.tags)).filter { tag in
-            !selectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+            !HomeTagFilterMutationSupport.contains(tag, in: selectedTags)
         }
     }
 
@@ -127,47 +120,26 @@ struct StatsFilterPresentation {
         _ tag: String,
         currentSuggestionAnchor: String?
     ) -> StatsIncludedTagMutation {
-        var selected = selectedTags
-        var suggestionAnchor = currentSuggestionAnchor
-
-        if selected.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            selected.insert(tag)
-            suggestionAnchor = tag
-        }
-
-        if selected.isEmpty {
-            suggestionAnchor = nil
-        }
-
-        return StatsIncludedTagMutation(
-            selectedTags: selected,
-            suggestionAnchor: suggestionAnchor
+        HomeTagFilterMutationSupport.toggledIncludedTag(
+            tag,
+            selectedTags: selectedTags,
+            suggestionAnchor: currentSuggestionAnchor
         )
     }
 
     func addedIncludedTag(_ tag: String) -> StatsIncludedTagMutation? {
-        guard !selectedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) else { return nil }
-        var selected = selectedTags
-        selected.insert(tag)
-        return StatsIncludedTagMutation(selectedTags: selected, suggestionAnchor: nil)
+        HomeTagFilterMutationSupport.addedIncludedTag(
+            tag,
+            selectedTags: selectedTags,
+            suggestionAnchor: nil
+        )
     }
 
     func toggledExcludedTag(_ tag: String) -> StatsTagFilterMutation {
-        var excluded = excludedTags
-        var selected = selectedTags
-
-        if excluded.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            excluded = excluded.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            excluded.insert(tag)
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-        }
-
-        return StatsTagFilterMutation(
-            selectedTags: selected,
-            excludedTags: excluded
+        HomeTagFilterMutationSupport.toggledExcludedTag(
+            tag,
+            selectedTags: selectedTags,
+            excludedTags: excludedTags
         )
     }
 
