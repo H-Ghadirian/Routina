@@ -495,6 +495,58 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filterPresentationSuggestsRelatedTagsFromCurrentAnchor() {
+        let presentation = TimelineFilterPresentation(
+            selectedTags: ["Focus", "Admin"],
+            excludedTags: [],
+            includeTagMatchMode: .all,
+            availableTags: ["Focus", "Admin", "Deep Work", "Errand"],
+            relatedTagRules: [
+                RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Deep Work"]),
+                RoutineRelatedTagRule(tag: "Admin", relatedTags: ["Errand"])
+            ]
+        )
+
+        #expect(presentation.suggestedRelatedTags(suggestionAnchor: "Focus") == ["Deep Work"])
+        #expect(presentation.suggestedRelatedTags(suggestionAnchor: nil) == ["Deep Work", "Errand"])
+    }
+
+    @Test
+    func filterPresentationScopesExcludedTagsToIncludedEntries() {
+        let entries = [
+            TimelineEntry(
+                id: UUID(),
+                taskID: UUID(),
+                timestamp: makeDate("2026-03-20T08:00:00Z"),
+                taskName: "A",
+                taskEmoji: "🔧",
+                tags: ["Focus", "Deep Work"],
+                isOneOff: false,
+                kind: .completed
+            ),
+            TimelineEntry(
+                id: UUID(),
+                taskID: UUID(),
+                timestamp: makeDate("2026-03-20T09:00:00Z"),
+                taskName: "B",
+                taskEmoji: "📝",
+                tags: ["Errand"],
+                isOneOff: true,
+                kind: .completed
+            )
+        ]
+        let presentation = TimelineFilterPresentation(
+            selectedTags: ["Focus"],
+            excludedTags: [],
+            includeTagMatchMode: .all,
+            availableTags: ["Focus", "Deep Work", "Errand"],
+            relatedTagRules: []
+        )
+
+        #expect(presentation.availableExcludeTags(from: entries) == ["Deep Work"])
+    }
+
+    @Test
     func filteredEntries_toleratesDuplicateTaskIDs() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

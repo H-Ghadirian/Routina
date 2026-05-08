@@ -113,19 +113,22 @@ struct TimelineView: View {
         store.availableTags
     }
 
-    private var suggestedRelatedFilterTags: [String] {
-        let selectedTags = store.effectiveSelectedTags
-        guard !selectedTags.isEmpty else { return [] }
-        let suggestionSource = relatedFilterTagSuggestionAnchor.map { [$0] } ?? Array(selectedTags)
-        return RoutineTagRelations.relatedTags(
-            for: suggestionSource,
-            rules: store.relatedTagRules,
-            availableTags: availableTags
+    private var filterPresentation: TimelineFilterPresentation {
+        TimelineFilterPresentation(
+            selectedTags: store.effectiveSelectedTags,
+            excludedTags: store.excludedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            availableTags: availableTags,
+            relatedTagRules: store.relatedTagRules
         )
     }
 
+    private var suggestedRelatedFilterTags: [String] {
+        filterPresentation.suggestedRelatedTags(suggestionAnchor: relatedFilterTagSuggestionAnchor)
+    }
+
     private var availableExcludeTags: [String] {
-        let includeScopedEntries = TimelineLogic.filteredEntries(
+        let baseEntries = TimelineLogic.filteredEntries(
             logs: store.logs,
             tasks: store.tasks,
             range: store.selectedRange,
@@ -137,16 +140,10 @@ struct TimelineView: View {
                 store.selectedImportanceUrgencyFilter,
                 importance: entry.importance,
                 urgency: entry.urgency
-            ) && HomeFeature.matchesSelectedTags(
-                store.effectiveSelectedTags,
-                mode: store.includeTagMatchMode,
-                in: entry.tags
             )
         }
 
-        return TimelineLogic.availableTags(from: includeScopedEntries).filter { tag in
-            !store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
-        }
+        return filterPresentation.availableExcludeTags(from: baseEntries)
     }
 
     private var tagRuleBindings: HomeTagRuleBindings {
@@ -163,14 +160,9 @@ struct TimelineView: View {
     }
 
     private var tagRuleData: HomeTagFilterData {
-        HomeTagFilterData(
-            selectedTags: store.effectiveSelectedTags,
-            excludedTags: store.excludedTags,
-            tagSummaries: availableTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) },
-            allTagTaskCount: 0,
+        filterPresentation.tagRuleData(
             suggestedRelatedTags: suggestedRelatedFilterTags,
-            availableExcludeTagSummaries: availableExcludeTags.map { RoutineTagSummary(name: $0, linkedRoutineCount: 0) },
-            showsTagCounts: false
+            availableExcludeTags: availableExcludeTags
         )
     }
 
@@ -187,41 +179,31 @@ struct TimelineView: View {
     }
 
     private func isIncludedTagSelected(_ tag: String) -> Bool {
-        store.effectiveSelectedTags.contains { RoutineTag.contains($0, in: [tag]) }
+        filterPresentation.isIncludedTagSelected(tag)
     }
 
     private func toggleIncludedTag(_ tag: String) {
-        var selected = store.effectiveSelectedTags
-        if selected.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            selected.insert(tag)
-            relatedFilterTagSuggestionAnchor = tag
-        }
-        store.send(.selectedTagsChanged(selected))
-        if selected.isEmpty {
-            relatedFilterTagSuggestionAnchor = nil
-        }
+        let mutation = filterPresentation.toggledIncludedTag(
+            tag,
+            currentSuggestionAnchor: relatedFilterTagSuggestionAnchor
+        )
+        relatedFilterTagSuggestionAnchor = mutation.suggestionAnchor
+        store.send(.selectedTagsChanged(mutation.selectedTags))
     }
 
     private func addIncludedTag(_ tag: String) {
-        guard !isIncludedTagSelected(tag) else { return }
-        var selected = store.effectiveSelectedTags
-        selected.insert(tag)
-        store.send(.selectedTagsChanged(selected))
+        guard let mutation = filterPresentation.addedIncludedTag(
+            tag,
+            currentSuggestionAnchor: relatedFilterTagSuggestionAnchor
+        ) else { return }
+        relatedFilterTagSuggestionAnchor = mutation.suggestionAnchor
+        store.send(.selectedTagsChanged(mutation.selectedTags))
     }
 
     private func toggleExcludedTag(_ tag: String) {
-        var excluded = store.excludedTags
-        if excluded.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-            excluded = excluded.filter { !RoutineTag.contains($0, in: [tag]) }
-        } else {
-            excluded.insert(tag)
-            var selected = store.effectiveSelectedTags
-            selected = selected.filter { !RoutineTag.contains($0, in: [tag]) }
-            store.send(.selectedTagsChanged(selected))
-        }
-        store.send(.excludedTagsChanged(excluded))
+        let mutation = filterPresentation.toggledExcludedTag(tag)
+        store.send(.selectedTagsChanged(mutation.selectedTags))
+        store.send(.excludedTagsChanged(mutation.excludedTags))
     }
 
     private var hasActiveFilters: Bool {
