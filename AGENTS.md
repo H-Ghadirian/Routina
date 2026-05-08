@@ -1,5 +1,11 @@
 # Routina Agent Notes
 
+## Project Decision Log
+
+- Before making meaningful project changes, read `docs/decisions/README.md` and any relevant decision records.
+- After making a change that introduces or revises long-term decisions, add a new decision record or supersede an existing one.
+- Decision records should capture why a choice was made, not every small implementation detail. Use them for architecture, conventions, data model, dependencies, product behavior, build setup, and other choices future contributors should preserve or understand.
+
 ## Build Verification
 
 - iOS CLI build:
