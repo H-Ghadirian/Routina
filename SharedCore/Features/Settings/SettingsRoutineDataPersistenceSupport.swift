@@ -134,30 +134,7 @@ enum SettingsRoutineDataPersistence {
         }
 
         do {
-            let existingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
-            for log in existingLogs {
-                context.delete(log)
-            }
-
-            let existingAttachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
-            for attachment in existingAttachments {
-                context.delete(attachment)
-            }
-
-            let existingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
-            for task in existingTasks {
-                context.delete(task)
-            }
-
-            let existingGoals = try context.fetch(FetchDescriptor<RoutineGoal>())
-            for goal in existingGoals {
-                context.delete(goal)
-            }
-
-            let existingPlaces = try context.fetch(FetchDescriptor<RoutinePlace>())
-            for place in existingPlaces {
-                context.delete(place)
-            }
+            try SettingsRoutineDataImportStoreResetter.deleteExistingData(in: context)
 
             var importedPlaceIDs = Set<UUID>()
             var importedPlaceCount = 0
