@@ -19,6 +19,9 @@ struct RoutinaIOSRootScene: Scene {
             WatchRoutineSyncBridge.shared.startIfNeeded {
                 persistence.container.mainContext
             }
+            LocalBatteryRoutineMonitor.shared.startIfNeeded {
+                persistence.container.mainContext
+            }
         }
     }
 

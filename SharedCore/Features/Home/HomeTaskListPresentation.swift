@@ -53,14 +53,43 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         showArchivedTasks: Bool = true,
         taskListKind: HomeFilterTaskListKind
     ) -> Self {
-        let regularSections = filtering.groupedRoutineSections(from: routineDisplays)
-        let awayTasks = filtering.filteredAwayTasks(awayRoutineDisplays)
+        let visibleArchivedDisplays = showArchivedTasks ? archivedRoutineDisplays : []
+        let pinnedTasks = filtering.filteredPinnedTasks(
+            activeDisplays: routineDisplays,
+            awayDisplays: hideUnavailableRoutines ? [] : awayRoutineDisplays,
+            archivedDisplays: visibleArchivedDisplays
+        )
+        let pinnedTaskIDs = Set(pinnedTasks.map(\.taskID))
+        let regularSections = filtering.groupedRoutineSections(
+            from: routineDisplays.filter { !pinnedTaskIDs.contains($0.taskID) }
+        )
+        let awayTasks = filtering.filteredAwayTasks(
+            awayRoutineDisplays.filter { !pinnedTaskIDs.contains($0.taskID) }
+        )
         let archivedTasks = showArchivedTasks
-            ? filtering.filteredArchivedTasks(archivedRoutineDisplays)
+            ? filtering.filteredArchivedTasks(
+                archivedRoutineDisplays.filter { !pinnedTaskIDs.contains($0.taskID) }
+            )
             : []
 
         var offset = 0
-        var presentationSections = regularSections.map { section in
+        var presentationSections: [HomeTaskListPresentationSection<Display>] = []
+
+        if !pinnedTasks.isEmpty {
+            presentationSections.append(
+                HomeTaskListPresentationSection(
+                    kind: .pinned,
+                    title: "Pinned",
+                    tasks: pinnedTasks,
+                    rowNumberOffset: offset,
+                    includeMarkDone: true,
+                    moveContext: nil
+                )
+            )
+            offset += pinnedTasks.count
+        }
+
+        presentationSections += regularSections.map { section in
             defer { offset += section.tasks.count }
             return HomeTaskListPresentationSection(
                 kind: .regular,

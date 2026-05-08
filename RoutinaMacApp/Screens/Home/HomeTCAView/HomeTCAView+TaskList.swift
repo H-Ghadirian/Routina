@@ -340,12 +340,18 @@ extension HomeTCAView {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.18)
         }
+        if let color = task.color.swiftUIColor {
+            return color.opacity(0.12)
+        }
         return Color.secondary.opacity(0.08)
     }
 
     private func macTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.55)
+        }
+        if let color = task.color.swiftUIColor {
+            return color.opacity(0.32)
         }
         return Color.primary.opacity(0.06)
     }

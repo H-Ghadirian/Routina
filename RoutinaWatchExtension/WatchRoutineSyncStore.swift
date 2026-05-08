@@ -244,12 +244,14 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     private let focusCacheKey = "watch.cachedFocusSession.v1"
     private let pendingRoutineKey = "watch.pendingRoutines.v3"
     private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
+    private var batteryRefreshTask: Task<Void, Never>?
 
     override init() {
         super.init()
         loadPendingRoutines()
         loadCachedRoutines()
         loadCachedFocusSession()
+        startPeriodicBatteryRefresh()
 
         guard let session else { return }
         session.delegate = self
@@ -260,6 +262,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     func requestSync() {
         guard let session else { return }
         updateConnectivityState(Self.makeConnectivityState(from: session))
+        sendBatteryStatus()
 
         if session.activationState == .activated {
             let context = session.receivedApplicationContext
@@ -348,6 +351,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             if focusUpdate.wasPresent {
                 self?.setActiveFocusSession(focusUpdate.focus)
             }
+            self?.sendBatteryStatus()
         }
     }
 
@@ -417,6 +421,49 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         if focusUpdate.wasPresent {
             setActiveFocusSession(focusUpdate.focus)
         }
+    }
+
+    private func startPeriodicBatteryRefresh() {
+        batteryRefreshTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(15 * 60))
+                guard !Task.isCancelled else { return }
+                self?.sendBatteryStatus()
+            }
+        }
+    }
+
+    private func sendBatteryStatus() {
+        guard let session else { return }
+        guard session.activationState == .activated else { return }
+        guard let payload = currentBatteryPayload() else { return }
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil) { error in
+                NSLog("Watch battery status message failed: \(error.localizedDescription)")
+                session.transferUserInfo(payload)
+            }
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    private func currentBatteryPayload() -> [String: Any]? {
+        let device = WKInterfaceDevice.current()
+        device.isBatteryMonitoringEnabled = true
+
+        let level = device.batteryLevel
+        guard level >= 0 else { return nil }
+
+        let state = device.batteryState
+        let isCharging = state == .charging || state == .full
+        return [
+            "action": "batteryStatus",
+            "deviceKind": "appleWatch",
+            "levelPercent": Int((level * 100).rounded()),
+            "isCharging": isCharging,
+            "capturedAt": Date().timeIntervalSince1970
+        ]
     }
 
     private func setRoutines(_ mapped: [WatchRoutine]) {

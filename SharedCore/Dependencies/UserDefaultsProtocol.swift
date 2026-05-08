@@ -51,6 +51,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingAppLockEnabled
     case appSettingGitFeaturesEnabled
     case appSettingShowPersianDates
+    case appSettingBatteryRoutineMonitoringEnabled
     case appSettingShowDayPlanUnplannedDoneBadges
     case requestNotificationPermission
 }

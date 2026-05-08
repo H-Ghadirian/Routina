@@ -8,6 +8,14 @@ struct SettingsAppearanceDetailView: View {
         UserDefaultBoolValueKey.appSettingShowDayPlanUnplannedDoneBadges.rawValue,
         store: SharedDefaults.app
     ) private var showsDayPlanUnplannedDoneBadges = true
+    @AppStorage(
+        BatteryRoutinePreferences.monitoringEnabledDefaultsKey,
+        store: SharedDefaults.app
+    ) private var batteryRoutineMonitoringEnabled = true
+    @AppStorage(
+        BatteryRoutinePreferences.thresholdPercentDefaultsKey,
+        store: SharedDefaults.app
+    ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
 
     private let columns = [
         GridItem(.adaptive(minimum: 108), spacing: 12)
@@ -44,6 +52,18 @@ struct SettingsAppearanceDetailView: View {
                     Toggle("Show unplanned done badges", isOn: $showsDayPlanUnplannedDoneBadges)
 
                     Text("Shows a small count on each planner day when completed tasks for that date are not yet placed in the day.")
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Battery Routines") {
+                    Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
+
+                    Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
+                        Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
+                    }
+                    .disabled(!batteryRoutineMonitoringEnabled)
+
+                    Text("Routina creates one charge routine for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
                         .foregroundStyle(.secondary)
                 }
 
@@ -164,6 +184,26 @@ struct SettingsAppearanceDetailView: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
+        )
+    }
+
+    private var batteryRoutineMonitoringBinding: Binding<Bool> {
+        Binding(
+            get: { batteryRoutineMonitoringEnabled },
+            set: {
+                batteryRoutineMonitoringEnabled = $0
+                BatteryRoutinePreferences.notifyChanged()
+            }
+        )
+    }
+
+    private var batteryRoutineThresholdBinding: Binding<Int> {
+        Binding(
+            get: { batteryRoutineThresholdPercent },
+            set: {
+                batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
+                BatteryRoutinePreferences.notifyChanged()
+            }
         )
     }
 

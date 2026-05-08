@@ -10,6 +10,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         case requestSync
         case markDone(UUID, Date)
         case openDeepLink(RoutinaDeepLink)
+        case batteryStatus(BatteryDeviceSnapshot)
         case ignore
     }
 
@@ -194,9 +195,18 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             markRoutineDone(taskID: taskID, completedAt: date)
         case let .openDeepLink(deepLink):
             openDeepLink(deepLink)
+        case let .batteryStatus(snapshot):
+            reconcileBatteryStatus(snapshot)
         case .ignore:
             return
         }
+    }
+
+    private func reconcileBatteryStatus(_ snapshot: BatteryDeviceSnapshot) {
+        guard let modelContextProvider else { return }
+        let context = modelContextProvider()
+        BatteryRoutineService.reconcile(snapshot: snapshot, in: context)
+        pushLatestSnapshot()
     }
 
     private func markRoutineDone(taskID: UUID, completedAt: Date) {
@@ -319,6 +329,27 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             }
 
             return .openDeepLink(.task(targetID))
+        }
+
+        if
+            let action = payload["action"] as? String,
+            action == "batteryStatus",
+            let kindRawValue = payload["deviceKind"] as? String,
+            let kind = BatteryRoutineDeviceKind(rawValue: kindRawValue),
+            let levelPercent = payload["levelPercent"] as? Int,
+            let isCharging = payload["isCharging"] as? Bool
+        {
+            let capturedAt = (payload["capturedAt"] as? TimeInterval)
+                .map(Date.init(timeIntervalSince1970:))
+                ?? Date()
+            return .batteryStatus(
+                BatteryDeviceSnapshot(
+                    kind: kind,
+                    levelPercent: levelPercent,
+                    isCharging: isCharging,
+                    capturedAt: capturedAt
+                )
+            )
         }
 
         if let requestSync = payload["requestSync"] as? Bool, requestSync {

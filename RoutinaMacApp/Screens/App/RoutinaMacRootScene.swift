@@ -19,6 +19,11 @@ struct RoutinaMacRootScene: Scene {
         self.focusTimerStatusStore = focusTimerStatusStore
         self.widgetRefreshScheduler = RoutinaMacWidgetRefreshScheduler(persistence: persistence)
         RoutinaMacFocusTimerStatusBarController.shared.configure(store: focusTimerStatusStore)
+        if !AppEnvironment.isAutomatedTestMode {
+            MacBatteryRoutineMonitor.shared.startIfNeeded {
+                persistence.container.mainContext
+            }
+        }
         RoutinaMacWindowRouter.shared.installFallbackHomeWindowOpener {
             RoutinaMacFallbackHomeWindowPresenter.shared.showHomeWindow(
                 rootView: AnyView(

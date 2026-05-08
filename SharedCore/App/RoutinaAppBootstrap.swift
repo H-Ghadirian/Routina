@@ -26,11 +26,13 @@ enum RoutinaAppBootstrap {
             .appSettingHideUnavailableRoutines: false,
             .appSettingAppLockEnabled: false,
             .appSettingShowPersianDates: false,
+            .appSettingBatteryRoutineMonitoringEnabled: true,
             .appSettingShowDayPlanUnplannedDoneBadges: true
         ])
         SharedDefaults.app.register(defaults: [
             UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
-            UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN"
+            UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN",
+            BatteryRoutinePreferences.thresholdPercentDefaultsKey: BatteryRoutinePreferences.defaultThresholdPercent
         ])
         SharedDefaults.app.register(defaults: [
             NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,
