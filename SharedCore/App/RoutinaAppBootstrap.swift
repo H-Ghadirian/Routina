@@ -27,7 +27,9 @@ enum RoutinaAppBootstrap {
             .appSettingAppLockEnabled: false,
             .appSettingShowPersianDates: false,
             .appSettingBatteryRoutineMonitoringEnabled: true,
-            .appSettingShowDayPlanUnplannedDoneBadges: true
+            .appSettingShowDayPlanUnplannedDoneBadges: true,
+            .appSettingDailyRoutinesSectionCollapsed: false,
+            .appSettingArchivedRoutinesSectionCollapsed: false
         ])
         SharedDefaults.app.register(defaults: [
             UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,

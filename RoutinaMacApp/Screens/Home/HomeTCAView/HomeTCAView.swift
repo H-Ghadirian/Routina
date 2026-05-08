@@ -40,6 +40,14 @@ struct HomeTCAView: View {
     var isMacTodoBoardCompactCards = false
     @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)
     var isMacBoardTicketInspectorPresented = true
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingDailyRoutinesSectionCollapsed.rawValue,
+        store: SharedDefaults.app
+    ) var isDailyRoutinesSectionCollapsed = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingArchivedRoutinesSectionCollapsed.rawValue,
+        store: SharedDefaults.app
+    ) var isArchivedSectionCollapsed = false
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var isQuickAddSheetPresented = false

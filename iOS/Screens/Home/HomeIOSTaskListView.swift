@@ -11,6 +11,14 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
     let onDelete: (IndexSet, [HomeFeature.RoutineDisplay]) -> Void
     let onScroll: (CGFloat, CGFloat) -> Void
     let destinationContent: (UUID) -> DestinationContent
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingDailyRoutinesSectionCollapsed.rawValue,
+        store: SharedDefaults.app
+    ) private var isDailyRoutinesSectionCollapsed = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingArchivedRoutinesSectionCollapsed.rawValue,
+        store: SharedDefaults.app
+    ) private var isArchivedSectionCollapsed = false
 
     init(
         presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
@@ -59,18 +67,22 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
     private var taskList: some View {
         List(selection: selectedTaskID) {
             ForEach(presentation.sections) { section in
-                Section(section.title) {
-                    ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                        rowContent(
-                            task,
-                            section.rowNumber(forTaskAt: index),
-                            section.includeMarkDone,
-                            section.moveContext
-                        )
+                Section {
+                    if isSectionExpanded(section) {
+                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                            rowContent(
+                                task,
+                                visibleRowNumber(for: section, taskIndex: index),
+                                section.includeMarkDone,
+                                section.moveContext
+                            )
+                        }
+                        .onDelete { offsets in
+                            onDelete(offsets, section.tasks)
+                        }
                     }
-                    .onDelete { offsets in
-                        onDelete(offsets, section.tasks)
-                    }
+                } header: {
+                    sectionHeader(for: section)
                 }
             }
         }
@@ -83,5 +95,73 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         .navigationDestination(for: UUID.self) { taskID in
             destinationContent(taskID)
         }
+    }
+
+    @ViewBuilder
+    private func sectionHeader(for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>) -> some View {
+        if section.kind.isCollapsible {
+            Button {
+                toggleSection(section)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .rotationEffect(.degrees(isSectionExpanded(section) ? 90 : 0))
+
+                    Text(section.title)
+
+                    Text("\(section.tasks.count)")
+                        .font(.caption2.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(section.title)
+            .accessibilityValue(isSectionExpanded(section) ? "Expanded" : "Collapsed")
+        } else {
+            Text(section.title)
+        }
+    }
+
+    private func isSectionExpanded(_ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>) -> Bool {
+        switch section.kind {
+        case .daily:
+            return !isDailyRoutinesSectionCollapsed
+        case .archived:
+            return !isArchivedSectionCollapsed
+        case .pinned, .regular, .away:
+            return true
+        }
+    }
+
+    private func toggleSection(_ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>) {
+        guard section.kind.isCollapsible else { return }
+        withAnimation(.snappy(duration: 0.2)) {
+            switch section.kind {
+            case .daily:
+                isDailyRoutinesSectionCollapsed.toggle()
+            case .archived:
+                isArchivedSectionCollapsed.toggle()
+            case .pinned, .regular, .away:
+                break
+            }
+        }
+    }
+
+    private func visibleRowNumber(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        taskIndex: Int
+    ) -> Int {
+        var offset = 0
+        for currentSection in presentation.sections {
+            if currentSection.id == section.id {
+                return offset + taskIndex + 1
+            }
+            if isSectionExpanded(currentSection) {
+                offset += currentSection.tasks.count
+            }
+        }
+        return taskIndex + 1
     }
 }

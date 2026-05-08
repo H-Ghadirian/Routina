@@ -2,6 +2,7 @@ import Foundation
 
 struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     static var pinnedManualOrderSectionKey: String { "pinned" }
+    static var dailyManualOrderSectionKey: String { "daily" }
     static var archivedManualOrderSectionKey: String { "archived" }
 
     var configuration: HomeTaskListFilteringConfiguration
@@ -137,6 +138,9 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     }
 
     func regularManualOrderSectionKey(for task: Display) -> String {
+        if task.isDailyRoutine {
+            return Self.dailyManualOrderSectionKey
+        }
         if task.isDoneToday {
             return "doneToday"
         }

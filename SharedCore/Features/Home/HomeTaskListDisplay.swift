@@ -35,6 +35,12 @@ protocol HomeTaskListDisplay {
     var todoState: TodoState? { get }
 }
 
+extension HomeTaskListDisplay {
+    var isDailyRoutine: Bool {
+        !isOneOffTask && recurrenceRule.isDaily
+    }
+}
+
 struct HomeTaskListSection<Display: HomeTaskListDisplay> {
     let title: String
     var tasks: [Display]

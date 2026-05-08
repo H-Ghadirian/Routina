@@ -264,6 +264,27 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func iOSPresentationSeparatesDailyRoutinesBeforeStatusBuckets() {
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+                TestTaskDisplay(name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: -1),
+                TestTaskDisplay(name: "Daily Done", recurrenceRule: .daily(at: .defaultValue), daysUntilDue: 0, isDoneToday: true)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [TestTaskDisplay(name: "Archived")],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.daily, .regular, .archived])
+        #expect(presentation.sections.map(\.title) == ["Daily Routines", "On Track", "Archived"])
+        #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily", "Daily Done"], ["Weekly"], ["Archived"]])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2, 3])
+    }
+
+    @Test
     func iOSPresentationCanHideArchivedSection() {
         let presentation = HomeTaskListPresentation.iOS(
             filtering: makeFiltering(),
@@ -325,6 +346,32 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [pinnedID, regularID, archivedID])
         #expect(presentation.visibleTaskCount == 3)
         #expect(presentation.emptyState == nil)
+    }
+
+    @Test
+    func sidebarPresentationSeparatesDailyRoutinesAndBuildsMoveContext() {
+        let dailyID = UUID()
+        let regularID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+                TestTaskDisplay(taskID: dailyID, name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: 0)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.daily, .regular])
+        #expect(presentation.sections.map(\.title) == ["Daily Routines", "On Track"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1])
+        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["daily", "onTrack"])
+        #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [dailyID, regularID])
     }
 
     @Test

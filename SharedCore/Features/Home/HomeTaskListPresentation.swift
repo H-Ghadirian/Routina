@@ -7,9 +7,16 @@ struct HomeTaskListMoveContext: Equatable {
 
 enum HomeTaskListPresentationSectionKind: String, Equatable {
     case pinned
+    case daily
     case regular
     case away
     case archived
+}
+
+extension HomeTaskListPresentationSectionKind {
+    var isCollapsible: Bool {
+        self == .daily || self == .archived
+    }
 }
 
 struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiable {
@@ -60,8 +67,10 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             archivedDisplays: visibleArchivedDisplays
         )
         let pinnedTaskIDs = Set(pinnedTasks.map(\.taskID))
+        let unpinnedRoutineDisplays = routineDisplays.filter { !pinnedTaskIDs.contains($0.taskID) }
+        let dailyTasks = filtering.filteredDailyRoutineTasks(unpinnedRoutineDisplays)
         let regularSections = filtering.groupedRoutineSections(
-            from: routineDisplays.filter { !pinnedTaskIDs.contains($0.taskID) }
+            from: unpinnedRoutineDisplays.filter { !$0.isDailyRoutine }
         )
         let awayTasks = filtering.filteredAwayTasks(
             awayRoutineDisplays.filter { !pinnedTaskIDs.contains($0.taskID) }
@@ -87,6 +96,20 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 )
             )
             offset += pinnedTasks.count
+        }
+
+        if !dailyTasks.isEmpty {
+            presentationSections.append(
+                HomeTaskListPresentationSection(
+                    kind: .daily,
+                    title: "Daily Routines",
+                    tasks: dailyTasks,
+                    rowNumberOffset: offset,
+                    includeMarkDone: true,
+                    moveContext: nil
+                )
+            )
+            offset += dailyTasks.count
         }
 
         presentationSections += regularSections.map { section in
@@ -154,8 +177,10 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             awayDisplays: awayRoutineDisplays,
             archivedDisplays: visibleArchivedDisplays
         )
+        let unpinnedActiveDisplays = (routineDisplays + awayRoutineDisplays).filter { !$0.isPinned }
+        let dailyTasks = filtering.filteredDailyRoutineTasks(unpinnedActiveDisplays)
         let regularSections = filtering.groupedRoutineSections(
-            from: (routineDisplays + awayRoutineDisplays).filter { !$0.isPinned }
+            from: unpinnedActiveDisplays.filter { !$0.isDailyRoutine }
         )
         let archivedTasks = filtering.filteredArchivedTasks(visibleArchivedDisplays, includePinned: false)
 
@@ -177,6 +202,23 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 )
             )
             offset += pinnedTasks.count
+        }
+
+        if !dailyTasks.isEmpty {
+            presentationSections.append(
+                HomeTaskListPresentationSection(
+                    kind: .daily,
+                    title: "Daily Routines",
+                    tasks: dailyTasks,
+                    rowNumberOffset: offset,
+                    includeMarkDone: true,
+                    moveContext: HomeTaskListMoveContext(
+                        sectionKey: HomeTaskListFiltering<Display>.dailyManualOrderSectionKey,
+                        orderedTaskIDs: dailyTasks.map(\.taskID)
+                    )
+                )
+            )
+            offset += dailyTasks.count
         }
 
         for section in regularSections {

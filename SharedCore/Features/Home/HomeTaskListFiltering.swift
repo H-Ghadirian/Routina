@@ -5,6 +5,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         HomeTaskListSorter<Display>.pinnedManualOrderSectionKey
     }
 
+    static var dailyManualOrderSectionKey: String {
+        HomeTaskListSorter<Display>.dailyManualOrderSectionKey
+    }
+
     static var archivedManualOrderSectionKey: String {
         HomeTaskListSorter<Display>.archivedManualOrderSectionKey
     }
@@ -84,6 +88,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
 
     func groupedRoutineSections(from displays: [Display]) -> [HomeTaskListSection<Display>] {
         sectionBuilder.groupedRoutineSections(from: filteredTasks(displays))
+    }
+
+    func filteredDailyRoutineTasks(_ displays: [Display]) -> [Display] {
+        filteredTasks(displays).filter(\.isDailyRoutine)
     }
 
     func deadlineBasedSections(from tasks: [Display]) -> [HomeTaskListSection<Display>] {

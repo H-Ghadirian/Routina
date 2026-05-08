@@ -171,7 +171,7 @@ extension HomeTCAView {
         allowsPlannerDrag: Bool
     ) -> some View {
         let visibleTaskIDs = presentation.sections.flatMap { section in
-            section.tasks.map(\.taskID)
+            taskListSectionIsExpanded(section) ? section.tasks.map(\.taskID) : []
         }
 
         return ScrollViewReader { scrollProxy in
@@ -179,19 +179,18 @@ extension HomeTCAView {
                 LazyVStack(alignment: .leading, spacing: 8, pinnedViews: []) {
                     ForEach(presentation.sections) { section in
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(section.title)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 10)
+                            taskListSectionHeader(for: section)
 
-                            ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                                macTaskSourceRow(
-                                    for: task,
-                                    rowNumber: section.rowNumber(forTaskAt: index),
-                                    includeMarkDone: section.includeMarkDone,
-                                    moveContext: section.moveContext,
-                                    allowsPlannerDrag: allowsPlannerDrag
-                                )
+                            if taskListSectionIsExpanded(section) {
+                                ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                                    macTaskSourceRow(
+                                        for: task,
+                                        rowNumber: visibleRowNumber(for: section, taskIndex: index, in: presentation),
+                                        includeMarkDone: section.includeMarkDone,
+                                        moveContext: section.moveContext,
+                                        allowsPlannerDrag: allowsPlannerDrag
+                                    )
+                                }
                             }
                         }
                     }
@@ -227,6 +226,89 @@ extension HomeTCAView {
                 )
             }
         }
+    }
+
+    @ViewBuilder
+    private func taskListSectionHeader(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        if section.kind.isCollapsible {
+            Button {
+                toggleTaskListSection(section)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .rotationEffect(.degrees(taskListSectionIsExpanded(section) ? 90 : 0))
+
+                    Text(section.title)
+
+                    Text("\(section.tasks.count)")
+                        .font(.caption2.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(.tertiary)
+
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .accessibilityLabel(section.title)
+            .accessibilityValue(taskListSectionIsExpanded(section) ? "Expanded" : "Collapsed")
+        } else {
+            Text(section.title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+        }
+    }
+
+    private func taskListSectionIsExpanded(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> Bool {
+        switch section.kind {
+        case .daily:
+            return !isDailyRoutinesSectionCollapsed
+        case .archived:
+            return !isArchivedSectionCollapsed
+        case .pinned, .regular, .away:
+            return true
+        }
+    }
+
+    private func toggleTaskListSection(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) {
+        guard section.kind.isCollapsible else { return }
+        withAnimation(.snappy(duration: 0.2)) {
+            switch section.kind {
+            case .daily:
+                isDailyRoutinesSectionCollapsed.toggle()
+            case .archived:
+                isArchivedSectionCollapsed.toggle()
+            case .pinned, .regular, .away:
+                break
+            }
+        }
+    }
+
+    private func visibleRowNumber(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        taskIndex: Int,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    ) -> Int {
+        var offset = 0
+        for currentSection in presentation.sections {
+            if currentSection.id == section.id {
+                return offset + taskIndex + 1
+            }
+            if taskListSectionIsExpanded(currentSection) {
+                offset += currentSection.tasks.count
+            }
+        }
+        return taskIndex + 1
     }
 
     private func macDayPlanUnplannedCompletedTaskList(for date: Date) -> some View {
