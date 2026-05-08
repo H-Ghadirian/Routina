@@ -458,88 +458,16 @@ extension TaskDetailFeature.State {
     // MARK: - Completion button title
 
     var completionButtonTitle: String {
-        let selectedDate = resolvedSelectedDate
-        let isDone = isSelectedDateTerminal
-        let isFuture = isSelectedDateInFuture
-        let isPaused = task.isArchived()
-
-        if !task.isChecklistDriven && isDone {
-            return "Undo"
-        }
-        if task.isCanceledOneOff {
-            return "Select the canceled date to undo"
-        }
-        if task.isCompletedOneOff {
-            return "Select the completion date to undo"
-        }
-        if isPaused {
-            return "Resume the routine to mark dates done"
-        }
-        if shouldUseBulkConfirmAsPrimaryAction {
-            return bulkConfirmAssumedDaysTitle
-        }
-        if task.isSoftIntervalRoutine && task.isOngoing {
-            return "Finish ongoing"
-        }
-        if isSelectedDateAssumedDone {
-            if Calendar.current.isDateInToday(selectedDate) {
-                return "Confirm done"
-            }
-            return "Confirm for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
-        }
-        if task.isOneOffTask {
-            if Calendar.current.isDateInToday(selectedDate) {
-                return "Done"
-            }
-            return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
-        }
-        if task.isChecklistCompletionRoutine && !Calendar.current.isDateInToday(selectedDate) {
-            return "Checklist progress can only be updated today"
-        }
-        if task.isChecklistCompletionRoutine {
-            return "Complete checklist items below"
-        }
-        if task.isChecklistDriven && !Calendar.current.isDateInToday(selectedDate) {
-            return "Checklist routines can only be updated today"
-        }
-        if task.isChecklistDriven {
-            let dueItems = task.dueChecklistItems(referenceDate: Date())
-            if dueItems.isEmpty {
-                return "No due items right now"
-            }
-            if dueItems.count == 1, let title = dueItems.first?.title {
-                return "Buy: \(title)"
-            }
-            return "Buy \(dueItems.count) due items"
-        }
-        if task.hasSequentialSteps && !Calendar.current.isDateInToday(selectedDate) {
-            return "Step routines can only be progressed today"
-        }
-        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
-            if let completionTargetDate {
-                if Calendar.current.isDateInToday(completionTargetDate) {
-                    return "Done at \(completionTargetDate.formatted(date: .omitted, time: .shortened))"
-                }
-                return "Done for \(completionTargetDate.formatted(date: .abbreviated, time: .shortened))"
-            }
-
-            if Calendar.current.isDateInToday(selectedDate) {
-                let nextDue = RoutineDateMath.dueDate(for: task, referenceDate: Date())
-                return "Available \(nextDue.formatted(date: .abbreviated, time: .shortened))"
-            }
-
-            return "No occurrence on \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
-        }
-        if isFuture {
-            return "Future dates can't be marked done"
-        }
-        if let nextStepTitle = task.nextStepTitle {
-            return "Complete: \(nextStepTitle)"
-        }
-        if Calendar.current.isDateInToday(selectedDate) {
-            return "Done"
-        }
-        return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
+        TaskDetailCompletionButtonTitlePresentation(
+            task: task,
+            selectedDate: resolvedSelectedDate,
+            isSelectedDateTerminal: isSelectedDateTerminal,
+            isSelectedDateInFuture: isSelectedDateInFuture,
+            shouldUseBulkConfirmAsPrimaryAction: shouldUseBulkConfirmAsPrimaryAction,
+            bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
+            isSelectedDateAssumedDone: isSelectedDateAssumedDone,
+            completionTargetDate: completionTargetDate
+        ).title
     }
 
     var createdAtBadgeValue: String? {

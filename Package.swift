@@ -301,6 +301,7 @@ let package = Package(
                 "SharedCore/Features/Settings/SettingsTagPersistenceSupport.swift",
                 "SharedCore/Features/TaskDetail/RoutinePauseArchivePresentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailBasicEditActionHandler.swift",
+                "SharedCore/Features/TaskDetail/TaskDetailCompletionButtonTitlePresentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailCompletionLogActionHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailDateMetadataPresentation.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailDialogLifecycleActionHandler.swift",
