@@ -129,6 +129,9 @@ enum RoutineLogHistory {
             return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: completedAt)
         }
         if hasMatchingLog {
+            if BatteryRoutineService.dismissCompletedLowBatteryPrompt(for: task, at: completedAt) {
+                try context.save()
+            }
             return (task, .ignoredAlreadyCompletedToday)
         }
 
@@ -150,6 +153,7 @@ enum RoutineLogHistory {
 
         case .completedRoutine:
             context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
+            _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(for: task, at: completedAt)
             try context.save()
             return (task, result)
         }

@@ -512,8 +512,11 @@ struct TaskDetailFeature: Reducer {
                 referenceDate: now
             )
             let advanceResult = state.task.advance(completedAt: completionDate, calendar: calendar)
-            refreshTaskView(&state)
             if case .completedRoutine = advanceResult {
+                _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(
+                    for: state.task,
+                    at: completionDate
+                )
                 upsertLocalLog(at: completionDate, in: &state)
                 trackPendingLocalCompletion(at: completionDate, in: &state)
                 appendLocalTodoStateChange(
@@ -522,6 +525,7 @@ struct TaskDetailFeature: Reducer {
                     newStateTitle: TodoState.done.displayTitle
                 )
             }
+            refreshTaskView(&state)
             updateDerivedState(&state)
             return handleMarkAsDone(
                 taskID: state.task.id,

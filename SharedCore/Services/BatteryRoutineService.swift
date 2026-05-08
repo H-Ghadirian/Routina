@@ -38,6 +38,10 @@ enum BatteryRoutineDeviceKind: String, CaseIterable, Sendable {
     case iPad
     case appleWatch
 
+    static func isManagedRoutineID(_ id: UUID) -> Bool {
+        allCases.contains { $0.routineID == id }
+    }
+
     var routineID: UUID {
         switch self {
         case .mac:
@@ -103,14 +107,34 @@ enum BatteryRoutineService {
         }
 
         if isLow {
+            guard !isDismissedCurrentLowBatteryEpisode(task, at: snapshot.capturedAt) else {
+                if didChange {
+                    saveAndNotify(context)
+                }
+                return
+            }
             didChange = applyLowBatteryState(to: task, at: snapshot.capturedAt) || didChange
         } else {
             didChange = clearLowBatteryState(from: task) || didChange
+            didChange = clearLowBatteryDismissal(from: task) || didChange
         }
 
         if didChange {
             saveAndNotify(context)
         }
+    }
+
+    static func dismissCompletedLowBatteryPrompt(
+        for task: RoutineTask,
+        at date: Date
+    ) -> Bool {
+        guard BatteryRoutineDeviceKind.isManagedRoutineID(task.id) else { return false }
+        var didChange = clearLowBatteryState(from: task)
+        if task.lastDone == nil {
+            task.lastDone = date
+            didChange = true
+        }
+        return didChange
     }
 
     @MainActor
@@ -234,6 +258,31 @@ enum BatteryRoutineService {
             didChange = true
         }
         return didChange
+    }
+
+    private static func clearLowBatteryDismissal(from task: RoutineTask) -> Bool {
+        guard task.lastDone != nil else { return false }
+        task.lastDone = nil
+        return true
+    }
+
+    private static func isDismissedCurrentLowBatteryEpisode(
+        _ task: RoutineTask,
+        at date: Date
+    ) -> Bool {
+        guard !hasLowBatteryState(task),
+              let lastDone = task.lastDone else {
+            return false
+        }
+        return Calendar.current.isDate(lastDone, inSameDayAs: date)
+    }
+
+    private static func hasLowBatteryState(_ task: RoutineTask) -> Bool {
+        task.priority == .urgent
+            || task.importance == .level4
+            || task.urgency == .level4
+            || task.color == .red
+            || task.pinnedAt != nil
     }
 
     @MainActor
