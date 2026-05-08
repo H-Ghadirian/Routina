@@ -196,6 +196,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeFeatureAddRoutineActionHandler.swift",
                 "SharedCore/Features/Home/HomeAddRoutineSupport.swift",
                 "SharedCore/Features/Home/HomeAdvancedQueryInputSupport.swift",
+                "SharedCore/Features/Home/HomeAdvancedQuerySuggestionSelectionSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureAddRoutinePresentationRouter.swift",
                 "SharedCore/Features/Home/HomeDeduplicationSupport.swift",
                 "SharedCore/Features/Home/HomeDetailSelectionSupport.swift",

@@ -73,6 +73,28 @@ struct HomeFilterEditorTests {
     }
 
     @Test
+    func advancedQueryInputDoesNotCapContextualValuePrefixMatchesAtEight() {
+        let state = HomeAdvancedQueryInputState(
+            query: "tag:f",
+            options: HomeAdvancedQueryOptions(
+                tags: [
+                    "Focus 1",
+                    "Focus 2",
+                    "Focus 3",
+                    "Focus 4",
+                    "Focus 5",
+                    "Focus 6",
+                    "Focus 7",
+                    "Focus 8",
+                    "Focus 9"
+                ]
+            )
+        )
+
+        #expect(state.suggestions.map(\.token).count == 9)
+    }
+
+    @Test
     func advancedQueryInputSuggestsOperatorsAfterCommittedToken() {
         let state = HomeAdvancedQueryInputState(query: "pressure:>low ")
 

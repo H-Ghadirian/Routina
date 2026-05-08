@@ -13,34 +13,17 @@ struct HomeAdvancedQueryInputState: Equatable {
     }
 
     var suggestions: [HomeAdvancedQuerySuggestion] {
-        let rawDraft = draft
-        let normalizedDraft = rawDraft.normalizedAdvancedQueryToken
-        let candidates = suggestionCandidates
-
-        guard !normalizedDraft.isEmpty else {
-            return candidates
-        }
-
-        let exactPrefixMatches = candidates.filter {
-            $0.matchesPrefix(rawDraft)
-        }
-        if !exactPrefixMatches.isEmpty {
-            return Array(exactPrefixMatches.prefix(candidates.isContextualValueList ? candidates.count : 8))
-        }
-
-        let fieldScopedMatches = candidates.filter {
-            $0.searchText.contains(normalizedDraft)
-        }
-        return Array(fieldScopedMatches.prefix(8))
+        HomeAdvancedQuerySuggestionSelectionSupport.suggestions(
+            draft: draft,
+            candidates: suggestionCandidates
+        )
     }
 
     var primarySuggestion: HomeAdvancedQuerySuggestion? {
-        suggestions.first { suggestion in
-            let normalizedDraft = draft.normalizedAdvancedQueryToken
-            return !normalizedDraft.isEmpty
-                && suggestion.insertionToken.normalizedAdvancedQueryToken.hasPrefix(normalizedDraft)
-                && suggestion.insertionToken.normalizedAdvancedQueryToken != normalizedDraft
-        }
+        HomeAdvancedQuerySuggestionSelectionSupport.primarySuggestion(
+            draft: draft,
+            suggestions: suggestions
+        )
     }
 
     var primaryGhostSuffix: String? {
@@ -231,11 +214,11 @@ struct HomeAdvancedQuerySuggestion: Identifiable, Equatable {
         kind == .value || kind == .conjunction
     }
 
-    fileprivate var searchText: String {
+    var searchText: String {
         "\(token) \(insertionToken) \(description)".normalizedAdvancedQueryToken
     }
 
-    fileprivate func matchesPrefix(_ draft: String) -> Bool {
+    func matchesPrefix(_ draft: String) -> Bool {
         let normalizedDraft = draft.normalizedAdvancedQueryToken
         let normalizedToken = token.normalizedAdvancedQueryToken
         let normalizedInsertion = insertionToken.normalizedAdvancedQueryToken
@@ -248,7 +231,7 @@ struct HomeAdvancedQuerySuggestion: Identifiable, Equatable {
             || normalizedInsertion.hasSuffix("<=" + normalizedDraft)
     }
 
-    fileprivate func matchesExactDraft(_ draft: String) -> Bool {
+    func matchesExactDraft(_ draft: String) -> Bool {
         let normalizedDraft = draft.normalizedAdvancedQueryToken
         return token.normalizedAdvancedQueryToken == normalizedDraft
             || insertionToken.normalizedAdvancedQueryToken == normalizedDraft
@@ -546,12 +529,6 @@ private extension Array where Element == (title: String, queryValue: String) {
         return filter { value in
             seen.insert(value.queryValue.normalizedAdvancedQueryToken).inserted
         }
-    }
-}
-
-private extension Array where Element == HomeAdvancedQuerySuggestion {
-    var isContextualValueList: Bool {
-        !isEmpty && allSatisfy { $0.kind == .value }
     }
 }
 
