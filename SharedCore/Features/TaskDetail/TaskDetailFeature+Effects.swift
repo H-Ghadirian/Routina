@@ -384,6 +384,7 @@ extension TaskDetailFeature {
                 let previousRecurrenceRule = task.recurrenceRule
                 let previousRelationships = task.relationships
                 let previousActualDurationMinutes = task.actualDurationMinutes
+                let previousCreatedAt = task.createdAt
                 task.name = name
                 task.emoji = emoji
                 task.notes = notes
@@ -430,6 +431,7 @@ extension TaskDetailFeature {
                 task.actualDurationMinutes = scheduleMode == .oneOff
                     ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
                     : nil
+                task.createdAt = previousCreatedAt
                 appendRelationshipChangeEntries(
                     to: task,
                     previousRelationships: previousRelationships,
@@ -450,8 +452,8 @@ extension TaskDetailFeature {
                     task.interval = 1
                 } else if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
                     task.scheduleAnchor = now
-                } else if task.scheduleAnchor == nil {
-                    task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: now)
+                } else if task.scheduleAnchor == nil, let existingAnchor = task.lastDone ?? task.createdAt {
+                    task.scheduleAnchor = existingAnchor
                 }
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
