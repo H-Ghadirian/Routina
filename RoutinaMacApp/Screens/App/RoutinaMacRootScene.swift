@@ -6,18 +6,18 @@ import WidgetKit
 struct RoutinaMacRootScene: Scene {
     private let homeRoot: AnyView
     private let settingsRoot: AnyView
-    private let persistence: PersistenceController
     private let focusTimerStatusStore: RoutinaMacFocusTimerStatusStore
+    private let widgetRefreshScheduler: RoutinaMacWidgetRefreshScheduler
 
     @MainActor
     init() {
         let persistence = RoutinaAppSceneBootstrap.preparePersistence()
         let focusTimerStatusStore = RoutinaMacFocusTimerStatusStore(persistence: persistence)
         let homeRoot = RoutinaMacSceneFactory.makeHomeRoot(persistence: persistence)
-        self.persistence = persistence
         self.homeRoot = homeRoot
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
         self.focusTimerStatusStore = focusTimerStatusStore
+        self.widgetRefreshScheduler = RoutinaMacWidgetRefreshScheduler(persistence: persistence)
         RoutinaMacFocusTimerStatusBarController.shared.configure(store: focusTimerStatusStore)
         RoutinaMacWindowRouter.shared.installFallbackHomeWindowOpener {
             RoutinaMacFallbackHomeWindowPresenter.shared.showHomeWindow(
@@ -38,12 +38,12 @@ struct RoutinaMacRootScene: Scene {
                     DispatchQueue.main.async {
                         MacMenuCleanup.removeUnneededMenus()
                     }
-                    refreshWidgetStats()
+                    widgetRefreshScheduler.schedule(delayNanoseconds: 300_000_000)
                     focusTimerStatusStore.refresh()
                     activateHomeWindow()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-                    refreshWidgetStats()
+                    widgetRefreshScheduler.schedule()
                     focusTimerStatusStore.refresh()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
@@ -67,15 +67,33 @@ struct RoutinaMacRootScene: Scene {
     }
 
     @MainActor
-    private func refreshWidgetStats() {
+    private func activateHomeWindow() {
+        RoutinaMacWindowRouter.shared.activateHomeWindow()
+    }
+}
+
+@MainActor
+private final class RoutinaMacWidgetRefreshScheduler {
+    private let persistence: PersistenceController
+    private var refreshTask: Task<Void, Never>?
+
+    init(persistence: PersistenceController) {
+        self.persistence = persistence
+    }
+
+    func schedule(delayNanoseconds: UInt64 = 150_000_000) {
+        refreshTask?.cancel()
+        refreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+            guard !Task.isCancelled else { return }
+            self?.refreshNow()
+        }
+    }
+
+    private func refreshNow() {
         WidgetStatsService.refresh(using: persistence.container)
         FocusTimerWidgetService.refresh(using: persistence.container)
         WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    @MainActor
-    private func activateHomeWindow() {
-        RoutinaMacWindowRouter.shared.activateHomeWindow()
     }
 }
 

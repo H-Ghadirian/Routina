@@ -24,9 +24,12 @@ public enum FocusTimerWidgetService {
     @MainActor
     public static func refresh(using context: ModelContext) {
         do {
-            let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-            let sessions = try context.fetch(FetchDescriptor<FocusSession>())
-            let data = FocusTimerWidgetDataComputer.compute(tasks: tasks, sessions: sessions)
+            let session = try activeFocusSession(in: context)
+            let activeTask = try session.flatMap { try task(for: $0.taskID, in: context) }
+            let data = FocusTimerWidgetDataComputer.compute(
+                tasks: activeTask.map { [$0] } ?? [],
+                sessions: session.map { [$0] } ?? []
+            )
             write(data)
         } catch {
             NSLog("FocusTimerWidgetService: failed to compute focus timer — \(error)")
@@ -51,5 +54,29 @@ public enum FocusTimerWidgetService {
         guard let url = fileURL else { return }
         guard let encoded = try? JSONEncoder().encode(data) else { return }
         try? encoded.write(to: url, options: .atomic)
+    }
+
+    @MainActor
+    private static func activeFocusSession(in context: ModelContext) throws -> FocusSession? {
+        let activeSessionPredicate = #Predicate<FocusSession> { session in
+            session.completedAt == nil && session.abandonedAt == nil
+        }
+        var descriptor = FetchDescriptor<FocusSession>(
+            predicate: activeSessionPredicate,
+            sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+
+    @MainActor
+    private static func task(for taskID: UUID, in context: ModelContext) throws -> RoutineTask? {
+        var descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 }

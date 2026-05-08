@@ -19,9 +19,14 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
 
     func refresh() {
         do {
-            status = try Self.activeStatus(in: persistence.container.mainContext)
+            let refreshedStatus = try Self.activeStatus(in: persistence.container.mainContext)
+            if refreshedStatus != status {
+                status = refreshedStatus
+            }
         } catch {
-            status = .inactive
+            if status != .inactive {
+                status = .inactive
+            }
             NSLog("RoutinaMacFocusTimerStatusStore: failed to refresh focus timer status: \(error)")
         }
     }
@@ -43,43 +48,66 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
     }
 
     private static func activeTaskStatus(in context: ModelContext) throws -> RoutinaMacFocusTimerStatus? {
-        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let sessions = try context.fetch(FetchDescriptor<FocusSession>())
-        guard let session = sessions
-            .filter({ $0.state == .active && $0.startedAt != nil })
-            .sorted(by: { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) })
-            .first,
-            let startedAt = session.startedAt
-        else {
+        let activeSessionPredicate = #Predicate<FocusSession> { session in
+            session.completedAt == nil && session.abandonedAt == nil
+        }
+        var sessionDescriptor = FetchDescriptor<FocusSession>(
+            predicate: activeSessionPredicate,
+            sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+        )
+        sessionDescriptor.fetchLimit = 1
+
+        guard let session = try context.fetch(sessionDescriptor).first,
+              let startedAt = session.startedAt else {
             return nil
         }
+
+        let taskID = session.taskID
+        var taskDescriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+        taskDescriptor.fetchLimit = 1
+        let task = try context.fetch(taskDescriptor).first
 
         return RoutinaMacFocusTimerStatus(
             id: session.id,
             targetID: session.taskID,
             kind: .task,
-            title: normalizedTitle(tasks.first { $0.id == session.taskID }?.name, fallback: "Task focus"),
+            title: normalizedTitle(task?.name, fallback: "Task focus"),
             startedAt: startedAt,
             plannedDurationSeconds: session.plannedDurationSeconds
         )
     }
 
     private static func activeSprintStatus(in context: ModelContext) throws -> RoutinaMacFocusTimerStatus? {
-        let sprints = try context.fetch(FetchDescriptor<BoardSprintRecord>())
-        let sessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
-        guard let session = sessions
-            .filter({ $0.stoppedAt == nil })
-            .sorted(by: { $0.startedAt > $1.startedAt })
-            .first
-        else {
+        var sessionDescriptor = FetchDescriptor<SprintFocusSessionRecord>(
+            predicate: #Predicate { session in
+                session.stoppedAt == nil
+            },
+            sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+        )
+        sessionDescriptor.fetchLimit = 1
+
+        guard let session = try context.fetch(sessionDescriptor).first else {
             return nil
         }
+
+        let sprintID = session.sprintID
+        var sprintDescriptor = FetchDescriptor<BoardSprintRecord>(
+            predicate: #Predicate { sprint in
+                sprint.id == sprintID
+            }
+        )
+        sprintDescriptor.fetchLimit = 1
+        let sprint = try context.fetch(sprintDescriptor).first
 
         return RoutinaMacFocusTimerStatus(
             id: session.id,
             targetID: session.sprintID,
             kind: .sprint,
-            title: normalizedTitle(sprints.first { $0.id == session.sprintID }?.title, fallback: "Sprint focus"),
+            title: normalizedTitle(sprint?.title, fallback: "Sprint focus"),
             startedAt: session.startedAt,
             plannedDurationSeconds: 0
         )

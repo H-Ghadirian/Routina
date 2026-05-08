@@ -11,6 +11,8 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
     private var statusCancellable: AnyCancellable?
     private var displayTimer: Timer?
     private var currentStatus: RoutinaMacFocusTimerStatus = .inactive
+    private var currentMenuKey: RoutinaMacFocusTimerMenuKey?
+    private weak var runningTimeMenuItem: NSMenuItem?
 
     private override init() {
         super.init()
@@ -70,12 +72,18 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
             ? "\(status.kind?.displayTitle ?? "Focus Timer"): \(status.shortTitle)"
             : "Routina"
 
-        statusItem.length = NSStatusItem.variableLength
-        statusItem.menu = makeMenu(status: status, now: now)
+        let menuKey = RoutinaMacFocusTimerMenuKey(status: status)
+        if menuKey != currentMenuKey {
+            statusItem.menu = makeMenu(status: status, now: now)
+            currentMenuKey = menuKey
+        } else if status.isActive {
+            runningTimeMenuItem?.title = "\(status.menuBarTimeText(at: now)) \(status.menuBarModeText(at: now))"
+        }
     }
 
     private func makeMenu(status: RoutinaMacFocusTimerStatus, now: Date) -> NSMenu {
         let menu = NSMenu()
+        runningTimeMenuItem = nil
 
         if status.isActive {
             let openTitle = status.kind == .sprint ? "Open Sprint" : "Open Task Details"
@@ -95,6 +103,7 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
             )
             timeItem.isEnabled = false
             menu.addItem(timeItem)
+            runningTimeMenuItem = timeItem
             menu.addItem(.separator())
         }
 
@@ -141,5 +150,21 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
 
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
+    }
+}
+
+private struct RoutinaMacFocusTimerMenuKey: Equatable {
+    var id: UUID?
+    var targetID: UUID?
+    var kind: RoutinaMacFocusTimerStatus.Kind?
+    var title: String
+    var isActive: Bool
+
+    init(status: RoutinaMacFocusTimerStatus) {
+        id = status.id
+        targetID = status.targetID
+        kind = status.kind
+        title = status.title
+        isActive = status.isActive
     }
 }

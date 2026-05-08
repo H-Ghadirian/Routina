@@ -7,10 +7,9 @@ struct TaskDetailTCAView: View {
     var showsPrincipalToolbarTitle = true
     let externalBlockingFocusTitle: String?
     @Dependency(\.appSettingsClient) private var appSettingsClient
-    @Dependency(\.sprintBoardClient) private var sprintBoardClient
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
-    @Query private var focusSessionTasks: [RoutineTask]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = false
@@ -28,6 +27,7 @@ struct TaskDetailTCAView: View {
     @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
     @State private var referenceDate = Date()
+    @State private var activeBlockingTask: RoutineTask?
     @State private var sprintBlockingFocusTitle: String?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
@@ -110,11 +110,11 @@ struct TaskDetailTCAView: View {
                 )
             }
             .task {
-                await refreshSprintFocusBlock()
+                await refreshFocusBlockingContext()
             }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
                 Task {
-                    await refreshSprintFocusBlock()
+                    await refreshFocusBlockingContext()
                 }
             }
             .taskDetailDeleteConfirmationAlert(store: store)
@@ -126,6 +126,10 @@ struct TaskDetailTCAView: View {
             }
             .onChange(of: store.task.id) { _, _ in
                 referenceDate = Date()
+                activeBlockingTask = nil
+                Task {
+                    await refreshFocusBlockingContext()
+                }
                 collapseDefaultSections()
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
             }
@@ -397,7 +401,7 @@ struct TaskDetailTCAView: View {
         TaskDetailTimeSpentHeaderBox(
             task: store.task,
             focusSessions: focusSessions,
-            allTasks: focusSessionTasks,
+            allTasks: focusSessionTaskCandidates,
             resetToken: taskTimeEntryResetToken,
             blockingFocusTitle: blockingFocusTitle,
             isExpanded: $isTimeSectionExpanded,
@@ -446,7 +450,7 @@ struct TaskDetailTCAView: View {
         TaskDetailFocusSessionSectionView(
             task: store.task,
             sessions: focusSessions,
-            allTasks: focusSessionTasks,
+            allTasks: focusSessionTaskCandidates,
             blockingFocusTitle: blockingFocusTitle,
             onCompletedDuration: addCompletedFocusToTimeSpent
         )
@@ -477,15 +481,63 @@ struct TaskDetailTCAView: View {
     }
 
     @MainActor
-    private func refreshSprintFocusBlock() async {
+    private func refreshFocusBlockingContext() async {
+        refreshActiveBlockingTask()
+        refreshSprintFocusBlock()
+    }
+
+    private var focusSessionTaskCandidates: [RoutineTask] {
+        guard let activeBlockingTask,
+              activeBlockingTask.id != store.task.id else {
+            return [store.task]
+        }
+        return [store.task, activeBlockingTask]
+    }
+
+    @MainActor
+    private func refreshActiveBlockingTask() {
+        guard let activeTaskID = focusSessions.first(where: { session in
+            session.taskID != store.task.id
+                && session.completedAt == nil
+                && session.abandonedAt == nil
+        })?.taskID else {
+            activeBlockingTask = nil
+            return
+        }
+
         do {
-            let data = try await sprintBoardClient.load()
-            guard let session = data.activeFocusSession else {
+            var descriptor = TaskDetailFetchDescriptors.task(for: activeTaskID)
+            descriptor.fetchLimit = 1
+            activeBlockingTask = try modelContext.fetch(descriptor).first
+        } catch {
+            activeBlockingTask = nil
+        }
+    }
+
+    @MainActor
+    private func refreshSprintFocusBlock() {
+        do {
+            var sessionDescriptor = FetchDescriptor<SprintFocusSessionRecord>(
+                predicate: #Predicate { session in
+                    session.stoppedAt == nil
+                },
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
+            sessionDescriptor.fetchLimit = 1
+
+            guard let session = try modelContext.fetch(sessionDescriptor).first else {
                 sprintBlockingFocusTitle = nil
                 return
             }
 
-            sprintBlockingFocusTitle = data.sprints.first(where: { $0.id == session.sprintID })?.title ?? "a sprint"
+            let sprintID = session.sprintID
+            var sprintDescriptor = FetchDescriptor<BoardSprintRecord>(
+                predicate: #Predicate { sprint in
+                    sprint.id == sprintID
+                }
+            )
+            sprintDescriptor.fetchLimit = 1
+            sprintBlockingFocusTitle = try modelContext.fetch(sprintDescriptor).first?.title ?? "a sprint"
         } catch {
             sprintBlockingFocusTitle = nil
         }
@@ -865,7 +917,7 @@ struct TaskDetailTCAView: View {
 
     private func relatedTaskName(for change: RoutineTaskChangeLogEntry) -> String {
         guard let relatedTaskID = change.relatedTaskID else { return "task" }
-        return focusSessionTasks.first(where: { $0.id == relatedTaskID })?.name ?? "task"
+        return store.availableRelationshipTasks.first(where: { $0.id == relatedTaskID })?.displayName ?? "task"
     }
 
     private var relationshipsSection: some View {
