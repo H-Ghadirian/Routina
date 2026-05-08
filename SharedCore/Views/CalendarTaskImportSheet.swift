@@ -322,7 +322,7 @@ private struct CalendarTaskSuggestionRow: View {
 
             TextField("Task title", text: $suggestion.taskTitle)
                 .textFieldStyle(.roundedBorder)
-                .disabled(suggestion.reviewState != .pending)
+                .disabled(!isEditable)
 
             DatePicker(
                 "Deadline",
@@ -332,13 +332,13 @@ private struct CalendarTaskSuggestionRow: View {
                 ),
                 displayedComponents: suggestion.isAllDay ? [.date] : [.date, .hourAndMinute]
             )
-            .disabled(suggestion.reviewState != .pending)
+            .disabled(!isEditable)
 
             HStack {
                 Button("Skip") {
                     onSkip()
                 }
-                .disabled(suggestion.reviewState != .pending)
+                .disabled(!isEditable)
 
                 Spacer()
 
@@ -346,33 +346,38 @@ private struct CalendarTaskSuggestionRow: View {
                     onAdd()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(suggestion.reviewState != .pending || RoutineTask.trimmedName(suggestion.taskTitle) == nil)
+                .disabled(!CalendarTaskSuggestionRowPresentation.canAdd(suggestion))
             }
         }
         .padding(.vertical, 8)
     }
 
+    private var isEditable: Bool {
+        CalendarTaskSuggestionRowPresentation.isEditable(suggestion.reviewState)
+    }
+
     private var formattedEventDate: String {
-        if suggestion.isAllDay {
-            return suggestion.eventStartDate.formatted(date: .abbreviated, time: .omitted)
-        }
-        return suggestion.eventStartDate.formatted(date: .abbreviated, time: .shortened)
+        CalendarTaskSuggestionRowPresentation.formattedEventDate(for: suggestion)
     }
 
     @ViewBuilder
     private var statusLabel: some View {
-        switch suggestion.reviewState {
-        case .pending:
+        if let status = CalendarTaskSuggestionRowPresentation.status(for: suggestion.reviewState) {
+            Label(status.title, systemImage: status.systemImage)
+                .foregroundStyle(status.tint.color)
+        } else {
             EmptyView()
-        case .added:
-            Label("Added", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        case .skipped:
-            Label("Skipped", systemImage: "minus.circle")
-                .foregroundStyle(.secondary)
-        case .duplicate:
-            Label("Already added", systemImage: "checkmark.circle")
-                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private extension CalendarTaskSuggestionStatusPresentation.Tint {
+    var color: Color {
+        switch self {
+        case .success:
+            return .green
+        case .secondary:
+            return .secondary
         }
     }
 }

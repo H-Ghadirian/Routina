@@ -421,6 +421,7 @@ let package = Package(
                 "SharedCore/Views/StatsSummaryCardItemBuilder.swift",
                 "SharedCore/Views/SettingsQuickAddSyntaxViews.swift",
                 "SharedCore/Views/TaskRelationshipsEditor.swift",
+                "SharedCore/Views/CalendarTaskSuggestionRowPresentation.swift",
                 "SharedCore/Views/CalendarTaskImportSheet.swift",
                 "SharedCore/Views/DayPlan/DayPlanPlannerState.swift",
                 "SharedCore/Views/DayPlan/DayPlanSupport.swift",

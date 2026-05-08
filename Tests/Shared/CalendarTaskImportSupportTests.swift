@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -28,5 +29,47 @@ struct CalendarTaskImportSupportTests {
         #expect(CalendarTaskImportSupport.displayEmoji(for: "calendar.badge.plus") == CalendarTaskImportSupport.defaultTaskEmoji)
         #expect(CalendarTaskImportSupport.displayEmoji(for: " calendar.badge.plus ") == CalendarTaskImportSupport.defaultTaskEmoji)
         #expect(CalendarTaskImportSupport.displayEmoji(for: "✅") == "✅")
+    }
+
+    @Test
+    func suggestionRowPresentationMapsReviewStates() {
+        #expect(CalendarTaskSuggestionRowPresentation.status(for: .pending) == nil)
+        #expect(
+            CalendarTaskSuggestionRowPresentation.status(for: .added)
+                == CalendarTaskSuggestionStatusPresentation(
+                    title: "Added",
+                    systemImage: "checkmark.circle.fill",
+                    tint: .success
+                )
+        )
+        #expect(CalendarTaskSuggestionRowPresentation.status(for: .duplicate)?.title == "Already added")
+    }
+
+    @Test
+    func suggestionRowPresentationRequiresPendingTrimmedTitleToAdd() {
+        var suggestion = makeSuggestion(taskTitle: " Follow up ")
+        #expect(CalendarTaskSuggestionRowPresentation.canAdd(suggestion))
+
+        suggestion.reviewState = .skipped
+        #expect(CalendarTaskSuggestionRowPresentation.canAdd(suggestion) == false)
+    }
+
+    private func makeSuggestion(
+        taskTitle: String,
+        reviewState: CalendarTaskSuggestion.ReviewState = .pending
+    ) -> CalendarTaskSuggestion {
+        CalendarTaskSuggestion(
+            id: "event",
+            eventIdentifier: "event",
+            calendarIdentifier: "calendar",
+            calendarTitle: "Work",
+            eventTitle: "Follow up",
+            eventStartDate: Date(),
+            eventEndDate: Date(),
+            isAllDay: false,
+            taskTitle: taskTitle,
+            deadline: nil,
+            reviewState: reviewState
+        )
     }
 }
