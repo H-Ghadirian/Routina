@@ -240,6 +240,7 @@ let package = Package(
                 "SharedCore/Features/Home/StatsFeatureDerivedStateSupport.swift",
                 "SharedCore/Features/Home/StatsSummaryItemPresentation.swift",
                 "SharedCore/Features/Home/StatsTaskFilterResolver.swift",
+                "SharedCore/Features/Home/StatsTaskTypeMatrixFilterSupport.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadEffectFactory.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadHandler.swift",
                 "SharedCore/Features/Home/HomeFeatureTaskLoadQuery.swift",

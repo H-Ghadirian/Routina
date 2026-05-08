@@ -62,6 +62,38 @@ struct StatsFilterPresentationTests {
         #expect(data.tagSummaries.first?.colorHex == "#112233")
     }
 
+    @Test
+    func taskTypeMatrixFilterKeepsOnlyMatchingTodos() {
+        let routine = RoutineTask(
+            name: "Routine",
+            importance: .level4,
+            urgency: .level4
+        )
+        let matchingTodo = RoutineTask(
+            name: "Urgent todo",
+            importance: .level3,
+            urgency: .level4,
+            scheduleMode: .oneOff
+        )
+        let lowTodo = RoutineTask(
+            name: "Low todo",
+            importance: .level2,
+            urgency: .level4,
+            scheduleMode: .oneOff
+        )
+
+        let filtered = StatsTaskTypeMatrixFilterSupport.filteredTasks(
+            [routine, matchingTodo, lowTodo],
+            taskTypeFilter: .todos,
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(
+                importance: .level3,
+                urgency: .level3
+            )
+        )
+
+        #expect(filtered.map(\.name) == ["Urgent todo"])
+    }
+
     private func makePresentation(
         taskTypeFilter: StatsTaskTypeFilter = .all,
         advancedQuery: String = "",

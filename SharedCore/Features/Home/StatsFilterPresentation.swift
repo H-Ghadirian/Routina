@@ -144,21 +144,10 @@ struct StatsFilterPresentation {
     }
 
     private func tasksMatchingTaskTypeAndMatrixFilters(in tasks: [RoutineTask]) -> [RoutineTask] {
-        tasks.filter { task in
-            switch taskTypeFilter {
-            case .all:
-                return true
-            case .routines:
-                return !task.isOneOffTask
-            case .todos:
-                return task.isOneOffTask
-            }
-        }.filter { task in
-            HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
-                selectedImportanceUrgencyFilter,
-                importance: task.importance,
-                urgency: task.urgency
-            )
-        }
+        StatsTaskTypeMatrixFilterSupport.filteredTasks(
+            tasks,
+            taskTypeFilter: taskTypeFilter,
+            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
+        )
     }
 }
