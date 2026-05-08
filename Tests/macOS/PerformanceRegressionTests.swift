@@ -53,6 +53,20 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("log.kindRawValue == completedKindRawValue"))
     }
 
+    func testMacFocusToolbarShowsTimerWithoutResizingEverySecond() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Shared/RoutinaMacFocusTimerToolbarBadge.swift")
+
+        XCTAssertTrue(
+            source.contains("RoutinaMacFocusTimerToolbarTimeText(status: status)"),
+            "The active focus toolbar badge should show the live timer counter, not only a static focus label."
+        )
+        XCTAssertTrue(source.contains("status.menuBarTimeText(at: context.date)"))
+        XCTAssertTrue(
+            source.contains("Text(\"+00:00:00\")"),
+            "Reserve a stable counter width so second-by-second timer updates do not resize the toolbar item."
+        )
+    }
+
     func testStatsChartsOnlyUseNestedScrollingWhenChartNeedsOverflow() {
         XCTAssertFalse(
             StatsChartPresentation(selectedRange: .today, isCompact: false).usesHorizontalChartScroll

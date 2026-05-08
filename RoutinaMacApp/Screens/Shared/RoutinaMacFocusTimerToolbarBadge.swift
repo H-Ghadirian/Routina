@@ -61,9 +61,7 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
                         Image(systemName: status.kind?.systemImage ?? "timer")
                             .font(.caption.weight(.semibold))
 
-                        Text(status.toolbarBadgeTitle)
-                            .font(.caption.weight(.semibold))
-                            .lineLimit(1)
+                        RoutinaMacFocusTimerToolbarTimeText(status: status)
 
                         if showsTitle {
                             Text(status.shortTitle)
@@ -106,18 +104,31 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
     }
 }
 
-private extension RoutinaMacFocusTimerStatus {
-    var toolbarBadgeTitle: String {
-        switch kind {
-        case .sprint:
-            return "Sprint"
-        case .task:
-            return "Focus"
-        case nil:
-            return "Focus"
+private struct RoutinaMacFocusTimerToolbarTimeText: View {
+    let status: RoutinaMacFocusTimerStatus
+
+    var body: some View {
+        SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+            let timeText = status.menuBarTimeText(at: context.date)
+
+            ZStack(alignment: .trailing) {
+                Text("+00:00:00")
+                    .hidden()
+                    .accessibilityHidden(true)
+
+                Text(timeText)
+            }
+            .font(.caption.monospacedDigit().weight(.semibold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .transaction { transaction in
+                transaction.animation = nil
+            }
         }
     }
+}
 
+private extension RoutinaMacFocusTimerStatus {
     var tint: Color {
         switch kind {
         case .sprint:
