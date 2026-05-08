@@ -149,8 +149,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				RoutinaiOSDev-Info.plist,
-				RoutinaiOSProd-Info.plist,
+				"RoutinaiOSDev-Info.plist",
+				"RoutinaiOSProd-Info.plist",
 			);
 			target = 2A5A74BC2D7B92F600E91075 /* RoutinaiOSProd */;
 		};
@@ -158,8 +158,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				RoutinaiOSDev-Info.plist,
-				RoutinaiOSProd-Info.plist,
+				"RoutinaiOSDev-Info.plist",
+				"RoutinaiOSProd-Info.plist",
 			);
 			target = 3D1000402E70000100000001 /* RoutinaiOSDev */;
 		};

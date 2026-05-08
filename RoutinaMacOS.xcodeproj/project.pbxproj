@@ -100,14 +100,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2C0000202E60000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSProd" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				RoutinaMacOSDev-Info.plist,
-				RoutinaMacOSProd-Info.plist,
-			);
-			target = 2C0000012E60000100000001 /* RoutinaMacOSProd */;
-		};
 		2A5DD64C2F965A93009F0331 /* Exceptions for "RoutinaWidget" folder in "RoutinaWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -115,11 +107,19 @@
 			);
 			target = 2A5DD63B2F965A91009F0331 /* RoutinaWidgetExtension */;
 		};
+		2C0000202E60000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSProd" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"RoutinaMacOSDev-Info.plist",
+				"RoutinaMacOSProd-Info.plist",
+			);
+			target = 2C0000012E60000100000001 /* RoutinaMacOSProd */;
+		};
 		4E0000202E80000100000001 /* Exceptions for "macOSConfig" folder in "RoutinaMacOSDev" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				RoutinaMacOSDev-Info.plist,
-				RoutinaMacOSProd-Info.plist,
+				"RoutinaMacOSDev-Info.plist",
+				"RoutinaMacOSProd-Info.plist",
 			);
 			target = 4E0000012E80000100000001 /* RoutinaMacOSDev */;
 		};
