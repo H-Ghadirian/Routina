@@ -126,11 +126,12 @@ extension HomeTCAView {
     }
 
     var macVisibleTaskResultCount: Int {
-        macTaskListPresentation(
-            routineDisplays: store.routineDisplays,
-            awayRoutineDisplays: store.awayRoutineDisplays,
-            archivedRoutineDisplays: store.archivedRoutineDisplays
-        ).visibleTaskCount
+        taskListFiltering().sidebarVisibleTaskCount(
+            activeDisplays: store.routineDisplays,
+            awayDisplays: store.awayRoutineDisplays,
+            archivedDisplays: store.archivedRoutineDisplays,
+            showArchivedTasks: store.showArchivedTasks
+        )
     }
 
     func summarizedFilterLabels(from labels: [String], maxVisibleCount: Int) -> String {

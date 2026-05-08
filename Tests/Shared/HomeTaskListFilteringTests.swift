@@ -404,6 +404,61 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.isEmpty)
         #expect(presentation.visibleTaskCount == 0)
     }
+
+    @Test
+    func sidebarVisibleTaskCountMatchesPresentationWithoutBuildingSections() {
+        let filtering = makeFiltering(searchText: "match")
+        let activeDisplays = [
+            TestTaskDisplay(name: "match active", daysUntilDue: 4),
+            TestTaskDisplay(name: "match pinned", isPinned: true),
+            TestTaskDisplay(name: "hidden active")
+        ]
+        let awayDisplays = [
+            TestTaskDisplay(name: "match away", daysUntilDue: 4),
+            TestTaskDisplay(name: "hidden away")
+        ]
+        let archivedDisplays = [
+            TestTaskDisplay(name: "match archived"),
+            TestTaskDisplay(name: "match archived pinned", isPinned: true),
+            TestTaskDisplay(name: "hidden archived")
+        ]
+
+        let visiblePresentation = HomeTaskListPresentation.sidebar(
+            filtering: filtering,
+            routineDisplays: activeDisplays,
+            awayRoutineDisplays: awayDisplays,
+            archivedRoutineDisplays: archivedDisplays,
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+        let hiddenArchivedPresentation = HomeTaskListPresentation.sidebar(
+            filtering: filtering,
+            routineDisplays: activeDisplays,
+            awayRoutineDisplays: awayDisplays,
+            archivedRoutineDisplays: archivedDisplays,
+            showArchivedTasks: false,
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(filtering.sidebarVisibleTaskCount(
+            activeDisplays: activeDisplays,
+            awayDisplays: awayDisplays,
+            archivedDisplays: archivedDisplays
+        ) == visiblePresentation.visibleTaskCount)
+        #expect(filtering.sidebarVisibleTaskCount(
+            activeDisplays: activeDisplays,
+            awayDisplays: awayDisplays,
+            archivedDisplays: archivedDisplays,
+            showArchivedTasks: false
+        ) == hiddenArchivedPresentation.visibleTaskCount)
+    }
 }
 
 private func makeFiltering(

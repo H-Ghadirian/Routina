@@ -86,6 +86,30 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         return (activePinned + archivedPinned).sorted(by: sorter.pinnedTaskSort)
     }
 
+    func sidebarVisibleTaskCount(
+        activeDisplays: [Display],
+        awayDisplays: [Display],
+        archivedDisplays: [Display],
+        showArchivedTasks: Bool = true
+    ) -> Int {
+        let activeDisplays = activeDisplays + awayDisplays
+        let visibleArchivedDisplays = showArchivedTasks ? archivedDisplays : []
+        let activePinnedCount = activeDisplays.count { task in
+            task.isPinned && predicate.matchesVisibleTask(task)
+        }
+        let activeUnpinnedCount = activeDisplays.count { task in
+            !task.isPinned && predicate.matchesVisibleTask(task)
+        }
+        let archivedPinnedCount = visibleArchivedDisplays.count { task in
+            task.isPinned && predicate.matchesArchivedTask(task, includePinned: true)
+        }
+        let archivedUnpinnedCount = visibleArchivedDisplays.count { task in
+            predicate.matchesArchivedTask(task, includePinned: false)
+        }
+
+        return activePinnedCount + activeUnpinnedCount + archivedPinnedCount + archivedUnpinnedCount
+    }
+
     func groupedRoutineSections(from displays: [Display]) -> [HomeTaskListSection<Display>] {
         sectionBuilder.groupedRoutineSections(from: filteredTasks(displays))
     }
