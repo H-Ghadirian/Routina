@@ -31,6 +31,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var snoozedUntil: Date?
     var pinnedAt: Date?
     var daysUntilDue: Int
+    var hasMissedExactTimedOccurrence: Bool = false
     var isOneOffTask: Bool
     var isCompletedOneOff: Bool
     var isCanceledOneOff: Bool

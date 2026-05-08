@@ -397,6 +397,48 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func exactTimedOccurrenceBecomesMissedAfterScheduledDayPasses() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-04-19T10:00:00Z")
+        )
+        let referenceDate = makeDate("2026-04-24T10:00:00Z")
+        let missedDate = makeDate("2026-04-23T18:30:00Z")
+        let nextDueDate = makeDate("2026-04-30T18:30:00Z")
+
+        #expect(
+            RoutineDateMath.missedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == missedDate
+        )
+        #expect(RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar) == nextDueDate)
+        #expect(RoutineDateMath.daysUntilDue(for: task, referenceDate: referenceDate, calendar: calendar) == 6)
+        #expect(RoutineDateMath.overdueDays(for: task, referenceDate: referenceDate, calendar: calendar) == 0)
+        #expect(!RoutineDateMath.canMarkDone(for: task, referenceDate: referenceDate, calendar: calendar))
+        #expect(
+            RoutineDateMath.completionTargetDate(
+                for: task,
+                selectedDay: referenceDate,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == nil
+        )
+        #expect(
+            RoutineDateMath.completionTargetDate(
+                for: task,
+                selectedDay: missedDate,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == missedDate
+        )
+    }
+
+    @Test
     func canMarkDone_monthlySchedule_returnsTrueForPastOccurrenceBeforeScheduleAnchor() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

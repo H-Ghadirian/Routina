@@ -82,14 +82,22 @@ struct TaskDetailCompletionButtonTitlePresentation {
 
     private var exactTimedOccurrenceTitle: String {
         if let completionTargetDate {
-            if calendar.isDateInToday(completionTargetDate) {
+            if calendar.isDate(completionTargetDate, inSameDayAs: referenceDate) {
                 return "Done at \(completionTargetDate.formatted(date: .omitted, time: .shortened))"
             }
             return "Done for \(completionTargetDate.formatted(date: .abbreviated, time: .shortened))"
         }
 
-        if calendar.isDateInToday(selectedDate) {
-            let nextDue = RoutineDateMath.dueDate(for: task, referenceDate: referenceDate)
+        if RoutineDateMath.missedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) != nil, calendar.isDate(selectedDate, inSameDayAs: referenceDate) {
+            return "Missed"
+        }
+
+        if calendar.isDate(selectedDate, inSameDayAs: referenceDate) {
+            let nextDue = RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
             return "Available \(nextDue.formatted(date: .abbreviated, time: .shortened))"
         }
 

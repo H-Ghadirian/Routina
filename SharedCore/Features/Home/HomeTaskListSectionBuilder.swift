@@ -4,14 +4,20 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
     var sorter: HomeTaskListSorter<Display>
 
     func groupedRoutineSections(from filteredTasks: [Display]) -> [HomeTaskListSection<Display>] {
-        let overdue = filteredTasks.filter { metrics.overdueDays(for: $0) > 0 }
+        let missed = filteredTasks.filter { metrics.hasMissedExactTimedOccurrence(for: $0) }
+        let overdue = filteredTasks.filter {
+            !metrics.hasMissedExactTimedOccurrence(for: $0)
+                && metrics.overdueDays(for: $0) > 0
+        }
         let dueSoon = filteredTasks.filter {
-            !$0.isDoneToday
+            !metrics.hasMissedExactTimedOccurrence(for: $0)
+                && !$0.isDoneToday
                 && metrics.overdueDays(for: $0) == 0
                 && (metrics.urgencyLevel(for: $0) > 0 || metrics.isYellowUrgency($0))
         }
         let onTrack = filteredTasks.filter {
-            !$0.isDoneToday
+            !metrics.hasMissedExactTimedOccurrence(for: $0)
+                && !$0.isDoneToday
                 && metrics.overdueDays(for: $0) == 0
                 && metrics.urgencyLevel(for: $0) == 0
                 && !metrics.isYellowUrgency($0)
@@ -28,6 +34,7 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
 
         return (
             [
+                HomeTaskListSection(title: "Missed", tasks: missed),
                 HomeTaskListSection(title: "Overdue", tasks: overdue),
                 HomeTaskListSection(title: "Due Soon", tasks: dueSoon)
             ]

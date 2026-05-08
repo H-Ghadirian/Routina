@@ -27,6 +27,10 @@ extension TaskDetailFeature.State {
         )
     }
 
+    var missedExactTimedOccurrenceDate: Date? {
+        RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: Date())
+    }
+
     var isSelectedDateDone: Bool {
         let calendar = Calendar.current
         let day = resolvedSelectedDate
@@ -224,7 +228,7 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask {
             return task.deadline
         }
-        return RoutineDateMath.dueDate(for: task, referenceDate: Date())
+        return RoutineDateMath.upcomingDueDate(for: task, referenceDate: Date())
     }
 
     /// Soft routines use a threshold date instead of a hard overdue date.
@@ -439,6 +443,9 @@ extension TaskDetailFeature.State {
         }
         if isAssumedDoneToday {
             return "Assumed done today"
+        }
+        if missedExactTimedOccurrenceDate != nil {
+            return "Missed"
         }
         if overdueDays > 0 {
             return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"

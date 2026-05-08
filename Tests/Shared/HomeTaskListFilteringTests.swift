@@ -145,7 +145,15 @@ struct HomeTaskListFilteringTests {
 
     @Test
     func groupedRoutineSectionsBuildsExpectedStatusBuckets() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let tasks = [
+            TestTaskDisplay(
+                name: "Missed",
+                recurrenceRule: .weekly(on: 4, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+                dueDate: referenceDate.addingTimeInterval(86_400),
+                daysUntilDue: 1,
+                hasMissedExactTimedOccurrence: true
+            ),
             TestTaskDisplay(name: "Overdue", daysUntilDue: -2),
             TestTaskDisplay(name: "Due Today", daysUntilDue: 0),
             TestTaskDisplay(name: "On Track", daysUntilDue: 4),
@@ -154,8 +162,8 @@ struct HomeTaskListFilteringTests {
 
         let sections = makeFiltering().groupedRoutineSections(from: tasks)
 
-        #expect(sections.map(\.title) == ["Overdue", "Due Soon", "On Track", "Done Today"])
-        #expect(sections.map { $0.tasks.map(\.name) } == [["Overdue"], ["Due Today"], ["On Track"], ["Done Today"]])
+        #expect(sections.map(\.title) == ["Missed", "Overdue", "Due Soon", "On Track", "Done Today"])
+        #expect(sections.map { $0.tasks.map(\.name) } == [["Missed"], ["Overdue"], ["Due Today"], ["On Track"], ["Done Today"]])
     }
 
     @Test
@@ -467,6 +475,7 @@ private struct TestTaskDisplay: HomeTaskListDisplay, Equatable {
     var pausedAt: Date?
     var pinnedAt: Date?
     var daysUntilDue: Int = 7
+    var hasMissedExactTimedOccurrence: Bool = false
     var isOneOffTask: Bool = false
     var isCompletedOneOff: Bool = false
     var isCanceledOneOff: Bool = false

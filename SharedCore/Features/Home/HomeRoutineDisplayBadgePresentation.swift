@@ -103,6 +103,10 @@ extension HomeRoutineDisplayMetadataPresenter {
             return badge("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
         }
 
+        if filtering.hasMissedExactTimedOccurrence(for: task) {
+            return badge("Missed", "exclamationmark.triangle.fill", .yellow, Color.yellow.opacity(0.18))
+        }
+
         if dueIn < 0 {
             return badge("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
         }

@@ -162,6 +162,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         metrics.overdueDays(for: task)
     }
 
+    func hasMissedExactTimedOccurrence(for task: Display) -> Bool {
+        metrics.hasMissedExactTimedOccurrence(for: task)
+    }
+
     func daysSinceLastRoutine(_ task: Display) -> Int {
         metrics.daysSinceLastRoutine(task)
     }

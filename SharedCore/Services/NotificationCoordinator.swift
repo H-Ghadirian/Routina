@@ -92,6 +92,14 @@ enum NotificationCoordinator {
             return deadline > referenceDate
         }
 
+        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            return RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) > referenceDate
+        }
+
         return !task.isSoftIntervalRoutine && !task.isOngoing
     }
 
@@ -122,7 +130,7 @@ enum NotificationCoordinator {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> NotificationPayload {
-        let dueDate = RoutineDateMath.dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        let dueDate = RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
         let reminderDate = activeReminderDate(for: task, referenceDate: referenceDate)
         let resolvedTriggerDate = triggerDate ?? {
             if let reminderDate {
@@ -203,18 +211,43 @@ enum NotificationCoordinator {
                 return
             }
 
+            let completionDate: Date
+            if let exactTimedTarget = RoutineDateMath.completionTargetDate(
+                for: task,
+                selectedDay: now,
+                referenceDate: now,
+                calendar: .current
+            ) {
+                completionDate = exactTimedTarget
+            } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+                if shouldScheduleNotification(for: task, referenceDate: now) {
+                    await scheduleNotification(notificationPayload(for: task, referenceDate: now))
+                } else {
+                    cancelNotification(taskID.uuidString)
+                }
+                NotificationCenter.default.postRoutineDidUpdate()
+                return
+            } else {
+                completionDate = now
+            }
+
+            guard RoutineDateMath.canMarkDone(for: task, referenceDate: completionDate, calendar: .current) else {
+                return
+            }
+
             guard let advancedTask = try RoutineLogHistory.advanceTask(
                 taskID: taskID,
-                completedAt: now,
+                completedAt: completionDate,
+                referenceDate: now,
                 context: context,
                 calendar: .current
             ) else {
                 return
             }
-            if !shouldScheduleNotification(for: advancedTask.task, referenceDate: now) {
+            if !shouldScheduleNotification(for: advancedTask.task, referenceDate: completionDate) {
                 cancelNotification(taskID.uuidString)
             } else {
-                await scheduleNotification(notificationPayload(for: advancedTask.task, referenceDate: now))
+                await scheduleNotification(notificationPayload(for: advancedTask.task, referenceDate: completionDate))
             }
             NotificationCenter.default.postRoutineDidUpdate()
         } catch {

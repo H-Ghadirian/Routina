@@ -83,6 +83,9 @@ enum TaskDetailPresentation {
         if task.isInProgress { return .orange }
         if isDoneToday { return .green }
         if isAssumedDoneToday { return .mint }
+        if RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: referenceDate) != nil {
+            return .yellow
+        }
         if overdueDays > 0 { return .red }
         if daysUntilDueIfActive(task, referenceDate: referenceDate) == 0 {
             return TaskDetailPlatformStyle.dueTodayTitleColor

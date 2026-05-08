@@ -18,6 +18,9 @@ struct TaskDetailCalendarCardContent: View {
             onPreviousMonth: onPreviousMonth,
             onNextMonth: onNextMonth,
             showsAssumedLegend: task.autoAssumeDailyDone,
+            showsMissedLegend: missedDate != nil,
+            showsDueLegend: dueDate != nil,
+            showsOverdueLegend: isOverdueRangeVisible,
             showsSoftDueLegend: softDueDate != nil,
             showsPausedLegend: task.pausedAt != nil,
             showsCreatedLegend: task.createdAt != nil
@@ -28,6 +31,7 @@ struct TaskDetailCalendarCardContent: View {
                 assumedDates: TaskDetailCalendarPresentation.assumedDates(from: logs, task: task),
                 dueDate: dueDate,
                 softDueDate: softDueDate,
+                missedDate: missedDate,
                 createdAt: task.createdAt,
                 pausedAt: task.pausedAt,
                 isOrangeUrgencyToday: isOrangeUrgencyToday,
@@ -35,5 +39,15 @@ struct TaskDetailCalendarCardContent: View {
                 onSelectDate: onSelectDate
             )
         }
+    }
+
+    private var missedDate: Date? {
+        RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: Date())
+    }
+
+    private var isOverdueRangeVisible: Bool {
+        guard let dueDate else { return false }
+        let calendar = Calendar.current
+        return calendar.startOfDay(for: dueDate) < calendar.startOfDay(for: Date())
     }
 }

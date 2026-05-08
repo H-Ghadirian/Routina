@@ -369,6 +369,59 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func calendarPresentationMarksExactTimedMissedDateWithoutOverdueRange() {
+        let calendar = makeTestCalendar()
+        let missedDate = makeDate("2026-05-07T18:30:00Z")
+        let today = makeDate("2026-05-08T10:00:00Z")
+        let nextDueDate = makeDate("2026-05-14T18:30:00Z")
+
+        let missedPresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: missedDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nextDueDate,
+            missedDate: missedDate,
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: today,
+            calendar: calendar
+        )
+        let todayPresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: today,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nextDueDate,
+            missedDate: missedDate,
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: today,
+            calendar: calendar
+        )
+        let nextDuePresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: nextDueDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nextDueDate,
+            missedDate: missedDate,
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: today,
+            calendar: calendar
+        )
+
+        #expect(missedPresentation.isMissedDate)
+        #expect(missedPresentation.isHighlightedDay)
+        #expect(!todayPresentation.isMissedDate)
+        #expect(!todayPresentation.isDueToTodayRangeDate)
+        #expect(todayPresentation.isToday)
+        #expect(nextDuePresentation.isDueDate)
+        #expect(nextDuePresentation.isHighlightedDay)
+    }
+
+    @Test
     func checklistPresentationSortsAndSummarizesDueItems() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-04-25T10:00:00Z")

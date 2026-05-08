@@ -27,6 +27,11 @@ struct HomeRoutineDisplayFactory {
         let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
+        let hasMissedExactTimedOccurrence = RoutineDateMath.missedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: now,
+            calendar: calendar
+        ) != nil
 
         return HomeRoutineDisplayCore(
             taskID: task.id,
@@ -58,6 +63,7 @@ struct HomeRoutineDisplayFactory {
             snoozedUntil: task.snoozedUntil,
             pinnedAt: task.pinnedAt,
             daysUntilDue: daysUntilDue(for: task, isArchived: isArchived),
+            hasMissedExactTimedOccurrence: hasMissedExactTimedOccurrence,
             isOneOffTask: task.isOneOffTask,
             isCompletedOneOff: task.isCompletedOneOff,
             isCanceledOneOff: task.isCanceledOneOff,
@@ -111,7 +117,7 @@ struct HomeRoutineDisplayFactory {
         guard !isArchived, !task.isChecklistDriven, task.recurrenceRule.isFixedCalendar else {
             return nil
         }
-        return RoutineDateMath.dueDate(for: task, referenceDate: now, calendar: calendar)
+        return RoutineDateMath.upcomingDueDate(for: task, referenceDate: now, calendar: calendar)
     }
 
     private func daysUntilDue(for task: RoutineTask, isArchived: Bool) -> Int {

@@ -62,15 +62,15 @@ enum HomeTaskLifecycleSupport {
         guard !tasks[index].isChecklistCompletionRoutine else {
             return nil
         }
-        guard RoutineDateMath.canMarkDone(
-            for: tasks[index],
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) else {
-            return nil
-        }
 
         if tasks[index].isChecklistDriven {
+            guard RoutineDateMath.canMarkDone(
+                for: tasks[index],
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else {
+                return nil
+            }
             let hadCompletionToday = tasks[index].lastDone.map {
                 calendar.isDate($0, inSameDayAs: referenceDate)
             } ?? false
@@ -96,20 +96,42 @@ enum HomeTaskLifecycleSupport {
             )
         }
 
+        let completionDate: Date
+        if let exactTimedTarget = RoutineDateMath.completionTargetDate(
+            for: tasks[index],
+            selectedDay: referenceDate,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) {
+            completionDate = exactTimedTarget
+        } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: tasks[index]) {
+            return nil
+        } else {
+            completionDate = referenceDate
+        }
+
+        guard RoutineDateMath.canMarkDone(
+            for: tasks[index],
+            referenceDate: completionDate,
+            calendar: calendar
+        ) else {
+            return nil
+        }
+
         let previousTodoStateTitle = tasks[index].isOneOffTask ? tasks[index].todoState?.displayTitle : nil
-        let result = tasks[index].advance(completedAt: referenceDate, calendar: calendar)
+        let result = tasks[index].advance(completedAt: completionDate, calendar: calendar)
         if case .completedRoutine = result {
             doneStats.totalCount += 1
             doneStats.countsByTaskID[taskID, default: 0] += 1
             _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(
                 for: tasks[index],
-                at: referenceDate
+                at: completionDate
             )
             if tasks[index].isOneOffTask,
                previousTodoStateTitle != TodoState.done.displayTitle {
                 tasks[index].appendChangeLogEntry(
                     RoutineTaskChangeLogEntry(
-                        timestamp: referenceDate,
+                        timestamp: completionDate,
                         kind: .stateChanged,
                         previousValue: previousTodoStateTitle,
                         newValue: TodoState.done.displayTitle
@@ -120,7 +142,7 @@ enum HomeTaskLifecycleSupport {
         return .advance(
             HomeAdvanceTaskUpdate(
                 taskID: taskID,
-                completionDate: referenceDate,
+                completionDate: completionDate,
                 previousTodoStateTitle: previousTodoStateTitle
             )
         )

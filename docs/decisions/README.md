@@ -16,3 +16,4 @@ Use decision records for architecture, conventions, data model, dependencies, pr
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
 | [0001](0001-maintain-project-decision-log.md) | Maintain a Project Decision Log | Accepted | 2026-05-08 |
+| [0002](0002-exact-time-routines-miss-after-day.md) | Treat Exact-Time Routines as Missed After Their Scheduled Day | Accepted | 2026-05-08 |

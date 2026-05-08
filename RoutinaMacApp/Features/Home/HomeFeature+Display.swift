@@ -137,6 +137,7 @@ private extension HomeFeature.RoutineDisplay {
             snoozedUntil: core.snoozedUntil,
             pinnedAt: core.pinnedAt,
             daysUntilDue: core.daysUntilDue,
+            hasMissedExactTimedOccurrence: core.hasMissedExactTimedOccurrence,
             isOneOffTask: core.isOneOffTask,
             isCompletedOneOff: core.isCompletedOneOff,
             isCanceledOneOff: core.isCanceledOneOff,

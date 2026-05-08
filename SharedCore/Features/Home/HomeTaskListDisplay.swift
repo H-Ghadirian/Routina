@@ -23,6 +23,7 @@ protocol HomeTaskListDisplay {
     var pausedAt: Date? { get }
     var pinnedAt: Date? { get }
     var daysUntilDue: Int { get }
+    var hasMissedExactTimedOccurrence: Bool { get }
     var isOneOffTask: Bool { get }
     var isCompletedOneOff: Bool { get }
     var isCanceledOneOff: Bool { get }
@@ -36,6 +37,10 @@ protocol HomeTaskListDisplay {
 }
 
 extension HomeTaskListDisplay {
+    var hasMissedExactTimedOccurrence: Bool {
+        false
+    }
+
     var isDailyRoutine: Bool {
         !isOneOffTask && recurrenceRule.isDaily
     }

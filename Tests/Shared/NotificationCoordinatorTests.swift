@@ -167,6 +167,47 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func notificationPayload_forMissedExactTimeRoutineUsesNextOccurrence() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let referenceDate = makeDate("2026-04-24T10:00:00Z")
+        let nextThursday = makeDate("2026-04-30T18:30:00Z")
+        let task = RoutineTask(
+            name: "Group session",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: 5,
+                at: RoutineTimeOfDay(hour: 18, minute: 30)
+            ),
+            scheduleAnchor: makeDate("2026-04-19T10:00:00Z")
+        )
+
+        #expect(
+            NotificationCoordinator.shouldScheduleNotification(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        )
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let trigger = NotificationCoordinator.createNotificationTrigger(for: payload, now: referenceDate)
+        let expectedComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: nextThursday)
+
+        #expect(payload.triggerDate == nextThursday)
+        #expect(payload.dueDate == nextThursday)
+        #expect(trigger.dateComponents.year == expectedComponents.year)
+        #expect(trigger.dateComponents.month == expectedComponents.month)
+        #expect(trigger.dateComponents.day == expectedComponents.day)
+        #expect(trigger.dateComponents.hour == expectedComponents.hour)
+        #expect(trigger.dateComponents.minute == expectedComponents.minute)
+    }
+
+    @Test
     func notificationContent_marksWeeklyExactTimeRoutineTimeSensitive() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

@@ -768,10 +768,9 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
-    func markAsDone_forTodayOnOverdueWeeklyExactTimeRoutine_usesOutstandingOccurrenceTimestamp() async throws {
+    func markAsDone_forTodayOnMissedWeeklyExactTimeRoutineDoesNothing() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-04-24T10:00:00Z")
-        let expectedCompletion = makeDate("2026-04-23T18:30:00Z")
 
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
@@ -806,27 +805,11 @@ struct TaskDetailFeatureCompletionTests {
         }
 
         _ = await store.withExhaustivity(.off) {
-            await store.send(.markAsDone) {
-                $0.task.lastDone = expectedCompletion
-                $0.taskRefreshID = 1
-                $0.daysSinceLastRoutine = 1
-                $0.overdueDays = 0
-                $0.isDoneToday = false
-                $0.pendingLocalCompletionDates = [expectedCompletion]
-            }
+            await store.send(.markAsDone)
         }
-        #expect(store.state.logs.contains { $0.kind == .completed && $0.timestamp == expectedCompletion })
-
-        await store.receive { action in
-            guard case let .logsLoaded(logs) = action else { return false }
-            return logs.contains { $0.kind == .completed && $0.timestamp == expectedCompletion }
-        } assert: {
-            $0.logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
-            $0.pendingLocalCompletionDates = []
-            $0.daysSinceLastRoutine = 1
-            $0.overdueDays = 0
-            $0.isDoneToday = false
-        }
+        #expect(store.state.logs.isEmpty)
+        #expect(store.state.task.lastDone == nil)
+        #expect(store.state.pendingLocalCompletionDates.isEmpty)
 
         let persistedTaskID = task.id
         let persistedTask = try #require(
@@ -840,10 +823,9 @@ struct TaskDetailFeatureCompletionTests {
         )
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
 
-        #expect(persistedTask.lastDone == expectedCompletion)
-        #expect(persistedLogs.count == 1)
-        #expect(persistedLogs.first?.timestamp == expectedCompletion)
-        #expect(scheduledIDs.value == [task.id.uuidString])
+        #expect(persistedTask.lastDone == nil)
+        #expect(persistedLogs.isEmpty)
+        #expect(scheduledIDs.value.isEmpty)
     }
 
     @Test
@@ -926,7 +908,7 @@ struct TaskDetailFeatureCompletionTests {
             $0.taskRefreshID = 1
             $0.logs = []
             $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 1
+            $0.overdueDays = 0
             $0.isDoneToday = false
         }
 

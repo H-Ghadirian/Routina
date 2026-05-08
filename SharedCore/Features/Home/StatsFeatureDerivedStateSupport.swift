@@ -421,6 +421,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let pausedAt: Date?
     let pinnedAt: Date?
     let daysUntilDue: Int
+    let hasMissedExactTimedOccurrence: Bool
     let isOneOffTask: Bool
     let isCompletedOneOff: Bool
     let isCanceledOneOff: Bool
@@ -433,7 +434,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let todoState: TodoState?
 
     init(task: RoutineTask, referenceDate: Date, calendar: Calendar) {
-        let dueDate = RoutineDateMath.dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        let dueDate = RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
 
         self.taskID = task.id
         self.name = task.name ?? "Untitled"
@@ -461,6 +462,11 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
             from: calendar.startOfDay(for: referenceDate),
             to: calendar.startOfDay(for: dueDate)
         ).day ?? 0
+        self.hasMissedExactTimedOccurrence = RoutineDateMath.missedExactTimedOccurrenceDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) != nil
         self.isOneOffTask = task.isOneOffTask
         self.isCompletedOneOff = task.isCompletedOneOff
         self.isCanceledOneOff = task.isCanceledOneOff

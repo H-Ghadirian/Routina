@@ -30,6 +30,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var snoozedUntil: Date?
     var pinnedAt: Date?
     var daysUntilDue: Int
+    var hasMissedExactTimedOccurrence: Bool
     var isOneOffTask: Bool
     var isCompletedOneOff: Bool
     var isCanceledOneOff: Bool

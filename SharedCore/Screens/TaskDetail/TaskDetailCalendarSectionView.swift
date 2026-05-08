@@ -5,6 +5,9 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
     let onPreviousMonth: () -> Void
     let onNextMonth: () -> Void
     let showsAssumedLegend: Bool
+    let showsMissedLegend: Bool
+    let showsDueLegend: Bool
+    let showsOverdueLegend: Bool
     let showsSoftDueLegend: Bool
     let showsPausedLegend: Bool
     let showsCreatedLegend: Bool
@@ -15,6 +18,9 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         onPreviousMonth: @escaping () -> Void,
         onNextMonth: @escaping () -> Void,
         showsAssumedLegend: Bool,
+        showsMissedLegend: Bool = false,
+        showsDueLegend: Bool = false,
+        showsOverdueLegend: Bool = true,
         showsSoftDueLegend: Bool,
         showsPausedLegend: Bool,
         showsCreatedLegend: Bool,
@@ -24,6 +30,9 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         self.onPreviousMonth = onPreviousMonth
         self.onNextMonth = onNextMonth
         self.showsAssumedLegend = showsAssumedLegend
+        self.showsMissedLegend = showsMissedLegend
+        self.showsDueLegend = showsDueLegend
+        self.showsOverdueLegend = showsOverdueLegend
         self.showsSoftDueLegend = showsSoftDueLegend
         self.showsPausedLegend = showsPausedLegend
         self.showsCreatedLegend = showsCreatedLegend
@@ -49,6 +58,9 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
 
             TaskDetailCalendarSectionLegendView(
                 showsAssumedLegend: showsAssumedLegend,
+                showsMissedLegend: showsMissedLegend,
+                showsDueLegend: showsDueLegend,
+                showsOverdueLegend: showsOverdueLegend,
                 showsSoftDueLegend: showsSoftDueLegend,
                 showsPausedLegend: showsPausedLegend,
                 showsCreatedLegend: showsCreatedLegend
@@ -85,6 +97,9 @@ private struct TaskDetailCalendarSectionHeaderView: View {
 
 private struct TaskDetailCalendarSectionLegendView: View {
     let showsAssumedLegend: Bool
+    let showsMissedLegend: Bool
+    let showsDueLegend: Bool
+    let showsOverdueLegend: Bool
     let showsSoftDueLegend: Bool
     let showsPausedLegend: Bool
     let showsCreatedLegend: Bool
@@ -104,7 +119,15 @@ private struct TaskDetailCalendarSectionLegendView: View {
             if showsAssumedLegend {
                 TaskDetailCalendarSectionLegendItemView(color: .mint, label: "Assumed")
             }
-            TaskDetailCalendarSectionLegendItemView(color: .red, label: "Overdue")
+            if showsMissedLegend {
+                TaskDetailCalendarSectionLegendItemView(color: .yellow, label: "Missed")
+            }
+            if showsDueLegend {
+                TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Due")
+            }
+            if showsOverdueLegend {
+                TaskDetailCalendarSectionLegendItemView(color: .red, label: "Overdue")
+            }
             if showsSoftDueLegend {
                 TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Soft due")
             }

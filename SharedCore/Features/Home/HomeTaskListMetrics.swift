@@ -28,6 +28,9 @@ struct HomeTaskListMetrics<Display: HomeTaskListDisplay> {
     }
 
     func isYellowUrgency(_ task: Display) -> Bool {
+        if hasMissedExactTimedOccurrence(for: task) {
+            return false
+        }
         if task.isOneOffTask {
             return false
         }
@@ -48,7 +51,14 @@ struct HomeTaskListMetrics<Display: HomeTaskListDisplay> {
     }
 
     func overdueDays(for task: Display) -> Int {
-        max(-dueInDays(for: task), 0)
+        if hasMissedExactTimedOccurrence(for: task) {
+            return 0
+        }
+        return max(-dueInDays(for: task), 0)
+    }
+
+    func hasMissedExactTimedOccurrence(for task: Display) -> Bool {
+        task.hasMissedExactTimedOccurrence
     }
 
     func daysSinceLastRoutine(_ task: Display) -> Int {
@@ -63,6 +73,7 @@ struct HomeTaskListMetrics<Display: HomeTaskListDisplay> {
     }
 
     func urgencyLevel(for task: Display) -> Int {
+        if hasMissedExactTimedOccurrence(for: task) { return 3 }
         let dueIn = dueInDays(for: task)
 
         if dueIn < 0 { return 3 }

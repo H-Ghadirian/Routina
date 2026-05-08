@@ -235,7 +235,7 @@ private extension RoutinaAIQueryService {
         if task.isOneOffTask {
             return task.deadline
         }
-        return RoutineDateMath.dueDate(for: task, referenceDate: now, calendar: calendar)
+        return RoutineDateMath.upcomingDueDate(for: task, referenceDate: now, calendar: calendar)
     }
 
     static func resolvedDaysUntilDue(
