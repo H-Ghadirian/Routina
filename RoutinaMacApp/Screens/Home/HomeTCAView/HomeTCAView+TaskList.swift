@@ -225,6 +225,23 @@ extension HomeTCAView {
                     visibleTaskIDs: visibleTaskIDs
                 )
             }
+            .focusable()
+            .focused($isMacTaskSourceListFocused)
+            .focusEffectDisabled()
+            .onKeyPress(.upArrow) {
+                handleMacTaskSourceListKeyboardNavigation(
+                    .previous,
+                    visibleTaskIDs: visibleTaskIDs
+                )
+                return visibleTaskIDs.isEmpty ? .ignored : .handled
+            }
+            .onKeyPress(.downArrow) {
+                handleMacTaskSourceListKeyboardNavigation(
+                    .next,
+                    visibleTaskIDs: visibleTaskIDs
+                )
+                return visibleTaskIDs.isEmpty ? .ignored : .handled
+            }
         }
     }
 
@@ -394,7 +411,7 @@ extension HomeTCAView {
             .id(task.taskID)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onTapGesture {
-                store.send(.macSidebarSelectionChanged(.task(task.taskID)))
+                selectMacTaskSourceListTask(task.taskID, scrollAnchor: nil)
             }
             .contextMenu {
                 routineContextMenu(
@@ -407,7 +424,7 @@ extension HomeTCAView {
         if allowsPlannerDrag {
             row
                 .onDrag({
-                    store.send(.macSidebarSelectionChanged(.task(task.taskID)))
+                    selectMacTaskSourceListTask(task.taskID, scrollAnchor: nil)
                     return NSItemProvider(object: task.taskID.uuidString as NSString)
                 }, preview: {
                     taskDragPreview(for: task)
@@ -416,6 +433,33 @@ extension HomeTCAView {
         } else {
             row
         }
+    }
+
+    private func handleMacTaskSourceListKeyboardNavigation(
+        _ direction: MacTaskSourceListKeyboardDirection,
+        visibleTaskIDs: [UUID]
+    ) {
+        guard let taskID = MacTaskSourceListKeyboardNavigation.adjacentTaskID(
+            from: store.selectedTaskID,
+            direction: direction,
+            visibleTaskIDs: visibleTaskIDs
+        ) else { return }
+
+        selectMacTaskSourceListTask(taskID, scrollAnchor: .minimalReveal)
+    }
+
+    private func selectMacTaskSourceListTask(
+        _ taskID: UUID,
+        scrollAnchor: MacSidebarTaskScrollRequest.Anchor?
+    ) {
+        isMacTaskSourceListFocused = true
+        if let scrollAnchor {
+            macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(
+                taskID: taskID,
+                anchor: scrollAnchor
+            )
+        }
+        store.send(.macSidebarSelectionChanged(.task(taskID)))
     }
 
     private func macTaskSourceRowBackground(for task: HomeFeature.RoutineDisplay) -> Color {
@@ -473,7 +517,7 @@ extension HomeTCAView {
             to: taskID,
             with: proxy,
             visibleTaskIDs: visibleTaskIDs,
-            anchor: .center
+            anchor: macSidebarTaskScrollRequest?.unitPointAnchor
         ) {
             macSidebarTaskScrollRequest = nil
         }
@@ -484,7 +528,7 @@ extension HomeTCAView {
         to taskID: UUID,
         with proxy: ScrollViewProxy,
         visibleTaskIDs: [UUID],
-        anchor: UnitPoint
+        anchor: UnitPoint?
     ) -> Bool {
         guard visibleTaskIDs.contains(taskID) else { return false }
 
@@ -530,6 +574,17 @@ extension HomeTCAView {
             }
     }
 
+}
+
+private extension MacSidebarTaskScrollRequest {
+    var unitPointAnchor: UnitPoint? {
+        switch anchor {
+        case .center:
+            return .center
+        case .minimalReveal:
+            return nil
+        }
+    }
 }
 
 private struct MacTaskSourceRowColorBadgeShape: Shape {

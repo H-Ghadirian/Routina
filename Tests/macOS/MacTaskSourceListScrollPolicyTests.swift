@@ -61,3 +61,76 @@ struct MacTaskSourceListScrollPolicyTests {
         #expect(firstRequest != secondRequest)
     }
 }
+
+struct MacTaskSourceListKeyboardNavigationTests {
+    @Test
+    func downArrowMovesToNextVisibleTask() {
+        let firstTaskID = UUID()
+        let secondTaskID = UUID()
+        let thirdTaskID = UUID()
+
+        let target = MacTaskSourceListKeyboardNavigation.adjacentTaskID(
+            from: firstTaskID,
+            direction: .next,
+            visibleTaskIDs: [firstTaskID, secondTaskID, thirdTaskID]
+        )
+
+        #expect(target == secondTaskID)
+    }
+
+    @Test
+    func upArrowMovesToPreviousVisibleTask() {
+        let firstTaskID = UUID()
+        let secondTaskID = UUID()
+        let thirdTaskID = UUID()
+
+        let target = MacTaskSourceListKeyboardNavigation.adjacentTaskID(
+            from: thirdTaskID,
+            direction: .previous,
+            visibleTaskIDs: [firstTaskID, secondTaskID, thirdTaskID]
+        )
+
+        #expect(target == secondTaskID)
+    }
+
+    @Test
+    func arrowsDoNotWrapAtVisibleListEdges() {
+        let firstTaskID = UUID()
+        let secondTaskID = UUID()
+
+        let previousFromFirst = MacTaskSourceListKeyboardNavigation.adjacentTaskID(
+            from: firstTaskID,
+            direction: .previous,
+            visibleTaskIDs: [firstTaskID, secondTaskID]
+        )
+        let nextFromSecond = MacTaskSourceListKeyboardNavigation.adjacentTaskID(
+            from: secondTaskID,
+            direction: .next,
+            visibleTaskIDs: [firstTaskID, secondTaskID]
+        )
+
+        #expect(previousFromFirst == nil)
+        #expect(nextFromSecond == nil)
+    }
+
+    @Test
+    func arrowsChooseEdgeTaskWhenSelectionIsMissingFromVisibleList() {
+        let firstTaskID = UUID()
+        let secondTaskID = UUID()
+        let hiddenTaskID = UUID()
+
+        let downTarget = MacTaskSourceListKeyboardNavigation.adjacentTaskID(
+            from: hiddenTaskID,
+            direction: .next,
+            visibleTaskIDs: [firstTaskID, secondTaskID]
+        )
+        let upTarget = MacTaskSourceListKeyboardNavigation.adjacentTaskID(
+            from: hiddenTaskID,
+            direction: .previous,
+            visibleTaskIDs: [firstTaskID, secondTaskID]
+        )
+
+        #expect(downTarget == firstTaskID)
+        #expect(upTarget == secondTaskID)
+    }
+}

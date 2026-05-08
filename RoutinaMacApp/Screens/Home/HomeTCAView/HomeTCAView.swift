@@ -11,11 +11,18 @@ enum MacHomeDetailMode: String, CaseIterable, Identifiable {
 }
 
 struct MacSidebarTaskScrollRequest: Equatable {
+    enum Anchor: Equatable {
+        case center
+        case minimalReveal
+    }
+
     let taskID: UUID
+    let anchor: Anchor
     private let token = UUID()
 
-    init(taskID: UUID) {
+    init(taskID: UUID, anchor: Anchor = .center) {
         self.taskID = taskID
+        self.anchor = anchor
     }
 }
 
@@ -64,6 +71,7 @@ struct HomeTCAView: View {
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
+    @FocusState var isMacTaskSourceListFocused: Bool
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
 
     init(
