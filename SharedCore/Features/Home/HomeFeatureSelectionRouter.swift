@@ -3,6 +3,7 @@ import Foundation
 
 protocol HomeFeatureSelectionRoutingState {
     var routineTasks: [RoutineTask] { get set }
+    var routinePlaces: [RoutinePlace] { get set }
     var selection: HomeSelectionState { get set }
     var presentation: HomePresentationState { get set }
 }
@@ -34,6 +35,7 @@ struct HomeFeatureSelectionRouter<State: HomeFeatureSelectionRoutingState, Actio
             selection: &state.selection,
             makeTaskDetailState: makeTaskDetailState
         )
+        populateTaskDetailDisplayContext(&state)
         return refreshSelectedTaskDetailEffect(for: state)
     }
 
@@ -49,6 +51,7 @@ struct HomeFeatureSelectionRouter<State: HomeFeatureSelectionRoutingState, Actio
             calendar: calendar,
             makeTaskDetailState: makeTaskDetailState
         )
+        populateTaskDetailDisplayContext(&state)
     }
 
     func updatePendingChecklistReloadGuard(for itemID: UUID, state: inout State) {
@@ -86,11 +89,24 @@ struct HomeFeatureSelectionRouter<State: HomeFeatureSelectionRoutingState, Actio
         ) else {
             return .none
         }
+        populateTaskDetailDisplayContext(&state)
         return refreshSelectedTaskDetailEffect(for: state)
     }
 
     func refreshSelectedTaskDetailEffect(for state: State) -> Effect<Action> {
         guard state.selection.taskDetailState != nil else { return .none }
         return .send(refreshTaskDetailAction())
+    }
+
+    private func populateTaskDetailDisplayContext(_ state: inout State) {
+        guard var detailState = state.selection.taskDetailState else { return }
+        HomeTaskSupport.populateTaskDetailDisplayContext(
+            &detailState,
+            tasks: state.routineTasks,
+            places: state.routinePlaces,
+            now: now,
+            calendar: calendar
+        )
+        state.selection.taskDetailState = detailState
     }
 }

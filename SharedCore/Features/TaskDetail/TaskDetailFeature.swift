@@ -1078,10 +1078,7 @@ struct TaskDetailFeature: Reducer {
                 state.selectedDate = calendar.startOfDay(for: now)
             }
             updateDerivedState(&state)
-            return .concatenate(
-                loadEditContext(excluding: state.task.id),
-                handleOnAppear(taskID: state.task.id)
-            )
+            return handleOnAppear(taskID: state.task.id)
             .cancellable(id: CancelID.loadContext, cancelInFlight: true)
         }
     }

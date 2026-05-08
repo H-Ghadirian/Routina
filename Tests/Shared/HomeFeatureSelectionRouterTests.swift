@@ -54,6 +54,49 @@ struct HomeFeatureSelectionRouterTests {
     }
 
     @Test
+    func setSelectedTaskPopulatesLightweightDisplayContext() throws {
+        let taskID = UUID()
+        let directRelationshipID = UUID()
+        let inverseRelationshipID = UUID()
+        let unrelatedID = UUID()
+        let placeID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Focus",
+            emoji: "F",
+            placeID: placeID,
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: directRelationshipID, kind: .blockedBy)
+            ]
+        )
+        let directRelationshipTask = RoutineTask(id: directRelationshipID, name: "Direct", emoji: "D")
+        let inverseRelationshipTask = RoutineTask(
+            id: inverseRelationshipID,
+            name: "Inverse",
+            emoji: "I",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: taskID, kind: .blocks)
+            ]
+        )
+        let unrelatedTask = RoutineTask(id: unrelatedID, name: "Elsewhere", emoji: "E")
+        let place = RoutinePlace(id: placeID, name: "Desk", latitude: 1, longitude: 2)
+        var state = TestSelectionRoutingState(
+            routineTasks: [task, directRelationshipTask, inverseRelationshipTask, unrelatedTask],
+            routinePlaces: [place]
+        )
+        let router = makeRouter(TestSelectionRouterRecorder())
+
+        _ = router.setSelectedTask(taskID, state: &state)
+
+        let detailState = try #require(state.selection.taskDetailState)
+        #expect(Set(detailState.availableRelationshipTasks.map(\.id)) == [directRelationshipID, inverseRelationshipID])
+        #expect(!detailState.availableRelationshipTasks.contains(where: { $0.id == unrelatedID }))
+        #expect(detailState.availablePlaces == [
+            RoutinePlaceSummary(id: placeID, name: "Desk", radiusMeters: 150, linkedRoutineCount: 1)
+        ])
+    }
+
+    @Test
     func syncSelectedTaskFromTaskDetailCopiesDetailTaskAndRefreshesDisplays() {
         let taskID = UUID()
         let original = RoutineTask(id: taskID, name: "Original", emoji: "O")
@@ -106,6 +149,7 @@ private final class TestSelectionRouterRecorder {
 
 private struct TestSelectionRoutingState: HomeFeatureSelectionRoutingState, Equatable {
     var routineTasks: [RoutineTask] = []
+    var routinePlaces: [RoutinePlace] = []
     var selection = HomeSelectionState()
     var presentation = HomePresentationState()
 }

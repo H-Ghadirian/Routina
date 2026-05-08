@@ -67,6 +67,45 @@ enum HomeTaskSupport {
         )
     }
 
+    static func populateTaskDetailDisplayContext(
+        _ detailState: inout TaskDetailFeature.State,
+        tasks: [RoutineTask],
+        places: [RoutinePlace],
+        now: Date,
+        calendar: Calendar
+    ) {
+        guard !detailState.isEditSheetPresented else { return }
+
+        let task = detailState.task
+        let directRelationshipTargetIDs = Set(task.relationships.map(\.targetTaskID))
+        let relatedTasks = tasks.filter { candidate in
+            guard candidate.id != task.id else { return false }
+            if directRelationshipTargetIDs.contains(candidate.id) {
+                return true
+            }
+            return candidate.relationships.contains { $0.targetTaskID == task.id }
+        }
+        detailState.availableRelationshipTasks = RoutineTaskRelationshipCandidate.from(
+            relatedTasks,
+            excluding: task.id,
+            referenceDate: now,
+            calendar: calendar
+        )
+
+        guard let placeID = task.placeID,
+              let place = places.first(where: { $0.id == placeID }) else {
+            detailState.availablePlaces = []
+            return
+        }
+
+        let linkedRoutineCount = tasks.reduce(into: 0) { count, candidate in
+            if candidate.placeID == placeID {
+                count += 1
+            }
+        }
+        detailState.availablePlaces = [place.summary(linkedRoutineCount: linkedRoutineCount)]
+    }
+
     static func availableTags(from tasks: [RoutineTask]) -> [String] {
         RoutineTag.allTags(from: tasks.map(\.tags))
     }
