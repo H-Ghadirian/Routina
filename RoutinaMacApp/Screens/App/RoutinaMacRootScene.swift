@@ -38,7 +38,7 @@ struct RoutinaMacRootScene: Scene {
                     DispatchQueue.main.async {
                         MacMenuCleanup.removeUnneededMenus()
                     }
-                    widgetRefreshScheduler.schedule(delayNanoseconds: 300_000_000)
+                    widgetRefreshScheduler.scheduleLaunchRefresh()
                     focusTimerStatusStore.refresh()
                     activateHomeWindow()
                 }
@@ -75,25 +75,49 @@ struct RoutinaMacRootScene: Scene {
 @MainActor
 private final class RoutinaMacWidgetRefreshScheduler {
     private let persistence: PersistenceController
-    private var refreshTask: Task<Void, Never>?
+    private var focusRefreshTask: Task<Void, Never>?
+    private var statsRefreshTask: Task<Void, Never>?
 
     init(persistence: PersistenceController) {
         self.persistence = persistence
     }
 
+    func scheduleLaunchRefresh() {
+        scheduleFocusRefresh(delayNanoseconds: 300_000_000)
+        scheduleStatsRefresh(delayNanoseconds: 2_000_000_000)
+    }
+
     func schedule(delayNanoseconds: UInt64 = 150_000_000) {
-        refreshTask?.cancel()
-        refreshTask = Task { @MainActor [weak self] in
+        scheduleFocusRefresh(delayNanoseconds: delayNanoseconds)
+        scheduleStatsRefresh(delayNanoseconds: delayNanoseconds)
+    }
+
+    private func scheduleFocusRefresh(delayNanoseconds: UInt64) {
+        focusRefreshTask?.cancel()
+        focusRefreshTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: delayNanoseconds)
             guard !Task.isCancelled else { return }
-            self?.refreshNow()
+            self?.refreshFocusTimerWidget()
         }
     }
 
-    private func refreshNow() {
-        WidgetStatsService.refresh(using: persistence.container)
+    private func scheduleStatsRefresh(delayNanoseconds: UInt64) {
+        statsRefreshTask?.cancel()
+        statsRefreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+            guard !Task.isCancelled else { return }
+            self?.refreshStatsWidget()
+        }
+    }
+
+    private func refreshFocusTimerWidget() {
         FocusTimerWidgetService.refresh(using: persistence.container)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetCenter.shared.reloadTimelines(ofKind: FocusTimerWidgetService.widgetKind)
+    }
+
+    private func refreshStatsWidget() {
+        WidgetStatsService.refresh(using: persistence.container)
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetStatsService.widgetKind)
     }
 }
 

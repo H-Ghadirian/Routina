@@ -26,6 +26,33 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("homeToolbarTodoCount"))
     }
 
+    func testMacLaunchWidgetRefreshKeepsStatsWorkOutOfInitialScrollWindow() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
+
+        XCTAssertTrue(
+            source.contains("scheduleLaunchRefresh()"),
+            "Launch should use a dedicated schedule so broad stats work does not compete with the first task-detail scroll."
+        )
+        XCTAssertTrue(
+            source.contains("scheduleStatsRefresh(delayNanoseconds: 2_000_000_000)"),
+            "Stats widget refresh is intentionally delayed on launch because it may fetch many tasks/logs."
+        )
+        XCTAssertFalse(
+            source.contains("WidgetCenter.shared.reloadAllTimelines()"),
+            "Mac launch should reload only the Routina widgets whose data changed instead of invalidating every widget timeline."
+        )
+    }
+
+    func testWidgetStatsServiceDoesNotFetchCanceledLogsForStats() throws {
+        let source = try Self.sourceFile("SharedCore/Services/WidgetStatsService.swift")
+
+        XCTAssertFalse(
+            source.contains("FetchDescriptor<RoutineLog>()"),
+            "Widget stats should not fetch every routine log on launch; canceled logs are irrelevant for completion stats."
+        )
+        XCTAssertTrue(source.contains("log.kindRawValue == completedKindRawValue"))
+    }
+
     func testStatsChartsOnlyUseNestedScrollingWhenChartNeedsOverflow() {
         XCTAssertFalse(
             StatsChartPresentation(selectedRange: .today, isCompact: false).usesHorizontalChartScroll

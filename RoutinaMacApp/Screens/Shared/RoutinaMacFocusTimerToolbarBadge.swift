@@ -50,8 +50,9 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
     let maxTitleWidth: CGFloat
 
     var body: some View {
-        SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+        Group {
             let status = statusStore.status
+
             if status.isActive {
                 Button {
                     open(status)
@@ -60,8 +61,8 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
                         Image(systemName: status.kind?.systemImage ?? "timer")
                             .font(.caption.weight(.semibold))
 
-                        Text(status.menuBarTimeText(at: context.date))
-                            .font(.caption.monospacedDigit().weight(.semibold))
+                        Text(status.toolbarBadgeTitle)
+                            .font(.caption.weight(.semibold))
                             .lineLimit(1)
 
                         if showsTitle {
@@ -78,7 +79,7 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help(status.helpTitle(at: context.date))
+                .help(status.toolbarHelpTitle)
             }
         }
         .onAppear {
@@ -106,6 +107,17 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
 }
 
 private extension RoutinaMacFocusTimerStatus {
+    var toolbarBadgeTitle: String {
+        switch kind {
+        case .sprint:
+            return "Sprint"
+        case .task:
+            return "Focus"
+        case nil:
+            return "Focus"
+        }
+    }
+
     var tint: Color {
         switch kind {
         case .sprint:
@@ -117,8 +129,8 @@ private extension RoutinaMacFocusTimerStatus {
         }
     }
 
-    func helpTitle(at date: Date) -> String {
+    var toolbarHelpTitle: String {
         let target = kind == .sprint ? "sprint" : "task"
-        return "Open active \(target): \(shortTitle) • \(menuBarTimeText(at: date)) \(menuBarModeText(at: date))"
+        return "Open active \(target): \(shortTitle)"
     }
 }

@@ -25,7 +25,13 @@ public enum WidgetStatsService {
     public static func refresh(using context: ModelContext) {
         do {
             let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-            let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+            let completedKindRawValue = RoutineLogKind.completed.rawValue
+            let completedLogsDescriptor = FetchDescriptor<RoutineLog>(
+                predicate: #Predicate { log in
+                    log.kindRawValue == completedKindRawValue && log.timestamp != nil
+                }
+            )
+            let logs = try context.fetch(completedLogsDescriptor)
             let stats = WidgetStatsComputer.compute(tasks: tasks, logs: logs)
             write(stats)
         } catch {
