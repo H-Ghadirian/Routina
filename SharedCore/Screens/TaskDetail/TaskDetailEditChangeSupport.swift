@@ -117,11 +117,14 @@ enum TaskDetailEditChangeDetector {
             ]
         } ?? request.checklistItems
         let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
+        let removesExistingChecklist = sanitizedCandidateChecklistItems.isEmpty
+            && !currentChecklistItems.isEmpty
 
         guard request.scheduleMode == .fixedInterval
             || request.scheduleMode == .softInterval
             || request.scheduleMode == .oneOff
             || !sanitizedCandidateChecklistItems.isEmpty
+            || removesExistingChecklist
         else {
             return false
         }

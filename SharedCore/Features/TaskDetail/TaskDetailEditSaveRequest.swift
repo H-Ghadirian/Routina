@@ -56,17 +56,19 @@ struct TaskDetailEditSaveRequestBuilder {
 
         let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return nil }
-        guard !scheduleModeRequiresChecklistItems(state.editScheduleMode) || !state.editRoutineChecklistItems.isEmpty else {
+        let scheduleMode = effectiveScheduleMode(for: state)
+        guard !scheduleModeRequiresChecklistItems(scheduleMode) || !state.editRoutineChecklistItems.isEmpty else {
             return nil
         }
 
         state.isEditSheetPresented = false
 
-        let frequencyInterval = state.editScheduleMode == .oneOff
+        let frequencyInterval = scheduleMode == .oneOff
             ? 1
             : state.editFrequencyValue * state.editFrequency.daysMultiplier
         let recurrenceRule = selectedRecurrenceRule(
             for: state,
+            scheduleMode: scheduleMode,
             fallbackInterval: frequencyInterval
         )
 
@@ -76,7 +78,7 @@ struct TaskDetailEditSaveRequestBuilder {
             emoji: state.editRoutineEmoji,
             notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
             link: RoutineTask.sanitizedLink(state.editRoutineLink),
-            deadline: state.editScheduleMode == .oneOff ? state.editDeadline : nil,
+            deadline: scheduleMode == .oneOff ? state.editDeadline : nil,
             reminderAt: state.editReminderAt,
             priority: matrixPriority(state.editImportance, state.editUrgency),
             importance: state.editImportance,
@@ -88,13 +90,13 @@ struct TaskDetailEditSaveRequestBuilder {
             tags: state.editRoutineTags,
             goals: state.editRoutineGoals,
             relationships: state.editRelationships,
-            steps: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
+            steps: (scheduleMode == .fixedInterval || scheduleMode == .oneOff)
                 ? state.editRoutineSteps
                 : [],
-            checklistItems: (state.editScheduleMode == .fixedInterval || state.editScheduleMode == .oneOff)
+            checklistItems: (scheduleMode == .fixedInterval || scheduleMode == .oneOff)
                 ? []
                 : state.editRoutineChecklistItems,
-            scheduleMode: state.editScheduleMode,
+            scheduleMode: scheduleMode,
             recurrenceRule: recurrenceRule,
             color: state.editColor,
             autoAssumeDailyDone: state.editAutoAssumeDailyDone,
@@ -107,17 +109,18 @@ struct TaskDetailEditSaveRequestBuilder {
 
     private func selectedRecurrenceRule(
         for state: TaskDetailFeature.State,
+        scheduleMode: RoutineScheduleMode,
         fallbackInterval: Int
     ) -> RoutineRecurrenceRule {
-        guard state.editScheduleMode != .oneOff else {
+        guard scheduleMode != .oneOff else {
             return .interval(days: 1)
         }
 
-        guard state.editScheduleMode != .softInterval else {
+        guard scheduleMode != .softInterval else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
-        guard state.editScheduleMode != .derivedFromChecklist else {
+        guard scheduleMode != .derivedFromChecklist else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
@@ -165,5 +168,14 @@ struct TaskDetailEditSaveRequestBuilder {
 
     private func scheduleModeRequiresChecklistItems(_ scheduleMode: RoutineScheduleMode) -> Bool {
         scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
+    }
+
+    private func effectiveScheduleMode(for state: TaskDetailFeature.State) -> RoutineScheduleMode {
+        guard scheduleModeRequiresChecklistItems(state.editScheduleMode),
+              state.editRoutineChecklistItems.isEmpty,
+              !state.task.checklistItems.isEmpty else {
+            return state.editScheduleMode
+        }
+        return .fixedInterval
     }
 }

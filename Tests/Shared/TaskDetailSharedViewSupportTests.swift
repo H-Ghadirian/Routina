@@ -288,6 +288,28 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func editChangeDetectorAllowsRemovingExistingChecklist() {
+        let task = RoutineTask(
+            name: "Restock pantry",
+            checklistItems: [
+                RoutineChecklistItem(title: "Beans", intervalDays: 14),
+                RoutineChecklistItem(title: "Rice", intervalDays: 30)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        var state = TaskDetailFeature.State(task: task)
+        withDependencies {
+            $0.date.now = makeDate("2026-04-25T10:00:00Z")
+        } operation: {
+            TaskDetailFeature().syncEditFormFromTask(&state)
+        }
+
+        state.editRoutineChecklistItems = []
+
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+    }
+
+    @Test
     func logPresentationBuildsSharedLogAndChangeText() {
         let timestamp = makeDate("2026-04-25T08:30:00Z")
         let log = RoutineLog(
