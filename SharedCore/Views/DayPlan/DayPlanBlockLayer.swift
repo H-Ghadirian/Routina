@@ -9,9 +9,14 @@ struct DayPlanBlockLayer: View {
     var timeColumnWidth: CGFloat
     var blockAnimationNamespace: Namespace.ID
     var blocksForDate: (Date) -> [DayPlanBlock]
+    var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
     var taskTint: (DayPlanBlock) -> Color
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
+    var onOpenTimelineTaskDetails: (UUID) -> Void = { _ in }
+    var onTimelineDragProvider: (DayPlanTimelineActivityBlock, Date) -> NSItemProvider = { _, _ in
+        NSItemProvider(object: "" as NSString)
+    }
     var onDeleteBlock: (DayPlanBlock) -> Void
     var onResizeStarted: (DayPlanBlock, Date) -> Void
     var onResizeChanged: (DayPlanBlock, Date, DayPlanResizeEdge, CGFloat) -> Void
@@ -21,6 +26,40 @@ struct DayPlanBlockLayer: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
+                ForEach(automaticTimelineBlocksForDate(date)) { activity in
+                    let block = activity.block
+                    let blockHeight = blockHeight(for: block)
+                    DayPlanBlockCard(
+                        block: block,
+                        tint: taskTint(block),
+                        style: .automatic(activity.kind),
+                        isSelected: false,
+                        renderedHeight: blockHeight,
+                        selectedDate: date,
+                        calendar: calendar,
+                        onSelect: {},
+                        onOpenDetails: {
+                            onOpenTimelineTaskDetails(block.taskID)
+                        },
+                        onDelete: {},
+                        onResizeStarted: {},
+                        onResizeChanged: { _, _ in },
+                        onResizeEnded: {},
+                        onDragProvider: {
+                            onTimelineDragProvider(activity, date)
+                        }
+                    )
+                    .frame(
+                        width: max(dayWidth - 10, 90),
+                        height: blockHeight
+                    )
+                    .offset(
+                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
+                        y: yOffset(for: block.startMinute)
+                    )
+                    .zIndex(0)
+                }
+
                 ForEach(blocksForDate(date)) { block in
                     let blockHeight = blockHeight(for: block)
                     DayPlanBlockCard(

@@ -141,6 +141,231 @@ struct DayPlanPlannerStateTests {
 
         #expect(tasks.map(\.id) == [canceledTaskID, missedTaskID])
     }
+
+    @Test
+    func timelineActivityBlocksUseLatestActivityAndExcludePlannedTasks() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let plannedAt = try #require(date("2026-05-07T08:00:00Z"))
+        let olderActivityAt = try #require(date("2026-05-07T09:00:00Z"))
+        let latestActivityAt = try #require(date("2026-05-07T09:45:00Z"))
+        let canceledAt = try #require(date("2026-05-07T10:15:00Z"))
+        let plannedTaskID = UUID()
+        let activeTaskID = UUID()
+        let canceledTaskID = UUID()
+        let plannedTask = RoutineTask(
+            id: plannedTaskID,
+            name: "Already planned",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 60
+        )
+        let activeTask = RoutineTask(
+            id: activeTaskID,
+            name: "Review inbox",
+            emoji: "📬",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let canceledTask = RoutineTask(
+            id: canceledTaskID,
+            name: "Canceled errand",
+            scheduleMode: .oneOff,
+            canceledAt: canceledAt,
+            estimatedDurationMinutes: 35
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: plannedAt,
+                taskID: plannedTaskID,
+                kind: .completed,
+                actualDurationMinutes: 20
+            ),
+            RoutineLog(
+                timestamp: olderActivityAt,
+                taskID: activeTaskID,
+                kind: .missed,
+                actualDurationMinutes: 25
+            ),
+            RoutineLog(
+                timestamp: latestActivityAt,
+                taskID: activeTaskID,
+                kind: .completed,
+                actualDurationMinutes: 40
+            ),
+        ]
+        let plannedBlock = DayPlanBlock(
+            taskID: plannedTaskID,
+            dayKey: DayPlanStorage.dayKey(for: activityDate, calendar: calendar),
+            startMinute: 8 * 60,
+            durationMinutes: 60,
+            titleSnapshot: "Already planned"
+        )
+
+        let activityBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: activityDate,
+            from: [plannedTask, activeTask, canceledTask],
+            logs: logs,
+            plannedBlocks: [plannedBlock],
+            calendar: calendar
+        )
+
+        #expect(activityBlocks.map(\.block.taskID) == [activeTaskID, canceledTaskID])
+        #expect(activityBlocks.map(\.kind) == [.completed, .canceled])
+        #expect(activityBlocks.first?.block.startMinute == 9 * 60 + 45)
+        #expect(activityBlocks.first?.block.durationMinutes == 40)
+        #expect(activityBlocks.last?.block.durationMinutes == 35)
+    }
+
+    @Test
+    func movingTimelineActivityUpdatesLogAndTaskCompletionDate() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let originalTimestamp = try #require(date("2026-05-07T09:45:00Z"))
+        let targetDate = try #require(date("2026-05-08T12:00:00Z"))
+        let task = RoutineTask(
+            name: "Review inbox",
+            scheduleMode: .fixedInterval,
+            lastDone: originalTimestamp,
+            estimatedDurationMinutes: 40
+        )
+        let log = RoutineLog(
+            timestamp: originalTimestamp,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 40
+        )
+        context.insert(task)
+        context.insert(log)
+        try context.save()
+
+        let activity = try #require(
+            DayPlanTimelineTasks.activityBlocks(
+                on: originalTimestamp,
+                from: [task],
+                logs: [log],
+                plannedBlocks: [],
+                calendar: calendar
+            )
+            .first
+        )
+
+        let didMove = DayPlanTimelineTasks.moveActivity(
+            activity,
+            to: targetDate,
+            startMinute: 11 * 60 + 15,
+            tasks: [task],
+            logs: [log],
+            context: context,
+            calendar: calendar
+        )
+
+        let expectedTimestamp = try #require(date("2026-05-08T11:15:00Z"))
+        #expect(didMove)
+        #expect(log.timestamp == expectedTimestamp)
+        #expect(task.lastDone == expectedTimestamp)
+    }
+
+    @Test
+    func movingOlderTimelineCompletionDoesNotLowerLatestTaskCompletionDate() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let originalTimestamp = try #require(date("2026-05-07T09:45:00Z"))
+        let latestTimestamp = try #require(date("2026-05-09T14:00:00Z"))
+        let targetDate = try #require(date("2026-05-08T12:00:00Z"))
+        let task = RoutineTask(
+            name: "Review inbox",
+            scheduleMode: .fixedInterval,
+            lastDone: latestTimestamp,
+            estimatedDurationMinutes: 40
+        )
+        let log = RoutineLog(
+            timestamp: originalTimestamp,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 40
+        )
+        context.insert(task)
+        context.insert(log)
+        try context.save()
+
+        let activity = try #require(
+            DayPlanTimelineTasks.activityBlocks(
+                on: originalTimestamp,
+                from: [task],
+                logs: [log],
+                plannedBlocks: [],
+                calendar: calendar
+            )
+            .first
+        )
+
+        let didMove = DayPlanTimelineTasks.moveActivity(
+            activity,
+            to: targetDate,
+            startMinute: 11 * 60 + 15,
+            tasks: [task],
+            logs: [log],
+            context: context,
+            calendar: calendar
+        )
+
+        let expectedMovedTimestamp = try #require(date("2026-05-08T11:15:00Z"))
+        #expect(didMove)
+        #expect(log.timestamp == expectedMovedTimestamp)
+        #expect(task.lastDone == latestTimestamp)
+    }
+
+    @Test
+    func movingLegacyTimelineActivityCreatesMatchingLog() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let originalTimestamp = try #require(date("2026-05-07T09:45:00Z"))
+        let targetDate = try #require(date("2026-05-08T12:00:00Z"))
+        let task = RoutineTask(
+            name: "Legacy completion",
+            scheduleMode: .fixedInterval,
+            lastDone: originalTimestamp,
+            estimatedDurationMinutes: 40
+        )
+        context.insert(task)
+        try context.save()
+
+        let activity = try #require(
+            DayPlanTimelineTasks.activityBlocks(
+                on: originalTimestamp,
+                from: [task],
+                logs: [],
+                plannedBlocks: [],
+                calendar: calendar
+            )
+            .first
+        )
+
+        let didMove = DayPlanTimelineTasks.moveActivity(
+            activity,
+            to: targetDate,
+            startMinute: 11 * 60 + 15,
+            tasks: [task],
+            logs: [],
+            context: context,
+            calendar: calendar
+        )
+
+        let expectedTimestamp = try #require(date("2026-05-08T11:15:00Z"))
+        let taskID = task.id
+        let persistedLogs = try context.fetch(
+            FetchDescriptor<RoutineLog>(
+                predicate: #Predicate<RoutineLog> { log in
+                    log.taskID == taskID
+                }
+            )
+        )
+        #expect(didMove)
+        #expect(task.lastDone == expectedTimestamp)
+        #expect(persistedLogs.count == 1)
+        #expect(persistedLogs.first?.kind == .completed)
+        #expect(persistedLogs.first?.timestamp == expectedTimestamp)
+    }
 }
 
 private let gregorianCalendar: Calendar = {

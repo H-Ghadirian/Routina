@@ -36,17 +36,19 @@ struct DayPlanTaskDropDelegate: DropDelegate {
     let hourHeight: CGFloat
     let dropDurationMinutes: Int
     @Binding var draggedBlockID: DayPlanBlock.ID?
+    @Binding var draggedTimelineActivity: DayPlanTimelineActivityBlock?
     @Binding var draggedBlockDurationMinutes: Int?
     @Binding var isCompletingDrop: Bool
     @Binding var isDropTargeted: Bool
     @Binding var dropPreview: DayPlanDropPreview?
     let onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
+    let onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void
     let onDropTask: (UUID, Date, Int) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
         !isCompletingDrop
             && dropTarget(for: info.location) != nil
-            && (draggedBlockID != nil || info.hasItemsConforming(to: [.text]))
+            && (draggedBlockID != nil || draggedTimelineActivity != nil || info.hasItemsConforming(to: [.text]))
     }
 
     func dropEntered(info: DropInfo) {
@@ -64,8 +66,10 @@ struct DayPlanTaskDropDelegate: DropDelegate {
             return nil
         }
 
-        updatePreview(for: info)
-        return DropProposal(operation: draggedBlockID == nil ? .copy : .move)
+        guard updatePreview(for: info) else {
+            return nil
+        }
+        return DropProposal(operation: draggedBlockID == nil && draggedTimelineActivity == nil ? .copy : .move)
     }
 
     func dropExited(info: DropInfo) {
@@ -82,6 +86,14 @@ struct DayPlanTaskDropDelegate: DropDelegate {
             finishDrop()
             withAnimation(DayPlanMotion.dropCommit) {
                 onMoveBlock(draggedBlockID, target.date, target.startMinute)
+            }
+            return true
+        }
+
+        if let draggedTimelineActivity {
+            finishDrop()
+            withAnimation(DayPlanMotion.dropCommit) {
+                onMoveTimelineActivity(draggedTimelineActivity, target.date, target.startMinute)
             }
             return true
         }
@@ -114,24 +126,30 @@ struct DayPlanTaskDropDelegate: DropDelegate {
         return true
     }
 
-    private func updatePreview(for info: DropInfo) {
+    @discardableResult
+    private func updatePreview(for info: DropInfo) -> Bool {
         guard !isCompletingDrop else {
             clearDropState()
-            return
+            return false
         }
 
         guard let target = dropTarget(for: info.location) else {
-            dropPreview = nil
-            isDropTargeted = false
-            return
+            clearDropState()
+            return false
         }
 
-        isDropTargeted = true
-        dropPreview = DayPlanDropPreview(
+        let nextPreview = DayPlanDropPreview(
             dayIndex: target.dayIndex,
             startMinute: target.startMinute,
             durationMinutes: previewDuration(for: info)
         )
+        if isDropTargeted, dropPreview == nextPreview {
+            return true
+        }
+
+        isDropTargeted = true
+        dropPreview = nextPreview
+        return true
     }
 
     private func finishDrop() {
@@ -153,18 +171,26 @@ struct DayPlanTaskDropDelegate: DropDelegate {
     }
 
     private func clearDropState() {
-        isDropTargeted = false
-        dropPreview = nil
+        if isDropTargeted {
+            isDropTargeted = false
+        }
+        if dropPreview != nil {
+            dropPreview = nil
+        }
     }
 
     private func clearDragState() {
         draggedBlockID = nil
+        draggedTimelineActivity = nil
         draggedBlockDurationMinutes = nil
         clearDropState()
     }
 
     private func previewDuration(for info: DropInfo) -> Int {
         if draggedBlockID != nil {
+            return draggedBlockDurationMinutes ?? dropDurationMinutes
+        }
+        if draggedTimelineActivity != nil {
             return draggedBlockDurationMinutes ?? dropDurationMinutes
         }
         return dropDurationMinutes

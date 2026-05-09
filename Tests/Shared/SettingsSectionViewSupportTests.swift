@@ -49,7 +49,7 @@ struct SettingsSectionViewSupportTests {
 
         let presentation = SettingsSectionID.calendar.rowPresentation(in: state)
 
-        #expect(presentation.subtitle == "Timeline activity hidden • Persian dates")
+        #expect(presentation.subtitle == "Timeline badges • Persian dates")
         #expect(presentation.value == "Persian")
     }
 

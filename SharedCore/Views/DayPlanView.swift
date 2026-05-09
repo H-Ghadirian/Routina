@@ -226,7 +226,7 @@ struct DayPlanSidebarView: View {
     }
 
     private var activeFocusedUnplannedCompletedDate: Date? {
-        showsTimelineTasksInDayPlanner ? planner.focusedUnplannedCompletedDate : nil
+        showsTimelineTasksInDayPlanner ? nil : planner.focusedUnplannedCompletedDate
     }
 
     private var selectedTask: RoutineTask? {
@@ -366,6 +366,17 @@ private struct DayPlanTimelinePanelView: View {
     ) private var showsTimelineTasksInDayPlanner = true
 
     var body: some View {
+        let weekDates = planner.weekDates(calendar: calendar)
+        let plannedBlocksByDayKey = plannedBlocksByDayKey(for: weekDates)
+        let timelineBlocksByDayKey = DayPlanTimelineTasks.activityBlocksByDayKey(
+            on: weekDates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            calendar: calendar
+        )
+        let tintsByTaskID = tintsByTaskID()
+
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Day")
@@ -377,26 +388,29 @@ private struct DayPlanTimelinePanelView: View {
             }
 
             DayPlanWeekCalendarView(
-                dates: planner.weekDates(calendar: calendar),
+                dates: weekDates,
                 selectedBlockID: planner.selectedBlockID,
                 selectedDate: planner.selectedDate,
                 focusedUnplannedCompletedDate: activeFocusedUnplannedCompletedDate,
                 calendar: calendar,
                 dropDurationMinutes: planner.durationMinutes,
-                showsUnplannedCompletedBadges: showsTimelineTasksInDayPlanner,
+                showsUnplannedCompletedBadges: !showsTimelineTasksInDayPlanner,
                 blocksForDate: { date in
-                    planner.blocks(on: date, calendar: calendar, context: modelContext)
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return plannedBlocksByDayKey[dayKey] ?? []
+                },
+                automaticTimelineBlocksForDate: { date in
+                    guard showsTimelineTasksInDayPlanner else { return [] }
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return timelineBlocksByDayKey[dayKey] ?? []
                 },
                 unplannedCompletedCount: { date in
-                    DayPlanTimelineTasks.count(
-                        on: date,
-                        tasks: tasks,
-                        logs: logs,
-                        plannedBlocks: planner.blocks(on: date, calendar: calendar, context: modelContext),
-                        calendar: calendar
-                    )
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return timelineBlocksByDayKey[dayKey]?.count ?? 0
                 },
-                taskTint: taskTint(for:),
+                taskTint: { block in
+                    tintsByTaskID[block.taskID] ?? .accentColor
+                },
                 onSelectUnplannedCompletedDate: { date in
                     planner.focusUnplannedCompletedTasks(on: date, calendar: calendar)
                     onSelectUnplannedCompletedDate?(date)
@@ -411,11 +425,21 @@ private struct DayPlanTimelinePanelView: View {
                     planner.edit(block, on: date, calendar: calendar, context: modelContext)
                     onOpenTaskDetails?(block.taskID)
                 },
+                onOpenTimelineTaskDetails: { taskID in
+                    if let task = tasks.first(where: { $0.id == taskID }) {
+                        planner.selectedBlockID = nil
+                        planner.selectTask(task)
+                    }
+                    onOpenTaskDetails?(taskID)
+                },
                 onDeleteBlock: { block in
                     planner.deleteBlock(block.id, calendar: calendar, context: modelContext)
                 },
                 onMoveBlock: { blockID, date, minute in
                     planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar, context: modelContext)
+                },
+                onMoveTimelineActivity: { activity, date, minute in
+                    moveTimelineActivity(activity, to: date, startMinute: minute)
                 },
                 onResizeBlock: { blockID, date, startMinute, durationMinutes in
                     planner.resizeBlock(
@@ -434,18 +458,50 @@ private struct DayPlanTimelinePanelView: View {
         }
         .dayPlanLifecycle(planner: planner, tasks: tasks, calendar: calendar)
         .onChange(of: showsTimelineTasksInDayPlanner) { _, isEnabled in
-            if !isEnabled {
+            if isEnabled {
                 planner.clearFocusedUnplannedCompletedTasks()
             }
         }
     }
 
     private var activeFocusedUnplannedCompletedDate: Date? {
-        showsTimelineTasksInDayPlanner ? planner.focusedUnplannedCompletedDate : nil
+        showsTimelineTasksInDayPlanner ? nil : planner.focusedUnplannedCompletedDate
     }
 
-    private func taskTint(for block: DayPlanBlock) -> Color {
-        tasks.first { $0.id == block.taskID }?.color.swiftUIColor ?? .accentColor
+    private func plannedBlocksByDayKey(for dates: [Date]) -> [String: [DayPlanBlock]] {
+        Dictionary(
+            uniqueKeysWithValues: dates.map { date in
+                let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                return (
+                    dayKey,
+                    planner.blocks(on: date, calendar: calendar, context: modelContext)
+                )
+            }
+        )
+    }
+
+    private func tintsByTaskID() -> [UUID: Color] {
+        var result: [UUID: Color] = [:]
+        for task in tasks {
+            result[task.id] = task.color.swiftUIColor ?? .accentColor
+        }
+        return result
+    }
+
+    private func moveTimelineActivity(
+        _ activity: DayPlanTimelineActivityBlock,
+        to date: Date,
+        startMinute: Int
+    ) {
+        _ = DayPlanTimelineTasks.moveActivity(
+            activity,
+            to: date,
+            startMinute: startMinute,
+            tasks: tasks,
+            logs: logs,
+            context: modelContext,
+            calendar: calendar
+        )
     }
 
     private func dropTask(_ taskID: UUID, on date: Date, startMinute: Int) {

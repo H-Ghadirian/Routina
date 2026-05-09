@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum DayPlanTaskSorting {
     static func availableTasks(from tasks: [RoutineTask]) -> [RoutineTask] {
@@ -40,6 +41,29 @@ enum DayPlanTaskSorting {
         let trimmed = RoutineTask.trimmedName(task.name) ?? ""
         return trimmed.isEmpty ? "Untitled task" : trimmed
     }
+}
+
+struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
+    var block: DayPlanBlock
+    var kind: RoutineLogKind
+    var source: DayPlanTimelineActivitySource
+
+    var id: String {
+        switch source {
+        case let .log(logID):
+            return "timeline-log-\(logID.uuidString)"
+        case .taskLastDone:
+            return "timeline-last-done-\(block.taskID.uuidString)"
+        case .taskCanceledAt:
+            return "timeline-canceled-\(block.taskID.uuidString)"
+        }
+    }
+}
+
+enum DayPlanTimelineActivitySource: Equatable {
+    case log(UUID)
+    case taskLastDone
+    case taskCanceledAt
 }
 
 enum DayPlanTimelineTasks {
@@ -102,6 +126,125 @@ enum DayPlanTimelineTasks {
                     return lhsDate > rhsDate
                 }
                 return DayPlanTaskSorting.title(for: lhs).localizedCaseInsensitiveCompare(DayPlanTaskSorting.title(for: rhs)) == .orderedAscending
+            }
+    }
+
+    static func activityBlocks(
+        on date: Date,
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocks: [DayPlanBlock],
+        calendar: Calendar
+    ) -> [DayPlanTimelineActivityBlock] {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        return activityBlocksByDayKey(
+            on: [date],
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: [dayKey: plannedBlocks],
+            calendar: calendar
+        )[dayKey] ?? []
+    }
+
+    static func activityBlocksByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        calendar: Calendar
+    ) -> [String: [DayPlanTimelineActivityBlock]] {
+        let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
+        guard !visibleDayKeys.isEmpty else { return [:] }
+
+        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        let knownTaskIDs = Set(tasksByID.keys)
+        let plannedTaskIDsByDayKey = plannedBlocksByDayKey.mapValues { Set($0.map(\.taskID)) }
+        var latestActivityByKey: [DayPlanTimelineActivityKey: DayPlanTimelineActivity] = [:]
+
+        func record(_ activity: DayPlanTimelineActivity, taskID: UUID) {
+            guard knownTaskIDs.contains(taskID) else { return }
+            let dayKey = DayPlanStorage.dayKey(for: activity.timestamp, calendar: calendar)
+            guard visibleDayKeys.contains(dayKey) else { return }
+            guard plannedTaskIDsByDayKey[dayKey]?.contains(taskID) != true else { return }
+
+            let key = DayPlanTimelineActivityKey(dayKey: dayKey, taskID: taskID)
+            if let existing = latestActivityByKey[key], existing.timestamp >= activity.timestamp {
+                return
+            }
+            latestActivityByKey[key] = activity
+        }
+
+        for log in logs {
+            guard let timestamp = log.timestamp else { continue }
+            record(
+                DayPlanTimelineActivity(
+                    timestamp: timestamp,
+                    kind: log.kind,
+                    actualDurationMinutes: log.actualDurationMinutes,
+                    source: .log(log.id)
+                ),
+                taskID: log.taskID
+            )
+        }
+
+        for task in tasks {
+            if let lastDone = task.lastDone {
+                record(
+                    DayPlanTimelineActivity(
+                        timestamp: lastDone,
+                        kind: .completed,
+                        actualDurationMinutes: nil,
+                        source: .taskLastDone
+                    ),
+                    taskID: task.id
+                )
+            }
+
+            if let canceledAt = task.canceledAt {
+                record(
+                    DayPlanTimelineActivity(
+                        timestamp: canceledAt,
+                        kind: .canceled,
+                        actualDurationMinutes: nil,
+                        source: .taskCanceledAt
+                    ),
+                    taskID: task.id
+                )
+            }
+        }
+
+        let blocks = latestActivityByKey.compactMap { key, activity -> DayPlanTimelineActivityBlock? in
+            guard let task = tasksByID[key.taskID] else { return nil }
+            let startMinute = startMinute(for: activity.timestamp, calendar: calendar)
+            let durationMinutes = activity.actualDurationMinutes
+                ?? task.estimatedDurationMinutes
+                ?? DayPlanBlock.minimumDurationMinutes * 2
+            let block = DayPlanBlock(
+                id: task.id,
+                taskID: task.id,
+                dayKey: key.dayKey,
+                startMinute: startMinute,
+                durationMinutes: durationMinutes,
+                titleSnapshot: DayPlanTaskSorting.title(for: task),
+                emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                createdAt: activity.timestamp,
+                updatedAt: activity.timestamp
+            )
+            return DayPlanTimelineActivityBlock(
+                block: block,
+                kind: activity.kind,
+                source: activity.source
+            )
+        }
+
+        return Dictionary(grouping: blocks, by: \.block.dayKey)
+            .mapValues {
+                $0.sorted { lhs, rhs in
+                    if lhs.block.startMinute != rhs.block.startMinute {
+                        return lhs.block.startMinute < rhs.block.startMinute
+                    }
+                    return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+                }
             }
     }
 
@@ -177,6 +320,220 @@ enum DayPlanTimelineTasks {
         }
         return dates.max()
     }
+
+    @MainActor
+    @discardableResult
+    static func moveActivity(
+        _ activity: DayPlanTimelineActivityBlock,
+        to date: Date,
+        startMinute: Int,
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        context: ModelContext,
+        calendar: Calendar
+    ) -> Bool {
+        guard let task = tasks.first(where: { $0.id == activity.block.taskID }) else {
+            return false
+        }
+
+        let targetTimestamp = timestamp(on: date, startMinute: startMinute, calendar: calendar)
+        let sourceTimestamp = activity.block.updatedAt
+        let taskLogs = logs.filter { $0.taskID == activity.block.taskID }
+        let movedLog: RoutineLog?
+
+        switch activity.source {
+        case let .log(logID):
+            guard let log = taskLogs.first(where: { $0.id == logID }) else {
+                return false
+            }
+            log.timestamp = targetTimestamp
+            movedLog = log
+
+        case .taskLastDone:
+            task.lastDone = targetTimestamp
+            movedLog = upsertFallbackLog(
+                taskID: task.id,
+                kind: .completed,
+                sourceTimestamp: sourceTimestamp,
+                targetTimestamp: targetTimestamp,
+                logs: taskLogs,
+                context: context
+            )
+
+        case .taskCanceledAt:
+            task.canceledAt = targetTimestamp
+            movedLog = upsertFallbackLog(
+                taskID: task.id,
+                kind: .canceled,
+                sourceTimestamp: sourceTimestamp,
+                targetTimestamp: targetTimestamp,
+                logs: taskLogs,
+                context: context
+            )
+        }
+
+        synchronizeTaskActivityDates(
+            for: task,
+            movedKind: activity.kind,
+            sourceTimestamp: sourceTimestamp,
+            targetTimestamp: targetTimestamp,
+            movedLogID: movedLog?.id,
+            logs: taskLogs,
+            calendar: calendar
+        )
+
+        do {
+            try context.save()
+            NotificationCenter.default.postRoutineDidUpdate()
+            return true
+        } catch {
+            NSLog("Failed to move timeline activity in day planner: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    private static func latestActivity(
+        for task: RoutineTask,
+        logs: [RoutineLog],
+        on date: Date,
+        calendar: Calendar
+    ) -> DayPlanTimelineActivity? {
+        var activities = logs.compactMap { log -> DayPlanTimelineActivity? in
+            guard log.taskID == task.id,
+                  let timestamp = log.timestamp,
+                  calendar.isDate(timestamp, inSameDayAs: date)
+            else { return nil }
+
+            return DayPlanTimelineActivity(
+                timestamp: timestamp,
+                kind: log.kind,
+                actualDurationMinutes: log.actualDurationMinutes,
+                source: .log(log.id)
+            )
+        }
+
+        if let lastDone = task.lastDone, calendar.isDate(lastDone, inSameDayAs: date) {
+            activities.append(
+                DayPlanTimelineActivity(
+                    timestamp: lastDone,
+                    kind: .completed,
+                    actualDurationMinutes: nil,
+                    source: .taskLastDone
+                )
+            )
+        }
+
+        if let canceledAt = task.canceledAt, calendar.isDate(canceledAt, inSameDayAs: date) {
+            activities.append(
+                DayPlanTimelineActivity(
+                    timestamp: canceledAt,
+                    kind: .canceled,
+                    actualDurationMinutes: nil,
+                    source: .taskCanceledAt
+                )
+            )
+        }
+
+        return activities.max { lhs, rhs in
+            lhs.timestamp < rhs.timestamp
+        }
+    }
+
+    private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: timestamp)
+        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        return DayPlanBlock.clampedStartMinute(minute)
+    }
+
+    private static func timestamp(on date: Date, startMinute: Int, calendar: Calendar) -> Date {
+        let startOfDay = calendar.startOfDay(for: date)
+        return calendar.date(
+            byAdding: .minute,
+            value: DayPlanBlock.clampedStartMinute(startMinute),
+            to: startOfDay
+        ) ?? startOfDay
+    }
+
+    @MainActor
+    private static func upsertFallbackLog(
+        taskID: UUID,
+        kind: RoutineLogKind,
+        sourceTimestamp: Date,
+        targetTimestamp: Date,
+        logs: [RoutineLog],
+        context: ModelContext
+    ) -> RoutineLog {
+        if let log = logs.first(where: { log in
+            log.kind == kind && log.timestamp == sourceTimestamp
+        }) {
+            log.timestamp = targetTimestamp
+            return log
+        }
+
+        let log = RoutineLog(timestamp: targetTimestamp, taskID: taskID, kind: kind)
+        context.insert(log)
+        return log
+    }
+
+    private static func synchronizeTaskActivityDates(
+        for task: RoutineTask,
+        movedKind: RoutineLogKind,
+        sourceTimestamp: Date,
+        targetTimestamp: Date,
+        movedLogID: UUID?,
+        logs: [RoutineLog],
+        calendar: Calendar
+    ) {
+        switch movedKind {
+        case .completed:
+            var completionDates = logs
+                .filter { $0.kind == .completed }
+                .compactMap { log -> Date? in
+                    if log.id == movedLogID {
+                        return targetTimestamp
+                    }
+                    return log.timestamp
+                }
+            if !logs.contains(where: { $0.id == movedLogID }) {
+                completionDates.append(targetTimestamp)
+            }
+            if let currentLastDone = task.lastDone, currentLastDone != sourceTimestamp {
+                completionDates.append(currentLastDone)
+            }
+            let latestCompletion = completionDates
+                .max()
+            task.lastDone = latestCompletion
+            task.canceledAt = nil
+            if task.usesRollingScheduleAnchor {
+                task.scheduleAnchor = latestCompletion
+            } else if task.isOneOffTask {
+                task.scheduleAnchor = latestCompletion
+            } else if task.scheduleAnchor == sourceTimestamp {
+                task.scheduleAnchor = latestCompletion
+            }
+
+        case .canceled:
+            if task.canceledAt == sourceTimestamp
+                || task.canceledAt.map({ calendar.isDate($0, inSameDayAs: sourceTimestamp) }) == true {
+                task.canceledAt = targetTimestamp
+            }
+
+        case .missed:
+            break
+        }
+    }
+}
+
+private struct DayPlanTimelineActivity: Equatable {
+    var timestamp: Date
+    var kind: RoutineLogKind
+    var actualDurationMinutes: Int?
+    var source: DayPlanTimelineActivitySource
+}
+
+private struct DayPlanTimelineActivityKey: Hashable {
+    var dayKey: String
+    var taskID: UUID
 }
 
 enum DayPlanFormatting {

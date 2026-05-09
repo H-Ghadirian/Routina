@@ -225,9 +225,9 @@ private struct SettingsCalendarDetailView: View {
                 }
 
                 Section("Planner Calendar") {
-                    Toggle("Show timeline tasks in planner", isOn: showTimelineTasksInDayPlannerBinding)
+                    Toggle("Show timeline tasks automatically in planner", isOn: showTimelineTasksInDayPlannerBinding)
 
-                    Text("Shows past timeline activity on planner dates when those tasks are not already placed in the day.")
+                    Text("When off, planner dates show a timeline badge that opens the activity list instead.")
                         .foregroundStyle(.secondary)
                 }
 

@@ -11,6 +11,9 @@ extension HomeTCAView {
     var isMacAddTaskMode: Bool { store.macSidebarMode == .addTask }
     var isMacSegmentedBoardMode: Bool { isMacRoutinesMode && macHomeDetailMode == .board }
     var isMacBoardSidebarPresented: Bool { isMacBoardMode || isMacSegmentedBoardMode }
+    var shouldHideMacSidebarHeaderForDayPlanTimelineFilter: Bool {
+        dayPlanUnplannedCompletedFilterDate != nil && macHomeDetailMode == .planner
+    }
 
     var macSidebarNavigationTitle: String {
         if store.isMacFilterDetailPresented {
@@ -346,7 +349,7 @@ extension HomeTCAView {
         Group {
             if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
-            } else if isMacRoutinesMode && store.routineTasks.isEmpty {
+            } else if isMacRoutinesMode && store.routineTasks.isEmpty && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                 VStack(spacing: 0) {
                     macSidebarHeader
                     Divider()
@@ -374,9 +377,11 @@ extension HomeTCAView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 VStack(spacing: 0) {
-                    macSidebarHeader
+                    if !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
+                        macSidebarHeader
 
-                    Divider()
+                        Divider()
+                    }
 
                     if isMacTimelineMode {
                         macTimelineSidebarView

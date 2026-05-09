@@ -2,8 +2,14 @@ import Foundation
 import SwiftUI
 
 struct DayPlanBlockCard: View {
+    enum Style: Equatable {
+        case manual
+        case automatic(RoutineLogKind)
+    }
+
     var block: DayPlanBlock
     var tint: Color
+    var style: Style = .manual
     var isSelected: Bool
     var renderedHeight: CGFloat
     var selectedDate: Date
@@ -17,48 +23,86 @@ struct DayPlanBlockCard: View {
     var onDragProvider: () -> NSItemProvider
 
     var body: some View {
+        if isAutomatic {
+            automaticCard
+        } else {
+            manualCard
+        }
+    }
+
+    private var baseCard: some View {
         cardContent
             .padding(contentInsets)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(tint.opacity(isSelected ? 0.22 : 0.14))
+                    .fill(tint.opacity(fillOpacity))
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(tint.opacity(isSelected ? 0.75 : 0.35), lineWidth: isSelected ? 2 : 1)
+                    .stroke(
+                        tint.opacity(strokeOpacity),
+                        style: StrokeStyle(lineWidth: strokeWidth, dash: strokeDash)
+                    )
+            }
+            .overlay(alignment: .leading) {
+                if isAutomatic {
+                    DayPlanAutomaticActivityStripe(tint: tint)
+                        .frame(width: 9)
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if let automaticKind, renderedHeight >= 28 {
+                    Image(systemName: automaticIconName(for: automaticKind))
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(tint)
+                        .padding(4)
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .accessibilityAddTraits(.isButton)
+    }
+
+    private var manualCard: some View {
+        baseCard
             .onTapGesture(count: 2) {
                 onOpenDetails()
             }
             .onTapGesture {
                 onSelect()
             }
-            .accessibilityAddTraits(.isButton)
-        .onDrag(onDragProvider)
-        .overlay(alignment: .top) {
-            DayPlanResizeHandle(
-                edge: .top,
-                isSelected: isSelected,
-                onResizeStarted: onResizeStarted,
-                onResizeChanged: onResizeChanged,
-                onResizeEnded: onResizeEnded
-            )
-        }
-        .overlay(alignment: .bottom) {
-            DayPlanResizeHandle(
-                edge: .bottom,
-                isSelected: isSelected,
-                onResizeStarted: onResizeStarted,
-                onResizeChanged: onResizeChanged,
-                onResizeEnded: onResizeEnded
-            )
-        }
-        .contextMenu {
-            Button("Delete", role: .destructive, action: onDelete)
-        }
+            .onDrag(onDragProvider)
+            .overlay(alignment: .top) {
+                DayPlanResizeHandle(
+                    edge: .top,
+                    isSelected: isSelected,
+                    onResizeStarted: onResizeStarted,
+                    onResizeChanged: onResizeChanged,
+                    onResizeEnded: onResizeEnded
+                )
+            }
+            .overlay(alignment: .bottom) {
+                DayPlanResizeHandle(
+                    edge: .bottom,
+                    isSelected: isSelected,
+                    onResizeStarted: onResizeStarted,
+                    onResizeChanged: onResizeChanged,
+                    onResizeEnded: onResizeEnded
+                )
+            }
+            .contextMenu {
+                Button("Delete", role: .destructive, action: onDelete)
+            }
+    }
+
+    private var automaticCard: some View {
+        baseCard
+            .onTapGesture {
+                onOpenDetails()
+            }
+            .onDrag(onDragProvider)
+            .help(automaticHelpText)
     }
 
     @ViewBuilder
@@ -132,12 +176,80 @@ struct DayPlanBlockCard: View {
     }
 
     private var contentInsets: EdgeInsets {
+        let automaticLeadingPadding: CGFloat = isAutomatic ? 8 : 0
+        let automaticTrailingPadding: CGFloat = isAutomatic && renderedHeight >= 28 ? 18 : 0
+
         if renderedHeight < 36 {
-            EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6)
+            return EdgeInsets(
+                top: 1,
+                leading: 6 + automaticLeadingPadding,
+                bottom: 1,
+                trailing: 6 + automaticTrailingPadding
+            )
         } else if renderedHeight < 48 {
-            EdgeInsets(top: 2, leading: 7, bottom: 2, trailing: 7)
+            return EdgeInsets(
+                top: 2,
+                leading: 7 + automaticLeadingPadding,
+                bottom: 2,
+                trailing: 7 + automaticTrailingPadding
+            )
         } else {
-            EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8)
+            return EdgeInsets(
+                top: 8,
+                leading: 8 + automaticLeadingPadding,
+                bottom: 8,
+                trailing: 8 + automaticTrailingPadding
+            )
+        }
+    }
+
+    private var isAutomatic: Bool {
+        automaticKind != nil
+    }
+
+    private var automaticKind: RoutineLogKind? {
+        if case let .automatic(kind) = style {
+            return kind
+        }
+        return nil
+    }
+
+    private var fillOpacity: Double {
+        isAutomatic ? 0.08 : (isSelected ? 0.22 : 0.14)
+    }
+
+    private var strokeOpacity: Double {
+        isAutomatic ? 0.72 : (isSelected ? 0.75 : 0.35)
+    }
+
+    private var strokeWidth: CGFloat {
+        isAutomatic ? 1.5 : (isSelected ? 2 : 1)
+    }
+
+    private var strokeDash: [CGFloat] {
+        isAutomatic ? [5, 4] : []
+    }
+
+    private func automaticIconName(for kind: RoutineLogKind) -> String {
+        switch kind {
+        case .completed:
+            return "checkmark.circle.fill"
+        case .missed:
+            return "exclamationmark.triangle.fill"
+        case .canceled:
+            return "xmark.circle.fill"
+        }
+    }
+
+    private var automaticHelpText: String {
+        guard let automaticKind else { return "Automatically shown from timeline activity" }
+        switch automaticKind {
+        case .completed:
+            return "Automatically shown from completed timeline activity"
+        case .missed:
+            return "Automatically shown from missed timeline activity"
+        case .canceled:
+            return "Automatically shown from canceled timeline activity"
         }
     }
 
@@ -146,5 +258,19 @@ struct DayPlanBlockCard: View {
         let end = DayPlanFormatting.timeText(for: block.endMinute, on: selectedDate, calendar: calendar)
         let duration = DayPlanFormatting.durationText(block.durationMinutes)
         return "\(start)-\(end)  \(duration)"
+    }
+}
+
+private struct DayPlanAutomaticActivityStripe: View {
+    var tint: Color
+
+    var body: some View {
+        Rectangle()
+            .fill(tint.opacity(0.14))
+            .overlay(alignment: .leading) {
+                Rectangle()
+                    .fill(tint.opacity(0.70))
+                    .frame(width: 2)
+            }
     }
 }

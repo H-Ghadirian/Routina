@@ -290,8 +290,8 @@ extension SettingsAppearanceState {
 
     var calendarOverviewSubtitle: String {
         let plannerText = showsTimelineTasksInDayPlanner
-            ? "Timeline activity in planner"
-            : "Timeline activity hidden"
+            ? "Automatic timeline activity"
+            : "Timeline badges"
 
         if showPersianDates {
             return "\(plannerText) • Persian dates"

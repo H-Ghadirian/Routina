@@ -14,14 +14,17 @@ struct DayPlanWeekCalendarView: View {
     var dropDurationMinutes: Int
     var showsUnplannedCompletedBadges: Bool
     var blocksForDate: (Date) -> [DayPlanBlock]
+    var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
     var unplannedCompletedCount: (Date) -> Int
     var taskTint: (DayPlanBlock) -> Color
     var onSelectUnplannedCompletedDate: (Date) -> Void
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
+    var onOpenTimelineTaskDetails: (UUID) -> Void = { _ in }
     var onDeleteBlock: (DayPlanBlock) -> Void
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
+    var onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void = { _, _, _ in }
     var onResizeBlock: (DayPlanBlock.ID, Date, Int, Int) -> Void
     var onDropTask: (UUID, Date, Int) -> Void
 
@@ -29,6 +32,7 @@ struct DayPlanWeekCalendarView: View {
     @State private var isCompletingDrop = false
     @State private var dropPreview: DayPlanDropPreview?
     @State private var draggedBlockID: DayPlanBlock.ID?
+    @State private var draggedTimelineActivity: DayPlanTimelineActivityBlock?
     @State private var draggedBlockDurationMinutes: Int?
     @State private var resizeSession: DayPlanResizeSession?
     @Namespace private var blockAnimationNamespace
@@ -79,9 +83,14 @@ struct DayPlanWeekCalendarView: View {
                                 timeColumnWidth: timeColumnWidth,
                                 blockAnimationNamespace: blockAnimationNamespace,
                                 blocksForDate: blocksForDate,
+                                automaticTimelineBlocksForDate: automaticTimelineBlocksForDate,
                                 taskTint: taskTint,
                                 onSelectBlock: onSelectBlock,
                                 onOpenBlockDetails: onOpenBlockDetails,
+                                onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
+                                onTimelineDragProvider: { activity, date in
+                                    dragProvider(for: activity, on: date)
+                                },
                                 onDeleteBlock: onDeleteBlock,
                                 onResizeStarted: { block, date in
                                     beginResize(block, date)
@@ -103,7 +112,6 @@ struct DayPlanWeekCalendarView: View {
                                     hourHeight: hourHeight,
                                     timeColumnWidth: timeColumnWidth
                                 )
-                                .animation(DayPlanMotion.dropPreview, value: dropPreview)
                             }
                             DayPlanCurrentTimeScrollAnchor(
                                 dates: dates,
@@ -131,11 +139,13 @@ struct DayPlanWeekCalendarView: View {
                                 hourHeight: hourHeight,
                                 dropDurationMinutes: dropDurationMinutes,
                                 draggedBlockID: $draggedBlockID,
+                                draggedTimelineActivity: $draggedTimelineActivity,
                                 draggedBlockDurationMinutes: $draggedBlockDurationMinutes,
                                 isCompletingDrop: $isCompletingDrop,
                                 isDropTargeted: $isDropTargeted,
                                 dropPreview: $dropPreview,
                                 onMoveBlock: onMoveBlock,
+                                onMoveTimelineActivity: onMoveTimelineActivity,
                                 onDropTask: onDropTask
                             )
                         )
@@ -160,6 +170,7 @@ struct DayPlanWeekCalendarView: View {
     private func beginResize(_ block: DayPlanBlock, _ date: Date) {
         clearDropState()
         draggedBlockID = nil
+        draggedTimelineActivity = nil
         draggedBlockDurationMinutes = nil
         onSelectBlock(block, date)
         resizeSession = DayPlanResizeSession(
@@ -225,9 +236,20 @@ struct DayPlanWeekCalendarView: View {
         clearDropState()
         endResize()
         draggedBlockID = block.id
+        draggedTimelineActivity = nil
         draggedBlockDurationMinutes = block.durationMinutes
         onSelectBlock(block, date)
         return NSItemProvider(object: DayPlanBlockDragPayload.text(for: block.id) as NSString)
+    }
+
+    private func dragProvider(for activity: DayPlanTimelineActivityBlock, on date: Date) -> NSItemProvider {
+        isCompletingDrop = false
+        clearDropState()
+        endResize()
+        draggedBlockID = nil
+        draggedTimelineActivity = activity
+        draggedBlockDurationMinutes = activity.block.durationMinutes
+        return NSItemProvider(object: "day-plan-timeline-activity:\(activity.id)" as NSString)
     }
 
     private func scrollToCurrentTime(with proxy: ScrollViewProxy) {
