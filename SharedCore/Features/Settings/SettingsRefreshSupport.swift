@@ -15,6 +15,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var appLockEnabled: Bool
     var gitFeaturesEnabled: Bool
     var showPersianDates: Bool
+    var showTimelineTasksInDayPlanner: Bool
     var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
     var hasTemporaryViewStateToReset: Bool
@@ -70,6 +71,7 @@ enum SettingsRefreshEditor {
             appLockEnabled: snapshot.appLockEnabled,
             gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
             showPersianDates: snapshot.showPersianDates,
+            showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
             deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,
             selectedAppIcon: snapshot.selectedAppIcon,
             hasTemporaryViewStateToReset: snapshot.hasTemporaryViewStateToReset,

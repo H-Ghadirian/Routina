@@ -58,6 +58,7 @@ struct SettingsAppearanceState: Equatable {
     var appLockStatusMessage: String = ""
     var isGitFeaturesEnabled: Bool = false
     var showPersianDates: Bool = false
+    var showsTimelineTasksInDayPlanner: Bool = true
     var appIconStatusMessage: String = ""
     var selectedAppIcon: AppIconOption = .orange
     var hasTemporaryViewStateToReset: Bool = false

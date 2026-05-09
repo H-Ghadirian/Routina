@@ -120,6 +120,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func showTimelineTasksInDayPlannerToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.showsTimelineTasksInDayPlanner = isEnabled
+        appSettingsClient.setShowTimelineTasksInDayPlanner(isEnabled)
+        return .none
+    }
+
     static func resetTemporaryViewStateTapped(
         state: inout SettingsAppearanceState,
         appSettingsClient: AppSettingsClient

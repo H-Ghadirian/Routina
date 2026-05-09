@@ -4,18 +4,6 @@ import ComposableArchitecture
 struct SettingsAppearanceDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var resetFeedbackTrigger = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingShowDayPlanUnplannedDoneBadges.rawValue,
-        store: SharedDefaults.app
-    ) private var showsDayPlanUnplannedDoneBadges = true
-    @AppStorage(
-        BatteryRoutinePreferences.monitoringEnabledDefaultsKey,
-        store: SharedDefaults.app
-    ) private var batteryRoutineMonitoringEnabled = true
-    @AppStorage(
-        BatteryRoutinePreferences.thresholdPercentDefaultsKey,
-        store: SharedDefaults.app
-    ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
 
     private let columns = [
         GridItem(.adaptive(minimum: 108), spacing: 12)
@@ -48,25 +36,6 @@ struct SettingsAppearanceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section("Day Planner") {
-                    Toggle("Show timeline task badges", isOn: $showsDayPlanUnplannedDoneBadges)
-
-                    Text("Shows a small count on each planner day when timeline tasks for that date are not yet placed in the day.")
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Battery Routines") {
-                    Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
-
-                    Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
-                        Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
-                    }
-                    .disabled(!batteryRoutineMonitoringEnabled)
-
-                    Text("Routina creates one charge routine for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
-                        .foregroundStyle(.secondary)
-                }
-
                 Section("Tag Counters") {
                     Picker("Display", selection: tagCounterDisplayModeBinding) {
                         ForEach(TagCounterDisplayMode.allCases) { mode in
@@ -76,25 +45,6 @@ struct SettingsAppearanceDetailView: View {
                     .pickerStyle(.menu)
 
                     Text(store.appearance.tagCounterDisplayMode.subtitle)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("App Lock") {
-                    Toggle("Require unlock when opening Routina", isOn: appLockBinding)
-                        .disabled(store.appearance.isAppLockToggleInProgress)
-
-                    if store.appearance.isAppLockToggleInProgress {
-                        ProgressView("Verifying device authentication…")
-                    }
-
-                    Text(store.appearance.appLockDetailText)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Advanced") {
-                    Toggle("Enable Git features", isOn: gitFeaturesBinding)
-
-                    Text("Shows GitHub and GitLab connection settings and contribution activity in Stats.")
                         .foregroundStyle(.secondary)
                 }
 
@@ -138,13 +88,6 @@ struct SettingsAppearanceDetailView: View {
                     }
                 }
 
-                if !store.appearance.appLockStatusMessage.isEmpty {
-                    Section("Status") {
-                        Text(store.appearance.appLockStatusMessage)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
                 if !store.appearance.temporaryViewStateStatusMessage.isEmpty {
                     Section("Status") {
                         Text(store.appearance.temporaryViewStateStatusMessage)
@@ -170,40 +113,6 @@ struct SettingsAppearanceDetailView: View {
         Binding(
             get: { store.appearance.appColorScheme },
             set: { store.send(.appColorSchemeChanged($0)) }
-        )
-    }
-
-    private var appLockBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.isAppLockEnabled },
-            set: { store.send(.appLockToggled($0)) }
-        )
-    }
-
-    private var gitFeaturesBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.isGitFeaturesEnabled },
-            set: { store.send(.gitFeaturesToggled($0)) }
-        )
-    }
-
-    private var batteryRoutineMonitoringBinding: Binding<Bool> {
-        Binding(
-            get: { batteryRoutineMonitoringEnabled },
-            set: {
-                batteryRoutineMonitoringEnabled = $0
-                BatteryRoutinePreferences.notifyChanged()
-            }
-        )
-    }
-
-    private var batteryRoutineThresholdBinding: Binding<Int> {
-        Binding(
-            get: { batteryRoutineThresholdPercent },
-            set: {
-                batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
-                BatteryRoutinePreferences.notifyChanged()
-            }
         )
     }
 
@@ -236,5 +145,85 @@ struct SettingsAppearanceDetailView: View {
         store.appearance.hasTemporaryViewStateToReset
             ? AnyShapeStyle(Color.red)
             : AnyShapeStyle(Color.secondary)
+    }
+}
+
+struct SettingsGeneralDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    @AppStorage(
+        BatteryRoutinePreferences.monitoringEnabledDefaultsKey,
+        store: SharedDefaults.app
+    ) private var batteryRoutineMonitoringEnabled = true
+    @AppStorage(
+        BatteryRoutinePreferences.thresholdPercentDefaultsKey,
+        store: SharedDefaults.app
+    ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
+
+    var body: some View {
+        WithPerceptionTracking {
+            List {
+                Section("App Lock") {
+                    Toggle("Require unlock when opening Routina", isOn: appLockBinding)
+                        .disabled(store.appearance.isAppLockToggleInProgress)
+
+                    if store.appearance.isAppLockToggleInProgress {
+                        ProgressView("Verifying device authentication…")
+                    }
+
+                    Text(store.appearance.appLockDetailText)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Battery Routines") {
+                    Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
+
+                    Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
+                        Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
+                    }
+                    .disabled(!batteryRoutineMonitoringEnabled)
+
+                    Text("Routina creates one charge routine for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
+                        .foregroundStyle(.secondary)
+                }
+
+                if !store.appearance.appLockStatusMessage.isEmpty {
+                    Section("Status") {
+                        Text(store.appearance.appLockStatusMessage)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("General")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var appLockBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isAppLockEnabled },
+            set: { store.send(.appLockToggled($0)) }
+        )
+    }
+
+    private var batteryRoutineMonitoringBinding: Binding<Bool> {
+        Binding(
+            get: { batteryRoutineMonitoringEnabled },
+            set: {
+                batteryRoutineMonitoringEnabled = $0
+                BatteryRoutinePreferences.notifyChanged()
+            }
+        )
+    }
+
+    private var batteryRoutineThresholdBinding: Binding<Int> {
+        Binding(
+            get: { batteryRoutineThresholdPercent },
+            set: {
+                batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
+                BatteryRoutinePreferences.notifyChanged()
+            }
+        )
     }
 }

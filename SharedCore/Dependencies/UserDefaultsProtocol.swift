@@ -52,7 +52,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingGitFeaturesEnabled
     case appSettingShowPersianDates
     case appSettingBatteryRoutineMonitoringEnabled
-    case appSettingShowDayPlanUnplannedDoneBadges
+    case appSettingShowTimelineTasksInDayPlanner = "appSettingShowDayPlanUnplannedDoneBadges"
     case appSettingDailyRoutinesSectionCollapsed
     case appSettingArchivedRoutinesSectionCollapsed
     case requestNotificationPermission
@@ -90,6 +90,8 @@ struct AppSettingsClient: Sendable {
     var setGitFeaturesEnabled: @Sendable (Bool) -> Void
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
+    var showTimelineTasksInDayPlanner: @Sendable () -> Bool
+    var setShowTimelineTasksInDayPlanner: @Sendable (Bool) -> Void
     var appColorScheme: @Sendable () -> AppColorScheme
     var setAppColorScheme: @Sendable (AppColorScheme) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
@@ -275,6 +277,12 @@ extension AppSettingsClient {
         setShowPersianDates: { isEnabled in
             SharedDefaults.app[.appSettingShowPersianDates] = isEnabled
         },
+        showTimelineTasksInDayPlanner: {
+            SharedDefaults.app[.appSettingShowTimelineTasksInDayPlanner]
+        },
+        setShowTimelineTasksInDayPlanner: { isEnabled in
+            SharedDefaults.app[.appSettingShowTimelineTasksInDayPlanner] = isEnabled
+        },
         appColorScheme: {
             AppColorScheme(
                 rawValue: SharedDefaults.app[.appSettingAppColorScheme] ?? ""
@@ -401,6 +409,8 @@ extension AppSettingsClient {
         setGitFeaturesEnabled: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
+        showTimelineTasksInDayPlanner: { true },
+        setShowTimelineTasksInDayPlanner: { _ in },
         appColorScheme: { .system },
         setAppColorScheme: { _ in },
         routineListSectioningMode: { .defaultValue },

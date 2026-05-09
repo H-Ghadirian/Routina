@@ -259,6 +259,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func showTimelineTasksInDayPlannerToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setShowTimelineTasksInDayPlanner = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.showTimelineTasksInDayPlannerToggled(false)) {
+            $0.appearance.showsTimelineTasksInDayPlanner = false
+        }
+
+        #expect(persistedValue.value == false)
+    }
+
+    @Test
     func appLockToggled_onAuthenticatesThenPersistsSetting() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

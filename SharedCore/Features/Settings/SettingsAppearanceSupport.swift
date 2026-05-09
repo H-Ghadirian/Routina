@@ -27,6 +27,7 @@ enum SettingsAppearanceEditor {
         appLockEnabled: Bool,
         gitFeaturesEnabled: Bool,
         showPersianDates: Bool,
+        showTimelineTasksInDayPlanner: Bool,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         selectedAppIcon: AppIconOption,
         hasTemporaryViewStateToReset: Bool,
@@ -36,6 +37,7 @@ enum SettingsAppearanceEditor {
         state.isAppLockEnabled = appLockEnabled
         state.isGitFeaturesEnabled = gitFeaturesEnabled
         state.showPersianDates = showPersianDates
+        state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
         state.isAppLockToggleInProgress = false
         state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason

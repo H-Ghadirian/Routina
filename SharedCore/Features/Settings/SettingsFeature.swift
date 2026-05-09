@@ -17,6 +17,7 @@ struct SettingsFeature {
         case appLockEnableFinished(DeviceAuthenticationResult)
         case gitFeaturesToggled(Bool)
         case showPersianDatesToggled(Bool)
+        case showTimelineTasksInDayPlannerToggled(Bool)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -145,6 +146,13 @@ struct SettingsFeature {
 
             case let .showPersianDatesToggled(isEnabled):
                 return SettingsAppearanceActionHandler.showPersianDatesToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .showTimelineTasksInDayPlannerToggled(isEnabled):
+                return SettingsAppearanceActionHandler.showTimelineTasksInDayPlannerToggled(
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient

@@ -27,7 +27,7 @@ enum RoutinaAppBootstrap {
             .appSettingAppLockEnabled: false,
             .appSettingShowPersianDates: false,
             .appSettingBatteryRoutineMonitoringEnabled: true,
-            .appSettingShowDayPlanUnplannedDoneBadges: true,
+            .appSettingShowTimelineTasksInDayPlanner: true,
             .appSettingDailyRoutinesSectionCollapsed: false,
             .appSettingArchivedRoutinesSectionCollapsed: false
         ])

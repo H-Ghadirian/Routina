@@ -6,18 +6,6 @@ struct SettingsMacAppearanceDetailView: View {
 
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     private var isMacTodoBoardCompactCards = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingShowDayPlanUnplannedDoneBadges.rawValue,
-        store: SharedDefaults.app
-    ) private var showsDayPlanUnplannedDoneBadges = true
-    @AppStorage(
-        BatteryRoutinePreferences.monitoringEnabledDefaultsKey,
-        store: SharedDefaults.app
-    ) private var batteryRoutineMonitoringEnabled = true
-    @AppStorage(
-        BatteryRoutinePreferences.thresholdPercentDefaultsKey,
-        store: SharedDefaults.app
-    ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
 
     private let columns = [
         GridItem(.adaptive(minimum: 124), spacing: 12)
@@ -68,29 +56,6 @@ struct SettingsMacAppearanceDetailView: View {
                     .foregroundStyle(.secondary)
                 }
 
-                SettingsMacDetailCard(title: "Day Planner") {
-                    Toggle("Show timeline task badges", isOn: $showsDayPlanUnplannedDoneBadges)
-                        .toggleStyle(.switch)
-
-                    Text("Shows a small count on each planner day when timeline tasks for that date are not yet placed in the day.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                SettingsMacDetailCard(title: "Battery Routines") {
-                    Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
-                        .toggleStyle(.switch)
-
-                    Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
-                        Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
-                    }
-                    .disabled(!batteryRoutineMonitoringEnabled)
-
-                    Text("Routina creates one charge routine for this Mac and turns it red, urgent, and pinned when the battery is below the threshold.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
                 SettingsMacDetailCard(title: "Tag Counters") {
                     Picker("Display", selection: tagCounterDisplayModeBinding) {
                         ForEach(TagCounterDisplayMode.allCases) { mode in
@@ -100,30 +65,6 @@ struct SettingsMacAppearanceDetailView: View {
                     .pickerStyle(.menu)
 
                     Text(store.appearance.tagCounterDisplayMode.subtitle)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                SettingsMacDetailCard(title: "App Lock") {
-                    Toggle("Require unlock when opening Routina", isOn: appLockBinding)
-                        .toggleStyle(.switch)
-                        .disabled(store.appearance.isAppLockToggleInProgress)
-
-                    if store.appearance.isAppLockToggleInProgress {
-                        ProgressView("Verifying device authentication…")
-                            .controlSize(.small)
-                    }
-
-                    Text(store.appearance.appLockDetailText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                SettingsMacDetailCard(title: "Advanced") {
-                    Toggle("Enable Git features", isOn: gitFeaturesBinding)
-                        .toggleStyle(.switch)
-
-                    Text("Shows GitHub and GitLab connection settings and contribution activity in Stats.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -169,14 +110,6 @@ struct SettingsMacAppearanceDetailView: View {
                     }
                 }
 
-                if !store.appearance.appLockStatusMessage.isEmpty {
-                    SettingsMacDetailCard(title: "Status") {
-                        Text(store.appearance.appLockStatusMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
                 if !store.appearance.temporaryViewStateStatusMessage.isEmpty {
                     SettingsMacDetailCard(title: "Status") {
                         Text(store.appearance.temporaryViewStateStatusMessage)
@@ -199,40 +132,6 @@ struct SettingsMacAppearanceDetailView: View {
         Binding(
             get: { store.appearance.appColorScheme },
             set: { store.send(.appColorSchemeChanged($0)) }
-        )
-    }
-
-    private var appLockBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.isAppLockEnabled },
-            set: { store.send(.appLockToggled($0)) }
-        )
-    }
-
-    private var gitFeaturesBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.isGitFeaturesEnabled },
-            set: { store.send(.gitFeaturesToggled($0)) }
-        )
-    }
-
-    private var batteryRoutineMonitoringBinding: Binding<Bool> {
-        Binding(
-            get: { batteryRoutineMonitoringEnabled },
-            set: {
-                batteryRoutineMonitoringEnabled = $0
-                BatteryRoutinePreferences.notifyChanged()
-            }
-        )
-    }
-
-    private var batteryRoutineThresholdBinding: Binding<Int> {
-        Binding(
-            get: { batteryRoutineThresholdPercent },
-            set: {
-                batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
-                BatteryRoutinePreferences.notifyChanged()
-            }
         )
     }
 
@@ -259,5 +158,91 @@ struct SettingsMacAppearanceDetailView: View {
         store.appearance.hasTemporaryViewStateToReset
             ? "Clears saved filters, list mode choices, and other temporary view selections so the app opens with defaults again."
             : "Everything is already using the default filters and temporary selections."
+    }
+}
+
+struct SettingsMacGeneralDetailView: View {
+    let store: StoreOf<SettingsFeature>
+
+    @AppStorage(
+        BatteryRoutinePreferences.monitoringEnabledDefaultsKey,
+        store: SharedDefaults.app
+    ) private var batteryRoutineMonitoringEnabled = true
+    @AppStorage(
+        BatteryRoutinePreferences.thresholdPercentDefaultsKey,
+        store: SharedDefaults.app
+    ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
+
+    var body: some View {
+        WithPerceptionTracking {
+            SettingsMacDetailShell(
+                title: "General",
+                subtitle: "Configure app-wide behavior and device-aware routines."
+            ) {
+                SettingsMacDetailCard(title: "App Lock") {
+                    Toggle("Require unlock when opening Routina", isOn: appLockBinding)
+                        .toggleStyle(.switch)
+                        .disabled(store.appearance.isAppLockToggleInProgress)
+
+                    if store.appearance.isAppLockToggleInProgress {
+                        ProgressView("Verifying device authentication…")
+                            .controlSize(.small)
+                    }
+
+                    Text(store.appearance.appLockDetailText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                SettingsMacDetailCard(title: "Battery Routines") {
+                    Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
+                        .toggleStyle(.switch)
+
+                    Stepper(value: batteryRoutineThresholdBinding, in: 5...95, step: 5) {
+                        Text("Low battery threshold \(batteryRoutineThresholdPercent)%")
+                    }
+                    .disabled(!batteryRoutineMonitoringEnabled)
+
+                    Text("Routina creates one charge routine for this Mac and turns it red, urgent, and pinned when the battery is below the threshold.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !store.appearance.appLockStatusMessage.isEmpty {
+                    SettingsMacDetailCard(title: "Status") {
+                        Text(store.appearance.appLockStatusMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private var appLockBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isAppLockEnabled },
+            set: { store.send(.appLockToggled($0)) }
+        )
+    }
+
+    private var batteryRoutineMonitoringBinding: Binding<Bool> {
+        Binding(
+            get: { batteryRoutineMonitoringEnabled },
+            set: {
+                batteryRoutineMonitoringEnabled = $0
+                BatteryRoutinePreferences.notifyChanged()
+            }
+        )
+    }
+
+    private var batteryRoutineThresholdBinding: Binding<Int> {
+        Binding(
+            get: { batteryRoutineThresholdPercent },
+            set: {
+                batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
+                BatteryRoutinePreferences.notifyChanged()
+            }
+        )
     }
 }

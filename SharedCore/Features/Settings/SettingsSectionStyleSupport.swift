@@ -3,6 +3,8 @@ import SwiftUI
 extension SettingsSectionID {
     var tint: Color {
         switch self {
+        case .general:
+            return .blue
         case .notifications:
             return .red
         case .calendar:

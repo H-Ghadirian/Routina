@@ -1,6 +1,7 @@
 import Foundation
 
 enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
+    case general
     case notifications
     case calendar
     case places
@@ -16,11 +17,8 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
-    static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsSectionID] {
+    static func visibleSections(isGitFeaturesEnabled _: Bool) -> [SettingsSectionID] {
         allCases.filter { section in
-            if section == .git {
-                return isGitFeaturesEnabled
-            }
             #if os(macOS)
             return true
             #else
@@ -29,9 +27,10 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    static func compactSectionGroups(isGitFeaturesEnabled: Bool) -> [[SettingsSectionID]] {
+    static func compactSectionGroups(isGitFeaturesEnabled _: Bool) -> [[SettingsSectionID]] {
         [
             [
+                .general,
                 .notifications,
                 .calendar,
                 .places,
@@ -40,7 +39,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .iCloud,
                 .git,
                 .quickAdd
-            ].filter { $0 != .git || isGitFeaturesEnabled },
+            ],
             [
                 .backup,
                 .support,
@@ -51,6 +50,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
+        case .general:       return "General"
         case .notifications: return "Notifications"
         case .calendar:      return "Calendar"
         case .places:        return "Places"
@@ -68,6 +68,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var icon: String {
         switch self {
+        case .general:       return "gearshape.fill"
         case .notifications: return "bell.badge.fill"
         case .calendar:      return "calendar.badge.plus"
         case .places:        return "mappin.and.ellipse"
@@ -85,6 +86,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     func rowPresentation(in state: SettingsFeatureState) -> SettingsSectionRowPresentation {
         switch self {
+        case .general:
+            return SettingsSectionRowPresentation(
+                subtitle: "App Lock: \(state.appearance.isAppLockEnabled ? "On" : "Off") • Battery routines"
+            )
+
         case .notifications:
             return SettingsSectionRowPresentation(
                 subtitle: state.notifications.overviewSubtitle,
@@ -93,9 +99,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .calendar:
             return SettingsSectionRowPresentation(
-                subtitle: state.appearance.showPersianDates
-                    ? "Review tasks and show Persian dates"
-                    : "Review tasks and date display",
+                subtitle: state.appearance.calendarOverviewSubtitle,
                 value: state.appearance.showPersianDates ? "Persian" : nil
             )
 
@@ -115,6 +119,13 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             )
 
         case .git:
+            guard state.appearance.isGitFeaturesEnabled else {
+                return SettingsSectionRowPresentation(
+                    subtitle: "GitHub and GitLab activity is hidden",
+                    value: "Off"
+                )
+            }
+
             let ghConnected = state.github.connectedRepository != nil
             let glConnected = state.gitlab.isConnected
             let subtitle: String
@@ -270,11 +281,23 @@ extension SettingsNotificationsState {
 
 extension SettingsAppearanceState {
     var overviewSubtitle: String {
-        "Theme: \(appColorScheme.title) • Lock: \(isAppLockEnabled ? "On" : "Off") • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)"
+        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)"
     }
 
     var routineListSectioningSubtitle: String {
         routineListSectioningMode.subtitle
+    }
+
+    var calendarOverviewSubtitle: String {
+        let plannerText = showsTimelineTasksInDayPlanner
+            ? "Timeline activity in planner"
+            : "Timeline activity hidden"
+
+        if showPersianDates {
+            return "\(plannerText) • Persian dates"
+        }
+
+        return plannerText
     }
 
     var appLockDetailText: String {

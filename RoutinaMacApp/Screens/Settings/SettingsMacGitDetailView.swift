@@ -10,6 +10,15 @@ struct SettingsMacGitDetailView: View {
                 title: "Git",
                 subtitle: "Connect GitHub or GitLab to display contribution activity on your dashboard."
             ) {
+                SettingsMacDetailCard(title: "Git Features") {
+                    Toggle("Enable Git features", isOn: gitFeaturesBinding)
+                        .toggleStyle(.switch)
+
+                    Text("Shows GitHub and GitLab contribution activity in Stats.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 Text("GitHub")
                     .font(.title2.weight(.semibold))
 
@@ -165,6 +174,13 @@ struct SettingsMacGitDetailView: View {
                 }
             }
         }
+    }
+
+    private var gitFeaturesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isGitFeaturesEnabled },
+            set: { store.send(.gitFeaturesToggled($0)) }
+        )
     }
 
     private var scopeBinding: Binding<GitHubStatsScope> {

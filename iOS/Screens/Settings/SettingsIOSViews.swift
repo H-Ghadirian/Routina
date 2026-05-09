@@ -75,20 +75,11 @@ private struct SettingsIPadSplitView: View {
                 SettingsIOSDetailView(section: selectedDetailSection, store: store)
             }
             .navigationSplitViewStyle(.balanced)
-            .onChange(of: store.appearance.isGitFeaturesEnabled) { _, isEnabled in
-                if !isEnabled, selectedSection == .git {
-                    selectedSection = .appearance
-                }
-            }
         }
     }
 
     private var selectedDetailSection: SettingsIOSSection {
-        let fallback = selectedSection ?? .notifications
-        if fallback == .git, !store.appearance.isGitFeaturesEnabled {
-            return .appearance
-        }
-        return fallback
+        selectedSection ?? .notifications
     }
 }
 
@@ -100,6 +91,8 @@ private struct SettingsIOSDetailView: View {
 
     var body: some View {
         switch section {
+        case .general:
+            SettingsGeneralDetailView(store: store)
         case .notifications:
             SettingsNotificationsDetailView(store: store)
         case .calendar:
@@ -231,6 +224,13 @@ private struct SettingsCalendarDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("Planner Calendar") {
+                    Toggle("Show timeline tasks in planner", isOn: showTimelineTasksInDayPlannerBinding)
+
+                    Text("Shows past timeline activity on planner dates when those tasks are not already placed in the day.")
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Date Display") {
                     Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
 
@@ -256,6 +256,13 @@ private struct SettingsCalendarDetailView: View {
         Binding(
             get: { store.appearance.showPersianDates },
             set: { store.send(.showPersianDatesToggled($0)) }
+        )
+    }
+
+    private var showTimelineTasksInDayPlannerBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showsTimelineTasksInDayPlanner },
+            set: { store.send(.showTimelineTasksInDayPlannerToggled($0)) }
         )
     }
 

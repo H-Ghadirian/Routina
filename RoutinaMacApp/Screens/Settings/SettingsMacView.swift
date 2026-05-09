@@ -49,11 +49,6 @@ struct SettingsMacView: View {
                 }
             }
             .navigationSplitViewStyle(.balanced)
-            .onChange(of: store.appearance.isGitFeaturesEnabled) { _, isEnabled in
-                if !isEnabled, selectedSection == .git {
-                    selectedSection = .appearance
-                }
-            }
             .settingsMacPresentations(
                 store: store,
                 isPlacePickerPresented: $isPlacePickerPresented
@@ -62,11 +57,7 @@ struct SettingsMacView: View {
     }
 
     private var selectedDetailSection: SettingsMacSection {
-        let fallback = selectedSection ?? .notifications
-        if fallback == .git, !store.appearance.isGitFeaturesEnabled {
-            return .appearance
-        }
-        return fallback
+        selectedSection ?? .notifications
     }
 }
 
@@ -77,6 +68,8 @@ struct SettingsMacDetailView: View {
 
     var body: some View {
         switch section {
+        case .general:
+            SettingsMacGeneralDetailView(store: store)
         case .notifications:
             SettingsMacNotificationsDetailView(store: store)
         case .calendar:
@@ -116,7 +109,7 @@ struct EmbeddedSettingsMacDetailView: View {
     var body: some View {
         WithPerceptionTracking {
             SettingsMacDetailView(
-                section: section == .git && !store.appearance.isGitFeaturesEnabled ? .appearance : section,
+                section: section,
                 store: store,
                 isPlacePickerPresented: $isPlacePickerPresented
             )
@@ -208,6 +201,15 @@ private struct SettingsMacCalendarDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                SettingsMacDetailCard(title: "Planner Calendar") {
+                    Toggle("Show timeline tasks in planner", isOn: showTimelineTasksInDayPlannerBinding)
+                        .toggleStyle(.switch)
+
+                    Text("Shows past timeline activity on planner dates when those tasks are not already placed in the day.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 SettingsMacDetailCard(title: "Date Display") {
                     Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
                         .toggleStyle(.switch)
@@ -233,6 +235,13 @@ private struct SettingsMacCalendarDetailView: View {
         Binding(
             get: { store.appearance.showPersianDates },
             set: { store.send(.showPersianDatesToggled($0)) }
+        )
+    }
+
+    private var showTimelineTasksInDayPlannerBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showsTimelineTasksInDayPlanner },
+            set: { store.send(.showTimelineTasksInDayPlannerToggled($0)) }
         )
     }
 

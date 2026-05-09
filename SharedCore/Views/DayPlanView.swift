@@ -50,6 +50,10 @@ struct DayPlanSidebarView: View {
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
     var usesPanelBackground = true
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
+        store: SharedDefaults.app
+    ) private var showsTimelineTasksInDayPlanner = true
 
     var body: some View {
         taskPanel
@@ -64,7 +68,7 @@ struct DayPlanSidebarView: View {
                         Text(sidebarTitle)
                             .font(.headline)
 
-                        if let focusedDate = planner.focusedUnplannedCompletedDate {
+                        if let focusedDate = activeFocusedUnplannedCompletedDate {
                             Text("Timeline activity on \(focusedDate.formatted(date: .abbreviated, time: .omitted)) and not in planner")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -73,7 +77,7 @@ struct DayPlanSidebarView: View {
 
                     Spacer(minLength: 8)
 
-                    if planner.focusedUnplannedCompletedDate != nil {
+                    if activeFocusedUnplannedCompletedDate != nil {
                         Button("Clear") {
                             planner.clearFocusedUnplannedCompletedTasks()
                         }
@@ -204,7 +208,7 @@ struct DayPlanSidebarView: View {
     }
 
     private var availableTasks: [RoutineTask] {
-        if let focusedDate = planner.focusedUnplannedCompletedDate {
+        if let focusedDate = activeFocusedUnplannedCompletedDate {
             return DayPlanTimelineTasks.tasks(
                 on: focusedDate,
                 from: tasks,
@@ -221,6 +225,10 @@ struct DayPlanSidebarView: View {
         DayPlanTaskSorting.filteredTasks(from: availableTasks, query: planner.searchText)
     }
 
+    private var activeFocusedUnplannedCompletedDate: Date? {
+        showsTimelineTasksInDayPlanner ? planner.focusedUnplannedCompletedDate : nil
+    }
+
     private var selectedTask: RoutineTask? {
         guard let selectedTaskID = planner.selectedTaskID else { return nil }
         return tasks.first { $0.id == selectedTaskID }
@@ -231,15 +239,15 @@ struct DayPlanSidebarView: View {
     }
 
     private var sidebarTitle: String {
-        planner.focusedUnplannedCompletedDate == nil ? "Tasks" : "Timeline Activity"
+        activeFocusedUnplannedCompletedDate == nil ? "Tasks" : "Timeline Activity"
     }
 
     private var emptyStateTitle: String {
-        planner.focusedUnplannedCompletedDate == nil ? "No tasks found" : "All timeline activity is planned"
+        activeFocusedUnplannedCompletedDate == nil ? "No tasks found" : "All timeline activity is planned"
     }
 
     private var emptyStateDescription: String {
-        planner.focusedUnplannedCompletedDate == nil
+        activeFocusedUnplannedCompletedDate == nil
             ? "Create or search for a task to add it to the plan."
             : "Timeline tasks for this day are already placed in the planner."
     }
@@ -353,9 +361,9 @@ private struct DayPlanTimelinePanelView: View {
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
     @AppStorage(
-        UserDefaultBoolValueKey.appSettingShowDayPlanUnplannedDoneBadges.rawValue,
+        UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
         store: SharedDefaults.app
-    ) private var showsUnplannedCompletedBadges = true
+    ) private var showsTimelineTasksInDayPlanner = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -372,10 +380,10 @@ private struct DayPlanTimelinePanelView: View {
                 dates: planner.weekDates(calendar: calendar),
                 selectedBlockID: planner.selectedBlockID,
                 selectedDate: planner.selectedDate,
-                focusedUnplannedCompletedDate: planner.focusedUnplannedCompletedDate,
+                focusedUnplannedCompletedDate: activeFocusedUnplannedCompletedDate,
                 calendar: calendar,
                 dropDurationMinutes: planner.durationMinutes,
-                showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
+                showsUnplannedCompletedBadges: showsTimelineTasksInDayPlanner,
                 blocksForDate: { date in
                     planner.blocks(on: date, calendar: calendar, context: modelContext)
                 },
@@ -425,6 +433,15 @@ private struct DayPlanTimelinePanelView: View {
             )
         }
         .dayPlanLifecycle(planner: planner, tasks: tasks, calendar: calendar)
+        .onChange(of: showsTimelineTasksInDayPlanner) { _, isEnabled in
+            if !isEnabled {
+                planner.clearFocusedUnplannedCompletedTasks()
+            }
+        }
+    }
+
+    private var activeFocusedUnplannedCompletedDate: Date? {
+        showsTimelineTasksInDayPlanner ? planner.focusedUnplannedCompletedDate : nil
     }
 
     private func taskTint(for block: DayPlanBlock) -> Color {
