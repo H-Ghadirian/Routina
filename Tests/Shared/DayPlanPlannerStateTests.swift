@@ -217,6 +217,155 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func activeFocusSessionBlocksUseTimerStartAndElapsedDuration() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let now = try #require(date("2026-05-07T10:05:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write notes",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: taskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [task],
+            sessions: [session],
+            now: now,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let focusBlock = try #require(focusBlocksByDayKey[dayKey]?.first)
+        #expect(focusBlock.sessionID == sessionID)
+        #expect(focusBlock.block.id == sessionID)
+        #expect(focusBlock.block.taskID == taskID)
+        #expect(focusBlock.block.startMinute == 9 * 60 + 30)
+        #expect(focusBlock.durationMinutes == 35)
+        #expect(focusBlock.block.durationMinutes == 35)
+    }
+
+    @Test
+    func activeFocusSessionBlocksClampFutureStartsToCurrentDay() throws {
+        let calendar = gregorianCalendar
+        let currentDate = try #require(date("2026-05-07T12:00:00Z"))
+        let now = try #require(date("2026-05-07T12:36:00Z"))
+        let futureStartedAt = try #require(date("2026-05-10T12:36:00Z"))
+        let futureDate = try #require(date("2026-05-10T12:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write notes",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            taskID: taskID,
+            startedAt: futureStartedAt,
+            plannedDurationSeconds: 0
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [currentDate, futureDate],
+            from: [task],
+            sessions: [session],
+            now: now,
+            calendar: calendar
+        )
+
+        let currentDayKey = DayPlanStorage.dayKey(for: currentDate, calendar: calendar)
+        let futureDayKey = DayPlanStorage.dayKey(for: futureDate, calendar: calendar)
+        let focusBlock = try #require(focusBlocksByDayKey[currentDayKey]?.first)
+        #expect(focusBlocksByDayKey[futureDayKey] == nil)
+        #expect(focusBlock.block.startMinute == 12 * 60 + 36)
+        #expect(focusBlock.durationMinutes == 1)
+    }
+
+    @Test
+    func activeFocusSessionBlocksClampPreviousDayStartsToCurrentDay() throws {
+        let calendar = gregorianCalendar
+        let previousDate = try #require(date("2026-05-06T12:00:00Z"))
+        let currentDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-06T22:30:00Z"))
+        let now = try #require(date("2026-05-07T01:15:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write notes",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            taskID: taskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [previousDate, currentDate],
+            from: [task],
+            sessions: [session],
+            now: now,
+            calendar: calendar
+        )
+
+        let previousDayKey = DayPlanStorage.dayKey(for: previousDate, calendar: calendar)
+        let currentDayKey = DayPlanStorage.dayKey(for: currentDate, calendar: calendar)
+        let focusBlock = try #require(focusBlocksByDayKey[currentDayKey]?.first)
+        #expect(focusBlocksByDayKey[previousDayKey] == nil)
+        #expect(focusBlock.block.startMinute == 0)
+        #expect(focusBlock.durationMinutes == 75)
+    }
+
+    @Test
+    func activeFocusSessionBlocksExcludeFinishedAndUnknownTaskSessions() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let finishedAt = try #require(date("2026-05-07T10:05:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write notes",
+            scheduleMode: .fixedInterval
+        )
+        let sessions = [
+            FocusSession(
+                taskID: taskID,
+                startedAt: startedAt,
+                completedAt: finishedAt
+            ),
+            FocusSession(
+                taskID: taskID,
+                startedAt: startedAt,
+                abandonedAt: finishedAt
+            ),
+            FocusSession(
+                taskID: UUID(),
+                startedAt: startedAt
+            ),
+        ]
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [task],
+            sessions: sessions,
+            now: finishedAt,
+            calendar: calendar
+        )
+
+        #expect(focusBlocksByDayKey.isEmpty)
+    }
+
+    @Test
     func movingTimelineActivityUpdatesLogAndTaskCompletionDate() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

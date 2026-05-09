@@ -66,6 +66,16 @@ enum DayPlanTimelineActivitySource: Equatable {
     case taskCanceledAt
 }
 
+struct DayPlanFocusSessionBlock: Identifiable, Equatable {
+    var sessionID: UUID
+    var block: DayPlanBlock
+    var durationMinutes: Int
+
+    var id: String {
+        "\(block.dayKey)-\(sessionID.uuidString)"
+    }
+}
+
 enum DayPlanTimelineTasks {
     static func count(
         on date: Date,
@@ -521,6 +531,106 @@ enum DayPlanTimelineTasks {
         case .missed:
             break
         }
+    }
+}
+
+enum DayPlanFocusSessionBlocks {
+    static func activeBlocksByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        sessions: [FocusSession],
+        now: Date,
+        calendar: Calendar
+    ) -> [String: [DayPlanFocusSessionBlock]] {
+        let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
+        guard !visibleDayKeys.isEmpty else { return [:] }
+
+        let blocks = activeBlocks(
+            from: tasks,
+            sessions: sessions,
+            now: now,
+            calendar: calendar
+        )
+        .filter { visibleDayKeys.contains($0.block.dayKey) }
+
+        return Dictionary(grouping: blocks, by: \.block.dayKey)
+            .mapValues {
+                $0.sorted { lhs, rhs in
+                    if lhs.block.startMinute != rhs.block.startMinute {
+                        return lhs.block.startMinute < rhs.block.startMinute
+                    }
+                    return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+                }
+            }
+    }
+
+    static func activeBlocks(
+        from tasks: [RoutineTask],
+        sessions: [FocusSession],
+        now: Date,
+        calendar: Calendar
+    ) -> [DayPlanFocusSessionBlock] {
+        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        let blocks = sessions.compactMap { session -> DayPlanFocusSessionBlock? in
+            guard session.completedAt == nil,
+                  session.abandonedAt == nil,
+                  let startedAt = session.startedAt,
+                  let task = tasksByID[session.taskID]
+            else { return nil }
+
+            let dayKey = DayPlanStorage.dayKey(for: now, calendar: calendar)
+            let renderStart = renderStart(for: startedAt, now: now, calendar: calendar)
+            let startMinute = startMinute(for: renderStart, calendar: calendar)
+            let elapsedSeconds = max(60, now.timeIntervalSince(renderStart))
+            let elapsedMinutes = max(1, Int(ceil(elapsedSeconds / 60)))
+            let remainingMinutes = max(1, DayPlanBlock.minutesPerDay - startMinute)
+            let durationMinutes = min(elapsedMinutes, remainingMinutes)
+            let block = DayPlanBlock(
+                id: session.id,
+                taskID: task.id,
+                dayKey: dayKey,
+                startMinute: startMinute,
+                durationMinutes: DayPlanBlock.clampedDuration(
+                    max(durationMinutes, DayPlanBlock.minimumDurationMinutes),
+                    startMinute: startMinute
+                ),
+                titleSnapshot: DayPlanTaskSorting.title(for: task),
+                emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                createdAt: renderStart,
+                updatedAt: now
+            )
+
+            return DayPlanFocusSessionBlock(
+                sessionID: session.id,
+                block: block,
+                durationMinutes: durationMinutes
+            )
+        }
+
+        return blocks.sorted { lhs, rhs in
+            if lhs.block.startMinute != rhs.block.startMinute {
+                return lhs.block.startMinute < rhs.block.startMinute
+            }
+            return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+        }
+    }
+
+    private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: timestamp)
+        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        return DayPlanBlock.clampedStartMinute(minute)
+    }
+
+    private static func renderStart(for startedAt: Date, now: Date, calendar: Calendar) -> Date {
+        if startedAt > now {
+            return now
+        }
+
+        guard calendar.isDate(startedAt, inSameDayAs: now) else {
+            return calendar.startOfDay(for: now)
+        }
+
+        return startedAt
     }
 }
 

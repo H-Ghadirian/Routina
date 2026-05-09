@@ -117,3 +117,99 @@ struct DayPlanBlockLayer: View {
         CGFloat(block.durationMinutes) / 60 * hourHeight
     }
 }
+
+struct DayPlanFocusSessionBlockLayer: View {
+    var dates: [Date]
+    var now: Date
+    var calendar: Calendar
+    var dayWidth: CGFloat
+    var hourHeight: CGFloat
+    var timeColumnWidth: CGFloat
+    var focusSessionBlocks: [DayPlanFocusSessionBlock]
+    var taskTint: (DayPlanBlock) -> Color
+    var onOpenFocusTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(positionedFocusBlocks) { positionedBlock in
+                let focusBlock = positionedBlock.focusBlock
+                let block = focusBlock.block
+                let blockHeight = blockHeight(for: focusBlock)
+                DayPlanBlockCard(
+                    block: block,
+                    tint: taskTint(block),
+                    style: .liveFocus,
+                    displayDurationMinutes: focusBlock.durationMinutes,
+                    isSelected: false,
+                    renderedHeight: blockHeight,
+                    selectedDate: positionedBlock.date,
+                    calendar: calendar,
+                    onSelect: {},
+                    onOpenDetails: {
+                        onOpenFocusTaskDetails(block.taskID)
+                    },
+                    onDelete: {},
+                    onResizeStarted: {},
+                    onResizeChanged: { _, _ in },
+                    onResizeEnded: {},
+                    onDragProvider: {
+                        NSItemProvider(object: "" as NSString)
+                    }
+                )
+                .frame(
+                    width: max(dayWidth - 10, 90),
+                    height: blockHeight
+                )
+                .offset(
+                    x: timeColumnWidth + CGFloat(positionedBlock.dayIndex) * dayWidth + 5,
+                    y: yOffset(for: block.startMinute)
+                )
+                .zIndex(3)
+            }
+        }
+        .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
+    }
+
+    private var positionedFocusBlocks: [PositionedFocusSessionBlock] {
+        guard let todayIndex else { return [] }
+        let today = dates[todayIndex]
+        return focusSessionBlocks.map {
+            PositionedFocusSessionBlock(
+                dayIndex: todayIndex,
+                date: today,
+                focusBlock: $0
+            )
+        }
+    }
+
+    private var todayIndex: Int? {
+        dates.firstIndex { calendar.isDate($0, inSameDayAs: now) }
+    }
+
+    private func yOffset(for minute: Int) -> CGFloat {
+        CGFloat(minute) / 60 * hourHeight
+    }
+
+    private func blockHeight(for focusBlock: DayPlanFocusSessionBlock) -> CGFloat {
+        let visibleMinutes = max(focusBlock.durationMinutes, 1)
+        return max(CGFloat(visibleMinutes) / 60 * hourHeight, 18)
+    }
+
+    private var contentWidth: CGFloat {
+        timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+    }
+
+    private var contentHeight: CGFloat {
+        hourHeight * 24
+    }
+}
+
+private struct PositionedFocusSessionBlock: Identifiable {
+    var dayIndex: Int
+    var date: Date
+    var focusBlock: DayPlanFocusSessionBlock
+
+    var id: String {
+        focusBlock.id
+    }
+}

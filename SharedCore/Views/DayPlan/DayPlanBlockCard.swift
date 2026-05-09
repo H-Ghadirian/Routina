@@ -5,11 +5,13 @@ struct DayPlanBlockCard: View {
     enum Style: Equatable {
         case manual
         case automatic(RoutineLogKind)
+        case liveFocus
     }
 
     var block: DayPlanBlock
     var tint: Color
     var style: Style = .manual
+    var displayDurationMinutes: Int? = nil
     var isSelected: Bool
     var renderedHeight: CGFloat
     var selectedDate: Date
@@ -25,6 +27,8 @@ struct DayPlanBlockCard: View {
     var body: some View {
         if isAutomatic {
             automaticCard
+        } else if isLiveFocus {
+            liveFocusCard
         } else {
             manualCard
         }
@@ -46,17 +50,24 @@ struct DayPlanBlockCard: View {
                     )
             }
             .overlay(alignment: .leading) {
-                if isAutomatic {
-                    DayPlanAutomaticActivityStripe(tint: tint)
+                if showsActivityStripe {
+                    DayPlanActivityStripe(tint: tint, isLiveFocus: isLiveFocus)
                         .frame(width: 9)
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                if let automaticKind, renderedHeight >= 28 {
-                    Image(systemName: automaticIconName(for: automaticKind))
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(tint)
-                        .padding(4)
+                if renderedHeight >= 28 {
+                    if let automaticKind {
+                        Image(systemName: automaticIconName(for: automaticKind))
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(tint)
+                            .padding(4)
+                    } else if isLiveFocus {
+                        Image(systemName: "timer.circle.fill")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(tint)
+                            .padding(4)
+                    }
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -105,6 +116,14 @@ struct DayPlanBlockCard: View {
             .help(automaticHelpText)
     }
 
+    private var liveFocusCard: some View {
+        baseCard
+            .onTapGesture {
+                onOpenDetails()
+            }
+            .help("Focus timer in progress")
+    }
+
     @ViewBuilder
     private var cardContent: some View {
         if renderedHeight < 36 {
@@ -117,7 +136,7 @@ struct DayPlanBlockCard: View {
 
                 Spacer(minLength: 4)
 
-                Text("\(block.durationMinutes)m")
+                Text("\(effectiveDurationMinutes)m")
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
@@ -176,35 +195,42 @@ struct DayPlanBlockCard: View {
     }
 
     private var contentInsets: EdgeInsets {
-        let automaticLeadingPadding: CGFloat = isAutomatic ? 8 : 0
-        let automaticTrailingPadding: CGFloat = isAutomatic && renderedHeight >= 28 ? 18 : 0
+        let activityLeadingPadding: CGFloat = showsActivityStripe ? 8 : 0
+        let statusTrailingPadding: CGFloat = showsStatusIcon ? 18 : 0
 
         if renderedHeight < 36 {
             return EdgeInsets(
                 top: 1,
-                leading: 6 + automaticLeadingPadding,
+                leading: 6 + activityLeadingPadding,
                 bottom: 1,
-                trailing: 6 + automaticTrailingPadding
+                trailing: 6 + statusTrailingPadding
             )
         } else if renderedHeight < 48 {
             return EdgeInsets(
                 top: 2,
-                leading: 7 + automaticLeadingPadding,
+                leading: 7 + activityLeadingPadding,
                 bottom: 2,
-                trailing: 7 + automaticTrailingPadding
+                trailing: 7 + statusTrailingPadding
             )
         } else {
             return EdgeInsets(
                 top: 8,
-                leading: 8 + automaticLeadingPadding,
+                leading: 8 + activityLeadingPadding,
                 bottom: 8,
-                trailing: 8 + automaticTrailingPadding
+                trailing: 8 + statusTrailingPadding
             )
         }
     }
 
     private var isAutomatic: Bool {
         automaticKind != nil
+    }
+
+    private var isLiveFocus: Bool {
+        if case .liveFocus = style {
+            return true
+        }
+        return false
     }
 
     private var automaticKind: RoutineLogKind? {
@@ -214,16 +240,42 @@ struct DayPlanBlockCard: View {
         return nil
     }
 
+    private var showsActivityStripe: Bool {
+        isAutomatic || isLiveFocus
+    }
+
+    private var showsStatusIcon: Bool {
+        renderedHeight >= 28 && (isAutomatic || isLiveFocus)
+    }
+
     private var fillOpacity: Double {
-        isAutomatic ? 0.08 : (isSelected ? 0.22 : 0.14)
+        if isAutomatic {
+            return 0.08
+        }
+        if isLiveFocus {
+            return 0.2
+        }
+        return isSelected ? 0.22 : 0.14
     }
 
     private var strokeOpacity: Double {
-        isAutomatic ? 0.72 : (isSelected ? 0.75 : 0.35)
+        if isAutomatic {
+            return 0.72
+        }
+        if isLiveFocus {
+            return 0.85
+        }
+        return isSelected ? 0.75 : 0.35
     }
 
     private var strokeWidth: CGFloat {
-        isAutomatic ? 1.5 : (isSelected ? 2 : 1)
+        if isAutomatic {
+            return 1.5
+        }
+        if isLiveFocus {
+            return 2
+        }
+        return isSelected ? 2 : 1
     }
 
     private var strokeDash: [CGFloat] {
@@ -253,24 +305,33 @@ struct DayPlanBlockCard: View {
         }
     }
 
+    private var effectiveDurationMinutes: Int {
+        displayDurationMinutes ?? block.durationMinutes
+    }
+
+    private var effectiveEndMinute: Int {
+        min(DayPlanBlock.minutesPerDay, block.startMinute + effectiveDurationMinutes)
+    }
+
     private var rangeText: String {
         let start = DayPlanFormatting.timeText(for: block.startMinute, on: selectedDate, calendar: calendar)
-        let end = DayPlanFormatting.timeText(for: block.endMinute, on: selectedDate, calendar: calendar)
-        let duration = DayPlanFormatting.durationText(block.durationMinutes)
+        let end = DayPlanFormatting.timeText(for: effectiveEndMinute, on: selectedDate, calendar: calendar)
+        let duration = DayPlanFormatting.durationText(effectiveDurationMinutes)
         return "\(start)-\(end)  \(duration)"
     }
 }
 
-private struct DayPlanAutomaticActivityStripe: View {
+private struct DayPlanActivityStripe: View {
     var tint: Color
+    var isLiveFocus: Bool
 
     var body: some View {
         Rectangle()
-            .fill(tint.opacity(0.14))
+            .fill(tint.opacity(isLiveFocus ? 0.22 : 0.14))
             .overlay(alignment: .leading) {
                 Rectangle()
-                    .fill(tint.opacity(0.70))
-                    .frame(width: 2)
+                    .fill(tint.opacity(isLiveFocus ? 0.9 : 0.70))
+                    .frame(width: isLiveFocus ? 3 : 2)
             }
     }
 }

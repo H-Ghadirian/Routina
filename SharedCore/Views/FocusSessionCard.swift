@@ -447,6 +447,7 @@ struct FocusSessionCard: View {
         modelContext.insert(
             FocusSession(
                 taskID: task.id,
+                startedAt: Date(),
                 plannedDurationSeconds: duration
             )
         )

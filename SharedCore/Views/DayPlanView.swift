@@ -360,6 +360,13 @@ private struct DayPlanTimelinePanelView: View {
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
+    @Query(
+        filter: #Predicate<FocusSession> { session in
+            session.completedAt == nil && session.abandonedAt == nil
+        },
+        sort: \FocusSession.startedAt,
+        order: .reverse
+    ) private var activeFocusSessions: [FocusSession]
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
         store: SharedDefaults.app
@@ -404,6 +411,14 @@ private struct DayPlanTimelinePanelView: View {
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return timelineBlocksByDayKey[dayKey] ?? []
                 },
+                activeFocusSessionBlocks: { now in
+                    DayPlanFocusSessionBlocks.activeBlocks(
+                        from: tasks,
+                        sessions: activeFocusSessions,
+                        now: now,
+                        calendar: calendar
+                    )
+                },
                 unplannedCompletedCount: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return timelineBlocksByDayKey[dayKey]?.count ?? 0
@@ -426,6 +441,13 @@ private struct DayPlanTimelinePanelView: View {
                     onOpenTaskDetails?(block.taskID)
                 },
                 onOpenTimelineTaskDetails: { taskID in
+                    if let task = tasks.first(where: { $0.id == taskID }) {
+                        planner.selectedBlockID = nil
+                        planner.selectTask(task)
+                    }
+                    onOpenTaskDetails?(taskID)
+                },
+                onOpenFocusTaskDetails: { taskID in
                     if let task = tasks.first(where: { $0.id == taskID }) {
                         planner.selectedBlockID = nil
                         planner.selectTask(task)

@@ -21,3 +21,4 @@ Use decision records for architecture, conventions, data model, dependencies, pr
 | [0004](0004-macos-task-list-keyboard-navigation.md) | Support Keyboard Navigation in the macOS Task List | Accepted | 2026-05-09 |
 | [0005](0005-show-timeline-activity-in-day-planner.md) | Show Timeline Activity in the Day Planner | Accepted | 2026-05-09 |
 | [0006](0006-make-planner-timeline-activity-configurable.md) | Make Planner Timeline Activity Configurable | Accepted | 2026-05-09 |
+| [0007](0007-show-active-focus-timers-in-planner.md) | Show Active Focus Timers in the Planner | Accepted | 2026-05-09 |

@@ -15,6 +15,7 @@ struct DayPlanWeekCalendarView: View {
     var showsUnplannedCompletedBadges: Bool
     var blocksForDate: (Date) -> [DayPlanBlock]
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
+    var activeFocusSessionBlocks: (Date) -> [DayPlanFocusSessionBlock] = { _ in [] }
     var unplannedCompletedCount: (Date) -> Int
     var taskTint: (DayPlanBlock) -> Color
     var onSelectUnplannedCompletedDate: (Date) -> Void
@@ -22,6 +23,7 @@ struct DayPlanWeekCalendarView: View {
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
     var onOpenTimelineTaskDetails: (UUID) -> Void = { _ in }
+    var onOpenFocusTaskDetails: (UUID) -> Void = { _ in }
     var onDeleteBlock: (DayPlanBlock) -> Void
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
     var onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void = { _, _, _ in }
@@ -120,13 +122,34 @@ struct DayPlanWeekCalendarView: View {
                                 timeColumnWidth: timeColumnWidth
                             )
                             SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
-                                DayPlanCurrentTimeIndicator(
-                                    dates: dates,
-                                    now: timeline.date,
-                                    calendar: calendar,
-                                    dayWidth: dayWidth,
-                                    hourHeight: hourHeight,
-                                    timeColumnWidth: timeColumnWidth
+                                ZStack(alignment: .topLeading) {
+                                    DayPlanFocusSessionBlockLayer(
+                                        dates: dates,
+                                        now: timeline.date,
+                                        calendar: calendar,
+                                        dayWidth: dayWidth,
+                                        hourHeight: hourHeight,
+                                        timeColumnWidth: timeColumnWidth,
+                                        focusSessionBlocks: activeFocusSessionBlocks(timeline.date),
+                                        taskTint: taskTint,
+                                        onOpenFocusTaskDetails: onOpenFocusTaskDetails
+                                    )
+                                    .zIndex(3)
+
+                                    DayPlanCurrentTimeIndicator(
+                                        dates: dates,
+                                        now: timeline.date,
+                                        calendar: calendar,
+                                        dayWidth: dayWidth,
+                                        hourHeight: hourHeight,
+                                        timeColumnWidth: timeColumnWidth
+                                    )
+                                    .zIndex(20)
+                                }
+                                .frame(
+                                    width: timeColumnWidth + (CGFloat(dates.count) * dayWidth),
+                                    height: hourHeight * 24,
+                                    alignment: .topLeading
                                 )
                             }
                         }
