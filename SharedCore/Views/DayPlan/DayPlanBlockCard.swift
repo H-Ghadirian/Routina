@@ -19,6 +19,7 @@ struct DayPlanBlockCard: View {
     var onSelect: () -> Void
     var onOpenDetails: () -> Void
     var onDelete: () -> Void
+    var onConfirmAutomatic: (() -> Void)? = nil
     var onResizeStarted: () -> Void
     var onResizeChanged: (DayPlanResizeEdge, CGFloat) -> Void
     var onResizeEnded: () -> Void
@@ -113,6 +114,15 @@ struct DayPlanBlockCard: View {
                 onOpenDetails()
             }
             .onDrag(onDragProvider)
+            .contextMenu {
+                if let onConfirmAutomatic {
+                    Button {
+                        onConfirmAutomatic()
+                    } label: {
+                        Label("Confirm in Planner", systemImage: "checkmark.circle")
+                    }
+                }
+            }
             .help(automaticHelpText)
     }
 

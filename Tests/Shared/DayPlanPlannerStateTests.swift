@@ -217,6 +217,68 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func confirmingTimelineActivityPersistsPlannerBlockAndHidesAutomaticBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-05-06T12:00:00Z"))
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T12:15:00Z"))
+        let task = RoutineTask(
+            name: "Review inbox",
+            emoji: "📬",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let log = RoutineLog(
+            timestamp: completedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 40
+        )
+        let planner = DayPlanPlannerState(selectedDate: selectedDate)
+        planner.loadBlocks(calendar: calendar, context: context)
+        let activity = try #require(
+            DayPlanTimelineTasks.activityBlocks(
+                on: activityDate,
+                from: [task],
+                logs: [log],
+                plannedBlocks: [],
+                calendar: calendar
+            )
+            .first
+        )
+
+        let didConfirm = planner.confirmTimelineActivity(activity, on: activityDate, calendar: calendar, context: context)
+        let didConfirmAgain = planner.confirmTimelineActivity(activity, on: activityDate, calendar: calendar, context: context)
+
+        let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
+        let confirmedBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        let remainingAutomaticBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [log],
+            plannedBlocks: confirmedBlocks,
+            calendar: calendar
+        )
+
+        #expect(didConfirm)
+        #expect(didConfirmAgain)
+        #expect(confirmedBlocks.count == 1)
+        let confirmedBlock = try #require(confirmedBlocks.first)
+        #expect(confirmedBlock.id != activity.block.id)
+        #expect(confirmedBlock.taskID == task.id)
+        #expect(confirmedBlock.dayKey == dayKey)
+        #expect(confirmedBlock.startMinute == 12 * 60 + 15)
+        #expect(confirmedBlock.durationMinutes == 40)
+        #expect(confirmedBlock.titleSnapshot == "Review inbox")
+        #expect(confirmedBlock.emojiSnapshot == "📬")
+        #expect(planner.selectedDate == activityDate)
+        #expect(planner.selectedBlockID == confirmedBlock.id)
+        #expect(planner.selectedTaskID == task.id)
+        #expect(remainingAutomaticBlocks.isEmpty)
+    }
+
+    @Test
     func activeFocusSessionBlocksUseTimerStartAndElapsedDuration() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))

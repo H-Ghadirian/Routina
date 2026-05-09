@@ -263,6 +263,53 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     @discardableResult
+    func confirmTimelineActivity(
+        _ activity: DayPlanTimelineActivityBlock,
+        on date: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> Bool {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        var dayBlocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+
+        if let existingBlock = dayBlocks.first(where: { $0.taskID == activity.block.taskID }) {
+            selectedDate = date
+            selectedBlockID = existingBlock.id
+            selectedTaskID = existingBlock.taskID
+            startMinute = existingBlock.startMinute
+            durationMinutes = existingBlock.durationMinutes
+            weekBlocksByDayKey[dayKey] = dayBlocks
+            syncSelectedDayBlocks(calendar: calendar, context: context)
+            return true
+        }
+
+        let now = Date()
+        let confirmedBlock = DayPlanBlock(
+            taskID: activity.block.taskID,
+            dayKey: dayKey,
+            startMinute: activity.block.startMinute,
+            durationMinutes: activity.block.durationMinutes,
+            titleSnapshot: activity.block.titleSnapshot,
+            emojiSnapshot: activity.block.emojiSnapshot,
+            createdAt: now,
+            updatedAt: now
+        )
+
+        dayBlocks.append(confirmedBlock)
+        let sortedBlocks = sortedDayBlocks(dayBlocks)
+        weekBlocksByDayKey[dayKey] = sortedBlocks
+        DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
+
+        selectedDate = date
+        selectedBlockID = confirmedBlock.id
+        selectedTaskID = confirmedBlock.taskID
+        startMinute = confirmedBlock.startMinute
+        durationMinutes = confirmedBlock.durationMinutes
+        syncSelectedDayBlocks(calendar: calendar, context: context)
+        return true
+    }
+
+    @discardableResult
     func resizeBlock(
         _ id: DayPlanBlock.ID,
         on date: Date,

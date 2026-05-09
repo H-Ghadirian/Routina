@@ -457,6 +457,9 @@ private struct DayPlanTimelinePanelView: View {
                 onDeleteBlock: { block in
                     planner.deleteBlock(block.id, calendar: calendar, context: modelContext)
                 },
+                onConfirmTimelineActivity: { activity, date in
+                    planner.confirmTimelineActivity(activity, on: date, calendar: calendar, context: modelContext)
+                },
                 onMoveBlock: { blockID, date, minute in
                     planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
