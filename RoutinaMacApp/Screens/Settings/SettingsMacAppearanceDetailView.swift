@@ -208,13 +208,6 @@ struct SettingsMacGeneralDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if !store.appearance.appLockStatusMessage.isEmpty {
-                    SettingsMacDetailCard(title: "Status") {
-                        Text(store.appearance.appLockStatusMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
             }
         }
     }

@@ -187,12 +187,6 @@ struct SettingsGeneralDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if !store.appearance.appLockStatusMessage.isEmpty {
-                    Section("Status") {
-                        Text(store.appearance.appLockStatusMessage)
-                            .foregroundStyle(.secondary)
-                    }
-                }
             }
             .listStyle(.insetGrouped)
             .navigationTitle("General")
