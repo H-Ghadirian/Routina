@@ -332,7 +332,7 @@ extension HomeTCAView {
         let tasks = dayPlanUnplannedCompletedDisplays(for: date)
         let section = HomeTaskListPresentationSection(
             kind: .regular,
-            title: "Done on \(date.formatted(date: .abbreviated, time: .omitted))",
+            title: "Timeline on \(date.formatted(date: .abbreviated, time: .omitted))",
             tasks: tasks,
             rowNumberOffset: 0,
             includeMarkDone: false,
@@ -343,16 +343,16 @@ extension HomeTCAView {
             hiddenUnavailableTaskCount: 0,
             emptyState: tasks.isEmpty
                 ? HomeTaskListEmptyState(
-                    title: "All done tasks are planned",
-                    message: "Completed tasks for this day are already placed in the planner.",
-                    systemImage: "calendar.badge.checkmark"
+                    title: "All timeline activity is planned",
+                    message: "Timeline tasks for this day are already placed in the planner.",
+                    systemImage: "clock.arrow.circlepath"
                 )
                 : nil
         )
 
         return VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 8) {
-                Label(dayPlanUnplannedCompletedFilterTitle(for: date), systemImage: "checkmark.circle.fill")
+                Label(dayPlanUnplannedCompletedFilterTitle(for: date), systemImage: "clock.arrow.circlepath")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

@@ -271,20 +271,31 @@ extension HomeTCAView {
     func dayPlanUnplannedCompletedDisplays(for date: Date) -> [HomeFeature.RoutineDisplay] {
         let displays = uniqueDayPlanCandidateDisplays
         let plannedBlocks = dayPlanPlanner.blocks(on: date, calendar: calendar, context: modelContext)
-        let matchingIDs = DayPlanUnplannedCompletedTasks.taskIDs(
+        let matchingIDs = DayPlanTimelineTasks.taskIDs(
             on: date,
             taskIDs: displays.map(\.taskID),
             lastDoneForTaskID: Dictionary(uniqueKeysWithValues: displays.map { ($0.taskID, $0.lastDone) }),
+            canceledAtForTaskID: Dictionary(uniqueKeysWithValues: displays.map { ($0.taskID, $0.canceledAt) }),
             logs: store.timelineLogs,
             plannedBlocks: plannedBlocks,
             calendar: calendar
         )
 
         return displays
-            .filter { matchingIDs.contains($0.taskID) && !$0.isCanceledOneOff }
+            .filter { matchingIDs.contains($0.taskID) }
             .sorted { lhs, rhs in
-                let lhsDate = latestCompletionDate(for: lhs.taskID, fallbackLastDone: lhs.lastDone, on: date) ?? .distantPast
-                let rhsDate = latestCompletionDate(for: rhs.taskID, fallbackLastDone: rhs.lastDone, on: date) ?? .distantPast
+                let lhsDate = latestActivityDate(
+                    for: lhs.taskID,
+                    fallbackLastDone: lhs.lastDone,
+                    fallbackCanceledAt: lhs.canceledAt,
+                    on: date
+                ) ?? .distantPast
+                let rhsDate = latestActivityDate(
+                    for: rhs.taskID,
+                    fallbackLastDone: rhs.lastDone,
+                    fallbackCanceledAt: rhs.canceledAt,
+                    on: date
+                ) ?? .distantPast
                 if lhsDate != rhsDate {
                     return lhsDate > rhsDate
                 }
@@ -301,7 +312,7 @@ extension HomeTCAView {
         } else {
             dateText = date.formatted(date: .abbreviated, time: .omitted)
         }
-        return "Done \(dateText) · Not in planner"
+        return "Timeline \(dateText) · Not in planner"
     }
 
     private var uniqueDayPlanCandidateDisplays: [HomeFeature.RoutineDisplay] {
@@ -314,29 +325,20 @@ extension HomeTCAView {
             }
     }
 
-    private func latestCompletionDate(
+    private func latestActivityDate(
         for taskID: UUID,
         fallbackLastDone: Date?,
+        fallbackCanceledAt: Date?,
         on date: Date
     ) -> Date? {
-        let logDate = store.timelineLogs
-            .filter { log in
-                guard log.taskID == taskID,
-                      log.kind == .completed,
-                      let timestamp = log.timestamp
-                else { return false }
-                return calendar.isDate(timestamp, inSameDayAs: date)
-            }
-            .compactMap(\.timestamp)
-            .max()
-
-        guard let fallbackLastDone,
-              calendar.isDate(fallbackLastDone, inSameDayAs: date)
-        else {
-            return logDate
-        }
-
-        return max(logDate ?? fallbackLastDone, fallbackLastDone)
+        DayPlanTimelineTasks.latestActivityDate(
+            for: taskID,
+            fallbackLastDone: fallbackLastDone,
+            fallbackCanceledAt: fallbackCanceledAt,
+            logs: store.timelineLogs,
+            on: date,
+            calendar: calendar
+        )
     }
 
     @ViewBuilder

@@ -65,7 +65,7 @@ struct DayPlanSidebarView: View {
                             .font(.headline)
 
                         if let focusedDate = planner.focusedUnplannedCompletedDate {
-                            Text("Done on \(focusedDate.formatted(date: .abbreviated, time: .omitted)) and not in planner")
+                            Text("Timeline activity on \(focusedDate.formatted(date: .abbreviated, time: .omitted)) and not in planner")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -205,7 +205,7 @@ struct DayPlanSidebarView: View {
 
     private var availableTasks: [RoutineTask] {
         if let focusedDate = planner.focusedUnplannedCompletedDate {
-            return DayPlanUnplannedCompletedTasks.tasks(
+            return DayPlanTimelineTasks.tasks(
                 on: focusedDate,
                 from: tasks,
                 logs: logs,
@@ -231,17 +231,17 @@ struct DayPlanSidebarView: View {
     }
 
     private var sidebarTitle: String {
-        planner.focusedUnplannedCompletedDate == nil ? "Tasks" : "Unplanned Done"
+        planner.focusedUnplannedCompletedDate == nil ? "Tasks" : "Timeline Activity"
     }
 
     private var emptyStateTitle: String {
-        planner.focusedUnplannedCompletedDate == nil ? "No tasks found" : "All done tasks are planned"
+        planner.focusedUnplannedCompletedDate == nil ? "No tasks found" : "All timeline activity is planned"
     }
 
     private var emptyStateDescription: String {
         planner.focusedUnplannedCompletedDate == nil
             ? "Create or search for a task to add it to the plan."
-            : "Completed tasks for this day are already placed in the planner."
+            : "Timeline tasks for this day are already placed in the planner."
     }
 }
 
@@ -380,7 +380,7 @@ private struct DayPlanTimelinePanelView: View {
                     planner.blocks(on: date, calendar: calendar, context: modelContext)
                 },
                 unplannedCompletedCount: { date in
-                    DayPlanUnplannedCompletedTasks.count(
+                    DayPlanTimelineTasks.count(
                         on: date,
                         tasks: tasks,
                         logs: logs,

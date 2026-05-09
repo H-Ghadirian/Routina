@@ -79,6 +79,68 @@ struct DayPlanPlannerStateTests {
         let records = try context.fetch(descriptor)
         #expect(records.count == 1)
     }
+
+    @Test
+    func timelineTasksIncludeMissedAndCanceledActivityNotAlreadyPlanned() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T08:00:00Z"))
+        let missedAt = try #require(date("2026-05-07T09:00:00Z"))
+        let canceledAt = try #require(date("2026-05-07T10:00:00Z"))
+        let completedTaskID = UUID()
+        let missedTaskID = UUID()
+        let canceledTaskID = UUID()
+        let completedTask = RoutineTask(
+            id: completedTaskID,
+            name: "Already planned",
+            scheduleMode: .fixedInterval
+        )
+        let missedTask = RoutineTask(
+            id: missedTaskID,
+            name: "Missed call",
+            scheduleMode: .fixedInterval
+        )
+        let canceledTask = RoutineTask(
+            id: canceledTaskID,
+            name: "Canceled errand",
+            scheduleMode: .oneOff,
+            canceledAt: canceledAt
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: completedAt,
+                taskID: completedTaskID,
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: missedAt,
+                taskID: missedTaskID,
+                kind: .missed
+            ),
+            RoutineLog(
+                timestamp: canceledAt,
+                taskID: canceledTaskID,
+                kind: .canceled
+            ),
+        ]
+        let plannedBlock = DayPlanBlock(
+            taskID: completedTaskID,
+            dayKey: DayPlanStorage.dayKey(for: activityDate, calendar: calendar),
+            startMinute: 8 * 60,
+            durationMinutes: 60,
+            titleSnapshot: "Already planned"
+        )
+
+        let tasks = DayPlanTimelineTasks.tasks(
+            on: activityDate,
+            from: [completedTask, missedTask, canceledTask],
+            logs: logs,
+            plannedBlocks: [plannedBlock],
+            calendar: calendar
+        )
+
+        #expect(tasks.map(\.id) == [canceledTaskID, missedTaskID])
+    }
 }
 
 private let gregorianCalendar: Calendar = {

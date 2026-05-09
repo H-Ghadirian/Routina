@@ -69,10 +69,10 @@ struct SettingsMacAppearanceDetailView: View {
                 }
 
                 SettingsMacDetailCard(title: "Day Planner") {
-                    Toggle("Show unplanned done badges", isOn: $showsDayPlanUnplannedDoneBadges)
+                    Toggle("Show timeline task badges", isOn: $showsDayPlanUnplannedDoneBadges)
                         .toggleStyle(.switch)
 
-                    Text("Shows a small count on each planner day when completed tasks for that date are not yet placed in the day.")
+                    Text("Shows a small count on each planner day when timeline tasks for that date are not yet placed in the day.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

@@ -42,7 +42,7 @@ enum DayPlanTaskSorting {
     }
 }
 
-enum DayPlanUnplannedCompletedTasks {
+enum DayPlanTimelineTasks {
     static func count(
         on date: Date,
         tasks: [RoutineTask],
@@ -54,6 +54,7 @@ enum DayPlanUnplannedCompletedTasks {
             on: date,
             taskIDs: tasks.map(\.id),
             lastDoneForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.lastDone) }),
+            canceledAtForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.canceledAt) }),
             logs: logs,
             plannedBlocks: plannedBlocks,
             calendar: calendar
@@ -72,16 +73,31 @@ enum DayPlanUnplannedCompletedTasks {
             on: date,
             taskIDs: tasks.map(\.id),
             lastDoneForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.lastDone) }),
+            canceledAtForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.canceledAt) }),
             logs: logs,
             plannedBlocks: plannedBlocks,
             calendar: calendar
         )
 
         return tasks
-            .filter { matchingIDs.contains($0.id) && !$0.isCanceledOneOff }
+            .filter { matchingIDs.contains($0.id) }
             .sorted { lhs, rhs in
-                let lhsDate = latestCompletionDate(for: lhs.id, fallbackLastDone: lhs.lastDone, logs: logs, on: date, calendar: calendar) ?? .distantPast
-                let rhsDate = latestCompletionDate(for: rhs.id, fallbackLastDone: rhs.lastDone, logs: logs, on: date, calendar: calendar) ?? .distantPast
+                let lhsDate = latestActivityDate(
+                    for: lhs.id,
+                    fallbackLastDone: lhs.lastDone,
+                    fallbackCanceledAt: lhs.canceledAt,
+                    logs: logs,
+                    on: date,
+                    calendar: calendar
+                ) ?? .distantPast
+                let rhsDate = latestActivityDate(
+                    for: rhs.id,
+                    fallbackLastDone: rhs.lastDone,
+                    fallbackCanceledAt: rhs.canceledAt,
+                    logs: logs,
+                    on: date,
+                    calendar: calendar
+                ) ?? .distantPast
                 if lhsDate != rhsDate {
                     return lhsDate > rhsDate
                 }
@@ -93,20 +109,20 @@ enum DayPlanUnplannedCompletedTasks {
         on date: Date,
         taskIDs: [UUID],
         lastDoneForTaskID: [UUID: Date?],
+        canceledAtForTaskID: [UUID: Date?] = [:],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
         calendar: Calendar
     ) -> Set<UUID> {
         let knownTaskIDs = Set(taskIDs)
-        var completedIDs = Set<UUID>()
+        var activityIDs = Set<UUID>()
 
         for log in logs {
             guard knownTaskIDs.contains(log.taskID),
-                  log.kind == .completed,
                   let timestamp = log.timestamp,
                   calendar.isDate(timestamp, inSameDayAs: date)
             else { continue }
-            completedIDs.insert(log.taskID)
+            activityIDs.insert(log.taskID)
         }
 
         for (taskID, lastDone) in lastDoneForTaskID {
@@ -114,16 +130,25 @@ enum DayPlanUnplannedCompletedTasks {
                   let lastDone,
                   calendar.isDate(lastDone, inSameDayAs: date)
             else { continue }
-            completedIDs.insert(taskID)
+            activityIDs.insert(taskID)
         }
 
-        completedIDs.subtract(Set(plannedBlocks.map(\.taskID)))
-        return completedIDs
+        for (taskID, canceledAt) in canceledAtForTaskID {
+            guard knownTaskIDs.contains(taskID),
+                  let canceledAt,
+                  calendar.isDate(canceledAt, inSameDayAs: date)
+            else { continue }
+            activityIDs.insert(taskID)
+        }
+
+        activityIDs.subtract(Set(plannedBlocks.map(\.taskID)))
+        return activityIDs
     }
 
-    private static func latestCompletionDate(
+    static func latestActivityDate(
         for taskID: UUID,
         fallbackLastDone: Date?,
+        fallbackCanceledAt: Date? = nil,
         logs: [RoutineLog],
         on date: Date,
         calendar: Calendar
@@ -131,7 +156,6 @@ enum DayPlanUnplannedCompletedTasks {
         let logDate = logs
             .filter { log in
                 guard log.taskID == taskID,
-                      log.kind == .completed,
                       let timestamp = log.timestamp
                 else { return false }
                 return calendar.isDate(timestamp, inSameDayAs: date)
@@ -139,13 +163,19 @@ enum DayPlanUnplannedCompletedTasks {
             .compactMap(\.timestamp)
             .max()
 
-        guard let fallbackLastDone,
-              calendar.isDate(fallbackLastDone, inSameDayAs: date)
-        else {
-            return logDate
-        }
+        let legacyDates = [fallbackLastDone, fallbackCanceledAt]
+            .compactMap { candidate -> Date? in
+                guard let candidate,
+                      calendar.isDate(candidate, inSameDayAs: date)
+                else { return nil }
+                return candidate
+            }
 
-        return max(logDate ?? fallbackLastDone, fallbackLastDone)
+        var dates = legacyDates
+        if let logDate {
+            dates.append(logDate)
+        }
+        return dates.max()
     }
 }
 

@@ -32,7 +32,7 @@ struct DayPlanWeekDayHeader: View {
 
             if unplannedCompletedCount > 0 {
                 Button(action: onSelectUnplannedCompleted) {
-                    Label("\(unplannedCompletedCount) done", systemImage: "checkmark.circle.fill")
+                    Label(timelineTaskCountText, systemImage: "clock.arrow.circlepath")
                         .font(.caption2.weight(.semibold))
                         .lineLimit(1)
                         .labelStyle(.titleAndIcon)
@@ -45,8 +45,8 @@ struct DayPlanWeekDayHeader: View {
                     Capsule(style: .continuous)
                         .fill(isFocusedForUnplannedCompleted ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.10))
                 )
-                .help("Show completed tasks not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
-                .accessibilityLabel("\(unplannedCompletedCount) completed tasks not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
+                .help("Show timeline tasks not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
+                .accessibilityLabel("\(timelineTaskCountText) from the timeline not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
             }
         }
         .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
@@ -67,5 +67,9 @@ struct DayPlanWeekDayHeader: View {
             return Color.accentColor.opacity(0.14)
         }
         return Color.clear
+    }
+
+    private var timelineTaskCountText: String {
+        "\(unplannedCompletedCount) \(unplannedCompletedCount == 1 ? "task" : "tasks")"
     }
 }

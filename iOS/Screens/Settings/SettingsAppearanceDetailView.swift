@@ -49,9 +49,9 @@ struct SettingsAppearanceDetailView: View {
                 }
 
                 Section("Day Planner") {
-                    Toggle("Show unplanned done badges", isOn: $showsDayPlanUnplannedDoneBadges)
+                    Toggle("Show timeline task badges", isOn: $showsDayPlanUnplannedDoneBadges)
 
-                    Text("Shows a small count on each planner day when completed tasks for that date are not yet placed in the day.")
+                    Text("Shows a small count on each planner day when timeline tasks for that date are not yet placed in the day.")
                         .foregroundStyle(.secondary)
                 }
 
