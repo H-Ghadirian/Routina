@@ -56,6 +56,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             if mode == .softInterval {
                 state.editRecurrenceKind = .intervalDays
                 state.editRecurrenceHasExplicitTime = false
+                state.editRecurrenceHasTimeRange = false
             }
         }
         disableAutoAssumeIfNeeded(state: &state)
@@ -88,10 +89,13 @@ struct TaskDetailRecurrenceEditActionHandler {
             switch kind {
             case .intervalDays:
                 state.editRecurrenceHasExplicitTime = false
+                state.editRecurrenceHasTimeRange = false
             case .dailyTime:
-                state.editRecurrenceHasExplicitTime = true
+                state.editRecurrenceHasExplicitTime = !state.editRecurrenceHasTimeRange
             case .weekly, .monthlyDay:
-                state.editRecurrenceHasExplicitTime = previousHasExplicitTime
+                state.editRecurrenceHasExplicitTime = state.editRecurrenceHasTimeRange
+                    ? false
+                    : previousHasExplicitTime
             }
         }
         disableAutoAssumeIfNeeded(state: &state)
@@ -104,7 +108,26 @@ struct TaskDetailRecurrenceEditActionHandler {
     ) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
             state.editRecurrenceHasExplicitTime = hasExplicitTime
+            if hasExplicitTime {
+                state.editRecurrenceHasTimeRange = false
+            }
         }
+        return .none
+    }
+
+    func editRecurrenceHasTimeRangeChanged(
+        _ hasTimeRange: Bool,
+        state: inout State
+    ) -> Effect<Action> {
+        rebaseEditReminderIfUsingLeadTime(&state) { state in
+            state.editRecurrenceHasTimeRange = hasTimeRange
+            if hasTimeRange {
+                state.editRecurrenceHasExplicitTime = false
+            } else if state.editRecurrenceKind == .dailyTime {
+                state.editRecurrenceHasExplicitTime = true
+            }
+        }
+        disableAutoAssumeIfNeeded(state: &state)
         return .none
     }
 
@@ -114,6 +137,28 @@ struct TaskDetailRecurrenceEditActionHandler {
     ) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
             state.editRecurrenceTimeOfDay = timeOfDay
+        }
+        disableAutoAssumeIfNeeded(state: &state)
+        return .none
+    }
+
+    func editRecurrenceTimeRangeStartChanged(
+        _ timeOfDay: RoutineTimeOfDay,
+        state: inout State
+    ) -> Effect<Action> {
+        rebaseEditReminderIfUsingLeadTime(&state) { state in
+            state.editRecurrenceTimeRangeStart = timeOfDay
+        }
+        disableAutoAssumeIfNeeded(state: &state)
+        return .none
+    }
+
+    func editRecurrenceTimeRangeEndChanged(
+        _ timeOfDay: RoutineTimeOfDay,
+        state: inout State
+    ) -> Effect<Action> {
+        rebaseEditReminderIfUsingLeadTime(&state) { state in
+            state.editRecurrenceTimeRangeEnd = timeOfDay
         }
         disableAutoAssumeIfNeeded(state: &state)
         return .none

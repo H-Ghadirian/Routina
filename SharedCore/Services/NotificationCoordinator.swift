@@ -139,12 +139,12 @@ enum NotificationCoordinator {
             if task.isOneOffTask {
                 return task.deadline
             }
-            if task.recurrenceRule.usesExplicitTimeOfDay {
+            if task.recurrenceRule.usesTimeConstraint {
                 return dueDate
             }
             return NotificationPreferences.reminderDate(on: dueDate, calendar: calendar)
         }()
-        let usesExactTime = reminderDate != nil || task.isOneOffTask || task.recurrenceRule.usesExplicitTimeOfDay
+        let usesExactTime = reminderDate != nil || task.isOneOffTask || task.recurrenceRule.usesTimeConstraint
         return NotificationPayload(
             identifier: task.id.uuidString,
             name: task.name,

@@ -59,7 +59,10 @@ struct TaskDetailFeature: Reducer {
         var editFrequencyValue: Int = 1
         var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
         var editRecurrenceHasExplicitTime: Bool = false
+        var editRecurrenceHasTimeRange: Bool = false
         var editRecurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
+        var editRecurrenceTimeRangeStart: RoutineTimeOfDay = RoutineTimeRange.defaultValue.start
+        var editRecurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
         var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var editAutoAssumeDailyDone: Bool = false
@@ -82,6 +85,7 @@ struct TaskDetailFeature: Reducer {
             let fallbackInterval = editScheduleMode == .oneOff
                 ? 1
                 : editFrequencyValue * editFrequency.daysMultiplier
+            let timeRange = editRecurrenceTimeRange
 
             guard editScheduleMode != .oneOff else {
                 return .interval(days: 1)
@@ -99,18 +103,31 @@ struct TaskDetailFeature: Reducer {
             case .intervalDays:
                 return .interval(days: max(fallbackInterval, 1))
             case .dailyTime:
+                if let timeRange {
+                    return .daily(in: timeRange)
+                }
                 return .daily(at: editRecurrenceTimeOfDay)
             case .weekly:
                 return .weekly(
                     on: editRecurrenceWeekday,
-                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
+                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
+                    timeRange: timeRange
                 )
             case .monthlyDay:
                 return .monthly(
                     on: editRecurrenceDayOfMonth,
-                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
+                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
+                    timeRange: timeRange
                 )
             }
+        }
+
+        var editRecurrenceTimeRange: RoutineTimeRange? {
+            guard editRecurrenceHasTimeRange else { return nil }
+            return RoutineTimeRange(
+                start: editRecurrenceTimeRangeStart,
+                end: editRecurrenceTimeRangeEnd
+            )
         }
 
         var canAutoAssumeDailyDone: Bool {
@@ -216,7 +233,10 @@ struct TaskDetailFeature: Reducer {
         case editFrequencyValueChanged(Int)
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
         case editRecurrenceHasExplicitTimeChanged(Bool)
+        case editRecurrenceHasTimeRangeChanged(Bool)
         case editRecurrenceTimeOfDayChanged(RoutineTimeOfDay)
+        case editRecurrenceTimeRangeStartChanged(RoutineTimeOfDay)
+        case editRecurrenceTimeRangeEndChanged(RoutineTimeOfDay)
         case editRecurrenceWeekdayChanged(Int)
         case editRecurrenceDayOfMonthChanged(Int)
         case editAutoAssumeDailyDoneChanged(Bool)
@@ -971,8 +991,26 @@ struct TaskDetailFeature: Reducer {
                 state: &state
             )
 
+        case let .editRecurrenceHasTimeRangeChanged(hasTimeRange):
+            return recurrenceEditActionHandler().editRecurrenceHasTimeRangeChanged(
+                hasTimeRange,
+                state: &state
+            )
+
         case let .editRecurrenceTimeOfDayChanged(timeOfDay):
             return recurrenceEditActionHandler().editRecurrenceTimeOfDayChanged(
+                timeOfDay,
+                state: &state
+            )
+
+        case let .editRecurrenceTimeRangeStartChanged(timeOfDay):
+            return recurrenceEditActionHandler().editRecurrenceTimeRangeStartChanged(
+                timeOfDay,
+                state: &state
+            )
+
+        case let .editRecurrenceTimeRangeEndChanged(timeOfDay):
+            return recurrenceEditActionHandler().editRecurrenceTimeRangeEndChanged(
                 timeOfDay,
                 state: &state
             )

@@ -201,4 +201,66 @@ struct TaskDetailEditSaveTests {
         #expect(persistedTask.scheduleMode == .fixedInterval)
         #expect(persistedTask.checklistItems.isEmpty)
     }
+
+    @Test
+    func editSaveTapped_persistsDailyTimeRangeRecurrence() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Breakfast",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🍳",
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
+            scheduleAnchor: makeDate("2026-03-10T06:00:00Z")
+        )
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Breakfast",
+                editRoutineEmoji: "🍳",
+                editScheduleMode: .fixedInterval,
+                editRecurrenceKind: .dailyTime,
+                editRecurrenceHasExplicitTime: false,
+                editRecurrenceHasTimeRange: true,
+                editRecurrenceTimeRangeStart: timeRange.start,
+                editRecurrenceTimeRangeEnd: timeRange.end
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.recurrenceRule == .daily(in: timeRange))
+    }
 }

@@ -5,6 +5,7 @@ enum RoutinaAppSceneBootstrap {
     static func preparePersistence() -> PersistenceController {
         RoutinaAppBootstrap.configure()
         let persistence = PersistenceController.shared
+        PersistenceController.runPostOpenMigrations(in: persistence.container)
         RoutinaUITestSeeder.seedIfRequested(in: persistence.container.mainContext)
         scheduleDuplicateIDCleanup(using: persistence)
         return persistence

@@ -44,7 +44,10 @@ struct AddRoutineScheduleState: Equatable {
     var frequencyValue: Int = 1
     var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
     var recurrenceHasExplicitTime: Bool = false
+    var recurrenceHasTimeRange: Bool = false
     var recurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
+    var recurrenceTimeRangeStart: RoutineTimeOfDay = RoutineTimeRange.defaultValue.start
+    var recurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
     var recurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
     var recurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
     var autoAssumeDailyDone: Bool = false
@@ -112,6 +115,7 @@ struct AddRoutineFeatureState: Equatable {
         let fallbackInterval = schedule.scheduleMode == .oneOff
             ? 1
             : schedule.frequencyValue * schedule.frequency.daysMultiplier
+        let timeRange = schedule.recurrenceTimeRange
 
         guard schedule.scheduleMode != .oneOff else {
             return .interval(days: 1)
@@ -129,16 +133,21 @@ struct AddRoutineFeatureState: Equatable {
         case .intervalDays:
             return .interval(days: max(fallbackInterval, 1))
         case .dailyTime:
+            if let timeRange {
+                return .daily(in: timeRange)
+            }
             return .daily(at: schedule.recurrenceTimeOfDay)
         case .weekly:
             return .weekly(
                 on: schedule.recurrenceWeekday,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: schedule.recurrenceDayOfMonth,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         }
     }
@@ -149,6 +158,16 @@ struct AddRoutineFeatureState: Equatable {
             recurrenceRule: candidateRecurrenceRule,
             hasSequentialSteps: !checklist.routineSteps.isEmpty,
             hasChecklistItems: !checklist.routineChecklistItems.isEmpty
+        )
+    }
+}
+
+extension AddRoutineScheduleState {
+    var recurrenceTimeRange: RoutineTimeRange? {
+        guard recurrenceHasTimeRange else { return nil }
+        return RoutineTimeRange(
+            start: recurrenceTimeRangeStart,
+            end: recurrenceTimeRangeEnd
         )
     }
 }

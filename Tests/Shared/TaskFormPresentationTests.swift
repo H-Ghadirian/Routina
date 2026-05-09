@@ -16,12 +16,12 @@ struct TaskFormPresentationTests {
 
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
-        #expect(fixed.scheduleModeDescription == "Use one overall repeat interval and complete every checklist item to finish the routine.")
+        #expect(fixed.scheduleModeDescription == "One scheduled routine that finishes after every checklist item is done.")
         #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The routine is done when every checklist item is completed.")
 
         #expect(oneOff.isStepBasedMode)
         #expect(oneOff.showsRepeatControls == false)
-        #expect(oneOff.taskTypeDescription == "Todos are one-off tasks. Once you finish one, it stays completed.")
+        #expect(oneOff.taskTypeDescription == "Happens once. Use a deadline instead of repeat settings.")
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
     }
 
@@ -57,6 +57,10 @@ struct TaskFormPresentationTests {
             recurrenceHasExplicitTime: true,
             recurrenceDayOfMonth: 11
         )
+        let weeklyWindow = presentation(
+            recurrenceHasTimeRange: true,
+            recurrenceWeekday: 2
+        )
         let weekdaySymbols = Calendar.current.weekdaySymbols
 
         #expect(TaskFormPresentation.weekdayName(for: 99) == weekdaySymbols.last)
@@ -71,6 +75,7 @@ struct TaskFormPresentationTests {
         #expect(TaskFormPresentation.storyPointsLabel(for: 1) == "1 story point")
         #expect(weekly.weeklyRecurrenceTimeHelpText() == "Optional. Leave this off to keep the routine due any time on \(weekdaySymbols[1]).")
         #expect(monthly.monthlyRecurrenceTimeHelpText(explicitTimeText: "9:30 AM") == "Due on the 11th of each month at 9:30 AM.")
+        #expect(weeklyWindow.weeklyRecurrenceTimeHelpText(timeRangeText: "7:00 AM to 10:00 AM") == "Due every \(weekdaySymbols[1]) from 7:00 AM to 10:00 AM.")
     }
 
     private func presentation(
@@ -78,6 +83,7 @@ struct TaskFormPresentationTests {
         scheduleMode: RoutineScheduleMode = .fixedInterval,
         recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays,
         recurrenceHasExplicitTime: Bool = false,
+        recurrenceHasTimeRange: Bool = false,
         recurrenceWeekday: Int = 2,
         recurrenceDayOfMonth: Int = 1,
         importance: RoutineTaskImportance = .level2,
@@ -93,6 +99,7 @@ struct TaskFormPresentationTests {
             scheduleMode: scheduleMode,
             recurrenceKind: recurrenceKind,
             recurrenceHasExplicitTime: recurrenceHasExplicitTime,
+            recurrenceHasTimeRange: recurrenceHasTimeRange,
             recurrenceWeekday: recurrenceWeekday,
             recurrenceDayOfMonth: recurrenceDayOfMonth,
             importance: importance,

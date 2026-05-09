@@ -33,7 +33,10 @@ struct TaskDetailEditChangeRequest {
     let frequencyValue: Int
     let recurrenceKind: RoutineRecurrenceRule.Kind
     let recurrenceHasExplicitTime: Bool
+    let recurrenceHasTimeRange: Bool
     let recurrenceTimeOfDay: RoutineTimeOfDay
+    let recurrenceTimeRangeStart: RoutineTimeOfDay
+    let recurrenceTimeRangeEnd: RoutineTimeOfDay
     let recurrenceWeekday: Int
     let recurrenceDayOfMonth: Int
     let autoAssumeDailyDone: Bool
@@ -74,7 +77,10 @@ struct TaskDetailEditChangeRequest {
         self.frequencyValue = state.editFrequencyValue
         self.recurrenceKind = state.editRecurrenceKind
         self.recurrenceHasExplicitTime = state.editRecurrenceHasExplicitTime
+        self.recurrenceHasTimeRange = state.editRecurrenceHasTimeRange
         self.recurrenceTimeOfDay = state.editRecurrenceTimeOfDay
+        self.recurrenceTimeRangeStart = state.editRecurrenceTimeRangeStart
+        self.recurrenceTimeRangeEnd = state.editRecurrenceTimeRangeEnd
         self.recurrenceWeekday = state.editRecurrenceWeekday
         self.recurrenceDayOfMonth = state.editRecurrenceDayOfMonth
         self.autoAssumeDailyDone = state.editAutoAssumeDailyDone
@@ -157,20 +163,32 @@ enum TaskDetailEditChangeDetector {
     }
 
     private static func recurrenceRule(for request: TaskDetailEditChangeRequest) -> RoutineRecurrenceRule {
+        let timeRange = request.recurrenceHasTimeRange
+            ? RoutineTimeRange(
+                start: request.recurrenceTimeRangeStart,
+                end: request.recurrenceTimeRangeEnd
+            )
+            : nil
+
         switch request.recurrenceKind {
         case .intervalDays:
             return .interval(days: request.frequencyValue * request.frequency.daysMultiplier)
         case .dailyTime:
+            if let timeRange {
+                return .daily(in: timeRange)
+            }
             return .daily(at: request.recurrenceTimeOfDay)
         case .weekly:
             return .weekly(
                 on: request.recurrenceWeekday,
-                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil
+                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: request.recurrenceDayOfMonth,
-                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil
+                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         }
     }
@@ -234,7 +252,7 @@ enum TaskFormReminderLeadTime: Int, CaseIterable, Identifiable {
         }
 
         guard scheduleMode == .fixedInterval,
-              let timeOfDay = recurrenceRule.timeOfDay else {
+              let timeOfDay = recurrenceRule.timeRange?.start ?? recurrenceRule.timeOfDay else {
             return nil
         }
 

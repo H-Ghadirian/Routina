@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -85,6 +86,36 @@ struct PersistenceControllerTests {
         let contents = try String(contentsOf: diagnosticsURL, encoding: .utf8)
         #expect(contents.contains("Store Path: /tmp/RoutinaModel.sqlite"))
         #expect(contents.contains("Underlying Error: schema mismatch"))
+    }
+
+    @MainActor
+    @Test
+    func migrateLegacyRecurrenceRules_backfillsSwiftDataColumnsAndClearsJSON() throws {
+        let container = try PersistenceController.makeLocalOnlyContainer(inMemory: true)
+        let context = container.mainContext
+        let legacyRule = RoutineRecurrenceRule.monthly(
+            on: 21,
+            timeRange: RoutineTimeRange(
+                start: RoutineTimeOfDay(hour: 7, minute: 0),
+                end: RoutineTimeOfDay(hour: 10, minute: 0)
+            )
+        )
+        let task = RoutineTask(name: "Legacy breakfast", interval: 30)
+        task.recurrenceStorageVersion = 0
+        task.recurrenceRuleStorage = RoutineRecurrenceRuleStorage.serialize(legacyRule)
+        context.insert(task)
+        try context.save()
+
+        let migratedCount = try PersistenceController.migrateLegacyRecurrenceRules(in: context)
+
+        #expect(migratedCount == 1)
+        #expect(task.recurrenceRule == legacyRule)
+        #expect(task.recurrenceStorageVersion == 1)
+        #expect(task.recurrenceKindRawValue == RoutineRecurrenceRule.Kind.monthlyDay.rawValue)
+        #expect(task.recurrenceDayOfMonth == 21)
+        #expect(task.recurrenceTimeRangeStartHour == 7)
+        #expect(task.recurrenceTimeRangeEndHour == 10)
+        #expect(task.recurrenceRuleStorage.isEmpty)
     }
 }
 

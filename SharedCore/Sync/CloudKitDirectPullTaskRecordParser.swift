@@ -77,6 +77,31 @@ enum CloudKitDirectPullTaskRecordParser {
                 "cd_recurrencerulestorage"
             ]
         )
+        let recurrenceStorageVersionValue = intValue(in: record, keys: storageKeys("recurrenceStorageVersion"))
+        let recurrenceKindRawValueValue = stringValue(in: record, keys: storageKeys("recurrenceKindRawValue"))
+        let recurrenceTimeOfDayHourValue = intValue(in: record, keys: storageKeys("recurrenceTimeOfDayHour"))
+        let recurrenceTimeOfDayMinuteValue = intValue(in: record, keys: storageKeys("recurrenceTimeOfDayMinute"))
+        let recurrenceTimeRangeStartHourValue = intValue(in: record, keys: storageKeys("recurrenceTimeRangeStartHour"))
+        let recurrenceTimeRangeStartMinuteValue = intValue(in: record, keys: storageKeys("recurrenceTimeRangeStartMinute"))
+        let recurrenceTimeRangeEndHourValue = intValue(in: record, keys: storageKeys("recurrenceTimeRangeEndHour"))
+        let recurrenceTimeRangeEndMinuteValue = intValue(in: record, keys: storageKeys("recurrenceTimeRangeEndMinute"))
+        let recurrenceWeekdayValue = intValue(in: record, keys: storageKeys("recurrenceWeekday"))
+        let recurrenceDayOfMonthValue = intValue(in: record, keys: storageKeys("recurrenceDayOfMonth"))
+        let recurrenceRuleColumnValue = recurrenceRuleFromColumns(
+            storageVersion: recurrenceStorageVersionValue,
+            kindRawValue: recurrenceKindRawValueValue,
+            interval: intervalValue,
+            timeOfDayHour: recurrenceTimeOfDayHourValue,
+            timeOfDayMinute: recurrenceTimeOfDayMinuteValue,
+            timeRangeStartHour: recurrenceTimeRangeStartHourValue,
+            timeRangeStartMinute: recurrenceTimeRangeStartMinuteValue,
+            timeRangeEndHour: recurrenceTimeRangeEndHourValue,
+            timeRangeEndMinute: recurrenceTimeRangeEndMinuteValue,
+            weekday: recurrenceWeekdayValue,
+            dayOfMonth: recurrenceDayOfMonthValue
+        )
+        let recurrenceRuleValue = recurrenceRuleColumnValue
+            ?? recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize)
         let imageDataValue = dataValue(
             in: record,
             keys: ["imageData", "IMAGEDATA", "zimagedata", "ZIMAGEDATA", "cd_imagedata"]
@@ -187,7 +212,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || checklistItemsStorageValue != nil
                 || imageDataValue != nil
                 || scheduleModeValue != nil
-                || recurrenceRuleStorageValue != nil
+                || recurrenceRuleValue != nil
                 || lastDoneValue != nil
                 || canceledAtValue != nil
                 || scheduleAnchorValue != nil
@@ -240,7 +265,7 @@ enum CloudKitDirectPullTaskRecordParser {
             imageData: imageDataValue,
             scheduleMode: scheduleModeValue.flatMap(RoutineScheduleMode.init(rawValue:)),
             interval: Int16(clamping: intervalValue ?? 1),
-            recurrenceRule: recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize),
+            recurrenceRule: recurrenceRuleValue,
             lastDone: lastDoneValue,
             canceledAt: canceledAtValue,
             scheduleAnchor: scheduleAnchorValue,
@@ -289,5 +314,92 @@ enum CloudKitDirectPullTaskRecordParser {
 
     private static func uuidValue(in record: CKRecord, keys: [String]) -> UUID? {
         CloudKitDirectPullService.uuidValue(in: record, keys: keys)
+    }
+
+    private static func storageKeys(_ property: String) -> [String] {
+        [
+            property,
+            property.lowercased(),
+            property.uppercased(),
+            "z\(property.lowercased())",
+            "Z\(property.uppercased())",
+            "cd_\(property.lowercased())"
+        ]
+    }
+
+    private static func recurrenceRuleFromColumns(
+        storageVersion: Int?,
+        kindRawValue: String?,
+        interval: Int?,
+        timeOfDayHour: Int?,
+        timeOfDayMinute: Int?,
+        timeRangeStartHour: Int?,
+        timeRangeStartMinute: Int?,
+        timeRangeEndHour: Int?,
+        timeRangeEndMinute: Int?,
+        weekday: Int?,
+        dayOfMonth: Int?
+    ) -> RoutineRecurrenceRule? {
+        guard storageVersion != nil
+                || kindRawValue != nil
+                || timeOfDayHour != nil
+                || timeOfDayMinute != nil
+                || timeRangeStartHour != nil
+                || timeRangeStartMinute != nil
+                || timeRangeEndHour != nil
+                || timeRangeEndMinute != nil
+                || weekday != nil
+                || dayOfMonth != nil else {
+            return nil
+        }
+
+        let kind = kindRawValue.flatMap(RoutineRecurrenceRule.Kind.init(rawValue:)) ?? .intervalDays
+        let exactTime = timeOfDay(hour: timeOfDayHour, minute: timeOfDayMinute)
+        let range = timeRange(
+            startHour: timeRangeStartHour,
+            startMinute: timeRangeStartMinute,
+            endHour: timeRangeEndHour,
+            endMinute: timeRangeEndMinute
+        )
+
+        switch kind {
+        case .intervalDays:
+            return .interval(days: max(interval ?? 1, 1))
+        case .dailyTime:
+            if let range {
+                return .daily(in: range)
+            }
+            return .daily(at: exactTime ?? .defaultValue)
+        case .weekly:
+            return .weekly(
+                on: weekday ?? Calendar.current.firstWeekday,
+                at: exactTime,
+                timeRange: range
+            )
+        case .monthlyDay:
+            return .monthly(
+                on: dayOfMonth ?? Calendar.current.component(.day, from: Date()),
+                at: exactTime,
+                timeRange: range
+            )
+        }
+    }
+
+    private static func timeOfDay(hour: Int?, minute: Int?) -> RoutineTimeOfDay? {
+        guard let hour, let minute else { return nil }
+        return RoutineTimeOfDay(hour: hour, minute: minute)
+    }
+
+    private static func timeRange(
+        startHour: Int?,
+        startMinute: Int?,
+        endHour: Int?,
+        endMinute: Int?
+    ) -> RoutineTimeRange? {
+        guard let start = timeOfDay(hour: startHour, minute: startMinute),
+              let end = timeOfDay(hour: endHour, minute: endMinute) else {
+            return nil
+        }
+        return RoutineTimeRange(start: start, end: end)
     }
 }

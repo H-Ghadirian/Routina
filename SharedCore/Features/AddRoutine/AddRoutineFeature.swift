@@ -55,7 +55,10 @@ struct AddRoutineFeature: Reducer {
         case frequencyValueChanged(Int)
         case recurrenceKindChanged(RoutineRecurrenceRule.Kind)
         case recurrenceHasExplicitTimeChanged(Bool)
+        case recurrenceHasTimeRangeChanged(Bool)
         case recurrenceTimeOfDayChanged(RoutineTimeOfDay)
+        case recurrenceTimeRangeStartChanged(RoutineTimeOfDay)
+        case recurrenceTimeRangeEndChanged(RoutineTimeOfDay)
         case recurrenceWeekdayChanged(Int)
         case recurrenceDayOfMonthChanged(Int)
         case autoAssumeDailyDoneChanged(Bool)
@@ -355,8 +358,20 @@ struct AddRoutineFeature: Reducer {
             scheduleMutationHandler().setRecurrenceHasExplicitTime(hasExplicitTime, state: &state)
             return .none
 
+        case let .recurrenceHasTimeRangeChanged(hasTimeRange):
+            scheduleMutationHandler().setRecurrenceHasTimeRange(hasTimeRange, state: &state)
+            return .none
+
         case let .recurrenceTimeOfDayChanged(timeOfDay):
             scheduleMutationHandler().setRecurrenceTimeOfDay(timeOfDay, state: &state)
+            return .none
+
+        case let .recurrenceTimeRangeStartChanged(timeOfDay):
+            scheduleMutationHandler().setRecurrenceTimeRangeStart(timeOfDay, state: &state)
+            return .none
+
+        case let .recurrenceTimeRangeEndChanged(timeOfDay):
+            scheduleMutationHandler().setRecurrenceTimeRangeEnd(timeOfDay, state: &state)
             return .none
 
         case let .recurrenceWeekdayChanged(weekday):

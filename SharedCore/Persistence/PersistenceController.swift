@@ -31,6 +31,7 @@ public struct PersistenceController {
                 SprintFocusAllocationRecord.self,
                 configurations: primaryConfiguration
             )
+            Self.schedulePostOpenMigrations(in: container)
         } catch {
             NSLog(
                 "Primary ModelContainer init failed: \(error.localizedDescription)."
@@ -72,6 +73,7 @@ public struct PersistenceController {
                         SprintFocusAllocationRecord.self,
                         configurations: retriedConfiguration
                     )
+                    Self.schedulePostOpenMigrations(in: container)
                     return
                 } catch {
                     NSLog("Retry with the same persistent-store configuration failed: \(error.localizedDescription). Falling back to local-only store.")
@@ -98,6 +100,7 @@ public struct PersistenceController {
                     SprintFocusAllocationRecord.self,
                     configurations: localFallback
                 )
+                Self.schedulePostOpenMigrations(in: container)
             } catch {
                 NSLog("Local-only ModelContainer init failed: \(error.localizedDescription). Falling back to in-memory store.")
 
@@ -119,6 +122,7 @@ public struct PersistenceController {
                         SprintFocusAllocationRecord.self,
                         configurations: memoryFallback
                     )
+                    Self.schedulePostOpenMigrations(in: container)
                 } catch {
                     fatalError("Failed to initialize in-memory ModelContainer: \(error.localizedDescription)")
                 }
@@ -137,7 +141,7 @@ public struct PersistenceController {
             inMemory: inMemory,
             cloudKitDatabase: .none
         )
-        return try ModelContainer(
+        let container = try ModelContainer(
             for: RoutineTask.self,
             RoutineGoal.self,
             RoutineLog.self,
@@ -153,6 +157,23 @@ public struct PersistenceController {
             SprintFocusAllocationRecord.self,
             configurations: configuration
         )
+        Self.schedulePostOpenMigrations(in: container)
+        return container
+    }
+
+    @discardableResult
+    @MainActor
+    static func migrateLegacyRecurrenceRules(in context: ModelContext) throws -> Int {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        var migratedCount = 0
+        for task in tasks where task.migrateLegacyRecurrenceRuleStorageIfNeeded() {
+            migratedCount += 1
+        }
+
+        if migratedCount > 0 {
+            try context.save()
+        }
+        return migratedCount
     }
 
     static func strategyAfterPrimaryInitializationFailure(
@@ -179,6 +200,24 @@ public struct PersistenceController {
         }
 
         return .private(cloudContainerIdentifier)
+    }
+
+    private static func schedulePostOpenMigrations(in container: ModelContainer) {
+        Task { @MainActor in
+            Self.runPostOpenMigrations(in: container)
+        }
+    }
+
+    @MainActor
+    static func runPostOpenMigrations(in container: ModelContainer) {
+        do {
+            let migratedCount = try migrateLegacyRecurrenceRules(in: container.mainContext)
+            if migratedCount > 0 {
+                NSLog("Migrated \(migratedCount) routine recurrence rule(s) from legacy JSON storage.")
+            }
+        } catch {
+            NSLog("Legacy recurrence rule migration failed: \(error.localizedDescription)")
+        }
     }
 
     private static func makeConfiguration(

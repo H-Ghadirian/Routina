@@ -4,7 +4,7 @@ enum RoutineDateMath {
     static func usesExactTimedOccurrenceTracking(for task: RoutineTask) -> Bool {
         !task.isOneOffTask
             && task.recurrenceRule.isFixedCalendar
-            && task.recurrenceRule.usesExplicitTimeOfDay
+            && task.recurrenceRule.usesTimeConstraint
             && !task.isChecklistDriven
     }
 
@@ -66,7 +66,11 @@ enum RoutineDateMath {
         case .dailyTime:
             let reference = recurrenceReference(for: task, referenceDate: referenceDate)
             let base: Date
-            if task.lastDone == nil {
+            if task.lastDone == nil, let timeRange = task.recurrenceRule.timeRange {
+                base = timeRange.contains(reference.base, calendar: calendar)
+                    ? calendar.startOfDay(for: reference.base)
+                    : reference.base
+            } else if task.lastDone == nil {
                 // For new tasks, search from start of day so today's occurrence is
                 // found even if the task was created after the scheduled time.
                 base = calendar.startOfDay(for: reference.base)
@@ -75,13 +79,14 @@ enum RoutineDateMath {
             }
             return nextDailyOccurrence(
                 after: base,
-                timeOfDay: task.recurrenceRule.timeOfDay ?? .defaultValue,
+                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? .defaultValue,
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
             )
 
         case .weekly:
             let reference = recurrenceReference(for: task, referenceDate: referenceDate)
+            let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule)
             let base: Date
             if task.lastDone == nil,
                isWeeklyOccurrenceDay(
@@ -91,20 +96,27 @@ enum RoutineDateMath {
                ) {
                 // If a routine is created on its scheduled weekday, keep that day as
                 // the first occurrence even when the creation time is later.
-                base = calendar.startOfDay(for: reference.base)
+                if let timeRange = task.recurrenceRule.timeRange,
+                   !timeRange.contains(reference.base, calendar: calendar),
+                   reference.base >= timeRange.endDate(on: reference.base, calendar: calendar) {
+                    base = reference.base
+                } else {
+                    base = calendar.startOfDay(for: reference.base)
+                }
             } else {
                 base = reference.base
             }
             return nextWeeklyOccurrence(
                 after: base,
                 weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
-                timeOfDay: task.recurrenceRule.timeOfDay,
+                timeOfDay: timeOfDay,
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
             )
 
         case .monthlyDay:
             let reference = recurrenceReference(for: task, referenceDate: referenceDate)
+            let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule)
             let base: Date
             if task.lastDone == nil,
                isMonthlyOccurrenceDay(
@@ -114,14 +126,20 @@ enum RoutineDateMath {
                ) {
                 // If a routine is created on its scheduled day-of-month, keep that day
                 // as the first occurrence even when the creation time is later.
-                base = calendar.startOfDay(for: reference.base)
+                if let timeRange = task.recurrenceRule.timeRange,
+                   !timeRange.contains(reference.base, calendar: calendar),
+                   reference.base >= timeRange.endDate(on: reference.base, calendar: calendar) {
+                    base = reference.base
+                } else {
+                    base = calendar.startOfDay(for: reference.base)
+                }
             } else {
                 base = reference.base
             }
             return nextMonthlyOccurrence(
                 after: base,
                 dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
-                timeOfDay: task.recurrenceRule.timeOfDay,
+                timeOfDay: timeOfDay,
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
             )
@@ -197,7 +215,16 @@ enum RoutineDateMath {
             for: task,
             referenceDate: referenceDate,
             calendar: calendar
-        ), !calendar.isDate(referenceDate, inSameDayAs: missedDate) {
+        ) {
+            if task.recurrenceRule.usesTimeRange {
+                return false
+            }
+            if !calendar.isDate(referenceDate, inSameDayAs: missedDate) {
+                return false
+            }
+        }
+        if let timeRange = task.recurrenceRule.timeRange,
+           !timeRange.contains(referenceDate, calendar: calendar) {
             return false
         }
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar) <= referenceDate
@@ -210,6 +237,13 @@ enum RoutineDateMath {
     ) -> Date? {
         guard usesExactTimedOccurrenceTracking(for: task) else { return nil }
         let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        if let timeRange = task.recurrenceRule.timeRange {
+            let windowEnd = timeRange.endDate(on: due, calendar: calendar)
+            guard referenceDate >= windowEnd else {
+                return nil
+            }
+            return due
+        }
         guard calendar.startOfDay(for: due) < calendar.startOfDay(for: referenceDate) else {
             return nil
         }
@@ -271,7 +305,7 @@ enum RoutineDateMath {
         case .dailyTime:
             return nextDailyOccurrence(
                 after: missedDate,
-                timeOfDay: task.recurrenceRule.timeOfDay ?? .defaultValue,
+                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? .defaultValue,
                 includeCurrentDate: false,
                 calendar: calendar
             )
@@ -280,7 +314,7 @@ enum RoutineDateMath {
             return nextWeeklyOccurrence(
                 after: missedDate,
                 weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
-                timeOfDay: task.recurrenceRule.timeOfDay,
+                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
                 calendar: calendar
             )
@@ -289,7 +323,7 @@ enum RoutineDateMath {
             return nextMonthlyOccurrence(
                 after: missedDate,
                 dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
-                timeOfDay: task.recurrenceRule.timeOfDay,
+                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
                 calendar: calendar
             )
@@ -305,7 +339,7 @@ enum RoutineDateMath {
         calendar: Calendar = .current
     ) -> Date? {
         guard usesExactTimedOccurrenceTracking(for: task) else { return nil }
-        guard let timeOfDay = task.recurrenceRule.timeOfDay else { return nil }
+        guard let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) else { return nil }
 
         let startOfDay = calendar.startOfDay(for: day)
 
@@ -424,6 +458,10 @@ enum RoutineDateMath {
         }
 
         return (referenceDate, true)
+    }
+
+    private static func scheduledTimeOfDay(for recurrenceRule: RoutineRecurrenceRule) -> RoutineTimeOfDay? {
+        recurrenceRule.timeRange?.start ?? recurrenceRule.timeOfDay
     }
 
     private static func nextDailyOccurrence(

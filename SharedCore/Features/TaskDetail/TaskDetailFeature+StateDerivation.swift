@@ -58,7 +58,7 @@ extension TaskDetailFeature {
         }
 
         let startOfDay = calendar.startOfDay(for: baseDate)
-        if let timeOfDay = task.recurrenceRule.timeOfDay,
+        if let timeOfDay = task.recurrenceRule.timeRange?.start ?? task.recurrenceRule.timeOfDay,
            !task.isOneOffTask {
             return timeOfDay.date(on: startOfDay, calendar: calendar)
         }

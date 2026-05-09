@@ -97,6 +97,7 @@ struct TaskFormContent: View {
             scheduleMode: model.scheduleMode.wrappedValue,
             recurrenceKind: model.recurrenceKind.wrappedValue,
             recurrenceHasExplicitTime: model.recurrenceHasExplicitTime.wrappedValue,
+            recurrenceHasTimeRange: model.recurrenceHasTimeRange.wrappedValue,
             recurrenceWeekday: model.recurrenceWeekday.wrappedValue,
             recurrenceDayOfMonth: model.recurrenceDayOfMonth.wrappedValue,
             importance: model.importance.wrappedValue,

@@ -17,6 +17,9 @@ struct SwiftDataModelTests {
         let task = RoutineTask()
         #expect(task.interval == 1)
         #expect(task.recurrenceRule == .interval(days: 1))
+        #expect(task.recurrenceStorageVersion == 1)
+        #expect(task.recurrenceKindRawValue == RoutineRecurrenceRule.Kind.intervalDays.rawValue)
+        #expect(task.recurrenceRuleStorage.isEmpty)
         #expect(!task.id.uuidString.isEmpty)
         #expect(task.lastDone == nil)
         #expect(task.placeID == nil)
@@ -195,6 +198,10 @@ struct SwiftDataModelTests {
 
         #expect(task.recurrenceRule == .daily(at: RoutineTimeOfDay(hour: 21, minute: 15)))
         #expect(task.interval == 1)
+        #expect(task.recurrenceKindRawValue == RoutineRecurrenceRule.Kind.dailyTime.rawValue)
+        #expect(task.recurrenceTimeOfDayHour == 21)
+        #expect(task.recurrenceTimeOfDayMinute == 15)
+        #expect(task.recurrenceRuleStorage.isEmpty)
 
         _ = task.advance(completedAt: makeDate("2026-03-18T21:30:00Z"))
 
@@ -217,6 +224,54 @@ struct SwiftDataModelTests {
 
         #expect(weeklyTask.recurrenceRule == .weekly(on: 6, at: RoutineTimeOfDay(hour: 18, minute: 45)))
         #expect(monthlyTask.recurrenceRule == .monthly(on: 21, at: RoutineTimeOfDay(hour: 18, minute: 45)))
+        #expect(weeklyTask.recurrenceWeekday == 6)
+        #expect(monthlyTask.recurrenceDayOfMonth == 21)
+    }
+
+    @Test
+    func routineTask_timeRangeRecurrencePreservesScheduleRule() {
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Breakfast",
+            recurrenceRule: .daily(in: timeRange),
+            scheduleAnchor: makeDate("2026-03-18T06:00:00Z")
+        )
+
+        #expect(task.recurrenceRule == .daily(in: timeRange))
+        #expect(task.recurrenceRule.displayText() == "Every day from \(timeRange.formatted())")
+        #expect(task.recurrenceTimeRangeStartHour == 7)
+        #expect(task.recurrenceTimeRangeStartMinute == 0)
+        #expect(task.recurrenceTimeRangeEndHour == 10)
+        #expect(task.recurrenceTimeRangeEndMinute == 0)
+        #expect(task.recurrenceRuleStorage.isEmpty)
+    }
+
+    @Test
+    func routineTask_migratesLegacyJSONRecurrenceRuleToSwiftDataColumns() {
+        let legacyRule = RoutineRecurrenceRule.weekly(
+            on: 6,
+            at: RoutineTimeOfDay(hour: 18, minute: 45)
+        )
+        let task = RoutineTask(interval: 7)
+        task.recurrenceStorageVersion = 0
+        task.recurrenceKindRawValue = RoutineRecurrenceRule.Kind.intervalDays.rawValue
+        task.recurrenceTimeOfDayHour = nil
+        task.recurrenceTimeOfDayMinute = nil
+        task.recurrenceWeekday = nil
+        task.recurrenceRuleStorage = RoutineRecurrenceRuleStorage.serialize(legacyRule)
+
+        #expect(task.recurrenceRule == legacyRule)
+        #expect(task.migrateLegacyRecurrenceRuleStorageIfNeeded())
+        #expect(task.recurrenceRule == legacyRule)
+        #expect(task.recurrenceStorageVersion == 1)
+        #expect(task.recurrenceKindRawValue == RoutineRecurrenceRule.Kind.weekly.rawValue)
+        #expect(task.recurrenceTimeOfDayHour == 18)
+        #expect(task.recurrenceTimeOfDayMinute == 45)
+        #expect(task.recurrenceWeekday == 6)
+        #expect(task.recurrenceRuleStorage.isEmpty)
     }
 
     @Test

@@ -84,9 +84,21 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.schedule.recurrenceHasExplicitTime },
                 send: AddRoutineFeature.Action.recurrenceHasExplicitTimeChanged
             ),
+            recurrenceHasTimeRange: binding(
+                get: { store.schedule.recurrenceHasTimeRange },
+                send: AddRoutineFeature.Action.recurrenceHasTimeRangeChanged
+            ),
             recurrenceTimeOfDay: binding(
                 get: { store.schedule.recurrenceTimeOfDay.date(on: Date()) },
                 send: { .recurrenceTimeOfDayChanged(RoutineTimeOfDay.from($0)) }
+            ),
+            recurrenceTimeRangeStart: binding(
+                get: { store.schedule.recurrenceTimeRangeStart.date(on: Date()) },
+                send: { .recurrenceTimeRangeStartChanged(RoutineTimeOfDay.from($0)) }
+            ),
+            recurrenceTimeRangeEnd: binding(
+                get: { store.schedule.recurrenceTimeRangeEnd.date(on: Date()) },
+                send: { .recurrenceTimeRangeEndChanged(RoutineTimeOfDay.from($0)) }
             ),
             recurrenceWeekday: binding(
                 get: { store.schedule.recurrenceWeekday },

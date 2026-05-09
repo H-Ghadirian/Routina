@@ -244,7 +244,7 @@ extension TaskDetailFeature.State {
         TaskDetailDateMetadataPresentation.dueDateMetadataText(
             dueDate: resolvedDueDate,
             isOneOffTask: task.isOneOffTask,
-            usesExplicitTimeOfDay: task.recurrenceRule.usesExplicitTimeOfDay
+            usesExplicitTimeOfDay: task.recurrenceRule.usesTimeConstraint
         )
     }
 
@@ -275,7 +275,7 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask {
             return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
         }
-        guard task.recurrenceRule.usesExplicitTimeOfDay else { return false }
+        guard task.recurrenceRule.usesTimeConstraint else { return false }
         return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
     }
 

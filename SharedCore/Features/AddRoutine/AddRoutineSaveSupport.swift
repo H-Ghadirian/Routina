@@ -209,6 +209,8 @@ struct AddRoutineSaveRequest: Equatable {
         schedule: AddRoutineScheduleState,
         fallbackInterval: Int
     ) -> RoutineRecurrenceRule {
+        let timeRange = schedule.recurrenceTimeRange
+
         guard schedule.scheduleMode != .oneOff else {
             return .interval(days: 1)
         }
@@ -225,16 +227,21 @@ struct AddRoutineSaveRequest: Equatable {
         case .intervalDays:
             return .interval(days: max(fallbackInterval, 1))
         case .dailyTime:
+            if let timeRange {
+                return .daily(in: timeRange)
+            }
             return .daily(at: schedule.recurrenceTimeOfDay)
         case .weekly:
             return .weekly(
                 on: schedule.recurrenceWeekday,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: schedule.recurrenceDayOfMonth,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         }
     }

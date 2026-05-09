@@ -14,8 +14,8 @@ struct AddRoutineRepeatPatternSections: View {
     let weekdayOptions: [(id: Int, name: String)]
 
     var body: some View {
-        Section(header: Text("Repeat Pattern")) {
-            Picker("Repeat Pattern", selection: $recurrenceKind) {
+        Section(header: Text("Cadence")) {
+            Picker("Cadence", selection: $recurrenceKind) {
                 ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
                     Text(kind.pickerTitle).tag(kind)
                 }
@@ -62,7 +62,7 @@ struct AddRoutineRepeatPatternSections: View {
     }
 
     private var dailyTimeSection: some View {
-        Section(header: Text("Time of Day")) {
+        Section(header: Text("Availability")) {
             DatePicker(
                 "Time",
                 selection: $recurrenceTime,

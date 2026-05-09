@@ -16,11 +16,20 @@ enum TaskFormFrequencyUnit: String, CaseIterable, Equatable, Sendable {
     var singularLabel: String { rawValue.lowercased() }
 }
 
+enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable {
+    case none = "Any time"
+    case exact = "At time"
+    case range = "Window"
+
+    var id: String { rawValue }
+}
+
 struct TaskFormPresentation {
     let taskType: RoutineTaskType
     let scheduleMode: RoutineScheduleMode
     let recurrenceKind: RoutineRecurrenceRule.Kind
     let recurrenceHasExplicitTime: Bool
+    var recurrenceHasTimeRange: Bool = false
     let recurrenceWeekday: Int
     let recurrenceDayOfMonth: Int
     let importance: RoutineTaskImportance
@@ -51,8 +60,8 @@ struct TaskFormPresentation {
 
     var taskTypeDescription: String {
         switch taskType {
-        case .routine: return "Routines repeat on a schedule and stay in your rotation."
-        case .todo: return "Todos are one-off tasks. Once you finish one, it stays completed."
+        case .routine: return "Repeats on a schedule and stays in your rotation."
+        case .todo: return "Happens once. Use a deadline instead of repeat settings."
         }
     }
 
@@ -104,10 +113,10 @@ struct TaskFormPresentation {
 
     var scheduleModeDescription: String {
         switch scheduleMode {
-        case .fixedInterval: return "Use one overall repeat interval for the whole routine."
-        case .softInterval: return "Keep this routine visible all the time and gently highlight it again after a while."
-        case .fixedIntervalChecklist: return "Use one overall repeat interval and complete every checklist item to finish the routine."
-        case .derivedFromChecklist: return "Use checklist item due dates to decide when the routine is due."
+        case .fixedInterval: return "One scheduled routine. Mark it done once, or advance its steps."
+        case .softInterval: return "Always visible. Highlight it again after enough time has passed."
+        case .fixedIntervalChecklist: return "One scheduled routine that finishes after every checklist item is done."
+        case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
         case .oneOff: return "This task does not repeat."
         }
     }
@@ -145,14 +154,14 @@ struct TaskFormPresentation {
     func recurrencePatternDescription(includesOptionalExactTimeDetail: Bool) -> String {
         switch recurrenceKind {
         case .intervalDays: return "Repeat after a fixed number of days, weeks, or months."
-        case .dailyTime: return "Repeat every day at a specific time."
+        case .dailyTime: return "Repeat every day at a specific time or within a time range."
         case .weekly:
             return includesOptionalExactTimeDetail
-                ? "Repeat on the same weekday each week, with an optional exact time."
+                ? "Repeat on the same weekday each week, with optional timing."
                 : "Repeat on the same weekday each week."
         case .monthlyDay:
             return includesOptionalExactTimeDetail
-                ? "Repeat on the same calendar day each month, with an optional exact time."
+                ? "Repeat on the same calendar day each month, with optional timing."
                 : "Repeat on the same calendar day each month."
         }
     }
@@ -172,7 +181,24 @@ struct TaskFormPresentation {
         "Due every \(Self.weekdayName(for: recurrenceWeekday))."
     }
 
-    func weeklyRecurrenceTimeHelpText(explicitTimeText: String? = nil) -> String {
+    func dailyRecurrenceTimeHelpText(
+        exactTimeText: String,
+        timeRangeText: String
+    ) -> String {
+        if recurrenceHasTimeRange {
+            return "Due every day from \(timeRangeText)."
+        }
+        return "Due every day at \(exactTimeText)."
+    }
+
+    func weeklyRecurrenceTimeHelpText(
+        explicitTimeText: String? = nil,
+        timeRangeText: String? = nil
+    ) -> String {
+        if recurrenceHasTimeRange {
+            guard let timeRangeText else { return weeklyRecurrenceSummary }
+            return "Due every \(Self.weekdayName(for: recurrenceWeekday)) from \(timeRangeText)."
+        }
         if recurrenceHasExplicitTime {
             guard let explicitTimeText else { return weeklyRecurrenceSummary }
             return "Due every \(Self.weekdayName(for: recurrenceWeekday)) at \(explicitTimeText)."
@@ -184,7 +210,14 @@ struct TaskFormPresentation {
         "Due on the \(Self.ordinalDay(recurrenceDayOfMonth)) of each month."
     }
 
-    func monthlyRecurrenceTimeHelpText(explicitTimeText: String? = nil) -> String {
+    func monthlyRecurrenceTimeHelpText(
+        explicitTimeText: String? = nil,
+        timeRangeText: String? = nil
+    ) -> String {
+        if recurrenceHasTimeRange {
+            guard let timeRangeText else { return monthlyRecurrenceSummary }
+            return "Due on the \(Self.ordinalDay(recurrenceDayOfMonth)) of each month from \(timeRangeText)."
+        }
         if recurrenceHasExplicitTime {
             guard let explicitTimeText else { return monthlyRecurrenceSummary }
             return "Due on the \(Self.ordinalDay(recurrenceDayOfMonth)) of each month at \(explicitTimeText)."

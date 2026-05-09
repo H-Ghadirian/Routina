@@ -156,6 +156,58 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func dailyTimeRange_allowsCompletionOnlyInsideWindowAndMissesAfterEnd() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let task = RoutineTask(
+            recurrenceRule: .daily(in: timeRange),
+            scheduleAnchor: makeDate("2026-03-20T06:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-03-20T08:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-03-20T07:00:00Z"))
+        #expect(!RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-20T06:30:00Z"),
+            calendar: calendar
+        ))
+        #expect(RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-20T08:00:00Z"),
+            calendar: calendar
+        ))
+        #expect(!RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-20T10:30:00Z"),
+            calendar: calendar
+        ))
+        #expect(
+            RoutineDateMath.missedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: makeDate("2026-03-20T10:30:00Z"),
+                calendar: calendar
+            ) == makeDate("2026-03-20T07:00:00Z")
+        )
+        #expect(
+            RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: makeDate("2026-03-20T10:30:00Z"),
+                calendar: calendar
+            ) == makeDate("2026-03-21T07:00:00Z")
+        )
+    }
+
+    @Test
     func dueDate_weeklySchedule_usesConfiguredWeekday() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

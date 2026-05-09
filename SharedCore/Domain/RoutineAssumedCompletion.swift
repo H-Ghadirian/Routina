@@ -150,6 +150,9 @@ enum RoutineAssumedCompletion {
         on day: Date,
         calendar: Calendar
     ) -> Date {
+        if let timeRange = task.recurrenceRule.timeRange {
+            return timeRange.startDate(on: day, calendar: calendar)
+        }
         switch task.recurrenceRule.kind {
         case .dailyTime:
             return (task.recurrenceRule.timeOfDay ?? .defaultValue).date(on: day, calendar: calendar)

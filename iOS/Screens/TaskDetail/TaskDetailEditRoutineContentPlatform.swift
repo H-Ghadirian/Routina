@@ -128,7 +128,10 @@ struct TaskDetailEditRoutineContent: View {
             ),
             recurrenceKind: recurrenceKindBinding,
             recurrenceHasExplicitTime: recurrenceHasExplicitTimeBinding,
+            recurrenceHasTimeRange: recurrenceHasTimeRangeBinding,
             recurrenceTimeOfDay: recurrenceTimeBinding,
+            recurrenceTimeRangeStart: recurrenceTimeRangeStartBinding,
+            recurrenceTimeRangeEnd: recurrenceTimeRangeEndBinding,
             recurrenceWeekday: recurrenceWeekdayBinding,
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
             frequencyUnit: frequencyUnitBinding,
@@ -259,6 +262,27 @@ struct TaskDetailEditRoutineContent: View {
         Binding(
             get: { store.editRecurrenceHasExplicitTime },
             set: { store.send(.editRecurrenceHasExplicitTimeChanged($0)) }
+        )
+    }
+
+    private var recurrenceHasTimeRangeBinding: Binding<Bool> {
+        Binding(
+            get: { store.editRecurrenceHasTimeRange },
+            set: { store.send(.editRecurrenceHasTimeRangeChanged($0)) }
+        )
+    }
+
+    private var recurrenceTimeRangeStartBinding: Binding<Date> {
+        Binding(
+            get: { store.editRecurrenceTimeRangeStart.date(on: Date()) },
+            set: { store.send(.editRecurrenceTimeRangeStartChanged(RoutineTimeOfDay.from($0))) }
+        )
+    }
+
+    private var recurrenceTimeRangeEndBinding: Binding<Date> {
+        Binding(
+            get: { store.editRecurrenceTimeRangeEnd.date(on: Date()) },
+            set: { store.send(.editRecurrenceTimeRangeEndChanged(RoutineTimeOfDay.from($0))) }
         )
     }
 

@@ -97,7 +97,10 @@ struct TaskFormModel {
     // MARK: Recurrence
     var recurrenceKind: Binding<RoutineRecurrenceRule.Kind>
     var recurrenceHasExplicitTime: Binding<Bool>
+    var recurrenceHasTimeRange: Binding<Bool> = .constant(false)
     var recurrenceTimeOfDay: Binding<Date>
+    var recurrenceTimeRangeStart: Binding<Date> = .constant(RoutineTimeRange.defaultValue.start.date(on: Date()))
+    var recurrenceTimeRangeEnd: Binding<Date> = .constant(RoutineTimeRange.defaultValue.end.date(on: Date()))
     var recurrenceWeekday: Binding<Int>
     var recurrenceDayOfMonth: Binding<Int>
     var frequencyUnit: Binding<TaskFormFrequencyUnit>

@@ -124,20 +124,26 @@ struct TaskDetailEditSaveRequestBuilder {
             return .interval(days: max(fallbackInterval, 1))
         }
 
+        let timeRange = state.editRecurrenceTimeRange
         switch state.editRecurrenceKind {
         case .intervalDays:
             return .interval(days: max(fallbackInterval, 1))
         case .dailyTime:
+            if let timeRange {
+                return .daily(in: timeRange)
+            }
             return .daily(at: state.editRecurrenceTimeOfDay)
         case .weekly:
             return .weekly(
                 on: state.editRecurrenceWeekday,
-                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil
+                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: state.editRecurrenceDayOfMonth,
-                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil
+                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
+                timeRange: timeRange
             )
         }
     }

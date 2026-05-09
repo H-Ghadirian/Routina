@@ -22,8 +22,8 @@ struct TaskFormIOSTaskTypeSection: View {
     let presentation: TaskFormPresentation
 
     var body: some View {
-        Section(header: Text("Task Type")) {
-            Picker("Task Type", selection: model.taskType) {
+        Section(header: Text("Kind")) {
+            Picker("Kind", selection: model.taskType) {
                 Text("Routine").tag(RoutineTaskType.routine)
                 Text("Todo").tag(RoutineTaskType.todo)
             }

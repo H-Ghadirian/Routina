@@ -9,6 +9,10 @@ struct RoutineTimeOfDay: Codable, Equatable, Hashable, Sendable {
         self.minute = min(max(minute, 0), 59)
     }
 
+    var minutesFromStartOfDay: Int {
+        hour * 60 + minute
+    }
+
     static let defaultValue = RoutineTimeOfDay(
         hour: NotificationPreferences.defaultReminderHour,
         minute: NotificationPreferences.defaultReminderMinute
@@ -47,6 +51,69 @@ struct RoutineTimeOfDay: Codable, Equatable, Hashable, Sendable {
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         return formatter.string(from: date(on: Date(), calendar: calendar))
+    }
+
+    func addingMinutes(_ minutes: Int) -> RoutineTimeOfDay {
+        let dayMinutes = 24 * 60
+        let total = (minutesFromStartOfDay + minutes) % dayMinutes
+        let normalized = total >= 0 ? total : total + dayMinutes
+        return RoutineTimeOfDay(hour: normalized / 60, minute: normalized % 60)
+    }
+}
+
+struct RoutineTimeRange: Codable, Equatable, Hashable, Sendable {
+    var start: RoutineTimeOfDay
+    var end: RoutineTimeOfDay
+
+    init(start: RoutineTimeOfDay, end: RoutineTimeOfDay) {
+        self.start = start
+        self.end = start.minutesFromStartOfDay == end.minutesFromStartOfDay
+            ? start.addingMinutes(60)
+            : end
+    }
+
+    static let defaultValue = RoutineTimeRange(
+        start: RoutineTimeOfDay(hour: 7, minute: 0),
+        end: RoutineTimeOfDay(hour: 10, minute: 0)
+    )
+
+    var isOvernight: Bool {
+        end.minutesFromStartOfDay <= start.minutesFromStartOfDay
+    }
+
+    func startDate(
+        on date: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        start.date(on: date, calendar: calendar)
+    }
+
+    func endDate(
+        on date: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        let startOfDay = calendar.startOfDay(for: date)
+        let baseEnd = end.date(on: startOfDay, calendar: calendar)
+        guard isOvernight else { return baseEnd }
+        return calendar.date(byAdding: .day, value: 1, to: baseEnd) ?? baseEnd
+    }
+
+    func contains(
+        _ date: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        let minutes = RoutineTimeOfDay.from(date, calendar: calendar).minutesFromStartOfDay
+        let startMinutes = start.minutesFromStartOfDay
+        let endMinutes = end.minutesFromStartOfDay
+
+        if isOvernight {
+            return minutes >= startMinutes || minutes < endMinutes
+        }
+        return minutes >= startMinutes && minutes < endMinutes
+    }
+
+    func formatted(calendar: Calendar = .current) -> String {
+        "\(start.formatted(calendar: calendar)) to \(end.formatted(calendar: calendar))"
     }
 }
 

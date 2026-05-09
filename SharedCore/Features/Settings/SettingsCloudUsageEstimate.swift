@@ -100,7 +100,16 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var completedChecklistItemIDsStorage: String
         var relationshipsStorage: String
         var scheduleModeRawValue: String
-        var recurrenceRuleStorage: String
+        var recurrenceStorageVersion: Int16
+        var recurrenceKindRawValue: String
+        var recurrenceTimeOfDayHour: Int?
+        var recurrenceTimeOfDayMinute: Int?
+        var recurrenceTimeRangeStartHour: Int?
+        var recurrenceTimeRangeStartMinute: Int?
+        var recurrenceTimeRangeEndHour: Int?
+        var recurrenceTimeRangeEndMinute: Int?
+        var recurrenceWeekday: Int?
+        var recurrenceDayOfMonth: Int?
         var interval: Int16
         var lastDone: Date?
         var canceledAt: Date?
@@ -133,7 +142,16 @@ struct CloudUsageEstimate: Equatable, Sendable {
             completedChecklistItemIDsStorage = task.completedChecklistItemIDsStorage
             relationshipsStorage = task.relationshipsStorage
             scheduleModeRawValue = task.scheduleModeRawValue
-            recurrenceRuleStorage = task.recurrenceRuleStorage
+            recurrenceStorageVersion = task.recurrenceStorageVersion
+            recurrenceKindRawValue = task.recurrenceKindRawValue
+            recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
+            recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
+            recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
+            recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
+            recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
+            recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
+            recurrenceWeekday = task.recurrenceWeekday
+            recurrenceDayOfMonth = task.recurrenceDayOfMonth
             interval = task.interval
             lastDone = task.lastDone
             canceledAt = task.canceledAt

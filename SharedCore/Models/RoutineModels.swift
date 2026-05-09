@@ -24,6 +24,17 @@ final class RoutineTask {
     var relationshipsStorage: String = ""
     var goalIDsStorage: String = ""
     var scheduleModeRawValue: String = RoutineScheduleMode.fixedInterval.rawValue
+    var recurrenceStorageVersion: Int16 = 0
+    var recurrenceKindRawValue: String = RoutineRecurrenceRule.Kind.intervalDays.rawValue
+    var recurrenceTimeOfDayHour: Int?
+    var recurrenceTimeOfDayMinute: Int?
+    var recurrenceTimeRangeStartHour: Int?
+    var recurrenceTimeRangeStartMinute: Int?
+    var recurrenceTimeRangeEndHour: Int?
+    var recurrenceTimeRangeEndMinute: Int?
+    var recurrenceWeekday: Int?
+    var recurrenceDayOfMonth: Int?
+    // Legacy JSON storage retained only so existing stores can be backfilled into the typed recurrence columns.
     var recurrenceRuleStorage: String = ""
     var interval: Int16 = 1
     var lastDone: Date?
@@ -189,12 +200,14 @@ final class RoutineTask {
 
     var recurrenceRule: RoutineRecurrenceRule {
         get {
-            RoutineRecurrenceRuleStorage.deserialize(recurrenceRuleStorage)
-                ?? .interval(days: max(Int(interval), 1))
+            if recurrenceStorageVersion >= Self.currentRecurrenceStorageVersion {
+                return recurrenceRuleFromColumns
+            }
+            return RoutineRecurrenceRuleStorage.deserialize(recurrenceRuleStorage)
+                ?? recurrenceRuleFromColumns
         }
         set {
-            recurrenceRuleStorage = RoutineRecurrenceRuleStorage.serialize(newValue)
-            interval = Int16(clamping: scheduleMode == .oneOff ? 1 : newValue.approximateIntervalDays)
+            storeRecurrenceRuleInColumns(newValue)
         }
     }
 
@@ -266,7 +279,7 @@ final class RoutineTask {
         self.stepsStorage = RoutineStepStorage.serialize(steps)
         self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(resolvedChecklistItems)
         self.scheduleModeRawValue = resolvedScheduleMode.rawValue
-        self.recurrenceRuleStorage = RoutineRecurrenceRuleStorage.serialize(resolvedRecurrenceRule)
+        storeRecurrenceRuleInColumns(resolvedRecurrenceRule)
         self.interval = Int16(clamping: resolvedScheduleMode == .oneOff ? 1 : resolvedRecurrenceRule.approximateIntervalDays)
         self.lastDone = lastDone
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
@@ -313,6 +326,81 @@ final class RoutineTask {
 
     func replaceRelationships(_ updatedRelationships: [RoutineTaskRelationship]) {
         relationshipsStorage = RoutineTaskRelationshipStorage.serialize(updatedRelationships, ownerID: id)
+    }
+
+    @discardableResult
+    func migrateLegacyRecurrenceRuleStorageIfNeeded() -> Bool {
+        guard recurrenceStorageVersion < Self.currentRecurrenceStorageVersion else { return false }
+        let legacyRule = RoutineRecurrenceRuleStorage.deserialize(recurrenceRuleStorage)
+            ?? .interval(days: max(Int(interval), 1))
+        storeRecurrenceRuleInColumns(legacyRule)
+        return true
+    }
+
+    private static var currentRecurrenceStorageVersion: Int16 { 1 }
+
+    private var recurrenceRuleFromColumns: RoutineRecurrenceRule {
+        let kind = RoutineRecurrenceRule.Kind(rawValue: recurrenceKindRawValue) ?? .intervalDays
+        let exactTime = recurrenceTimeOfDay
+        let timeRange = recurrenceTimeRange
+
+        switch kind {
+        case .intervalDays:
+            return .interval(days: max(Int(interval), 1))
+        case .dailyTime:
+            if let timeRange {
+                return .daily(in: timeRange)
+            }
+            return .daily(at: exactTime ?? .defaultValue)
+        case .weekly:
+            return .weekly(
+                on: recurrenceWeekday ?? Calendar.current.firstWeekday,
+                at: exactTime,
+                timeRange: timeRange
+            )
+        case .monthlyDay:
+            return .monthly(
+                on: recurrenceDayOfMonth ?? Calendar.current.component(.day, from: Date()),
+                at: exactTime,
+                timeRange: timeRange
+            )
+        }
+    }
+
+    private var recurrenceTimeOfDay: RoutineTimeOfDay? {
+        guard let hour = recurrenceTimeOfDayHour,
+              let minute = recurrenceTimeOfDayMinute else {
+            return nil
+        }
+        return RoutineTimeOfDay(hour: hour, minute: minute)
+    }
+
+    private var recurrenceTimeRange: RoutineTimeRange? {
+        guard let startHour = recurrenceTimeRangeStartHour,
+              let startMinute = recurrenceTimeRangeStartMinute,
+              let endHour = recurrenceTimeRangeEndHour,
+              let endMinute = recurrenceTimeRangeEndMinute else {
+            return nil
+        }
+        return RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: startHour, minute: startMinute),
+            end: RoutineTimeOfDay(hour: endHour, minute: endMinute)
+        )
+    }
+
+    private func storeRecurrenceRuleInColumns(_ recurrenceRule: RoutineRecurrenceRule) {
+        recurrenceStorageVersion = Self.currentRecurrenceStorageVersion
+        recurrenceKindRawValue = recurrenceRule.kind.rawValue
+        interval = Int16(clamping: scheduleMode == .oneOff ? 1 : recurrenceRule.approximateIntervalDays)
+        recurrenceTimeOfDayHour = recurrenceRule.timeOfDay?.hour
+        recurrenceTimeOfDayMinute = recurrenceRule.timeOfDay?.minute
+        recurrenceTimeRangeStartHour = recurrenceRule.timeRange?.start.hour
+        recurrenceTimeRangeStartMinute = recurrenceRule.timeRange?.start.minute
+        recurrenceTimeRangeEndHour = recurrenceRule.timeRange?.end.hour
+        recurrenceTimeRangeEndMinute = recurrenceRule.timeRange?.end.minute
+        recurrenceWeekday = recurrenceRule.weekday
+        recurrenceDayOfMonth = recurrenceRule.dayOfMonth
+        recurrenceRuleStorage = ""
     }
 
     static func trimmedName(_ name: String?) -> String? {

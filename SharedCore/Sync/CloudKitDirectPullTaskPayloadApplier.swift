@@ -34,7 +34,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
         if let recurrenceRule = payload.recurrenceRule {
             task.recurrenceRule = recurrenceRule
         } else {
-            task.interval = payload.interval
+            task.recurrenceRule = .interval(days: max(Int(payload.interval), 1))
         }
         task.lastDone = payload.lastDone
         task.canceledAt = payload.canceledAt

@@ -9,6 +9,7 @@ enum AddRoutineScheduleEditor {
         if mode == .softInterval {
             schedule.recurrenceKind = .intervalDays
             schedule.recurrenceHasExplicitTime = false
+            schedule.recurrenceHasTimeRange = false
         }
     }
 
@@ -35,10 +36,13 @@ enum AddRoutineScheduleEditor {
         switch kind {
         case .intervalDays:
             schedule.recurrenceHasExplicitTime = false
+            schedule.recurrenceHasTimeRange = false
         case .dailyTime:
-            schedule.recurrenceHasExplicitTime = true
+            schedule.recurrenceHasExplicitTime = !schedule.recurrenceHasTimeRange
         case .weekly, .monthlyDay:
-            schedule.recurrenceHasExplicitTime = previousHasExplicitTime
+            schedule.recurrenceHasExplicitTime = schedule.recurrenceHasTimeRange
+                ? false
+                : previousHasExplicitTime
         }
     }
 
@@ -47,6 +51,21 @@ enum AddRoutineScheduleEditor {
         schedule: inout AddRoutineScheduleState
     ) {
         schedule.recurrenceHasExplicitTime = hasExplicitTime
+        if hasExplicitTime {
+            schedule.recurrenceHasTimeRange = false
+        }
+    }
+
+    static func setRecurrenceHasTimeRange(
+        _ hasTimeRange: Bool,
+        schedule: inout AddRoutineScheduleState
+    ) {
+        schedule.recurrenceHasTimeRange = hasTimeRange
+        if hasTimeRange {
+            schedule.recurrenceHasExplicitTime = false
+        } else if schedule.recurrenceKind == .dailyTime {
+            schedule.recurrenceHasExplicitTime = true
+        }
     }
 
     static func setRecurrenceTimeOfDay(
@@ -54,6 +73,20 @@ enum AddRoutineScheduleEditor {
         schedule: inout AddRoutineScheduleState
     ) {
         schedule.recurrenceTimeOfDay = timeOfDay
+    }
+
+    static func setRecurrenceTimeRangeStart(
+        _ timeOfDay: RoutineTimeOfDay,
+        schedule: inout AddRoutineScheduleState
+    ) {
+        schedule.recurrenceTimeRangeStart = timeOfDay
+    }
+
+    static func setRecurrenceTimeRangeEnd(
+        _ timeOfDay: RoutineTimeOfDay,
+        schedule: inout AddRoutineScheduleState
+    ) {
+        schedule.recurrenceTimeRangeEnd = timeOfDay
     }
 
     static func setRecurrenceWeekday(

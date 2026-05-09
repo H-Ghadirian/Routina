@@ -169,6 +169,43 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_dailyTimeSchedule_withTimeRange_sendsDailyRangeRecurrenceRule() async {
+        let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Breakfast"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    recurrenceKind: .dailyTime,
+                    recurrenceHasExplicitTime: false,
+                    recurrenceHasTimeRange: true,
+                    recurrenceTimeRangeStart: timeRange.start,
+                    recurrenceTimeRangeEnd: timeRange.end
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRecurrenceRules.withValue { $0 = [request.recurrenceRule] }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRecurrenceRules.value == [.daily(in: timeRange)])
+    }
+
+    @Test
     func saveTapped_weeklyAndMonthlySchedules_sendCalendarRecurrenceRules() async {
         let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
         let weeklyStore = TestStore(

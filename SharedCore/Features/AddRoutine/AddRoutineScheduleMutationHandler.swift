@@ -111,11 +111,44 @@ struct AddRoutineScheduleMutationHandler {
         enforceAutoAssumeEligibility(state: &state)
     }
 
+    func setRecurrenceHasTimeRange(
+        _ hasTimeRange: Bool,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setRecurrenceHasTimeRange(
+            hasTimeRange,
+            schedule: &state.schedule
+        )
+        enforceAutoAssumeEligibility(state: &state)
+    }
+
     func setRecurrenceTimeOfDay(
         _ timeOfDay: RoutineTimeOfDay,
         state: inout AddRoutineFeature.State
     ) {
         AddRoutineScheduleEditor.setRecurrenceTimeOfDay(
+            timeOfDay,
+            schedule: &state.schedule
+        )
+        enforceAutoAssumeEligibility(state: &state)
+    }
+
+    func setRecurrenceTimeRangeStart(
+        _ timeOfDay: RoutineTimeOfDay,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setRecurrenceTimeRangeStart(
+            timeOfDay,
+            schedule: &state.schedule
+        )
+        enforceAutoAssumeEligibility(state: &state)
+    }
+
+    func setRecurrenceTimeRangeEnd(
+        _ timeOfDay: RoutineTimeOfDay,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setRecurrenceTimeRangeEnd(
             timeOfDay,
             schedule: &state.schedule
         )

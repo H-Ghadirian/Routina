@@ -364,6 +364,7 @@ struct TaskFormContent: View {
             scheduleMode: model.scheduleMode.wrappedValue,
             recurrenceKind: model.recurrenceKind.wrappedValue,
             recurrenceHasExplicitTime: model.recurrenceHasExplicitTime.wrappedValue,
+            recurrenceHasTimeRange: model.recurrenceHasTimeRange.wrappedValue,
             recurrenceWeekday: model.recurrenceWeekday.wrappedValue,
             recurrenceDayOfMonth: model.recurrenceDayOfMonth.wrappedValue,
             importance: model.importance.wrappedValue,
@@ -432,13 +433,22 @@ struct TaskFormContent: View {
                 value: model.frequencyValue.wrappedValue
             )
         case .dailyTime:
+            if model.recurrenceHasTimeRange.wrappedValue {
+                return "Daily \(previewTimeRangeText)"
+            }
             return "Daily at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
         case .weekly:
+            if model.recurrenceHasTimeRange.wrappedValue {
+                return "Every \(TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)) \(previewTimeRangeText)"
+            }
             if model.recurrenceHasExplicitTime.wrappedValue {
                 return "Every \(TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
             }
             return "Every \(TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue))"
         case .monthlyDay:
+            if model.recurrenceHasTimeRange.wrappedValue {
+                return "Monthly on the \(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) \(previewTimeRangeText)"
+            }
             if model.recurrenceHasExplicitTime.wrappedValue {
                 return "Monthly on the \(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
             }
@@ -452,6 +462,10 @@ struct TaskFormContent: View {
             for: model.deadline.wrappedValue,
             enabled: showPersianDates
         )
+    }
+
+    private var previewTimeRangeText: String {
+        "\(model.recurrenceTimeRangeStart.wrappedValue.formatted(date: .omitted, time: .shortened))-\(model.recurrenceTimeRangeEnd.wrappedValue.formatted(date: .omitted, time: .shortened))"
     }
 
     private var persianDeadlineText: String? {

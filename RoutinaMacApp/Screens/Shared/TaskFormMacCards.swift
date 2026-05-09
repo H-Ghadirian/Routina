@@ -165,7 +165,7 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     @ViewBuilder let checklistItemsContent: ChecklistItemsContent
 
     var body: some View {
-        TaskFormMacSectionCard(title: "Behavior") {
+        TaskFormMacSectionCard(title: "Scheduling") {
             VStack(alignment: .leading, spacing: 18) {
                 taskTypeControl
                 routineScheduleControls
@@ -177,16 +177,15 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     }
 
     private var taskTypeControl: some View {
-        TaskFormMacControlBlock(title: "Type") {
-            HStack(spacing: 0) {
-                Picker("Task Type", selection: model.taskType) {
+        TaskFormMacControlBlock(title: "Kind", caption: presentation.taskTypeDescription) {
+            VStack(alignment: .leading, spacing: 10) {
+                Picker("Kind", selection: model.taskType) {
                     Text("Routine").tag(RoutineTaskType.routine)
                     Text("Todo").tag(RoutineTaskType.todo)
                 }
                 .labelsHidden()
                 .pickerStyle(.segmented)
                 .fixedSize()
-                Spacer(minLength: 0)
             }
         }
     }
@@ -194,9 +193,9 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     @ViewBuilder
     private var routineScheduleControls: some View {
         if model.taskType.wrappedValue == .routine {
-            TaskFormMacControlBlock(title: "Schedule style") {
+            TaskFormMacControlBlock(title: "Routine style", caption: presentation.scheduleModeDescription) {
                 HStack(spacing: 0) {
-                    Picker("Schedule Type", selection: model.scheduleMode) {
+                    Picker("Routine Style", selection: model.scheduleMode) {
                         Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
                         Text("Soft").tag(RoutineScheduleMode.softInterval)
                         Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
@@ -246,9 +245,9 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
 
     @ViewBuilder
     private var repeatPatternControls: some View {
-        TaskFormMacControlBlock(title: "Repeat pattern") {
+        TaskFormMacControlBlock(title: "Cadence") {
             HStack(spacing: 0) {
-                Picker("Repeat Pattern", selection: model.recurrenceKind) {
+                Picker("Cadence", selection: model.recurrenceKind) {
                     ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
                         Text(kind.pickerTitle).tag(kind)
                     }
@@ -300,13 +299,35 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     }
 
     private var recurrenceTimePicker: some View {
-        TaskFormMacControlBlock(title: "Time") {
-            DatePicker(
-                "Time",
-                selection: model.recurrenceTimeOfDay,
-                displayedComponents: .hourAndMinute
-            )
-            .labelsHidden()
+        TaskFormMacControlBlock(title: "Availability") {
+            VStack(alignment: .leading, spacing: 10) {
+                Picker("Availability", selection: dailyTimingModeBinding) {
+                    Text(TaskFormTimingMode.exact.rawValue).tag(TaskFormTimingMode.exact)
+                    Text(TaskFormTimingMode.range.rawValue).tag(TaskFormTimingMode.range)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+
+                if model.recurrenceHasTimeRange.wrappedValue {
+                    timeRangePickers
+                } else {
+                    DatePicker(
+                        "Time",
+                        selection: model.recurrenceTimeOfDay,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .labelsHidden()
+                }
+                Text(
+                    presentation.dailyRecurrenceTimeHelpText(
+                        exactTimeText: exactTimeText,
+                        timeRangeText: timeRangeText
+                    )
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -322,10 +343,11 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
                 .pickerStyle(.menu)
             }
 
-            TaskFormMacControlBlock(title: "Time") {
+            TaskFormMacControlBlock(title: "Availability") {
                 recurrenceExplicitTimeControls(
                     helpText: presentation.weeklyRecurrenceTimeHelpText(
-                        explicitTimeText: model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened)
+                        explicitTimeText: exactTimeText,
+                        timeRangeText: timeRangeText
                     )
                 )
             }
@@ -342,10 +364,11 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
                 .fixedSize()
             }
 
-            TaskFormMacControlBlock(title: "Time") {
+            TaskFormMacControlBlock(title: "Availability") {
                 recurrenceExplicitTimeControls(
                     helpText: presentation.monthlyRecurrenceTimeHelpText(
-                        explicitTimeText: model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened)
+                        explicitTimeText: exactTimeText,
+                        timeRangeText: timeRangeText
                     )
                 )
             }
@@ -354,7 +377,15 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
 
     private func recurrenceExplicitTimeControls(helpText: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Toggle("Set exact time", isOn: model.recurrenceHasExplicitTime)
+            Picker("Availability", selection: timingModeBinding) {
+                ForEach(TaskFormTimingMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .fixedSize()
+
             if model.recurrenceHasExplicitTime.wrappedValue {
                 DatePicker(
                     "Time",
@@ -362,11 +393,69 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
                     displayedComponents: .hourAndMinute
                 )
                 .labelsHidden()
+            } else if model.recurrenceHasTimeRange.wrappedValue {
+                timeRangePickers
             }
             Text(helpText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var timeRangePickers: some View {
+        HStack(spacing: 12) {
+            DatePicker(
+                "Starts",
+                selection: model.recurrenceTimeRangeStart,
+                displayedComponents: .hourAndMinute
+            )
+            .fixedSize()
+
+            DatePicker(
+                "Ends",
+                selection: model.recurrenceTimeRangeEnd,
+                displayedComponents: .hourAndMinute
+            )
+            .fixedSize()
+        }
+    }
+
+    private var exactTimeText: String {
+        model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened)
+    }
+
+    private var timeRangeText: String {
+        "\(model.recurrenceTimeRangeStart.wrappedValue.formatted(date: .omitted, time: .shortened)) to \(model.recurrenceTimeRangeEnd.wrappedValue.formatted(date: .omitted, time: .shortened))"
+    }
+
+    private var timingModeBinding: Binding<TaskFormTimingMode> {
+        Binding(
+            get: {
+                if model.recurrenceHasTimeRange.wrappedValue {
+                    return .range
+                }
+                if model.recurrenceHasExplicitTime.wrappedValue {
+                    return .exact
+                }
+                return .none
+            },
+            set: { mode in
+                model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
+                model.recurrenceHasTimeRange.wrappedValue = mode == .range
+            }
+        )
+    }
+
+    private var dailyTimingModeBinding: Binding<TaskFormTimingMode> {
+        Binding(
+            get: {
+                model.recurrenceHasTimeRange.wrappedValue ? .range : .exact
+            },
+            set: { mode in
+                model.recurrenceHasTimeRange.wrappedValue = mode == .range
+                model.recurrenceHasExplicitTime.wrappedValue = mode != .range
+            }
+        )
     }
 
     private var assumedDoneControl: some View {
