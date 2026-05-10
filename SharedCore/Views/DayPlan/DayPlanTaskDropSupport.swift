@@ -29,6 +29,37 @@ enum DayPlanBlockDragPayload {
     }
 }
 
+struct DayPlanDropTarget: Equatable {
+    let dayIndex: Int
+    let date: Date
+    let startMinute: Int
+}
+
+enum DayPlanDropTargetResolver {
+    static func target(
+        for location: CGPoint,
+        dates: [Date],
+        dayWidth: CGFloat,
+        timeColumnWidth: CGFloat,
+        hourHeight: CGFloat
+    ) -> DayPlanDropTarget? {
+        guard !dates.isEmpty, dayWidth > 0, hourHeight > 0 else { return nil }
+
+        let dayX = max(location.x - timeColumnWidth, 0)
+        let dayIndex = min(max(Int(dayX / dayWidth), 0), dates.count - 1)
+        let timelineHeight = hourHeight * 24
+        let boundedY = min(max(location.y, 0), max(timelineHeight - 1, 0))
+        let rawMinute = Int((boundedY / hourHeight) * 60)
+        let quarterHourMinute = (rawMinute / 15) * 15
+
+        return DayPlanDropTarget(
+            dayIndex: dayIndex,
+            date: dates[dayIndex],
+            startMinute: DayPlanBlock.clampedStartMinute(quarterHourMinute)
+        )
+    }
+}
+
 struct DayPlanTaskDropDelegate: DropDelegate {
     let dates: [Date]
     let dayWidth: CGFloat
@@ -46,22 +77,22 @@ struct DayPlanTaskDropDelegate: DropDelegate {
     let onDropTask: (UUID, Date, Int) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
-        !isCompletingDrop
-            && dropTarget(for: info.location) != nil
-            && (draggedBlockID != nil || draggedTimelineActivity != nil || info.hasItemsConforming(to: [.text]))
+        dropTarget(for: info.location) != nil
+            && (
+                draggedBlockID != nil
+                    || draggedTimelineActivity != nil
+                    || info.hasItemsConforming(to: [.text])
+            )
     }
 
     func dropEntered(info: DropInfo) {
-        guard !isCompletingDrop else {
-            clearDropState()
-            return
-        }
-
+        prepareForActiveDrop()
         updatePreview(for: info)
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        guard !isCompletingDrop, validateDrop(info: info) else {
+        prepareForActiveDrop()
+        guard validateDrop(info: info) else {
             clearDropState()
             return nil
         }
@@ -128,11 +159,6 @@ struct DayPlanTaskDropDelegate: DropDelegate {
 
     @discardableResult
     private func updatePreview(for info: DropInfo) -> Bool {
-        guard !isCompletingDrop else {
-            clearDropState()
-            return false
-        }
-
         guard let target = dropTarget(for: info.location) else {
             clearDropState()
             return false
@@ -150,6 +176,12 @@ struct DayPlanTaskDropDelegate: DropDelegate {
         isDropTargeted = true
         dropPreview = nextPreview
         return true
+    }
+
+    private func prepareForActiveDrop() {
+        if isCompletingDrop {
+            isCompletingDrop = false
+        }
     }
 
     private func finishDrop() {
@@ -196,21 +228,13 @@ struct DayPlanTaskDropDelegate: DropDelegate {
         return dropDurationMinutes
     }
 
-    private func dropTarget(for location: CGPoint) -> (dayIndex: Int, date: Date, startMinute: Int)? {
-        guard !dates.isEmpty else { return nil }
-
-        let dayX = location.x - timeColumnWidth
-        guard dayX >= 0 else { return nil }
-
-        let dayIndex = min(max(Int(dayX / dayWidth), 0), dates.count - 1)
-        let boundedY = min(max(location.y, 0), (hourHeight * 24) - 1)
-        let rawMinute = Int((boundedY / hourHeight) * 60)
-        let quarterHourMinute = (rawMinute / 15) * 15
-
-        return (
-            dayIndex: dayIndex,
-            date: dates[dayIndex],
-            startMinute: DayPlanBlock.clampedStartMinute(quarterHourMinute)
+    private func dropTarget(for location: CGPoint) -> DayPlanDropTarget? {
+        DayPlanDropTargetResolver.target(
+            for: location,
+            dates: dates,
+            dayWidth: dayWidth,
+            timeColumnWidth: timeColumnWidth,
+            hourHeight: hourHeight
         )
     }
 }

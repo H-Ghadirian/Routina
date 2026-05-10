@@ -577,6 +577,53 @@ struct DayPlanPlannerStateTests {
         #expect(persistedLogs.first?.kind == .completed)
         #expect(persistedLogs.first?.timestamp == expectedTimestamp)
     }
+
+    @Test
+    func dropTargetTreatsTimeGutterAsFirstDayColumn() throws {
+        let dates = try plannerDates()
+
+        let target = DayPlanDropTargetResolver.target(
+            for: CGPoint(x: 20, y: 9.2 * 64),
+            dates: dates,
+            dayWidth: 120,
+            timeColumnWidth: 64,
+            hourHeight: 64
+        )
+
+        #expect(target?.dayIndex == 0)
+        #expect(target?.date == dates[0])
+        #expect(target?.startMinute == 9 * 60)
+    }
+
+    @Test
+    func dropTargetMapsColumnsAndSnapsToQuarterHour() throws {
+        let dates = try plannerDates()
+
+        let target = DayPlanDropTargetResolver.target(
+            for: CGPoint(x: 64 + (2 * 120) + 10, y: 2.6 * 64),
+            dates: dates,
+            dayWidth: 120,
+            timeColumnWidth: 64,
+            hourHeight: 64
+        )
+
+        #expect(target?.dayIndex == 2)
+        #expect(target?.date == dates[2])
+        #expect(target?.startMinute == 2 * 60 + 30)
+    }
+
+    @Test
+    func dropTargetRejectsEmptyDates() {
+        let target = DayPlanDropTargetResolver.target(
+            for: CGPoint(x: 20, y: 20),
+            dates: [],
+            dayWidth: 120,
+            timeColumnWidth: 64,
+            hourHeight: 64
+        )
+
+        #expect(target == nil)
+    }
 }
 
 private let gregorianCalendar: Calendar = {
@@ -587,6 +634,15 @@ private let gregorianCalendar: Calendar = {
 
 private func date(_ string: String) -> Date? {
     ISO8601DateFormatter().date(from: string)
+}
+
+private func plannerDates() throws -> [Date] {
+    try [
+        #require(date("2026-05-09T12:00:00Z")),
+        #require(date("2026-05-10T12:00:00Z")),
+        #require(date("2026-05-11T12:00:00Z")),
+        #require(date("2026-05-12T12:00:00Z")),
+    ]
 }
 
 private func dayPlanBlock(on date: Date, calendar: Calendar) -> DayPlanBlock {

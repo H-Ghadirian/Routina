@@ -60,6 +60,8 @@ struct DayPlanWeekCalendarView: View {
                 ScrollView(.vertical) {
                     GeometryReader { proxy in
                         let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(max(dates.count, 1)), 120)
+                        let contentWidth = timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+                        let contentHeight = hourHeight * 24
 
                         ZStack(alignment: .topLeading) {
                             DayPlanWeekGridView(
@@ -155,6 +157,8 @@ struct DayPlanWeekCalendarView: View {
                                 )
                             }
                         }
+                        .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
+                        .contentShape(Rectangle())
                         .onDrop(
                             of: [.text],
                             delegate: DayPlanTaskDropDelegate(
