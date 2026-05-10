@@ -34,12 +34,14 @@ enum SettingsRoutineDataImportEntityInserter {
             importedTaskIDs: tasks.ids,
             in: context
         )
+        let sleepSessionCount = insertSleepSessions(from: backup, in: context)
 
         return ImportSummary(
             places: places.count,
             goals: goals.count,
             tasks: tasks.count,
             logs: logCount,
+            sleepSessions: sleepSessionCount,
             attachments: attachmentCount
         )
     }
@@ -235,6 +237,30 @@ enum SettingsRoutineDataImportEntityInserter {
                 actualDurationMinutes: log.actualDurationMinutes
             )
             context.insert(importedLog)
+            importedCount += 1
+        }
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertSleepSessions(
+        from backup: Backup,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+        for sleepSession in backup.sleepSessions ?? [] {
+            guard importedIDs.insert(sleepSession.id).inserted else { continue }
+
+            let importedSession = SleepSession(
+                id: sleepSession.id,
+                startedAt: sleepSession.startedAt,
+                endedAt: sleepSession.endedAt,
+                targetDurationMinutes: sleepSession.targetDurationMinutes ?? 8 * 60,
+                createdAt: sleepSession.createdAt,
+                updatedAt: sleepSession.updatedAt
+            )
+            context.insert(importedSession)
             importedCount += 1
         }
         return importedCount

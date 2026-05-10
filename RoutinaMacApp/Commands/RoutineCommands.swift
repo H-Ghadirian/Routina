@@ -18,6 +18,15 @@ struct RoutineCommands: Commands {
 
     var body: some Commands {
         CommandGroup(before: .appSettings) {
+            #if !SWIFT_PACKAGE
+            Button("Going to Sleep") {
+                RoutinaMacSleepModeStarter.requestStartUsingSharedPersistence()
+            }
+            .keyboardShortcut("s", modifiers: [.command, .shift])
+
+            Divider()
+            #endif
+
             Button("Quick Add") {
                 NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
             }

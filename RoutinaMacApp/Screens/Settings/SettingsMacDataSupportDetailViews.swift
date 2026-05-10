@@ -119,6 +119,8 @@ struct SettingsMacShortcutsDetailView: View {
         SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”", shortcut: "Shortcuts"),
         SettingsMacShortcutRowModel(title: "Mark Done", detail: "“Mark task done in Routina” or “Complete a task in Routina”", shortcut: "Shortcuts"),
         SettingsMacShortcutRowModel(title: "Start Focus", detail: "“Start focus in Routina” or “Focus with Routina”", shortcut: "Shortcuts"),
+        SettingsMacShortcutRowModel(title: "Sleep", detail: "“I am going to sleep in Routina” or “Start sleep mode in Routina”", shortcut: "Shortcuts"),
+        SettingsMacShortcutRowModel(title: "Wake Up", detail: "“I woke up in Routina” or “I am awake in Routina”", shortcut: "Shortcuts"),
         SettingsMacShortcutRowModel(title: "Today", detail: "“What's due in Routina” or “Today in Routina”", shortcut: "Shortcuts")
     ]
 

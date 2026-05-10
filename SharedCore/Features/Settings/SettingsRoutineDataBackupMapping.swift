@@ -83,4 +83,15 @@ enum SettingsRoutineDataBackupMapping {
             actualDurationMinutes: log.actualDurationMinutes
         )
     }
+
+    static func sleep(_ session: SleepSession) -> Backup.Sleep {
+        Backup.Sleep(
+            id: session.id,
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            targetDurationMinutes: session.targetDurationMinutes,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt
+        )
+    }
 }

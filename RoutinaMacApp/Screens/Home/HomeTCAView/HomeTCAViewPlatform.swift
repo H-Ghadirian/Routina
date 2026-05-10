@@ -385,6 +385,7 @@ struct HomeMacView: View {
             goalsStore: goalsStore,
             statsStore: statsStore
         )
+        .sleepModeGate()
         .task {
             appStore.send(.onAppear)
             handlePendingDeepLink()

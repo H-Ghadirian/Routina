@@ -30,6 +30,11 @@ enum CloudDataResetService {
             context.delete(session)
         }
 
+        let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
+        for session in sleepSessions {
+            context.delete(session)
+        }
+
         let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
         for att in attachments {
             context.delete(att)

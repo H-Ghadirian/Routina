@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomeMacTimelineSidebarView<RowContent: View>: View {
-    let timelineLogCount: Int
+    let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
     @Binding var selection: HomeFeature.MacSidebarSelection?
     let sectionTitle: (Date) -> String
@@ -9,11 +9,11 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
 
     var body: some View {
         Group {
-            if timelineLogCount == 0 {
+            if timelineEntryCount == 0 {
                 ContentUnavailableView(
-                    "No completions yet",
+                    "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed routines and todos will appear here in chronological order.")
+                    description: Text("Completed items and sleep records will appear here in chronological order.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if groupedEntries.isEmpty {

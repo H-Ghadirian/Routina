@@ -3,6 +3,7 @@ import SwiftUI
 
 struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var activeSleepSessions: [SleepSession]
     @State private var isExpanded = false
     @State private var editingSession: FocusSession?
     @State private var editStartedAt = Date()
@@ -23,6 +24,13 @@ struct FocusSessionCard: View {
         blockingFocusTitle: String? = nil,
         onCompletedDuration: ((TimeInterval) -> Void)? = nil
     ) {
+        _activeSleepSessions = Query(
+            filter: #Predicate<SleepSession> { session in
+                session.endedAt == nil
+            },
+            sort: \.startedAt,
+            order: .reverse
+        )
         self.task = task
         self.sessions = sessions
         self.allTasks = allTasks
@@ -85,7 +93,9 @@ struct FocusSessionCard: View {
             .buttonStyle(.plain)
 
             if isContentExpanded {
-                if let activeSessionForTask = snapshot.activeSessionForTask {
+                if isSleepModeActive {
+                    sleepModeActiveContent
+                } else if let activeSessionForTask = snapshot.activeSessionForTask {
                     activeSessionContent(activeSessionForTask)
                 } else if let activeSessionForAnotherTask = snapshot.activeSessionForAnotherTask {
                     otherTaskActiveContent(activeSessionForAnotherTask)
@@ -239,6 +249,9 @@ struct FocusSessionCard: View {
     #endif
 
     private func focusSubtitle(snapshot: FocusSessionCardSnapshot) -> String {
+        if isSleepModeActive {
+            return "Sleep mode is active"
+        }
         if snapshot.activeSessionForTask != nil {
             return "Session in progress"
         }
@@ -300,6 +313,23 @@ struct FocusSessionCard: View {
             return "Finished focus sessions are added to time spent."
         }
         return "Focus time is tracked separately from completions."
+    }
+
+    private var isSleepModeActive: Bool {
+        !activeSleepSessions.isEmpty
+    }
+
+    private var sleepModeActiveContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Sleep mode is active", systemImage: "bed.double.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text("Wake up before starting a focus timer.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func activeSessionContent(_ session: FocusSession) -> some View {
@@ -444,14 +474,21 @@ struct FocusSessionCard: View {
     }
 
     private func startSession(duration: TimeInterval) {
-        modelContext.insert(
-            FocusSession(
-                taskID: task.id,
-                startedAt: Date(),
-                plannedDurationSeconds: duration
+        do {
+            guard try SleepSessionSupport.activeSession(in: modelContext) == nil else {
+                return
+            }
+            modelContext.insert(
+                FocusSession(
+                    taskID: task.id,
+                    startedAt: Date(),
+                    plannedDurationSeconds: duration
+                )
             )
-        )
-        saveContext()
+            saveContext()
+        } catch {
+            NSLog("Failed to check sleep mode before starting focus: \(error.localizedDescription)")
+        }
     }
 
     private func startCountUpSession() {

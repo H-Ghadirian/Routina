@@ -49,6 +49,7 @@ struct DayPlanSidebarView: View {
     @ObservedObject var planner: DayPlanPlannerState
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
+    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     var usesPanelBackground = true
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
@@ -57,7 +58,7 @@ struct DayPlanSidebarView: View {
 
     var body: some View {
         taskPanel
-            .dayPlanLifecycle(planner: planner, tasks: tasks, calendar: calendar)
+            .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, calendar: calendar)
     }
 
     private var taskPanel: some View {
@@ -174,6 +175,12 @@ struct DayPlanSidebarView: View {
                     .foregroundStyle(.orange)
             }
 
+            if let sleepConflict {
+                Label("Overlaps \(sleepConflict.title)", systemImage: "bed.double.fill")
+                    .font(.caption)
+                    .foregroundStyle(.indigo)
+            }
+
             HStack {
                 Button(planner.selectedBlock == nil ? "Add" : "Save") {
                     if let selectedTask {
@@ -235,7 +242,20 @@ struct DayPlanSidebarView: View {
     }
 
     private var canCommitBlock: Bool {
-        selectedTask != nil && planner.conflictingBlock == nil
+        selectedTask != nil && planner.conflictingBlock == nil && sleepConflict == nil
+    }
+
+    private var sleepConflict: DayPlanBlockedInterval? {
+        planner.sleepConflict(
+            in: DayPlanSleepBlocks.blockedIntervals(
+                on: planner.selectedDate,
+                from: sleepSessions,
+                referenceDate: Date(),
+                calendar: calendar
+            ),
+            startMinute: planner.startMinute,
+            durationMinutes: planner.durationMinutes
+        )
     }
 
     private var sidebarTitle: String {
@@ -360,6 +380,7 @@ private struct DayPlanTimelinePanelView: View {
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
+    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(
         filter: #Predicate<FocusSession> { session in
             session.completedAt == nil && session.abandonedAt == nil
@@ -373,6 +394,7 @@ private struct DayPlanTimelinePanelView: View {
     ) private var showsTimelineTasksInDayPlanner = true
 
     var body: some View {
+        let referenceDate = Date()
         let weekDates = planner.weekDates(calendar: calendar)
         let plannedBlocksByDayKey = plannedBlocksByDayKey(for: weekDates)
         let timelineBlocksByDayKey = DayPlanTimelineTasks.activityBlocksByDayKey(
@@ -382,6 +404,18 @@ private struct DayPlanTimelinePanelView: View {
             plannedBlocksByDayKey: plannedBlocksByDayKey,
             calendar: calendar
         )
+        let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
+            on: weekDates,
+            from: sleepSessions,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let blockedIntervalsByDayKey = sleepBlocksByDayKey.mapValues { blocks in
+            blocks.map(\.interval)
+        }
+        let selectedDayKey = DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar)
+        let selectedDayBlockedMinutes = blockedIntervalsByDayKey[selectedDayKey, default: []]
+            .reduce(0) { $0 + $1.durationMinutes }
         let tintsByTaskID = tintsByTaskID()
 
         VStack(alignment: .leading, spacing: 12) {
@@ -389,7 +423,7 @@ private struct DayPlanTimelinePanelView: View {
                 Text("Day")
                     .font(.headline)
                 Spacer()
-                Text("\(DayPlanFormatting.durationText(planner.unplannedMinutes)) open on selected day")
+                Text("\(DayPlanFormatting.durationText(max(planner.unplannedMinutes - selectedDayBlockedMinutes, 0))) open on selected day")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -410,6 +444,14 @@ private struct DayPlanTimelinePanelView: View {
                     guard showsTimelineTasksInDayPlanner else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return timelineBlocksByDayKey[dayKey] ?? []
+                },
+                sleepBlocksForDate: { date in
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return sleepBlocksByDayKey[dayKey] ?? []
+                },
+                blockedIntervalsForDate: { date in
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return blockedIntervalsByDayKey[dayKey] ?? []
                 },
                 activeFocusSessionBlocks: { now in
                     DayPlanFocusSessionBlocks.activeBlocks(
@@ -458,15 +500,48 @@ private struct DayPlanTimelinePanelView: View {
                     planner.deleteBlock(block.id, calendar: calendar, context: modelContext)
                 },
                 onConfirmTimelineActivity: { activity, date in
+                    guard !hasSleepConflict(
+                        on: date,
+                        startMinute: activity.block.startMinute,
+                        durationMinutes: activity.block.durationMinutes,
+                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                    ) else {
+                        return
+                    }
                     planner.confirmTimelineActivity(activity, on: date, calendar: calendar, context: modelContext)
                 },
                 onMoveBlock: { blockID, date, minute in
+                    let durationMinutes = plannedBlock(with: blockID)?.durationMinutes ?? planner.durationMinutes
+                    guard !hasSleepConflict(
+                        on: date,
+                        startMinute: minute,
+                        durationMinutes: durationMinutes,
+                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                    ) else {
+                        return
+                    }
                     planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
                 onMoveTimelineActivity: { activity, date, minute in
+                    guard !hasSleepConflict(
+                        on: date,
+                        startMinute: minute,
+                        durationMinutes: activity.block.durationMinutes,
+                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                    ) else {
+                        return
+                    }
                     moveTimelineActivity(activity, to: date, startMinute: minute)
                 },
                 onResizeBlock: { blockID, date, startMinute, durationMinutes in
+                    guard !hasSleepConflict(
+                        on: date,
+                        startMinute: startMinute,
+                        durationMinutes: durationMinutes,
+                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                    ) else {
+                        return
+                    }
                     planner.resizeBlock(
                         blockID,
                         on: date,
@@ -477,11 +552,16 @@ private struct DayPlanTimelinePanelView: View {
                     )
                 },
                 onDropTask: { taskID, date, minute in
-                    dropTask(taskID, on: date, startMinute: minute)
+                    dropTask(
+                        taskID,
+                        on: date,
+                        startMinute: minute,
+                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                    )
                 }
             )
         }
-        .dayPlanLifecycle(planner: planner, tasks: tasks, calendar: calendar)
+        .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, calendar: calendar)
         .onChange(of: showsTimelineTasksInDayPlanner) { _, isEnabled in
             if isEnabled {
                 planner.clearFocusedUnplannedCompletedTasks()
@@ -529,11 +609,47 @@ private struct DayPlanTimelinePanelView: View {
         )
     }
 
-    private func dropTask(_ taskID: UUID, on date: Date, startMinute: Int) {
+    private func dropTask(
+        _ taskID: UUID,
+        on date: Date,
+        startMinute: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) {
         guard let task = tasks.first(where: { $0.id == taskID }) else { return }
+        let durationMinutes = task.estimatedDurationMinutes ?? planner.durationMinutes
+        guard !hasSleepConflict(
+            on: date,
+            startMinute: startMinute,
+            durationMinutes: durationMinutes,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey
+        ) else {
+            return
+        }
+
         planner.selectSlot(on: date, startMinute: startMinute, calendar: calendar, context: modelContext)
         planner.selectTask(task)
         planner.commitBlock(task: task, calendar: calendar, context: modelContext)
+    }
+
+    private func hasSleepConflict(
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) -> Bool {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        guard let intervals = blockedIntervalsByDayKey[dayKey] else { return false }
+        return intervals.contains {
+            $0.overlaps(startMinute: startMinute, durationMinutes: durationMinutes)
+        }
+    }
+
+    private func plannedBlock(with id: DayPlanBlock.ID) -> DayPlanBlock? {
+        planner.weekBlocksByDayKey.values.lazy.compactMap { blocks in
+            blocks.first { $0.id == id }
+        }
+        .first
+            ?? planner.blocks.first { $0.id == id }
     }
 }
 
@@ -542,29 +658,59 @@ private struct DayPlanLifecycleModifier: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var planner: DayPlanPlannerState
     var tasks: [RoutineTask]
+    var sleepSessions: [SleepSession]
     var calendar: Calendar
 
     func body(content: Content) -> some View {
         content
             .onAppear {
                 planner.loadBlocks(calendar: calendar, context: modelContext)
-                planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
+                showExactTimedTasks()
                 planner.selectDefaultTaskIfNeeded(from: tasks)
             }
             .onChange(of: planner.selectedDate) { _, _ in
                 planner.handleSelectedDateChanged(calendar: calendar, context: modelContext)
-                planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
+                showExactTimedTasks()
             }
             .onChange(of: tasks.map(\.id)) { _, _ in
-                planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
+                showExactTimedTasks()
                 planner.selectDefaultTaskIfNeeded(from: tasks)
+            }
+            .onChange(of: sleepSessionChangeToken) { _, _ in
+                showExactTimedTasks()
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     planner.loadBlocks(calendar: calendar, context: modelContext)
-                    planner.showExactTimedTasks(from: tasks, calendar: calendar, context: modelContext)
+                    showExactTimedTasks()
                 }
             }
+    }
+
+    private var sleepSessionChangeToken: [String] {
+        sleepSessions.map { session in
+            [
+                session.id.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
+    private func showExactTimedTasks() {
+        let dates = planner.weekDates(calendar: calendar) + [planner.selectedDate]
+        let blockedIntervalsByDayKey = DayPlanSleepBlocks.blockedIntervalsByDayKey(
+            on: dates,
+            from: sleepSessions,
+            referenceDate: Date(),
+            calendar: calendar
+        )
+        planner.showExactTimedTasks(
+            from: tasks,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            context: modelContext
+        )
     }
 }
 
@@ -572,9 +718,17 @@ private extension View {
     func dayPlanLifecycle(
         planner: DayPlanPlannerState,
         tasks: [RoutineTask],
+        sleepSessions: [SleepSession],
         calendar: Calendar
     ) -> some View {
-        modifier(DayPlanLifecycleModifier(planner: planner, tasks: tasks, calendar: calendar))
+        modifier(
+            DayPlanLifecycleModifier(
+                planner: planner,
+                tasks: tasks,
+                sleepSessions: sleepSessions,
+                calendar: calendar
+            )
+        )
     }
 }
 

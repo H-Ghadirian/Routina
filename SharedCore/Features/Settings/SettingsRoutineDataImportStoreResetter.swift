@@ -9,6 +9,11 @@ enum SettingsRoutineDataImportStoreResetter {
             context.delete(log)
         }
 
+        let existingSleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
+        for session in existingSleepSessions {
+            context.delete(session)
+        }
+
         let existingAttachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
         for attachment in existingAttachments {
             context.delete(attachment)

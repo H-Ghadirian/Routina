@@ -122,8 +122,30 @@ private struct SettingsIOSDetailView: View {
 }
 
 private struct SettingsIOSShortcutsDetailView: View {
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingSleepHomeDockEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isSleepHomeDockEnabled = true
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isSleepHomeMenuEnabled = true
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShakeToStartSleepEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isShakeToStartSleepEnabled = true
+
     var body: some View {
         List {
+            Section("Sleep Shortcuts") {
+                Toggle("Show Going to sleep on Home", isOn: $isSleepHomeDockEnabled)
+                Toggle("Show Going to sleep in Home menu", isOn: $isSleepHomeMenuEnabled)
+                Toggle("Shake to start sleep mode", isOn: $isShakeToStartSleepEnabled)
+
+                Text("Long-press the Home tab to open the Home menu. Shake always asks for confirmation before sleep mode starts.")
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Apple Shortcuts & Siri") {
                 SettingsNavigationRow(
                     icon: "text.badge.plus",
@@ -142,6 +164,18 @@ private struct SettingsIOSShortcutsDetailView: View {
                     tint: .orange,
                     title: "Start Focus",
                     subtitle: "Start focus in Routina"
+                )
+                SettingsNavigationRow(
+                    icon: "bed.double.fill",
+                    tint: .indigo,
+                    title: "Sleep",
+                    subtitle: "I am going to sleep in Routina"
+                )
+                SettingsNavigationRow(
+                    icon: "alarm.fill",
+                    tint: .orange,
+                    title: "Wake Up",
+                    subtitle: "I woke up in Routina"
                 )
                 SettingsNavigationRow(
                     icon: "calendar",

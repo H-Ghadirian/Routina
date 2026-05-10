@@ -8,6 +8,7 @@ extension SettingsRoutineDataPersistence {
         var goals: [Goal]?
         var tasks: [Task]
         var logs: [Log]
+        var sleepSessions: [Sleep]?
         var attachments: [Attachment]?
 
         struct Place: Codable {
@@ -78,6 +79,15 @@ extension SettingsRoutineDataPersistence {
             var actualDurationMinutes: Int?
         }
 
+        struct Sleep: Codable {
+            var id: UUID
+            var startedAt: Date?
+            var endedAt: Date?
+            var targetDurationMinutes: Int?
+            var createdAt: Date?
+            var updatedAt: Date?
+        }
+
         struct Attachment: Codable {
             enum Role: String, Codable {
                 case taskImage
@@ -98,6 +108,7 @@ extension SettingsRoutineDataPersistence {
         var goals: Int
         var tasks: Int
         var logs: Int
+        var sleepSessions: Int = 0
         var attachments: Int
     }
 

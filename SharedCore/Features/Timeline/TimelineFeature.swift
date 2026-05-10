@@ -14,6 +14,7 @@ struct TimelineFeature {
     struct State: Equatable {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
+        var sleepSessions: [SleepSession] = []
         var selectedRange: TimelineRange = .all
         var filterType: TimelineFilterType = .all
         var selectedTag: String?
@@ -52,7 +53,7 @@ struct TimelineFeature {
     }
 
     enum Action: Equatable {
-        case setData(tasks: [RoutineTask], logs: [RoutineLog])
+        case setData(tasks: [RoutineTask], logs: [RoutineLog], sleepSessions: [SleepSession] = [])
         case selectedRangeChanged(TimelineRange)
         case filterTypeChanged(TimelineFilterType)
         case selectedTagChanged(String?)
@@ -72,9 +73,10 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs):
+            case let .setData(tasks, logs, sleepSessions):
                 state.tasks = tasks
                 state.logs = logs
+                state.sleepSessions = sleepSessions
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -144,6 +146,7 @@ struct TimelineFeature {
         let baseEntries = TimelineLogic.filteredEntries(
             logs: state.logs,
             tasks: state.tasks,
+            sleepSessions: state.sleepSessions,
             range: state.selectedRange,
             filterType: state.filterType,
             now: now,

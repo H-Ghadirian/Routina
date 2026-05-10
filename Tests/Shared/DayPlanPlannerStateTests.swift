@@ -428,6 +428,72 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func sleepBlocksSplitOvernightSessionsByVisibleDay() throws {
+        let calendar = gregorianCalendar
+        let previousDate = try #require(date("2026-05-09T12:00:00Z"))
+        let nextDate = try #require(date("2026-05-10T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-09T22:30:00Z"))
+        let endedAt = try #require(date("2026-05-10T06:45:00Z"))
+        let session = SleepSession(startedAt: startedAt, endedAt: endedAt)
+
+        let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
+            on: [previousDate, nextDate],
+            from: [session],
+            referenceDate: endedAt,
+            calendar: calendar
+        )
+
+        let previousDayKey = DayPlanStorage.dayKey(for: previousDate, calendar: calendar)
+        let nextDayKey = DayPlanStorage.dayKey(for: nextDate, calendar: calendar)
+        let previousBlock = try #require(sleepBlocksByDayKey[previousDayKey]?.first)
+        let nextBlock = try #require(sleepBlocksByDayKey[nextDayKey]?.first)
+        #expect(previousBlock.sessionID == session.id)
+        #expect(previousBlock.block.startMinute == 22 * 60 + 30)
+        #expect(previousBlock.block.durationMinutes == 90)
+        #expect(nextBlock.block.startMinute == 0)
+        #expect(nextBlock.block.durationMinutes == 6 * 60 + 45)
+    }
+
+    @Test
+    func sleepBlockedIntervalsRejectOverlappingPlannerTimes() throws {
+        let calendar = gregorianCalendar
+        let previousDate = try #require(date("2026-05-09T12:00:00Z"))
+        let nextDate = try #require(date("2026-05-10T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-09T22:30:00Z"))
+        let endedAt = try #require(date("2026-05-10T06:45:00Z"))
+        let session = SleepSession(startedAt: startedAt, endedAt: endedAt)
+
+        let previousConflict = DayPlanSleepBlocks.conflictingInterval(
+            on: previousDate,
+            from: [session],
+            startMinute: 23 * 60,
+            durationMinutes: 30,
+            referenceDate: endedAt,
+            calendar: calendar
+        )
+        let previousOpenSlot = DayPlanSleepBlocks.conflictingInterval(
+            on: previousDate,
+            from: [session],
+            startMinute: 21 * 60,
+            durationMinutes: 30,
+            referenceDate: endedAt,
+            calendar: calendar
+        )
+        let nextConflict = DayPlanSleepBlocks.conflictingInterval(
+            on: nextDate,
+            from: [session],
+            startMinute: 6 * 60 + 30,
+            durationMinutes: 30,
+            referenceDate: endedAt,
+            calendar: calendar
+        )
+
+        #expect(previousConflict?.title == "Sleep")
+        #expect(previousOpenSlot == nil)
+        #expect(nextConflict?.title == "Sleep")
+    }
+
+    @Test
     func movingTimelineActivityUpdatesLogAndTaskCompletionDate() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

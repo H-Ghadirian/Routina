@@ -57,6 +57,11 @@ struct HomeTCAView: View {
                         requestRefresh()
                     }
                 }
+                .safeAreaInset(edge: .bottom) {
+                    SleepHomeDockView()
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 6)
+                }
         )
     }
 

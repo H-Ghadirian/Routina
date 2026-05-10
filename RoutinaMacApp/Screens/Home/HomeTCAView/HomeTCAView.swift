@@ -73,6 +73,7 @@ struct HomeTCAView: View {
     @FocusState var isSprintRenameFieldFocused: Bool
     @FocusState var isMacTaskSourceListFocused: Bool
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
+    @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
 
     init(
         store: StoreOf<HomeFeature>,

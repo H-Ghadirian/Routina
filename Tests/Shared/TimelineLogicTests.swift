@@ -324,6 +324,56 @@ struct TimelineLogicTests {
         #expect(entries.isEmpty)
     }
 
+    @Test
+    func filteredEntries_includesSleepSessionsAndSupportsSleepFilter() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Read")
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let startedAt = makeDate("2026-03-19T23:30:00Z")
+        let endedAt = makeDate("2026-03-20T07:15:00Z")
+        let sleepSession = SleepSession(startedAt: startedAt, endedAt: endedAt)
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            sleepSessions: [sleepSession],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let sleepEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            sleepSessions: [sleepSession],
+            range: .all,
+            filterType: .sleep,
+            now: now,
+            calendar: calendar
+        )
+        let doneEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            sleepSessions: [sleepSession],
+            range: .all,
+            filterType: .done,
+            now: now,
+            calendar: calendar
+        )
+
+        let sleepEntry = allEntries.first { $0.id == sleepSession.id }
+        #expect(allEntries.count == 2)
+        #expect(sleepEntry?.isSleep == true)
+        #expect(sleepEntry?.taskID == nil)
+        #expect(sleepEntry?.timestamp == endedAt)
+        #expect(sleepEntry?.startTimestamp == startedAt)
+        #expect(sleepEntry?.endTimestamp == endedAt)
+        #expect(sleepEntry?.durationSeconds == endedAt.timeIntervalSince(startedAt))
+        #expect(sleepEntries.map(\.id) == [sleepSession.id])
+        #expect(doneEntries.map(\.id) == [log.id])
+    }
+
     // MARK: - groupedByDay
 
     @Test

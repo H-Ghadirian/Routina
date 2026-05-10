@@ -10,6 +10,7 @@ struct TimelineView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
+    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
 
@@ -20,14 +21,17 @@ struct TimelineView: View {
                     timelineFiltersSheet
                 }
             .task {
-                store.send(.setData(tasks: tasks, logs: logs))
+                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions))
                 ensureTimelineSelection()
             }
             .onChange(of: tasks) { _, newValue in
-                store.send(.setData(tasks: newValue, logs: logs))
+                store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions))
             }
             .onChange(of: logs) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: newValue))
+                store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions))
+            }
+            .onChange(of: sleepSessionChangeToken) { _, _ in
+                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions))
             }
             .onChange(of: visibleTimelineEntryIDs) { _, _ in
                 ensureTimelineSelection()
@@ -68,6 +72,16 @@ struct TimelineView: View {
 
     private var visibleTimelineEntryIDs: [UUID] {
         groupedByDay.flatMap { $0.entries.map(\.id) }
+    }
+
+    private var sleepSessionChangeToken: [String] {
+        sleepSessions.map { session in
+            [
+                session.id.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
     }
 
     private var selectedTimelineEntry: TimelineEntry? {
@@ -131,6 +145,7 @@ struct TimelineView: View {
         let baseEntries = TimelineLogic.filteredEntries(
             logs: store.logs,
             tasks: store.tasks,
+            sleepSessions: store.sleepSessions,
             range: store.selectedRange,
             filterType: store.filterType,
             now: Date(),
@@ -212,11 +227,11 @@ struct TimelineView: View {
 
     @ViewBuilder
     private var content: some View {
-        if logs.isEmpty {
+        if logs.isEmpty && sleepSessions.isEmpty {
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed and canceled items will appear here in chronological order.")
+                description: Text("Completed items and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
@@ -332,11 +347,11 @@ struct TimelineView: View {
                     .padding(.vertical, 10)
             }
 
-            if logs.isEmpty {
+            if logs.isEmpty && sleepSessions.isEmpty {
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed and canceled items will appear here in chronological order.")
+                    description: Text("Completed items and sleep records will appear here in chronological order.")
                 )
             } else if groupedByDay.isEmpty {
                 ContentUnavailableView(
@@ -373,11 +388,18 @@ struct TimelineView: View {
     private var timelineSidebarDetail: some View {
         if let taskID = selectedTimelineEntry?.taskID {
             timelineDetailDestination(taskID: taskID)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isSleep {
+            ContentUnavailableView(
+                "Sleep record",
+                systemImage: "bed.double.fill",
+                description: Text(timelineSubtitle(for: selectedTimelineEntry))
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ContentUnavailableView(
-                "Select a done",
+                "Select a timeline entry",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Choose a completed or canceled item from the sidebar to see its task detail.")
+                description: Text("Choose an item from the sidebar to see its detail.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -410,7 +432,7 @@ struct TimelineView: View {
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) {
+                if tasks.contains(where: { $0.isOneOffTask }) || !sleepSessions.isEmpty {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
@@ -476,8 +498,13 @@ struct TimelineView: View {
         return "Showing done items from tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }
 
+    @ViewBuilder
     private func timelineRow(_ entry: TimelineEntry) -> some View {
-        NavigationLink(value: entry.taskID) {
+        if let taskID = entry.taskID {
+            NavigationLink(value: taskID) {
+                timelineRowContent(entry)
+            }
+        } else {
             timelineRowContent(entry)
         }
     }
@@ -497,7 +524,7 @@ struct TimelineView: View {
                     .font(.body.weight(.medium))
                     .lineLimit(1)
 
-                Text(entry.timestamp, style: .time)
+                Text(timelineSubtitle(for: entry))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -518,6 +545,10 @@ struct TimelineView: View {
     }
 
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
+        if entry.isSleep {
+            return "Sleep"
+        }
+
         switch entry.kind {
         case .completed:
             return entry.isOneOff ? "Todo" : "Routine"
@@ -529,6 +560,10 @@ struct TimelineView: View {
     }
 
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
+        if entry.isSleep {
+            return .indigo
+        }
+
         switch entry.kind {
         case .completed:
             return entry.isOneOff ? .purple : .accentColor
@@ -537,6 +572,20 @@ struct TimelineView: View {
         case .missed:
             return .yellow
         }
+    }
+
+    private func timelineSubtitle(for entry: TimelineEntry) -> String {
+        if entry.isSleep {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let endedAt = entry.endTimestamp ?? entry.timestamp
+            let range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            if let durationSeconds = entry.durationSeconds {
+                return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
+            }
+            return range
+        }
+
+        return entry.timestamp.formatted(date: .omitted, time: .shortened)
     }
 
     @ViewBuilder

@@ -72,17 +72,21 @@ struct DayPlanTaskDropDelegate: DropDelegate {
     @Binding var isCompletingDrop: Bool
     @Binding var isDropTargeted: Bool
     @Binding var dropPreview: DayPlanDropPreview?
+    let blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval]
     let onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
     let onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void
     let onDropTask: (UUID, Date, Int) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
-        dropTarget(for: info.location) != nil
-            && (
-                draggedBlockID != nil
-                    || draggedTimelineActivity != nil
-                    || info.hasItemsConforming(to: [.text])
-            )
+        guard let target = dropTarget(for: info.location),
+              draggedBlockID != nil
+                || draggedTimelineActivity != nil
+                || info.hasItemsConforming(to: [.text])
+        else {
+            return false
+        }
+
+        return !isBlocked(target, durationMinutes: previewDuration(for: info))
     }
 
     func dropEntered(info: DropInfo) {
@@ -108,7 +112,9 @@ struct DayPlanTaskDropDelegate: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        guard let target = dropTarget(for: info.location) else {
+        guard let target = dropTarget(for: info.location),
+              !isBlocked(target, durationMinutes: previewDuration(for: info))
+        else {
             clearDropState()
             return false
         }
@@ -164,10 +170,16 @@ struct DayPlanTaskDropDelegate: DropDelegate {
             return false
         }
 
+        let durationMinutes = previewDuration(for: info)
+        guard !isBlocked(target, durationMinutes: durationMinutes) else {
+            clearDropState()
+            return false
+        }
+
         let nextPreview = DayPlanDropPreview(
             dayIndex: target.dayIndex,
             startMinute: target.startMinute,
-            durationMinutes: previewDuration(for: info)
+            durationMinutes: durationMinutes
         )
         if isDropTargeted, dropPreview == nextPreview {
             return true
@@ -236,5 +248,11 @@ struct DayPlanTaskDropDelegate: DropDelegate {
             timeColumnWidth: timeColumnWidth,
             hourHeight: hourHeight
         )
+    }
+
+    private func isBlocked(_ target: DayPlanDropTarget, durationMinutes: Int) -> Bool {
+        blockedIntervalsForDate(target.date).contains {
+            $0.overlaps(startMinute: target.startMinute, durationMinutes: durationMinutes)
+        }
     }
 }

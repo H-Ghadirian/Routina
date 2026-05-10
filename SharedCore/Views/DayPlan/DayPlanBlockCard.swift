@@ -6,6 +6,7 @@ struct DayPlanBlockCard: View {
         case manual
         case automatic(RoutineLogKind)
         case liveFocus
+        case sleep
     }
 
     var block: DayPlanBlock
@@ -30,6 +31,8 @@ struct DayPlanBlockCard: View {
             automaticCard
         } else if isLiveFocus {
             liveFocusCard
+        } else if isSleep {
+            sleepCard
         } else {
             manualCard
         }
@@ -63,8 +66,8 @@ struct DayPlanBlockCard: View {
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(tint)
                             .padding(4)
-                    } else if isLiveFocus {
-                        Image(systemName: "timer.circle.fill")
+                    } else if let statusIconName {
+                        Image(systemName: statusIconName)
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(tint)
                             .padding(4)
@@ -132,6 +135,11 @@ struct DayPlanBlockCard: View {
                 onOpenDetails()
             }
             .help("Focus timer in progress")
+    }
+
+    private var sleepCard: some View {
+        baseCard
+            .help("Sleep time is blocked")
     }
 
     @ViewBuilder
@@ -243,6 +251,13 @@ struct DayPlanBlockCard: View {
         return false
     }
 
+    private var isSleep: Bool {
+        if case .sleep = style {
+            return true
+        }
+        return false
+    }
+
     private var automaticKind: RoutineLogKind? {
         if case let .automatic(kind) = style {
             return kind
@@ -251,11 +266,11 @@ struct DayPlanBlockCard: View {
     }
 
     private var showsActivityStripe: Bool {
-        isAutomatic || isLiveFocus
+        isAutomatic || isLiveFocus || isSleep
     }
 
     private var showsStatusIcon: Bool {
-        renderedHeight >= 28 && (isAutomatic || isLiveFocus)
+        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isSleep)
     }
 
     private var fillOpacity: Double {
@@ -264,6 +279,9 @@ struct DayPlanBlockCard: View {
         }
         if isLiveFocus {
             return 0.2
+        }
+        if isSleep {
+            return 0.16
         }
         return isSelected ? 0.22 : 0.14
     }
@@ -275,6 +293,9 @@ struct DayPlanBlockCard: View {
         if isLiveFocus {
             return 0.85
         }
+        if isSleep {
+            return 0.78
+        }
         return isSelected ? 0.75 : 0.35
     }
 
@@ -285,11 +306,24 @@ struct DayPlanBlockCard: View {
         if isLiveFocus {
             return 2
         }
+        if isSleep {
+            return 1.5
+        }
         return isSelected ? 2 : 1
     }
 
     private var strokeDash: [CGFloat] {
         isAutomatic ? [5, 4] : []
+    }
+
+    private var statusIconName: String? {
+        if isLiveFocus {
+            return "timer.circle.fill"
+        }
+        if isSleep {
+            return "bed.double.fill"
+        }
+        return nil
     }
 
     private func automaticIconName(for kind: RoutineLogKind) -> String {

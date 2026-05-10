@@ -9,6 +9,7 @@ enum RoutinaQuickAddError: LocalizedError, Equatable {
     case taskAlreadyCompleted(String)
     case checklistCompletionRequiresApp(String)
     case activeFocusSession(String?)
+    case activeSleepSession
     case invalidFocusDuration
 
     var errorDescription: String? {
@@ -31,6 +32,8 @@ enum RoutinaQuickAddError: LocalizedError, Equatable {
                 return "A focus session is already active for \"\(name)\"."
             }
             return "A focus session is already active."
+        case .activeSleepSession:
+            return "Sleep mode is active. Wake up before starting focus."
         case .invalidFocusDuration:
             return "Choose a focus duration from 1 to 720 minutes."
         }
@@ -192,6 +195,9 @@ enum RoutinaQuickAddService {
     ) throws -> RoutinaQuickAddFocusResult {
         guard (1...720).contains(durationMinutes) else {
             throw RoutinaQuickAddError.invalidFocusDuration
+        }
+        guard try SleepSessionSupport.activeSession(in: context) == nil else {
+            throw RoutinaQuickAddError.activeSleepSession
         }
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())

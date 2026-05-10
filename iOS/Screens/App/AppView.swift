@@ -12,10 +12,14 @@ struct AppView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
+    @State private var isHomeMenuSleepConfirmationPresented = false
+    @State private var homeMenuSleepWarningMessage: String?
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
     @AppStorage(UserDefaultStringValueKey.appSettingFastFilterTags.rawValue, store: SharedDefaults.app)
     private var fastFilterTagsRawValue = ""
+    @AppStorage(UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue, store: SharedDefaults.app)
+    private var isSleepHomeMenuEnabled = true
 
     var body: some View {
         WithPerceptionTracking {
@@ -97,14 +101,18 @@ struct AppView: View {
                 handleLiveActivityContinuation(userActivity)
             }
             .background {
-                HomeTabFastFilterMenuBridge(
+                HomeTabContextMenuBridge(
                     fastFilters: fastFilterTags,
                     selectedTags: store.home.selectedTags,
+                    isSleepActionEnabled: isSleepHomeMenuEnabled,
                     onSelect: { tag in
                         store.send(.homeFastFilterSelected(tag))
                     },
                     onClear: {
                         store.send(.home(.clearOptionalFilters))
+                    },
+                    onStartSleep: {
+                        requestSleepFromHomeMenu()
                     }
                 )
                 .frame(width: 0, height: 0)
@@ -112,6 +120,15 @@ struct AppView: View {
             .sheet(item: $presentedSprintFocusDeepLink) { presentation in
                 SprintFocusDeepLinkView(sprintID: presentation.id)
             }
+            .alert("Stop focus timer?", isPresented: $isHomeMenuSleepConfirmationPresented) {
+                Button("Start Sleep", role: .destructive) {
+                    startSleepFromHomeMenu()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(homeMenuSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
+            }
+            .sleepModeGate()
         }
     }
 
@@ -121,6 +138,32 @@ struct AppView: View {
 
     private var fastFilterTags: [String] {
         FastFilterTags.decoded(from: fastFilterTagsRawValue)
+    }
+
+    @MainActor
+    private func requestSleepFromHomeMenu() {
+        do {
+            if let warningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext) {
+                homeMenuSleepWarningMessage = warningMessage
+                isHomeMenuSleepConfirmationPresented = true
+                return
+            }
+
+            startSleepFromHomeMenu()
+        } catch {
+            NSLog("Failed to check active focus before Home menu sleep start: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func startSleepFromHomeMenu() {
+        do {
+            _ = try SleepSessionSupport.startSleep(in: modelContext)
+            homeMenuSleepWarningMessage = nil
+            isHomeMenuSleepConfirmationPresented = false
+        } catch {
+            NSLog("Failed to start sleep session from Home menu: \(error.localizedDescription)")
+        }
     }
 
     private func handleOpenURL(_ url: URL) {
@@ -292,11 +335,13 @@ private extension AppColorScheme {
     }
 }
 
-private struct HomeTabFastFilterMenuBridge: UIViewRepresentable {
+private struct HomeTabContextMenuBridge: UIViewRepresentable {
     var fastFilters: [String]
     var selectedTags: Set<String>
+    var isSleepActionEnabled: Bool
     var onSelect: (String) -> Void
     var onClear: () -> Void
+    var onStartSleep: () -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -312,8 +357,10 @@ private struct HomeTabFastFilterMenuBridge: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) {
         context.coordinator.fastFilters = fastFilters
         context.coordinator.selectedTags = selectedTags
+        context.coordinator.isSleepActionEnabled = isSleepActionEnabled
         context.coordinator.onSelect = onSelect
         context.coordinator.onClear = onClear
+        context.coordinator.onStartSleep = onStartSleep
 
         DispatchQueue.main.async {
             context.coordinator.install(from: uiView)
@@ -327,8 +374,10 @@ private struct HomeTabFastFilterMenuBridge: UIViewRepresentable {
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var fastFilters: [String] = []
         var selectedTags: Set<String> = []
+        var isSleepActionEnabled = false
         var onSelect: (String) -> Void = { _ in }
         var onClear: () -> Void = {}
+        var onStartSleep: () -> Void = {}
 
         private weak var installedTabBar: UITabBar?
         private weak var menuSourceButton: UIButton?
@@ -373,7 +422,7 @@ private struct HomeTabFastFilterMenuBridge: UIViewRepresentable {
 
         @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
             guard let tabBar = installedTabBar,
-                  !fastFilters.isEmpty,
+                  hasMenuItems,
                   gesture.state == .began
             else {
                 return
@@ -417,7 +466,41 @@ private struct HomeTabFastFilterMenuBridge: UIViewRepresentable {
         }
 
         private func makeMenu() -> UIMenu {
-            var actions = fastFilters.map { tag in
+            var sections: [UIMenuElement] = []
+
+            let fastFilterActions = makeFastFilterActions()
+            if !fastFilterActions.isEmpty {
+                sections.append(
+                    UIMenu(
+                        title: "Fast Filters",
+                        options: .displayInline,
+                        children: fastFilterActions
+                    )
+                )
+            }
+
+            if isSleepActionEnabled {
+                sections.append(
+                    UIMenu(
+                        title: "Sleep",
+                        options: .displayInline,
+                        children: [
+                            UIAction(
+                                title: "Going to sleep",
+                                image: UIImage(systemName: "bed.double.fill")
+                            ) { [weak self] _ in
+                                self?.onStartSleep()
+                            }
+                        ]
+                    )
+                )
+            }
+
+            return UIMenu(title: "Home", children: sections)
+        }
+
+        private func makeFastFilterActions() -> [UIMenuElement] {
+            var actions: [UIMenuElement] = fastFilters.map { tag in
                 UIAction(
                     title: "#\(tag)",
                     image: UIImage(systemName: "tag"),
@@ -438,7 +521,11 @@ private struct HomeTabFastFilterMenuBridge: UIViewRepresentable {
                 )
             }
 
-            return UIMenu(title: "Fast Filters", children: actions)
+            return actions
+        }
+
+        private var hasMenuItems: Bool {
+            isSleepActionEnabled || !fastFilters.isEmpty
         }
 
         private func isHomeTabLocation(_ location: CGPoint, in tabBar: UITabBar) -> Bool {

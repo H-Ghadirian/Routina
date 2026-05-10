@@ -66,7 +66,12 @@ final class DayPlanPlannerState: ObservableObject {
         syncSelectedDayBlocks(calendar: calendar, context: context)
     }
 
-    func showExactTimedTasks(from tasks: [RoutineTask], calendar: Calendar, context: ModelContext) {
+    func showExactTimedTasks(
+        from tasks: [RoutineTask],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
+        calendar: Calendar,
+        context: ModelContext
+    ) {
         let visibleDates = visibleAndSelectedDates(calendar: calendar)
         let availableTasks = DayPlanTaskSorting.availableTasks(from: tasks)
         let now = Date()
@@ -90,6 +95,15 @@ final class DayPlanPlannerState: ObservableObject {
 
                 let startMinute = startMinute(for: scheduledDate, calendar: calendar)
                 let durationMinutes = task.estimatedDurationMinutes ?? 60
+                guard !isBlocked(
+                    dayKey: dayKey,
+                    startMinute: startMinute,
+                    durationMinutes: durationMinutes,
+                    blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                ) else {
+                    continue
+                }
+
                 dayBlocks.append(
                     DayPlanBlock(
                         taskID: task.id,
@@ -460,6 +474,16 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
+    func sleepConflict(
+        in intervals: [DayPlanBlockedInterval],
+        startMinute: Int,
+        durationMinutes: Int
+    ) -> DayPlanBlockedInterval? {
+        intervals.first {
+            $0.overlaps(startMinute: startMinute, durationMinutes: durationMinutes)
+        }
+    }
+
     func clampDurationForCurrentStart() {
         durationMinutes = DayPlanBlock.clampedDuration(durationMinutes, startMinute: startMinute)
     }
@@ -515,6 +539,18 @@ final class DayPlanPlannerState: ObservableObject {
         }
 
         return nil
+    }
+
+    private func isBlocked(
+        dayKey: String,
+        startMinute: Int,
+        durationMinutes: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) -> Bool {
+        guard let intervals = blockedIntervalsByDayKey[dayKey] else { return false }
+        return intervals.contains {
+            $0.overlaps(startMinute: startMinute, durationMinutes: durationMinutes)
+        }
     }
 
     private func sortedDayBlocks(_ blocks: [DayPlanBlock]) -> [DayPlanBlock] {

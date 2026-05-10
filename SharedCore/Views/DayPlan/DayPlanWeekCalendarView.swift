@@ -15,6 +15,8 @@ struct DayPlanWeekCalendarView: View {
     var showsUnplannedCompletedBadges: Bool
     var blocksForDate: (Date) -> [DayPlanBlock]
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
+    var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
+    var blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval] = { _ in [] }
     var activeFocusSessionBlocks: (Date) -> [DayPlanFocusSessionBlock] = { _ in [] }
     var unplannedCompletedCount: (Date) -> Int
     var taskTint: (DayPlanBlock) -> Color
@@ -89,6 +91,7 @@ struct DayPlanWeekCalendarView: View {
                                 blockAnimationNamespace: blockAnimationNamespace,
                                 blocksForDate: blocksForDate,
                                 automaticTimelineBlocksForDate: automaticTimelineBlocksForDate,
+                                sleepBlocksForDate: sleepBlocksForDate,
                                 taskTint: taskTint,
                                 onSelectBlock: onSelectBlock,
                                 onOpenBlockDetails: onOpenBlockDetails,
@@ -173,6 +176,7 @@ struct DayPlanWeekCalendarView: View {
                                 isCompletingDrop: $isCompletingDrop,
                                 isDropTargeted: $isDropTargeted,
                                 dropPreview: $dropPreview,
+                                blockedIntervalsForDate: blockedIntervalsForDate,
                                 onMoveBlock: onMoveBlock,
                                 onMoveTimelineActivity: onMoveTimelineActivity,
                                 onDropTask: onDropTask

@@ -12,16 +12,24 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case sleep = "Sleep"
     case done = "Done"
     case missed = "Missed"
     case canceled = "Canceled"
     var id: Self { self }
 }
 
+enum TimelineEntryType: Equatable {
+    case task
+    case sleep
+}
+
 struct TimelineEntry: Identifiable, Equatable {
     let id: UUID
     let taskID: UUID?
     let timestamp: Date
+    let startTimestamp: Date?
+    let endTimestamp: Date?
     let taskName: String
     let taskEmoji: String
     let tags: [String]
@@ -29,22 +37,30 @@ struct TimelineEntry: Identifiable, Equatable {
     let urgency: RoutineTaskUrgency
     let isOneOff: Bool
     let kind: RoutineLogKind
+    let entryType: TimelineEntryType
+    let durationSeconds: TimeInterval?
 
     init(
         id: UUID,
         taskID: UUID?,
         timestamp: Date,
+        startTimestamp: Date? = nil,
+        endTimestamp: Date? = nil,
         taskName: String,
         taskEmoji: String,
         tags: [String],
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
         isOneOff: Bool,
-        kind: RoutineLogKind
+        kind: RoutineLogKind,
+        entryType: TimelineEntryType = .task,
+        durationSeconds: TimeInterval? = nil
     ) {
         self.id = id
         self.taskID = taskID
         self.timestamp = timestamp
+        self.startTimestamp = startTimestamp
+        self.endTimestamp = endTimestamp
         self.taskName = taskName
         self.taskEmoji = taskEmoji
         self.tags = tags
@@ -52,6 +68,12 @@ struct TimelineEntry: Identifiable, Equatable {
         self.urgency = urgency
         self.isOneOff = isOneOff
         self.kind = kind
+        self.entryType = entryType
+        self.durationSeconds = durationSeconds
+    }
+
+    var isSleep: Bool {
+        entryType == .sleep
     }
 }
 
@@ -59,6 +81,7 @@ enum TimelineLogic {
     static func filteredEntries(
         logs: [RoutineLog],
         tasks: [RoutineTask],
+        sleepSessions: [SleepSession] = [],
         range: TimelineRange,
         filterType: TimelineFilterType,
         now: Date,
@@ -74,7 +97,7 @@ enum TimelineLogic {
             }
         }()
 
-        return logs.compactMap { log in
+        let logEntries = logs.compactMap { log -> TimelineEntry? in
             guard let timestamp = log.timestamp else { return nil }
             if let cutoff, timestamp < cutoff { return nil }
 
@@ -85,6 +108,7 @@ enum TimelineLogic {
             case .all: break
             case .routines: if isOneOff { return nil }
             case .todos: if !isOneOff { return nil }
+            case .sleep: return nil
             case .done: if log.kind != .completed { return nil }
             case .missed: if log.kind != .missed { return nil }
             case .canceled: if log.kind != .canceled { return nil }
@@ -103,6 +127,35 @@ enum TimelineLogic {
                 kind: log.kind
             )
         }
+
+        let sleepEntries = sleepSessions.compactMap { session -> TimelineEntry? in
+            guard filterType == .all || filterType == .sleep,
+                  let startedAt = session.startedAt
+            else {
+                return nil
+            }
+
+            let endedAt = session.endedAt
+            let timestamp = endedAt ?? startedAt
+            if let cutoff, timestamp < cutoff { return nil }
+
+            return TimelineEntry(
+                id: session.id,
+                taskID: nil,
+                timestamp: timestamp,
+                startTimestamp: startedAt,
+                endTimestamp: endedAt,
+                taskName: "Sleep",
+                taskEmoji: "🛌",
+                tags: [],
+                isOneOff: false,
+                kind: .completed,
+                entryType: .sleep,
+                durationSeconds: session.durationSeconds(referenceDate: now)
+            )
+        }
+
+        return logEntries + sleepEntries
     }
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {

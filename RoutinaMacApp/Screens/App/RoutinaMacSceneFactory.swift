@@ -56,6 +56,7 @@ enum RoutinaMacSceneFactory {
                         minHeight: RoutinaMacSettingsSizing.minHeight
                     )
                     .modelContainer(persistence.container)
+                    .sleepModeGate()
                 }
             }
         )

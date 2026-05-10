@@ -34,6 +34,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
+        RoutinaMacSleepToolbarItem()
+
         ToolbarItemGroup(placement: .primaryAction) {
             MacToolbarStatusBadge(
                 title: "\(boardOpenCount) open",
@@ -69,6 +71,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var goalsToolbar: some ToolbarContent {
+        RoutinaMacSleepToolbarItem()
+
         ToolbarItem(placement: .primaryAction) {
             MacGoalsNewGoalButton(store: goalsStore)
         }
@@ -76,6 +80,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
+        RoutinaMacSleepToolbarItem()
+
         ToolbarItemGroup(placement: .primaryAction) {
             MacToolbarStatusBadge(
                 title: "\(doneCount) done",

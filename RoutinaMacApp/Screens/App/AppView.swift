@@ -80,6 +80,7 @@ struct AppView: View {
                 }
             }
             .preferredColorScheme(appColorScheme.preferredColorScheme)
+            .sleepModeGate()
         }
     }
 

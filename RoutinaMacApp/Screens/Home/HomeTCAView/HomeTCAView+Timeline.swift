@@ -27,6 +27,7 @@ extension HomeTCAView {
         TimelineLogic.filteredEntries(
             logs: store.timelineLogs,
             tasks: store.routineTasks,
+            sleepSessions: sleepSessions,
             range: store.selectedTimelineRange,
             filterType: store.selectedTimelineFilterType,
             now: Date(),
@@ -106,22 +107,22 @@ extension HomeTCAView {
                         .font(.body.weight(.medium))
                         .lineLimit(1)
 
-                    Text(entry.timestamp, style: .time)
+                    Text(timelineSubtitle(for: entry))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer(minLength: 0)
 
-                Text(entry.isOneOff ? "Todo" : "Routine")
+                Text(timelineKindLabel(for: entry))
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(
                         Capsule()
-                            .fill(entry.isOneOff ? Color.purple.opacity(0.15) : Color.accentColor.opacity(0.15))
+                            .fill(timelineKindColor(for: entry).opacity(0.15))
                     )
-                    .foregroundStyle(entry.isOneOff ? .purple : .accentColor)
+                    .foregroundStyle(timelineKindColor(for: entry))
             }
             .padding(.vertical, 2)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -136,9 +137,7 @@ extension HomeTCAView {
         guard !trimmedSearch.isEmpty else { return true }
         return entry.taskName.localizedCaseInsensitiveContains(trimmedSearch)
             || entry.taskEmoji.localizedCaseInsensitiveContains(trimmedSearch)
-            || (entry.isOneOff
-                ? "todo".localizedCaseInsensitiveContains(trimmedSearch)
-                : "routine".localizedCaseInsensitiveContains(trimmedSearch))
+            || timelineKindLabel(for: entry).localizedCaseInsensitiveContains(trimmedSearch)
     }
 
     func validateSelectedTimelineTag() {
@@ -234,7 +233,7 @@ extension HomeTCAView {
                     get: { store.selectedTimelineImportanceUrgencyFilter },
                     set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
                 ),
-                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask),
+                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !sleepSessions.isEmpty,
                 importanceUrgencySummary: timelineImportanceUrgencySummary,
                 allTagsCount: filteredTimelineEntriesForTagging.count,
                 availableTags: availableTimelineTags,
@@ -283,7 +282,7 @@ extension HomeTCAView {
 
     var macTimelineSidebarView: some View {
         HomeMacTimelineSidebarView(
-            timelineLogCount: store.timelineLogs.count,
+            timelineEntryCount: store.timelineLogs.count + sleepSessions.count,
             groupedEntries: groupedTimelineEntries,
             selection: macSidebarSelectionBinding,
             sectionTitle: { date in
@@ -292,5 +291,49 @@ extension HomeTCAView {
         ) { entry, rowNumber in
             timelineSidebarRow(entry, rowNumber: rowNumber)
         }
+    }
+
+    private func timelineKindLabel(for entry: TimelineEntry) -> String {
+        if entry.isSleep {
+            return "Sleep"
+        }
+
+        switch entry.kind {
+        case .completed:
+            return entry.isOneOff ? "Todo" : "Routine"
+        case .canceled:
+            return "Canceled"
+        case .missed:
+            return "Missed"
+        }
+    }
+
+    private func timelineKindColor(for entry: TimelineEntry) -> Color {
+        if entry.isSleep {
+            return .indigo
+        }
+
+        switch entry.kind {
+        case .completed:
+            return entry.isOneOff ? .purple : .accentColor
+        case .canceled:
+            return .orange
+        case .missed:
+            return .yellow
+        }
+    }
+
+    private func timelineSubtitle(for entry: TimelineEntry) -> String {
+        if entry.isSleep {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let endedAt = entry.endTimestamp ?? entry.timestamp
+            let range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            if let durationSeconds = entry.durationSeconds {
+                return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
+            }
+            return range
+        }
+
+        return entry.timestamp.formatted(date: .omitted, time: .shortened)
     }
 }

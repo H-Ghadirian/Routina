@@ -45,6 +45,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
         let storedAttachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
 
         var attachmentManifests: [Backup.Attachment] = []
@@ -98,6 +99,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
                 )
             },
             logs: logs.map(SettingsRoutineDataBackupMapping.log),
+            sleepSessions: sleepSessions.map(SettingsRoutineDataBackupMapping.sleep),
             attachments: attachmentManifests
         )
 

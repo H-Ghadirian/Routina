@@ -8,6 +8,7 @@ struct TimelineView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
+    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
 
     var body: some View {
@@ -31,14 +32,27 @@ struct TimelineView: View {
                     }
             }
             .task {
-                store.send(.setData(tasks: tasks, logs: logs))
+                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions))
             }
             .onChange(of: tasks) { _, newValue in
-                store.send(.setData(tasks: newValue, logs: logs))
+                store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions))
             }
             .onChange(of: logs) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: newValue))
+                store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions))
             }
+            .onChange(of: sleepSessionChangeToken) { _, _ in
+                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions))
+            }
+        }
+    }
+
+    private var sleepSessionChangeToken: [String] {
+        sleepSessions.map { session in
+            [
+                session.id.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
         }
     }
 
@@ -123,11 +137,11 @@ struct TimelineView: View {
 
     @ViewBuilder
     private var content: some View {
-        if logs.isEmpty {
+        if logs.isEmpty && sleepSessions.isEmpty {
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed and canceled items will appear here in chronological order.")
+                description: Text("Completed items and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
@@ -186,7 +200,7 @@ struct TimelineView: View {
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) {
+                if tasks.contains(where: { $0.isOneOffTask }) || !sleepSessions.isEmpty {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
@@ -347,44 +361,57 @@ struct TimelineView: View {
         }
     }
 
+    @ViewBuilder
     private func timelineRow(_ entry: TimelineEntry) -> some View {
-        NavigationLink(value: entry.taskID) {
-            HStack(spacing: 12) {
-                Text(entry.taskEmoji)
-                    .font(.title2)
-                    .frame(width: 36, height: 36)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.primary.opacity(0.06))
-                    )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.taskName)
-                        .font(.body.weight(.medium))
-                        .lineLimit(1)
-
-                    Text(entry.timestamp, style: .time)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 0)
-
-                Text(timelineKindLabel(for: entry))
-                    .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(timelineKindColor(for: entry).opacity(0.15))
-                    )
-                    .foregroundStyle(timelineKindColor(for: entry))
+        if let taskID = entry.taskID {
+            NavigationLink(value: taskID) {
+                timelineRowContent(entry)
             }
-            .padding(.vertical, 2)
+        } else {
+            timelineRowContent(entry)
         }
     }
 
+    private func timelineRowContent(_ entry: TimelineEntry) -> some View {
+        HStack(spacing: 12) {
+            Text(entry.taskEmoji)
+                .font(.title2)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.primary.opacity(0.06))
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.taskName)
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+
+                Text(timelineSubtitle(for: entry))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            Text(timelineKindLabel(for: entry))
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(
+                    Capsule()
+                        .fill(timelineKindColor(for: entry).opacity(0.15))
+                )
+                .foregroundStyle(timelineKindColor(for: entry))
+        }
+        .padding(.vertical, 2)
+    }
+
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
+        if entry.isSleep {
+            return "Sleep"
+        }
+
         switch entry.kind {
         case .completed:
             return entry.isOneOff ? "Todo" : "Routine"
@@ -396,6 +423,10 @@ struct TimelineView: View {
     }
 
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
+        if entry.isSleep {
+            return .indigo
+        }
+
         switch entry.kind {
         case .completed:
             return entry.isOneOff ? .purple : .accentColor
@@ -404,6 +435,20 @@ struct TimelineView: View {
         case .missed:
             return .yellow
         }
+    }
+
+    private func timelineSubtitle(for entry: TimelineEntry) -> String {
+        if entry.isSleep {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let endedAt = entry.endTimestamp ?? entry.timestamp
+            let range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            if let durationSeconds = entry.durationSeconds {
+                return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
+            }
+            return range
+        }
+
+        return entry.timestamp.formatted(date: .omitted, time: .shortened)
     }
 
     @ViewBuilder
@@ -460,10 +505,10 @@ struct TimelineView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(
-                    Capsule(style: .continuous)
-                        .fill(isSelected ? selectedColor.opacity(0.16) : Color.secondary.opacity(0.12))
+                    Capsule()
+                        .fill(isSelected ? selectedColor.opacity(0.16) : Color.secondary.opacity(0.10))
                 )
-                .foregroundStyle(isSelected ? selectedColor : .primary)
+                .foregroundStyle(isSelected ? selectedColor : .secondary)
         }
         .buttonStyle(.plain)
     }
