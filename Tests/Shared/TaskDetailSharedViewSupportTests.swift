@@ -467,6 +467,30 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func calendarPresentationPrefersCanceledWhenCanceledAndMissedShareDate() {
+        let calendar = makeTestCalendar()
+        let occurrenceDate = makeDate("2026-05-07T18:30:00Z")
+        let occurrenceDay = calendar.startOfDay(for: occurrenceDate)
+        let presentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: occurrenceDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            missedDates: [occurrenceDay],
+            canceledDates: [occurrenceDay],
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: makeDate("2026-05-08T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(presentation.isCanceledDate)
+        #expect(!presentation.isMissedDate)
+        #expect(presentation.isHighlightedDay)
+    }
+
+    @Test
     func checklistPresentationSortsAndSummarizesDueItems() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-04-25T10:00:00Z")

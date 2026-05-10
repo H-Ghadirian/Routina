@@ -25,11 +25,11 @@ enum TaskDetailLogPresentation {
     static func statusColor(for kind: RoutineLogKind) -> Color {
         switch kind {
         case .completed:
-            return .green
+            return TaskDetailStatusPalette.done
         case .canceled:
-            return .orange
+            return TaskDetailStatusPalette.canceled
         case .missed:
-            return .yellow
+            return TaskDetailStatusPalette.missed
         }
     }
 

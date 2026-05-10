@@ -491,6 +491,30 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func canceledExactTimedOccurrenceAcknowledgesMissedAssumption() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-04-19T10:00:00Z")
+        )
+        let missedDate = makeDate("2026-04-23T18:30:00Z")
+        let logs = [
+            RoutineLog(timestamp: missedDate, taskID: task.id, kind: .canceled)
+        ]
+
+        #expect(
+            RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: makeDate("2026-04-24T10:00:00Z"),
+                logs: logs,
+                calendar: calendar
+            ) == nil
+        )
+    }
+
+    @Test
     func canMarkDone_monthlySchedule_returnsTrueForPastOccurrenceBeforeScheduleAnchor() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

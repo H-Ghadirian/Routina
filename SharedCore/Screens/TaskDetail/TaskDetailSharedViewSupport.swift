@@ -306,7 +306,7 @@ enum TaskDetailHeaderBadgePresentation {
             title: "Canceled",
             value: state.canceledLogCountText,
             systemImage: nil,
-            tint: .orange
+            tint: TaskDetailStatusPalette.canceled
         )
     }
 }

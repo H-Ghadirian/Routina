@@ -60,7 +60,7 @@ enum TaskDetailPresentation {
         if task.isOneOffTask {
             if task.isInProgress { return .orange }
             if task.isCompletedOneOff || isDoneToday { return .green }
-            if task.isCanceledOneOff { return .orange }
+            if task.isCanceledOneOff { return TaskDetailStatusPalette.canceled }
             return .primary
         }
         if task.isChecklistCompletionRoutine {

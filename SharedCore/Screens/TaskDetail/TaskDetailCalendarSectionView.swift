@@ -118,29 +118,29 @@ private struct TaskDetailCalendarSectionLegendView: View {
             spacing: 8
         ) {
             if showsCreatedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .purple, label: "Created")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.created, label: "Created")
             }
-            TaskDetailCalendarSectionLegendItemView(color: .green, label: "Done")
+            TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.done, label: "Done")
             if showsAssumedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .mint, label: "Assumed")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.assumed, label: "Assumed")
             }
             if showsMissedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .yellow, label: "Missed")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.missed, label: "Missed")
             }
             if showsCanceledLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Canceled")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.canceled, label: "Canceled")
             }
             if showsDueLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Due")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.due, label: "Due")
             }
             if showsOverdueLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .red, label: "Overdue")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.overdue, label: "Overdue")
             }
             if showsSoftDueLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .orange, label: "Soft due")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.due, label: "Soft due")
             }
             if showsPausedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: .teal, label: "Paused")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.paused, label: "Paused")
             }
             TaskDetailCalendarSectionTodayLegendItemView()
         }
@@ -170,7 +170,7 @@ private struct TaskDetailCalendarSectionTodayLegendItemView: View {
     var body: some View {
         HStack(spacing: 4) {
             Circle()
-                .stroke(Color.blue, lineWidth: 2)
+                .stroke(TaskDetailStatusPalette.today, lineWidth: 2)
                 .frame(width: 10, height: 10)
             Text("Today")
                 .font(.caption2)
