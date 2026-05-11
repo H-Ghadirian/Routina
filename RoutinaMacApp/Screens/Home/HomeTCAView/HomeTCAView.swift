@@ -6,6 +6,7 @@ enum MacHomeDetailMode: String, CaseIterable, Identifiable {
     case details = "Details"
     case planner = "Planner"
     case board = "Board"
+    case places = "Places"
 
     var id: Self { self }
 }
@@ -68,12 +69,14 @@ struct HomeTCAView: View {
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var isFinishedSprintsExpanded = false
+    @State var placeCheckInMapActivity: PlaceCheckInActivity?
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
     @FocusState var isMacTaskSourceListFocused: Bool
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
+    @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
 
     init(
         store: StoreOf<HomeFeature>,

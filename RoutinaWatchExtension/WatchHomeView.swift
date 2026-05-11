@@ -10,6 +10,10 @@ struct WatchHomeView: View {
                 focusSessionRow(activeFocusSession)
             }
 
+            if syncStore.activePlaceCheckIn != nil || !syncStore.places.isEmpty {
+                placeCheckInSection
+            }
+
             if !syncStore.isCompanionAppInstalled {
                 watchStateMessage(
                     systemImage: "iphone.slash",
@@ -84,6 +88,67 @@ struct WatchHomeView: View {
                 syncStore.requestSync()
             }
         }
+    }
+
+    private var placeCheckInSection: some View {
+        Section("Place") {
+            if let activePlaceCheckIn = syncStore.activePlaceCheckIn {
+                activePlaceCheckInRow(activePlaceCheckIn)
+            }
+
+            ForEach(syncStore.places.prefix(6)) { place in
+                Button {
+                    syncStore.checkInPlace(id: place.id)
+                } label: {
+                    Label(place.name, systemImage: activePlaceSystemImage(for: place))
+                        .lineLimit(1)
+                }
+                .disabled(syncStore.activePlaceCheckIn?.placeID == place.id)
+            }
+        }
+    }
+
+    private func activePlaceCheckInRow(_ checkIn: WatchRoutineSyncStore.WatchPlaceCheckIn) -> some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 6) {
+                    Image(systemName: "location.fill")
+                        .foregroundStyle(.teal)
+                    Text("Checked in")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                }
+
+                Text(placeDurationText(seconds: checkIn.elapsedSeconds(at: context.date)))
+                    .font(.system(.title2, design: .rounded).weight(.bold))
+                    .monospacedDigit()
+                    .lineLimit(1)
+
+                Text(checkIn.placeName)
+                    .font(.footnote.weight(.semibold))
+                    .lineLimit(1)
+
+                if let activity = checkIn.activity {
+                    Text(activity.title)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button(role: .destructive) {
+                    syncStore.endPlaceCheckIn()
+                } label: {
+                    Label("End check-in", systemImage: "stop.fill")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func activePlaceSystemImage(for place: WatchRoutineSyncStore.WatchPlace) -> String {
+        syncStore.activePlaceCheckIn?.placeID == place.id ? "location.fill" : "mappin"
     }
 
     private func focusSessionRow(_ session: WatchRoutineSyncStore.WatchFocusSession) -> some View {
@@ -170,6 +235,20 @@ struct WatchHomeView: View {
         }
 
         return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    private func placeDurationText(seconds: TimeInterval) -> String {
+        let totalMinutes = max(0, Int((seconds / 60).rounded()))
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+
+        if hours == 0 {
+            return "\(minutes)m"
+        }
+        if minutes == 0 {
+            return "\(hours)h"
+        }
+        return "\(hours)h \(minutes)m"
     }
 
     private func statusText(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {

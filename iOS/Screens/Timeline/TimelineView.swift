@@ -11,6 +11,7 @@ struct TimelineView: View {
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
 
@@ -21,17 +22,20 @@ struct TimelineView: View {
                     timelineFiltersSheet
                 }
             .task {
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions))
+                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
                 ensureTimelineSelection()
             }
             .onChange(of: tasks) { _, newValue in
-                store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions))
+                store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
             }
             .onChange(of: logs) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions))
+                store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
             }
             .onChange(of: sleepSessionChangeToken) { _, _ in
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions))
+                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+            }
+            .onChange(of: placeCheckInChangeToken) { _, _ in
+                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
             }
             .onChange(of: visibleTimelineEntryIDs) { _, _ in
                 ensureTimelineSelection()
@@ -80,6 +84,17 @@ struct TimelineView: View {
                 session.id.uuidString,
                 session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
+    private var placeCheckInChangeToken: [String] {
+        placeCheckInSessions.map { session in
+            [
+                session.id.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.activityRawValue ?? "",
             ].joined(separator: ":")
         }
     }
@@ -146,6 +161,7 @@ struct TimelineView: View {
             logs: store.logs,
             tasks: store.tasks,
             sleepSessions: store.sleepSessions,
+            placeCheckInSessions: store.placeCheckInSessions,
             range: store.selectedRange,
             filterType: store.filterType,
             now: Date(),
@@ -227,11 +243,11 @@ struct TimelineView: View {
 
     @ViewBuilder
     private var content: some View {
-        if logs.isEmpty && sleepSessions.isEmpty {
+        if logs.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items and sleep records will appear here in chronological order.")
+                description: Text("Completed items, place check-ins, and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
@@ -347,11 +363,11 @@ struct TimelineView: View {
                     .padding(.vertical, 10)
             }
 
-            if logs.isEmpty && sleepSessions.isEmpty {
+            if logs.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items and sleep records will appear here in chronological order.")
+                    description: Text("Completed items, place check-ins, and sleep records will appear here in chronological order.")
                 )
             } else if groupedByDay.isEmpty {
                 ContentUnavailableView(
@@ -395,6 +411,13 @@ struct TimelineView: View {
                 description: Text(timelineSubtitle(for: selectedTimelineEntry))
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isPlaceCheckIn {
+            ContentUnavailableView(
+                "Place check-in",
+                systemImage: "mappin.and.ellipse",
+                description: Text(timelineSubtitle(for: selectedTimelineEntry))
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ContentUnavailableView(
                 "Select a timeline entry",
@@ -432,7 +455,7 @@ struct TimelineView: View {
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !sleepSessions.isEmpty {
+                if tasks.contains(where: { $0.isOneOffTask }) || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
@@ -548,6 +571,9 @@ struct TimelineView: View {
         if entry.isSleep {
             return "Sleep"
         }
+        if entry.isPlaceCheckIn {
+            return "Place"
+        }
 
         switch entry.kind {
         case .completed:
@@ -562,6 +588,9 @@ struct TimelineView: View {
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isPlaceCheckIn {
+            return .teal
         }
 
         switch entry.kind {
@@ -583,6 +612,18 @@ struct TimelineView: View {
                 return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
             }
             return range
+        }
+
+        if entry.isPlaceCheckIn {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let range: String
+            if let endedAt = entry.endTimestamp {
+                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            } else {
+                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            let duration = entry.durationSeconds.map { PlaceCheckInFormatting.durationText(seconds: $0) }
+            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
         return entry.timestamp.formatted(date: .omitted, time: .shortened)

@@ -374,6 +374,63 @@ struct TimelineLogicTests {
         #expect(doneEntries.map(\.id) == [log.id])
     }
 
+    @Test
+    func filteredEntries_includesPlaceCheckInsAndSupportsPlaceFilter() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Read")
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let startedAt = makeDate("2026-03-20T09:00:00Z")
+        let placeSession = PlaceCheckInSession(
+            placeID: UUID(),
+            placeName: "Office",
+            activity: .work,
+            startedAt: startedAt,
+            endedAt: nil
+        )
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            placeCheckInSessions: [placeSession],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let placeEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            placeCheckInSessions: [placeSession],
+            range: .all,
+            filterType: .places,
+            now: now,
+            calendar: calendar
+        )
+        let doneEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            placeCheckInSessions: [placeSession],
+            range: .all,
+            filterType: .done,
+            now: now,
+            calendar: calendar
+        )
+
+        let placeEntry = allEntries.first { $0.id == placeSession.id }
+        #expect(allEntries.count == 2)
+        #expect(placeEntry?.isPlaceCheckIn == true)
+        #expect(placeEntry?.taskID == nil)
+        #expect(placeEntry?.taskName == "Office")
+        #expect(placeEntry?.timestamp == startedAt)
+        #expect(placeEntry?.startTimestamp == startedAt)
+        #expect(placeEntry?.endTimestamp == nil)
+        #expect(placeEntry?.activityTitle == "Work")
+        #expect(placeEntry?.durationSeconds == now.timeIntervalSince(startedAt))
+        #expect(placeEntries.map(\.id) == [placeSession.id])
+        #expect(doneEntries.map(\.id) == [log.id])
+    }
+
     // MARK: - groupedByDay
 
     @Test

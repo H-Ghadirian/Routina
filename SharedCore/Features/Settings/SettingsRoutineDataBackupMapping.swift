@@ -94,4 +94,22 @@ enum SettingsRoutineDataBackupMapping {
             updatedAt: session.updatedAt
         )
     }
+
+    static func placeCheckIn(_ session: PlaceCheckInSession) -> Backup.PlaceCheckIn {
+        Backup.PlaceCheckIn(
+            id: session.id,
+            placeID: session.placeID,
+            placeName: session.displayPlaceName,
+            latitude: session.latitude,
+            longitude: session.longitude,
+            horizontalAccuracyMeters: session.horizontalAccuracyMeters,
+            placeRadiusMeters: session.placeRadiusMeters,
+            activity: session.activity,
+            note: session.note,
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt
+        )
+    }
 }

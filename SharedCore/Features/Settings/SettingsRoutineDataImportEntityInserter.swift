@@ -35,6 +35,11 @@ enum SettingsRoutineDataImportEntityInserter {
             in: context
         )
         let sleepSessionCount = insertSleepSessions(from: backup, in: context)
+        let placeCheckInCount = insertPlaceCheckInSessions(
+            from: backup,
+            importedPlaceIDs: places.ids,
+            in: context
+        )
 
         return ImportSummary(
             places: places.count,
@@ -42,6 +47,7 @@ enum SettingsRoutineDataImportEntityInserter {
             tasks: tasks.count,
             logs: logCount,
             sleepSessions: sleepSessionCount,
+            placeCheckInSessions: placeCheckInCount,
             attachments: attachmentCount
         )
     }
@@ -259,6 +265,38 @@ enum SettingsRoutineDataImportEntityInserter {
                 targetDurationMinutes: sleepSession.targetDurationMinutes ?? 8 * 60,
                 createdAt: sleepSession.createdAt,
                 updatedAt: sleepSession.updatedAt
+            )
+            context.insert(importedSession)
+            importedCount += 1
+        }
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertPlaceCheckInSessions(
+        from backup: Backup,
+        importedPlaceIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+        for session in backup.placeCheckInSessions ?? [] {
+            guard importedIDs.insert(session.id).inserted else { continue }
+
+            let importedSession = PlaceCheckInSession(
+                id: session.id,
+                placeID: session.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
+                placeName: session.placeName,
+                latitude: session.latitude,
+                longitude: session.longitude,
+                horizontalAccuracyMeters: session.horizontalAccuracyMeters,
+                placeRadiusMeters: session.placeRadiusMeters,
+                activity: session.activity,
+                note: session.note,
+                startedAt: session.startedAt,
+                endedAt: session.endedAt,
+                createdAt: session.createdAt,
+                updatedAt: session.updatedAt
             )
             context.insert(importedSession)
             importedCount += 1

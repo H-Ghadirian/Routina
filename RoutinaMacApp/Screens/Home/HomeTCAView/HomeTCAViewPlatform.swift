@@ -66,6 +66,7 @@ extension HomeTCAView {
         return .standard
     }
 
+    @ViewBuilder
     var platformNavigationContent: some View {
         HomeMacNavigationContent(
             isBoardMode: isMacBoardMode,
@@ -89,6 +90,7 @@ extension HomeTCAView {
                 isTimelinePresented: isMacTimelineMode,
                 isStatsPresented: isMacStatsMode,
                 isSettingsPresented: isMacSettingsMode,
+                placeCheckInMapActivity: placeCheckInMapActivity,
                 settingsStore: settingsStore,
                 statsStore: statsStore,
                 selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
@@ -114,6 +116,8 @@ extension HomeTCAView {
             } boardInspectorView: {
                 macBoardTaskInspector
             }
+        } homeToolbarContent: {
+            homeToolbarContent
         } boardToolbarContent: {
             macBoardDetailToolbarContent
         }

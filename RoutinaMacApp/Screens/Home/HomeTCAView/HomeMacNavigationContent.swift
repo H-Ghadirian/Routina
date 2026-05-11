@@ -6,6 +6,7 @@ struct HomeMacNavigationContent<
     BoardInspectorContent: View,
     GoalsDetailContent: View,
     MainDetailContent: View,
+    HomeToolbarContent: ToolbarContent,
     BoardToolbarContent: ToolbarContent
 >: View {
     let isBoardMode: Bool
@@ -17,6 +18,7 @@ struct HomeMacNavigationContent<
     let boardInspectorContent: () -> BoardInspectorContent
     let goalsDetailContent: () -> GoalsDetailContent
     let mainDetailContent: () -> MainDetailContent
+    let homeToolbarContent: () -> HomeToolbarContent
     let boardToolbarContent: () -> BoardToolbarContent
 
     init(
@@ -29,6 +31,7 @@ struct HomeMacNavigationContent<
         @ViewBuilder boardInspectorContent: @escaping () -> BoardInspectorContent,
         @ViewBuilder goalsDetailContent: @escaping () -> GoalsDetailContent,
         @ViewBuilder mainDetailContent: @escaping () -> MainDetailContent,
+        @ToolbarContentBuilder homeToolbarContent: @escaping () -> HomeToolbarContent,
         @ToolbarContentBuilder boardToolbarContent: @escaping () -> BoardToolbarContent
     ) {
         self.isBoardMode = isBoardMode
@@ -40,6 +43,7 @@ struct HomeMacNavigationContent<
         self.boardInspectorContent = boardInspectorContent
         self.goalsDetailContent = goalsDetailContent
         self.mainDetailContent = mainDetailContent
+        self.homeToolbarContent = homeToolbarContent
         self.boardToolbarContent = boardToolbarContent
     }
 
@@ -52,6 +56,9 @@ struct HomeMacNavigationContent<
             } else {
                 mainNavigation
             }
+        }
+        .toolbar {
+            homeToolbarContent()
         }
     }
 

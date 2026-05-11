@@ -84,15 +84,11 @@ final class OneShotLocationProvider: NSObject, @preconcurrency CLLocationManager
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        guard let continuation = authorizationContinuation else { return }
-        authorizationContinuation = nil
-        continuation.resume(returning: manager.authorizationStatus)
+        resumeAuthorizationContinuation(with: manager.authorizationStatus)
     }
 
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        guard let continuation = authorizationContinuation else { return }
-        authorizationContinuation = nil
-        continuation.resume(returning: status)
+        resumeAuthorizationContinuation(with: status)
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -123,12 +119,22 @@ final class OneShotLocationProvider: NSObject, @preconcurrency CLLocationManager
             return .denied
         }
     }
+
+    private func resumeAuthorizationContinuation(with status: CLAuthorizationStatus) {
+        guard status != .notDetermined, let continuation = authorizationContinuation else { return }
+        authorizationContinuation = nil
+        continuation.resume(returning: status)
+    }
 }
 
 extension OneShotLocationProvider {
     func fetchPlatformSnapshot(requestAuthorizationIfNeeded: Bool) async -> LocationSnapshot {
-        let initialAuthorization = manager.authorizationStatus
-        if initialAuthorization == .notDetermined && !requestAuthorizationIfNeeded {
+        var authorizationStatus = manager.authorizationStatus
+        if authorizationStatus == .notDetermined && requestAuthorizationIfNeeded {
+            authorizationStatus = await awaitAuthorizationDecision()
+        }
+
+        if authorizationStatus == .notDetermined {
             return snapshot(authorizationStatus: .notDetermined)
         }
 
@@ -136,8 +142,8 @@ extension OneShotLocationProvider {
             return snapshot(authorizationStatus: .disabled)
         }
 
-        let initialMappedAuthorization = mapAuthorizationStatus(initialAuthorization)
-        if initialAuthorization != .notDetermined && !initialMappedAuthorization.isAuthorized {
+        let initialMappedAuthorization = mapAuthorizationStatus(authorizationStatus)
+        if !initialMappedAuthorization.isAuthorized {
             return snapshot(authorizationStatus: initialMappedAuthorization)
         }
 

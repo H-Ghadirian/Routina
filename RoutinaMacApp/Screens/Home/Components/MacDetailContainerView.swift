@@ -11,6 +11,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
+    let placeCheckInMapActivity: PlaceCheckInActivity?
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
     let selectedSettingsSection: SettingsMacSection
@@ -59,12 +60,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         .toolbar {
             RoutinaMacFocusTimerToolbarItem()
 
-            if shouldShowDetailModePicker {
-                ToolbarItem(placement: .principal) {
-                    detailModePicker
-                }
-            }
-
             if shouldShowBoardInspectorToolbarButton {
                 ToolbarItem(placement: .primaryAction) {
                     HomeMacBoardInspectorToolbarButton(
@@ -76,7 +71,25 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         }
     }
 
+    @ViewBuilder
     private var mainDetailContent: some View {
+        VStack(spacing: 0) {
+            if shouldShowDetailModePicker {
+                detailModePickerHeader
+                Divider()
+            }
+
+            mainDetailBody
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var detailModePickerHeader: some View {
+        MacHomeDetailModePickerHeader(selection: $mainDetailMode)
+    }
+
+    @ViewBuilder
+    private var mainDetailBody: some View {
         Group {
             switch mainDetailMode {
             case .details:
@@ -90,8 +103,20 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 )
             case .board:
                 boardDetailContent
+            case .places:
+                placesDetailContent
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var placesDetailContent: some View {
+        PlaceCheckInMapSheet(
+            selectedActivity: placeCheckInMapActivity,
+            showsNavigationChrome: false,
+            showsInlineHeader: false,
+            layout: .mapOnly
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -111,17 +136,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             }
         }
         .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
-    }
-
-    private var detailModePicker: some View {
-        Picker("Detail mode", selection: $mainDetailMode) {
-            ForEach(MacHomeDetailMode.allCases) { mode in
-                Text(mode.rawValue).tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .frame(width: 320)
     }
 
     private var shouldShowDetailModePicker: Bool {
@@ -179,5 +193,35 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+}
+
+struct MacHomeDetailModePickerHeader: View {
+    @Binding var selection: MacHomeDetailMode
+
+    var body: some View {
+        HStack {
+            Spacer(minLength: 0)
+            MacHomeDetailModePicker(selection: $selection)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(.bar)
+    }
+}
+
+struct MacHomeDetailModePicker: View {
+    @Binding var selection: MacHomeDetailMode
+
+    var body: some View {
+        Picker("Detail mode", selection: $selection) {
+            ForEach(MacHomeDetailMode.allCases) { mode in
+                Text(mode.rawValue).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 420)
     }
 }

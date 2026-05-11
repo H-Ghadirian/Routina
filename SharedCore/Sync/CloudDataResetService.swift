@@ -35,6 +35,11 @@ enum CloudDataResetService {
             context.delete(session)
         }
 
+        let placeCheckIns = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+        for session in placeCheckIns {
+            context.delete(session)
+        }
+
         let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
         for att in attachments {
             context.delete(att)

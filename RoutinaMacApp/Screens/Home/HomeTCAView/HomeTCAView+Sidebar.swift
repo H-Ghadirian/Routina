@@ -182,11 +182,29 @@ extension HomeTCAView {
             get: { macHomeDetailMode },
             set: { mode in
                 macHomeDetailMode = mode
+                if mode == .places {
+                    clearDayPlanUnplannedCompletedFilter()
+                }
+                if mode != .places {
+                    placeCheckInMapActivity = nil
+                }
                 if mode == .board, store.taskListMode != .todos {
                     store.send(.taskListModeChanged(.todos))
                 }
             }
         )
+    }
+
+    func openMacPlacesWorkspace(activity: PlaceCheckInActivity?) {
+        placeCheckInMapActivity = activity
+        withAnimation(.easeInOut(duration: 0.18)) {
+            store.send(.setMacFilterDetailPresented(false))
+            clearDayPlanUnplannedCompletedFilter()
+            if store.macSidebarMode != .routines {
+                showRoutinesInSidebar()
+            }
+            mainDetailModeBinding.wrappedValue = .places
+        }
     }
 
     var macSidebarSelectionBinding: Binding<MacSidebarSelection?> {
@@ -347,7 +365,9 @@ extension HomeTCAView {
     @ViewBuilder
     var macSidebarContent: some View {
         Group {
-            if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
+            if macHomeDetailMode == .places {
+                macPlacesSidebarView
+            } else if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
             } else if isMacRoutinesMode && store.routineTasks.isEmpty && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                 VStack(spacing: 0) {
@@ -379,7 +399,6 @@ extension HomeTCAView {
                 VStack(spacing: 0) {
                     if !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                         macSidebarHeader
-
                         Divider()
                     }
 
@@ -405,8 +424,26 @@ extension HomeTCAView {
             }
         }
         .navigationTitle("Routina")
-        .toolbar { homeToolbarContent }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if macHomeDetailMode != .places {
+                PlaceCheckInDockView(maximumPlaceButtons: 3) { activity in
+                    openMacPlacesWorkspace(activity: activity)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+            }
+        }
         .routinaHomeSidebarColumnWidth()
+    }
+
+    private var macPlacesSidebarView: some View {
+        PlaceCheckInMapSheet(
+            selectedActivity: placeCheckInMapActivity,
+            showsNavigationChrome: false,
+            showsInlineHeader: false,
+            layout: .controlsOnly
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     var macFormSectionNav: some View {

@@ -1,5 +1,9 @@
 # Routina Agent Notes
 
+## User Permission Preferences
+
+- Always ask the user before taking screenshots, screen captures, or recording the screen. Never capture the screen without explicit permission in the current conversation.
+
 ## Project Decision Log
 
 - Before making meaningful project changes, read `docs/decisions/README.md` and any relevant decision records.

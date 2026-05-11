@@ -2,6 +2,14 @@ import CoreLocation
 import Foundation
 import SwiftData
 
+extension LocationCoordinate {
+    func distance(to coordinate: LocationCoordinate) -> Double {
+        let first = CLLocation(latitude: latitude, longitude: longitude)
+        let second = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        return first.distance(from: second)
+    }
+}
+
 struct RoutinePlaceSummary: Equatable, Identifiable, Sendable {
     let id: UUID
     var name: String
@@ -57,9 +65,7 @@ final class RoutinePlace {
     }
 
     func distance(to coordinate: LocationCoordinate) -> Double {
-        let placeLocation = CLLocation(latitude: latitude, longitude: longitude)
-        let userLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        return placeLocation.distance(from: userLocation)
+        LocationCoordinate(latitude: latitude, longitude: longitude).distance(to: coordinate)
     }
 
     func summary(linkedRoutineCount: Int = 0) -> RoutinePlaceSummary {

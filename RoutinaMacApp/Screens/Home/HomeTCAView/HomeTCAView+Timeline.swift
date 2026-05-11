@@ -28,6 +28,7 @@ extension HomeTCAView {
             logs: store.timelineLogs,
             tasks: store.routineTasks,
             sleepSessions: sleepSessions,
+            placeCheckInSessions: placeCheckInSessions,
             range: store.selectedTimelineRange,
             filterType: store.selectedTimelineFilterType,
             now: Date(),
@@ -233,7 +234,7 @@ extension HomeTCAView {
                     get: { store.selectedTimelineImportanceUrgencyFilter },
                     set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
                 ),
-                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !sleepSessions.isEmpty,
+                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty,
                 importanceUrgencySummary: timelineImportanceUrgencySummary,
                 allTagsCount: filteredTimelineEntriesForTagging.count,
                 availableTags: availableTimelineTags,
@@ -282,7 +283,7 @@ extension HomeTCAView {
 
     var macTimelineSidebarView: some View {
         HomeMacTimelineSidebarView(
-            timelineEntryCount: store.timelineLogs.count + sleepSessions.count,
+            timelineEntryCount: store.timelineLogs.count + sleepSessions.count + placeCheckInSessions.count,
             groupedEntries: groupedTimelineEntries,
             selection: macSidebarSelectionBinding,
             sectionTitle: { date in
@@ -296,6 +297,9 @@ extension HomeTCAView {
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
         if entry.isSleep {
             return "Sleep"
+        }
+        if entry.isPlaceCheckIn {
+            return "Place"
         }
 
         switch entry.kind {
@@ -311,6 +315,9 @@ extension HomeTCAView {
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isPlaceCheckIn {
+            return .teal
         }
 
         switch entry.kind {
@@ -332,6 +339,18 @@ extension HomeTCAView {
                 return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
             }
             return range
+        }
+
+        if entry.isPlaceCheckIn {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let range: String
+            if let endedAt = entry.endTimestamp {
+                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            } else {
+                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            let duration = entry.durationSeconds.map { PlaceCheckInFormatting.durationText(seconds: $0) }
+            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
         return entry.timestamp.formatted(date: .omitted, time: .shortened)

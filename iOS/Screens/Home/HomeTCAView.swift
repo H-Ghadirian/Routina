@@ -58,7 +58,10 @@ struct HomeTCAView: View {
                     }
                 }
                 .safeAreaInset(edge: .bottom) {
-                    SleepHomeDockView()
+                    VStack(spacing: 8) {
+                        PlaceCheckInDockView()
+                        SleepHomeDockView()
+                    }
                         .padding(.horizontal, 24)
                         .padding(.bottom, 6)
                 }

@@ -84,15 +84,11 @@ final class OneShotLocationProvider: NSObject, @preconcurrency CLLocationManager
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        guard let continuation = authorizationContinuation else { return }
-        authorizationContinuation = nil
-        continuation.resume(returning: manager.authorizationStatus)
+        resumeAuthorizationContinuation(with: manager.authorizationStatus)
     }
 
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        guard let continuation = authorizationContinuation else { return }
-        authorizationContinuation = nil
-        continuation.resume(returning: status)
+        resumeAuthorizationContinuation(with: status)
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -122,6 +118,12 @@ final class OneShotLocationProvider: NSObject, @preconcurrency CLLocationManager
         @unknown default:
             return .denied
         }
+    }
+
+    private func resumeAuthorizationContinuation(with status: CLAuthorizationStatus) {
+        guard status != .notDetermined, let continuation = authorizationContinuation else { return }
+        authorizationContinuation = nil
+        continuation.resume(returning: status)
     }
 }
 

@@ -12,6 +12,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case places = "Places"
     case sleep = "Sleep"
     case done = "Done"
     case missed = "Missed"
@@ -22,6 +23,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
 enum TimelineEntryType: Equatable {
     case task
     case sleep
+    case placeCheckIn
 }
 
 struct TimelineEntry: Identifiable, Equatable {
@@ -39,6 +41,7 @@ struct TimelineEntry: Identifiable, Equatable {
     let kind: RoutineLogKind
     let entryType: TimelineEntryType
     let durationSeconds: TimeInterval?
+    let activityTitle: String?
 
     init(
         id: UUID,
@@ -54,7 +57,8 @@ struct TimelineEntry: Identifiable, Equatable {
         isOneOff: Bool,
         kind: RoutineLogKind,
         entryType: TimelineEntryType = .task,
-        durationSeconds: TimeInterval? = nil
+        durationSeconds: TimeInterval? = nil,
+        activityTitle: String? = nil
     ) {
         self.id = id
         self.taskID = taskID
@@ -70,10 +74,15 @@ struct TimelineEntry: Identifiable, Equatable {
         self.kind = kind
         self.entryType = entryType
         self.durationSeconds = durationSeconds
+        self.activityTitle = activityTitle
     }
 
     var isSleep: Bool {
         entryType == .sleep
+    }
+
+    var isPlaceCheckIn: Bool {
+        entryType == .placeCheckIn
     }
 }
 
@@ -82,6 +91,7 @@ enum TimelineLogic {
         logs: [RoutineLog],
         tasks: [RoutineTask],
         sleepSessions: [SleepSession] = [],
+        placeCheckInSessions: [PlaceCheckInSession] = [],
         range: TimelineRange,
         filterType: TimelineFilterType,
         now: Date,
@@ -108,6 +118,7 @@ enum TimelineLogic {
             case .all: break
             case .routines: if isOneOff { return nil }
             case .todos: if !isOneOff { return nil }
+            case .places: return nil
             case .sleep: return nil
             case .done: if log.kind != .completed { return nil }
             case .missed: if log.kind != .missed { return nil }
@@ -155,7 +166,35 @@ enum TimelineLogic {
             )
         }
 
-        return logEntries + sleepEntries
+        let placeEntries = placeCheckInSessions.compactMap { session -> TimelineEntry? in
+            guard filterType == .all || filterType == .places,
+                  let startedAt = session.startedAt
+            else {
+                return nil
+            }
+
+            let endedAt = session.endedAt
+            let timestamp = endedAt ?? startedAt
+            if let cutoff, timestamp < cutoff { return nil }
+
+            return TimelineEntry(
+                id: session.id,
+                taskID: nil,
+                timestamp: timestamp,
+                startTimestamp: startedAt,
+                endTimestamp: endedAt,
+                taskName: session.displayPlaceName,
+                taskEmoji: "📍",
+                tags: session.activity.map { [$0.title] } ?? [],
+                isOneOff: false,
+                kind: .completed,
+                entryType: .placeCheckIn,
+                durationSeconds: session.durationSeconds(referenceDate: now),
+                activityTitle: session.activity?.title
+            )
+        }
+
+        return logEntries + sleepEntries + placeEntries
     }
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {
@@ -178,7 +217,14 @@ enum TimelineLogic {
         }
         return grouped
             .sorted { $0.key > $1.key }
-            .map { (date: $0.key, entries: $0.value) }
+            .map {
+                (
+                    date: $0.key,
+                    entries: $0.value.sorted { lhs, rhs in
+                        lhs.timestamp > rhs.timestamp
+                    }
+                )
+            }
     }
 
     static func daySectionTitle(

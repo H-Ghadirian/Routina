@@ -38,6 +38,7 @@ struct RoutinaMacRootScene: Scene {
             homeRoot
                 .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
                 .background(RoutinaMacWindowRouterInstaller())
+                .background(RoutinaMacHomeWindowConfigurator())
                 .onAppear {
                     MacMenuCleanup.removeUnneededMenus()
                     DispatchQueue.main.async {
@@ -144,6 +145,35 @@ private struct RoutinaMacWindowRouterInstaller: View {
     }
 }
 
+private struct RoutinaMacHomeWindowConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> RoutinaMacHomeWindowConfigurationView {
+        RoutinaMacHomeWindowConfigurationView()
+    }
+
+    func updateNSView(_ view: RoutinaMacHomeWindowConfigurationView, context: Context) {
+        RoutinaMacHomeWindowChrome.configure(view.window)
+    }
+}
+
+private final class RoutinaMacHomeWindowConfigurationView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        RoutinaMacHomeWindowChrome.configure(window)
+    }
+}
+
+private enum RoutinaMacHomeWindowChrome {
+    static func configure(_ window: NSWindow?) {
+        MainActor.assumeIsolated {
+            guard let window else { return }
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.styleMask.insert(.fullSizeContentView)
+            window.toolbarStyle = .unified
+        }
+    }
+}
+
 @MainActor
 private final class RoutinaMacFallbackHomeWindowPresenter {
     static let shared = RoutinaMacFallbackHomeWindowPresenter()
@@ -174,6 +204,7 @@ private final class RoutinaMacFallbackHomeWindowPresenter {
             width: RoutinaMacWindowSizing.minWidth,
             height: RoutinaMacWindowSizing.minHeight
         )
+        RoutinaMacHomeWindowChrome.configure(window)
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: rootView)
         window.center()
