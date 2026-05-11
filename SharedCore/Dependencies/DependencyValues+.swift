@@ -21,7 +21,12 @@ private enum DeviceAuthenticationClientKey: DependencyKey {
 }
 
 private enum LocationClientKey: DependencyKey {
+    #if SWIFT_PACKAGE
     static let liveValue = LocationClient.noop
+    #else
+    static let liveValue = LocationClient.live
+    #endif
+    static let testValue = LocationClient.noop
 }
 
 private enum CloudSyncClientKey: DependencyKey {

@@ -26,6 +26,7 @@ struct PlaceCheckInMapSheet: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var sessions: [PlaceCheckInSession]
 
@@ -133,6 +134,12 @@ struct PlaceCheckInMapSheet: View {
         .task {
             syncMapPosition()
             await refreshLocation(requestAuthorizationIfNeeded: true)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task {
+                await refreshLocation(requestAuthorizationIfNeeded: true)
+            }
         }
         .onChange(of: places.map(\.id)) { _, _ in
             if let selectedPlaceID, !places.contains(where: { $0.id == selectedPlaceID }) {
@@ -835,8 +842,7 @@ struct PlaceCheckInMapSheet: View {
                 in: modelContext
             )
             errorText = nil
-            signalSuccess()
-            close()
+            finishSuccessfulCheckIn()
         } catch {
             errorText = "Could not check in at current location."
             NSLog("Failed to check in at current location: \(error.localizedDescription)")
@@ -852,8 +858,7 @@ struct PlaceCheckInMapSheet: View {
                 in: modelContext
             )
             errorText = nil
-            signalSuccess()
-            close()
+            finishSuccessfulCheckIn()
         } catch {
             errorText = "Could not check in at \(place.displayName)."
             NSLog("Failed to check in at place from map: \(error.localizedDescription)")
@@ -876,6 +881,20 @@ struct PlaceCheckInMapSheet: View {
         } else {
             dismiss()
         }
+    }
+
+    private func finishSuccessfulCheckIn() {
+        signalSuccess()
+
+        guard shouldDismissAfterCheckIn else {
+            return
+        }
+
+        close()
+    }
+
+    private var shouldDismissAfterCheckIn: Bool {
+        showsNavigationChrome || onClose != nil
     }
 
     private func signalSuccess() {
