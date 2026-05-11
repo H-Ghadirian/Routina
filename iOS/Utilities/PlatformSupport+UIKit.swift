@@ -11,6 +11,10 @@ extension PlatformSupport {
         URL(string: UIApplication.openSettingsURLString)
     }
 
+    static var locationSettingsURL: URL? {
+        URL(string: UIApplication.openSettingsURLString)
+    }
+
     @MainActor
     static func open(_ url: URL) {
         UIApplication.shared.open(url)

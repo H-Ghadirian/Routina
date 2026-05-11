@@ -22,6 +22,7 @@ struct PlaceCheckInMapSheet: View {
     private let onClose: (() -> Void)?
 
     @Dependency(\.locationClient) private var locationClient
+    @Dependency(\.urlOpenerClient) private var urlOpenerClient
     @Environment(\.calendar) private var calendar
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -427,10 +428,22 @@ struct PlaceCheckInMapSheet: View {
                 .accessibilityLabel("Refresh current location")
             }
 
-            Text(locationStatusText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(locationStatusText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if showsLocationSettingsButton {
+                    Button {
+                        openLocationSettings()
+                    } label: {
+                        Label("Open Location Settings", systemImage: "gearshape")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
         }
     }
 
@@ -672,6 +685,19 @@ struct PlaceCheckInMapSheet: View {
         }
     }
 
+    private var showsLocationSettingsButton: Bool {
+        guard urlOpenerClient.locationSettingsURL() != nil else {
+            return false
+        }
+
+        switch locationSnapshot.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return false
+        case .disabled, .notDetermined, .restricted, .denied:
+            return true
+        }
+    }
+
     private var dayTitle: String {
         if calendar.isDateInToday(selectedDay) {
             return "Today"
@@ -752,6 +778,15 @@ struct PlaceCheckInMapSheet: View {
             selectedPlaceID = nearbyPlace.id
         }
         syncMapPosition()
+    }
+
+    @MainActor
+    private func openLocationSettings() {
+        guard let url = urlOpenerClient.locationSettingsURL() else {
+            return
+        }
+
+        urlOpenerClient.open(url)
     }
 
     private func zoomMap(by scale: Double) {

@@ -13,6 +13,17 @@ enum SettingsAppInteractionExecution {
     }
 
     @MainActor
+    static func openLocationSettings(
+        urlOpenerClient: URLOpenerClient
+    ) {
+        guard let url = urlOpenerClient.locationSettingsURL() else {
+            return
+        }
+
+        urlOpenerClient.open(url)
+    }
+
+    @MainActor
     static func contactSupport(
         urlOpenerClient: URLOpenerClient
     ) {

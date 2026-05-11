@@ -12,6 +12,10 @@ extension PlatformSupport {
         URL(string: "x-apple.systempreferences:com.apple.preference.notifications")
     }
 
+    static var locationSettingsURL: URL? {
+        URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices")
+    }
+
     @MainActor
     static func open(_ url: URL) {
         if openWithAppleMailIfNeeded(for: url) {

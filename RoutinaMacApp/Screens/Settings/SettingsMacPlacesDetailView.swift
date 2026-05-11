@@ -43,7 +43,7 @@ struct SettingsMacPlacesDetailView: View {
 
                         if store.places.locationAuthorizationStatus.needsSettingsChange {
                             Button("Open System Settings") {
-                                store.send(.openAppSettingsTapped)
+                                store.send(.openLocationSettingsTapped)
                             }
                             .buttonStyle(.bordered)
                         }

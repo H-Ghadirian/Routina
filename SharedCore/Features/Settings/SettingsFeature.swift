@@ -21,6 +21,7 @@ struct SettingsFeature {
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
+        case openLocationSettingsTapped
         case gitHubScopeChanged(GitHubStatsScope)
         case gitHubOwnerChanged(String)
         case gitHubRepositoryChanged(String)
@@ -223,6 +224,13 @@ struct SettingsFeature {
             case .openAppSettingsTapped:
                 return .run { @MainActor _ in
                     SettingsAppInteractionExecution.openNotificationSettings(
+                        urlOpenerClient: self.urlOpenerClient
+                    )
+                }
+
+            case .openLocationSettingsTapped:
+                return .run { @MainActor _ in
+                    SettingsAppInteractionExecution.openLocationSettings(
                         urlOpenerClient: self.urlOpenerClient
                     )
                 }

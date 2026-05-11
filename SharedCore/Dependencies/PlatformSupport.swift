@@ -114,6 +114,7 @@ extension AppInfoClient {
 struct URLOpenerClient: Sendable {
     var open: @MainActor @Sendable (URL) -> Void
     var notificationSettingsURL: @Sendable () -> URL?
+    var locationSettingsURL: @Sendable () -> URL?
 }
 
 extension URLOpenerClient {
@@ -123,7 +124,8 @@ extension URLOpenerClient {
     // implementation below via their Xcode targets.
     static let live = URLOpenerClient(
         open: { _ in },
-        notificationSettingsURL: { nil }
+        notificationSettingsURL: { nil },
+        locationSettingsURL: { nil }
     )
     #else
     static let live = URLOpenerClient(
@@ -132,12 +134,16 @@ extension URLOpenerClient {
         },
         notificationSettingsURL: {
             PlatformSupport.notificationSettingsURL
+        },
+        locationSettingsURL: {
+            PlatformSupport.locationSettingsURL
         }
     )
     #endif
 
     static let noop = URLOpenerClient(
         open: { _ in },
-        notificationSettingsURL: { nil }
+        notificationSettingsURL: { nil },
+        locationSettingsURL: { nil }
     )
 }

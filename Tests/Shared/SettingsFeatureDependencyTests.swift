@@ -203,11 +203,36 @@ struct SettingsFeatureDependencyTests {
                 open: { url in
                     openedURL.setValue(url)
                 },
-                notificationSettingsURL: { settingsURL }
+                notificationSettingsURL: { settingsURL },
+                locationSettingsURL: { nil }
             )
         }
 
         await store.send(.openAppSettingsTapped)
+
+        #expect(openedURL.value == settingsURL)
+    }
+
+    @Test
+    func openLocationSettingsTapped_opensLocationSettingsURLWhenAvailable() async {
+        let context = makeInMemoryContext()
+        let openedURL = LockIsolated<URL?>(nil)
+        let settingsURL = URL(string: "app-settings:location")!
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.urlOpenerClient = URLOpenerClient(
+                open: { url in
+                    openedURL.setValue(url)
+                },
+                notificationSettingsURL: { nil },
+                locationSettingsURL: { settingsURL }
+            )
+        }
+
+        await store.send(.openLocationSettingsTapped)
 
         #expect(openedURL.value == settingsURL)
     }
