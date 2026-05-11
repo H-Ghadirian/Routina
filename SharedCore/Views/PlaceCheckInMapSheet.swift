@@ -48,6 +48,8 @@ struct PlaceCheckInMapSheet: View {
         )
     )
     @State private var errorText: String?
+    @State private var editingSessionDraft: PlaceCheckInSessionEditDraft?
+    @State private var deletionCandidate: PlaceCheckInSessionDeletionCandidate?
 
     init(
         selectedActivity: PlaceCheckInActivity?,
@@ -146,6 +148,24 @@ struct PlaceCheckInMapSheet: View {
                 self.selectedPlaceID = nil
             }
             syncMapPosition()
+        }
+        .sheet(item: $editingSessionDraft) { draft in
+            PlaceCheckInSessionEditor(draft: draft) { updatedDraft in
+                try saveEditedSession(updatedDraft)
+            }
+        }
+        .confirmationDialog(
+            item: $deletionCandidate,
+            titleVisibility: .visible
+        ) { _ in
+            Text("Delete Check-In?")
+        } actions: { candidate in
+            Button("Delete Check-In", role: .destructive) {
+                deleteSession(id: candidate.id)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { candidate in
+            Text("This removes the check-in at \(candidate.title) from your place timeline.")
         }
     }
 
@@ -591,67 +611,106 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private func dayTimelineRow(_ session: PlaceCheckInSession) -> some View {
-        Button {
-            if let coordinate = session.coordinate {
-                selectedPlaceID = session.placeID
-                focus(on: coordinate)
-            }
-        } label: {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(spacing: 4) {
-                    Circle()
-                        .fill(session.isActive ? Color.teal : Color.accentColor)
-                        .frame(width: 10, height: 10)
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.22))
-                        .frame(width: 2, height: 34)
-                }
-                .frame(width: 18)
+        HStack(alignment: .top, spacing: 8) {
+            Button {
+                focusOnSession(session)
+            } label: {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(spacing: 4) {
+                        Circle()
+                            .fill(session.isActive ? Color.teal : Color.accentColor)
+                            .frame(width: 10, height: 10)
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.22))
+                            .frame(width: 2, height: 34)
+                    }
+                    .frame(width: 18)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 6) {
-                        Text(session.displayPlaceName)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text(session.displayPlaceName)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+
+                            if session.isActive {
+                                Text("Now")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.teal)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(.teal.opacity(0.12), in: Capsule())
+                            }
+                        }
+
+                        Text(sessionTimelineSubtitle(session))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
 
-                        if session.isActive {
-                            Text("Now")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.teal)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(.teal.opacity(0.12), in: Capsule())
+                        if let activity = session.activity {
+                            Label(activity.title, systemImage: activity.systemImage)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
                     }
 
-                    Text(sessionTimelineSubtitle(session))
-                        .font(.caption)
+                    Spacer(minLength: 8)
+
+                    Image(systemName: session.coordinate == nil ? "mappin.slash" : "scope")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
-
-                    if let activity = session.activity {
-                        Label(activity.title, systemImage: activity.systemImage)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
                 }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: session.coordinate == nil ? "mappin.slash" : "scope")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .buttonStyle(.plain)
+            .disabled(session.coordinate == nil)
+
+            sessionActionsMenu(session)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .contextMenu {
+            Button {
+                beginEditing(session)
+            } label: {
+                Label("Edit Check-In", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                confirmDelete(session)
+            } label: {
+                Label("Delete Check-In", systemImage: "trash")
+            }
+        }
+        .accessibilityLabel("Show \(session.displayPlaceName) on map")
+    }
+
+    private func sessionActionsMenu(_ session: PlaceCheckInSession) -> some View {
+        Menu {
+            Button {
+                beginEditing(session)
+            } label: {
+                Label("Edit Check-In", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                confirmDelete(session)
+            } label: {
+                Label("Delete Check-In", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(session.coordinate == nil)
-        .accessibilityLabel("Show \(session.displayPlaceName) on map")
+        .accessibilityLabel("Check-in actions")
     }
 
     private var mapTitle: String {
@@ -816,6 +875,12 @@ struct PlaceCheckInMapSheet: View {
         focus(on: currentLocation)
     }
 
+    private func focusOnSession(_ session: PlaceCheckInSession) {
+        guard let coordinate = session.coordinate else { return }
+        selectedPlaceID = session.placeID
+        focus(on: coordinate)
+    }
+
     private func focus(on coordinate: LocationCoordinate) {
         let region = MKCoordinateRegion(
             center: coordinate.mapCoordinate,
@@ -824,6 +889,47 @@ struct PlaceCheckInMapSheet: View {
         visibleRegion = region
         withAnimation(.easeInOut(duration: 0.25)) {
             mapPosition = PlaceCheckInMapCamera.position(region: region)
+        }
+    }
+
+    private func beginEditing(_ session: PlaceCheckInSession) {
+        editingSessionDraft = PlaceCheckInSessionEditDraft(session: session)
+    }
+
+    private func confirmDelete(_ session: PlaceCheckInSession) {
+        deletionCandidate = PlaceCheckInSessionDeletionCandidate(
+            id: session.id,
+            title: session.displayPlaceName
+        )
+    }
+
+    @MainActor
+    private func saveEditedSession(_ draft: PlaceCheckInSessionEditDraft) throws {
+        _ = try PlaceCheckInSupport.updateSession(
+            id: draft.id,
+            placeName: draft.placeName,
+            activity: draft.activity,
+            note: draft.note,
+            startedAt: draft.startedAt,
+            endedAt: draft.hasEndTime ? draft.endedAt : nil,
+            in: modelContext
+        )
+        editingSessionDraft = nil
+        errorText = nil
+    }
+
+    @MainActor
+    private func deleteSession(id: UUID) {
+        do {
+            let deleted = try PlaceCheckInSupport.deleteSession(id: id, in: modelContext)
+            if deleted {
+                errorText = nil
+            } else {
+                errorText = PlaceCheckInSessionEditError.missingSession.localizedDescription
+            }
+        } catch {
+            errorText = "Could not delete check-in."
+            NSLog("Failed to delete place check-in: \(error.localizedDescription)")
         }
     }
 
@@ -925,6 +1031,149 @@ private enum PlaceCheckInMapSheetMode: String, CaseIterable, Identifiable {
             return "mappin"
         case .day:
             return "calendar"
+        }
+    }
+}
+
+private struct PlaceCheckInSessionEditDraft: Identifiable {
+    let id: UUID
+    let canRemainActive: Bool
+    var placeName: String
+    var startedAt: Date
+    var endedAt: Date
+    var hasEndTime: Bool
+    var activity: PlaceCheckInActivity?
+    var note: String
+
+    init(session: PlaceCheckInSession) {
+        let start = session.startedAt ?? session.createdAt ?? Date()
+        self.id = session.id
+        self.canRemainActive = session.endedAt == nil
+        self.placeName = session.displayPlaceName
+        self.startedAt = start
+        self.endedAt = session.endedAt ?? Date()
+        self.hasEndTime = session.endedAt != nil
+        self.activity = session.activity
+        self.note = session.note ?? ""
+    }
+}
+
+private struct PlaceCheckInSessionDeletionCandidate: Identifiable {
+    let id: UUID
+    let title: String
+}
+
+private struct PlaceCheckInSessionEditor: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var draft: PlaceCheckInSessionEditDraft
+    @State private var errorText: String?
+
+    let onSave: (PlaceCheckInSessionEditDraft) throws -> Void
+
+    init(
+        draft: PlaceCheckInSessionEditDraft,
+        onSave: @escaping (PlaceCheckInSessionEditDraft) throws -> Void
+    ) {
+        _draft = State(initialValue: draft)
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Check-In") {
+                    TextField("Place name", text: $draft.placeName)
+
+                    Picker("Activity", selection: $draft.activity) {
+                        Label("No Activity", systemImage: "tag.slash")
+                            .tag(nil as PlaceCheckInActivity?)
+
+                        ForEach(PlaceCheckInActivity.allCases) { activity in
+                            Label(activity.title, systemImage: activity.systemImage)
+                                .tag(Optional(activity))
+                        }
+                    }
+
+                    TextField("Note", text: $draft.note, axis: .vertical)
+                        .lineLimit(3, reservesSpace: true)
+                }
+
+                Section("Time") {
+                    DatePicker(
+                        "Start",
+                        selection: $draft.startedAt,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+
+                    if draft.canRemainActive {
+                        Toggle("End active check-in", isOn: $draft.hasEndTime)
+                    }
+
+                    if draft.hasEndTime {
+                        DatePicker(
+                            "End",
+                            selection: $draft.endedAt,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                    }
+                }
+
+                if let validationMessage {
+                    Text(validationMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                if let errorText {
+                    Text(errorText)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Edit Check-In")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        save()
+                    }
+                    .disabled(validationMessage != nil)
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 360)
+        #endif
+    }
+
+    private var validationMessage: String? {
+        if draft.placeName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return PlaceCheckInSessionEditError.invalidPlaceName.localizedDescription
+        }
+        if draft.hasEndTime, draft.endedAt < draft.startedAt {
+            return PlaceCheckInSessionEditError.invalidDateRange.localizedDescription
+        }
+        return nil
+    }
+
+    private func save() {
+        guard validationMessage == nil else { return }
+
+        do {
+            try onSave(draft)
+            dismiss()
+        } catch {
+            errorText = error.localizedDescription
         }
     }
 }

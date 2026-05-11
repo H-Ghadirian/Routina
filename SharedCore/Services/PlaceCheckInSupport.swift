@@ -1,6 +1,25 @@
 import Foundation
 import SwiftData
 
+enum PlaceCheckInSessionEditError: Error, Equatable {
+    case invalidDateRange
+    case invalidPlaceName
+    case missingSession
+}
+
+extension PlaceCheckInSessionEditError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .invalidDateRange:
+            return "The check-in end time cannot be before the start time."
+        case .invalidPlaceName:
+            return "The check-in needs a place name."
+        case .missingSession:
+            return "That check-in no longer exists."
+        }
+    }
+}
+
 enum PlaceCheckInSupport {
     @MainActor
     static func activeSession(in context: ModelContext) throws -> PlaceCheckInSession? {
@@ -151,6 +170,56 @@ enum PlaceCheckInSupport {
         NotificationCenter.default.postRoutineDidUpdate()
     }
 
+    @MainActor
+    @discardableResult
+    static func updateSession(
+        id: UUID,
+        placeName: String,
+        activity: PlaceCheckInActivity?,
+        note: String?,
+        startedAt: Date,
+        endedAt: Date?,
+        updatedAt date: Date = Date(),
+        in context: ModelContext
+    ) throws -> PlaceCheckInSession {
+        guard let cleanedPlaceName = RoutinePlace.cleanedName(placeName) else {
+            throw PlaceCheckInSessionEditError.invalidPlaceName
+        }
+        if let endedAt, endedAt < startedAt {
+            throw PlaceCheckInSessionEditError.invalidDateRange
+        }
+
+        guard let session = try session(id: id, in: context) else {
+            throw PlaceCheckInSessionEditError.missingSession
+        }
+
+        session.placeName = cleanedPlaceName
+        session.activity = activity
+        session.note = PlaceCheckInSession.cleanedNote(note)
+        session.startedAt = startedAt
+        session.endedAt = endedAt
+        session.updatedAt = date
+        try context.save()
+        NotificationCenter.default.postRoutineDidUpdate()
+        return session
+    }
+
+    @MainActor
+    @discardableResult
+    static func deleteSession(
+        id: UUID,
+        in context: ModelContext
+    ) throws -> Bool {
+        guard let session = try session(id: id, in: context) else {
+            return false
+        }
+
+        context.delete(session)
+        try context.save()
+        NotificationCenter.default.postRoutineDidUpdate()
+        return true
+    }
+
     static func suggestedPlaces(
         places: [RoutinePlace],
         sessions: [PlaceCheckInSession],
@@ -260,6 +329,20 @@ enum PlaceCheckInSupport {
             horizontalAccuracyMeters ?? 0
         )
         return sessionCoordinate.distance(to: coordinate) <= tolerance
+    }
+
+    @MainActor
+    private static func session(
+        id: UUID,
+        in context: ModelContext
+    ) throws -> PlaceCheckInSession? {
+        var descriptor = FetchDescriptor<PlaceCheckInSession>(
+            predicate: #Predicate { session in
+                session.id == id
+            }
+        )
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 
     @MainActor

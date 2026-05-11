@@ -24,7 +24,7 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **macOS task interactions:** The custom macOS task list owns explicit arrow-key navigation through visible task rows. In the planner sidebar, single click selects and double click opens task details.
 - **Sleep:** Sleep is an app-level `SleepSession` mode rather than a routine completion. Sleep and focus timers do not overlap. Active sleep gates the app until ended or undone, and sleep history participates in timeline, planner, stats, widgets, backup, import, and reset flows as dedicated sleep data.
 - **Place check-ins:** Place check-ins are duration-based `PlaceCheckInSession` records. Starting a new place closes the prior active session, same-place check-ins update the active session, and sessions may store place snapshots, saved-place links, coordinates, and activity tags. Place sessions are timeline evidence distinct from planned blocks, sleep, and focus.
-- **Map and day place review:** iPhone and Mac expose map-based check-in from the check-in dock. The map flow can request current location, use saved-place radii, record raw current-location sessions, and show a read-only day timeline of place sessions.
+- **Map and day place review:** iPhone and Mac expose map-based check-in from the check-in dock. The map flow can request current location, use saved-place radii, record raw current-location sessions, and show a day timeline where place sessions can be reviewed, edited, or deleted.
 - **Mac Places:** The active Mac Places architecture is [0021](0021-keep-mac-places-in-home-split-shell.md), superseding the 0017-0020 presentation chain. Places stays inside the shared Home split-view shell: the sidebar keeps the shared mode strip and swaps task filters/list for place controls, saved places, and day timeline; the detail column renders the map.
 - **Mac Home toolbar:** Global Home toolbar content belongs to the root split-view shell, not the sidebar column. Detail-specific controls may still be attached by detail views. The Home window uses full-size transparent titlebar with unified toolbar styling.
 
@@ -60,3 +60,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0020](0020-show-mac-places-as-workspace.md) | Show Mac Places as a Workspace | Superseded | 2026-05-10 |
 | [0021](0021-keep-mac-places-in-home-split-shell.md) | Keep Mac Places in the Home Split Shell | Accepted | 2026-05-11 |
 | [0022](0022-own-mac-home-toolbar-at-split-shell.md) | Own Mac Home Toolbar at the Split Shell | Accepted | 2026-05-11 |
+| [0023](0023-edit-place-check-ins-from-day-timeline.md) | Edit Place Check-Ins from the Day Timeline | Accepted | 2026-05-11 |

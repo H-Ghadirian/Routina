@@ -186,6 +186,94 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func updateSession_correctsEditableCheckInFields() throws {
+        let context = makeInMemoryContext()
+        let session = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Current Location",
+            activity: .other,
+            note: "rough",
+            startedAt: makeDate("2026-05-10T08:00:00Z"),
+            endedAt: makeDate("2026-05-10T08:20:00Z"),
+            createdAt: makeDate("2026-05-10T08:00:00Z"),
+            updatedAt: makeDate("2026-05-10T08:20:00Z")
+        )
+        context.insert(session)
+        try context.save()
+
+        let updated = try PlaceCheckInSupport.updateSession(
+            id: session.id,
+            placeName: "  Office focus  ",
+            activity: .work,
+            note: "  deep work block  ",
+            startedAt: makeDate("2026-05-10T09:00:00Z"),
+            endedAt: makeDate("2026-05-10T11:30:00Z"),
+            updatedAt: makeDate("2026-05-10T12:00:00Z"),
+            in: context
+        )
+
+        #expect(updated.displayPlaceName == "Office focus")
+        #expect(updated.activity == .work)
+        #expect(updated.note == "deep work block")
+        #expect(updated.startedAt == makeDate("2026-05-10T09:00:00Z"))
+        #expect(updated.endedAt == makeDate("2026-05-10T11:30:00Z"))
+        #expect(updated.updatedAt == makeDate("2026-05-10T12:00:00Z"))
+    }
+
+    @MainActor
+    @Test
+    func updateSession_rejectsEndBeforeStart() throws {
+        let context = makeInMemoryContext()
+        let session = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Gym",
+            startedAt: makeDate("2026-05-10T08:00:00Z"),
+            endedAt: makeDate("2026-05-10T09:00:00Z")
+        )
+        context.insert(session)
+        try context.save()
+
+        do {
+            _ = try PlaceCheckInSupport.updateSession(
+                id: session.id,
+                placeName: "Gym",
+                activity: nil,
+                note: nil,
+                startedAt: makeDate("2026-05-10T10:00:00Z"),
+                endedAt: makeDate("2026-05-10T09:30:00Z"),
+                in: context
+            )
+            Issue.record("Expected invalidDateRange error")
+        } catch let error as PlaceCheckInSessionEditError {
+            #expect(error == .invalidDateRange)
+        }
+
+        #expect(session.startedAt == makeDate("2026-05-10T08:00:00Z"))
+        #expect(session.endedAt == makeDate("2026-05-10T09:00:00Z"))
+    }
+
+    @MainActor
+    @Test
+    func deleteSession_removesPlaceCheckInRecord() throws {
+        let context = makeInMemoryContext()
+        let session = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Cafe",
+            startedAt: makeDate("2026-05-10T12:00:00Z"),
+            endedAt: makeDate("2026-05-10T13:00:00Z")
+        )
+        context.insert(session)
+        try context.save()
+
+        let deleted = try PlaceCheckInSupport.deleteSession(id: session.id, in: context)
+
+        #expect(deleted)
+        #expect(try context.fetch(FetchDescriptor<PlaceCheckInSession>()).isEmpty)
+        #expect(try PlaceCheckInSupport.deleteSession(id: session.id, in: context) == false)
+    }
+
+    @MainActor
+    @Test
     func backupPackage_roundTripsPlaceCheckInSessions() throws {
         let sourceContext = makeInMemoryContext()
         let place = makePlace(in: sourceContext, name: "Office")
