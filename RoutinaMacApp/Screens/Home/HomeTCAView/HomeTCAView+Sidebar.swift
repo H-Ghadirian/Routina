@@ -365,7 +365,7 @@ extension HomeTCAView {
     @ViewBuilder
     var macSidebarContent: some View {
         Group {
-            if macHomeDetailMode == .places {
+            if macHomeDetailMode == .places && isMacRoutinesMode {
                 macPlacesSidebarView
             } else if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
@@ -437,13 +437,28 @@ extension HomeTCAView {
     }
 
     private var macPlacesSidebarView: some View {
-        PlaceCheckInMapSheet(
-            selectedActivity: placeCheckInMapActivity,
-            showsNavigationChrome: false,
-            showsInlineHeader: false,
-            layout: .controlsOnly
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        VStack(spacing: 0) {
+            macPlacesSidebarHeader
+            Divider()
+
+            PlaceCheckInMapSheet(
+                selectedActivity: placeCheckInMapActivity,
+                showsNavigationChrome: false,
+                showsInlineHeader: false,
+                layout: .controlsOnly
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var macPlacesSidebarHeader: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HomeMacSidebarModeStripView(selectedMode: macSidebarModeBinding)
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
     }
 
     var macFormSectionNav: some View {

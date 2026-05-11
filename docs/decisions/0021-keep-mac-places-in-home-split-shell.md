@@ -20,7 +20,7 @@ The product expectation is that Places is another mode in the same Home window, 
 
 ## Decision
 
-Mac Home keeps one shared split-view shell for Details, Planner, Board, and Places. The root `Details / Planner / Board / Places` picker stays in the same detail-column header for all modes. When Places is selected, the sidebar body is replaced with place check-in controls, saved places, and day timeline review, while the detail column renders the map itself. The normal Mac sidebar remains expandable and collapsible through the system split-view controls.
+Mac Home keeps one shared split-view shell for Details, Planner, Board, and Places. The root `Details / Planner / Board / Places` picker stays in the same detail-column header for all modes. When Places is selected, the sidebar keeps the shared Mac mode strip at the top, then replaces the task filters and task list below it with place check-in controls, saved places, and day timeline review. The detail column renders the map itself. The normal Mac sidebar remains expandable and collapsible through the system split-view controls.
 
 Selecting Places from the segmented picker does not change the user's current sidebar mode or task-list filter. The quick check-in dock can still jump to Places, but it only changes sidebar mode when needed to get back into the normal Home split shell.
 
@@ -29,4 +29,5 @@ Selecting Places from the segmented picker does not change the user's current si
 - The left sidebar behaves consistently across all four detail modes.
 - The segmented picker no longer jumps because the root view hierarchy is not swapped.
 - Toolbar counters stay in the normal Home toolbar layout when the sidebar is collapsed.
+- The Places sidebar keeps the same top-level mode navigation as the other Home sidebar modes.
 - Places uses the sidebar for current-location controls, saved places, and the day timeline, leaving the detail column map-first.
