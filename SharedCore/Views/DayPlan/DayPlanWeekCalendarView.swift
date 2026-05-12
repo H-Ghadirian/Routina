@@ -289,9 +289,7 @@ struct DayPlanWeekCalendarView: View {
         guard dates.contains(where: { calendar.isDateInToday($0) }) else { return }
 
         DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                proxy.scrollTo(DayPlanScrollTarget.currentTime, anchor: .center)
-            }
+            proxy.scrollTo(DayPlanScrollTarget.currentTime, anchor: .center)
         }
     }
 
