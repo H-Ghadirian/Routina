@@ -54,6 +54,7 @@ struct PlaceCheckInMapSheet: View {
     @State private var errorText: String?
     @State private var editingSessionDraft: PlaceCheckInSessionEditDraft?
     @State private var deletionCandidate: PlaceCheckInSessionDeletionCandidate?
+    @State private var newPlaceDraft: PlaceCheckInNewPlaceDraft?
 
     init(
         selectedActivity: PlaceCheckInActivity?,
@@ -134,6 +135,30 @@ struct PlaceCheckInMapSheet: View {
     private var selectedHistoryMarker: PlaceCheckInHistoryMapMarker? {
         guard let selectedHistoryMarkerID else { return nil }
         return historyMapMarkers.first { $0.id == selectedHistoryMarkerID }
+    }
+
+    private var newPlaceNameBinding: Binding<String> {
+        Binding(
+            get: { newPlaceDraft?.name ?? "" },
+            set: { name in
+                newPlaceDraft?.name = name
+                newPlaceDraft?.statusMessage = ""
+            }
+        )
+    }
+
+    private var newPlaceRadiusBinding: Binding<Double> {
+        Binding(
+            get: { newPlaceDraft?.radiusMeters ?? PlaceCheckInNewPlaceDraft.defaultRadiusMeters },
+            set: { radiusMeters in
+                newPlaceDraft?.radiusMeters = min(max(radiusMeters, 25), 2_000)
+                newPlaceDraft?.statusMessage = ""
+            }
+        )
+    }
+
+    private var canSaveNewPlaceDraft: Bool {
+        RoutinePlace.cleanedName(newPlaceDraft?.name) != nil
     }
 
     private var daySections: [PlaceCheckInDaySection] {
@@ -350,65 +375,60 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private var mapSurface: some View {
-        Map(position: $mapPosition) {
-            UserAnnotation()
+        MapReader { proxy in
+            Map(position: $mapPosition) {
+                UserAnnotation()
 
-            ForEach(places) { place in
-                MapCircle(
-                    center: place.mapCoordinate,
-                    radius: place.radiusMeters
-                )
-                .foregroundStyle(placeMapTint(for: place).opacity(isSelected(place) ? 0.24 : 0.12))
+                ForEach(places) { place in
+                    MapCircle(
+                        center: place.mapCoordinate,
+                        radius: place.radiusMeters
+                    )
+                    .foregroundStyle(placeMapTint(for: place).opacity(isSelected(place) ? 0.24 : 0.12))
 
-                Annotation(place.displayName, coordinate: place.mapCoordinate) {
-                    Button {
-                        selectPlace(place)
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(isSelected(place) ? Color.accentColor : Color.white.opacity(0.94))
-                                .frame(width: isSelected(place) ? 18 : 14, height: isSelected(place) ? 18 : 14)
-                            Circle()
-                                .stroke(isSelected(place) ? Color.white : Color.accentColor, lineWidth: 2)
-                                .frame(width: isSelected(place) ? 18 : 14, height: isSelected(place) ? 18 : 14)
+                    Annotation(place.displayName, coordinate: place.mapCoordinate) {
+                        placeAnnotationButton(place)
+                    }
+                }
+
+                if let currentLocation {
+                    Annotation("Current Location", coordinate: currentLocation.mapCoordinate) {
+                        currentLocationAnnotation
+                    }
+                }
+
+                ForEach(historyMapMarkers) { marker in
+                    Annotation(marker.title, coordinate: marker.coordinate.mapCoordinate) {
+                        historyMarkerButton(marker)
+                    }
+                }
+
+                if let newPlaceDraft {
+                    MapCircle(
+                        center: newPlaceDraft.coordinate.mapCoordinate,
+                        radius: newPlaceDraft.radiusMeters
+                    )
+                    .foregroundStyle(Color.accentColor.opacity(0.18))
+
+                    Marker("New Place", coordinate: newPlaceDraft.coordinate.mapCoordinate)
+                        .tint(Color.accentColor)
+                }
+            }
+            .simultaneousGesture(
+                SpatialTapGesture()
+                    .onEnded { value in
+                        guard let coordinate = proxy.convert(value.location, from: .local) else {
+                            return
                         }
-                        .shadow(color: .black.opacity(0.16), radius: 4, y: 2)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Select \(place.displayName)")
-                }
-            }
 
-            if let currentLocation {
-                Annotation("Current Location", coordinate: currentLocation.mapCoordinate) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue.opacity(0.18))
-                            .frame(width: 26, height: 26)
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 10, height: 10)
-                        Circle()
-                            .stroke(Color.white, lineWidth: 2)
-                            .frame(width: 10, height: 10)
+                        beginNewPlaceDraft(
+                            at: LocationCoordinate(
+                                latitude: coordinate.latitude,
+                                longitude: coordinate.longitude
+                            )
+                        )
                     }
-                    .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
-                }
-            }
-
-            ForEach(historyMapMarkers) { marker in
-                Annotation(marker.title, coordinate: marker.coordinate.mapCoordinate) {
-                    Button {
-                        selectedHistoryMarkerID = marker.id
-                        selectedPlaceID = marker.placeID
-                        focus(on: marker.coordinate)
-                    } label: {
-                        historyMarkerView(marker)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(marker.accessibilityLabel)
-                }
-            }
+            )
         }
         .mapStyle(.standard)
         .onMapCameraChange { context in
@@ -430,7 +450,124 @@ struct PlaceCheckInMapSheet: View {
         .overlay(alignment: .trailing) {
             mapControls
         }
+        .overlay(alignment: .bottom) {
+            newPlaceDraftPanel
+        }
         .accessibilityLabel("Place check-in map")
+    }
+
+    private func placeAnnotationButton(_ place: RoutinePlace) -> some View {
+        Button {
+            selectPlace(place)
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(isSelected(place) ? Color.accentColor : Color.white.opacity(0.94))
+                    .frame(width: isSelected(place) ? 18 : 14, height: isSelected(place) ? 18 : 14)
+                Circle()
+                    .stroke(isSelected(place) ? Color.white : Color.accentColor, lineWidth: 2)
+                    .frame(width: isSelected(place) ? 18 : 14, height: isSelected(place) ? 18 : 14)
+            }
+            .shadow(color: .black.opacity(0.16), radius: 4, y: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Select \(place.displayName)")
+    }
+
+    private var currentLocationAnnotation: some View {
+        ZStack {
+            Circle()
+                .fill(Color.blue.opacity(0.18))
+                .frame(width: 26, height: 26)
+            Circle()
+                .fill(Color.blue)
+                .frame(width: 10, height: 10)
+            Circle()
+                .stroke(Color.white, lineWidth: 2)
+                .frame(width: 10, height: 10)
+        }
+        .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+    }
+
+    private func historyMarkerButton(_ marker: PlaceCheckInHistoryMapMarker) -> some View {
+        Button {
+            newPlaceDraft = nil
+            selectedHistoryMarkerID = marker.id
+            selectedPlaceID = marker.placeID
+            focus(on: marker.coordinate)
+        } label: {
+            historyMarkerView(marker)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(marker.accessibilityLabel)
+    }
+
+    @ViewBuilder
+    private var newPlaceDraftPanel: some View {
+        if let draft = newPlaceDraft {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Label("New Place", systemImage: "mappin.and.ellipse")
+                        .font(.headline.weight(.semibold))
+
+                    Spacer(minLength: 8)
+
+                    Button {
+                        cancelNewPlaceDraft()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Cancel new place")
+                }
+
+                TextField("Place name", text: newPlaceNameBinding)
+                    .textFieldStyle(.roundedBorder)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Radius")
+                        Spacer()
+                        Text("\(Int(draft.radiusMeters)) m")
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.caption.weight(.semibold))
+
+                    Slider(value: newPlaceRadiusBinding, in: 25...2_000, step: 25)
+                }
+
+                if !draft.statusMessage.isEmpty {
+                    Text(draft.statusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack {
+                    Text(draft.coordinate.formattedForPlaceSelection)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 8)
+
+                    Button("Cancel") {
+                        cancelNewPlaceDraft()
+                    }
+
+                    Button("Save") {
+                        saveNewPlaceDraft()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canSaveNewPlaceDraft)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: 360)
+            .routinaGlassPanel(cornerRadius: 12, tint: .accentColor, tintOpacity: 0.08, interactive: true)
+            .padding(12)
+        }
     }
 
     private var mapControls: some View {
@@ -803,6 +940,9 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private var mapTitle: String {
+        if newPlaceDraft != nil {
+            return "New place"
+        }
         if let selectedHistoryMarker {
             return selectedHistoryMarker.title
         }
@@ -886,6 +1026,7 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private func selectPlace(_ place: RoutinePlace) {
+        newPlaceDraft = nil
         selectedHistoryMarkerID = nil
         selectedPlaceID = place.id
         syncMapPosition()
@@ -955,6 +1096,7 @@ struct PlaceCheckInMapSheet: View {
 
     private func focusOnCurrentLocation() {
         guard let currentLocation else { return }
+        newPlaceDraft = nil
         selectedHistoryMarkerID = nil
         selectedPlaceID = currentMatchedPlace?.id
         focus(on: currentLocation)
@@ -977,6 +1119,7 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private func focusOnSession(_ session: PlaceCheckInSession) {
+        newPlaceDraft = nil
         if let coordinate = session.coordinate {
             selectedHistoryMarkerID = PlaceCheckInSupport.historyMapMarkerID(for: coordinate)
             selectedPlaceID = session.placeID
@@ -1006,6 +1149,82 @@ struct PlaceCheckInMapSheet: View {
         visibleRegion = region
         withAnimation(.easeInOut(duration: 0.25)) {
             mapPosition = PlaceCheckInMapCamera.position(region: region)
+        }
+    }
+
+    private func beginNewPlaceDraft(at coordinate: LocationCoordinate) {
+        guard !isMapTapOnExistingMapFeature(at: coordinate) else {
+            return
+        }
+
+        if var draft = newPlaceDraft {
+            draft.coordinate = coordinate
+            draft.statusMessage = ""
+            newPlaceDraft = draft
+        } else {
+            newPlaceDraft = PlaceCheckInNewPlaceDraft(coordinate: coordinate)
+        }
+        selectedHistoryMarkerID = nil
+        selectedPlaceID = nil
+        errorText = nil
+    }
+
+    private func cancelNewPlaceDraft() {
+        newPlaceDraft = nil
+    }
+
+    private func isMapTapOnExistingMapFeature(at coordinate: LocationCoordinate) -> Bool {
+        if places.contains(where: { $0.distance(to: coordinate) <= 75 }) {
+            return true
+        }
+        if historyMapMarkers.contains(where: { $0.coordinate.distance(to: coordinate) <= 75 }) {
+            return true
+        }
+        if let currentLocation, currentLocation.distance(to: coordinate) <= 75 {
+            return true
+        }
+        return false
+    }
+
+    @MainActor
+    private func saveNewPlaceDraft() {
+        guard var draft = newPlaceDraft else {
+            return
+        }
+        guard let cleanedName = RoutinePlace.cleanedName(draft.name) else {
+            draft.statusMessage = "Enter a place name."
+            newPlaceDraft = draft
+            return
+        }
+
+        do {
+            if try SettingsDataQueries.hasDuplicatePlaceName(cleanedName, in: modelContext) {
+                draft.statusMessage = SettingsPlacePersistenceError.duplicateName.localizedDescription
+                newPlaceDraft = draft
+                return
+            }
+
+            let placeID = UUID()
+            let place = RoutinePlace(
+                id: placeID,
+                name: cleanedName,
+                latitude: draft.coordinate.latitude,
+                longitude: draft.coordinate.longitude,
+                radiusMeters: draft.radiusMeters
+            )
+            modelContext.insert(place)
+            try modelContext.save()
+
+            newPlaceDraft = nil
+            selectedHistoryMarkerID = nil
+            selectedPlaceID = placeID
+            selectedMode = .places
+            errorText = nil
+            focus(on: draft.coordinate)
+        } catch {
+            draft.statusMessage = "Could not save place."
+            newPlaceDraft = draft
+            NSLog("Failed to save place from map: \(error.localizedDescription)")
         }
     }
 
@@ -1184,6 +1403,16 @@ private struct PlaceCheckInSessionEditDraft: Identifiable {
 private struct PlaceCheckInSessionDeletionCandidate: Identifiable {
     let id: UUID
     let title: String
+}
+
+private struct PlaceCheckInNewPlaceDraft: Identifiable, Equatable {
+    static let defaultRadiusMeters = 150.0
+
+    let id = UUID()
+    var coordinate: LocationCoordinate
+    var name = ""
+    var radiusMeters = defaultRadiusMeters
+    var statusMessage = ""
 }
 
 private struct PlaceCheckInSessionEditor: View {
