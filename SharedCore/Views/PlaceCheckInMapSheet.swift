@@ -862,6 +862,19 @@ struct PlaceCheckInMapSheet: View {
                                     .padding(.vertical, 2)
                                     .routinaGlassPill(tint: .teal, tintOpacity: 0.12)
                             }
+
+                            if session.isAutomatic {
+                                let autoTint = session.requiresConfirmation ? Color.orange : Color.secondary
+                                Text("Auto")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(autoTint)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .routinaGlassPill(
+                                        tint: autoTint,
+                                        tintOpacity: session.requiresConfirmation ? 0.14 : 0.10
+                                    )
+                            }
                         }
 
                         Text(sessionTimelineSubtitle(session))
@@ -897,6 +910,16 @@ struct PlaceCheckInMapSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.07, interactive: true)
         .contextMenu {
+            if session.requiresConfirmation {
+                Button {
+                    confirmAutomaticSession(session)
+                } label: {
+                    Label("Confirm Auto Check-In", systemImage: "checkmark.circle")
+                }
+
+                Divider()
+            }
+
             Button {
                 beginEditing(session)
             } label: {
@@ -909,11 +932,27 @@ struct PlaceCheckInMapSheet: View {
                 Label("Delete Check-In", systemImage: "trash")
             }
         }
+        .modifier(
+            PlaceCheckInConfirmSwipeModifier(
+                showsConfirm: session.requiresConfirmation,
+                action: { confirmAutomaticSession(session) }
+            )
+        )
         .accessibilityLabel("Show \(session.displayPlaceName) on map")
     }
 
     private func sessionActionsMenu(_ session: PlaceCheckInSession) -> some View {
         Menu {
+            if session.requiresConfirmation {
+                Button {
+                    confirmAutomaticSession(session)
+                } label: {
+                    Label("Confirm Auto Check-In", systemImage: "checkmark.circle")
+                }
+
+                Divider()
+            }
+
             Button {
                 beginEditing(session)
             } label: {
@@ -1068,7 +1107,27 @@ struct PlaceCheckInMapSheet: View {
            let nearbyPlace = PlaceCheckInSupport.nearestContainingPlace(to: coordinate, places: places) {
             selectedPlaceID = nearbyPlace.id
         }
+        reconcileAutomaticCheckIn(for: snapshot)
         syncMapPosition()
+    }
+
+    @MainActor
+    private func reconcileAutomaticCheckIn(for snapshot: LocationSnapshot) {
+        guard snapshot.canDeterminePresence, let coordinate = snapshot.coordinate else {
+            return
+        }
+
+        do {
+            _ = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
+                coordinate: coordinate,
+                horizontalAccuracyMeters: snapshot.horizontalAccuracy,
+                activity: selectedActivity,
+                in: modelContext
+            )
+        } catch {
+            errorText = "Could not update automatic check-in."
+            NSLog("Failed to reconcile automatic place check-in: \(error.localizedDescription)")
+        }
     }
 
     @MainActor
@@ -1247,6 +1306,18 @@ struct PlaceCheckInMapSheet: View {
     }
 
     @MainActor
+    private func confirmAutomaticSession(_ session: PlaceCheckInSession) {
+        do {
+            _ = try PlaceCheckInSupport.confirmAutomaticSession(id: session.id, in: modelContext)
+            errorText = nil
+            signalSuccess()
+        } catch {
+            errorText = "Could not confirm check-in."
+            NSLog("Failed to confirm automatic place check-in: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
     private func saveEditedSession(_ draft: PlaceCheckInSessionEditDraft) throws {
         _ = try PlaceCheckInSupport.updateSession(
             id: draft.id,
@@ -1355,6 +1426,29 @@ struct PlaceCheckInMapSheet: View {
     private func signalSuccess() {
         #if os(iOS)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+    }
+}
+
+private struct PlaceCheckInConfirmSwipeModifier: ViewModifier {
+    let showsConfirm: Bool
+    let action: () -> Void
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                if showsConfirm {
+                    Button {
+                        action()
+                    } label: {
+                        Label("Confirm", systemImage: "checkmark.circle")
+                    }
+                    .tint(.green)
+                }
+            }
+        #else
+        content
         #endif
     }
 }

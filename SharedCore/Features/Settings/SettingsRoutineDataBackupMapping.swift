@@ -109,7 +109,9 @@ enum SettingsRoutineDataBackupMapping {
             startedAt: session.startedAt,
             endedAt: session.endedAt,
             createdAt: session.createdAt,
-            updatedAt: session.updatedAt
+            updatedAt: session.updatedAt,
+            captureMode: session.captureMode,
+            confirmedAt: session.confirmedAt
         )
     }
 }
