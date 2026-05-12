@@ -67,6 +67,43 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func checkIn_sameActivePlaceFromPreviousDayAppearsInCurrentDayTimeline() throws {
+        let context = makeInMemoryContext()
+        let home = makePlace(in: context, name: "Home")
+        let first = try PlaceCheckInSupport.checkIn(
+            at: home,
+            date: makeDate("2026-05-10T23:00:00Z"),
+            in: context
+        )
+        let second = try PlaceCheckInSupport.checkIn(
+            at: home,
+            date: makeDate("2026-05-11T08:00:00Z"),
+            in: context
+        )
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let timeline = PlaceCheckInSupport.sessions(
+            [second],
+            on: makeDate("2026-05-11T12:00:00Z"),
+            calendar: calendar,
+            referenceDate: makeDate("2026-05-11T08:00:00Z")
+        )
+
+        #expect(first.id == second.id)
+        #expect(timeline.map(\.displayPlaceName) == ["Home"])
+        #expect(
+            PlaceCheckInSupport.totalDurationSeconds(
+                for: timeline,
+                on: makeDate("2026-05-11T12:00:00Z"),
+                calendar: calendar,
+                referenceDate: makeDate("2026-05-11T08:00:00Z")
+            ) == 28_800
+        )
+    }
+
+    @MainActor
+    @Test
     func checkInAtCurrentLocation_usesContainingSavedPlace() throws {
         let context = makeInMemoryContext()
         let office = makePlace(in: context, name: "Office", latitude: 52.5200, longitude: 13.4050, radiusMeters: 150)
@@ -148,6 +185,61 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func historyMapMarkersGroupsCoordinateSnapshots() throws {
+        let homeID = UUID()
+        let homeCoordinate = LocationCoordinate(latitude: 52.52, longitude: 13.405)
+        let cafeCoordinate = LocationCoordinate(latitude: 48.8566, longitude: 2.3522)
+        let firstHome = PlaceCheckInSession(
+            placeID: homeID,
+            placeName: "Home",
+            latitude: homeCoordinate.latitude,
+            longitude: homeCoordinate.longitude,
+            startedAt: makeDate("2026-05-10T08:00:00Z"),
+            endedAt: makeDate("2026-05-10T09:00:00Z")
+        )
+        let secondHome = PlaceCheckInSession(
+            placeID: homeID,
+            placeName: "Home",
+            latitude: homeCoordinate.latitude,
+            longitude: homeCoordinate.longitude,
+            startedAt: makeDate("2026-05-11T08:00:00Z"),
+            endedAt: makeDate("2026-05-11T10:00:00Z")
+        )
+        let activeCafe = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Cafe",
+            latitude: cafeCoordinate.latitude,
+            longitude: cafeCoordinate.longitude,
+            startedAt: makeDate("2026-05-11T12:00:00Z"),
+            endedAt: nil
+        )
+        let missingCoordinate = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Unknown",
+            startedAt: makeDate("2026-05-11T13:00:00Z"),
+            endedAt: makeDate("2026-05-11T14:00:00Z")
+        )
+
+        let markers = PlaceCheckInSupport.historyMapMarkers(
+            from: [firstHome, activeCafe, missingCoordinate, secondHome]
+        )
+        let homeMarker = try #require(markers.first { $0.placeName == "Home" })
+        let cafeMarker = try #require(markers.first { $0.placeName == "Cafe" })
+
+        #expect(markers.count == 2)
+        #expect(markers.first?.placeName == "Cafe")
+        #expect(homeMarker.placeID == homeID)
+        #expect(homeMarker.coordinate == homeCoordinate)
+        #expect(homeMarker.count == 2)
+        #expect(homeMarker.latestDate == makeDate("2026-05-11T10:00:00Z"))
+        #expect(!homeMarker.containsActiveSession)
+        #expect(cafeMarker.coordinate == cafeCoordinate)
+        #expect(cafeMarker.count == 1)
+        #expect(cafeMarker.containsActiveSession)
+    }
+
+    @MainActor
+    @Test
     func sessionsOnDay_returnsChronologicalPlaceTimeline() throws {
         let context = makeInMemoryContext()
         let morning = PlaceCheckInSession(
@@ -182,6 +274,85 @@ struct PlaceCheckInSupportTests {
 
         #expect(timeline.map(\.displayPlaceName) == ["Gym", "Office"])
         #expect(PlaceCheckInSupport.totalDurationSeconds(for: timeline) == 31_500)
+    }
+
+    @MainActor
+    @Test
+    func groupedSessionsByDay_returnsReverseChronologicalSectionsAndRows() throws {
+        let home = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Home",
+            startedAt: makeDate("2026-05-10T19:00:00Z"),
+            endedAt: makeDate("2026-05-10T21:00:00Z")
+        )
+        let cafe = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Cafe",
+            startedAt: makeDate("2026-05-11T09:00:00Z"),
+            endedAt: makeDate("2026-05-11T10:00:00Z")
+        )
+        let office = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Office",
+            startedAt: makeDate("2026-05-11T12:00:00Z"),
+            endedAt: makeDate("2026-05-11T17:00:00Z")
+        )
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let sections = PlaceCheckInSupport.groupedSessionsByDay(
+            [home, office, cafe],
+            calendar: calendar
+        )
+
+        #expect(sections.map(\.date) == [
+            makeDate("2026-05-11T00:00:00Z"),
+            makeDate("2026-05-10T00:00:00Z")
+        ])
+        #expect(sections.first?.sessions.map(\.displayPlaceName) == ["Office", "Cafe"])
+        #expect(sections.last?.sessions.map(\.displayPlaceName) == ["Home"])
+    }
+
+    @MainActor
+    @Test
+    func sessionsOnDay_includesSessionsThatOverlapSelectedDay() throws {
+        let home = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Home",
+            startedAt: makeDate("2026-05-10T23:00:00Z"),
+            endedAt: makeDate("2026-05-11T08:00:00Z")
+        )
+        let office = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Office",
+            startedAt: makeDate("2026-05-11T09:00:00Z"),
+            endedAt: makeDate("2026-05-11T10:00:00Z")
+        )
+        let nextDay = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Gym",
+            startedAt: makeDate("2026-05-12T07:00:00Z"),
+            endedAt: makeDate("2026-05-12T08:00:00Z")
+        )
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let timeline = PlaceCheckInSupport.sessions(
+            [office, nextDay, home],
+            on: makeDate("2026-05-11T12:00:00Z"),
+            calendar: calendar,
+            referenceDate: makeDate("2026-05-11T12:00:00Z")
+        )
+
+        #expect(timeline.map(\.displayPlaceName) == ["Home", "Office"])
+        #expect(
+            PlaceCheckInSupport.totalDurationSeconds(
+                for: timeline,
+                on: makeDate("2026-05-11T12:00:00Z"),
+                calendar: calendar,
+                referenceDate: makeDate("2026-05-11T12:00:00Z")
+            ) == 32_400
+        )
     }
 
     @MainActor

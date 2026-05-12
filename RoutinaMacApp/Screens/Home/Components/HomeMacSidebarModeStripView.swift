@@ -48,7 +48,7 @@ struct HomeMacSidebarModeStripView: View {
         }
         .frame(height: 42)
         .padding(4)
-        .routinaGlassPanel(cornerRadius: 13, tint: .secondary, tintOpacity: 0.10, interactive: true)
+        .routinaGlassPanel(cornerRadius: 13, tint: .secondary, tintOpacity: 0.10)
         .overlay(
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .stroke(Color.white.opacity(0.06), lineWidth: 1)

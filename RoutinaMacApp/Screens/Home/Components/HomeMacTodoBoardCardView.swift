@@ -44,11 +44,11 @@ struct HomeMacTodoBoardCardView: View {
                 .stroke(isSelected ? Color.accentColor.opacity(0.65) : Color.primary.opacity(0.08), lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .onTapGesture(count: 2) {
-            onOpenTask(task.id)
-        }
         .onTapGesture {
             onSelectTask(task.id)
+        }
+        .onMacDoubleClick {
+            onOpenTask(task.id)
         }
         .onDrag {
             draggedTaskID = task.id

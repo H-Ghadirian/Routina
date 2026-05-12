@@ -33,18 +33,20 @@ struct PlaceCheckInMapSheet: View {
     @State private var locationSnapshot = LocationSnapshot(authorizationStatus: .notDetermined)
     @State private var isLoadingLocation = false
     @State private var selectedMode = PlaceCheckInMapSheetMode.places
-    @State private var selectedDay = Date()
     @State private var selectedPlaceID: UUID?
+    @State private var selectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     @State private var visibleRegion = PlaceCheckInMapCamera.region(
         places: [],
         currentLocation: nil,
-        selectedPlaceID: nil
+        selectedPlaceID: nil,
+        historyCoordinates: []
     )
     @State private var mapPosition = PlaceCheckInMapCamera.position(
         region: PlaceCheckInMapCamera.region(
             places: [],
             currentLocation: nil,
-            selectedPlaceID: nil
+            selectedPlaceID: nil,
+            historyCoordinates: []
         )
     )
     @State private var errorText: String?
@@ -91,8 +93,17 @@ struct PlaceCheckInMapSheet: View {
         return PlaceCheckInSupport.nearestContainingPlace(to: currentLocation, places: places)
     }
 
-    private var daySessions: [PlaceCheckInSession] {
-        PlaceCheckInSupport.sessions(sessions, on: selectedDay, calendar: calendar)
+    private var historyMapMarkers: [PlaceCheckInHistoryMapMarker] {
+        PlaceCheckInSupport.historyMapMarkers(from: sessions)
+    }
+
+    private var selectedHistoryMarker: PlaceCheckInHistoryMapMarker? {
+        guard let selectedHistoryMarkerID else { return nil }
+        return historyMapMarkers.first { $0.id == selectedHistoryMarkerID }
+    }
+
+    private var daySections: [PlaceCheckInDaySection] {
+        PlaceCheckInSupport.groupedSessionsByDay(sessions, calendar: calendar)
     }
 
     var body: some View {
@@ -146,6 +157,12 @@ struct PlaceCheckInMapSheet: View {
         .onChange(of: places.map(\.id)) { _, _ in
             if let selectedPlaceID, !places.contains(where: { $0.id == selectedPlaceID }) {
                 self.selectedPlaceID = nil
+            }
+            syncMapPosition()
+        }
+        .onChange(of: historyMapMarkers.map(\.id)) { _, markerIDs in
+            if let selectedHistoryMarkerID, !markerIDs.contains(selectedHistoryMarkerID) {
+                self.selectedHistoryMarkerID = nil
             }
             syncMapPosition()
         }
@@ -303,8 +320,7 @@ struct PlaceCheckInMapSheet: View {
 
                 Annotation(place.displayName, coordinate: place.mapCoordinate) {
                     Button {
-                        selectedPlaceID = place.id
-                        syncMapPosition()
+                        selectPlace(place)
                     } label: {
                         ZStack {
                             Circle()
@@ -338,16 +354,17 @@ struct PlaceCheckInMapSheet: View {
                 }
             }
 
-            ForEach(daySessions.filter { $0.placeID == nil && $0.coordinate != nil }) { session in
-                if let coordinate = session.coordinate {
-                    Annotation(session.displayPlaceName, coordinate: coordinate.mapCoordinate) {
-                        Image(systemName: "clock.fill")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 22, height: 22)
-                            .background(Color.teal, in: Circle())
-                            .shadow(color: .black.opacity(0.16), radius: 4, y: 2)
+            ForEach(historyMapMarkers) { marker in
+                Annotation(marker.title, coordinate: marker.coordinate.mapCoordinate) {
+                    Button {
+                        selectedHistoryMarkerID = marker.id
+                        selectedPlaceID = marker.placeID
+                        focus(on: marker.coordinate)
+                    } label: {
+                        historyMarkerView(marker)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(marker.accessibilityLabel)
                 }
             }
         }
@@ -389,12 +406,7 @@ struct PlaceCheckInMapSheet: View {
             mapControlSeparator
 
             mapControlButton(systemImage: "location", accessibilityLabel: "Show current location") {
-                Task {
-                    if currentLocation == nil {
-                        await refreshLocation(requestAuthorizationIfNeeded: true)
-                    }
-                    focusOnCurrentLocation()
-                }
+                showCurrentLocation(refreshFirst: false)
             }
         }
         .frame(width: 40)
@@ -423,6 +435,44 @@ struct PlaceCheckInMapSheet: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
+    private func historyMarkerView(_ marker: PlaceCheckInHistoryMapMarker) -> some View {
+        let isSelected = selectedHistoryMarkerID == marker.id
+        let markerColor = marker.containsActiveSession ? Color.teal : Color.orange
+
+        return ZStack(alignment: .topTrailing) {
+            Image(systemName: marker.containsActiveSession ? "location.fill" : "clock.fill")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: isSelected ? 28 : 24, height: isSelected ? 28 : 24)
+                .background(markerColor, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(.white, lineWidth: isSelected ? 3 : 2)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 5, y: 2)
+
+            if marker.count > 1 {
+                Text(historyMarkerCountText(marker.count))
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, 4)
+                    .frame(minWidth: 16, minHeight: 16)
+                    .background(Color.red, in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(.white, lineWidth: 1)
+                    )
+                    .offset(x: 8, y: -8)
+            }
+        }
+    }
+
+    private func historyMarkerCountText(_ count: Int) -> String {
+        count > 99 ? "99+" : "\(count)"
+    }
+
     private var mapControlSeparator: some View {
         Rectangle()
             .fill(Color.secondary.opacity(0.18))
@@ -444,7 +494,7 @@ struct PlaceCheckInMapSheet: View {
                 .disabled(currentLocation == nil || isLoadingLocation)
 
                 Button {
-                    Task { await refreshLocation(requestAuthorizationIfNeeded: true) }
+                    showCurrentLocation(refreshFirst: true)
                 } label: {
                     Image(systemName: isLoadingLocation ? "location.circle" : "location.circle.fill")
                         .frame(width: 22, height: 22)
@@ -452,7 +502,8 @@ struct PlaceCheckInMapSheet: View {
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
                 .disabled(isLoadingLocation)
-                .accessibilityLabel("Refresh current location")
+                .accessibilityLabel("Show current location on map")
+                .help("Show current location on map")
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -504,49 +555,11 @@ struct PlaceCheckInMapSheet: View {
 
     private var dayTimeline: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Button {
-                    shiftSelectedDay(by: -1)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityLabel("Previous day")
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(dayTitle)
-                        .font(.subheadline.weight(.semibold))
-                    Text(daySubtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 8)
-
-                Button("Today") {
-                    selectedDay = Date()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-
-                Button {
-                    shiftSelectedDay(by: 1)
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityLabel("Next day")
-            }
-
-            if daySessions.isEmpty {
+            if daySections.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("No check-ins")
                         .font(.subheadline.weight(.semibold))
-                    Text("Your place sessions for this day will appear here in time order.")
+                    Text("Your place sessions will appear here grouped by date.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -555,9 +568,9 @@ struct PlaceCheckInMapSheet: View {
                 .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.08)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
-                        ForEach(daySessions) { session in
-                            dayTimelineRow(session)
+                    LazyVStack(alignment: .leading, spacing: 14) {
+                        ForEach(daySections) { section in
+                            dayTimelineSection(section)
                         }
                     }
                 }
@@ -565,51 +578,77 @@ struct PlaceCheckInMapSheet: View {
         }
     }
 
-    private func placeRow(_ place: RoutinePlace) -> some View {
-        Button {
-            selectedPlaceID = place.id
-            checkIn(at: place)
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: activeSession?.placeID == place.id ? "location.fill" : "mappin")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(isSelected(place) ? Color.accentColor : Color.secondary)
-                    .frame(width: 28, height: 28)
-                    .routinaGlassPill(
-                        tint: isSelected(place) ? .accentColor : .secondary,
-                        tintOpacity: isSelected(place) ? 0.16 : 0.10
-                    )
+    private func dayTimelineSection(_ section: PlaceCheckInDaySection) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 2)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(place.displayName)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-
-                    Text(placeSubtitle(place))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+            LazyVStack(alignment: .leading, spacing: 8) {
+                ForEach(section.sessions) { session in
+                    dayTimelineRow(session)
                 }
+            }
+        }
+    }
 
-                Spacer(minLength: 8)
+    private func placeRow(_ place: RoutinePlace) -> some View {
+        HStack(spacing: 10) {
+            Button {
+                selectPlace(place)
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: activeSession?.placeID == place.id ? "location.fill" : "mappin")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isSelected(place) ? Color.accentColor : Color.secondary)
+                        .frame(width: 28, height: 28)
+                        .routinaGlassPill(
+                            tint: isSelected(place) ? .accentColor : .secondary,
+                            tintOpacity: isSelected(place) ? 0.16 : 0.10
+                        )
 
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(place.displayName)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        Text(placeSubtitle(place))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 8)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Show \(place.displayName) on map")
+
+            Button {
+                checkIn(at: place)
+            } label: {
                 Image(systemName: "checkmark.circle")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 9)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .routinaGlassCard(
-                cornerRadius: 8,
-                tint: isSelected(place) ? .accentColor : .secondary,
-                tintOpacity: isSelected(place) ? 0.12 : 0.07,
-                interactive: true
-            )
+            .buttonStyle(.plain)
+            .accessibilityLabel("Check in at \(place.displayName)")
+            .help("Check in at \(place.displayName)")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Check in at \(place.displayName)")
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .routinaGlassCard(
+            cornerRadius: 8,
+            tint: isSelected(place) ? .accentColor : .secondary,
+            tintOpacity: isSelected(place) ? 0.12 : 0.07,
+            interactive: true
+        )
     }
 
     private func dayTimelineRow(_ session: PlaceCheckInSession) -> some View {
@@ -716,6 +755,9 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private var mapTitle: String {
+        if let selectedHistoryMarker {
+            return selectedHistoryMarker.title
+        }
         if let selectedPlace {
             return selectedPlace.displayName
         }
@@ -766,23 +808,6 @@ struct PlaceCheckInMapSheet: View {
         }
     }
 
-    private var dayTitle: String {
-        if calendar.isDateInToday(selectedDay) {
-            return "Today"
-        }
-        if calendar.isDateInYesterday(selectedDay) {
-            return "Yesterday"
-        }
-        return selectedDay.formatted(.dateTime.month(.abbreviated).day().weekday(.abbreviated))
-    }
-
-    private var daySubtitle: String {
-        let total = PlaceCheckInSupport.totalDurationSeconds(for: daySessions)
-        let duration = PlaceCheckInFormatting.durationText(seconds: total)
-        let countText = daySessions.count == 1 ? "1 check-in" : "\(daySessions.count) check-ins"
-        return "\(duration) tracked · \(countText)"
-    }
-
     private func placeSubtitle(_ place: RoutinePlace) -> String {
         let radius = "\(Int(place.radiusMeters.rounded())) m radius"
         guard let currentLocation else { return radius }
@@ -812,26 +837,33 @@ struct PlaceCheckInMapSheet: View {
         selectedPlaceID == place.id
     }
 
-    private func sessionTimelineSubtitle(_ session: PlaceCheckInSession) -> String {
-        let start = session.startedAt ?? session.createdAt
-        let range: String
-        if let start {
-            let startText = start.formatted(.dateTime.hour().minute())
-            if let endedAt = session.endedAt {
-                range = "\(startText)-\(endedAt.formatted(.dateTime.hour().minute()))"
-            } else {
-                range = "\(startText)-Now"
-            }
-        } else {
-            range = "Time unavailable"
-        }
-
-        let duration = PlaceCheckInFormatting.durationText(seconds: session.durationSeconds())
-        return "\(range) · \(duration)"
+    private func selectPlace(_ place: RoutinePlace) {
+        selectedHistoryMarkerID = nil
+        selectedPlaceID = place.id
+        syncMapPosition()
     }
 
-    private func shiftSelectedDay(by value: Int) {
-        selectedDay = calendar.date(byAdding: .day, value: value, to: selectedDay) ?? selectedDay
+    private func sessionTimelineSubtitle(_ session: PlaceCheckInSession) -> String {
+        guard let start = session.startedAt ?? session.createdAt else {
+            return "Time unavailable"
+        }
+
+        let referenceDate = Date()
+        let rawFinish = session.endedAt ?? referenceDate
+        let normalizedFinish = rawFinish > start ? rawFinish : start
+        let startText = start.formatted(.dateTime.hour().minute())
+        let finishText: String
+        if session.endedAt == nil {
+            finishText = "Now"
+        } else {
+            finishText = normalizedFinish.formatted(.dateTime.hour().minute())
+        }
+
+        let range = "\(startText)-\(finishText)"
+        let duration = PlaceCheckInFormatting.durationText(
+            seconds: session.durationSeconds(referenceDate: referenceDate)
+        )
+        return "\(range) · \(duration)"
     }
 
     @MainActor
@@ -873,12 +905,30 @@ struct PlaceCheckInMapSheet: View {
 
     private func focusOnCurrentLocation() {
         guard let currentLocation else { return }
+        selectedHistoryMarkerID = nil
         selectedPlaceID = currentMatchedPlace?.id
         focus(on: currentLocation)
     }
 
+    private func showCurrentLocation(refreshFirst: Bool) {
+        Task { @MainActor in
+            if refreshFirst || currentLocation == nil {
+                await refreshLocation(requestAuthorizationIfNeeded: true)
+            }
+
+            guard currentLocation != nil else {
+                errorText = "Current location is unavailable."
+                return
+            }
+
+            errorText = nil
+            focusOnCurrentLocation()
+        }
+    }
+
     private func focusOnSession(_ session: PlaceCheckInSession) {
         guard let coordinate = session.coordinate else { return }
+        selectedHistoryMarkerID = historyMapMarkers.first { $0.coordinate == coordinate }?.id
         selectedPlaceID = session.placeID
         focus(on: coordinate)
     }
@@ -977,7 +1027,8 @@ struct PlaceCheckInMapSheet: View {
         let region = PlaceCheckInMapCamera.region(
             places: places,
             currentLocation: currentLocation,
-            selectedPlaceID: selectedPlaceID
+            selectedPlaceID: selectedPlaceID,
+            historyCoordinates: historyMapMarkers.map(\.coordinate)
         )
         visibleRegion = region
         mapPosition = PlaceCheckInMapCamera.position(region: region)
@@ -1188,15 +1239,20 @@ private enum PlaceCheckInMapCamera {
     static func region(
         places: [RoutinePlace],
         currentLocation: LocationCoordinate?,
-        selectedPlaceID: UUID?
+        selectedPlaceID: UUID?,
+        historyCoordinates: [LocationCoordinate]
     ) -> MKCoordinateRegion {
         if let selectedPlaceID,
            let selectedPlace = places.first(where: { $0.id == selectedPlaceID }) {
             return region(focusingOn: selectedPlace)
         }
 
-        if !places.isEmpty {
-            return regionIncluding(places: places, currentLocation: currentLocation)
+        if !places.isEmpty || !historyCoordinates.isEmpty {
+            return regionIncluding(
+                places: places,
+                currentLocation: currentLocation,
+                historyCoordinates: historyCoordinates
+            )
         }
 
         if let currentLocation {
@@ -1224,7 +1280,8 @@ private enum PlaceCheckInMapCamera {
 
     private static func regionIncluding(
         places: [RoutinePlace],
-        currentLocation: LocationCoordinate?
+        currentLocation: LocationCoordinate?,
+        historyCoordinates: [LocationCoordinate]
     ) -> MKCoordinateRegion {
         var minLatitude = Double.greatestFiniteMagnitude
         var maxLatitude = -Double.greatestFiniteMagnitude
@@ -1238,6 +1295,13 @@ private enum PlaceCheckInMapCamera {
             maxLatitude = max(maxLatitude, place.latitude + latitudeInset)
             minLongitude = min(minLongitude, place.longitude - longitudeInset)
             maxLongitude = max(maxLongitude, place.longitude + longitudeInset)
+        }
+
+        for coordinate in historyCoordinates {
+            minLatitude = min(minLatitude, coordinate.latitude)
+            maxLatitude = max(maxLatitude, coordinate.latitude)
+            minLongitude = min(minLongitude, coordinate.longitude)
+            maxLongitude = max(maxLongitude, coordinate.longitude)
         }
 
         if let currentLocation {

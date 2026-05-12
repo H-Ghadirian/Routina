@@ -10,19 +10,25 @@ struct HomeMacTaskListModeStripView: View {
                 Button {
                     onSelectMode(mode)
                 } label: {
+                    let isSelected = selectedMode == mode
+
                     Text(mode.rawValue)
                         .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
-                        .foregroundStyle(selectedMode == mode ? Color.white : Color.primary)
+                        .frame(maxWidth: .infinity, minHeight: 32)
+                        .foregroundStyle(isSelected ? Color.white : Color.primary)
                         .routinaGlassPill(
-                            tint: selectedMode == mode ? .accentColor : .secondary,
-                            tintOpacity: selectedMode == mode ? 0.42 : 0.10,
+                            tint: isSelected ? .accentColor : .secondary,
+                            tintOpacity: isSelected ? 0.42 : 0.10,
                             interactive: true
                         )
+                        .contentShape(Capsule(style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel(mode.accessibilityLabel)
+                .help(mode.rawValue)
             }
         }
     }

@@ -46,17 +46,19 @@ struct HomeFilterChipButton: View {
         Button(action: action) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, verticalPadding)
+                .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
                 .foregroundStyle(foregroundColor)
                 .routinaGlassPill(
                     tint: backgroundTint,
                     tintOpacity: backgroundOpacity,
                     interactive: true
                 )
+                .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
     }
 
     private var foregroundColor: Color {

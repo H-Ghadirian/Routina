@@ -7,6 +7,37 @@ enum PlaceCheckInSessionEditError: Error, Equatable {
     case missingSession
 }
 
+struct PlaceCheckInHistoryMapMarker: Equatable, Identifiable {
+    let id: String
+    var placeID: UUID?
+    var placeName: String
+    var coordinate: LocationCoordinate
+    var count: Int
+    var latestDate: Date?
+    var containsActiveSession: Bool
+
+    var title: String {
+        if count == 1 {
+            return placeName
+        }
+        return "\(placeName) (\(count))"
+    }
+
+    var accessibilityLabel: String {
+        if count == 1 {
+            return "Check-in at \(placeName)"
+        }
+        return "\(count) check-ins at \(placeName)"
+    }
+}
+
+struct PlaceCheckInDaySection: Equatable, Identifiable {
+    let date: Date
+    var sessions: [PlaceCheckInSession]
+
+    var id: Date { date }
+}
+
 extension PlaceCheckInSessionEditError: LocalizedError {
     var errorDescription: String? {
         switch self {
@@ -284,15 +315,59 @@ enum PlaceCheckInSupport {
     static func sessions(
         _ sessions: [PlaceCheckInSession],
         on day: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        referenceDate: Date = Date()
     ) -> [PlaceCheckInSession] {
-        sessions
+        let dayStart = calendar.startOfDay(for: day)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return []
+        }
+
+        return sessions
             .filter { session in
-                guard let timestamp = session.startedAt ?? session.createdAt else { return false }
-                return calendar.isDate(timestamp, inSameDayAs: day)
+                sessionOverlaps(
+                    session,
+                    dayStart: dayStart,
+                    dayEnd: dayEnd,
+                    referenceDate: referenceDate
+                )
             }
             .sorted { lhs, rhs in
-                (lhs.startedAt ?? lhs.createdAt ?? .distantPast) < (rhs.startedAt ?? rhs.createdAt ?? .distantPast)
+                let lhsStart = effectiveStartDate(lhs, dayStart: dayStart)
+                let rhsStart = effectiveStartDate(rhs, dayStart: dayStart)
+                if lhsStart != rhsStart {
+                    return lhsStart < rhsStart
+                }
+                return (lhs.startedAt ?? lhs.createdAt ?? .distantPast) < (rhs.startedAt ?? rhs.createdAt ?? .distantPast)
+            }
+    }
+
+    static func groupedSessionsByDay(
+        _ sessions: [PlaceCheckInSession],
+        calendar: Calendar
+    ) -> [PlaceCheckInDaySection] {
+        var sessionsByDay: [Date: [PlaceCheckInSession]] = [:]
+        for session in sessions {
+            guard let date = timelineDate(for: session) else { continue }
+            sessionsByDay[calendar.startOfDay(for: date), default: []].append(session)
+        }
+
+        return sessionsByDay
+            .map { date, sessions in
+                PlaceCheckInDaySection(
+                    date: date,
+                    sessions: sessions.sorted { lhs, rhs in
+                        let lhsDate = timelineDate(for: lhs) ?? .distantPast
+                        let rhsDate = timelineDate(for: rhs) ?? .distantPast
+                        if lhsDate != rhsDate {
+                            return lhsDate > rhsDate
+                        }
+                        return lhs.displayPlaceName.localizedCaseInsensitiveCompare(rhs.displayPlaceName) == .orderedAscending
+                    }
+                )
+            }
+            .sorted { lhs, rhs in
+                lhs.date > rhs.date
             }
     }
 
@@ -302,6 +377,79 @@ enum PlaceCheckInSupport {
     ) -> TimeInterval {
         sessions.reduce(0) { total, session in
             total + session.durationSeconds(referenceDate: referenceDate)
+        }
+    }
+
+    static func totalDurationSeconds(
+        for sessions: [PlaceCheckInSession],
+        on day: Date,
+        calendar: Calendar,
+        referenceDate: Date = Date()
+    ) -> TimeInterval {
+        let dayStart = calendar.startOfDay(for: day)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return 0
+        }
+
+        return sessions.reduce(0) { total, session in
+            guard let startedAt = session.startedAt ?? session.createdAt else {
+                return total
+            }
+
+            let finishedAt = session.endedAt ?? referenceDate
+            let normalizedFinish = finishedAt > startedAt ? finishedAt : startedAt
+            let clampedStart = startedAt > dayStart ? startedAt : dayStart
+            let clampedFinish = normalizedFinish < dayEnd ? normalizedFinish : dayEnd
+            return total + max(0, clampedFinish.timeIntervalSince(clampedStart))
+        }
+    }
+
+    static func historyMapMarkers(
+        from sessions: [PlaceCheckInSession]
+    ) -> [PlaceCheckInHistoryMapMarker] {
+        var markersByID: [String: PlaceCheckInHistoryMapMarker] = [:]
+
+        for session in sessions {
+            guard let coordinate = session.coordinate else { continue }
+
+            let markerID = historyMapMarkerID(for: coordinate)
+            let latestDate = recentUseDate(for: session)
+            if var marker = markersByID[markerID] {
+                marker.count += 1
+                marker.containsActiveSession = marker.containsActiveSession || session.isActive
+
+                if (latestDate ?? .distantPast) >= (marker.latestDate ?? .distantPast) {
+                    marker.placeID = session.placeID
+                    marker.placeName = session.displayPlaceName
+                    marker.coordinate = coordinate
+                    marker.latestDate = latestDate
+                }
+                markersByID[markerID] = marker
+            } else {
+                markersByID[markerID] = PlaceCheckInHistoryMapMarker(
+                    id: markerID,
+                    placeID: session.placeID,
+                    placeName: session.displayPlaceName,
+                    coordinate: coordinate,
+                    count: 1,
+                    latestDate: latestDate,
+                    containsActiveSession: session.isActive
+                )
+            }
+        }
+
+        return markersByID.values.sorted { lhs, rhs in
+            if lhs.containsActiveSession != rhs.containsActiveSession {
+                return lhs.containsActiveSession
+            }
+
+            let lhsDate = lhs.latestDate ?? .distantPast
+            let rhsDate = rhs.latestDate ?? .distantPast
+            if lhsDate != rhsDate {
+                return lhsDate > rhsDate
+            }
+
+            return lhs.placeName.localizedCaseInsensitiveCompare(rhs.placeName) == .orderedAscending
         }
     }
 
@@ -329,6 +477,43 @@ enum PlaceCheckInSupport {
             horizontalAccuracyMeters ?? 0
         )
         return sessionCoordinate.distance(to: coordinate) <= tolerance
+    }
+
+    private static func sessionOverlaps(
+        _ session: PlaceCheckInSession,
+        dayStart: Date,
+        dayEnd: Date,
+        referenceDate: Date
+    ) -> Bool {
+        guard let startedAt = session.startedAt ?? session.createdAt else {
+            return false
+        }
+
+        let finishedAt = session.endedAt ?? referenceDate
+        let normalizedFinish = finishedAt > startedAt ? finishedAt : startedAt
+        return startedAt < dayEnd && normalizedFinish > dayStart
+    }
+
+    private static func effectiveStartDate(
+        _ session: PlaceCheckInSession,
+        dayStart: Date
+    ) -> Date {
+        let startedAt = session.startedAt ?? session.createdAt ?? .distantPast
+        return startedAt > dayStart ? startedAt : dayStart
+    }
+
+    private static func timelineDate(for session: PlaceCheckInSession) -> Date? {
+        session.startedAt ?? session.createdAt ?? session.endedAt
+    }
+
+    private static func recentUseDate(for session: PlaceCheckInSession) -> Date? {
+        session.endedAt ?? session.startedAt ?? session.createdAt
+    }
+
+    private static func historyMapMarkerID(for coordinate: LocationCoordinate) -> String {
+        let latitudeBucket = Int((coordinate.latitude * 100_000).rounded())
+        let longitudeBucket = Int((coordinate.longitude * 100_000).rounded())
+        return "\(latitudeBucket):\(longitudeBucket)"
     }
 
     @MainActor

@@ -115,11 +115,11 @@ struct HomeMacTodoBoardBacklogListView: View {
                 )
             }
             .contentShape(Rectangle())
-            .onTapGesture(count: 2) {
-                onOpenTask(task.id)
-            }
             .onTapGesture {
                 onSelectTask(task.id)
+            }
+            .onMacDoubleClick {
+                onOpenTask(task.id)
             }
             .contextMenu {
                 taskMenuItems(for: task)
