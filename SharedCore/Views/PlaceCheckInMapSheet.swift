@@ -32,7 +32,7 @@ struct PlaceCheckInMapSheet: View {
 
     @State private var locationSnapshot = LocationSnapshot(authorizationStatus: .notDetermined)
     @State private var isLoadingLocation = false
-    @State private var selectedMode = PlaceCheckInMapSheetMode.places
+    @State private var selectedMode = PlaceCheckInMapSheetMode.checkIns
     @State private var selectedPlaceID: UUID?
     @State private var selectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     @State private var visibleRegion = PlaceCheckInMapCamera.region(
@@ -267,22 +267,24 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private var mapDetailPicker: some View {
-        Picker("Map detail", selection: $selectedMode) {
+        Picker("Places view", selection: $selectedMode) {
             ForEach(PlaceCheckInMapSheetMode.allCases) { mode in
                 Label(mode.title, systemImage: mode.systemImage)
                     .tag(mode)
             }
         }
         .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private var mapDetailContent: some View {
         switch selectedMode {
+        case .checkIns:
+            dayTimeline
         case .places:
             placesList
-        case .day:
-            dayTimeline
         }
     }
 
@@ -527,9 +529,6 @@ struct PlaceCheckInMapSheet: View {
 
     private var placesList: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Saved Places")
-                .font(.subheadline.weight(.semibold))
-
             if orderedPlaces.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("No saved places yet")
@@ -623,8 +622,10 @@ struct PlaceCheckInMapSheet: View {
 
                     Spacer(minLength: 8)
                 }
-                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .buttonStyle(.plain)
             .accessibilityLabel("Show \(place.displayName) on map")
 
@@ -656,6 +657,8 @@ struct PlaceCheckInMapSheet: View {
             Button {
                 focusOnSession(session)
             } label: {
+                let canFocus = canFocusOnSession(session)
+
                 HStack(alignment: .top, spacing: 10) {
                     VStack(spacing: 4) {
                         Circle()
@@ -699,14 +702,16 @@ struct PlaceCheckInMapSheet: View {
 
                     Spacer(minLength: 8)
 
-                    Image(systemName: session.coordinate == nil ? "mappin.slash" : "scope")
+                    Image(systemName: canFocus ? "scope" : "mappin.slash")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .buttonStyle(.plain)
-            .disabled(session.coordinate == nil)
+            .disabled(!canFocusOnSession(session))
 
             sessionActionsMenu(session)
         }
@@ -927,10 +932,25 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private func focusOnSession(_ session: PlaceCheckInSession) {
-        guard let coordinate = session.coordinate else { return }
-        selectedHistoryMarkerID = historyMapMarkers.first { $0.coordinate == coordinate }?.id
-        selectedPlaceID = session.placeID
-        focus(on: coordinate)
+        if let coordinate = session.coordinate {
+            selectedHistoryMarkerID = historyMapMarkers.first { $0.coordinate == coordinate }?.id
+            selectedPlaceID = session.placeID
+            focus(on: coordinate)
+            return
+        }
+
+        if let place = place(for: session) {
+            selectPlace(place)
+        }
+    }
+
+    private func canFocusOnSession(_ session: PlaceCheckInSession) -> Bool {
+        session.coordinate != nil || place(for: session) != nil
+    }
+
+    private func place(for session: PlaceCheckInSession) -> RoutinePlace? {
+        guard let placeID = session.placeID else { return nil }
+        return places.first { $0.id == placeID }
     }
 
     private func focus(on coordinate: LocationCoordinate) {
@@ -1064,26 +1084,26 @@ struct PlaceCheckInMapSheet: View {
 }
 
 private enum PlaceCheckInMapSheetMode: String, CaseIterable, Identifiable {
+    case checkIns
     case places
-    case day
 
     var id: Self { self }
 
     var title: String {
         switch self {
+        case .checkIns:
+            return "Check-ins"
         case .places:
             return "Places"
-        case .day:
-            return "Day"
         }
     }
 
     var systemImage: String {
         switch self {
+        case .checkIns:
+            return "checklist"
         case .places:
             return "mappin"
-        case .day:
-            return "calendar"
         }
     }
 }
