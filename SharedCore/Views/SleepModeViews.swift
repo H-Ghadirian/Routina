@@ -41,7 +41,7 @@ struct SleepHomeDockView: View {
                             .font(.headline.weight(.semibold))
                             .foregroundStyle(.indigo)
                             .frame(width: 32, height: 32)
-                            .background(.indigo.opacity(0.14), in: Circle())
+                            .routinaGlassPill(tint: .indigo, tintOpacity: 0.16)
 
                         VStack(alignment: .leading, spacing: 1) {
                             Text("Going to sleep")
@@ -62,11 +62,11 @@ struct SleepHomeDockView: View {
                             .font(.headline.weight(.semibold))
                             .foregroundStyle(.white)
                             .frame(width: 42, height: 32)
-                            .background(.indigo, in: Capsule())
+                            .routinaGlassPill(tint: .indigo, tintOpacity: 0.72, interactive: true)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
-                    .background(.regularMaterial, in: Capsule())
+                    .routinaGlassPill(tint: .indigo, tintOpacity: 0.10, interactive: true)
                     .overlay(
                         Capsule()
                             .stroke(.primary.opacity(0.08), lineWidth: 1)
@@ -276,7 +276,7 @@ private struct SleepModeFullScreenView: View {
                         )
                     }
                     .padding(18)
-                    .background(.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .routinaGlassPanel(cornerRadius: 18, tint: .white, tintOpacity: 0.14)
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(.white.opacity(0.12), lineWidth: 1)
@@ -377,7 +377,7 @@ private struct SleepMetricRow: View {
                 .font(.body.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.82))
                 .frame(width: 28, height: 28)
-                .background(.white.opacity(0.10), in: Circle())
+                .routinaGlassPill(tint: .white, tintOpacity: 0.14)
 
             Text(title)
                 .font(.subheadline.weight(.medium))

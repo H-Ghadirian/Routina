@@ -14,7 +14,15 @@ struct HomeMacSidebarModeStripView: View {
 
                     ZStack {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(isSelected ? Color.accentColor : Color.clear)
+                            .fill(Color.clear)
+                            .routinaIf(isSelected) { view in
+                                view.routinaGlassCard(
+                                    cornerRadius: 10,
+                                    tint: .accentColor,
+                                    tintOpacity: 0.42,
+                                    interactive: true
+                                )
+                            }
 
                         Image(systemName: sidebarModeIcon(for: mode))
                             .font(.system(size: 15, weight: .semibold))
@@ -40,10 +48,7 @@ struct HomeMacSidebarModeStripView: View {
         }
         .frame(height: 42)
         .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .fill(Color.secondary.opacity(0.12))
-        )
+        .routinaGlassPanel(cornerRadius: 13, tint: .secondary, tintOpacity: 0.10, interactive: true)
         .overlay(
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .stroke(Color.white.opacity(0.06), lineWidth: 1)

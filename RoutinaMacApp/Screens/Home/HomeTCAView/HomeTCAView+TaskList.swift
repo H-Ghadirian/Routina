@@ -110,7 +110,7 @@ extension HomeTCAView {
                             .font(.caption2)
                             .foregroundStyle(.primary)
                             .padding(3)
-                            .background(.ultraThinMaterial, in: Circle())
+                            .routinaGlassPill()
                     }
                 }
                 .padding(2)
@@ -140,10 +140,7 @@ extension HomeTCAView {
             .lineLimit(1)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(tint.opacity(0.14))
-            )
+            .routinaGlassPill(tint: tint, tintOpacity: 0.14)
             .overlay(
                 Capsule(style: .continuous)
                     .stroke(tint.opacity(0.28), lineWidth: 0.5)
@@ -161,10 +158,7 @@ extension HomeTCAView {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(.ultraThickMaterial)
-        )
+        .routinaGlassCard(cornerRadius: 8, interactive: true)
     }
 
     private func macTaskSourceList(
@@ -395,9 +389,11 @@ extension HomeTCAView {
             .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task))
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(macTaskSourceRowBackground(for: task))
+            .routinaGlassCard(
+                cornerRadius: 8,
+                tint: macTaskSourceRowGlassTint(for: task),
+                tintOpacity: macTaskSourceRowGlassOpacity(for: task),
+                interactive: true
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -437,6 +433,20 @@ extension HomeTCAView {
         } else {
             row
         }
+    }
+
+    private func macTaskSourceRowGlassTint(for task: HomeFeature.RoutineDisplay) -> Color {
+        if task.id == store.selectedTaskID {
+            return .accentColor
+        }
+        return task.color.swiftUIColor ?? .secondary
+    }
+
+    private func macTaskSourceRowGlassOpacity(for task: HomeFeature.RoutineDisplay) -> Double {
+        if task.id == store.selectedTaskID {
+            return 0.16
+        }
+        return task.color.swiftUIColor == nil ? 0.05 : 0.10
     }
 
     private func handleMacTaskSourceListKeyboardNavigation(

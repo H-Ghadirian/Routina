@@ -30,6 +30,6 @@ struct DayPlanWeekHeaderRow: View {
                 )
             }
         }
-        .background(Color.secondary.opacity(0.08))
+        .routinaGlassCard(cornerRadius: 0, tint: .secondary, tintOpacity: 0.08)
     }
 }

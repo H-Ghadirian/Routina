@@ -13,9 +13,9 @@ struct MacPlaceFilterAllItemsRow: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .frame(width: 24, height: 24)
-                    .background(
-                        Circle()
-                            .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                    .routinaGlassPill(
+                        tint: isSelected ? .accentColor : .secondary,
+                        tintOpacity: isSelected ? 0.16 : 0.10
                     )
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -35,7 +35,12 @@ struct MacPlaceFilterAllItemsRow: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(rowBackground)
+            .routinaGlassCard(
+                cornerRadius: 14,
+                tint: isSelected ? .accentColor : .secondary,
+                tintOpacity: isSelected ? 0.14 : 0.07,
+                interactive: true
+            )
         }
         .buttonStyle(.plain)
     }
@@ -62,10 +67,6 @@ struct MacPlaceFilterAllItemsRow: View {
         }
     }
 
-    private var rowBackground: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
-    }
 }
 
 struct MacPlaceFilterMapPreview: View {
@@ -121,7 +122,7 @@ struct MacPlaceFilterMapPreview: View {
                 .font(.caption.weight(.semibold))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.ultraThinMaterial, in: Capsule())
+                .routinaGlassPill()
                 .padding(10)
         }
         .frame(maxWidth: 280, maxHeight: .infinity)

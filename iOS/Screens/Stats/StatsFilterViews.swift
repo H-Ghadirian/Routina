@@ -191,7 +191,7 @@ struct StatsActiveFilterChipBar: View {
             .foregroundStyle(tintColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Capsule().fill(tintColor.opacity(0.12)))
+            .routinaGlassPill(tint: tintColor, tintOpacity: 0.12, interactive: true)
         }
         .buttonStyle(.plain)
     }

@@ -259,10 +259,7 @@ private struct SettingsMacShortcutKeyCluster: View {
                     .lineLimit(1)
                     .padding(.horizontal, horizontalPadding(for: tokens[index]))
                     .frame(minWidth: minimumWidth(for: tokens[index]), minHeight: 30)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Color.accentColor.opacity(0.16))
-                    )
+                    .routinaGlassCard(cornerRadius: 7, tint: .accentColor, tintOpacity: 0.16)
                     .overlay(
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .stroke(Color.accentColor.opacity(0.42), lineWidth: 1)

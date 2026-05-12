@@ -92,7 +92,6 @@ struct HomeMacTodoBoardView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .windowBackgroundColor))
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isCompactLayout)
     }
 
@@ -175,9 +174,10 @@ struct HomeMacTodoBoardView: View {
             )
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(backgroundFill(for: column.state))
+        .routinaGlassPanel(
+            cornerRadius: 8,
+            tint: highlightedColumnState == column.state ? .accentColor : .secondary,
+            tintOpacity: highlightedColumnState == column.state ? 0.08 : 0.06
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -186,13 +186,6 @@ struct HomeMacTodoBoardView: View {
         .animation(.easeInOut(duration: 0.12), value: highlightedColumnState)
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: hoverTargetTaskID)
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: trailingDropColumnState)
-    }
-
-    private func backgroundFill(for state: TodoState) -> Color {
-        if highlightedColumnState == state {
-            return Color.accentColor.opacity(0.08)
-        }
-        return Color.secondary.opacity(0.08)
     }
 
     private func borderColor(for state: TodoState) -> Color {

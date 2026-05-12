@@ -40,10 +40,7 @@ struct HomeMacBoardCreationFieldView: View {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.secondary.opacity(0.1))
-        )
+        .routinaGlassCard(cornerRadius: 6, tint: .secondary, tintOpacity: 0.10, interactive: true)
     }
 }
 
@@ -84,10 +81,7 @@ struct HomeMacBoardSprintRenameFieldView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.accentColor.opacity(0.1))
-        )
+        .routinaGlassCard(cornerRadius: 8, tint: .accentColor, tintOpacity: 0.10, interactive: true)
     }
 }
 
@@ -103,10 +97,9 @@ struct HomeMacBoardScopeButton: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
-                )
+                .routinaIf(isSelected) { view in
+                    view.routinaGlassCard(cornerRadius: 8, tint: .accentColor, tintOpacity: 0.14, interactive: true)
+                }
         }
         .buttonStyle(.plain)
     }
@@ -135,10 +128,9 @@ struct HomeMacBoardBacklogScopeRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
-            )
+            .routinaIf(isSelected) { view in
+                view.routinaGlassCard(cornerRadius: 8, tint: .accentColor, tintOpacity: 0.14, interactive: true)
+            }
         }
         .buttonStyle(.plain)
     }
@@ -167,10 +159,7 @@ struct HomeMacBacklogRoutingTagsEditor: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.secondary.opacity(0.1))
-            )
+            .routinaGlassCard(cornerRadius: 6, tint: .secondary, tintOpacity: 0.10, interactive: true)
 
             if backlog.routingTags.isEmpty {
                 Text("Tagged new todos land here automatically.")
@@ -193,10 +182,7 @@ struct HomeMacBacklogRoutingTagsEditor: View {
                             .foregroundStyle(Color.accentColor)
                             .padding(.horizontal, 7)
                             .padding(.vertical, 4)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(Color.accentColor.opacity(0.12))
-                            )
+                            .routinaGlassPill(tint: .accentColor, tintOpacity: 0.12, interactive: true)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Remove routing tag \(tag)")
@@ -287,10 +273,9 @@ struct HomeMacBoardSprintScopeRow: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
-                )
+                .routinaIf(isSelected) { view in
+                    view.routinaGlassCard(cornerRadius: 8, tint: .accentColor, tintOpacity: 0.14, interactive: true)
+                }
             }
             .buttonStyle(.plain)
             .contextMenu {

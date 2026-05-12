@@ -24,10 +24,7 @@ struct HomeMacSidebarSectionCard<Content: View>: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.quaternary.opacity(0.32))
-        )
+        .routinaGlassPanel(cornerRadius: 18, tint: .secondary, tintOpacity: 0.08)
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(.white.opacity(0.06), lineWidth: 1)

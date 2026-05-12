@@ -24,10 +24,7 @@ struct HomeIOSLocationFilterPanel: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.secondary.opacity(0.08))
-        )
+        .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.08)
         .padding(.horizontal)
     }
 

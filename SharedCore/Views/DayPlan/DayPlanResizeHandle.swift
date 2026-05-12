@@ -60,7 +60,7 @@ struct DayPlanResizeHandle: View {
         .foregroundStyle(.white)
         .padding(.horizontal, 5)
         .padding(.vertical, 2)
-        .background(.black.opacity(0.48), in: Capsule(style: .continuous))
+        .routinaGlassPill(tint: .black, tintOpacity: 0.48, interactive: true)
         .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
     }
 }

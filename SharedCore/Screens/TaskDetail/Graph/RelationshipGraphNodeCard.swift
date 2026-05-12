@@ -35,8 +35,12 @@ struct RelationshipGraphNodeCard: View {
             }
             .padding(12)
             .frame(width: node.cardSize.width, height: node.cardSize.height, alignment: .leading)
-            .background(node.isCenter ? Color.accentColor.opacity(0.14) : TaskDetailPlatformStyle.graphNodeCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .routinaGlassCard(
+                cornerRadius: 8,
+                tint: node.isCenter ? .accentColor : TaskDetailPlatformStyle.graphNodeCardBackground,
+                tintOpacity: node.isCenter ? 0.14 : 0.10,
+                interactive: true
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(node.isCenter ? Color.accentColor.opacity(0.45) : Color.secondary.opacity(0.2), lineWidth: 1)

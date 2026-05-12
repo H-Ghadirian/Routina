@@ -85,7 +85,7 @@ struct TaskDetailRelationshipsSectionView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
-                                .background(.ultraThinMaterial, in: Capsule())
+                                .routinaGlassPill()
                                 .overlay(
                                     Capsule()
                                         .stroke(Color.white.opacity(0.08), lineWidth: 1)

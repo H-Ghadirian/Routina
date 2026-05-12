@@ -98,10 +98,7 @@ extension HomeTCAView {
                 Text(entry.taskEmoji)
                     .font(.title2)
                     .frame(width: 36, height: 36)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.primary.opacity(0.06))
-                    )
+                    .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.taskName)
@@ -119,10 +116,7 @@ extension HomeTCAView {
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(timelineKindColor(for: entry).opacity(0.15))
-                    )
+                    .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
                     .foregroundStyle(timelineKindColor(for: entry))
             }
             .padding(.vertical, 2)

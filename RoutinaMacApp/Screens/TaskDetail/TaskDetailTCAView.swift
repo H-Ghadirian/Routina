@@ -348,8 +348,7 @@ struct TaskDetailTCAView: View {
             if isCalendarExpanded {
                 Divider()
                 calendarSection
-                    .background(TaskDetailPlatformStyle.calendarCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.06)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
@@ -812,10 +811,7 @@ struct TaskDetailTCAView: View {
             .lineLimit(1)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(tint.opacity(0.13))
-            )
+            .routinaGlassPill(tint: tint, tintOpacity: 0.13)
             .overlay(
                 Capsule()
                     .stroke(tint.opacity(0.25), lineWidth: 1)

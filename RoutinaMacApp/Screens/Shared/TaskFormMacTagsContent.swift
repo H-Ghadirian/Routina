@@ -37,13 +37,13 @@ struct TaskFormMacTagsContent: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
-                                .background(.quaternary, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                                .routinaGlassCard(cornerRadius: 4, tint: .secondary, tintOpacity: 0.08)
                         }
                         .font(.caption.weight(.medium))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .foregroundStyle(.secondary)
-                        .background(.regularMaterial, in: Capsule())
+                        .routinaGlassPill(interactive: true)
                         .overlay {
                             Capsule()
                                 .stroke(Color.secondary.opacity(0.22), lineWidth: 1)
@@ -79,7 +79,7 @@ struct TaskFormMacTagsContent: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                        .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
                     }
                     .buttonStyle(.plain)
                     .fixedSize()
@@ -112,7 +112,7 @@ struct TaskFormMacTagsContent: View {
                             .foregroundStyle(.orange)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(Color.orange.opacity(0.10), in: Capsule())
+                            .routinaGlassPill(tint: .orange, tintOpacity: 0.10, interactive: true)
                             .overlay {
                                 Capsule()
                                     .stroke(Color.orange.opacity(0.45), lineWidth: 1)
@@ -153,12 +153,10 @@ struct TaskFormMacTagsContent: View {
                             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(
-                                Capsule().fill(
-                                    isSelected
-                                        ? Color.accentColor.opacity(0.16)
-                                        : Color.secondary.opacity(0.10)
-                                )
+                            .routinaGlassPill(
+                                tint: isSelected ? .accentColor : .secondary,
+                                tintOpacity: isSelected ? 0.16 : 0.10,
+                                interactive: true
                             )
                         }
                         .buttonStyle(.plain)

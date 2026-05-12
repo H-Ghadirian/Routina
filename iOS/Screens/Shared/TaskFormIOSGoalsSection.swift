@@ -46,7 +46,7 @@ struct TaskFormIOSGoalsSection: View {
                         .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                        .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
                         .overlay {
                             Capsule()
                                 .stroke(Color.accentColor.opacity(0.28), lineWidth: 1)
@@ -82,12 +82,10 @@ struct TaskFormIOSGoalsSection: View {
                             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(
-                                Capsule().fill(
-                                    isSelected
-                                        ? Color.accentColor.opacity(0.16)
-                                        : Color.secondary.opacity(0.10)
-                                )
+                            .routinaGlassPill(
+                                tint: isSelected ? .accentColor : .secondary,
+                                tintOpacity: isSelected ? 0.16 : 0.10,
+                                interactive: true
                             )
                             .overlay {
                                 Capsule()

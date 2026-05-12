@@ -50,9 +50,10 @@ struct HomeFilterChipButton: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, verticalPadding)
                 .foregroundStyle(foregroundColor)
-                .background(
-                    Capsule()
-                        .fill(backgroundColor)
+                .routinaGlassPill(
+                    tint: backgroundTint,
+                    tintOpacity: backgroundOpacity,
+                    interactive: true
                 )
         }
         .buttonStyle(.plain)
@@ -66,11 +67,15 @@ struct HomeFilterChipButton: View {
         }
     }
 
-    private var backgroundColor: Color {
+    private var backgroundTint: Color {
         if isSelected {
-            selectedColor.opacity(selectedBackgroundOpacity)
+            selectedColor
         } else {
-            (unselectedColor ?? Color.secondary).opacity(unselectedBackgroundOpacity)
+            unselectedColor ?? Color.secondary
         }
+    }
+
+    private var backgroundOpacity: Double {
+        isSelected ? selectedBackgroundOpacity : unselectedBackgroundOpacity
     }
 }

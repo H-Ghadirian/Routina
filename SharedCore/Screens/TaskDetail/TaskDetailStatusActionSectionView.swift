@@ -74,8 +74,7 @@ struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
         if let cardBackground {
             content
                 .padding(contentPadding)
-                .background(cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .routinaGlassCard(cornerRadius: 12, tint: cardBackground, tintOpacity: 0.18)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(cardStroke ?? .clear, lineWidth: 1)

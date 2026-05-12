@@ -63,10 +63,7 @@ struct SettingsMacTagsListContent: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.primary.opacity(0.06))
-        )
+        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06, interactive: true)
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)

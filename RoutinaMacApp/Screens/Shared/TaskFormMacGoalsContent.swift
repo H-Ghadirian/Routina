@@ -47,7 +47,7 @@ struct TaskFormMacGoalsContent: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                        .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
                     }
                     .buttonStyle(.plain)
                     .fixedSize()
@@ -80,12 +80,10 @@ struct TaskFormMacGoalsContent: View {
                             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(
-                                Capsule().fill(
-                                    isSelected
-                                        ? Color.accentColor.opacity(0.16)
-                                        : Color.secondary.opacity(0.10)
-                                )
+                            .routinaGlassPill(
+                                tint: isSelected ? .accentColor : .secondary,
+                                tintOpacity: isSelected ? 0.16 : 0.10,
+                                interactive: true
                             )
                         }
                         .buttonStyle(.plain)

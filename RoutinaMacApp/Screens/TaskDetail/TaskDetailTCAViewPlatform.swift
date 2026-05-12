@@ -64,8 +64,7 @@ extension TaskDetailTCAView {
                     minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                     alignment: .topLeading
                 )
-                .background(TaskDetailPlatformStyle.calendarCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .routinaGlassCard(cornerRadius: 16, tint: .secondary, tintOpacity: 0.06)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
@@ -79,8 +78,7 @@ extension TaskDetailTCAView {
                     minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                     alignment: .topLeading
                 )
-                .background(TaskDetailPlatformStyle.summaryCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .routinaGlassCard(cornerRadius: 16, tint: .secondary, tintOpacity: 0.06)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)

@@ -56,7 +56,7 @@ struct TaskRelationshipGraphSheet: View {
                     .padding(24)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(TaskDetailPlatformStyle.graphSheetBackground)
+                .routinaGlassPanel(cornerRadius: 0, tint: TaskDetailPlatformStyle.graphSheetBackground, tintOpacity: 0.08)
                 .onAppear {
                     canvasOffset = CGSize(width: proxy.size.width * 0.08, height: 0)
                     canvasOffsetAtDragStart = canvasOffset

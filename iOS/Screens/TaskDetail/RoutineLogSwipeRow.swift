@@ -27,7 +27,7 @@ struct RoutineLogSwipeRow: View {
             }
 
             rowContent
-                .background(TaskDetailPlatformStyle.summaryCardBackground)
+                .routinaGlassCard(cornerRadius: 8, tint: TaskDetailPlatformStyle.summaryCardBackground, tintOpacity: 0.12)
                 .offset(x: currentOffset)
                 .contentShape(Rectangle())
                 .simultaneousGesture(swipeGesture)

@@ -62,9 +62,11 @@ struct SettingsAppIconButton: View {
             }
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(uiColor: .secondarySystemGroupedBackground))
+            .routinaGlassCard(
+                cornerRadius: 14,
+                tint: isSelected ? .accentColor : .secondary,
+                tintOpacity: isSelected ? 0.12 : 0.06,
+                interactive: true
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)

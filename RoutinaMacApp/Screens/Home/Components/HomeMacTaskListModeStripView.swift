@@ -16,9 +16,10 @@ struct HomeMacTaskListModeStripView: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .foregroundStyle(selectedMode == mode ? Color.white : Color.primary)
-                        .background(
-                            Capsule()
-                                .fill(selectedMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                        .routinaGlassPill(
+                            tint: selectedMode == mode ? .accentColor : .secondary,
+                            tintOpacity: selectedMode == mode ? 0.42 : 0.10,
+                            interactive: true
                         )
                 }
                 .buttonStyle(.plain)

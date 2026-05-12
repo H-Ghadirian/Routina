@@ -48,7 +48,7 @@ struct StatsGitHubSummaryCard: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(accent)
                 .frame(width: 42, height: 42)
-                .background(accent.opacity(colorScheme == .dark ? 0.18 : 0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .routinaGlassCard(cornerRadius: 14, tint: accent, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
@@ -65,17 +65,7 @@ struct StatsGitHubSummaryCard: View {
         }
         .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
         .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(StatsGitHubSurfaceStyle.gradient(colorScheme: colorScheme))
-                .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(accent.opacity(colorScheme == .dark ? 0.16 : 0.12))
-                        .frame(width: 110, height: 110)
-                        .blur(radius: 16)
-                        .offset(x: 28, y: -32)
-                }
-        )
+        .routinaGlassPanel(cornerRadius: 24, tint: accent, tintOpacity: colorScheme == .dark ? 0.12 : 0.08)
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
@@ -98,6 +88,6 @@ struct StatsGitHubInsightPill: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.black.opacity(colorScheme == .dark ? 0.14 : 0.04), in: Capsule(style: .continuous))
+            .routinaGlassPill(tint: .secondary, tintOpacity: colorScheme == .dark ? 0.14 : 0.06)
     }
 }

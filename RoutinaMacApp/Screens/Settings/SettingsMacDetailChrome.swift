@@ -34,7 +34,6 @@ struct SettingsMacDetailShell<Content: View>: View {
             .frame(maxWidth: 760, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 
@@ -59,10 +58,7 @@ struct SettingsMacDetailCard<Content: View>: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
+        .routinaGlassPanel(cornerRadius: 14, tint: .secondary, tintOpacity: 0.06)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.gray.opacity(0.18), lineWidth: 1)

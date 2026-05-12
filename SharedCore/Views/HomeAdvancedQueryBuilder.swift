@@ -30,9 +30,11 @@ struct HomeAdvancedQueryBuilder: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.secondary.opacity(0.08))
+        .routinaGlassCard(
+            cornerRadius: 8,
+            tint: isFocused ? .accentColor : .secondary,
+            tintOpacity: isFocused ? 0.08 : 0.05,
+            interactive: true
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -123,9 +125,11 @@ struct HomeAdvancedQueryBuilder: View {
                     Text(part.title)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .fill(part.kind.color.opacity(0.18))
+                        .routinaGlassCard(
+                            cornerRadius: 5,
+                            tint: part.kind.color,
+                            tintOpacity: 0.18,
+                            interactive: true
                         )
                         .foregroundStyle(part.kind.color)
                 }
@@ -136,9 +140,11 @@ struct HomeAdvancedQueryBuilder: View {
         .controlSize(.small)
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(token.isAdvancedQueryOperator ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.12))
+        .routinaGlassCard(
+            cornerRadius: 7,
+            tint: token.isAdvancedQueryOperator ? .accentColor : .secondary,
+            tintOpacity: token.isAdvancedQueryOperator ? 0.18 : 0.12,
+            interactive: true
         )
         .help("Remove \(token)")
     }

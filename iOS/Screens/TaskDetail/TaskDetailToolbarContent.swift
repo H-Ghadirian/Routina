@@ -18,10 +18,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
                 .font(TaskDetailPlatformStyle.principalTitleFont)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 999, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                )
+                .routinaGlassPill(tint: .accentColor, tintOpacity: 0.10, interactive: true)
                 .overlay(
                     RoundedRectangle(cornerRadius: 999, style: .continuous)
                         .stroke(Color.white.opacity(0.16), lineWidth: 1)

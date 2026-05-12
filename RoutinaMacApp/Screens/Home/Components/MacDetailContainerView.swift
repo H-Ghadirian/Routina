@@ -207,7 +207,7 @@ struct MacHomeDetailModePickerHeader: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .background(.bar)
+        .routinaGlassPanel(cornerRadius: 0, tint: .secondary, tintOpacity: 0.04)
     }
 }
 

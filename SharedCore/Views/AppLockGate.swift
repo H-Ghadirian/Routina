@@ -188,7 +188,7 @@ struct AppLockGate<Content: View>: View {
             }
             .padding(28)
             .frame(maxWidth: 360)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .routinaGlassPanel(cornerRadius: 24, tint: .accentColor, tintOpacity: 0.08)
             .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
             .padding(24)
         }

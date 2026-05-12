@@ -40,18 +40,12 @@ struct HomeMacTagChipView: View {
                     .font(.caption2.weight(.bold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(countBackgroundColor)
-                    )
+                    .routinaGlassPill(tint: tint, tintOpacity: isSelected ? 0.18 : 0.12)
             }
             .foregroundStyle(foregroundColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(backgroundColor)
-            )
+            .routinaGlassPill(tint: tint, tintOpacity: isSelected ? 0.16 : 0.10, interactive: true)
             .overlay(
                 Capsule(style: .continuous)
                     .stroke(strokeColor, lineWidth: 1)
@@ -73,14 +67,6 @@ struct HomeMacTagChipView: View {
             return selectedColor
         }
         return unselectedColor ?? .primary
-    }
-
-    private var backgroundColor: Color {
-        tint.opacity(isSelected ? 0.16 : 0.10)
-    }
-
-    private var countBackgroundColor: Color {
-        tint.opacity(isSelected ? 0.18 : 0.12)
     }
 
     private var strokeColor: Color {

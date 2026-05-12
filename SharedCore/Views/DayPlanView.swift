@@ -89,12 +89,12 @@ struct DayPlanSidebarView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
-                    TextField("Search tasks", text: $planner.searchText)
-                        .textFieldStyle(.plain)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                TextField("Search tasks", text: $planner.searchText)
+                    .textFieldStyle(.plain)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .routinaGlassCard(cornerRadius: 8, interactive: true)
             }
 
             ScrollView {
@@ -126,11 +126,8 @@ struct DayPlanSidebarView: View {
             editorPanel
         }
         .padding(usesPanelBackground ? 14 : 0)
-        .background {
-            if usesPanelBackground {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(.thinMaterial)
-            }
+        .routinaIf(usesPanelBackground) { view in
+            view.routinaGlassPanel(cornerRadius: 8)
         }
     }
 
@@ -770,9 +767,11 @@ private struct DayPlanTaskCandidateRow: View {
             }
             .padding(10)
             .contentShape(Rectangle())
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
+            .routinaGlassCard(
+                cornerRadius: 8,
+                tint: isSelected ? .accentColor : .secondary,
+                tintOpacity: isSelected ? 0.12 : 0.08,
+                interactive: true
             )
         }
         .buttonStyle(.plain)

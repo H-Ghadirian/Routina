@@ -49,10 +49,7 @@ struct AddRoutineEditableStepsView: View {
                         }
                     }
                     .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.secondary.opacity(0.08))
-                    )
+                    .routinaGlassCard(cornerRadius: 10, tint: .secondary, tintOpacity: 0.08)
                 }
             }
             .padding(.vertical, 4)

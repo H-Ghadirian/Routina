@@ -55,7 +55,7 @@ struct HomeMacTodoBoardBacklogListView: View {
             .padding(.horizontal, isCompactLayout ? 12 : 16)
             .padding(.vertical, 9)
         }
-        .background(.regularMaterial)
+        .routinaGlassPanel(cornerRadius: 0, tint: .secondary, tintOpacity: 0.06)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color.primary.opacity(0.08))
@@ -106,10 +106,14 @@ struct HomeMacTodoBoardBacklogListView: View {
             }
             .padding(.horizontal, isCompactLayout ? 12 : 16)
             .padding(.vertical, isCompactLayout ? 9 : 11)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(rowBackground(isSelectedForBulkAction: isSelectedForBulkAction, taskID: task.id))
-            )
+            .routinaIf(isSelectedForBulkAction || selectedTaskID == task.id) { view in
+                view.routinaGlassCard(
+                    cornerRadius: 6,
+                    tint: .accentColor,
+                    tintOpacity: isSelectedForBulkAction ? 0.18 : 0.12,
+                    interactive: true
+                )
+            }
             .contentShape(Rectangle())
             .onTapGesture(count: 2) {
                 onOpenTask(task.id)
@@ -279,13 +283,4 @@ struct HomeMacTodoBoardBacklogListView: View {
         selectedTaskIDs.removeAll()
     }
 
-    private func rowBackground(isSelectedForBulkAction: Bool, taskID: UUID) -> Color {
-        if isSelectedForBulkAction {
-            return Color.accentColor.opacity(0.18)
-        }
-        if selectedTaskID == taskID {
-            return Color.accentColor.opacity(0.12)
-        }
-        return Color.clear
-    }
 }

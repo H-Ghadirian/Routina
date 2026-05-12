@@ -24,6 +24,7 @@ struct StatsHeroSectionView: View {
         }
         .padding(22)
         .background(heroGradient, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .routinaGlassPanel(cornerRadius: 30, tint: .accentColor, tintOpacity: 0.18)
         .overlay(
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.28), lineWidth: 1)
@@ -39,7 +40,7 @@ struct StatsHeroSectionView: View {
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
-                    .background(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.62), in: Capsule())
+                    .routinaGlassPill(tint: .white, tintOpacity: colorScheme == .dark ? 0.14 : 0.42)
 
                 Text(totalCount.formatted())
                     .font(.system(size: 54, weight: .bold, design: .rounded))
@@ -74,10 +75,7 @@ struct StatsHeroSectionView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(
-            Color.white.opacity(colorScheme == .dark ? 0.08 : 0.2),
-            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-        )
+        .routinaGlassCard(cornerRadius: 18, tint: .white, tintOpacity: colorScheme == .dark ? 0.08 : 0.2)
     }
 
     private var sparklinePreview: some View {

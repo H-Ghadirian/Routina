@@ -193,7 +193,7 @@ struct DayPlanWeekCalendarView: View {
                 }
             }
         }
-        .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .routinaGlassPanel(cornerRadius: 8)
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(isDropTargeted ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.18), lineWidth: isDropTargeted ? 1.5 : 1)

@@ -41,9 +41,10 @@ struct DayPlanWeekDayHeader: View {
                 .foregroundStyle(isFocusedForUnplannedCompleted ? Color.accentColor : Color.secondary)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(isFocusedForUnplannedCompleted ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.10))
+                .routinaGlassPill(
+                    tint: isFocusedForUnplannedCompleted ? .accentColor : .secondary,
+                    tintOpacity: isFocusedForUnplannedCompleted ? 0.14 : 0.10,
+                    interactive: true
                 )
                 .help("Show timeline tasks not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
                 .accessibilityLabel("\(timelineTaskCountText) from the timeline not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
@@ -51,22 +52,18 @@ struct DayPlanWeekDayHeader: View {
         }
         .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .padding(.horizontal, 10)
-        .background(headerBackground)
+        .routinaIf(isSelected || isFocusedForUnplannedCompleted) { view in
+            view.routinaGlassCard(
+                cornerRadius: 0,
+                tint: .accentColor,
+                tintOpacity: isFocusedForUnplannedCompleted ? 0.20 : 0.14
+            )
+        }
         .overlay(alignment: .trailing) {
             Rectangle()
                 .fill(Color.secondary.opacity(0.18))
                 .frame(width: 1)
         }
-    }
-
-    private var headerBackground: Color {
-        if isFocusedForUnplannedCompleted {
-            return Color.accentColor.opacity(0.20)
-        }
-        if isSelected {
-            return Color.accentColor.opacity(0.14)
-        }
-        return Color.clear
     }
 
     private var timelineTaskCountText: String {

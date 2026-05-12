@@ -43,7 +43,7 @@ struct MacQuickAddSpotlightOverlay: View {
                 }
             }
             .frame(width: 620)
-            .background(.ultraThickMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .routinaGlassPanel(cornerRadius: 16, tint: .accentColor, tintOpacity: 0.08, interactive: true)
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(Color.primary.opacity(0.12), lineWidth: 1)

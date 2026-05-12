@@ -729,7 +729,7 @@ struct StatsView: View {
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(.primary)
                         .frame(width: 34, height: 34)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .routinaGlassPill(interactive: true)
                         .overlay(
                             Circle()
                                 .stroke(Color.primary.opacity(0.12), lineWidth: 1)

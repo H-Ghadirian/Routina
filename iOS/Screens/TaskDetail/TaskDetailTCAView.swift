@@ -632,10 +632,7 @@ struct TaskDetailTCAView: View {
             .lineLimit(1)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(tint.opacity(0.12))
-            )
+            .routinaGlassPill(tint: tint, tintOpacity: 0.12)
             .overlay(
                 Capsule()
                     .stroke(tint.opacity(0.22), lineWidth: 1)

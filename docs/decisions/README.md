@@ -27,6 +27,7 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Map and day place review:** iPhone and Mac expose map-based check-in from the check-in dock. The map flow can request current location, use saved-place radii, record raw current-location sessions, and show a day timeline where place sessions can be reviewed, edited, or deleted.
 - **Mac Places:** The active Mac Places architecture is [0021](0021-keep-mac-places-in-home-split-shell.md), superseding the 0017-0020 presentation chain. Places stays inside the shared Home split-view shell: the sidebar keeps the shared mode strip and swaps task filters/list for place controls, saved places, and day timeline; the detail column renders the map.
 - **Mac Home toolbar:** Global Home toolbar content belongs to the root split-view shell, not the sidebar column. Detail-specific controls may still be attached by detail views. The Home window uses full-size transparent titlebar with unified toolbar styling.
+- **Liquid Glass UI:** Custom app cards, panels, chips, and floating controls use shared Liquid Glass surface modifiers with semantic tinting and material fallbacks. Standard system structures stay system-native, and custom opaque backgrounds behind macOS split-view chrome should be avoided.
 
 ## Open Questions
 
@@ -61,3 +62,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0021](0021-keep-mac-places-in-home-split-shell.md) | Keep Mac Places in the Home Split Shell | Accepted | 2026-05-11 |
 | [0022](0022-own-mac-home-toolbar-at-split-shell.md) | Own Mac Home Toolbar at the Split Shell | Accepted | 2026-05-11 |
 | [0023](0023-edit-place-check-ins-from-day-timeline.md) | Edit Place Check-Ins from the Day Timeline | Accepted | 2026-05-11 |
+| [0024](0024-adopt-liquid-glass-ui-surfaces.md) | Adopt Liquid Glass UI Surfaces | Accepted | 2026-05-12 |

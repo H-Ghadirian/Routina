@@ -39,7 +39,7 @@ struct DayPlanDropIndicator: View {
                     .monospacedDigit()
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(.ultraThickMaterial, in: Capsule(style: .continuous))
+                    .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14)
                     .offset(x: indicatorX + 8, y: indicatorY + 6)
             }
         }

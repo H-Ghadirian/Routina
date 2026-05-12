@@ -12,9 +12,9 @@ struct MacPlaceFilterRow: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .frame(width: 24, height: 24)
-                    .background(
-                        Circle()
-                            .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                    .routinaGlassPill(
+                        tint: isSelected ? .accentColor : .secondary,
+                        tintOpacity: isSelected ? 0.16 : 0.10
                     )
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -38,9 +38,11 @@ struct MacPlaceFilterRow: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
+            .routinaGlassCard(
+                cornerRadius: 14,
+                tint: isSelected ? .accentColor : .secondary,
+                tintOpacity: isSelected ? 0.14 : 0.07,
+                interactive: true
             )
         }
         .buttonStyle(.plain)
@@ -56,10 +58,7 @@ struct MacPlaceStatusBadge: View {
             .foregroundStyle(foregroundColor)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
-            .background(
-                Capsule()
-                    .fill(backgroundColor)
-            )
+            .routinaGlassPill(tint: foregroundColor, tintOpacity: 0.14)
     }
 
     private var labelText: String {
@@ -87,14 +86,4 @@ struct MacPlaceStatusBadge: View {
         }
     }
 
-    private var backgroundColor: Color {
-        switch status {
-        case .here:
-            return Color.green.opacity(0.15)
-        case .away:
-            return Color.orange.opacity(0.16)
-        case .unknown:
-            return Color.secondary.opacity(0.12)
-        }
-    }
 }

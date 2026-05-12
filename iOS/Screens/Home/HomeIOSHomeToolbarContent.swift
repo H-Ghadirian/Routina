@@ -77,10 +77,9 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                 .frame(width: 30, height: 30)
-                .background(
-                    Circle()
-                        .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.clear)
-                )
+                .routinaIf(isSelected) { view in
+                    view.routinaGlassPill(tint: .accentColor, tintOpacity: 0.16, interactive: true)
+                }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(mode.accessibilityLabel)

@@ -12,7 +12,7 @@ struct StatsHeroStatPill: View {
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(.white)
                 .frame(width: 34, height: 34)
-                .background(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.24), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .routinaGlassCard(cornerRadius: 12, tint: .white, tintOpacity: colorScheme == .dark ? 0.12 : 0.24)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -28,7 +28,7 @@ struct StatsHeroStatPill: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .routinaGlassCard(cornerRadius: 18, tint: .white, tintOpacity: colorScheme == .dark ? 0.08 : 0.2)
     }
 }
 
@@ -75,7 +75,7 @@ struct StatsSummaryCard<Accessory: View>: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(accent)
                     .frame(width: 42, height: 42)
-                    .background(accent.opacity(colorScheme == .dark ? 0.18 : 0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .routinaGlassCard(cornerRadius: 14, tint: accent, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
 
                 Spacer(minLength: 0)
                 accessory()
@@ -96,17 +96,7 @@ struct StatsSummaryCard<Accessory: View>: View {
         }
         .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
         .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(surfaceGradient)
-                .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(accent.opacity(colorScheme == .dark ? 0.16 : 0.12))
-                        .frame(width: 110, height: 110)
-                        .blur(radius: 16)
-                        .offset(x: 28, y: -32)
-                }
-        )
+        .routinaGlassPanel(cornerRadius: 24, tint: accent, tintOpacity: colorScheme == .dark ? 0.12 : 0.08)
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
@@ -193,7 +183,7 @@ struct StatsSmallHighlightBadge: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .routinaGlassCard(cornerRadius: 18, tint: .accentColor, tintOpacity: 0.10)
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.35), lineWidth: 1)
@@ -212,7 +202,7 @@ struct StatsBottomInsightPill: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.black.opacity(colorScheme == .dark ? 0.14 : 0.04), in: Capsule(style: .continuous))
+            .routinaGlassPill(tint: .secondary, tintOpacity: colorScheme == .dark ? 0.14 : 0.06)
     }
 }
 
@@ -311,7 +301,7 @@ extension View {
         colorScheme: ColorScheme
     ) -> some View {
         padding(20)
-            .background(surfaceGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .routinaGlassPanel(cornerRadius: 28, tint: .accentColor, tintOpacity: 0.07)
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
@@ -319,9 +309,6 @@ extension View {
     }
 
     func statsChartPlotBackground(colorScheme: ColorScheme) -> some View {
-        background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.black.opacity(colorScheme == .dark ? 0.18 : 0.04))
-        )
+        routinaGlassCard(cornerRadius: 18, tint: .secondary, tintOpacity: colorScheme == .dark ? 0.12 : 0.05)
     }
 }

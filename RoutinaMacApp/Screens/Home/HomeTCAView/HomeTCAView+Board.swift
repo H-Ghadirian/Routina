@@ -148,7 +148,7 @@ extension HomeTCAView {
                 onCancelSprintFocusAllocation: { store.send(.sprintFocusAllocationCancelTapped) }
             )
         }
-        .background(.regularMaterial)
+        .routinaGlassPanel(cornerRadius: 0, tint: .secondary, tintOpacity: 0.04)
         .clipped()
     }
 

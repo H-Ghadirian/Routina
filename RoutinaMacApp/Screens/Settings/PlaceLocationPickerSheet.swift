@@ -82,7 +82,7 @@ struct PlaceLocationPickerSheet: View {
                             .font(.footnote.weight(.medium))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(.ultraThinMaterial, in: Capsule())
+                            .routinaGlassPill(interactive: true)
                             .padding(16)
                     }
                     .simultaneousGesture(

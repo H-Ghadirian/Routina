@@ -18,8 +18,12 @@ struct TaskDetailSectionCardView<Content: View>: View {
     var body: some View {
         content
             .padding(12)
-            .background(background)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .routinaGlassCard(
+                cornerRadius: 12,
+                tint: background,
+                tintOpacity: 0.18,
+                interactive: false
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(stroke, lineWidth: 1)
@@ -49,7 +53,7 @@ struct TaskDetailCollapsibleSectionHeaderView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color.secondary.opacity(0.12), in: Capsule())
+                    .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
 
                 Spacer(minLength: 8)
 

@@ -294,7 +294,7 @@ private struct GoalTaskInlineRow: View {
         HStack(spacing: 12) {
             Text(task.displayEmoji)
                 .frame(width: 28, height: 28)
-                .background(Color.secondary.opacity(0.12), in: Circle())
+                .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(task.displayName)

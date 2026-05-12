@@ -27,9 +27,10 @@ struct AddRoutineAvailableTagSuggestionsView: View {
                             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(
-                                Capsule()
-                                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                            .routinaGlassPill(
+                                tint: isSelected ? .accentColor : .secondary,
+                                tintOpacity: isSelected ? 0.16 : 0.10,
+                                interactive: true
                             )
                         }
                         .buttonStyle(.plain)

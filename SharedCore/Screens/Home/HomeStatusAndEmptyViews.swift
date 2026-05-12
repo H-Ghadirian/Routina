@@ -53,7 +53,7 @@ struct HomeStatusBadgeView: View {
             .foregroundStyle(style.foregroundColor)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(style.backgroundColor, in: Capsule())
+            .routinaGlassPill(tint: style.foregroundColor, tintOpacity: 0.12)
         }
     }
 }
@@ -75,7 +75,7 @@ struct HomeTaskTypeBadgeView: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(tint.opacity(0.12), in: Capsule())
+            .routinaGlassPill(tint: tint, tintOpacity: 0.12)
     }
 }
 

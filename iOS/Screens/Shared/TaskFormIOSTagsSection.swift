@@ -37,7 +37,7 @@ struct TaskFormIOSTagsSection: View {
                             .foregroundStyle(tint)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(tint.opacity(0.12), in: Capsule())
+                            .routinaGlassPill(tint: tint, tintOpacity: 0.12, interactive: true)
                             .overlay {
                                 Capsule()
                                     .stroke(tint.opacity(0.28), lineWidth: 1)
@@ -75,7 +75,7 @@ struct TaskFormIOSTagsSection: View {
                         .foregroundStyle(tint)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(tint.opacity(0.14), in: Capsule())
+                        .routinaGlassPill(tint: tint, tintOpacity: 0.14, interactive: true)
                         .overlay {
                             Capsule()
                                 .stroke(tint.opacity(0.28), lineWidth: 1)
@@ -118,7 +118,7 @@ struct TaskFormIOSTagsSection: View {
                             .foregroundStyle(tint)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(tint.opacity(0.10), in: Capsule())
+                            .routinaGlassPill(tint: tint, tintOpacity: 0.10, interactive: true)
                             .overlay {
                                 Capsule()
                                     .stroke(tint.opacity(0.45), lineWidth: 1)
@@ -160,12 +160,10 @@ struct TaskFormIOSTagsSection: View {
                             .foregroundStyle(isSelected ? tint : (tagColor(tag) ?? .secondary))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(
-                                Capsule().fill(
-                                    isSelected
-                                        ? tint.opacity(0.16)
-                                        : (tagColor(tag) ?? .secondary).opacity(0.10)
-                                )
+                            .routinaGlassPill(
+                                tint: isSelected ? tint : (tagColor(tag) ?? .secondary),
+                                tintOpacity: isSelected ? 0.16 : 0.10,
+                                interactive: true
                             )
                             .overlay {
                                 Capsule()

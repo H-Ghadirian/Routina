@@ -24,7 +24,7 @@ struct AddRoutineSelectedTagsView: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                        .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Remove tag \(tag)")

@@ -67,7 +67,7 @@ struct FocusSessionCard: View {
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(.teal)
                         .frame(width: 30, height: 30)
-                        .background(.teal.opacity(0.12), in: Circle())
+                        .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Focus")
@@ -113,11 +113,8 @@ struct FocusSessionCard: View {
             }
         }
         .padding(isEmbedded ? 0 : 16)
-        .background {
-            if !isEmbedded {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(cardBackground)
-            }
+        .routinaIf(!isEmbedded) { view in
+            view.routinaGlassCard(cornerRadius: 12, tint: .teal, tintOpacity: 0.06)
         }
         .overlay {
             if !isEmbedded {
@@ -184,14 +181,6 @@ struct FocusSessionCard: View {
         .onChange(of: task.id) { _, _ in
             isExpanded = false
         }
-    }
-
-    private var cardBackground: Color {
-        #if os(macOS)
-        Color(nsColor: .windowBackgroundColor)
-        #else
-        Color(uiColor: .secondarySystemBackground)
-        #endif
     }
 
     #if os(macOS)

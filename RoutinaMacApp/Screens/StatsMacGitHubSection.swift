@@ -19,6 +19,7 @@ struct StatsMacGitHubSection: View {
         }
         .padding(20)
         .background(StatsGitHubSurfaceStyle.gradient(colorScheme: colorScheme), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .routinaGlassPanel(cornerRadius: 28, tint: .accentColor, tintOpacity: 0.07)
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)

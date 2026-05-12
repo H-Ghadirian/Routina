@@ -33,10 +33,7 @@ struct HomeMacTodoBoardBadgeView: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 6)
             .padding(.vertical, isCompactLayout ? 2 : 3)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(tint.opacity(0.12))
-            )
+            .routinaGlassPill(tint: tint, tintOpacity: 0.12)
     }
 }
 
@@ -69,11 +66,10 @@ struct HomeMacTodoBoardColumnDropSpacer: View {
             }
 
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(
-                    isHighlighted
-                        ? column.tint.opacity(0.14)
-                        : Color.clear
-                )
+                .fill(Color.clear)
+                .routinaIf(isHighlighted) { view in
+                    view.routinaGlassCard(cornerRadius: 8, tint: column.tint, tintOpacity: 0.14)
+                }
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .strokeBorder(

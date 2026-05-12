@@ -28,9 +28,11 @@ struct SettingsMacAppIconButton: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(nsColor: .windowBackgroundColor))
+            .routinaGlassCard(
+                cornerRadius: 12,
+                tint: isSelected ? .accentColor : .secondary,
+                tintOpacity: isSelected ? 0.12 : 0.06,
+                interactive: true
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

@@ -441,7 +441,7 @@ private struct HomePinnedFocusTimerBanner: View {
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 14)
                     .frame(maxWidth: .infinity, minHeight: 42)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .routinaGlassCard(cornerRadius: 10, tint: .teal, tintOpacity: 0.08, interactive: true)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .stroke(.teal.opacity(0.35), lineWidth: 1)
@@ -452,7 +452,7 @@ private struct HomePinnedFocusTimerBanner: View {
             .padding(.horizontal, 16)
             .padding(.top, 6)
             .padding(.bottom, 8)
-            .background(.bar)
+            .routinaGlassPanel(cornerRadius: 0, tint: .teal, tintOpacity: 0.04)
             .accessibilityLabel("Open running timer for \(status.title)")
             .transition(.move(edge: .top).combined(with: .opacity))
         }

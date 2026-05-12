@@ -38,8 +38,7 @@ extension View {
     }
 
     func routinaPlatformCalendarCardStyle() -> some View {
-        background(TaskDetailPlatformStyle.calendarCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.06)
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)

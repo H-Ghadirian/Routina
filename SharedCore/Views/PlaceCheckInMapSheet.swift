@@ -238,7 +238,7 @@ struct PlaceCheckInMapSheet: View {
             .padding(18)
             .frame(width: 380)
             .frame(maxHeight: .infinity, alignment: .top)
-            .background(.bar)
+            .routinaGlassPanel(cornerRadius: 0, tint: .teal, tintOpacity: 0.04)
 
             Divider()
 
@@ -365,7 +365,7 @@ struct PlaceCheckInMapSheet: View {
                 .font(.caption.weight(.semibold))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.ultraThinMaterial, in: Capsule())
+                .routinaGlassPill()
                 .padding(10)
         }
         .overlay(alignment: .trailing) {
@@ -399,7 +399,7 @@ struct PlaceCheckInMapSheet: View {
         }
         .frame(width: 40)
         .padding(.vertical, 6)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .routinaGlassCard(cornerRadius: 8, interactive: true)
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
@@ -489,7 +489,7 @@ struct PlaceCheckInMapSheet: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.08)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 8) {
@@ -552,7 +552,7 @@ struct PlaceCheckInMapSheet: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.08)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 8) {
@@ -575,9 +575,9 @@ struct PlaceCheckInMapSheet: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(isSelected(place) ? Color.accentColor : Color.secondary)
                     .frame(width: 28, height: 28)
-                    .background(
-                        Circle()
-                            .fill(isSelected(place) ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.10))
+                    .routinaGlassPill(
+                        tint: isSelected(place) ? .accentColor : .secondary,
+                        tintOpacity: isSelected(place) ? 0.16 : 0.10
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -601,9 +601,11 @@ struct PlaceCheckInMapSheet: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected(place) ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.07))
+            .routinaGlassCard(
+                cornerRadius: 8,
+                tint: isSelected(place) ? .accentColor : .secondary,
+                tintOpacity: isSelected(place) ? 0.12 : 0.07,
+                interactive: true
             )
         }
         .buttonStyle(.plain)
@@ -639,7 +641,7 @@ struct PlaceCheckInMapSheet: View {
                                     .foregroundStyle(.teal)
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(.teal.opacity(0.12), in: Capsule())
+                                    .routinaGlassPill(tint: .teal, tintOpacity: 0.12)
                             }
                         }
 
@@ -672,7 +674,7 @@ struct PlaceCheckInMapSheet: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.07, interactive: true)
         .contextMenu {
             Button {
                 beginEditing(session)
@@ -707,7 +709,7 @@ struct PlaceCheckInMapSheet: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .frame(width: 28, height: 28)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .routinaGlassCard(cornerRadius: 6, tint: .secondary, tintOpacity: 0.08, interactive: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Check-in actions")

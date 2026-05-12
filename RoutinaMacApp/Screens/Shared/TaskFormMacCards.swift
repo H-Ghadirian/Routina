@@ -20,10 +20,7 @@ struct TaskFormMacSectionCard<Content: View>: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
+        .routinaGlassPanel(cornerRadius: 14, tint: .secondary, tintOpacity: 0.06)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.gray.opacity(0.18), lineWidth: 1)
@@ -141,12 +138,10 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                             Text(emoji)
                                 .font(.title3)
                                 .frame(width: 34, height: 34)
-                                .background(
-                                    Circle().fill(
-                                        model.emoji.wrappedValue == emoji
-                                            ? Color.accentColor.opacity(0.20)
-                                            : Color.secondary.opacity(0.08)
-                                    )
+                                .routinaGlassPill(
+                                    tint: model.emoji.wrappedValue == emoji ? .accentColor : .secondary,
+                                    tintOpacity: model.emoji.wrappedValue == emoji ? 0.20 : 0.08,
+                                    interactive: true
                                 )
                         }
                         .buttonStyle(.plain)

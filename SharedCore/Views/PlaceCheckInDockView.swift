@@ -46,7 +46,7 @@ struct PlaceCheckInDockView: View {
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.teal)
                     .frame(width: 32, height: 32)
-                    .background(.teal.opacity(0.14), in: Circle())
+                    .routinaGlassPill(tint: .teal, tintOpacity: 0.16)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(titleText)
@@ -116,7 +116,7 @@ struct PlaceCheckInDockView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .routinaGlassPanel(cornerRadius: 8, tint: .teal, tintOpacity: 0.08, interactive: true)
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(.primary.opacity(0.08), lineWidth: 1)

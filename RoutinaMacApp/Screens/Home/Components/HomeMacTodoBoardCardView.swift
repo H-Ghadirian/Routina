@@ -33,9 +33,11 @@ struct HomeMacTodoBoardCardView: View {
             moveControls
         }
         .padding(isCompactLayout ? 10 : 12)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.14) : Color(nsColor: .controlBackgroundColor))
+        .routinaGlassCard(
+            cornerRadius: 8,
+            tint: isSelected ? .accentColor : .secondary,
+            tintOpacity: isSelected ? 0.14 : 0.06,
+            interactive: true
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
