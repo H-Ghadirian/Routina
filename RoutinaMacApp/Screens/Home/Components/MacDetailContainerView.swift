@@ -215,13 +215,56 @@ struct MacHomeDetailModePicker: View {
     @Binding var selection: MacHomeDetailMode
 
     var body: some View {
-        Picker("Detail mode", selection: $selection) {
-            ForEach(MacHomeDetailMode.allCases) { mode in
-                Text(mode.rawValue).tag(mode)
+        MacLiquidGlassHomeDetailModePicker(selection: $selection)
+    }
+}
+
+private struct MacLiquidGlassHomeDetailModePicker: View {
+    @Binding var selection: MacHomeDetailMode
+    @Namespace private var glassNamespace
+
+    var body: some View {
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 4) {
+                ForEach(MacHomeDetailMode.allCases) { mode in
+                    segmentButton(for: mode)
+                }
+            }
+            .padding(4)
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 14))
+        }
+        .frame(width: 420)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Detail mode")
+    }
+
+    private func segmentButton(for mode: MacHomeDetailMode) -> some View {
+        let isSelected = selection == mode
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                selection = mode
+            }
+        } label: {
+            Text(mode.rawValue)
+                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? .primary : .secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .background {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .glassEffect(
+                        .regular.tint(Color.accentColor.opacity(0.34)).interactive(),
+                        in: .rect(cornerRadius: 10)
+                    )
+                    .glassEffectID("MacHomeDetailModeSelection", in: glassNamespace)
             }
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .frame(width: 420)
+        .accessibilityLabel(mode.rawValue)
+        .accessibilityValue(isSelected ? "Selected" : "")
     }
 }
