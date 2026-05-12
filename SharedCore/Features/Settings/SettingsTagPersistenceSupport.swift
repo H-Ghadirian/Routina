@@ -27,6 +27,13 @@ enum SettingsTagPersistence {
             }
         }
 
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .tag,
+            entityTitle: request.cleanedName,
+            details: "Renamed \(request.originalTagName)",
+            in: context
+        )
         try context.save()
 
         return SettingsTagPersistenceResult(
@@ -52,6 +59,12 @@ enum SettingsTagPersistence {
             }
         }
 
+        DeviceActivityRecorder.recordAction(
+            .deleted,
+            entity: .tag,
+            entityTitle: request.tagName,
+            in: context
+        )
         try context.save()
 
         return SettingsTagPersistenceResult(

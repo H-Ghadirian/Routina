@@ -1213,6 +1213,13 @@ struct PlaceCheckInMapSheet: View {
                 radiusMeters: draft.radiusMeters
             )
             modelContext.insert(place)
+            DeviceActivityRecorder.recordAction(
+                .created,
+                entity: .place,
+                entityID: place.id,
+                entityTitle: place.displayName,
+                in: modelContext
+            )
             try modelContext.save()
 
             newPlaceDraft = nil

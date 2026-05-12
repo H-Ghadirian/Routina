@@ -467,12 +467,18 @@ struct FocusSessionCard: View {
             guard try SleepSessionSupport.activeSession(in: modelContext) == nil else {
                 return
             }
-            modelContext.insert(
-                FocusSession(
-                    taskID: task.id,
-                    startedAt: Date(),
-                    plannedDurationSeconds: duration
-                )
+            let session = FocusSession(
+                taskID: task.id,
+                startedAt: Date(),
+                plannedDurationSeconds: duration
+            )
+            modelContext.insert(session)
+            DeviceActivityRecorder.recordAction(
+                .started,
+                entity: .focusSession,
+                entityID: session.id,
+                entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                in: modelContext
             )
             saveContext()
         } catch {
@@ -488,11 +494,26 @@ struct FocusSessionCard: View {
         guard session.completedAt == nil else { return }
         session.completedAt = Date()
         onCompletedDuration?(session.actualDurationSeconds)
+        DeviceActivityRecorder.recordAction(
+            .completed,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+            in: modelContext
+        )
         saveContext()
     }
 
     private func abandon(_ session: FocusSession) {
         session.abandonedAt = Date()
+        DeviceActivityRecorder.recordAction(
+            .ended,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+            details: "Abandoned focus session",
+            in: modelContext
+        )
         saveContext()
     }
 
@@ -508,10 +529,24 @@ struct FocusSessionCard: View {
         session.completedAt = editStartedAt.addingTimeInterval(durationSeconds)
         session.abandonedAt = nil
         session.plannedDurationSeconds = durationSeconds
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+            in: modelContext
+        )
         saveContext()
     }
 
     private func delete(_ session: FocusSession) {
+        DeviceActivityRecorder.recordAction(
+            .deleted,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+            in: modelContext
+        )
         modelContext.delete(session)
         saveContext()
     }

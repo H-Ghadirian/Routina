@@ -45,6 +45,16 @@ enum CloudDataResetService {
             context.delete(att)
         }
 
+        let deviceActionLogs = try context.fetch(FetchDescriptor<RoutinaDeviceActionLog>())
+        for log in deviceActionLogs {
+            context.delete(log)
+        }
+
+        let deviceSessions = try context.fetch(FetchDescriptor<RoutinaDeviceSession>())
+        for session in deviceSessions {
+            context.delete(session)
+        }
+
         try context.save()
     }
 

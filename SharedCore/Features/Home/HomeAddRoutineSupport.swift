@@ -120,6 +120,13 @@ enum HomeAddRoutineSupport {
                 for attachment in makeAttachments(from: request, taskID: newRoutine.id) {
                     context.insert(attachment)
                 }
+                DeviceActivityRecorder.recordAction(
+                    .created,
+                    entity: .task,
+                    entityID: newRoutine.id,
+                    entityTitle: trimmedName,
+                    in: context
+                )
                 try context.save()
                 send(savedAction(newRoutine))
             } catch {

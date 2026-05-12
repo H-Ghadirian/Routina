@@ -2,6 +2,7 @@ import Foundation
 
 enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     case general
+    case devices
     case notifications
     case calendar
     case places
@@ -31,6 +32,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         [
             [
                 .general,
+                .devices,
                 .notifications,
                 .calendar,
                 .places,
@@ -51,6 +53,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .general:       return "General"
+        case .devices:       return "Devices"
         case .notifications: return "Notifications"
         case .calendar:      return "Calendar"
         case .places:        return "Places"
@@ -69,6 +72,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     var icon: String {
         switch self {
         case .general:       return "gearshape.fill"
+        case .devices:       return "desktopcomputer.and.macbook"
         case .notifications: return "bell.badge.fill"
         case .calendar:      return "calendar.badge.plus"
         case .places:        return "mappin.and.ellipse"
@@ -89,6 +93,12 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .general:
             return SettingsSectionRowPresentation(
                 subtitle: "App Lock: \(state.appearance.isAppLockEnabled ? "On" : "Off") • Battery routines"
+            )
+
+        case .devices:
+            return SettingsSectionRowPresentation(
+                subtitle: state.devices.overviewSubtitle,
+                value: state.devices.sessions.isEmpty ? nil : "\(state.devices.sessions.count)"
             )
 
         case .notifications:

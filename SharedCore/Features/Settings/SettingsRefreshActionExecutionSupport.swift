@@ -18,6 +18,7 @@ enum SettingsRefreshActionExecution {
             )
             send(.systemNotificationPermissionChecked(result.systemNotificationsEnabled))
             send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+            send(.deviceSessionsLoaded(result.deviceSessionSummaries))
             send(.placesLoaded(result.placeSummaries))
             send(.tagsLoaded(result.tagSummaries))
             send(.fastFilterTagsLoaded(appSettingsClient.fastFilterTags()))

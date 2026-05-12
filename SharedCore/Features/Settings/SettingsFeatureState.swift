@@ -47,6 +47,19 @@ struct SettingsNotificationsState: Equatable {
     var notificationReminderTime: Date = Date()
 }
 
+struct SettingsDevicesState: Equatable {
+    var sessions: [RoutinaDeviceSessionSummary] = []
+
+    var overviewSubtitle: String {
+        guard !sessions.isEmpty else { return "No devices recorded yet" }
+        let otherCount = sessions.filter { !$0.isCurrentDevice }.count
+        if otherCount == 0 {
+            return "This device only"
+        }
+        return "\(otherCount + 1) active devices"
+    }
+}
+
 struct SettingsAppearanceState: Equatable {
     var appColorScheme: AppColorScheme = .system
     var routineListSectioningMode: RoutineListSectioningMode = .defaultValue
@@ -170,6 +183,7 @@ extension SettingsTagsState {
 struct SettingsFeatureState: Equatable {
     var diagnostics = SettingsDiagnosticsState()
     var notifications = SettingsNotificationsState()
+    var devices = SettingsDevicesState()
     var appearance = SettingsAppearanceState()
     var cloud = SettingsCloudState()
     var dataTransfer = SettingsDataTransferState()

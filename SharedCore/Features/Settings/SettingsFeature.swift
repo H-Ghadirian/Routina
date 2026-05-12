@@ -41,6 +41,7 @@ struct SettingsFeature {
         case systemNotificationPermissionChecked(Bool)
         case cloudDiagnosticsUpdated
         case cloudUsageEstimateLoaded(CloudUsageEstimate)
+        case deviceSessionsLoaded([RoutinaDeviceSessionSummary])
         case syncNowTapped
         case setCloudDataResetConfirmation(Bool)
         case resetCloudDataConfirmed
@@ -352,6 +353,10 @@ struct SettingsFeature {
 
             case let .cloudUsageEstimateLoaded(estimate):
                 state.cloud.cloudUsageEstimate = estimate
+                return .none
+
+            case let .deviceSessionsLoaded(sessions):
+                state.devices.sessions = sessions
                 return .none
 
             case .onAppBecameActive:

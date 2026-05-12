@@ -298,6 +298,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     private let placeCheckInCacheKey = "watch.cachedPlaceCheckIn.v1"
     private let focusCacheKey = "watch.cachedFocusSession.v1"
     private let pendingRoutineKey = "watch.pendingRoutines.v3"
+    private let installationIDKey = "watch.device.installationID.v1"
     private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
     private var batteryRefreshTask: Task<Void, Never>?
 
@@ -327,9 +328,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         if session.isReachable {
-            session.sendMessage(["requestSync": true], replyHandler: nil)
+            session.sendMessage(actionPayload(["requestSync": true]), replyHandler: nil)
         } else {
-            session.transferUserInfo(["requestSync": true])
+            session.transferUserInfo(actionPayload(["requestSync": true]))
         }
     }
 
@@ -341,11 +342,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let session else { return }
 
-        let payload: [String: Any] = [
+        let payload = actionPayload([
             "action": "markDone",
             "taskID": id.uuidString,
             "completedAt": completionDate.timeIntervalSince1970
-        ]
+        ])
 
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -369,11 +370,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let session else { return }
 
-        let payload: [String: Any] = [
+        let payload = actionPayload([
             "action": "checkInPlace",
             "placeID": id.uuidString,
             "checkedInAt": checkedInAt.timeIntervalSince1970
-        ]
+        ])
 
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -389,10 +390,10 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let session else { return }
 
-        let payload: [String: Any] = [
+        let payload = actionPayload([
             "action": "endPlaceCheckIn",
             "endedAt": endedAt.timeIntervalSince1970
-        ]
+        ])
 
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -410,11 +411,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             NSLog("Watch open-on-iPhone used URL fallback only: session is unavailable")
             return
         }
-        var payload: [String: Any] = [
+        var payload = actionPayload([
             "action": "openDeepLink",
             "url": url.absoluteString,
             "focusKind": focus.resolvedFocusKind.rawValue
-        ]
+        ])
         payload["targetID"] = focus.deepLinkTargetID?.uuidString
 
         guard session.activationState == .activated else {
@@ -609,8 +610,55 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "deviceKind": "appleWatch",
             "levelPercent": Int((level * 100).rounded()),
             "isCharging": isCharging,
-            "capturedAt": Date().timeIntervalSince1970
+            "capturedAt": Date().timeIntervalSince1970,
+            "sourceDevice": currentDeviceSourcePayload()
         ]
+    }
+
+    private func actionPayload(_ payload: [String: Any]) -> [String: Any] {
+        var payload = payload
+        payload["sourceDevice"] = currentDeviceSourcePayload()
+        return payload
+    }
+
+    private func currentDeviceSourcePayload() -> [String: Any] {
+        let device = WKInterfaceDevice.current()
+        return [
+            "installationID": watchInstallationID(),
+            "displayName": device.name,
+            "platform": "appleWatch",
+            "modelName": device.model,
+            "systemName": device.systemName,
+            "systemVersion": device.systemVersion,
+            "appVersion": Self.currentAppVersion,
+            "bundleIdentifier": Bundle.main.bundleIdentifier ?? ""
+        ]
+    }
+
+    private func watchInstallationID() -> String {
+        if let existing = UserDefaults.standard.string(forKey: installationIDKey),
+           !existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return existing
+        }
+
+        let installationID = UUID().uuidString
+        UserDefaults.standard.set(installationID, forKey: installationIDKey)
+        return installationID
+    }
+
+    private static var currentAppVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
+        switch (version, build) {
+        case let (.some(version), .some(build)) where !build.isEmpty:
+            return "\(version) (\(build))"
+        case let (.some(version), _):
+            return version
+        case let (_, .some(build)):
+            return build
+        default:
+            return ""
+        }
     }
 
     private func setRoutines(_ mapped: [WatchRoutine]) {

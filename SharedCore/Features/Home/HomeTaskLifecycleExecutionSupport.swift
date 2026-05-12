@@ -195,6 +195,14 @@ enum HomeTaskLifecycleExecutionSupport {
                     )
                 }
                 task.pausedAt = update.pauseDate
+                DeviceActivityRecorder.recordAction(
+                    .paused,
+                    entity: .task,
+                    entityID: update.taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    at: update.pauseDate,
+                    in: context
+                )
                 try context.save()
                 await cancelNotification(update.taskID.uuidString)
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -223,6 +231,14 @@ enum HomeTaskLifecycleExecutionSupport {
                 )
                 task.pausedAt = nil
                 task.snoozedUntil = nil
+                DeviceActivityRecorder.recordAction(
+                    .resumed,
+                    entity: .task,
+                    entityID: update.taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    at: update.resumeDate,
+                    in: context
+                )
                 try context.save()
                 if NotificationCoordinator.shouldScheduleNotification(
                     for: task,
@@ -260,6 +276,14 @@ enum HomeTaskLifecycleExecutionSupport {
                     return
                 }
                 task.snoozedUntil = update.snoozedUntil
+                DeviceActivityRecorder.recordAction(
+                    .snoozed,
+                    entity: .task,
+                    entityID: update.taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    at: update.snoozedUntil,
+                    in: context
+                )
                 try context.save()
                 if NotificationCoordinator.shouldScheduleNotification(
                     for: task,
@@ -299,6 +323,15 @@ enum HomeTaskLifecycleExecutionSupport {
                     return
                 }
                 task.pinnedAt = update.pinnedAt
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: update.taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Pinned task",
+                    at: update.pinnedAt,
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
@@ -318,6 +351,14 @@ enum HomeTaskLifecycleExecutionSupport {
                     return
                 }
                 task.pinnedAt = nil
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: update.taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Unpinned task",
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {

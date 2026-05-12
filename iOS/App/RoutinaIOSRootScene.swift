@@ -32,6 +32,9 @@ struct RoutinaIOSRootScene: Scene {
                 .modelContainer(persistence.container)
                 .onAppear {
                     guard !AppEnvironment.isAutomatedTestMode else { return }
+                    DeviceActivityRecorder.recordCurrentDeviceSession(
+                        in: persistence.container.mainContext
+                    )
                     UIApplication.shared.registerForRemoteNotifications()
                     PlatformSupport.applyAppIcon(.persistedSelection)
                     Task {

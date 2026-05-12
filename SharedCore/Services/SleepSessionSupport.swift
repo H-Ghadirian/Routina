@@ -56,6 +56,14 @@ enum SleepSessionSupport {
 
         let session = SleepSession(startedAt: startedAt)
         context.insert(session)
+        DeviceActivityRecorder.recordAction(
+            .started,
+            entity: .sleepSession,
+            entityID: session.id,
+            entityTitle: "Sleep",
+            at: startedAt,
+            in: context
+        )
         try context.save()
         if stoppedFocusTimers {
             syncFocusTimerSurfaces()
@@ -75,6 +83,14 @@ enum SleepSessionSupport {
         }
 
         activeSession.end(at: endedAt)
+        DeviceActivityRecorder.recordAction(
+            .ended,
+            entity: .sleepSession,
+            entityID: activeSession.id,
+            entityTitle: "Sleep",
+            at: endedAt,
+            in: context
+        )
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()
         return activeSession
@@ -85,6 +101,13 @@ enum SleepSessionSupport {
         _ session: SleepSession,
         in context: ModelContext
     ) throws {
+        DeviceActivityRecorder.recordAction(
+            .deleted,
+            entity: .sleepSession,
+            entityID: session.id,
+            entityTitle: "Sleep",
+            in: context
+        )
         context.delete(session)
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()

@@ -7,13 +7,27 @@ import WatchConnectivity
 @MainActor
 final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     private enum IncomingAction: Sendable {
-        case requestSync
-        case markDone(UUID, Date)
-        case checkInPlace(UUID, Date)
-        case endPlaceCheckIn(Date)
-        case openDeepLink(RoutinaDeepLink)
-        case batteryStatus(BatteryDeviceSnapshot)
+        case requestSync(RoutinaDeviceActivitySource?)
+        case markDone(UUID, Date, RoutinaDeviceActivitySource?)
+        case checkInPlace(UUID, Date, RoutinaDeviceActivitySource?)
+        case endPlaceCheckIn(Date, RoutinaDeviceActivitySource?)
+        case openDeepLink(RoutinaDeepLink, RoutinaDeviceActivitySource?)
+        case batteryStatus(BatteryDeviceSnapshot, RoutinaDeviceActivitySource?)
         case ignore
+
+        var sourceDevice: RoutinaDeviceActivitySource? {
+            switch self {
+            case let .requestSync(source),
+                 let .markDone(_, _, source),
+                 let .checkInPlace(_, _, source),
+                 let .endPlaceCheckIn(_, source),
+                 let .openDeepLink(_, source),
+                 let .batteryStatus(_, source):
+                return source
+            case .ignore:
+                return nil
+            }
+        }
     }
 
     static let shared = WatchRoutineSyncBridge()
@@ -194,18 +208,23 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     }
 
     private func handleIncomingAction(_ action: IncomingAction) {
+        if let source = action.sourceDevice,
+           let context = modelContextProvider?() {
+            DeviceActivityRecorder.recordDeviceSession(source, in: context)
+        }
+
         switch action {
         case .requestSync:
             pushLatestSnapshot()
-        case let .markDone(taskID, date):
-            markRoutineDone(taskID: taskID, completedAt: date)
-        case let .checkInPlace(placeID, date):
-            checkInPlace(placeID: placeID, at: date)
-        case let .endPlaceCheckIn(date):
-            endPlaceCheckIn(at: date)
-        case let .openDeepLink(deepLink):
+        case let .markDone(taskID, date, source):
+            markRoutineDone(taskID: taskID, completedAt: date, sourceDevice: source)
+        case let .checkInPlace(placeID, date, source):
+            checkInPlace(placeID: placeID, at: date, sourceDevice: source)
+        case let .endPlaceCheckIn(date, source):
+            endPlaceCheckIn(at: date, sourceDevice: source)
+        case let .openDeepLink(deepLink, _):
             openDeepLink(deepLink)
-        case let .batteryStatus(snapshot):
+        case let .batteryStatus(snapshot, _):
             reconcileBatteryStatus(snapshot)
         case .ignore:
             return
@@ -219,7 +238,11 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         pushLatestSnapshot()
     }
 
-    private func markRoutineDone(taskID: UUID, completedAt: Date) {
+    private func markRoutineDone(
+        taskID: UUID,
+        completedAt: Date,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) {
         guard let modelContextProvider else { return }
 
         let context = modelContextProvider()
@@ -240,14 +263,16 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                     taskID: taskID,
                     purchasedAt: completedAt,
                     context: context,
-                    calendar: .current
+                    calendar: .current,
+                    sourceDevice: sourceDevice
                 )
             } else {
                 _ = try RoutineLogHistory.advanceTask(
                     taskID: taskID,
                     completedAt: completedAt,
                     context: context,
-                    calendar: .current
+                    calendar: .current,
+                    sourceDevice: sourceDevice
                 )
             }
             NotificationCenter.default.postRoutineDidUpdate()
@@ -257,7 +282,11 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         }
     }
 
-    private func checkInPlace(placeID: UUID, at date: Date) {
+    private func checkInPlace(
+        placeID: UUID,
+        at date: Date,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) {
         guard let modelContextProvider else { return }
         let context = modelContextProvider()
 
@@ -265,7 +294,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             _ = try PlaceCheckInSupport.checkIn(
                 placeID: placeID,
                 date: date,
-                in: context
+                in: context,
+                sourceDevice: sourceDevice
             )
             pushLatestSnapshot()
         } catch {
@@ -273,12 +303,15 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         }
     }
 
-    private func endPlaceCheckIn(at date: Date) {
+    private func endPlaceCheckIn(
+        at date: Date,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) {
         guard let modelContextProvider else { return }
         let context = modelContextProvider()
 
         do {
-            _ = try PlaceCheckInSupport.endActiveSession(at: date, in: context)
+            _ = try PlaceCheckInSupport.endActiveSession(at: date, in: context, sourceDevice: sourceDevice)
             pushLatestSnapshot()
         } catch {
             NSLog("Watch end place check-in sync failed: \(error.localizedDescription)")
@@ -337,6 +370,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     }
 
     nonisolated private static func parseIncomingAction(_ payload: [String: Any]) -> IncomingAction {
+        let sourceDevice = RoutinaDeviceActivitySource(payload: payload["sourceDevice"] as? [String: Any])
+
         if
             let action = payload["action"] as? String,
             action == "markDone",
@@ -344,7 +379,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             let taskID = UUID(uuidString: taskIDString)
         {
             let timestamp = (payload["completedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
-            return .markDone(taskID, timestamp)
+            return .markDone(taskID, timestamp, sourceDevice)
         }
 
         if
@@ -354,12 +389,12 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             let placeID = UUID(uuidString: placeIDString)
         {
             let timestamp = (payload["checkedInAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
-            return .checkInPlace(placeID, timestamp)
+            return .checkInPlace(placeID, timestamp, sourceDevice)
         }
 
         if let action = payload["action"] as? String, action == "endPlaceCheckIn" {
             let timestamp = (payload["endedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
-            return .endPlaceCheckIn(timestamp)
+            return .endPlaceCheckIn(timestamp, sourceDevice)
         }
 
         if let action = payload["action"] as? String, action == "openDeepLink" {
@@ -368,7 +403,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                 let url = URL(string: rawURL),
                 let deepLink = RoutinaDeepLink(url: url)
             {
-                return .openDeepLink(deepLink)
+                return .openDeepLink(deepLink, sourceDevice)
             }
 
             let kind = (payload["focusKind"] as? String) ?? "task"
@@ -378,10 +413,10 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             }
 
             if kind == "sprint" {
-                return .openDeepLink(.sprint(targetID))
+                return .openDeepLink(.sprint(targetID), sourceDevice)
             }
 
-            return .openDeepLink(.task(targetID))
+            return .openDeepLink(.task(targetID), sourceDevice)
         }
 
         if
@@ -401,12 +436,13 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                     levelPercent: levelPercent,
                     isCharging: isCharging,
                     capturedAt: capturedAt
-                )
+                ),
+                sourceDevice
             )
         }
 
         if let requestSync = payload["requestSync"] as? Bool, requestSync {
-            return .requestSync
+            return .requestSync(sourceDevice)
         }
 
         return .ignore

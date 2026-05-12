@@ -128,6 +128,7 @@ struct SettingsFeatureDependencyTests {
         } assert: {
             $0.cloud.cloudUsageEstimate = loadedEstimate
         }
+        await store.receive(.deviceSessionsLoaded([]))
         await store.receive { action in
             guard case let .placesLoaded(places) = action else { return false }
             loadedPlaces = places

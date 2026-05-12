@@ -98,6 +98,14 @@ enum RoutinaQuickAddService {
         for attachment in HomeAddRoutineSupport.makeAttachments(from: request, taskID: task.id) {
             context.insert(attachment)
         }
+        DeviceActivityRecorder.recordAction(
+            .created,
+            entity: .task,
+            entityID: task.id,
+            entityTitle: trimmedName,
+            details: "Quick Add",
+            in: context
+        )
 
         try context.save()
         do {
@@ -229,6 +237,13 @@ enum RoutinaQuickAddService {
             plannedDurationSeconds: TimeInterval(durationMinutes * 60)
         )
         context.insert(session)
+        DeviceActivityRecorder.recordAction(
+            .started,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: task.displayNameForQuickAdd,
+            in: context
+        )
         try context.save()
         notifyDataChanged(using: context)
 

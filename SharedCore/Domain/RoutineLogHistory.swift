@@ -111,7 +111,8 @@ enum RoutineLogHistory {
         completedAt: Date,
         referenceDate: Date? = nil,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> (task: RoutineTask, result: RoutineAdvanceResult)? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -148,6 +149,16 @@ enum RoutineLogHistory {
             return (task, result)
 
         case .advancedStep, .advancedChecklist:
+            DeviceActivityRecorder.recordAction(
+                .updated,
+                entity: .task,
+                entityID: taskID,
+                entityTitle: taskTitle(task),
+                details: "Advanced task progress",
+                sourceDevice: sourceDevice,
+                at: completedAt,
+                in: context
+            )
             try context.save()
             return (task, result)
 
@@ -155,6 +166,15 @@ enum RoutineLogHistory {
             deleteNonCompletionResolutionLogs(on: completedAt, from: existingLogs, context: context, calendar: calendar)
             context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
             _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(for: task, at: completedAt)
+            DeviceActivityRecorder.recordAction(
+                .completed,
+                entity: .task,
+                entityID: taskID,
+                entityTitle: taskTitle(task),
+                sourceDevice: sourceDevice,
+                at: completedAt,
+                in: context
+            )
             try context.save()
             return (task, result)
         }
@@ -165,7 +185,8 @@ enum RoutineLogHistory {
         taskID: UUID,
         missedAt: Date,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -215,6 +236,15 @@ enum RoutineLogHistory {
             context.insert(RoutineLog(timestamp: occurrence, taskID: taskID, kind: .missed))
         }
 
+        DeviceActivityRecorder.recordAction(
+            .missed,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            sourceDevice: sourceDevice,
+            at: occurrence,
+            in: context
+        )
         try context.save()
         return task
     }
@@ -224,7 +254,8 @@ enum RoutineLogHistory {
         taskID: UUID,
         canceledAt: Date,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -274,6 +305,15 @@ enum RoutineLogHistory {
             context.insert(RoutineLog(timestamp: occurrence, taskID: taskID, kind: .canceled))
         }
 
+        DeviceActivityRecorder.recordAction(
+            .canceled,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            sourceDevice: sourceDevice,
+            at: occurrence,
+            in: context
+        )
         try context.save()
         return task
     }
@@ -284,7 +324,8 @@ enum RoutineLogHistory {
         on days: [Date],
         context: ModelContext,
         referenceDate: Date = .now,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -331,6 +372,16 @@ enum RoutineLogHistory {
         }
 
         if didChange {
+            DeviceActivityRecorder.recordAction(
+                .completed,
+                entity: .task,
+                entityID: taskID,
+                entityTitle: taskTitle(task),
+                details: "Confirmed \(orderedDays.count) assumed day(s)",
+                sourceDevice: sourceDevice,
+                at: referenceDate,
+                in: context
+            )
             try context.save()
         }
 
@@ -343,7 +394,8 @@ enum RoutineLogHistory {
         itemID: UUID,
         completedAt: Date,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> (task: RoutineTask, result: RoutineAdvanceResult)? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -366,6 +418,16 @@ enum RoutineLogHistory {
             return (task, result)
 
         case .advancedStep, .advancedChecklist:
+            DeviceActivityRecorder.recordAction(
+                .updated,
+                entity: .task,
+                entityID: taskID,
+                entityTitle: taskTitle(task),
+                details: "Completed checklist item",
+                sourceDevice: sourceDevice,
+                at: completedAt,
+                in: context
+            )
             try context.save()
             return (task, result)
 
@@ -382,16 +444,28 @@ enum RoutineLogHistory {
                 context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
             }
 
+            DeviceActivityRecorder.recordAction(
+                .completed,
+                entity: .task,
+                entityID: taskID,
+                entityTitle: taskTitle(task),
+                details: "Completed checklist item",
+                sourceDevice: sourceDevice,
+                at: completedAt,
+                in: context
+            )
             try context.save()
             return (task, result)
         }
     }
 
     @discardableResult
+    @MainActor
     static func unmarkChecklistItem(
         taskID: UUID,
         itemID: UUID,
-        context: ModelContext
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -407,6 +481,15 @@ enum RoutineLogHistory {
             return task
         }
 
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Unchecked checklist item",
+            sourceDevice: sourceDevice,
+            in: context
+        )
         try context.save()
         return task
     }
@@ -416,7 +499,8 @@ enum RoutineLogHistory {
         taskID: UUID,
         purchasedAt: Date,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> (task: RoutineTask, updatedItemCount: Int)? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -436,7 +520,8 @@ enum RoutineLogHistory {
             itemIDs: dueItemIDs,
             purchasedAt: purchasedAt,
             context: context,
-            calendar: calendar
+            calendar: calendar,
+            sourceDevice: sourceDevice
         )
     }
 
@@ -446,7 +531,8 @@ enum RoutineLogHistory {
         itemIDs: Set<UUID>,
         purchasedAt: Date,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> (task: RoutineTask, updatedItemCount: Int)? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -476,6 +562,16 @@ enum RoutineLogHistory {
             context.insert(RoutineLog(timestamp: purchasedAt, taskID: taskID, kind: .completed))
         }
 
+        DeviceActivityRecorder.recordAction(
+            .completed,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Completed \(updatedItemCount) checklist item(s)",
+            sourceDevice: sourceDevice,
+            at: purchasedAt,
+            in: context
+        )
         try context.save()
         return (task, updatedItemCount)
     }
@@ -485,7 +581,8 @@ enum RoutineLogHistory {
         taskID: UUID,
         canceledAt: Date,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let descriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -514,6 +611,15 @@ enum RoutineLogHistory {
             context.insert(RoutineLog(timestamp: canceledAt, taskID: taskID, kind: .canceled))
         }
 
+        DeviceActivityRecorder.recordAction(
+            .canceled,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            sourceDevice: sourceDevice,
+            at: canceledAt,
+            in: context
+        )
         try context.save()
         return task
     }
@@ -523,7 +629,8 @@ enum RoutineLogHistory {
         taskID: UUID,
         on completedDay: Date,
         context: ModelContext,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let taskDescriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -576,6 +683,15 @@ enum RoutineLogHistory {
         task.resetStepProgress()
         task.resetChecklistProgress()
 
+        DeviceActivityRecorder.recordAction(
+            .deleted,
+            entity: .routineLog,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Removed timeline entry",
+            sourceDevice: sourceDevice,
+            in: context
+        )
         try context.save()
         return task
     }
@@ -584,7 +700,8 @@ enum RoutineLogHistory {
     static func removeLogEntry(
         taskID: UUID,
         timestamp: Date,
-        context: ModelContext
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let taskDescriptor = FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
@@ -631,6 +748,16 @@ enum RoutineLogHistory {
         task.resetStepProgress()
         task.resetChecklistProgress()
 
+        DeviceActivityRecorder.recordAction(
+            .deleted,
+            entity: .routineLog,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Removed timeline entry",
+            sourceDevice: sourceDevice,
+            at: timestamp,
+            in: context
+        )
         try context.save()
         return task
     }
@@ -638,6 +765,10 @@ enum RoutineLogHistory {
     private static func isSameCompletion(_ lhs: Date?, as rhs: Date) -> Bool {
         guard let lhs else { return false }
         return Calendar.current.isDate(lhs, inSameDayAs: rhs)
+    }
+
+    private static func taskTitle(_ task: RoutineTask) -> String {
+        RoutineTask.trimmedName(task.name) ?? "Untitled task"
     }
 
     private static func deleteNonCompletionResolutionLogs(

@@ -70,6 +70,8 @@ struct SettingsMacDetailView: View {
         switch section {
         case .general:
             SettingsMacGeneralDetailView(store: store)
+        case .devices:
+            SettingsMacDevicesDetailView(store: store)
         case .notifications:
             SettingsMacNotificationsDetailView(store: store)
         case .calendar:
