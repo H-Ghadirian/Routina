@@ -18,6 +18,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let dayPlanPlanner: DayPlanPlannerState
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var isBoardInspectorPresented: Bool
+    @Binding var placeCheckInSelectedPlaceID: UUID?
+    @Binding var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     let selectedTaskID: UUID?
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
@@ -115,7 +117,9 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             selectedActivity: placeCheckInMapActivity,
             showsNavigationChrome: false,
             showsInlineHeader: false,
-            layout: .mapOnly
+            layout: .mapOnly,
+            selectedPlaceID: $placeCheckInSelectedPlaceID,
+            selectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

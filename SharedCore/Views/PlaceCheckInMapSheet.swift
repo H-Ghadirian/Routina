@@ -20,6 +20,8 @@ struct PlaceCheckInMapSheet: View {
     private let showsInlineHeader: Bool
     private let layout: PlaceCheckInMapSheetLayout
     private let onClose: (() -> Void)?
+    private let externalSelectedPlaceID: Binding<UUID?>?
+    private let externalSelectedHistoryMarkerID: Binding<PlaceCheckInHistoryMapMarker.ID?>?
 
     @Dependency(\.locationClient) private var locationClient
     @Dependency(\.urlOpenerClient) private var urlOpenerClient
@@ -33,8 +35,8 @@ struct PlaceCheckInMapSheet: View {
     @State private var locationSnapshot = LocationSnapshot(authorizationStatus: .notDetermined)
     @State private var isLoadingLocation = false
     @State private var selectedMode = PlaceCheckInMapSheetMode.checkIns
-    @State private var selectedPlaceID: UUID?
-    @State private var selectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
+    @State private var localSelectedPlaceID: UUID?
+    @State private var localSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     @State private var visibleRegion = PlaceCheckInMapCamera.region(
         places: [],
         currentLocation: nil,
@@ -58,13 +60,45 @@ struct PlaceCheckInMapSheet: View {
         showsNavigationChrome: Bool = true,
         showsInlineHeader: Bool = true,
         layout: PlaceCheckInMapSheetLayout = .stack,
-        onClose: (() -> Void)? = nil
+        onClose: (() -> Void)? = nil,
+        selectedPlaceID: Binding<UUID?>? = nil,
+        selectedHistoryMarkerID: Binding<PlaceCheckInHistoryMapMarker.ID?>? = nil
     ) {
         self.selectedActivity = selectedActivity
         self.showsNavigationChrome = showsNavigationChrome
         self.showsInlineHeader = showsInlineHeader
         self.layout = layout
         self.onClose = onClose
+        self.externalSelectedPlaceID = selectedPlaceID
+        self.externalSelectedHistoryMarkerID = selectedHistoryMarkerID
+        _localSelectedPlaceID = State(initialValue: selectedPlaceID?.wrappedValue)
+        _localSelectedHistoryMarkerID = State(initialValue: selectedHistoryMarkerID?.wrappedValue)
+    }
+
+    private var selectedPlaceID: UUID? {
+        get {
+            externalSelectedPlaceID?.wrappedValue ?? localSelectedPlaceID
+        }
+        nonmutating set {
+            if let externalSelectedPlaceID {
+                externalSelectedPlaceID.wrappedValue = newValue
+            } else {
+                localSelectedPlaceID = newValue
+            }
+        }
+    }
+
+    private var selectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID? {
+        get {
+            externalSelectedHistoryMarkerID?.wrappedValue ?? localSelectedHistoryMarkerID
+        }
+        nonmutating set {
+            if let externalSelectedHistoryMarkerID {
+                externalSelectedHistoryMarkerID.wrappedValue = newValue
+            } else {
+                localSelectedHistoryMarkerID = newValue
+            }
+        }
     }
 
     private var currentLocation: LocationCoordinate? {
@@ -164,6 +198,12 @@ struct PlaceCheckInMapSheet: View {
             if let selectedHistoryMarkerID, !markerIDs.contains(selectedHistoryMarkerID) {
                 self.selectedHistoryMarkerID = nil
             }
+            syncMapPosition()
+        }
+        .onChange(of: selectedPlaceID) { _, _ in
+            syncMapPosition()
+        }
+        .onChange(of: selectedHistoryMarkerID) { _, _ in
             syncMapPosition()
         }
         .sheet(item: $editingSessionDraft) { draft in
@@ -749,14 +789,17 @@ struct PlaceCheckInMapSheet: View {
                 Label("Delete Check-In", systemImage: "trash")
             }
         } label: {
-            Image(systemName: "ellipsis")
-                .font(.caption.weight(.semibold))
+            Label("Check-in actions", systemImage: "ellipsis.circle")
+                .labelStyle(.iconOnly)
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .frame(width: 28, height: 28)
-                .routinaGlassCard(cornerRadius: 6, tint: .secondary, tintOpacity: 0.08, interactive: true)
         }
-        .buttonStyle(.plain)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
         .accessibilityLabel("Check-in actions")
+        .help("More actions")
     }
 
     private var mapTitle: String {
@@ -878,7 +921,9 @@ struct PlaceCheckInMapSheet: View {
 
         let snapshot = await locationClient.snapshot(requestAuthorizationIfNeeded)
         locationSnapshot = snapshot
-        if let coordinate = snapshot.coordinate,
+        if selectedPlaceID == nil,
+           selectedHistoryMarkerID == nil,
+           let coordinate = snapshot.coordinate,
            let nearbyPlace = PlaceCheckInSupport.nearestContainingPlace(to: coordinate, places: places) {
             selectedPlaceID = nearbyPlace.id
         }
@@ -933,7 +978,7 @@ struct PlaceCheckInMapSheet: View {
 
     private func focusOnSession(_ session: PlaceCheckInSession) {
         if let coordinate = session.coordinate {
-            selectedHistoryMarkerID = historyMapMarkers.first { $0.coordinate == coordinate }?.id
+            selectedHistoryMarkerID = PlaceCheckInSupport.historyMapMarkerID(for: coordinate)
             selectedPlaceID = session.placeID
             focus(on: coordinate)
             return
@@ -1044,12 +1089,17 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private func syncMapPosition() {
-        let region = PlaceCheckInMapCamera.region(
-            places: places,
-            currentLocation: currentLocation,
-            selectedPlaceID: selectedPlaceID,
-            historyCoordinates: historyMapMarkers.map(\.coordinate)
-        )
+        let region: MKCoordinateRegion
+        if let selectedHistoryMarker {
+            region = PlaceCheckInMapCamera.region(focusingOn: selectedHistoryMarker.coordinate)
+        } else {
+            region = PlaceCheckInMapCamera.region(
+                places: places,
+                currentLocation: currentLocation,
+                selectedPlaceID: selectedPlaceID,
+                historyCoordinates: historyMapMarkers.map(\.coordinate)
+            )
+        }
         visibleRegion = region
         mapPosition = PlaceCheckInMapCamera.position(region: region)
     }
@@ -1254,6 +1304,13 @@ private struct PlaceCheckInSessionEditor: View {
 private enum PlaceCheckInMapCamera {
     static func position(region: MKCoordinateRegion) -> MapCameraPosition {
         .region(region)
+    }
+
+    static func region(focusingOn coordinate: LocationCoordinate) -> MKCoordinateRegion {
+        MKCoordinateRegion(
+            center: coordinate.mapCoordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+        )
     }
 
     static func region(

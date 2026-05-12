@@ -97,6 +97,8 @@ extension HomeTCAView {
                 dayPlanPlanner: dayPlanPlanner,
                 mainDetailMode: mainDetailModeBinding,
                 isBoardInspectorPresented: macBoardInspectorPresentedBinding,
+                placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
+                placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
                 selectedTaskID: store.selectedTaskID,
                 onSelectDayPlanUnplannedCompletedDate: { date in
                     focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)

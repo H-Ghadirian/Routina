@@ -187,6 +187,8 @@ extension HomeTCAView {
                 }
                 if mode != .places {
                     placeCheckInMapActivity = nil
+                    placeCheckInSelectedPlaceID = nil
+                    placeCheckInSelectedHistoryMarkerID = nil
                 }
                 if mode == .board, store.taskListMode != .todos {
                     store.send(.taskListModeChanged(.todos))
@@ -445,7 +447,9 @@ extension HomeTCAView {
                 selectedActivity: placeCheckInMapActivity,
                 showsNavigationChrome: false,
                 showsInlineHeader: false,
-                layout: .controlsOnly
+                layout: .controlsOnly,
+                selectedPlaceID: $placeCheckInSelectedPlaceID,
+                selectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }

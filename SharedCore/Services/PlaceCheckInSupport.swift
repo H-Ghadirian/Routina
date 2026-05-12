@@ -510,7 +510,7 @@ enum PlaceCheckInSupport {
         session.endedAt ?? session.startedAt ?? session.createdAt
     }
 
-    private static func historyMapMarkerID(for coordinate: LocationCoordinate) -> String {
+    static func historyMapMarkerID(for coordinate: LocationCoordinate) -> String {
         let latitudeBucket = Int((coordinate.latitude * 100_000).rounded())
         let longitudeBucket = Int((coordinate.longitude * 100_000).rounded())
         return "\(latitudeBucket):\(longitudeBucket)"

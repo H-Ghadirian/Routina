@@ -70,6 +70,8 @@ struct HomeTCAView: View {
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var isFinishedSprintsExpanded = false
     @State var placeCheckInMapActivity: PlaceCheckInActivity?
+    @State var placeCheckInSelectedPlaceID: UUID?
+    @State var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
