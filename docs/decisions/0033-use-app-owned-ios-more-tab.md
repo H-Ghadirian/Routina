@@ -1,4 +1,4 @@
-# Use an App-Owned iOS More Tab
+# 0033: Use an App-Owned iOS More Tab
 
 - Status: Accepted
 - Date: 2026-05-13

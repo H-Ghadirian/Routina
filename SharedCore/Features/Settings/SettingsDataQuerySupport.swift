@@ -2,6 +2,20 @@ import SwiftData
 
 enum SettingsDataQueries {
     @MainActor
+    static func fetchDeviceSessionSummaries(in context: ModelContext) throws -> [RoutinaDeviceSessionSummary] {
+        let currentInstallationID = DeviceActivityRecorder.currentInstallationID()
+        let sessions = try context.fetch(FetchDescriptor<RoutinaDeviceSession>())
+        return sessions
+            .map { $0.summary(currentInstallationID: currentInstallationID) }
+            .sorted { lhs, rhs in
+                if lhs.isCurrentDevice != rhs.isCurrentDevice {
+                    return lhs.isCurrentDevice
+                }
+                return lhs.lastSeenAt > rhs.lastSeenAt
+            }
+    }
+
+    @MainActor
     static func fetchPlaceSummaries(in context: ModelContext) throws -> [RoutinePlaceSummary] {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())

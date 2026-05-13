@@ -72,7 +72,8 @@ enum PlaceCheckInSupport {
         at place: RoutinePlace,
         activity: PlaceCheckInActivity? = nil,
         date: Date = Date(),
-        in context: ModelContext
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> PlaceCheckInSession {
         if
             let active = try activeSession(in: context),
@@ -85,13 +86,25 @@ enum PlaceCheckInSupport {
             active.horizontalAccuracyMeters = nil
             active.placeRadiusMeters = place.radiusMeters
             active.activity = activity ?? active.activity
+            if active.requiresConfirmation {
+                active.confirmedAt = date
+            }
             active.updatedAt = date
+            DeviceActivityRecorder.recordAction(
+                .updated,
+                entity: .placeCheckIn,
+                entityID: active.id,
+                entityTitle: active.displayPlaceName,
+                sourceDevice: sourceDevice,
+                at: date,
+                in: context
+            )
             try context.save()
             NotificationCenter.default.postRoutineDidUpdate()
             return active
         }
 
-        try endActiveSessions(at: date, in: context, saves: false)
+        try endActiveSessions(at: date, in: context, saves: false, sourceDevice: sourceDevice)
         let session = PlaceCheckInSession(
             placeID: place.id,
             placeName: place.displayName,
@@ -104,6 +117,15 @@ enum PlaceCheckInSupport {
             updatedAt: date
         )
         context.insert(session)
+        DeviceActivityRecorder.recordAction(
+            .started,
+            entity: .placeCheckIn,
+            entityID: session.id,
+            entityTitle: session.displayPlaceName,
+            sourceDevice: sourceDevice,
+            at: date,
+            in: context
+        )
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()
         return session
@@ -115,7 +137,8 @@ enum PlaceCheckInSupport {
         placeID: UUID,
         activity: PlaceCheckInActivity? = nil,
         date: Date = Date(),
-        in context: ModelContext
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> PlaceCheckInSession? {
         let descriptor = FetchDescriptor<RoutinePlace>(
             predicate: #Predicate { place in
@@ -123,7 +146,7 @@ enum PlaceCheckInSupport {
             }
         )
         guard let place = try context.fetch(descriptor).first else { return nil }
-        return try checkIn(at: place, activity: activity, date: date, in: context)
+        return try checkIn(at: place, activity: activity, date: date, in: context, sourceDevice: sourceDevice)
     }
 
     @MainActor
@@ -133,11 +156,12 @@ enum PlaceCheckInSupport {
         horizontalAccuracyMeters: Double? = nil,
         activity: PlaceCheckInActivity? = nil,
         date: Date = Date(),
-        in context: ModelContext
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> PlaceCheckInSession {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         if let place = nearestContainingPlace(to: coordinate, places: places) {
-            return try checkIn(at: place, activity: activity, date: date, in: context)
+            return try checkIn(at: place, activity: activity, date: date, in: context, sourceDevice: sourceDevice)
         }
 
         if
@@ -155,12 +179,21 @@ enum PlaceCheckInSupport {
             active.placeRadiusMeters = nil
             active.activity = activity ?? active.activity
             active.updatedAt = date
+            DeviceActivityRecorder.recordAction(
+                .updated,
+                entity: .placeCheckIn,
+                entityID: active.id,
+                entityTitle: active.displayPlaceName,
+                sourceDevice: sourceDevice,
+                at: date,
+                in: context
+            )
             try context.save()
             NotificationCenter.default.postRoutineDidUpdate()
             return active
         }
 
-        try endActiveSessions(at: date, in: context, saves: false)
+        try endActiveSessions(at: date, in: context, saves: false, sourceDevice: sourceDevice)
         let session = PlaceCheckInSession(
             placeID: nil,
             placeName: "Current Location",
@@ -173,6 +206,73 @@ enum PlaceCheckInSupport {
             updatedAt: date
         )
         context.insert(session)
+        DeviceActivityRecorder.recordAction(
+            .started,
+            entity: .placeCheckIn,
+            entityID: session.id,
+            entityTitle: session.displayPlaceName,
+            sourceDevice: sourceDevice,
+            at: date,
+            in: context
+        )
+        try context.save()
+        NotificationCenter.default.postRoutineDidUpdate()
+        return session
+    }
+
+    @MainActor
+    @discardableResult
+    static func reconcileAutomaticCheckIn(
+        coordinate: LocationCoordinate,
+        horizontalAccuracyMeters: Double? = nil,
+        activity: PlaceCheckInActivity? = nil,
+        date: Date = Date(),
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> PlaceCheckInSession? {
+        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let active = try activeSession(in: context)
+
+        guard let place = nearestContainingPlace(to: coordinate, places: places) else {
+            if let active, active.isAutomatic {
+                _ = try endActiveSession(at: date, in: context, sourceDevice: sourceDevice)
+            }
+            return nil
+        }
+
+        if
+            let active,
+            active.placeID == place.id,
+            active.endedAt == nil
+        {
+            return active
+        }
+
+        try endActiveSessions(at: date, in: context, saves: false, sourceDevice: sourceDevice)
+        let session = PlaceCheckInSession(
+            placeID: place.id,
+            placeName: place.displayName,
+            latitude: place.latitude,
+            longitude: place.longitude,
+            horizontalAccuracyMeters: nil,
+            placeRadiusMeters: place.radiusMeters,
+            activity: activity,
+            startedAt: date,
+            createdAt: date,
+            updatedAt: date,
+            captureMode: .automatic
+        )
+        context.insert(session)
+        DeviceActivityRecorder.recordAction(
+            .started,
+            entity: .placeCheckIn,
+            entityID: session.id,
+            entityTitle: session.displayPlaceName,
+            details: "Automatic saved-place check-in",
+            sourceDevice: sourceDevice,
+            at: date,
+            in: context
+        )
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()
         return session
@@ -182,21 +282,61 @@ enum PlaceCheckInSupport {
     @discardableResult
     static func endActiveSession(
         at date: Date = Date(),
-        in context: ModelContext
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> PlaceCheckInSession? {
-        let ended = try endActiveSessions(at: date, in: context, saves: true)
+        let ended = try endActiveSessions(at: date, in: context, saves: true, sourceDevice: sourceDevice)
         return ended.first
+    }
+
+    @MainActor
+    @discardableResult
+    static func confirmAutomaticSession(
+        id: UUID,
+        date: Date = Date(),
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> PlaceCheckInSession {
+        guard let session = try session(id: id, in: context) else {
+            throw PlaceCheckInSessionEditError.missingSession
+        }
+
+        session.confirmedAt = date
+        session.updatedAt = date
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .placeCheckIn,
+            entityID: session.id,
+            entityTitle: session.displayPlaceName,
+            details: "Confirmed automatic check-in",
+            sourceDevice: sourceDevice,
+            at: date,
+            in: context
+        )
+        try context.save()
+        NotificationCenter.default.postRoutineDidUpdate()
+        return session
     }
 
     @MainActor
     static func updateActiveActivity(
         _ activity: PlaceCheckInActivity?,
         date: Date = Date(),
-        in context: ModelContext
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws {
         guard let active = try activeSession(in: context) else { return }
         active.activity = activity
         active.updatedAt = date
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .placeCheckIn,
+            entityID: active.id,
+            entityTitle: active.displayPlaceName,
+            sourceDevice: sourceDevice,
+            at: date,
+            in: context
+        )
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()
     }
@@ -211,7 +351,8 @@ enum PlaceCheckInSupport {
         startedAt: Date,
         endedAt: Date?,
         updatedAt date: Date = Date(),
-        in context: ModelContext
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> PlaceCheckInSession {
         guard let cleanedPlaceName = RoutinePlace.cleanedName(placeName) else {
             throw PlaceCheckInSessionEditError.invalidPlaceName
@@ -230,6 +371,15 @@ enum PlaceCheckInSupport {
         session.startedAt = startedAt
         session.endedAt = endedAt
         session.updatedAt = date
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .placeCheckIn,
+            entityID: session.id,
+            entityTitle: session.displayPlaceName,
+            sourceDevice: sourceDevice,
+            at: date,
+            in: context
+        )
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()
         return session
@@ -239,13 +389,23 @@ enum PlaceCheckInSupport {
     @discardableResult
     static func deleteSession(
         id: UUID,
-        in context: ModelContext
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> Bool {
         guard let session = try session(id: id, in: context) else {
             return false
         }
 
+        let title = session.displayPlaceName
         context.delete(session)
+        DeviceActivityRecorder.recordAction(
+            .deleted,
+            entity: .placeCheckIn,
+            entityID: id,
+            entityTitle: title,
+            sourceDevice: sourceDevice,
+            in: context
+        )
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()
         return true
@@ -535,7 +695,8 @@ enum PlaceCheckInSupport {
     private static func endActiveSessions(
         at date: Date,
         in context: ModelContext,
-        saves: Bool
+        saves: Bool,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> [PlaceCheckInSession] {
         let descriptor = FetchDescriptor<PlaceCheckInSession>(
             predicate: #Predicate { session in
@@ -545,6 +706,15 @@ enum PlaceCheckInSupport {
         let activeSessions = try context.fetch(descriptor)
         for session in activeSessions {
             session.end(at: date)
+            DeviceActivityRecorder.recordAction(
+                .ended,
+                entity: .placeCheckIn,
+                entityID: session.id,
+                entityTitle: session.displayPlaceName,
+                sourceDevice: sourceDevice,
+                at: date,
+                in: context
+            )
         }
 
         if saves, !activeSessions.isEmpty {

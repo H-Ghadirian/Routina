@@ -3,6 +3,7 @@ import SwiftData
 struct SettingsRefreshExecutionResult {
     var systemNotificationsEnabled: Bool
     var cloudUsageEstimate: CloudUsageEstimate
+    var deviceSessionSummaries: [RoutinaDeviceSessionSummary]
     var placeSummaries: [RoutinePlaceSummary]
     var tagSummaries: [RoutineTagSummary]
     var taskTagCollections: [[String]]
@@ -19,6 +20,7 @@ enum SettingsRefreshExecution {
         let context = modelContext()
         let systemNotificationsEnabled = await notificationClient.systemNotificationsAuthorized()
         let cloudUsageEstimate = SettingsDataQueries.loadCloudUsageEstimate(in: context)
+        let deviceSessionSummaries = (try? SettingsDataQueries.fetchDeviceSessionSummaries(in: context)) ?? []
         let placeSummaries = (try? SettingsDataQueries.fetchPlaceSummaries(in: context)) ?? []
         let tagSummaries = (try? SettingsDataQueries.fetchTagSummaries(in: context)) ?? []
         let taskTagCollections = (try? SettingsDataQueries.fetchTaskTagCollections(in: context)) ?? []
@@ -27,6 +29,7 @@ enum SettingsRefreshExecution {
         return SettingsRefreshExecutionResult(
             systemNotificationsEnabled: systemNotificationsEnabled,
             cloudUsageEstimate: cloudUsageEstimate,
+            deviceSessionSummaries: deviceSessionSummaries,
             placeSummaries: placeSummaries,
             tagSummaries: tagSummaries,
             taskTagCollections: taskTagCollections,

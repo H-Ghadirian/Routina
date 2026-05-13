@@ -103,6 +103,8 @@ extension SettingsRoutineDataPersistence {
             var endedAt: Date?
             var createdAt: Date?
             var updatedAt: Date?
+            var captureMode: PlaceCheckInCaptureMode?
+            var confirmedAt: Date?
         }
 
         struct Attachment: Codable {

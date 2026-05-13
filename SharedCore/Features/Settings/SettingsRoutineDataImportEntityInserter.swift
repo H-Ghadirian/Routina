@@ -296,7 +296,9 @@ enum SettingsRoutineDataImportEntityInserter {
                 startedAt: session.startedAt,
                 endedAt: session.endedAt,
                 createdAt: session.createdAt,
-                updatedAt: session.updatedAt
+                updatedAt: session.updatedAt,
+                captureMode: session.captureMode ?? .manual,
+                confirmedAt: session.confirmedAt
             )
             context.insert(importedSession)
             importedCount += 1

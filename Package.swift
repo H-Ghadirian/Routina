@@ -357,6 +357,7 @@ let package = Package(
                 "SharedCore/Services/CalendarTaskImportService.swift",
                 "SharedCore/Services/MicrosoftGraphCalendarService.swift",
                 "SharedCore/Services/RoutinaQuickAddService.swift",
+                "SharedCore/Services/DeviceActivityRecorder.swift",
                 "SharedCore/Services/SleepSessionSupport.swift",
                 "SharedCore/Services/PlaceCheckInSupport.swift",
                 "SharedCore/Services/WidgetStatsService.swift",

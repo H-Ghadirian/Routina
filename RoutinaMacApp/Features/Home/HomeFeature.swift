@@ -878,6 +878,25 @@ struct HomeFeature {
         )
     }
 
+    private func automaticPlaceCheckInEffect(for snapshot: LocationSnapshot) -> Effect<Action> {
+        guard snapshot.canDeterminePresence, let coordinate = snapshot.coordinate else {
+            return .none
+        }
+
+        let horizontalAccuracyMeters = snapshot.horizontalAccuracy
+        return .run { @MainActor _ in
+            do {
+                _ = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
+                    coordinate: coordinate,
+                    horizontalAccuracyMeters: horizontalAccuracyMeters,
+                    in: self.modelContext()
+                )
+            } catch {
+                NSLog("Automatic place check-in failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
     var body: some ReducerOf<Self> {
         CombineReducers {
             Reduce { state, action in
@@ -914,7 +933,10 @@ struct HomeFeature {
                 return lifecycleActionHandler().tasksLoadFailed()
 
             case let .locationSnapshotUpdated(snapshot):
-                return lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state)
+                return .merge(
+                    lifecycleActionHandler().locationSnapshotUpdated(snapshot, state: &state),
+                    automaticPlaceCheckInEffect(for: snapshot)
+                )
 
             case let .hideUnavailableRoutinesChanged(isHidden):
                 return lifecycleActionHandler().hideUnavailableRoutinesChanged(isHidden, state: &state)

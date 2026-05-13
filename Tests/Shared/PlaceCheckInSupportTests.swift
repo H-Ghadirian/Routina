@@ -149,6 +149,102 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func reconcileAutomaticCheckIn_startsPendingSavedPlaceSession() throws {
+        let context = makeInMemoryContext()
+        let office = makePlace(in: context, name: "Office", latitude: 52.5200, longitude: 13.4050, radiusMeters: 150)
+
+        let session = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
+            coordinate: LocationCoordinate(latitude: 52.5204, longitude: 13.4052),
+            horizontalAccuracyMeters: 42,
+            activity: .work,
+            date: makeDate("2026-05-10T09:00:00Z"),
+            in: context
+        )
+
+        let unwrapped = try #require(session)
+        #expect(unwrapped.placeID == office.id)
+        #expect(unwrapped.displayPlaceName == "Office")
+        #expect(unwrapped.isAutomatic)
+        #expect(unwrapped.requiresConfirmation)
+        #expect(unwrapped.confirmedAt == nil)
+        #expect(try PlaceCheckInSupport.activeSession(in: context)?.id == unwrapped.id)
+    }
+
+    @MainActor
+    @Test
+    func reconcileAutomaticCheckIn_sameSavedPlaceDoesNotDuplicateActiveSession() throws {
+        let context = makeInMemoryContext()
+        _ = makePlace(in: context, name: "Office", latitude: 52.5200, longitude: 13.4050, radiusMeters: 150)
+        let coordinate = LocationCoordinate(latitude: 52.5204, longitude: 13.4052)
+
+        let first = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
+            coordinate: coordinate,
+            date: makeDate("2026-05-10T09:00:00Z"),
+            in: context
+        )
+        let second = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
+            coordinate: coordinate,
+            date: makeDate("2026-05-10T09:15:00Z"),
+            in: context
+        )
+
+        #expect(first?.id == second?.id)
+        #expect(try context.fetch(FetchDescriptor<PlaceCheckInSession>()).count == 1)
+    }
+
+    @MainActor
+    @Test
+    func reconcileAutomaticCheckIn_endsAutomaticSessionWhenAwayFromSavedPlaces() throws {
+        let context = makeInMemoryContext()
+        let office = makePlace(in: context, name: "Office", latitude: 52.5200, longitude: 13.4050, radiusMeters: 150)
+        let session = PlaceCheckInSession(
+            placeID: office.id,
+            placeName: office.displayName,
+            latitude: office.latitude,
+            longitude: office.longitude,
+            startedAt: makeDate("2026-05-10T09:00:00Z"),
+            captureMode: .automatic
+        )
+        context.insert(session)
+        try context.save()
+
+        let nextSession = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
+            coordinate: LocationCoordinate(latitude: 48.8566, longitude: 2.3522),
+            date: makeDate("2026-05-10T10:00:00Z"),
+            in: context
+        )
+
+        #expect(nextSession == nil)
+        #expect(session.endedAt == makeDate("2026-05-10T10:00:00Z"))
+    }
+
+    @MainActor
+    @Test
+    func confirmAutomaticSession_marksSessionConfirmed() throws {
+        let context = makeInMemoryContext()
+        let session = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Office",
+            startedAt: makeDate("2026-05-10T09:00:00Z"),
+            captureMode: .automatic
+        )
+        context.insert(session)
+        try context.save()
+
+        let confirmed = try PlaceCheckInSupport.confirmAutomaticSession(
+            id: session.id,
+            date: makeDate("2026-05-10T09:30:00Z"),
+            in: context
+        )
+
+        #expect(confirmed.isAutomatic)
+        #expect(!confirmed.requiresConfirmation)
+        #expect(confirmed.confirmedAt == makeDate("2026-05-10T09:30:00Z"))
+        #expect(confirmed.updatedAt == makeDate("2026-05-10T09:30:00Z"))
+    }
+
+    @MainActor
+    @Test
     func suggestedPlacesPrefersRecentCheckInsThenNames() throws {
         let context = makeInMemoryContext()
         let gym = makePlace(in: context, name: "Gym")
@@ -460,7 +556,9 @@ struct PlaceCheckInSupportTests {
             startedAt: makeDate("2026-05-10T09:00:00Z"),
             endedAt: makeDate("2026-05-10T12:30:00Z"),
             createdAt: makeDate("2026-05-10T09:00:00Z"),
-            updatedAt: makeDate("2026-05-10T12:30:00Z")
+            updatedAt: makeDate("2026-05-10T12:30:00Z"),
+            captureMode: .automatic,
+            confirmedAt: makeDate("2026-05-10T09:05:00Z")
         )
         sourceContext.insert(session)
         try sourceContext.save()
@@ -489,5 +587,7 @@ struct PlaceCheckInSupportTests {
         #expect(restored.placeRadiusMeters == place.radiusMeters)
         #expect(restored.startedAt == session.startedAt)
         #expect(restored.endedAt == session.endedAt)
+        #expect(restored.captureMode == .automatic)
+        #expect(restored.confirmedAt == makeDate("2026-05-10T09:05:00Z"))
     }
 }

@@ -147,18 +147,27 @@ extension HomeTCAView {
             )
     }
 
-    private func taskDragPreview(for task: HomeFeature.RoutineDisplay) -> some View {
-        HStack(spacing: 8) {
-            Text(task.emoji)
-                .font(.body)
-
-            Text(task.name)
-                .font(.body.weight(.medium))
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .routinaGlassCard(cornerRadius: 8, interactive: true)
+    private func taskDragPreview(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
+        routineRow(for: task, rowNumber: rowNumber)
+            .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .frame(width: 300)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(macTaskSourceRowBackground(for: task))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(
+                        macTaskSourceRowStroke(for: task),
+                        lineWidth: macTaskSourceRowStrokeWidth(for: task)
+                    )
+            )
+            .overlay(alignment: .topTrailing) {
+                macTaskSourceRowColorBadge(for: task)
+            }
+            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
     }
 
     private func macTaskSourceList(
@@ -423,12 +432,9 @@ extension HomeTCAView {
 
         if allowsPlannerDrag {
             row
-                .onDrag({
-                    selectMacTaskSourceListTask(task.taskID, scrollAnchor: nil)
-                    return NSItemProvider(object: task.taskID.uuidString as NSString)
-                }, preview: {
-                    taskDragPreview(for: task)
-                })
+                .draggable(task.taskID.uuidString) {
+                    taskDragPreview(for: task, rowNumber: rowNumber)
+                }
                 .help("Drag to place this task on the planner")
         } else {
             row

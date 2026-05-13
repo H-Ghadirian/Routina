@@ -208,6 +208,17 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
     }
 
+    struct WatchSleepSession: Identifiable, Equatable, Sendable, Codable {
+        let id: UUID
+        let startedAt: Date
+        let targetWakeAt: Date?
+        let targetDurationMinutes: Int
+
+        func elapsedSeconds(at date: Date = .now) -> TimeInterval {
+            max(0, date.timeIntervalSince(startedAt))
+        }
+    }
+
     enum WatchFocusKind: String, Sendable, Codable {
         case task
         case sprint
@@ -285,9 +296,15 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let checkIn: WatchPlaceCheckIn?
     }
 
+    private struct SleepPayloadUpdate: Sendable {
+        let wasPresent: Bool
+        let sleep: WatchSleepSession?
+    }
+
     @Published private(set) var routines: [WatchRoutine] = []
     @Published private(set) var places: [WatchPlace] = []
     @Published private(set) var activePlaceCheckIn: WatchPlaceCheckIn?
+    @Published private(set) var activeSleepSession: WatchSleepSession?
     @Published private(set) var activeFocusSession: WatchFocusSession?
     @Published private(set) var isCompanionAppInstalled = false
     @Published private(set) var isPhoneReachable = false
@@ -296,8 +313,10 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     private let cacheKey = "watch.cachedRoutines.v3"
     private let placesCacheKey = "watch.cachedPlaces.v1"
     private let placeCheckInCacheKey = "watch.cachedPlaceCheckIn.v1"
+    private let sleepCacheKey = "watch.cachedSleepSession.v1"
     private let focusCacheKey = "watch.cachedFocusSession.v1"
     private let pendingRoutineKey = "watch.pendingRoutines.v3"
+    private let installationIDKey = "watch.device.installationID.v1"
     private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
     private var batteryRefreshTask: Task<Void, Never>?
 
@@ -307,6 +326,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         loadCachedRoutines()
         loadCachedPlaces()
         loadCachedPlaceCheckIn()
+        loadCachedSleepSession()
         loadCachedFocusSession()
         startPeriodicBatteryRefresh()
 
@@ -327,9 +347,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         if session.isReachable {
-            session.sendMessage(["requestSync": true], replyHandler: nil)
+            session.sendMessage(actionPayload(["requestSync": true]), replyHandler: nil)
         } else {
-            session.transferUserInfo(["requestSync": true])
+            session.transferUserInfo(actionPayload(["requestSync": true]))
         }
     }
 
@@ -341,11 +361,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let session else { return }
 
-        let payload: [String: Any] = [
+        let payload = actionPayload([
             "action": "markDone",
             "taskID": id.uuidString,
             "completedAt": completionDate.timeIntervalSince1970
-        ]
+        ])
 
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -369,11 +389,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let session else { return }
 
-        let payload: [String: Any] = [
+        let payload = actionPayload([
             "action": "checkInPlace",
             "placeID": id.uuidString,
             "checkedInAt": checkedInAt.timeIntervalSince1970
-        ]
+        ])
 
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -389,10 +409,53 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let session else { return }
 
-        let payload: [String: Any] = [
+        let payload = actionPayload([
             "action": "endPlaceCheckIn",
             "endedAt": endedAt.timeIntervalSince1970
-        ]
+        ])
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    func startSleep() {
+        let startedAt = Date()
+        activeSleepSession = WatchSleepSession(
+            id: UUID(),
+            startedAt: startedAt,
+            targetWakeAt: startedAt.addingTimeInterval(8 * 60 * 60),
+            targetDurationMinutes: 8 * 60
+        )
+        saveCachedSleepSession()
+
+        guard let session else { return }
+
+        let payload = actionPayload([
+            "action": "startSleep",
+            "startedAt": startedAt.timeIntervalSince1970
+        ])
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    func endSleep() {
+        let endedAt = Date()
+        activeSleepSession = nil
+        saveCachedSleepSession()
+
+        guard let session else { return }
+
+        let payload = actionPayload([
+            "action": "endSleep",
+            "endedAt": endedAt.timeIntervalSince1970
+        ])
 
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -410,11 +473,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             NSLog("Watch open-on-iPhone used URL fallback only: session is unavailable")
             return
         }
-        var payload: [String: Any] = [
+        var payload = actionPayload([
             "action": "openDeepLink",
             "url": url.absoluteString,
             "focusKind": focus.resolvedFocusKind.rawValue
-        ]
+        ])
         payload["targetID"] = focus.deepLinkTargetID?.uuidString
 
         guard session.activationState == .activated else {
@@ -448,6 +511,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let parsedPlaces = Self.parsePlacesPayload(context)
         let hasPlacesPayload = Self.containsPlacesPayload(context)
         let placeCheckInUpdate = Self.parsePlaceCheckInPayload(context)
+        let sleepUpdate = Self.parseSleepPayload(context)
         let focusUpdate = Self.parseFocusPayload(context)
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
@@ -460,6 +524,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             }
             if placeCheckInUpdate.wasPresent {
                 self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
+            }
+            if sleepUpdate.wasPresent {
+                self?.setActiveSleepSession(sleepUpdate.sleep)
             }
             if focusUpdate.wasPresent {
                 self?.setActiveFocusSession(focusUpdate.focus)
@@ -474,6 +541,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let parsedPlaces = Self.parsePlacesPayload(applicationContext)
         let hasPlacesPayload = Self.containsPlacesPayload(applicationContext)
         let placeCheckInUpdate = Self.parsePlaceCheckInPayload(applicationContext)
+        let sleepUpdate = Self.parseSleepPayload(applicationContext)
         let focusUpdate = Self.parseFocusPayload(applicationContext)
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
@@ -487,6 +555,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             if placeCheckInUpdate.wasPresent {
                 self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
             }
+            if sleepUpdate.wasPresent {
+                self?.setActiveSleepSession(sleepUpdate.sleep)
+            }
             if focusUpdate.wasPresent {
                 self?.setActiveFocusSession(focusUpdate.focus)
             }
@@ -497,8 +568,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let parsed = Self.parsePayload(message)
         let parsedPlaces = Self.parsePlacesPayload(message)
         let placeCheckInUpdate = Self.parsePlaceCheckInPayload(message)
+        let sleepUpdate = Self.parseSleepPayload(message)
         let focusUpdate = Self.parseFocusPayload(message)
-        guard !parsed.isEmpty || !parsedPlaces.isEmpty || placeCheckInUpdate.wasPresent || focusUpdate.wasPresent else { return }
+        guard !parsed.isEmpty || !parsedPlaces.isEmpty || placeCheckInUpdate.wasPresent || sleepUpdate.wasPresent || focusUpdate.wasPresent else { return }
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
             self?.updateConnectivityState(connectivityState)
@@ -510,6 +582,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             }
             if placeCheckInUpdate.wasPresent {
                 self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
+            }
+            if sleepUpdate.wasPresent {
+                self?.setActiveSleepSession(sleepUpdate.sleep)
             }
             if focusUpdate.wasPresent {
                 self?.setActiveFocusSession(focusUpdate.focus)
@@ -521,8 +596,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let parsed = Self.parsePayload(userInfo)
         let parsedPlaces = Self.parsePlacesPayload(userInfo)
         let placeCheckInUpdate = Self.parsePlaceCheckInPayload(userInfo)
+        let sleepUpdate = Self.parseSleepPayload(userInfo)
         let focusUpdate = Self.parseFocusPayload(userInfo)
-        guard !parsed.isEmpty || !parsedPlaces.isEmpty || placeCheckInUpdate.wasPresent || focusUpdate.wasPresent else { return }
+        guard !parsed.isEmpty || !parsedPlaces.isEmpty || placeCheckInUpdate.wasPresent || sleepUpdate.wasPresent || focusUpdate.wasPresent else { return }
         let connectivityState = Self.makeConnectivityState(from: session)
         Task { @MainActor [weak self] in
             self?.updateConnectivityState(connectivityState)
@@ -534,6 +610,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             }
             if placeCheckInUpdate.wasPresent {
                 self?.setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
+            }
+            if sleepUpdate.wasPresent {
+                self?.setActiveSleepSession(sleepUpdate.sleep)
             }
             if focusUpdate.wasPresent {
                 self?.setActiveFocusSession(focusUpdate.focus)
@@ -562,6 +641,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let placeCheckInUpdate = Self.parsePlaceCheckInPayload(payload)
         if placeCheckInUpdate.wasPresent {
             setActivePlaceCheckIn(placeCheckInUpdate.checkIn)
+        }
+
+        let sleepUpdate = Self.parseSleepPayload(payload)
+        if sleepUpdate.wasPresent {
+            setActiveSleepSession(sleepUpdate.sleep)
         }
 
         let focusUpdate = Self.parseFocusPayload(payload)
@@ -609,8 +693,55 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "deviceKind": "appleWatch",
             "levelPercent": Int((level * 100).rounded()),
             "isCharging": isCharging,
-            "capturedAt": Date().timeIntervalSince1970
+            "capturedAt": Date().timeIntervalSince1970,
+            "sourceDevice": currentDeviceSourcePayload()
         ]
+    }
+
+    private func actionPayload(_ payload: [String: Any]) -> [String: Any] {
+        var payload = payload
+        payload["sourceDevice"] = currentDeviceSourcePayload()
+        return payload
+    }
+
+    private func currentDeviceSourcePayload() -> [String: Any] {
+        let device = WKInterfaceDevice.current()
+        return [
+            "installationID": watchInstallationID(),
+            "displayName": device.name,
+            "platform": "appleWatch",
+            "modelName": device.model,
+            "systemName": device.systemName,
+            "systemVersion": device.systemVersion,
+            "appVersion": Self.currentAppVersion,
+            "bundleIdentifier": Bundle.main.bundleIdentifier ?? ""
+        ]
+    }
+
+    private func watchInstallationID() -> String {
+        if let existing = UserDefaults.standard.string(forKey: installationIDKey),
+           !existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return existing
+        }
+
+        let installationID = UUID().uuidString
+        UserDefaults.standard.set(installationID, forKey: installationIDKey)
+        return installationID
+    }
+
+    private static var currentAppVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
+        switch (version, build) {
+        case let (.some(version), .some(build)) where !build.isEmpty:
+            return "\(version) (\(build))"
+        case let (.some(version), _):
+            return version
+        case let (_, .some(build)):
+            return build
+        default:
+            return ""
+        }
     }
 
     private func setRoutines(_ mapped: [WatchRoutine]) {
@@ -643,6 +774,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     private func setActivePlaceCheckIn(_ checkIn: WatchPlaceCheckIn?) {
         activePlaceCheckIn = checkIn
         saveCachedPlaceCheckIn()
+    }
+
+    private func setActiveSleepSession(_ sleep: WatchSleepSession?) {
+        activeSleepSession = sleep
+        saveCachedSleepSession()
     }
 
     private func setActiveFocusSession(_ focus: WatchFocusSession?) {
@@ -761,6 +897,40 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         )
     }
 
+    nonisolated private static func parseSleepPayload(_ payload: [String: Any]) -> SleepPayloadUpdate {
+        guard let rawSleep = payload["sleep"] as? [String: Any] else {
+            return SleepPayloadUpdate(wasPresent: false, sleep: nil)
+        }
+
+        guard (rawSleep["isActive"] as? Bool) == true else {
+            return SleepPayloadUpdate(wasPresent: true, sleep: nil)
+        }
+
+        guard
+            let sessionIDString = rawSleep["sessionID"] as? String,
+            let sessionID = UUID(uuidString: sessionIDString),
+            let startedAtTimestamp = rawSleep["startedAt"] as? TimeInterval
+        else {
+            return SleepPayloadUpdate(wasPresent: true, sleep: nil)
+        }
+
+        let startedAt = Date(timeIntervalSince1970: startedAtTimestamp)
+        let targetDurationMinutes = max((rawSleep["targetDurationMinutes"] as? Int) ?? 8 * 60, 1)
+        let targetWakeAt = (rawSleep["targetWakeAt"] as? TimeInterval)
+            .map(Date.init(timeIntervalSince1970:))
+            ?? startedAt.addingTimeInterval(TimeInterval(targetDurationMinutes * 60))
+
+        return SleepPayloadUpdate(
+            wasPresent: true,
+            sleep: WatchSleepSession(
+                id: sessionID,
+                startedAt: startedAt,
+                targetWakeAt: targetWakeAt,
+                targetDurationMinutes: targetDurationMinutes
+            )
+        )
+    }
+
     nonisolated private static func parseFocusPayload(_ payload: [String: Any]) -> FocusPayloadUpdate {
         guard let rawFocus = payload["focus"] as? [String: Any] else {
             return FocusPayloadUpdate(wasPresent: false, focus: nil)
@@ -848,6 +1018,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         activePlaceCheckIn = try? JSONDecoder().decode(WatchPlaceCheckIn.self, from: data)
     }
 
+    private func loadCachedSleepSession() {
+        guard let data = UserDefaults.standard.data(forKey: sleepCacheKey) else { return }
+        activeSleepSession = try? JSONDecoder().decode(WatchSleepSession.self, from: data)
+    }
+
     private func loadCachedFocusSession() {
         guard let data = UserDefaults.standard.data(forKey: focusCacheKey) else { return }
         activeFocusSession = try? JSONDecoder().decode(WatchFocusSession.self, from: data)
@@ -866,6 +1041,16 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let data = try? JSONEncoder().encode(activePlaceCheckIn) else { return }
         UserDefaults.standard.set(data, forKey: placeCheckInCacheKey)
+    }
+
+    private func saveCachedSleepSession() {
+        guard let activeSleepSession else {
+            UserDefaults.standard.removeObject(forKey: sleepCacheKey)
+            return
+        }
+
+        guard let data = try? JSONEncoder().encode(activeSleepSession) else { return }
+        UserDefaults.standard.set(data, forKey: sleepCacheKey)
     }
 
     private func saveCachedFocusSession() {

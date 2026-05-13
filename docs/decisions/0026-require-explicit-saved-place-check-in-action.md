@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0031](0031-auto-check-in-at-saved-places.md)
 
 ## Date
 

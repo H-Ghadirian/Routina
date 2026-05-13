@@ -35,6 +35,31 @@ struct SleepSessionSupportTests {
 
     @MainActor
     @Test
+    func endActiveSleep_closesAllActiveSessions() throws {
+        let context = makeInMemoryContext()
+        let olderSession = SleepSession(
+            id: UUID(),
+            startedAt: makeDate("2026-05-09T22:30:00Z")
+        )
+        let newerSession = SleepSession(
+            id: UUID(),
+            startedAt: makeDate("2026-05-09T22:45:00Z")
+        )
+        let endedAt = makeDate("2026-05-10T06:40:00Z")
+        context.insert(olderSession)
+        context.insert(newerSession)
+        try context.save()
+
+        let endedSession = try #require(try SleepSessionSupport.endActiveSleep(in: context, at: endedAt))
+
+        #expect(endedSession.id == newerSession.id)
+        #expect(olderSession.endedAt == endedAt)
+        #expect(newerSession.endedAt == endedAt)
+        #expect(try SleepSessionSupport.activeSessions(in: context).isEmpty)
+    }
+
+    @MainActor
+    @Test
     func startSleep_stopsActiveFocusTimers() throws {
         let context = makeInMemoryContext()
         let task = makeTask(

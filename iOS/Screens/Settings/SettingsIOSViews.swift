@@ -93,6 +93,8 @@ struct SettingsIOSDetailView: View {
         switch section {
         case .general:
             SettingsGeneralDetailView(store: store)
+        case .devices:
+            SettingsDevicesDetailView(store: store)
         case .notifications:
             SettingsNotificationsDetailView(store: store)
         case .calendar:

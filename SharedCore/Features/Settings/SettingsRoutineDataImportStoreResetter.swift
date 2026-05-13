@@ -24,6 +24,11 @@ enum SettingsRoutineDataImportStoreResetter {
             context.delete(attachment)
         }
 
+        let existingDeviceActionLogs = try context.fetch(FetchDescriptor<RoutinaDeviceActionLog>())
+        for log in existingDeviceActionLogs {
+            context.delete(log)
+        }
+
         let existingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
         for task in existingTasks {
             context.delete(task)

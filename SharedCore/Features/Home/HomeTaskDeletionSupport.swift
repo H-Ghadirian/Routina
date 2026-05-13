@@ -114,7 +114,15 @@ enum HomeTaskDeletionSupport {
                     }
                 )
                 if let task = try context.fetch(descriptor).first {
+                    let title = RoutineTask.trimmedName(task.name) ?? "Untitled task"
                     context.delete(task)
+                    DeviceActivityRecorder.recordAction(
+                        .deleted,
+                        entity: .task,
+                        entityID: id,
+                        entityTitle: title,
+                        in: context
+                    )
                 }
                 let logs = try context.fetch(HomeTaskSupport.logsDescriptor(for: id))
                 for log in logs {

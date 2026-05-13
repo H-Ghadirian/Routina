@@ -344,9 +344,7 @@ private struct SleepModeFullScreenView: View {
     @MainActor
     private func endSleep() {
         do {
-            session.end(at: Date())
-            try modelContext.save()
-            NotificationCenter.default.postRoutineDidUpdate()
+            _ = try SleepSessionSupport.endActiveSleep(in: modelContext)
             errorText = nil
         } catch {
             errorText = "Could not save wake time."

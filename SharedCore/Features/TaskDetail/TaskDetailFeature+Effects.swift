@@ -257,6 +257,13 @@ extension TaskDetailFeature {
                         )
                     )
                 }
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .routineLog,
+                    entityID: logID,
+                    entityTitle: "Time spent",
+                    in: context
+                )
                 try context.save()
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -284,6 +291,14 @@ extension TaskDetailFeature {
                         )
                     )
                 }
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Updated time spent",
+                    in: context
+                )
                 try context.save()
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -302,6 +317,14 @@ extension TaskDetailFeature {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.comments = comments
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Updated comments",
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
@@ -455,6 +478,13 @@ extension TaskDetailFeature {
                 } else if task.scheduleAnchor == nil, let existingAnchor = task.lastDone ?? task.createdAt {
                     task.scheduleAnchor = existingAnchor
                 }
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
                 if !NotificationCoordinator.shouldScheduleNotification(
@@ -527,6 +557,15 @@ extension TaskDetailFeature {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.startOngoing(at: startedAt)
+                DeviceActivityRecorder.recordAction(
+                    .started,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Started ongoing routine",
+                    at: startedAt,
+                    in: context
+                )
                 try context.save()
                 await notificationClient.cancel(task.id.uuidString)
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -558,6 +597,15 @@ extension TaskDetailFeature {
                     context.insert(RoutineLog(timestamp: finishedAt, taskID: taskID, kind: .completed))
                 }
 
+                DeviceActivityRecorder.recordAction(
+                    .completed,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Finished ongoing routine",
+                    at: finishedAt,
+                    in: context
+                )
                 try context.save()
 
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
@@ -599,6 +647,7 @@ extension TaskDetailFeature {
                 }
 
                 let identifier = task.id.uuidString
+                let taskTitle = RoutineTask.trimmedName(task.name) ?? "Untitled task"
                 let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
                 RoutineTask.removeRelationships(targeting: Set([taskID]), from: allTasks)
                 context.delete(task)
@@ -614,6 +663,13 @@ extension TaskDetailFeature {
                 for att in attachmentsToDelete {
                     context.delete(att)
                 }
+                DeviceActivityRecorder.recordAction(
+                    .deleted,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: taskTitle,
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
                 await notificationClient.cancel(identifier)
@@ -634,6 +690,14 @@ extension TaskDetailFeature {
                 }
                 task.pausedAt = pausedAt
                 task.snoozedUntil = nil
+                DeviceActivityRecorder.recordAction(
+                    .paused,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    at: pausedAt,
+                    in: context
+                )
                 try context.save()
                 await notificationClient.cancel(taskID.uuidString)
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -649,6 +713,14 @@ extension TaskDetailFeature {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.snoozedUntil = snoozedUntil
+                DeviceActivityRecorder.recordAction(
+                    .snoozed,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    at: snoozedUntil,
+                    in: context
+                )
                 try context.save()
                 if NotificationCoordinator.shouldScheduleNotification(
                     for: task,
@@ -685,6 +757,14 @@ extension TaskDetailFeature {
                 task.scheduleAnchor = RoutineDateMath.resumedScheduleAnchor(for: task, resumedAt: resumedAt)
                 task.pausedAt = nil
                 task.snoozedUntil = nil
+                DeviceActivityRecorder.recordAction(
+                    .resumed,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    at: resumedAt,
+                    in: context
+                )
                 try context.save()
                 if NotificationCoordinator.shouldScheduleNotification(
                     for: task,
@@ -829,6 +909,15 @@ extension TaskDetailFeature {
                         )
                     )
                 }
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Changed state to \(newStateTitle)",
+                    at: now,
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
@@ -843,6 +932,14 @@ extension TaskDetailFeature {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.pressure = pressure
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Updated pressure",
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
@@ -864,6 +961,14 @@ extension TaskDetailFeature {
                 task.importance = importance
                 task.urgency = urgency
                 task.priority = priority
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Updated priority matrix",
+                    in: context
+                )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {

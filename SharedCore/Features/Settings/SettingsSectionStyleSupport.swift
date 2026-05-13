@@ -5,6 +5,8 @@ extension SettingsSectionID {
         switch self {
         case .general:
             return .blue
+        case .devices:
+            return .teal
         case .notifications:
             return .red
         case .calendar:

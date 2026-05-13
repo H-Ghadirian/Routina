@@ -51,6 +51,11 @@ enum PlaceCheckInActivity: String, CaseIterable, Codable, Equatable, Identifiabl
     }
 }
 
+enum PlaceCheckInCaptureMode: String, Codable, Equatable, Sendable {
+    case manual
+    case automatic
+}
+
 @Model
 final class PlaceCheckInSession {
     var id: UUID = UUID()
@@ -66,6 +71,8 @@ final class PlaceCheckInSession {
     var endedAt: Date?
     var createdAt: Date?
     var updatedAt: Date?
+    var captureModeRawValue: String?
+    var confirmedAt: Date?
 
     var isActive: Bool {
         endedAt == nil
@@ -86,6 +93,25 @@ final class PlaceCheckInSession {
         RoutinePlace.cleanedName(placeName) ?? "Unknown place"
     }
 
+    var captureMode: PlaceCheckInCaptureMode {
+        get {
+            guard let captureModeRawValue else { return .manual }
+            return PlaceCheckInCaptureMode(rawValue: captureModeRawValue) ?? .manual
+        }
+        set {
+            captureModeRawValue = newValue == .manual ? nil : newValue.rawValue
+            updatedAt = Date()
+        }
+    }
+
+    var isAutomatic: Bool {
+        captureMode == .automatic
+    }
+
+    var requiresConfirmation: Bool {
+        isAutomatic && confirmedAt == nil
+    }
+
     var coordinate: LocationCoordinate? {
         guard let latitude, let longitude else { return nil }
         return LocationCoordinate(latitude: latitude, longitude: longitude)
@@ -104,7 +130,9 @@ final class PlaceCheckInSession {
         startedAt: Date? = Date(),
         endedAt: Date? = nil,
         createdAt: Date? = Date(),
-        updatedAt: Date? = Date()
+        updatedAt: Date? = Date(),
+        captureMode: PlaceCheckInCaptureMode = .manual,
+        confirmedAt: Date? = nil
     ) {
         self.id = id
         self.placeID = placeID
@@ -119,6 +147,8 @@ final class PlaceCheckInSession {
         self.endedAt = endedAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.captureModeRawValue = captureMode == .manual ? nil : captureMode.rawValue
+        self.confirmedAt = captureMode == .automatic ? confirmedAt : nil
     }
 
     func end(at endedAt: Date = Date()) {
@@ -146,7 +176,9 @@ final class PlaceCheckInSession {
             startedAt: startedAt,
             endedAt: endedAt,
             createdAt: createdAt,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            captureMode: captureMode,
+            confirmedAt: confirmedAt
         )
     }
 

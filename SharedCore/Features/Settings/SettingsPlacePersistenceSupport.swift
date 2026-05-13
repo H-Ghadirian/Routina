@@ -27,13 +27,19 @@ enum SettingsPlacePersistence {
             throw SettingsPlacePersistenceError.duplicateName
         }
 
-        context.insert(
-            RoutinePlace(
-                name: request.cleanedName,
-                latitude: request.coordinate.latitude,
-                longitude: request.coordinate.longitude,
-                radiusMeters: request.radiusMeters
-            )
+        let place = RoutinePlace(
+            name: request.cleanedName,
+            latitude: request.coordinate.latitude,
+            longitude: request.coordinate.longitude,
+            radiusMeters: request.radiusMeters
+        )
+        context.insert(place)
+        DeviceActivityRecorder.recordAction(
+            .created,
+            entity: .place,
+            entityID: place.id,
+            entityTitle: place.displayName,
+            in: context
         )
         try context.save()
 
@@ -56,7 +62,15 @@ enum SettingsPlacePersistence {
         )
 
         if let place = try context.fetch(placeDescriptor).first {
+            let title = place.displayName
             context.delete(place)
+            DeviceActivityRecorder.recordAction(
+                .deleted,
+                entity: .place,
+                entityID: placeID,
+                entityTitle: title,
+                in: context
+            )
         }
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
