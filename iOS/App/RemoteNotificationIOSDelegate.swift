@@ -8,21 +8,11 @@ import WidgetKit
 public final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegate {
     public func application(
         _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+        didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         guard !AppEnvironment.isAutomatedTestMode else { return true }
         NotificationCoordinator.configureCurrentCenter(delegate: self)
-        handleLaunchURLIfPresent(launchOptions)
         return true
-    }
-
-    @available(iOS, introduced: 2.0, deprecated: 26.0, message: "SwiftUI scene URL handling is primary; this keeps older app-delegate URL delivery paths routed.")
-    public func application(
-        _ app: UIApplication,
-        open url: URL,
-        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
-    ) -> Bool {
-        handleIncomingURL(url)
     }
 
     public func application(
@@ -94,11 +84,6 @@ public final class RemoteNotificationIOSDelegate: NSObject, UIApplicationDelegat
         return true
     }
 
-    private func handleLaunchURLIfPresent(_ launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
-        let launchURLKey = UIApplication.LaunchOptionsKey(rawValue: "UIApplicationLaunchOptionsURLKey")
-        guard let url = launchOptions?[launchURLKey] as? URL else { return }
-        _ = handleIncomingURL(url)
-    }
 }
 
 extension RemoteNotificationIOSDelegate: UNUserNotificationCenterDelegate {

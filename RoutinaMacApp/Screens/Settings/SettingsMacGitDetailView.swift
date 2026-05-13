@@ -5,175 +5,173 @@ struct SettingsMacGitDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            SettingsMacDetailShell(
-                title: "Git",
-                subtitle: "Connect GitHub or GitLab to display contribution activity on your dashboard."
-            ) {
-                SettingsMacDetailCard(title: "Git Features") {
-                    Toggle("Enable Git features", isOn: gitFeaturesBinding)
-                        .toggleStyle(.switch)
+SettingsMacDetailShell(
+    title: "Git",
+    subtitle: "Connect GitHub or GitLab to display contribution activity on your dashboard."
+) {
+    SettingsMacDetailCard(title: "Git Features") {
+        Toggle("Enable Git features", isOn: gitFeaturesBinding)
+            .toggleStyle(.switch)
 
-                    Text("Shows GitHub and GitLab contribution activity in Stats.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+        Text("Shows GitHub and GitLab contribution activity in Stats.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
 
-                Text("GitHub")
-                    .font(.title2.weight(.semibold))
+    Text("GitHub")
+        .font(.title2.weight(.semibold))
 
-                SettingsMacDetailCard(title: "Mode") {
-                    Picker("Source", selection: scopeBinding) {
-                        ForEach(GitHubStatsScope.allCases) { scope in
-                            Text(scope.title).tag(scope)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Text(store.github.scope.subtitle)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                if store.github.scope == .repository {
-                    SettingsMacDetailCard(title: "Repository") {
-                        TextField("Owner", text: repositoryOwnerBinding)
-                            .textFieldStyle(.roundedBorder)
-
-                        TextField("Repository", text: repositoryNameBinding)
-                            .textFieldStyle(.roundedBorder)
-
-                        Text(store.github.repositorySummaryText)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-
-                        if let validationMessage = store.github.saveValidationMessage {
-                            Text(validationMessage)
-                                .font(.footnote)
-                                .foregroundStyle(.red)
-                        }
-                    }
-                } else {
-                    SettingsMacDetailCard(title: "Profile") {
-                        Text(store.github.profileSummaryText)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-
-                        if let validationMessage = store.github.saveValidationMessage {
-                            Text(validationMessage)
-                                .font(.footnote)
-                                .foregroundStyle(.red)
-                        }
-                    }
-                }
-
-                SettingsMacDetailCard(title: "Access Token") {
-                    SecureField("Personal access token", text: gitHubAccessTokenBinding)
-                        .textFieldStyle(.roundedBorder)
-
-                    Text(store.github.tokenStatusText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                SettingsMacDetailCard(title: "Actions") {
-                    HStack(spacing: 12) {
-                        Button {
-                            store.send(.saveGitHubConnectionTapped)
-                        } label: {
-                            if store.github.isOperationInProgress {
-                                ProgressView()
-                            } else {
-                                Label(store.github.saveButtonTitle, systemImage: "link.badge.plus")
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(store.github.isSaveDisabled)
-
-                        Button(role: .destructive) {
-                            store.send(.clearGitHubConnectionTapped)
-                        } label: {
-                            Label("Remove Connection", systemImage: "trash")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(store.github.removeButtonDisabled)
-                    }
-
-                    Text(store.github.infoText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                if !store.github.statusMessage.isEmpty {
-                    SettingsMacDetailCard(title: "Status") {
-                        Text(store.github.statusMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Text("GitLab")
-                    .font(.title2.weight(.semibold))
-                    .padding(.top, 8)
-
-                SettingsMacDetailCard(title: "Profile") {
-                    Text(store.gitlab.profileSummaryText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-
-                    if let validationMessage = store.gitlab.saveValidationMessage {
-                        Text(validationMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                    }
-                }
-
-                SettingsMacDetailCard(title: "Access Token") {
-                    SecureField("Personal access token", text: gitLabAccessTokenBinding)
-                        .textFieldStyle(.roundedBorder)
-
-                    Text(store.gitlab.tokenStatusText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                SettingsMacDetailCard(title: "Actions") {
-                    HStack(spacing: 12) {
-                        Button {
-                            store.send(.saveGitLabConnectionTapped)
-                        } label: {
-                            if store.gitlab.isOperationInProgress {
-                                ProgressView()
-                            } else {
-                                Label(store.gitlab.saveButtonTitle, systemImage: "link.badge.plus")
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(store.gitlab.isSaveDisabled)
-
-                        Button(role: .destructive) {
-                            store.send(.clearGitLabConnectionTapped)
-                        } label: {
-                            Label("Remove Connection", systemImage: "trash")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(store.gitlab.removeButtonDisabled)
-                    }
-
-                    Text(store.gitlab.infoText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                if !store.gitlab.statusMessage.isEmpty {
-                    SettingsMacDetailCard(title: "Status") {
-                        Text(store.gitlab.statusMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+    SettingsMacDetailCard(title: "Mode") {
+        Picker("Source", selection: scopeBinding) {
+            ForEach(GitHubStatsScope.allCases) { scope in
+                Text(scope.title).tag(scope)
             }
         }
+        .pickerStyle(.segmented)
+
+        Text(store.github.scope.subtitle)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    if store.github.scope == .repository {
+        SettingsMacDetailCard(title: "Repository") {
+            TextField("Owner", text: repositoryOwnerBinding)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("Repository", text: repositoryNameBinding)
+                .textFieldStyle(.roundedBorder)
+
+            Text(store.github.repositorySummaryText)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if let validationMessage = store.github.saveValidationMessage {
+                Text(validationMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+        }
+    } else {
+        SettingsMacDetailCard(title: "Profile") {
+            Text(store.github.profileSummaryText)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if let validationMessage = store.github.saveValidationMessage {
+                Text(validationMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    SettingsMacDetailCard(title: "Access Token") {
+        SecureField("Personal access token", text: gitHubAccessTokenBinding)
+            .textFieldStyle(.roundedBorder)
+
+        Text(store.github.tokenStatusText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Actions") {
+        HStack(spacing: 12) {
+            Button {
+                store.send(.saveGitHubConnectionTapped)
+            } label: {
+                if store.github.isOperationInProgress {
+                    ProgressView()
+                } else {
+                    Label(store.github.saveButtonTitle, systemImage: "link.badge.plus")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(store.github.isSaveDisabled)
+
+            Button(role: .destructive) {
+                store.send(.clearGitHubConnectionTapped)
+            } label: {
+                Label("Remove Connection", systemImage: "trash")
+            }
+            .buttonStyle(.bordered)
+            .disabled(store.github.removeButtonDisabled)
+        }
+
+        Text(store.github.infoText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    if !store.github.statusMessage.isEmpty {
+        SettingsMacDetailCard(title: "Status") {
+            Text(store.github.statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    Text("GitLab")
+        .font(.title2.weight(.semibold))
+        .padding(.top, 8)
+
+    SettingsMacDetailCard(title: "Profile") {
+        Text(store.gitlab.profileSummaryText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        if let validationMessage = store.gitlab.saveValidationMessage {
+            Text(validationMessage)
+                .font(.footnote)
+                .foregroundStyle(.red)
+        }
+    }
+
+    SettingsMacDetailCard(title: "Access Token") {
+        SecureField("Personal access token", text: gitLabAccessTokenBinding)
+            .textFieldStyle(.roundedBorder)
+
+        Text(store.gitlab.tokenStatusText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Actions") {
+        HStack(spacing: 12) {
+            Button {
+                store.send(.saveGitLabConnectionTapped)
+            } label: {
+                if store.gitlab.isOperationInProgress {
+                    ProgressView()
+                } else {
+                    Label(store.gitlab.saveButtonTitle, systemImage: "link.badge.plus")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(store.gitlab.isSaveDisabled)
+
+            Button(role: .destructive) {
+                store.send(.clearGitLabConnectionTapped)
+            } label: {
+                Label("Remove Connection", systemImage: "trash")
+            }
+            .buttonStyle(.bordered)
+            .disabled(store.gitlab.removeButtonDisabled)
+        }
+
+        Text(store.gitlab.infoText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    if !store.gitlab.statusMessage.isEmpty {
+        SettingsMacDetailCard(title: "Status") {
+            Text(store.gitlab.statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
     }
 
     private var gitFeaturesBinding: Binding<Bool> {

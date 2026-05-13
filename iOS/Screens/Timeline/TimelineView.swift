@@ -16,31 +16,29 @@ struct TimelineView: View {
     @State private var selectedTimelineEntryID: UUID?
 
     var body: some View {
-        WithPerceptionTracking {
-            timelineRoot
-                .sheet(isPresented: filterSheetBinding) {
-                    timelineFiltersSheet
-                }
-            .task {
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-                ensureTimelineSelection()
-            }
-            .onChange(of: tasks) { _, newValue in
-                store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: logs) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: sleepSessionChangeToken) { _, _ in
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: placeCheckInChangeToken) { _, _ in
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: visibleTimelineEntryIDs) { _, _ in
-                ensureTimelineSelection()
-            }
-        }
+timelineRoot
+    .sheet(isPresented: filterSheetBinding) {
+        timelineFiltersSheet
+    }
+.task {
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+    ensureTimelineSelection()
+}
+.onChange(of: tasks) { _, newValue in
+    store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: logs) { _, newValue in
+    store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: sleepSessionChangeToken) { _, _ in
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: placeCheckInChangeToken) { _, _ in
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: visibleTimelineEntryIDs) { _, _ in
+    ensureTimelineSelection()
+}
     }
 
     @ViewBuilder

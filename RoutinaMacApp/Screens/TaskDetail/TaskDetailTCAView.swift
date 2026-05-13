@@ -57,100 +57,98 @@ struct TaskDetailTCAView: View {
     }
 
     var body: some View {
-        WithPerceptionTracking {
-            detailBody
-            .routinaInlineTitleDisplayMode()
-            .toolbar {
-                TaskDetailToolbarContent(
-                    store: store,
-                    showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
-                    isInlineEditPresented: isInlineEditPresented,
-                    canSaveCurrentEdit: canSaveCurrentEdit
-                )
-            }
-            .routinaPlatformEditPresentation(
-                isPresented: presentationRouting.editSheet,
-                store: store,
-                isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
-                emojiOptions: emojiOptions,
-                canSaveCurrentEdit: canSaveCurrentEdit
-            )
-            .sheet(isPresented: $isEditEmojiPickerPresented) {
-                EmojiPickerSheet(
-                    selectedEmoji: presentationRouting.editRoutineEmoji,
-                    emojis: allEmojiOptions
-                )
-            }
-            .sheet(isPresented: $isRelationshipGraphPresented) {
-                TaskRelationshipGraphSheet(
-                    centerTask: store.task,
-                    relationships: store.resolvedRelationships,
-                    statusColor: TaskDetailPresentation.statusColor(for:),
-                    onSelectTask: { taskID in
-                        isRelationshipGraphPresented = false
-                        store.send(.openLinkedTask(taskID))
-                    }
-                )
-            }
-            .sheet(item: $timeEditing.editingLog) { log in
-                TaskDetailLogTimeSpentSheet(
-                    minutes: $timeEditing.editingMinutes,
-                    showsClearButton: log.actualDurationMinutes != nil,
-                    onClear: {
-                        store.send(.updateLogDuration(log.id, nil))
-                        timeEditing.dismissLog()
-                    },
-                    onCancel: {
-                        timeEditing.dismissLog()
-                    },
-                    onSave: {
-                        store.send(.updateLogDuration(log.id, timeEditing.editingMinutes))
-                        timeEditing.dismissLog()
-                    }
-                )
-            }
-            .task {
-                await refreshFocusBlockingContext()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-                Task {
-                    await refreshFocusBlockingContext()
-                }
-            }
-            .taskDetailDeleteConfirmationAlert(store: store)
-            .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
-            .onAppear {
-                referenceDate = Date()
-                displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
-                collapseDefaultSections()
-            }
-            .onChange(of: store.task.id) { _, _ in
-                referenceDate = Date()
-                activeBlockingTask = nil
-                Task {
-                    await refreshFocusBlockingContext()
-                }
-                collapseDefaultSections()
-                displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
-            }
-            .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
-                guard shouldDismiss else { return }
-                dismiss()
-                store.send(.deleteDismissHandled)
-            }
-            .onChange(of: store.resolvedSelectedDate) { _, newValue in
-                displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
-            }
-            .routinaAttachmentShareSheet(url: $attachmentTempURL)
-            .fileExporter(
-                isPresented: TaskDetailAttachmentExportPresentation.isPresentedBinding(fileToSave: $fileToSave),
-                document: fileToSave.map { RoutineAttachmentFileDocument(data: $0.data) },
-                contentType: .data,
-                defaultFilename: fileToSave?.fileName
-            ) { _ in
-                fileToSave = nil
-            }
+detailBody
+.routinaInlineTitleDisplayMode()
+.toolbar {
+    TaskDetailToolbarContent(
+        store: store,
+        showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
+        isInlineEditPresented: isInlineEditPresented,
+        canSaveCurrentEdit: canSaveCurrentEdit
+    )
+}
+.routinaPlatformEditPresentation(
+    isPresented: presentationRouting.editSheet,
+    store: store,
+    isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
+    emojiOptions: emojiOptions,
+    canSaveCurrentEdit: canSaveCurrentEdit
+)
+.sheet(isPresented: $isEditEmojiPickerPresented) {
+    EmojiPickerSheet(
+        selectedEmoji: presentationRouting.editRoutineEmoji,
+        emojis: allEmojiOptions
+    )
+}
+.sheet(isPresented: $isRelationshipGraphPresented) {
+    TaskRelationshipGraphSheet(
+        centerTask: store.task,
+        relationships: store.resolvedRelationships,
+        statusColor: TaskDetailPresentation.statusColor(for:),
+        onSelectTask: { taskID in
+            isRelationshipGraphPresented = false
+            store.send(.openLinkedTask(taskID))
         }
+    )
+}
+.sheet(item: $timeEditing.editingLog) { log in
+    TaskDetailLogTimeSpentSheet(
+        minutes: $timeEditing.editingMinutes,
+        showsClearButton: log.actualDurationMinutes != nil,
+        onClear: {
+            store.send(.updateLogDuration(log.id, nil))
+            timeEditing.dismissLog()
+        },
+        onCancel: {
+            timeEditing.dismissLog()
+        },
+        onSave: {
+            store.send(.updateLogDuration(log.id, timeEditing.editingMinutes))
+            timeEditing.dismissLog()
+        }
+    )
+}
+.task {
+    await refreshFocusBlockingContext()
+}
+.onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+    Task {
+        await refreshFocusBlockingContext()
+    }
+}
+.taskDetailDeleteConfirmationAlert(store: store)
+.taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
+.onAppear {
+    referenceDate = Date()
+    displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+    collapseDefaultSections()
+}
+.onChange(of: store.task.id) { _, _ in
+    referenceDate = Date()
+    activeBlockingTask = nil
+    Task {
+        await refreshFocusBlockingContext()
+    }
+    collapseDefaultSections()
+    displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+}
+.onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
+    guard shouldDismiss else { return }
+    dismiss()
+    store.send(.deleteDismissHandled)
+}
+.onChange(of: store.resolvedSelectedDate) { _, newValue in
+    displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
+}
+.routinaAttachmentShareSheet(url: $attachmentTempURL)
+.fileExporter(
+    isPresented: TaskDetailAttachmentExportPresentation.isPresentedBinding(fileToSave: $fileToSave),
+    document: fileToSave.map { RoutineAttachmentFileDocument(data: $0.data) },
+    contentType: .data,
+    defaultFilename: fileToSave?.fileName
+) { _ in
+    fileToSave = nil
+}
     }
 
     @ViewBuilder

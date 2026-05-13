@@ -5,18 +5,16 @@ struct SettingsMacTagsListContent: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            if store.tags.savedTags.isEmpty {
-                Text("No tags yet. Tags you add to routines will appear here.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    tagSearchField
-                    filteredTagsList
-                }
-            }
-        }
+if store.tags.savedTags.isEmpty {
+    Text("No tags yet. Tags you add to routines will appear here.")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+} else {
+    VStack(alignment: .leading, spacing: 12) {
+        tagSearchField
+        filteredTagsList
+    }
+}
     }
 
     @ViewBuilder

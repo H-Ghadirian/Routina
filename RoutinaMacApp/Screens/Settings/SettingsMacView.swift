@@ -14,46 +14,44 @@ struct SettingsMacView: View {
     @State private var isPlacePickerPresented = false
 
     var body: some View {
-        WithPerceptionTracking {
-            NavigationSplitView {
-                List(selection: $selectedSection) {
-                    ForEach(SettingsMacSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
-                        SettingsMacSidebarRow(
-                            section: section,
-                            store: store
-                        )
-                        .tag(section)
-                    }
-                }
-                .listStyle(.sidebar)
-                .navigationTitle("Settings")
-                .toolbar(removing: .sidebarToggle)
-                .navigationSplitViewColumnWidth(
-                    min: SettingsMacLayout.sidebarMinimumWidth,
-                    ideal: SettingsMacLayout.sidebarIdealWidth,
-                    max: SettingsMacLayout.sidebarMaximumWidth
-                )
-                .background(
-                    SettingsMacSidebarSplitViewConfigurator(
-                        minimumWidth: SettingsMacLayout.sidebarMinimumWidth
-                    )
-                )
-            } detail: {
-                SettingsMacDetailView(
-                    section: selectedDetailSection,
-                    store: store,
-                    isPlacePickerPresented: $isPlacePickerPresented
-                )
-                .toolbar {
-                    RoutinaMacFocusTimerToolbarItem()
-                }
-            }
-            .navigationSplitViewStyle(.balanced)
-            .settingsMacPresentations(
-                store: store,
-                isPlacePickerPresented: $isPlacePickerPresented
+NavigationSplitView {
+    List(selection: $selectedSection) {
+        ForEach(SettingsMacSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
+            SettingsMacSidebarRow(
+                section: section,
+                store: store
             )
+            .tag(section)
         }
+    }
+    .listStyle(.sidebar)
+    .navigationTitle("Settings")
+    .toolbar(removing: .sidebarToggle)
+    .navigationSplitViewColumnWidth(
+        min: SettingsMacLayout.sidebarMinimumWidth,
+        ideal: SettingsMacLayout.sidebarIdealWidth,
+        max: SettingsMacLayout.sidebarMaximumWidth
+    )
+    .background(
+        SettingsMacSidebarSplitViewConfigurator(
+            minimumWidth: SettingsMacLayout.sidebarMinimumWidth
+        )
+    )
+} detail: {
+    SettingsMacDetailView(
+        section: selectedDetailSection,
+        store: store,
+        isPlacePickerPresented: $isPlacePickerPresented
+    )
+    .toolbar {
+        RoutinaMacFocusTimerToolbarItem()
+    }
+}
+.navigationSplitViewStyle(.balanced)
+.settingsMacPresentations(
+    store: store,
+    isPlacePickerPresented: $isPlacePickerPresented
+)
     }
 
     private var selectedDetailSection: SettingsMacSection {
@@ -107,17 +105,15 @@ struct EmbeddedSettingsMacDetailView: View {
     @State private var isPlacePickerPresented = false
 
     var body: some View {
-        WithPerceptionTracking {
-            SettingsMacDetailView(
-                section: section,
-                store: store,
-                isPlacePickerPresented: $isPlacePickerPresented
-            )
-            .settingsMacPresentations(
-                store: store,
-                isPlacePickerPresented: $isPlacePickerPresented
-            )
-        }
+SettingsMacDetailView(
+    section: section,
+    store: store,
+    isPlacePickerPresented: $isPlacePickerPresented
+)
+.settingsMacPresentations(
+    store: store,
+    isPlacePickerPresented: $isPlacePickerPresented
+)
     }
 }
 
@@ -125,41 +121,39 @@ private struct SettingsMacNotificationsDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            SettingsMacDetailShell(
-                title: "Notifications",
-                subtitle: "Choose if Routina should remind you and when those reminders should arrive."
-            ) {
-                SettingsMacDetailCard(title: "Routine Reminders") {
-                    Toggle("Enable notifications", isOn: notificationsBinding)
-                        .toggleStyle(.switch)
+SettingsMacDetailShell(
+    title: "Notifications",
+    subtitle: "Choose if Routina should remind you and when those reminders should arrive."
+) {
+    SettingsMacDetailCard(title: "Routine Reminders") {
+        Toggle("Enable notifications", isOn: notificationsBinding)
+            .toggleStyle(.switch)
 
-                    DatePicker(
-                        "Reminder time",
-                        selection: reminderTimeBinding,
-                        displayedComponents: .hourAndMinute
-                    )
-                    .disabled(store.notifications.notificationsEnabled == false)
+        DatePicker(
+            "Reminder time",
+            selection: reminderTimeBinding,
+            displayedComponents: .hourAndMinute
+        )
+        .disabled(store.notifications.notificationsEnabled == false)
 
-                    Text("Notifications include quick actions for Done and Snooze.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+        Text("Notifications include quick actions for Done and Snooze.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
 
-                if store.notifications.systemSettingsNotificationsEnabled == false {
-                    SettingsMacDetailCard(title: "System Settings") {
-                        Text("Notifications are disabled in system settings.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+    if store.notifications.systemSettingsNotificationsEnabled == false {
+        SettingsMacDetailCard(title: "System Settings") {
+            Text("Notifications are disabled in system settings.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
 
-                        Button("Allow in System Settings") {
-                            store.send(.openAppSettingsTapped)
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                }
+            Button("Allow in System Settings") {
+                store.send(.openAppSettingsTapped)
             }
+            .buttonStyle(.borderedProminent)
         }
+    }
+}
     }
 
     private var notificationsBinding: Binding<Bool> {
@@ -183,52 +177,50 @@ private struct SettingsMacCalendarDetailView: View {
     @State private var isCalendarTaskImportPresented = false
 
     var body: some View {
-        WithPerceptionTracking {
-            SettingsMacDetailShell(
-                title: "Calendar",
-                subtitle: "Review calendar events before adding tasks and choose how dates are displayed."
-            ) {
-                SettingsMacDetailCard(title: "Calendar Tasks") {
-                    Button {
-                        isCalendarTaskImportPresented = true
-                    } label: {
-                        Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                SettingsMacDetailCard(title: "Planner Calendar") {
-                    Toggle("Show timeline tasks automatically in planner", isOn: showTimelineTasksInDayPlannerBinding)
-                        .toggleStyle(.switch)
-
-                    Text("When off, planner dates show a timeline badge that opens the activity list instead.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                SettingsMacDetailCard(title: "Date Display") {
-                    Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
-                        .toggleStyle(.switch)
-
-                    if store.appearance.showPersianDates {
-                        Text(persianDatePreviewText)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .sheet(isPresented: $isCalendarTaskImportPresented) {
-                CalendarTaskImportSheet(existingTasks: existingTasks) {}
-            }
+SettingsMacDetailShell(
+    title: "Calendar",
+    subtitle: "Review calendar events before adding tasks and choose how dates are displayed."
+) {
+    SettingsMacDetailCard(title: "Calendar Tasks") {
+        Button {
+            isCalendarTaskImportPresented = true
+        } label: {
+            Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
         }
+        .buttonStyle(.borderedProminent)
+
+        Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Planner Calendar") {
+        Toggle("Show timeline tasks automatically in planner", isOn: showTimelineTasksInDayPlannerBinding)
+            .toggleStyle(.switch)
+
+        Text("When off, planner dates show a timeline badge that opens the activity list instead.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Date Display") {
+        Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
+            .toggleStyle(.switch)
+
+        if store.appearance.showPersianDates {
+            Text(persianDatePreviewText)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+
+        Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+}
+.sheet(isPresented: $isCalendarTaskImportPresented) {
+    CalendarTaskImportSheet(existingTasks: existingTasks) {}
+}
     }
 
     private var showPersianDatesBinding: Binding<Bool> {

@@ -95,9 +95,7 @@ struct HomeTCAView: View {
     }
 
     var body: some View {
-        WithPerceptionTracking {
-            homeContent
-        }
+homeContent
     }
 
     private var homeContent: some View {

@@ -187,9 +187,7 @@ struct StatsView: View {
     }
 
     var body: some View {
-        WithPerceptionTracking {
-            dashboardBody(snapshot: dashboardSnapshot)
-        }
+dashboardBody(snapshot: dashboardSnapshot)
     }
 
     private func dashboardBody(snapshot: DashboardSnapshot) -> some View {

@@ -47,12 +47,7 @@ final class CalendarTaskImportService {
         case .writeOnly:
             throw CalendarTaskImportError.accessDenied
         case .notDetermined:
-            let granted: Bool
-            if #available(iOS 17.0, macOS 14.0, *) {
-                granted = try await eventStore.requestFullAccessToEvents()
-            } else {
-                granted = try await eventStore.requestAccess(to: .event)
-            }
+            let granted = try await eventStore.requestFullAccessToEvents()
             guard granted else { throw CalendarTaskImportError.accessDenied }
         @unknown default:
             throw CalendarTaskImportError.accessDenied

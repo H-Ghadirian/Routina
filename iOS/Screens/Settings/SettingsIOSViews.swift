@@ -32,27 +32,25 @@ struct SettingsIOSRootView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            List {
-                ForEach(
-                    SettingsIOSSection.compactSectionGroups(
-                        isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
-                    ),
-                    id: \.self
-                ) { sections in
-                    Section {
-                        ForEach(sections) { section in
-                            NavigationLink(value: section) {
-                                SettingsIOSSectionRow(section: section, store: store)
-                            }
-                        }
-                    }
+List {
+    ForEach(
+        SettingsIOSSection.compactSectionGroups(
+            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
+        ),
+        id: \.self
+    ) { sections in
+        Section {
+            ForEach(sections) { section in
+                NavigationLink(value: section) {
+                    SettingsIOSSectionRow(section: section, store: store)
                 }
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
         }
+    }
+}
+.listStyle(.insetGrouped)
+.navigationTitle("Settings")
+.navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -61,25 +59,23 @@ private struct SettingsIPadSplitView: View {
     @State private var selectedSection: SettingsIOSSection? = .notifications
 
     var body: some View {
-        WithPerceptionTracking {
-            NavigationSplitView {
-                List(selection: $selectedSection) {
-                    ForEach(SettingsIOSSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
-                        SettingsIOSSectionRow(
-                            section: section,
-                            store: store
-                        )
-                        .tag(section)
-                    }
-                }
-                .listStyle(.sidebar)
-                .navigationTitle("Settings")
-                .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 400)
-            } detail: {
-                SettingsIOSDetailView(section: selectedDetailSection, store: store)
-            }
-            .navigationSplitViewStyle(.balanced)
+NavigationSplitView {
+    List(selection: $selectedSection) {
+        ForEach(SettingsIOSSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
+            SettingsIOSSectionRow(
+                section: section,
+                store: store
+            )
+            .tag(section)
         }
+    }
+    .listStyle(.sidebar)
+    .navigationTitle("Settings")
+    .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 400)
+} detail: {
+    SettingsIOSDetailView(section: selectedDetailSection, store: store)
+}
+.navigationSplitViewStyle(.balanced)
     }
 
     private var selectedDetailSection: SettingsIOSSection {
@@ -227,15 +223,13 @@ private struct SettingsIOSSectionRow: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            SettingsNavigationRow(
-                icon: section.icon,
-                tint: section.tint,
-                title: section.title,
-                subtitle: presentation.subtitle,
-                value: presentation.value
-            )
-        }
+SettingsNavigationRow(
+    icon: section.icon,
+    tint: section.tint,
+    title: section.title,
+    subtitle: presentation.subtitle,
+    value: presentation.value
+)
     }
 
     private var presentation: SettingsSectionRowPresentation {
@@ -249,45 +243,43 @@ private struct SettingsCalendarDetailView: View {
     @State private var isCalendarTaskImportPresented = false
 
     var body: some View {
-        WithPerceptionTracking {
-            List {
-                Section("Calendar Tasks") {
-                    Button {
-                        isCalendarTaskImportPresented = true
-                    } label: {
-                        Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
-                    }
-
-                    Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Planner Calendar") {
-                    Toggle("Show timeline tasks automatically in planner", isOn: showTimelineTasksInDayPlannerBinding)
-
-                    Text("When off, planner dates show a timeline badge that opens the activity list instead.")
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Date Display") {
-                    Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
-
-                    if store.appearance.showPersianDates {
-                        Text(persianDatePreviewText)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Calendar")
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $isCalendarTaskImportPresented) {
-                CalendarTaskImportSheet(existingTasks: existingTasks) {}
-            }
+List {
+    Section("Calendar Tasks") {
+        Button {
+            isCalendarTaskImportPresented = true
+        } label: {
+            Label("Review Calendar Tasks", systemImage: "calendar.badge.plus")
         }
+
+        Text("Review Apple Calendar or Outlook events one by one before adding them as tasks.")
+            .foregroundStyle(.secondary)
+    }
+
+    Section("Planner Calendar") {
+        Toggle("Show timeline tasks automatically in planner", isOn: showTimelineTasksInDayPlannerBinding)
+
+        Text("When off, planner dates show a timeline badge that opens the activity list instead.")
+            .foregroundStyle(.secondary)
+    }
+
+    Section("Date Display") {
+        Toggle("Show Persian date beside dates", isOn: showPersianDatesBinding)
+
+        if store.appearance.showPersianDates {
+            Text(persianDatePreviewText)
+                .foregroundStyle(.secondary)
+        }
+
+        Text("Keeps the app schedule unchanged and adds a Persian calendar date next to visible Gregorian dates.")
+            .foregroundStyle(.secondary)
+    }
+}
+.listStyle(.insetGrouped)
+.navigationTitle("Calendar")
+.navigationBarTitleDisplayMode(.inline)
+.sheet(isPresented: $isCalendarTaskImportPresented) {
+    CalendarTaskImportSheet(existingTasks: existingTasks) {}
+}
     }
 
     private var showPersianDatesBinding: Binding<Bool> {
@@ -319,37 +311,35 @@ private struct SettingsNotificationsDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            List {
-                Section("Reminders") {
-                    Toggle("Enable notifications", isOn: notificationsBinding)
+List {
+    Section("Reminders") {
+        Toggle("Enable notifications", isOn: notificationsBinding)
 
-                    DatePicker(
-                        "Reminder time",
-                        selection: reminderTimeBinding,
-                        displayedComponents: .hourAndMinute
-                    )
-                    .disabled(store.notifications.notificationsEnabled == false)
-                }
+        DatePicker(
+            "Reminder time",
+            selection: reminderTimeBinding,
+            displayedComponents: .hourAndMinute
+        )
+        .disabled(store.notifications.notificationsEnabled == false)
+    }
 
-                Section("Info") {
-                    Text("Notifications include quick actions for Done and Snooze.")
-                        .foregroundStyle(.secondary)
-                }
+    Section("Info") {
+        Text("Notifications include quick actions for Done and Snooze.")
+            .foregroundStyle(.secondary)
+    }
 
-                if store.notifications.systemSettingsNotificationsEnabled == false {
-                    Section("System Settings") {
-                        Button("Allow Notifications in System Settings") {
-                            store.send(.openAppSettingsTapped)
-                        }
-                        .foregroundStyle(.red)
-                    }
-                }
+    if store.notifications.systemSettingsNotificationsEnabled == false {
+        Section("System Settings") {
+            Button("Allow Notifications in System Settings") {
+                store.send(.openAppSettingsTapped)
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Notifications")
-            .navigationBarTitleDisplayMode(.inline)
+            .foregroundStyle(.red)
         }
+    }
+}
+.listStyle(.insetGrouped)
+.navigationTitle("Notifications")
+.navigationBarTitleDisplayMode(.inline)
     }
 
     private var notificationsBinding: Binding<Bool> {

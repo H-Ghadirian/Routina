@@ -5,48 +5,46 @@ struct GoalsTCAView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            NavigationStack {
-                content
-                    .navigationTitle("Goals")
-                    .searchable(text: searchBinding, prompt: "Search goals")
-                    .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
-                            Button {
-                                store.send(.addGoalTapped)
-                            } label: {
-                                Label("New Goal", systemImage: "plus")
-                            }
-                        }
-                    }
-                    .navigationDestination(for: UUID.self) { goalID in
-                        GoalDetailView(store: store, goalID: goalID)
-                    }
-            }
-            .sheet(isPresented: editorBinding) {
-                GoalsEditorSheet(store: store)
-            }
-            .confirmationDialog(
-                "Delete Goal",
-                isPresented: deleteConfirmationBinding,
-                titleVisibility: .visible
-            ) {
-                Button("Delete", role: .destructive) {
-                    store.send(.deleteGoalConfirmed)
+NavigationStack {
+    content
+        .navigationTitle("Goals")
+        .searchable(text: searchBinding, prompt: "Search goals")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    store.send(.addGoalTapped)
+                } label: {
+                    Label("New Goal", systemImage: "plus")
                 }
-                Button("Cancel", role: .cancel) {
-                    store.send(.deleteGoalCanceled)
-                }
-            } message: {
-                Text("Tasks linked to this goal will keep the task, but the goal link will be removed.")
-            }
-            .task {
-                store.send(.onAppear)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-                store.send(.refreshRequested)
             }
         }
+        .navigationDestination(for: UUID.self) { goalID in
+            GoalDetailView(store: store, goalID: goalID)
+        }
+}
+.sheet(isPresented: editorBinding) {
+    GoalsEditorSheet(store: store)
+}
+.confirmationDialog(
+    "Delete Goal",
+    isPresented: deleteConfirmationBinding,
+    titleVisibility: .visible
+) {
+    Button("Delete", role: .destructive) {
+        store.send(.deleteGoalConfirmed)
+    }
+    Button("Cancel", role: .cancel) {
+        store.send(.deleteGoalCanceled)
+    }
+} message: {
+    Text("Tasks linked to this goal will keep the task, but the goal link will be removed.")
+}
+.task {
+    store.send(.onAppear)
+}
+.onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+    store.send(.refreshRequested)
+}
     }
 
     @ViewBuilder
@@ -166,93 +164,91 @@ private struct GoalDetailView: View {
     var goalID: UUID
 
     var body: some View {
-        WithPerceptionTracking {
-            if let goal = store.goals.first(where: { $0.id == goalID }) {
-                List {
-                    Section {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    Circle()
-                                        .fill(goal.color.swiftUIColor?.opacity(0.16) ?? Color.secondary.opacity(0.12))
-                                    Text(goal.displayEmoji)
-                                        .font(.title2)
-                                }
-                                .frame(width: 54, height: 54)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(goal.displayTitle)
-                                        .font(.title3.weight(.semibold))
-                                    Text(goal.status.title)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-
-                            if let notes = goal.notes {
-                                Text(notes)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 6)
+if let goal = store.goals.first(where: { $0.id == goalID }) {
+    List {
+        Section {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(goal.color.swiftUIColor?.opacity(0.16) ?? Color.secondary.opacity(0.12))
+                        Text(goal.displayEmoji)
+                            .font(.title2)
                     }
+                    .frame(width: 54, height: 54)
 
-                    Section("Overview") {
-                        LabeledContent("Open Items", value: "\(goal.openTaskCount)")
-                        LabeledContent("Routines", value: "\(goal.routineCount)")
-                        LabeledContent("Todos", value: "\(goal.todoCount)")
-                        if goal.completedTodoCount > 0 {
-                            LabeledContent("Done Todos", value: "\(goal.completedTodoCount)")
-                        }
-                        if let targetDate = goal.targetDate {
-                            LabeledContent(
-                                "Target Date",
-                                value: targetDate.formatted(date: .abbreviated, time: .omitted)
-                            )
-                        }
-                        if let nextDueDate = goal.nextDueDate {
-                            LabeledContent(
-                                "Next Due",
-                                value: nextDueDate.formatted(date: .abbreviated, time: .omitted)
-                            )
-                        }
-                    }
-
-                    Section("Linked Tasks") {
-                        if goal.linkedTasks.isEmpty {
-                            ContentUnavailableView(
-                                "No linked tasks",
-                                systemImage: "checklist"
-                            )
-                        } else {
-                            ForEach(goal.linkedTasks) { task in
-                                GoalTaskInlineRow(task: task)
-                            }
-                        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(goal.displayTitle)
+                            .font(.title3.weight(.semibold))
+                        Text(goal.status.title)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .navigationTitle(goal.displayTitle)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            store.send(.editGoalTapped(goal.id))
-                        } label: {
-                            Label("Edit", systemImage: "square.and.pencil")
-                        }
-                    }
 
-                    ToolbarItem(placement: .topBarTrailing) {
-                        GoalActionsMenu(store: store, goal: goal)
-                    }
+                if let notes = goal.notes {
+                    Text(notes)
+                        .foregroundStyle(.secondary)
                 }
-                .onAppear {
-                    store.send(.selectGoal(goalID))
-                }
-            } else {
-                ContentUnavailableView("Goal unavailable", systemImage: "target")
+            }
+            .padding(.vertical, 6)
+        }
+
+        Section("Overview") {
+            LabeledContent("Open Items", value: "\(goal.openTaskCount)")
+            LabeledContent("Routines", value: "\(goal.routineCount)")
+            LabeledContent("Todos", value: "\(goal.todoCount)")
+            if goal.completedTodoCount > 0 {
+                LabeledContent("Done Todos", value: "\(goal.completedTodoCount)")
+            }
+            if let targetDate = goal.targetDate {
+                LabeledContent(
+                    "Target Date",
+                    value: targetDate.formatted(date: .abbreviated, time: .omitted)
+                )
+            }
+            if let nextDueDate = goal.nextDueDate {
+                LabeledContent(
+                    "Next Due",
+                    value: nextDueDate.formatted(date: .abbreviated, time: .omitted)
+                )
             }
         }
+
+        Section("Linked Tasks") {
+            if goal.linkedTasks.isEmpty {
+                ContentUnavailableView(
+                    "No linked tasks",
+                    systemImage: "checklist"
+                )
+            } else {
+                ForEach(goal.linkedTasks) { task in
+                    GoalTaskInlineRow(task: task)
+                }
+            }
+        }
+    }
+    .navigationTitle(goal.displayTitle)
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                store.send(.editGoalTapped(goal.id))
+            } label: {
+                Label("Edit", systemImage: "square.and.pencil")
+            }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+            GoalActionsMenu(store: store, goal: goal)
+        }
+    }
+    .onAppear {
+        store.send(.selectGoal(goalID))
+    }
+} else {
+    ContentUnavailableView("Goal unavailable", systemImage: "target")
+}
     }
 }
 

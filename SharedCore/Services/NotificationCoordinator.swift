@@ -354,12 +354,8 @@ enum NotificationCoordinator {
         }
         content.sound = .default
         content.categoryIdentifier = categoryIdentifier
-#if os(iOS) || os(macOS)
-        if #available(iOS 15.0, macOS 12.0, *) {
-            content.interruptionLevel = payload.usesExactTime ? .timeSensitive : .active
-            content.relevanceScore = payload.usesExactTime ? 1.0 : 0.5
-        }
-#endif
+        content.interruptionLevel = payload.usesExactTime ? .timeSensitive : .active
+        content.relevanceScore = payload.usesExactTime ? 1.0 : 0.5
         return content
     }
 

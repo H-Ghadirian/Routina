@@ -17,48 +17,46 @@ struct SettingsMacTagRow: View {
     @State private var relatedTagEntry = ""
 
     var body: some View {
-        WithPerceptionTracking {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 12) {
-                    RoutineTagPill(tag: tag)
+VStack(alignment: .leading, spacing: 10) {
+    HStack(spacing: 12) {
+        RoutineTagPill(tag: tag)
 
-                    if !tag.settingsSubtitle.isEmpty {
-                        Text(tag.settingsSubtitle)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    disclosureButton
-                    tagActionsMenu
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        isExpanded.toggle()
-                    }
-                }
-
-                if isExpanded {
-                    expandedDetails
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .padding(.vertical, 10)
-            .contextMenu {
-                Button {
-                    store.send(.renameTagTapped(tag.name))
-                } label: {
-                    Label("Rename…", systemImage: "pencil")
-                }
-                Button(role: .destructive) {
-                    store.send(.deleteTagTapped(tag.name))
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
+        if !tag.settingsSubtitle.isEmpty {
+            Text(tag.settingsSubtitle)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
+
+        Spacer()
+
+        disclosureButton
+        tagActionsMenu
+    }
+    .contentShape(Rectangle())
+    .onTapGesture {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            isExpanded.toggle()
+        }
+    }
+
+    if isExpanded {
+        expandedDetails
+            .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
+.padding(.vertical, 10)
+.contextMenu {
+    Button {
+        store.send(.renameTagTapped(tag.name))
+    } label: {
+        Label("Rename…", systemImage: "pencil")
+    }
+    Button(role: .destructive) {
+        store.send(.deleteTagTapped(tag.name))
+    } label: {
+        Label("Delete", systemImage: "trash")
+    }
+}
     }
 
     private var disclosureButton: some View {

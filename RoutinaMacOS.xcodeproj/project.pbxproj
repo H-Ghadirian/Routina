@@ -13,21 +13,15 @@
 		2C0000102E60000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
 		2C0000112E60000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		2C0000122E60000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
-		2C0000132E60000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
 		2C0000142E60000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
-		2C0000152E60000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 		4E0000102E80000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
 		4E0000112E80000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		4E0000122E80000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
-		4E0000132E80000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001032E5F000100000001 /* Perception */; };
 		4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001072E5F000100000001 /* ConcurrencyExtras */; };
-		4E0000152E80000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001092E5F000100000001 /* PerceptionCore */; };
 		6B1000012F10000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */; };
 		6B1000022F10000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001042E5F000100000001 /* Dependencies */; };
 		6B1000032F10000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001052E5F000100000001 /* CasePaths */; };
-		6B1000042F10000100000001 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001062E5F000100000001 /* Perception */; };
 		6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
-		6B1000062F10000100000001 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001102E5F000100000001 /* PerceptionCore */; };
 		AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
 		AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
 		AA000103PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -199,9 +193,7 @@
 				2C0000102E60000100000001 /* ComposableArchitecture in Frameworks */,
 				2C0000112E60000100000001 /* Dependencies in Frameworks */,
 				2C0000122E60000100000001 /* CasePaths in Frameworks */,
-				2C0000132E60000100000001 /* Perception in Frameworks */,
 				2C0000142E60000100000001 /* ConcurrencyExtras in Frameworks */,
-				2C0000152E60000100000001 /* PerceptionCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -212,9 +204,7 @@
 				4E0000102E80000100000001 /* ComposableArchitecture in Frameworks */,
 				4E0000112E80000100000001 /* Dependencies in Frameworks */,
 				4E0000122E80000100000001 /* CasePaths in Frameworks */,
-				4E0000132E80000100000001 /* Perception in Frameworks */,
 				4E0000142E80000100000001 /* ConcurrencyExtras in Frameworks */,
-				4E0000152E80000100000001 /* PerceptionCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,9 +215,7 @@
 				6B1000012F10000100000001 /* ComposableArchitecture in Frameworks */,
 				6B1000022F10000100000001 /* Dependencies in Frameworks */,
 				6B1000032F10000100000001 /* CasePaths in Frameworks */,
-				6B1000042F10000100000001 /* Perception in Frameworks */,
 				6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */,
-				6B1000062F10000100000001 /* PerceptionCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,9 +325,7 @@
 				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
-				2B1001032E5F000100000001 /* Perception */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
-				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
 			productName = Routina;
 			productReference = 2C0000022E60000100000001 /* Routinam.app */;
@@ -371,9 +357,7 @@
 				2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */,
 				2B1001012E5F000100000001 /* Dependencies */,
 				2B1001022E5F000100000001 /* CasePaths */,
-				2B1001032E5F000100000001 /* Perception */,
 				2B1001072E5F000100000001 /* ConcurrencyExtras */,
-				2B1001092E5F000100000001 /* PerceptionCore */,
 			);
 			productName = RoutinaMacOSDev;
 			productReference = 4E0000022E80000100000001 /* RoutinaMacOSDev.app */;
@@ -400,9 +384,7 @@
 				2A4B56AF2D8DB4AB00760BCA /* ComposableArchitecture */,
 				2B1001042E5F000100000001 /* Dependencies */,
 				2B1001052E5F000100000001 /* CasePaths */,
-				2B1001062E5F000100000001 /* Perception */,
 				2B1001082E5F000100000001 /* ConcurrencyExtras */,
-				2B1001102E5F000100000001 /* PerceptionCore */,
 			);
 			productName = RoutinaMacOSTests;
 			productReference = 6B1000112F10000100000001 /* RoutinaMacOSTests.xctest */;
@@ -472,7 +454,6 @@
 				2A4B56AC2D8DB48D00760BCA /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 				2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */,
-				2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */,
 				2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -678,7 +659,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -738,7 +719,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -783,7 +764,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -820,7 +801,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -857,7 +838,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
 				PRODUCT_NAME = Routinam;
@@ -911,7 +892,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam;
 				PRODUCT_NAME = Routinam;
@@ -950,7 +931,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
@@ -984,7 +965,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.Routinam.mac.dev;
 				PRODUCT_MODULE_NAME = RoutinaMacOSDev;
@@ -1014,7 +995,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.RoutinaMacOSTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1042,7 +1023,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = ir.hamedgh.RoutinaMacOSTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1090,7 +1071,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -1127,7 +1108,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -1222,14 +1203,6 @@
 				minimumVersion = 1.7.3;
 			};
 		};
-		2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/pointfreeco/swift-perception";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.6.0;
-			};
-		};
 		2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-concurrency-extras";
@@ -1261,11 +1234,6 @@
 			package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
 			productName = CasePaths;
 		};
-		2B1001032E5F000100000001 /* Perception */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-			productName = Perception;
-		};
 		2B1001042E5F000100000001 /* Dependencies */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002012E5F000100000001 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
@@ -1276,11 +1244,6 @@
 			package = 2B1002022E5F000100000001 /* XCRemoteSwiftPackageReference "swift-case-paths" */;
 			productName = CasePaths;
 		};
-		2B1001062E5F000100000001 /* Perception */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-			productName = Perception;
-		};
 		2B1001072E5F000100000001 /* ConcurrencyExtras */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
@@ -1290,16 +1253,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2B1002042E5F000100000001 /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */;
 			productName = ConcurrencyExtras;
-		};
-		2B1001092E5F000100000001 /* PerceptionCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-			productName = PerceptionCore;
-		};
-		2B1001102E5F000100000001 /* PerceptionCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2B1002032E5F000100000001 /* XCRemoteSwiftPackageReference "swift-perception" */;
-			productName = PerceptionCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

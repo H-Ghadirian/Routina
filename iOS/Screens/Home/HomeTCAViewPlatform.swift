@@ -64,13 +64,9 @@ extension HomeTCAView {
 
     var platformNavigationContent: some View {
         NavigationSplitView {
-            WithPerceptionTracking {
-                iosSidebarContent
-            }
+iosSidebarContent
         } detail: {
-            WithPerceptionTracking {
-                detailContent
-            }
+detailContent
         }
     }
 

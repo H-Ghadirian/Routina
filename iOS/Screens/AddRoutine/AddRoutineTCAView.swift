@@ -17,28 +17,26 @@ struct AddRoutineTCAView: View {
     let allEmojiOptions = EmojiCatalog.searchableAll
 
     var body: some View {
-        WithPerceptionTracking {
-            NavigationStack {
-                addRoutineContent
-                .routinaAddRoutineNavigationChrome(store: store, isSaveDisabled: isSaveDisabled)
-                .routinaAddRoutineNameAutofocus(isRoutineNameFocused: $isRoutineNameFocused)
-                .routinaAddRoutineEmojiPicker(isPresented: $isEmojiPickerPresented) {
-                    EmojiPickerSheet(
-                        selectedEmoji: routineEmojiBinding,
-                        emojis: allEmojiOptions
-                    )
-                }
-                .sheet(isPresented: $isTagManagerPresented) {
-                    SettingsTagManagerPresentationView(store: tagManagerStore)
-                }
-                .routinaAddRoutineTagNotifications(store: store)
-                .routinaAddRoutineSheetFrame()
-                .onChange(of: selectedPhotoItem) { _, newItem in
-                    guard let newItem else { return }
-                    loadPickedImage(from: newItem)
-                }
-            }
-        }
+NavigationStack {
+    addRoutineContent
+    .routinaAddRoutineNavigationChrome(store: store, isSaveDisabled: isSaveDisabled)
+    .routinaAddRoutineNameAutofocus(isRoutineNameFocused: $isRoutineNameFocused)
+    .routinaAddRoutineEmojiPicker(isPresented: $isEmojiPickerPresented) {
+        EmojiPickerSheet(
+            selectedEmoji: routineEmojiBinding,
+            emojis: allEmojiOptions
+        )
+    }
+    .sheet(isPresented: $isTagManagerPresented) {
+        SettingsTagManagerPresentationView(store: tagManagerStore)
+    }
+    .routinaAddRoutineTagNotifications(store: store)
+    .routinaAddRoutineSheetFrame()
+    .onChange(of: selectedPhotoItem) { _, newItem in
+        guard let newItem else { return }
+        loadPickedImage(from: newItem)
+    }
+}
     }
 
     @ViewBuilder

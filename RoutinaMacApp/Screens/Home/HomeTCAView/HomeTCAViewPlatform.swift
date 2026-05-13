@@ -74,9 +74,7 @@ extension HomeTCAView {
             isBoardInspectorPresented: macBoardInspectorPresentedBinding,
             addEditFormCoordinator: addEditFormCoordinator
         ) {
-            WithPerceptionTracking {
-                macSidebarContent
-            }
+macSidebarContent
         } boardCenterContent: {
             macBoardCenterContent
         } boardInspectorContent: {

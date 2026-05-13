@@ -1,12 +1,12 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.3
 
 import PackageDescription
 
 let package = Package(
     name: "RoutinaModules",
     platforms: [
-        .iOS("18.0"),
-        .macOS("15.0"),
+        .iOS("26.4"),
+        .macOS("26.4"),
     ],
     products: [
         .library(
@@ -40,10 +40,6 @@ let package = Package(
             from: "1.7.3"
         ),
         .package(
-            url: "https://github.com/pointfreeco/swift-perception",
-            from: "1.6.0"
-        ),
-        .package(
             url: "https://github.com/pointfreeco/swift-concurrency-extras",
             from: "1.3.2"
         ),
@@ -55,8 +51,6 @@ let package = Package(
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "CasePaths", package: "swift-case-paths"),
-                .product(name: "Perception", package: "swift-perception"),
-                .product(name: "PerceptionCore", package: "swift-perception"),
                 .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
             ],
             path: ".",

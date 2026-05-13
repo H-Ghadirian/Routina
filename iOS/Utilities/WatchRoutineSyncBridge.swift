@@ -316,10 +316,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             content.body = "Tap to open the running timer in Routina."
             content.sound = .default
             content.userInfo = deepLink.notificationUserInfo
-            if #available(iOS 15.0, *) {
-                content.interruptionLevel = .timeSensitive
-                content.relevanceScore = 1.0
-            }
+            content.interruptionLevel = .timeSensitive
+            content.relevanceScore = 1.0
 
             let request = UNNotificationRequest(
                 identifier: Self.openOnPhoneNotificationIdentifier(for: deepLink),

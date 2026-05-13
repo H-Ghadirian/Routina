@@ -30,7 +30,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     @ViewBuilder let boardInspectorView: () -> BoardInspectorView
 
     var body: some View {
-        WithPerceptionTracking {
+        Group {
             if store.isMacFilterDetailPresented {
                 filterView()
             } else if isBoardPresented {

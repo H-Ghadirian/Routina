@@ -5,52 +5,50 @@ struct SettingsTagsDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            List {
-                Section("Info") {
-                    Text("Rename or delete tags across every routine that uses them.")
-                        .foregroundStyle(.secondary)
-                }
+List {
+    Section("Info") {
+        Text("Rename or delete tags across every routine that uses them.")
+            .foregroundStyle(.secondary)
+    }
 
-                Section("Saved Tags") {
-                    if store.tags.savedTags.isEmpty {
-                        Text("No tags yet. Tags you add to routines will appear here.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(store.tags.savedTags) { tag in
-                            SettingsTagRow(store: store, tag: tag)
-                        }
-                    }
-                }
-
-                if !store.tags.tagStatusMessage.isEmpty {
-                    Section("Status") {
-                        Text(store.tags.tagStatusMessage)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Tags")
-            .navigationBarTitleDisplayMode(.inline)
-            .alert(
-                "Delete Tag?",
-                isPresented: deleteTagConfirmationBinding
-            ) {
-                Button("Delete", role: .destructive) {
-                    store.send(.deleteTagConfirmed)
-                }
-                Button("Cancel", role: .cancel) {
-                    store.send(.setDeleteTagConfirmation(false))
-                }
-            } message: {
-                Text(store.tags.deleteConfirmationMessage)
-            }
-            .sheet(isPresented: renameTagSheetBinding) {
-                SettingsTagRenameSheet(store: store)
-                    .presentationDetents([.height(240)])
+    Section("Saved Tags") {
+        if store.tags.savedTags.isEmpty {
+            Text("No tags yet. Tags you add to routines will appear here.")
+                .foregroundStyle(.secondary)
+        } else {
+            ForEach(store.tags.savedTags) { tag in
+                SettingsTagRow(store: store, tag: tag)
             }
         }
+    }
+
+    if !store.tags.tagStatusMessage.isEmpty {
+        Section("Status") {
+            Text(store.tags.tagStatusMessage)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+.listStyle(.insetGrouped)
+.navigationTitle("Tags")
+.navigationBarTitleDisplayMode(.inline)
+.alert(
+    "Delete Tag?",
+    isPresented: deleteTagConfirmationBinding
+) {
+    Button("Delete", role: .destructive) {
+        store.send(.deleteTagConfirmed)
+    }
+    Button("Cancel", role: .cancel) {
+        store.send(.setDeleteTagConfirmation(false))
+    }
+} message: {
+    Text(store.tags.deleteConfirmationMessage)
+}
+.sheet(isPresented: renameTagSheetBinding) {
+    SettingsTagRenameSheet(store: store)
+        .presentationDetents([.height(240)])
+}
     }
 
     private var deleteTagConfirmationBinding: Binding<Bool> {

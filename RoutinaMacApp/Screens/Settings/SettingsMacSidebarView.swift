@@ -7,30 +7,28 @@ struct SettingsMacSidebarRow: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            HStack(spacing: 12) {
-                SettingsSectionGlyphView(icon: section.icon, tint: section.tint)
+HStack(spacing: 12) {
+    SettingsSectionGlyphView(icon: section.icon, tint: section.tint)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(section.title)
-                        .foregroundStyle(.primary)
+    VStack(alignment: .leading, spacing: 3) {
+        Text(section.title)
+            .foregroundStyle(.primary)
 
-                    Text(presentation.subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
+        Text(presentation.subtitle)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+    }
 
-                Spacer(minLength: 8)
+    Spacer(minLength: 8)
 
-                if let value = presentation.value, !value.isEmpty {
-                    Text(value)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.vertical, 4)
-        }
+    if let value = presentation.value, !value.isEmpty {
+        Text(value)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+}
+.padding(.vertical, 4)
     }
 
     private var presentation: SettingsSectionRowPresentation {

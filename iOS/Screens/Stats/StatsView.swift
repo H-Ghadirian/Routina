@@ -236,24 +236,22 @@ struct StatsView: View {
     }
 
     var body: some View {
-        WithPerceptionTracking {
-            statsRoot
-                .sheet(isPresented: filterSheetBinding) {
-                    statsFiltersSheet
-                }
-                .sheet(isPresented: $isAddDashboardItemSheetPresented) {
-                    addDashboardItemSheet
-                }
-                .statsDataRefresh(
-                    tasks: tasks,
-                    logs: logs,
-                    focusSessions: focusSessions,
-                    onAppear: { store.send(.onAppear) },
-                    onDataChanged: { tasks, logs, focusSessions in
-                        store.send(.setData(tasks: tasks, logs: logs, focusSessions: focusSessions))
-                    }
-                )
+statsRoot
+    .sheet(isPresented: filterSheetBinding) {
+        statsFiltersSheet
+    }
+    .sheet(isPresented: $isAddDashboardItemSheetPresented) {
+        addDashboardItemSheet
+    }
+    .statsDataRefresh(
+        tasks: tasks,
+        logs: logs,
+        focusSessions: focusSessions,
+        onAppear: { store.send(.onAppear) },
+        onDataChanged: { tasks, logs, focusSessions in
+            store.send(.setData(tasks: tasks, logs: logs, focusSessions: focusSessions))
         }
+    )
     }
 
     @ViewBuilder

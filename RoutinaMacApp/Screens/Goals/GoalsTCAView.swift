@@ -5,22 +5,20 @@ struct GoalsTCAView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            NavigationSplitView {
-                MacGoalsSidebarView(store: store)
-                    .navigationTitle("Goals")
-                    .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 420)
-                    .searchable(text: searchBinding, prompt: "Search goals")
-                    .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
-                            MacGoalsNewGoalButton(store: store)
-                        }
-                    }
-            } detail: {
-                MacGoalsDetailView(store: store)
+NavigationSplitView {
+    MacGoalsSidebarView(store: store)
+        .navigationTitle("Goals")
+        .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 420)
+        .searchable(text: searchBinding, prompt: "Search goals")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                MacGoalsNewGoalButton(store: store)
             }
-            .navigationSplitViewStyle(.balanced)
         }
+} detail: {
+    MacGoalsDetailView(store: store)
+}
+.navigationSplitViewStyle(.balanced)
     }
 
     private var searchBinding: Binding<String> {
@@ -48,9 +46,7 @@ struct MacGoalsSidebarView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            content
-        }
+content
     }
 
     @ViewBuilder
@@ -107,33 +103,31 @@ struct MacGoalsDetailView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            content
-                .sheet(isPresented: editorBinding) {
-                    GoalsEditorSheet(store: store)
-                        .frame(minWidth: 440, minHeight: 420)
-                }
-                .confirmationDialog(
-                    "Delete Goal",
-                    isPresented: deleteConfirmationBinding,
-                    titleVisibility: .visible
-                ) {
-                    Button("Delete", role: .destructive) {
-                        store.send(.deleteGoalConfirmed)
-                    }
-                    Button("Cancel", role: .cancel) {
-                        store.send(.deleteGoalCanceled)
-                    }
-                } message: {
-                    Text("Tasks linked to this goal will keep the task, but the goal link will be removed.")
-                }
-                .task {
-                    store.send(.onAppear)
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-                    store.send(.refreshRequested)
-                }
+content
+    .sheet(isPresented: editorBinding) {
+        GoalsEditorSheet(store: store)
+            .frame(minWidth: 440, minHeight: 420)
+    }
+    .confirmationDialog(
+        "Delete Goal",
+        isPresented: deleteConfirmationBinding,
+        titleVisibility: .visible
+    ) {
+        Button("Delete", role: .destructive) {
+            store.send(.deleteGoalConfirmed)
         }
+        Button("Cancel", role: .cancel) {
+            store.send(.deleteGoalCanceled)
+        }
+    } message: {
+        Text("Tasks linked to this goal will keep the task, but the goal link will be removed.")
+    }
+    .task {
+        store.send(.onAppear)
+    }
+    .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+        store.send(.refreshRequested)
+    }
     }
 
     @ViewBuilder

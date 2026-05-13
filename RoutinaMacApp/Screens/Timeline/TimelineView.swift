@@ -13,41 +13,39 @@ struct TimelineView: View {
     @State private var relatedFilterTagSuggestionAnchor: String?
 
     var body: some View {
-        WithPerceptionTracking {
-            NavigationStack {
-                content
-                    .navigationTitle("")
-                    .routinaTimelineNavigationTitleDisplayMode()
-                    .toolbar {
-                        RoutinaMacFocusTimerToolbarItem()
+NavigationStack {
+    content
+        .navigationTitle("")
+        .routinaTimelineNavigationTitleDisplayMode()
+        .toolbar {
+            RoutinaMacFocusTimerToolbarItem()
 
-                        ToolbarItem(placement: .primaryAction) {
-                            filterSheetButton
-                        }
-                    }
-                    .navigationDestination(for: UUID.self) { taskID in
-                        timelineDetailDestination(taskID: taskID)
-                    }
-                    .sheet(isPresented: filterSheetBinding) {
-                        timelineFiltersSheet
-                    }
-            }
-            .task {
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: tasks) { _, newValue in
-                store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: logs) { _, newValue in
-                store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: sleepSessionChangeToken) { _, _ in
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
-            }
-            .onChange(of: placeCheckInChangeToken) { _, _ in
-                store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+            ToolbarItem(placement: .primaryAction) {
+                filterSheetButton
             }
         }
+        .navigationDestination(for: UUID.self) { taskID in
+            timelineDetailDestination(taskID: taskID)
+        }
+        .sheet(isPresented: filterSheetBinding) {
+            timelineFiltersSheet
+        }
+}
+.task {
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: tasks) { _, newValue in
+    store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: logs) { _, newValue in
+    store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: sleepSessionChangeToken) { _, _ in
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
+.onChange(of: placeCheckInChangeToken) { _, _ in
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+}
     }
 
     private var sleepSessionChangeToken: [String] {

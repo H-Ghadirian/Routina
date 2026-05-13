@@ -27,7 +27,8 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Map and place review:** iPhone and Mac expose map-based check-in from the check-in dock. The map flow can request current location, use saved-place radii, record raw current-location sessions, show grouped history markers for coordinate-backed check-ins, and default to a grouped Check-ins history where place sessions can be reviewed, edited, deleted, and used to focus the map. Saved-place list rows select and focus places; recording a saved-place check-in requires an explicit action control.
 - **Mac Places:** The active Mac Places architecture is [0021](0021-keep-mac-places-in-home-split-shell.md), superseding the 0017-0020 presentation chain. Places stays inside the shared Home split-view shell: the sidebar keeps the shared mode strip and swaps task filters/list for place controls, check-in history, and saved places; the detail column renders the map.
 - **Mac Home toolbar:** Global Home toolbar content belongs to the root split-view shell, not the sidebar column. Detail-specific controls may still be attached by detail views. The Home window uses full-size transparent titlebar with unified toolbar styling.
-- **Liquid Glass UI:** Custom app cards, panels, chips, and floating controls use shared Liquid Glass surface modifiers with semantic tinting and material fallbacks. Standard system structures stay system-native, and custom opaque backgrounds behind macOS split-view chrome should be avoided.
+- **Platform baseline:** Routina targets the current Apple platform SDK baseline only. App, extension, test, and package targets should move together with the installed verified toolchain, use Swift 6, and avoid older-OS compatibility paths.
+- **Liquid Glass UI:** Custom app cards, panels, chips, and floating controls use shared Liquid Glass surface modifiers with semantic tinting. Standard system structures stay system-native, and custom opaque backgrounds behind macOS split-view chrome should be avoided.
 - **iOS More navigation:** Compact iOS uses an app-owned More tab for Stats and Settings instead of UIKit's automatic overflow More controller. The More flow owns a single SwiftUI navigation stack so Settings sections do not nest inside a second navigation hierarchy, and compact/regular presentation is chosen from SwiftUI size classes.
 
 ## Open Questions
@@ -69,3 +70,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0027](0027-show-places-day-as-grouped-history.md) | Show Places Day as Grouped History | Accepted | 2026-05-12 |
 | [0028](0028-default-places-to-check-ins-history.md) | Default Places to Check-Ins History | Accepted | 2026-05-12 |
 | [0029](0029-use-app-owned-ios-more-tab.md) | Use an App-Owned iOS More Tab | Accepted | 2026-05-13 |
+| [0030](0030-target-current-apple-platforms-only.md) | Target Current Apple Platforms Only | Accepted | 2026-05-13 |
