@@ -42,7 +42,10 @@ struct DayPlanBlockCard: View {
         cardContent
             .padding(contentInsets)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .routinaGlassCard(cornerRadius: 8, tint: tint, tintOpacity: fillOpacity, interactive: true)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(tint.opacity(fillOpacity))
+            )
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(

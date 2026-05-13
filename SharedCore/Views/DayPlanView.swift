@@ -767,11 +767,9 @@ private struct DayPlanTaskCandidateRow: View {
             }
             .padding(10)
             .contentShape(Rectangle())
-            .routinaGlassCard(
-                cornerRadius: 8,
-                tint: isSelected ? .accentColor : .secondary,
-                tintOpacity: isSelected ? 0.12 : 0.08,
-                interactive: true
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
             )
         }
         .buttonStyle(.plain)
