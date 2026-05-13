@@ -14,6 +14,7 @@ struct StatsViewWrapper: View {
 
 struct StatsView: View {
     let store: StoreOf<StatsFeature>
+    let ownsCompactNavigationStack: Bool
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -27,6 +28,14 @@ struct StatsView: View {
     private var hiddenDashboardItemIDsRaw = ""
 
     private typealias Metrics = StatsFeature.Metrics
+
+    init(
+        store: StoreOf<StatsFeature>,
+        ownsCompactNavigationStack: Bool = true
+    ) {
+        self.store = store
+        self.ownsCompactNavigationStack = ownsCompactNavigationStack
+    }
 
     private var chartPresentation: StatsChartPresentation {
         StatsChartPresentation(
@@ -258,7 +267,11 @@ struct StatsView: View {
             }
             .navigationSplitViewStyle(.balanced)
         } else {
-            NavigationStack {
+            if ownsCompactNavigationStack {
+                NavigationStack {
+                    statsDashboardContent
+                }
+            } else {
                 statsDashboardContent
             }
         }

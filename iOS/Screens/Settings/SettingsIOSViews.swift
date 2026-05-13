@@ -5,15 +5,21 @@ import UIKit
 
 struct SettingsPlatformRootView: View {
     let store: StoreOf<SettingsFeature>
+    let ownsCompactNavigationStack: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         if usesSidebarLayout {
             SettingsIPadSplitView(store: store)
-        } else {
+        } else if ownsCompactNavigationStack {
             NavigationStack {
                 SettingsIOSRootView(store: store)
+                    .navigationDestination(for: SettingsIOSSection.self) { section in
+                        SettingsIOSDetailView(section: section, store: store)
+                    }
             }
+        } else {
+            SettingsIOSRootView(store: store)
         }
     }
 
@@ -36,9 +42,7 @@ struct SettingsIOSRootView: View {
                 ) { sections in
                     Section {
                         ForEach(sections) { section in
-                            NavigationLink {
-                                SettingsIOSDetailView(section: section, store: store)
-                            } label: {
+                            NavigationLink(value: section) {
                                 SettingsIOSSectionRow(section: section, store: store)
                             }
                         }
@@ -83,9 +87,9 @@ private struct SettingsIPadSplitView: View {
     }
 }
 
-private typealias SettingsIOSSection = SettingsSectionID
+typealias SettingsIOSSection = SettingsSectionID
 
-private struct SettingsIOSDetailView: View {
+struct SettingsIOSDetailView: View {
     let section: SettingsIOSSection
     let store: StoreOf<SettingsFeature>
 

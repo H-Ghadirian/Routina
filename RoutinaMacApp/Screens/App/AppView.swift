@@ -11,7 +11,7 @@ struct AppView: View {
         WithPerceptionTracking {
             let tabView = TabView(
                 selection: Binding(
-                    get: { store.selectedTab },
+                    get: { store.selectedTab == .more ? .settings : store.selectedTab },
                     set: { store.send(.tabSelected($0)) }
                 )
             ) {

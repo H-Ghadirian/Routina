@@ -4,6 +4,15 @@ import SwiftUI
 
 struct SettingsTCAView: View {
     let store: StoreOf<SettingsFeature>
+    let ownsCompactNavigationStack: Bool
+
+    init(
+        store: StoreOf<SettingsFeature>,
+        ownsCompactNavigationStack: Bool = true
+    ) {
+        self.store = store
+        self.ownsCompactNavigationStack = ownsCompactNavigationStack
+    }
 
     var body: some View {
         WithPerceptionTracking {

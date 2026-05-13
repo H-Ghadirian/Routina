@@ -7,4 +7,5 @@ enum Tab: String, Codable, Sendable {
     case timeline = "Timeline"
     case stats = "Stats"
     case settings = "Settings"
+    case more = "More"
 }

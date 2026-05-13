@@ -10,7 +10,9 @@ import WidgetKit
 struct AppView: View {
     let store: StoreOf<AppFeature>
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var searchText = ""
+    @State private var moreNavigationPath = NavigationPath()
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
     @State private var isHomeMenuSleepConfirmationPresented = false
     @State private var homeMenuSleepWarningMessage: String?
@@ -24,10 +26,7 @@ struct AppView: View {
     var body: some View {
         WithPerceptionTracking {
             let tabView = TabView(
-                selection: Binding(
-                    get: { store.selectedTab },
-                    set: { store.send(.tabSelected($0)) }
-                )
+                selection: selectedTabBinding
             ) {
                 SwiftUI.Tab(Tab.home.rawValue, systemImage: "house", value: Tab.home) {
                     platformHomeView
@@ -49,16 +48,28 @@ struct AppView: View {
                     )
                 }
 
-                SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
-                    StatsViewWrapper(
-                        store: store.scope(state: \.stats, action: \.stats)
-                    )
-                }
+                if usesCompactMoreTab {
+                    SwiftUI.Tab(Tab.more.rawValue, systemImage: "ellipsis.circle", value: Tab.more) {
+                        AppMoreNavigationView(
+                            path: $moreNavigationPath,
+                            selectedTab: store.selectedTab,
+                            statsStore: store.scope(state: \.stats, action: \.stats),
+                            settingsStore: store.scope(state: \.settings, action: \.settings),
+                            onSelectTab: { store.send(.tabSelected($0)) }
+                        )
+                    }
+                } else {
+                    SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
+                        StatsViewWrapper(
+                            store: store.scope(state: \.stats, action: \.stats)
+                        )
+                    }
 
-                SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: Tab.settings) {
-                    SettingsTCAView(
-                        store: store.scope(state: \.settings, action: \.settings)
-                    )
+                    SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: Tab.settings) {
+                        SettingsTCAView(
+                            store: store.scope(state: \.settings, action: \.settings)
+                        )
+                    }
                 }
             }
             Group {
@@ -134,6 +145,43 @@ struct AppView: View {
 
     private var appColorScheme: AppColorScheme {
         AppColorScheme(rawValue: appColorSchemeRawValue) ?? .system
+    }
+
+    private var selectedTabBinding: Binding<Tab> {
+        Binding(
+            get: { selectedTabForCurrentLayout },
+            set: { tab in
+                selectTab(tab)
+            }
+        )
+    }
+
+    private var selectedTabForCurrentLayout: Tab {
+        if usesCompactMoreTab, store.selectedTab == .stats || store.selectedTab == .settings {
+            return .more
+        }
+
+        if !usesCompactMoreTab, store.selectedTab == .more {
+            return .settings
+        }
+
+        return store.selectedTab
+    }
+
+    private var usesCompactMoreTab: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone || horizontalSizeClass == .compact
+    }
+
+    private func selectTab(_ tab: Tab) {
+        if usesCompactMoreTab, tab == .more, selectedTabForCurrentLayout == .more {
+            moreNavigationPath = NavigationPath()
+        }
+
+        if tab != .more {
+            moreNavigationPath = NavigationPath()
+        }
+
+        store.send(.tabSelected(tab))
     }
 
     private var fastFilterTags: [String] {
@@ -331,6 +379,95 @@ private extension AppColorScheme {
             return .light
         case .dark:
             return .dark
+        }
+    }
+}
+
+private enum AppMoreDestination: Hashable {
+    case stats
+    case settings
+}
+
+private struct AppMoreNavigationView: View {
+    @Binding var path: NavigationPath
+    let selectedTab: Tab
+    let statsStore: StoreOf<StatsFeature>
+    let settingsStore: StoreOf<SettingsFeature>
+    let onSelectTab: (Tab) -> Void
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            List {
+                Section {
+                    NavigationLink(value: AppMoreDestination.stats) {
+                        SettingsNavigationRow(
+                            icon: "chart.bar.xaxis",
+                            tint: .indigo,
+                            title: Tab.stats.rawValue,
+                            subtitle: "Completion, focus, tags, and trends"
+                        )
+                    }
+
+                    NavigationLink(value: AppMoreDestination.settings) {
+                        SettingsNavigationRow(
+                            icon: "gear",
+                            tint: .gray,
+                            title: Tab.settings.rawValue,
+                            subtitle: "Preferences, data, tags, places, and support"
+                        )
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle(Tab.more.rawValue)
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: AppMoreDestination.self) { destination in
+                switch destination {
+                case .stats:
+                    StatsView(
+                        store: statsStore,
+                        ownsCompactNavigationStack: false
+                    )
+                    .onAppear {
+                        onSelectTab(.stats)
+                    }
+                case .settings:
+                    SettingsTCAView(
+                        store: settingsStore,
+                        ownsCompactNavigationStack: false
+                    )
+                    .onAppear {
+                        onSelectTab(.settings)
+                    }
+                }
+            }
+            .navigationDestination(for: SettingsIOSSection.self) { section in
+                SettingsIOSDetailView(section: section, store: settingsStore)
+            }
+        }
+        .onAppear {
+            restoreSelectedMoreDestinationIfNeeded()
+        }
+        .onChange(of: selectedTab) { _, tab in
+            restoreSelectedMoreDestinationIfNeeded(for: tab)
+        }
+        .onChange(of: path.count) { _, count in
+            if count == 0, selectedTab == .stats || selectedTab == .settings {
+                onSelectTab(.more)
+            }
+        }
+    }
+
+    private func restoreSelectedMoreDestinationIfNeeded(for tab: Tab? = nil) {
+        guard path.isEmpty else { return }
+
+        switch tab ?? selectedTab {
+        case .stats:
+            path.append(AppMoreDestination.stats)
+        case .settings:
+            path.append(AppMoreDestination.settings)
+        default:
+            break
         }
     }
 }
