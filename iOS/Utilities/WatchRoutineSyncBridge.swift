@@ -11,6 +11,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         case markDone(UUID, Date, RoutinaDeviceActivitySource?)
         case checkInPlace(UUID, Date, RoutinaDeviceActivitySource?)
         case endPlaceCheckIn(Date, RoutinaDeviceActivitySource?)
+        case startSleep(Date, RoutinaDeviceActivitySource?)
+        case endSleep(Date, RoutinaDeviceActivitySource?)
         case openDeepLink(RoutinaDeepLink, RoutinaDeviceActivitySource?)
         case batteryStatus(BatteryDeviceSnapshot, RoutinaDeviceActivitySource?)
         case ignore
@@ -21,6 +23,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                  let .markDone(_, _, source),
                  let .checkInPlace(_, _, source),
                  let .endPlaceCheckIn(_, source),
+                 let .startSleep(_, source),
+                 let .endSleep(_, source),
                  let .openDeepLink(_, source),
                  let .batteryStatus(_, source):
                 return source
@@ -94,6 +98,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                 let tasks = try context.fetch(descriptor)
                 let places = try context.fetch(FetchDescriptor<RoutinePlace>())
                 let placeCheckIns = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+                let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
                 let sessions = try context.fetch(FetchDescriptor<FocusSession>())
                 let focus = FocusTimerWidgetDataComputer.compute(
                     tasks: tasks,
@@ -134,6 +139,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                     },
                     "places": Self.placesPayload(from: places, sessions: placeCheckIns),
                     "placeCheckIn": Self.placeCheckInPayload(from: placeCheckIns, referenceDate: referenceDate),
+                    "sleep": Self.sleepPayload(from: sleepSessions, referenceDate: referenceDate),
                     "focus": focusPayload
                 ]
 
@@ -222,6 +228,10 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             checkInPlace(placeID: placeID, at: date, sourceDevice: source)
         case let .endPlaceCheckIn(date, source):
             endPlaceCheckIn(at: date, sourceDevice: source)
+        case let .startSleep(date, source):
+            startSleep(at: date, sourceDevice: source)
+        case let .endSleep(date, source):
+            endSleep(at: date, sourceDevice: source)
         case let .openDeepLink(deepLink, _):
             openDeepLink(deepLink)
         case let .batteryStatus(snapshot, _):
@@ -318,6 +328,44 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         }
     }
 
+    private func startSleep(
+        at date: Date,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) {
+        guard let modelContextProvider else { return }
+        let context = modelContextProvider()
+
+        do {
+            _ = try SleepSessionSupport.startSleep(
+                in: context,
+                at: date,
+                sourceDevice: sourceDevice
+            )
+            pushLatestSnapshot()
+        } catch {
+            NSLog("Watch start sleep sync failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func endSleep(
+        at date: Date,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) {
+        guard let modelContextProvider else { return }
+        let context = modelContextProvider()
+
+        do {
+            _ = try SleepSessionSupport.endActiveSleep(
+                in: context,
+                at: date,
+                sourceDevice: sourceDevice
+            )
+            pushLatestSnapshot()
+        } catch {
+            NSLog("Watch end sleep sync failed: \(error.localizedDescription)")
+        }
+    }
+
     private func openDeepLink(_ deepLink: RoutinaDeepLink) {
         NSLog("Watch open-on-iPhone request received: \(deepLink.url.absoluteString), appState: \(UIApplication.shared.applicationState.rawValue)")
         RoutinaDeepLinkDispatcher.open(deepLink)
@@ -395,6 +443,16 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         if let action = payload["action"] as? String, action == "endPlaceCheckIn" {
             let timestamp = (payload["endedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
             return .endPlaceCheckIn(timestamp, sourceDevice)
+        }
+
+        if let action = payload["action"] as? String, action == "startSleep" {
+            let timestamp = (payload["startedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
+            return .startSleep(timestamp, sourceDevice)
+        }
+
+        if let action = payload["action"] as? String, action == "endSleep" {
+            let timestamp = (payload["endedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
+            return .endSleep(timestamp, sourceDevice)
         }
 
         if let action = payload["action"] as? String, action == "openDeepLink" {
@@ -519,6 +577,30 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         ]
         payload["placeID"] = active.placeID?.uuidString
         payload["activity"] = active.activity?.rawValue
+        return payload
+    }
+
+    private static func sleepPayload(
+        from sessions: [SleepSession],
+        referenceDate: Date
+    ) -> [String: Any] {
+        guard let active = sessions
+            .filter({ $0.endedAt == nil })
+            .sorted(by: { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) })
+            .first,
+            let startedAt = active.startedAt
+        else {
+            return ["isActive": false]
+        }
+
+        var payload: [String: Any] = [
+            "isActive": true,
+            "sessionID": active.id.uuidString,
+            "startedAt": startedAt.timeIntervalSince1970,
+            "targetDurationMinutes": active.targetDurationMinutes,
+            "lastUpdated": referenceDate.timeIntervalSince1970
+        ]
+        payload["targetWakeAt"] = active.targetWakeAt?.timeIntervalSince1970
         return payload
     }
 

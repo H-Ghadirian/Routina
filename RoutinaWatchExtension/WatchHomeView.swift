@@ -3,83 +3,100 @@ import SwiftUI
 struct WatchHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var syncStore: WatchRoutineSyncStore
+    @State private var isSleepConfirmationPresented = false
 
     var body: some View {
         List {
-            if let activeFocusSession = syncStore.activeFocusSession {
-                focusSessionRow(activeFocusSession)
-            }
-
-            if syncStore.activePlaceCheckIn != nil || !syncStore.places.isEmpty {
-                placeCheckInSection
-            }
-
-            if !syncStore.isCompanionAppInstalled {
-                watchStateMessage(
-                    systemImage: "iphone.slash",
-                    title: "Install iPhone app",
-                    message: "Install Routina on iPhone to enable watch sync."
-                )
-            } else if !syncStore.isPhoneReachable && syncStore.routines.isEmpty {
-                watchStateMessage(
-                    systemImage: "iphone",
-                    title: "Open Routina on iPhone",
-                    message: "Open Routina on iPhone for the first sync."
-                )
-            } else if syncStore.routines.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "applewatch.slash")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                    Text("No routines yet")
-                        .font(.headline)
-                    Text("Add a routine on iPhone and keep both apps open for first sync.")
-                        .font(.footnote)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .listRowBackground(Color.clear)
+            if let activeSleepSession = syncStore.activeSleepSession {
+                sleepSessionRow(activeSleepSession)
             } else {
-                if !syncStore.isPhoneReachable {
-                    watchStateMessage(
-                        systemImage: "arrow.triangle.2.circlepath",
-                        title: "Showing cached routines",
-                        message: "Open iPhone app to sync latest changes."
-                    )
+                if syncStore.isCompanionAppInstalled {
+                    sleepStartRow
                 }
 
-                ForEach(syncStore.routines) { routine in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(routine.emoji) \(routine.name)")
+                if let activeFocusSession = syncStore.activeFocusSession {
+                    focusSessionRow(activeFocusSession)
+                }
+
+                if syncStore.activePlaceCheckIn != nil || !syncStore.places.isEmpty {
+                    placeCheckInSection
+                }
+
+                if !syncStore.isCompanionAppInstalled {
+                    watchStateMessage(
+                        systemImage: "iphone.slash",
+                        title: "Install iPhone app",
+                        message: "Install Routina on iPhone to enable watch sync."
+                    )
+                } else if !syncStore.isPhoneReachable && syncStore.routines.isEmpty {
+                    watchStateMessage(
+                        systemImage: "iphone",
+                        title: "Open Routina on iPhone",
+                        message: "Open Routina on iPhone for the first sync."
+                    )
+                } else if syncStore.routines.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "applewatch.slash")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                        Text("No routines yet")
                             .font(.headline)
-                            .lineLimit(1)
-
-                        if let nextStepTitle = routine.nextStepTitle {
-                            Text("Next: \(nextStepTitle)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-
-                        Text(statusText(for: routine))
+                        Text("Add a routine on iPhone and keep both apps open for first sync.")
                             .font(.footnote)
-                            .foregroundStyle(statusColor(for: routine))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
                     }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button {
-                            syncStore.markRoutineDone(id: routine.id)
-                        } label: {
-                            Label(actionTitle(for: routine), systemImage: "checkmark")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                } else {
+                    if !syncStore.isPhoneReachable {
+                        watchStateMessage(
+                            systemImage: "arrow.triangle.2.circlepath",
+                            title: "Showing cached routines",
+                            message: "Open iPhone app to sync latest changes."
+                        )
+                    }
+
+                    ForEach(syncStore.routines) { routine in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(routine.emoji) \(routine.name)")
+                                .font(.headline)
+                                .lineLimit(1)
+
+                            if let nextStepTitle = routine.nextStepTitle {
+                                Text("Next: \(nextStepTitle)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+
+                            Text(statusText(for: routine))
+                                .font(.footnote)
+                                .foregroundStyle(statusColor(for: routine))
                         }
-                        .tint(.green)
-                        .disabled(!routine.canMarkDone())
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button {
+                                syncStore.markRoutineDone(id: routine.id)
+                            } label: {
+                                Label(actionTitle(for: routine), systemImage: "checkmark")
+                            }
+                            .tint(.green)
+                            .disabled(!routine.canMarkDone())
+                        }
                     }
                 }
             }
         }
         .navigationTitle("Routina")
+        .alert("Stop focus timer?", isPresented: $isSleepConfirmationPresented) {
+            Button("Start Sleep", role: .destructive) {
+                syncStore.startSleep()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Starting sleep mode will stop the current focus timer.")
+        }
         .onAppear {
             syncStore.requestSync()
         }
@@ -87,6 +104,15 @@ struct WatchHomeView: View {
             if phase == .active {
                 syncStore.requestSync()
             }
+        }
+    }
+
+    private var sleepStartRow: some View {
+        Button {
+            requestStartSleep()
+        } label: {
+            Label("Going to sleep", systemImage: "bed.double.fill")
+                .font(.headline)
         }
     }
 
@@ -151,6 +177,41 @@ struct WatchHomeView: View {
         syncStore.activePlaceCheckIn?.placeID == place.id ? "location.fill" : "mappin"
     }
 
+    private func sleepSessionRow(_ session: WatchRoutineSyncStore.WatchSleepSession) -> some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "bed.double.fill")
+                        .foregroundStyle(.indigo)
+                    Text("Sleep mode")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                }
+
+                Text(placeDurationText(seconds: session.elapsedSeconds(at: context.date)))
+                    .font(.system(.title2, design: .rounded).weight(.bold))
+                    .monospacedDigit()
+                    .lineLimit(1)
+
+                Text("Wake around \(timeText(session.targetWakeAt))")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Button {
+                    syncStore.endSleep()
+                } label: {
+                    Label("I'm awake", systemImage: "checkmark.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .tint(.orange)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
     private func focusSessionRow(_ session: WatchRoutineSyncStore.WatchFocusSession) -> some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             VStack(alignment: .leading, spacing: 7) {
@@ -211,6 +272,15 @@ struct WatchHomeView: View {
         .listRowBackground(Color.clear)
     }
 
+    private func requestStartSleep() {
+        if syncStore.activeFocusSession != nil {
+            isSleepConfirmationPresented = true
+            return
+        }
+
+        syncStore.startSleep()
+    }
+
     private func focusTimerText(for session: WatchRoutineSyncStore.WatchFocusSession, now: Date) -> String {
         if session.isCountUp {
             return focusDurationText(seconds: session.elapsedSeconds(at: now))
@@ -249,6 +319,11 @@ struct WatchHomeView: View {
             return "\(hours)h"
         }
         return "\(hours)h \(minutes)m"
+    }
+
+    private func timeText(_ date: Date?) -> String {
+        guard let date else { return "unknown" }
+        return date.formatted(date: .omitted, time: .shortened)
     }
 
     private func statusText(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {

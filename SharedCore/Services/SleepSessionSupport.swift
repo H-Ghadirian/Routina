@@ -15,6 +15,17 @@ enum SleepSessionSupport {
     }
 
     @MainActor
+    static func activeSessions(in context: ModelContext) throws -> [SleepSession] {
+        let descriptor = FetchDescriptor<SleepSession>(
+            predicate: #Predicate<SleepSession> { session in
+                session.endedAt == nil
+            },
+            sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+        )
+        return try context.fetch(descriptor)
+    }
+
+    @MainActor
     static func activeFocusTimerWarningMessage(in context: ModelContext) throws -> String? {
         let taskFocusSessions = try activeTaskFocusSessions(in: context)
         let sprintFocusSessions = try activeSprintFocusSessions(in: context)
@@ -42,7 +53,8 @@ enum SleepSessionSupport {
     @MainActor
     static func startSleep(
         in context: ModelContext,
-        at startedAt: Date = Date()
+        at startedAt: Date = Date(),
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> SleepSession {
         let stoppedFocusTimers = try stopActiveFocusTimers(in: context, at: startedAt)
         if let activeSession = try activeSession(in: context) {
@@ -61,6 +73,7 @@ enum SleepSessionSupport {
             entity: .sleepSession,
             entityID: session.id,
             entityTitle: "Sleep",
+            sourceDevice: sourceDevice,
             at: startedAt,
             in: context
         )
@@ -76,21 +89,26 @@ enum SleepSessionSupport {
     @MainActor
     static func endActiveSleep(
         in context: ModelContext,
-        at endedAt: Date = Date()
+        at endedAt: Date = Date(),
+        sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> SleepSession? {
-        guard let activeSession = try activeSession(in: context) else {
+        let activeSessions = try activeSessions(in: context)
+        guard let activeSession = activeSessions.first else {
             return nil
         }
 
-        activeSession.end(at: endedAt)
-        DeviceActivityRecorder.recordAction(
-            .ended,
-            entity: .sleepSession,
-            entityID: activeSession.id,
-            entityTitle: "Sleep",
-            at: endedAt,
-            in: context
-        )
+        for session in activeSessions {
+            session.end(at: endedAt)
+            DeviceActivityRecorder.recordAction(
+                .ended,
+                entity: .sleepSession,
+                entityID: session.id,
+                entityTitle: "Sleep",
+                sourceDevice: sourceDevice,
+                at: endedAt,
+                in: context
+            )
+        }
         try context.save()
         NotificationCenter.default.postRoutineDidUpdate()
         return activeSession
