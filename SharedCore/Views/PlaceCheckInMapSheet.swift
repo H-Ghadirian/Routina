@@ -671,18 +671,6 @@ struct PlaceCheckInMapSheet: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)
                 .disabled(currentLocation == nil || isLoadingLocation)
-
-                Button {
-                    showCurrentLocation(refreshFirst: true)
-                } label: {
-                    Image(systemName: isLoadingLocation ? "location.circle" : "location.circle.fill")
-                        .frame(width: 22, height: 22)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .disabled(isLoadingLocation)
-                .accessibilityLabel("Show current location on map")
-                .help("Show current location on map")
             }
 
             VStack(alignment: .leading, spacing: 6) {
