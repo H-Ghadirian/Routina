@@ -27,8 +27,21 @@ extension HomeTCAView {
     var homeToolbarContent: some ToolbarContent {
         HomeMacHomeToolbarContent(
             mode: homeToolbarMode,
-            goalsStore: goalsStore
+            goalsStore: goalsStore,
+            showsDetailModePicker: showsDetailModePickerInToolbar,
+            detailMode: mainDetailModeBinding
         )
+    }
+
+    private var showsDetailModePickerInToolbar: Bool {
+        !store.isMacFilterDetailPresented
+            && !isMacBoardMode
+            && !isMacTimelineMode
+            && !isMacStatsMode
+            && !isMacSettingsMode
+            && !isMacGoalsMode
+            && !isMacAddTaskMode
+            && store.addRoutineState == nil
     }
 
     private var homeToolbarMode: HomeMacHomeToolbarContent.Mode {
@@ -49,7 +62,10 @@ extension HomeTCAView {
             isBoardInspectorPresented: macBoardInspectorPresentedBinding,
             addEditFormCoordinator: addEditFormCoordinator
         ) {
-macSidebarContent
+            macSidebarContent
+                .toolbar {
+                    macSidebarDoneToolbarContent
+                }
         } boardCenterContent: {
             macBoardCenterContent
         } boardInspectorContent: {
@@ -95,6 +111,18 @@ macSidebarContent
             homeToolbarContent
         } boardToolbarContent: {
             macBoardDetailToolbarContent
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var macSidebarDoneToolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            MacToolbarStatusBadge(
+                title: "\(store.doneStats.totalCount) done",
+                systemImage: "checkmark.seal.fill",
+                tintColor: .systemGreen
+            )
+            .help("\(store.doneStats.totalCount) total done")
         }
     }
 

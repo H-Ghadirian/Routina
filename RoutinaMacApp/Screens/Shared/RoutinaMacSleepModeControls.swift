@@ -77,6 +77,7 @@ private struct RoutinaMacSleepToolbarButton: View {
                 RoutinaMacSleepModeStarter.requestStart(in: modelContext)
             } label: {
                 Label("Going to sleep", systemImage: "bed.double.fill")
+                    .padding(.horizontal, 4)
             }
             .help("Start sleep mode")
         }

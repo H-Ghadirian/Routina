@@ -10,6 +10,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     let mode: Mode
     let goalsStore: StoreOf<GoalsFeature>
+    let showsDetailModePicker: Bool
+    @Binding var detailMode: MacHomeDetailMode
 
     var body: some ToolbarContent {
         switch mode {
@@ -25,6 +27,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
         RoutinaMacSleepToolbarItem()
+        detailModeToolbarItem
     }
 
     @ToolbarContentBuilder
@@ -39,6 +42,16 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
         RoutinaMacSleepToolbarItem()
+        detailModeToolbarItem
+    }
+
+    @ToolbarContentBuilder
+    private var detailModeToolbarItem: some ToolbarContent {
+        if showsDetailModePicker {
+            ToolbarItem(placement: .principal) {
+                MacHomeDetailModePicker(selection: $detailMode)
+            }
+        }
     }
 }
 

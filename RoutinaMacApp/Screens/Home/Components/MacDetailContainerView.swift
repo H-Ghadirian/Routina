@@ -75,19 +75,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
 
     @ViewBuilder
     private var mainDetailContent: some View {
-        VStack(spacing: 0) {
-            if shouldShowDetailModePicker {
-                detailModePickerHeader
-                Divider()
-            }
-
-            mainDetailBody
-        }
+        mainDetailBody
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var detailModePickerHeader: some View {
-        MacHomeDetailModePickerHeader(selection: $mainDetailMode)
     }
 
     @ViewBuilder
@@ -197,21 +186,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-}
-
-struct MacHomeDetailModePickerHeader: View {
-    @Binding var selection: MacHomeDetailMode
-
-    var body: some View {
-        HStack {
-            Spacer(minLength: 0)
-            MacHomeDetailModePicker(selection: $selection)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .routinaGlassPanel(cornerRadius: 0, tint: .secondary, tintOpacity: 0.04)
     }
 }
 
