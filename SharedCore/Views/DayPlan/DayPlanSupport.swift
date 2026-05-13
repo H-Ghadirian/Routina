@@ -277,7 +277,7 @@ enum DayPlanTimelineTasks {
 
         return Dictionary(grouping: blocks, by: \.block.dayKey)
             .mapValues {
-                $0.sorted { lhs, rhs in
+                arrangedTimelineActivityBlocks($0, calendar: calendar).sorted { lhs, rhs in
                     if lhs.block.startMinute != rhs.block.startMinute {
                         return lhs.block.startMinute < rhs.block.startMinute
                     }
@@ -483,6 +483,31 @@ enum DayPlanTimelineTasks {
         return DayPlanBlock.clampedStartMinute(minute)
     }
 
+    private static func arrangedTimelineActivityBlocks(
+        _ blocks: [DayPlanTimelineActivityBlock],
+        calendar: Calendar
+    ) -> [DayPlanTimelineActivityBlock] {
+        let completedBlocks = blocks
+            .filter { $0.kind == .completed }
+            .sorted { lhs, rhs in
+                if lhs.block.updatedAt != rhs.block.updatedAt {
+                    return lhs.block.updatedAt > rhs.block.updatedAt
+                }
+                return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedDescending
+            }
+
+        var latestAllowedEndMinute = DayPlanBlock.minutesPerDay
+        let arrangedCompletedBlocks = completedBlocks.map { activity in
+            let completionMinute = startMinute(for: activity.block.updatedAt, calendar: calendar)
+            let endMinute = min(completionMinute, latestAllowedEndMinute)
+            let arrangedActivity = activity.ending(noLaterThan: endMinute)
+            latestAllowedEndMinute = arrangedActivity.block.startMinute
+            return arrangedActivity
+        }
+
+        return blocks.filter { $0.kind != .completed } + arrangedCompletedBlocks
+    }
+
     private static func timestamp(on date: Date, startMinute: Int, calendar: Calendar) -> Date {
         let startOfDay = calendar.startOfDay(for: date)
         return calendar.date(
@@ -559,6 +584,38 @@ enum DayPlanTimelineTasks {
         case .missed:
             break
         }
+    }
+}
+
+private extension DayPlanTimelineActivityBlock {
+    func ending(noLaterThan endMinute: Int) -> DayPlanTimelineActivityBlock {
+        let clampedEndMinute = min(
+            max(endMinute, DayPlanBlock.minimumDurationMinutes),
+            DayPlanBlock.minutesPerDay
+        )
+        let startMinute = max(0, clampedEndMinute - block.durationMinutes)
+        let availableDuration = max(
+            DayPlanBlock.minimumDurationMinutes,
+            clampedEndMinute - startMinute
+        )
+        let durationMinutes = min(block.durationMinutes, availableDuration)
+        let adjustedBlock = DayPlanBlock(
+            id: block.id,
+            taskID: block.taskID,
+            dayKey: block.dayKey,
+            startMinute: startMinute,
+            durationMinutes: durationMinutes,
+            titleSnapshot: block.titleSnapshot,
+            emojiSnapshot: block.emojiSnapshot,
+            createdAt: block.createdAt,
+            updatedAt: block.updatedAt
+        )
+
+        return DayPlanTimelineActivityBlock(
+            block: adjustedBlock,
+            kind: kind,
+            source: source
+        )
     }
 }
 

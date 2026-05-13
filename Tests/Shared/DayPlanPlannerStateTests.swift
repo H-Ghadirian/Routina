@@ -211,9 +211,57 @@ struct DayPlanPlannerStateTests {
 
         #expect(activityBlocks.map(\.block.taskID) == [activeTaskID, canceledTaskID])
         #expect(activityBlocks.map(\.kind) == [.completed, .canceled])
-        #expect(activityBlocks.first?.block.startMinute == 9 * 60 + 45)
+        #expect(activityBlocks.first?.block.startMinute == 9 * 60 + 5)
         #expect(activityBlocks.first?.block.durationMinutes == 40)
         #expect(activityBlocks.last?.block.durationMinutes == 35)
+    }
+
+    @Test
+    func completedTimelineActivityBlocksEndAtCompletionAndAvoidRapidCompletionOverlap() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let firstCompletedAt = try #require(date("2026-05-07T22:10:05Z"))
+        let secondCompletedAt = try #require(date("2026-05-07T22:10:40Z"))
+        let firstTaskID = UUID()
+        let secondTaskID = UUID()
+        let firstTask = RoutineTask(
+            id: firstTaskID,
+            name: "First rapid task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let secondTask = RoutineTask(
+            id: secondTaskID,
+            name: "Second rapid task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: firstCompletedAt,
+                taskID: firstTaskID,
+                kind: .completed,
+                actualDurationMinutes: 30
+            ),
+            RoutineLog(
+                timestamp: secondCompletedAt,
+                taskID: secondTaskID,
+                kind: .completed,
+                actualDurationMinutes: 30
+            ),
+        ]
+
+        let activityBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: activityDate,
+            from: [firstTask, secondTask],
+            logs: logs,
+            plannedBlocks: [],
+            calendar: calendar
+        )
+
+        #expect(activityBlocks.map(\.block.taskID) == [firstTaskID, secondTaskID])
+        #expect(activityBlocks.map(\.block.startMinute) == [21 * 60 + 10, 21 * 60 + 40])
+        #expect(activityBlocks.map(\.block.endMinute) == [21 * 60 + 40, 22 * 60 + 10])
     }
 
     @Test
@@ -268,7 +316,7 @@ struct DayPlanPlannerStateTests {
         #expect(confirmedBlock.id != activity.block.id)
         #expect(confirmedBlock.taskID == task.id)
         #expect(confirmedBlock.dayKey == dayKey)
-        #expect(confirmedBlock.startMinute == 12 * 60 + 15)
+        #expect(confirmedBlock.startMinute == 11 * 60 + 35)
         #expect(confirmedBlock.durationMinutes == 40)
         #expect(confirmedBlock.titleSnapshot == "Review inbox")
         #expect(confirmedBlock.emojiSnapshot == "📬")
