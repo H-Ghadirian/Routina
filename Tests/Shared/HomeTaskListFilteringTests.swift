@@ -459,6 +459,36 @@ struct HomeTaskListFilteringTests {
             showArchivedTasks: false
         ) == hiddenArchivedPresentation.visibleTaskCount)
     }
+
+    @Test
+    func rowMetadataCanHideRoutineCompletionCount() {
+        let task = TestTaskDisplay(
+            name: "Read",
+            recurrenceRule: .daily(at: .defaultValue),
+            doneCount: 42
+        )
+        let filtering = makeFiltering()
+
+        let visiblePresenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: filtering,
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+        let hiddenPresenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: filtering,
+            showPersianDates: false,
+            badgeMode: .complete,
+            showsRoutineCompletionCount: false
+        )
+
+        let visibleMetadata = visiblePresenter.rowMetadataText(for: task)
+        let hiddenMetadata = hiddenPresenter.rowMetadataText(for: task)
+
+        #expect(visibleMetadata?.contains("42 completions") == true)
+        #expect(hiddenMetadata?.contains("42") == false)
+        #expect(hiddenMetadata?.contains("completions") == false)
+        #expect(hiddenMetadata?.contains("Never completed") == true)
+    }
 }
 
 private func makeFiltering(
@@ -507,20 +537,23 @@ private func makeFiltering(
     )
 }
 
-private struct TestTaskDisplay: HomeTaskListDisplay, Equatable {
+private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var taskID: UUID = UUID()
     var name: String
     var emoji: String = "✅"
     var notes: String?
     var placeID: UUID?
     var placeName: String?
+    var locationAvailability: RoutineLocationAvailability = .unrestricted
     var tags: [String] = []
     var goalTitles: [String] = []
+    var steps: [String] = []
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval
     var createdAt: Date?
     var lastDone: Date?
+    var canceledAt: Date?
     var dueDate: Date?
     var priority: RoutineTaskPriority = .none
     var importance: RoutineTaskImportance = .level2
@@ -535,10 +568,23 @@ private struct TestTaskDisplay: HomeTaskListDisplay, Equatable {
     var isCompletedOneOff: Bool = false
     var isCanceledOneOff: Bool = false
     var isDoneToday: Bool = false
+    var isAssumedDoneToday: Bool = false
     var isPaused: Bool = false
+    var isSnoozed: Bool = false
     var isPinned: Bool = false
+    var isSoftIntervalRoutine: Bool = false
+    var isOngoing: Bool = false
+    var ongoingSince: Date?
+    var hasPassedSoftThreshold: Bool = false
+    var completedStepCount: Int = 0
     var isInProgress: Bool = false
+    var nextStepTitle: String?
+    var checklistItemCount: Int = 0
     var completedChecklistItemCount: Int = 0
+    var dueChecklistItemCount: Int = 0
+    var nextPendingChecklistItemTitle: String?
+    var nextDueChecklistItemTitle: String?
+    var doneCount: Int = 0
     var manualSectionOrders: [String: Int] = [:]
     var todoState: TodoState?
 }

@@ -8,7 +8,8 @@ extension HomeTCAView {
         HomeRoutineDisplayMetadataPresenter(
             filtering: taskListFiltering(),
             showPersianDates: showPersianDates,
-            badgeMode: .complete
+            badgeMode: .complete,
+            showsRoutineCompletionCount: false
         )
     }
 

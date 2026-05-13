@@ -5,6 +5,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
     let filtering: HomeTaskListFiltering<Display>
     let showPersianDates: Bool
     let badgeMode: HomeRoutineMetadataBadgeMode
+    var showsRoutineCompletionCount = true
 
     func rowMetadataText(for task: Display) -> String? {
         if task.isOneOffTask {
@@ -13,9 +14,12 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         }
 
         let prioritySegment = task.priority.metadataLabel.map { "\($0) • " } ?? ""
+        let completionCountSegment = showsRoutineCompletionCount
+            ? "\(doneCountDescription(for: task.doneCount)) • "
+            : ""
         let statusDescription = task.isPaused ? pauseDescription(for: task) : completionDescription(for: task)
 
-        return "\(cadenceDescription(for: task)) • \(prioritySegment)\(doneCountDescription(for: task.doneCount)) • \(statusDescription)\(pressureMetadataSuffix(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+        return "\(cadenceDescription(for: task)) • \(prioritySegment)\(completionCountSegment)\(statusDescription)\(pressureMetadataSuffix(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
     }
 
     func todoRowMetadataItems(for task: Display) -> [String] {
