@@ -217,19 +217,19 @@ struct PlaceCheckInMapSheet: View {
             if let selectedPlaceID, !places.contains(where: { $0.id == selectedPlaceID }) {
                 self.selectedPlaceID = nil
             }
-            syncMapPosition()
+            syncMapPositionIfAllowed()
         }
         .onChange(of: historyMapMarkers.map(\.id)) { _, markerIDs in
             if let selectedHistoryMarkerID, !markerIDs.contains(selectedHistoryMarkerID) {
                 self.selectedHistoryMarkerID = nil
             }
-            syncMapPosition()
+            syncMapPositionIfAllowed()
         }
         .onChange(of: selectedPlaceID) { _, _ in
-            syncMapPosition()
+            syncMapPositionIfAllowed()
         }
         .onChange(of: selectedHistoryMarkerID) { _, _ in
-            syncMapPosition()
+            syncMapPositionIfAllowed()
         }
         .sheet(item: $editingSessionDraft) { draft in
             PlaceCheckInSessionEditor(draft: draft) { updatedDraft in
@@ -1089,14 +1089,15 @@ struct PlaceCheckInMapSheet: View {
 
         let snapshot = await locationClient.snapshot(requestAuthorizationIfNeeded)
         locationSnapshot = snapshot
-        if selectedPlaceID == nil,
+        if newPlaceDraft == nil,
+           selectedPlaceID == nil,
            selectedHistoryMarkerID == nil,
            let coordinate = snapshot.coordinate,
            let nearbyPlace = PlaceCheckInSupport.nearestContainingPlace(to: coordinate, places: places) {
             selectedPlaceID = nearbyPlace.id
         }
         reconcileAutomaticCheckIn(for: snapshot)
-        syncMapPosition()
+        syncMapPositionIfAllowed()
     }
 
     @MainActor
@@ -1387,6 +1388,14 @@ struct PlaceCheckInMapSheet: View {
         }
         visibleRegion = region
         mapPosition = PlaceCheckInMapCamera.position(region: region)
+    }
+
+    private func syncMapPositionIfAllowed() {
+        guard newPlaceDraft == nil else {
+            return
+        }
+
+        syncMapPosition()
     }
 
     private func close() {
