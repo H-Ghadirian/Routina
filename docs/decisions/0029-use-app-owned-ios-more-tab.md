@@ -11,6 +11,8 @@ On compact iPhone layouts, SwiftUI/UITabBarController moves overflow tabs into a
 
 The compact iOS app uses an app-owned More tab instead of relying on UIKit's automatic overflow More tab for Stats and Settings. The More tab owns a single SwiftUI navigation stack with destinations for Stats, Settings, and Settings sections. Settings can still own its own compact navigation stack when presented directly outside the More flow.
 
+Compact versus regular presentation is decided from SwiftUI size-class environment values, not UIKit device-family inspection.
+
 ## Consequences
 
 - Compact iOS navigation for More -> Settings -> section has exactly one active navigation hierarchy.

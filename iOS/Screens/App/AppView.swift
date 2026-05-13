@@ -11,6 +11,7 @@ struct AppView: View {
     let store: StoreOf<AppFeature>
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var searchText = ""
     @State private var moreNavigationPath = NavigationPath()
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
@@ -169,7 +170,7 @@ struct AppView: View {
     }
 
     private var usesCompactMoreTab: Bool {
-        UIDevice.current.userInterfaceIdiom == .phone || horizontalSizeClass == .compact
+        horizontalSizeClass == .compact || verticalSizeClass == .compact
     }
 
     private func selectTab(_ tab: Tab) {

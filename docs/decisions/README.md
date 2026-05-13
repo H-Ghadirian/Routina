@@ -28,7 +28,7 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Mac Places:** The active Mac Places architecture is [0021](0021-keep-mac-places-in-home-split-shell.md), superseding the 0017-0020 presentation chain. Places stays inside the shared Home split-view shell: the sidebar keeps the shared mode strip and swaps task filters/list for place controls, check-in history, and saved places; the detail column renders the map.
 - **Mac Home toolbar:** Global Home toolbar content belongs to the root split-view shell, not the sidebar column. Detail-specific controls may still be attached by detail views. The Home window uses full-size transparent titlebar with unified toolbar styling.
 - **Liquid Glass UI:** Custom app cards, panels, chips, and floating controls use shared Liquid Glass surface modifiers with semantic tinting and material fallbacks. Standard system structures stay system-native, and custom opaque backgrounds behind macOS split-view chrome should be avoided.
-- **iOS More navigation:** Compact iOS uses an app-owned More tab for Stats and Settings instead of UIKit's automatic overflow More controller. The More flow owns a single SwiftUI navigation stack so Settings sections do not nest inside a second navigation hierarchy.
+- **iOS More navigation:** Compact iOS uses an app-owned More tab for Stats and Settings instead of UIKit's automatic overflow More controller. The More flow owns a single SwiftUI navigation stack so Settings sections do not nest inside a second navigation hierarchy, and compact/regular presentation is chosen from SwiftUI size classes.
 
 ## Open Questions
 

@@ -2,7 +2,6 @@ import Charts
 import ComposableArchitecture
 import SwiftData
 import SwiftUI
-import UIKit
 
 struct StatsViewWrapper: View {
     let store: StoreOf<StatsFeature>
@@ -18,6 +17,7 @@ struct StatsView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @Query private var focusSessions: [FocusSession]
@@ -278,7 +278,7 @@ struct StatsView: View {
     }
 
     private var usesSidebarLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+        horizontalSizeClass == .regular && verticalSizeClass != .compact
     }
 
     private var statsDashboardContent: some View {

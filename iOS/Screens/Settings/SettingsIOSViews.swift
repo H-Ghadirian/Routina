@@ -1,12 +1,12 @@
 import ComposableArchitecture
 import SwiftData
 import SwiftUI
-import UIKit
 
 struct SettingsPlatformRootView: View {
     let store: StoreOf<SettingsFeature>
     let ownsCompactNavigationStack: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         if usesSidebarLayout {
@@ -24,7 +24,7 @@ struct SettingsPlatformRootView: View {
     }
 
     private var usesSidebarLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+        horizontalSizeClass == .regular && verticalSizeClass != .compact
     }
 }
 
