@@ -213,6 +213,18 @@ extension HomeTCAView {
                 goalsStore.send(.onAppear)
             }
         }
+        .onAppear {
+            recordMacNavigationSnapshotIfNeeded()
+        }
+        .onChange(of: macNavigationSnapshot) { _, snapshot in
+            recordMacNavigationSnapshotIfNeeded(snapshot)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .routinaMacNavigateBack)) { _ in
+            goBackInMacNavigationHistory()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .routinaMacNavigateForward)) { _ in
+            goForwardInMacNavigationHistory()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
             alignMacDetailModeForDeepLinkNotification(notification)
         }

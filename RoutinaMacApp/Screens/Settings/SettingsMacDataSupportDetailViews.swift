@@ -170,6 +170,8 @@ struct SettingsMacShortcutsDetailView: View {
     private var keyboardShortcuts: [SettingsMacShortcutRowModel] {
         [
             SettingsMacShortcutRowModel(title: "Quick Add", detail: "Open quick task creation.", shortcut: quickAddShortcut.title),
+            SettingsMacShortcutRowModel(title: "Back", detail: "Return to the previous Home view.", shortcut: "⌘←"),
+            SettingsMacShortcutRowModel(title: "Forward", detail: "Move forward after going back.", shortcut: "⌘→"),
             SettingsMacShortcutRowModel(title: "Routines", detail: "Switch the sidebar back to routines.", shortcut: "⌥⌘1"),
             SettingsMacShortcutRowModel(title: "Stats", detail: "Open stats from anywhere in the app.", shortcut: "⌥⌘2"),
             SettingsMacShortcutRowModel(title: "Timeline", detail: "Open the done timeline.", shortcut: "⌥⌘3"),

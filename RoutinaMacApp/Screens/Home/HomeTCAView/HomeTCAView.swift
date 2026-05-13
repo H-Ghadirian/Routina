@@ -65,6 +65,8 @@ struct HomeTCAView: View {
     @State var relatedStatsTagSuggestionAnchor: String?
     @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .details
+    @State var macNavigationHistory = HomeMacNavigationHistory()
+    @State var isRestoringMacNavigationHistory = false
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?

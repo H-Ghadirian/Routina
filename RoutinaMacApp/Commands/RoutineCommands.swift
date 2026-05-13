@@ -6,6 +6,8 @@ extension Notification.Name {
     static let routinaMacOpenStatsInSidebar = Notification.Name("routina.mac.openStatsInSidebar")
     static let routinaMacOpenAddTask = Notification.Name("routina.mac.openAddTask")
     static let routinaMacOpenQuickAdd = Notification.Name("routina.mac.openQuickAdd")
+    static let routinaMacNavigateBack = Notification.Name("routina.mac.navigateBack")
+    static let routinaMacNavigateForward = Notification.Name("routina.mac.navigateForward")
 }
 
 struct RoutineCommands: Commands {
@@ -31,6 +33,18 @@ struct RoutineCommands: Commands {
                 NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
             }
             .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.modifiers)
+
+            Button("Back") {
+                NotificationCenter.default.post(name: .routinaMacNavigateBack, object: nil)
+            }
+            .keyboardShortcut(.leftArrow, modifiers: [.command])
+
+            Button("Forward") {
+                NotificationCenter.default.post(name: .routinaMacNavigateForward, object: nil)
+            }
+            .keyboardShortcut(.rightArrow, modifiers: [.command])
+
+            Divider()
 
             Button("Routines") {
                 NotificationCenter.default.post(name: .routinaMacOpenRoutinesInSidebar, object: nil)
