@@ -51,7 +51,7 @@ enum RoutinaMacSleepModeStarter {
 
 struct RoutinaMacSleepToolbarItem: ToolbarContent {
     var body: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarItem(placement: .navigation) {
             RoutinaMacSleepToolbarButton()
         }
     }
