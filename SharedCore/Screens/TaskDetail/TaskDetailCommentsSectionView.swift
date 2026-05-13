@@ -17,6 +17,10 @@ struct TaskDetailCommentsSectionView: View {
     let onSaveEditComment: (UUID) -> Void
     let onDeleteComment: (UUID) -> Void
 
+    private var displayedComments: [RoutineTaskComment] {
+        RoutineTaskCommentPresentation.newestFirst(comments)
+    }
+
     var body: some View {
         TaskDetailSectionCardView(background: background, stroke: stroke) {
             VStack(alignment: .leading, spacing: 12) {
@@ -51,10 +55,10 @@ struct TaskDetailCommentsSectionView: View {
                         .padding(.vertical, 4)
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(comments.enumerated()), id: \.element.id) { index, comment in
+                        ForEach(Array(displayedComments.enumerated()), id: \.element.id) { index, comment in
                             commentRow(comment)
 
-                            if index < comments.count - 1 {
+                            if index < displayedComments.count - 1 {
                                 Divider()
                                     .padding(.vertical, 10)
                             }
@@ -186,5 +190,20 @@ struct TaskDetailCommentsSectionView: View {
 
     private func formattedTimestamp(_ date: Date) -> String {
         date.formatted(date: .abbreviated, time: .shortened)
+    }
+}
+
+enum RoutineTaskCommentPresentation {
+    static func newestFirst(_ comments: [RoutineTaskComment]) -> [RoutineTaskComment] {
+        comments
+            .enumerated()
+            .sorted { left, right in
+                if left.element.createdAt != right.element.createdAt {
+                    return left.element.createdAt > right.element.createdAt
+                }
+
+                return left.offset > right.offset
+            }
+            .map(\.element)
     }
 }

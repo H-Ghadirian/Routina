@@ -31,6 +31,29 @@ struct TaskDetailCommentsTests {
     }
 
     @Test
+    func commentPresentationShowsNewestCreatedCommentFirst() {
+        let olderDate = makeDate("2026-04-02T08:15:00Z")
+        let newerDate = makeDate("2026-04-02T09:30:00Z")
+        let comments = [
+            RoutineTaskComment(body: "Older", createdAt: olderDate),
+            RoutineTaskComment(body: "Newer", createdAt: newerDate)
+        ]
+
+        #expect(RoutineTaskCommentPresentation.newestFirst(comments).map(\.body) == ["Newer", "Older"])
+    }
+
+    @Test
+    func commentPresentationShowsLaterInsertionFirstWhenDatesMatch() {
+        let createdAt = makeDate("2026-04-02T08:15:00Z")
+        let comments = [
+            RoutineTaskComment(body: "First", createdAt: createdAt),
+            RoutineTaskComment(body: "Second", createdAt: createdAt)
+        ]
+
+        #expect(RoutineTaskCommentPresentation.newestFirst(comments).map(\.body) == ["Second", "First"])
+    }
+
+    @Test
     func detailComments_canAddEditAndDeleteWithoutOpeningEditSheet() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Journal", interval: 1, lastDone: nil, emoji: "J")
