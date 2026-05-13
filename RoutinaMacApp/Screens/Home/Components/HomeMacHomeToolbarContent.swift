@@ -10,16 +10,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     let mode: Mode
     let goalsStore: StoreOf<GoalsFeature>
-    let doneCount: Int
-    let canceledCount: Int
-    let missedCount: Int
-    let routineCount: Int
-    let todoCount: Int
-    let boardOpenCount: Int
-    let boardInProgressCount: Int
-    let boardBlockedCount: Int
-    let boardDoneCount: Int
-    let isBoardBacklogScope: Bool
 
     var body: some ToolbarContent {
         switch mode {
@@ -35,38 +25,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
         RoutinaMacSleepToolbarItem()
-
-        ToolbarItemGroup(placement: .primaryAction) {
-            MacToolbarStatusBadge(
-                title: "\(boardOpenCount) open",
-                systemImage: "square.grid.3x3.topleft.filled",
-                tintColor: .secondaryLabelColor
-            )
-            .help("Open todos in the current board view")
-
-            MacToolbarStatusBadge(
-                title: "\(boardInProgressCount) in progress",
-                systemImage: "arrow.clockwise.circle.fill",
-                tintColor: .systemBlue
-            )
-            .help("In-progress todos in the current board view")
-
-            MacToolbarStatusBadge(
-                title: "\(boardBlockedCount) blocked",
-                systemImage: "exclamationmark.circle.fill",
-                tintColor: .systemRed
-            )
-            .help("Blocked todos in the current board view")
-
-            if !isBoardBacklogScope {
-                MacToolbarStatusBadge(
-                    title: "\(boardDoneCount) done",
-                    systemImage: "checkmark.circle.fill",
-                    tintColor: .systemGreen
-                )
-                .help("Done todos in the current board view")
-            }
-        }
     }
 
     @ToolbarContentBuilder
@@ -81,43 +39,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
         RoutinaMacSleepToolbarItem()
-
-        ToolbarItemGroup(placement: .primaryAction) {
-            MacToolbarStatusBadge(
-                title: "\(doneCount) done",
-                systemImage: "checkmark.seal.fill",
-                tintColor: .systemGreen
-            )
-            .help("\(doneCount) total done")
-
-            MacToolbarStatusBadge(
-                title: "\(canceledCount) canceled",
-                systemImage: "xmark.seal.fill",
-                tintColor: .systemOrange
-            )
-            .help("\(canceledCount) total canceled")
-
-            MacToolbarStatusBadge(
-                title: "\(missedCount) missed",
-                systemImage: "exclamationmark.triangle.fill",
-                tintColor: .systemYellow
-            )
-            .help("\(missedCount) total missed")
-
-            MacToolbarStatusBadge(
-                title: "\(routineCount) routines",
-                systemImage: "arrow.clockwise",
-                tintColor: .secondaryLabelColor
-            )
-            .help("Total routines")
-
-            MacToolbarStatusBadge(
-                title: "\(todoCount) todos",
-                systemImage: "checkmark.circle",
-                tintColor: .secondaryLabelColor
-            )
-            .help("Total todos")
-        }
     }
 }
 

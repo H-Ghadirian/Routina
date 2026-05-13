@@ -25,35 +25,10 @@ extension HomeTCAView {
 
     @ToolbarContentBuilder
     var homeToolbarContent: some ToolbarContent {
-        let mode = homeToolbarMode
-        let boardToolbarPresentation = mode == .board ? self.boardPresentation : nil
-
         HomeMacHomeToolbarContent(
-            mode: mode,
-            goalsStore: goalsStore,
-            doneCount: store.doneStats.totalCount,
-            canceledCount: store.doneStats.canceledTotalCount,
-            missedCount: store.doneStats.missedTotalCount,
-            routineCount: homeToolbarRoutineCount,
-            todoCount: homeToolbarTodoCount,
-            boardOpenCount: boardToolbarPresentation?.openTodoCount ?? 0,
-            boardInProgressCount: boardToolbarPresentation?.inProgressTodoCount ?? 0,
-            boardBlockedCount: boardToolbarPresentation?.blockedTodoCount ?? 0,
-            boardDoneCount: boardToolbarPresentation?.doneTodoCount ?? 0,
-            isBoardBacklogScope: boardToolbarPresentation?.isBacklogScope ?? false
+            mode: homeToolbarMode,
+            goalsStore: goalsStore
         )
-    }
-
-    private var homeToolbarRoutineCount: Int {
-        store.routineDisplays.reduce(0) { $0 + ($1.isOneOffTask ? 0 : 1) }
-            + store.awayRoutineDisplays.reduce(0) { $0 + ($1.isOneOffTask ? 0 : 1) }
-            + store.archivedRoutineDisplays.reduce(0) { $0 + ($1.isOneOffTask ? 0 : 1) }
-    }
-
-    private var homeToolbarTodoCount: Int {
-        store.boardTodoDisplays.reduce(0) { count, display in
-            count + (!display.isCompletedOneOff && !display.isCanceledOneOff ? 1 : 0)
-        }
     }
 
     private var homeToolbarMode: HomeMacHomeToolbarContent.Mode {

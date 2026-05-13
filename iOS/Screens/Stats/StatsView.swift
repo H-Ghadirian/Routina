@@ -765,6 +765,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case totalDones
     case totalCancels
     case totalMissed
+    case routineCount
+    case todoCount
     case activeItems
     case archivedItems
     case completionChart
@@ -790,6 +792,10 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             self = .totalCancels
         case "stats.summary.totalMissed":
             self = .totalMissed
+        case "stats.summary.routineCount":
+            self = .routineCount
+        case "stats.summary.todoCount":
+            self = .todoCount
         case "stats.summary.activeRoutines":
             self = .activeItems
         case "stats.summary.archivedRoutines":
@@ -817,6 +823,10 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Canceled"
         case .totalMissed:
             return "Missed"
+        case .routineCount:
+            return "Routines"
+        case .todoCount:
+            return "Todos"
         case .activeItems:
             return "Active items"
         case .archivedItems:
@@ -836,7 +846,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .focusTime, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .completionChart:
             return "A bar chart of done, missed, and canceled activity over time."
@@ -867,6 +877,10 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "xmark.seal.fill"
         case .totalMissed:
             return "exclamationmark.triangle.fill"
+        case .routineCount:
+            return "arrow.clockwise"
+        case .todoCount:
+            return "checkmark.circle"
         case .activeItems:
             return "checklist.checked"
         case .archivedItems:

@@ -100,6 +100,28 @@ enum StatsSummaryCardItemBuilder {
 
         items.append(
             StatsSummaryCardItem(
+                icon: "arrow.clockwise",
+                accent: .indigo,
+                title: "Routines",
+                value: metrics.routineCount.formatted(),
+                caption: "Total matching routines",
+                accessibilityIdentifier: "stats.summary.routineCount"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
+                icon: "checkmark.circle",
+                accent: .cyan,
+                title: "Todos",
+                value: metrics.openTodoCount.formatted(),
+                caption: "Open matching todos",
+                accessibilityIdentifier: "stats.summary.todoCount"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
                 icon: "checklist",
                 accent: .green,
                 title: activeArchivePresentation.activeTitle,

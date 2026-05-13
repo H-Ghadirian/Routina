@@ -458,6 +458,7 @@ extension HomeTCAView {
 
     private var macPlacesSidebarHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
+            HomeMacSidebarDoneCounterView(doneCount: store.doneStats.totalCount)
             HomeMacSidebarModeStripView(selectedMode: macSidebarModeBinding)
         }
         .padding(.horizontal, 14)
@@ -498,6 +499,7 @@ extension HomeTCAView {
     var macSidebarHeader: some View {
         HomeMacSidebarHeaderView(
             selectedSidebarMode: macSidebarModeBinding,
+            doneCount: store.doneStats.totalCount,
             selectedTaskListMode: store.taskListMode,
             isRoutinesMode: isMacRoutinesMode && !isMacSegmentedBoardMode,
             isBoardMode: isMacBoardSidebarPresented,

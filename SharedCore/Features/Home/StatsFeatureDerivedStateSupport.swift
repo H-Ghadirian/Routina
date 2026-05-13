@@ -11,6 +11,8 @@ struct StatsFeatureMetrics: Equatable {
     var createdTotalCount: Int = 0
     var totalFocusSeconds: TimeInterval = 0
     var averageFocusSecondsPerDay: TimeInterval = 0
+    var routineCount: Int = 0
+    var openTodoCount: Int = 0
     var activeRoutineCount: Int = 0
     var archivedRoutineCount: Int = 0
     var totalCount: Int = 0
@@ -210,6 +212,10 @@ enum StatsFeatureDerivedStateBuilder {
         let totalFocusSeconds = FocusDurationStats.totalSeconds(in: focusChartPoints)
         let averageFocusSecondsPerDay = FocusDurationStats.averageSeconds(in: focusChartPoints)
         let busiestFocusDay = FocusDurationStats.busiestDay(in: focusChartPoints)
+        let routineCount = filteredTasks.filter { !$0.isOneOffTask }.count
+        let openTodoCount = filteredTasks.filter {
+            $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff
+        }.count
         let archiveCounts = taskArchiveCounts(
             filteredTasks,
             referenceDate: referenceDate,
@@ -242,6 +248,8 @@ enum StatsFeatureDerivedStateBuilder {
                 createdTotalCount: createdTotalCount,
                 totalFocusSeconds: totalFocusSeconds,
                 averageFocusSecondsPerDay: averageFocusSecondsPerDay,
+                routineCount: routineCount,
+                openTodoCount: openTodoCount,
                 activeRoutineCount: archiveCounts.active,
                 archivedRoutineCount: archiveCounts.archived,
                 totalCount: totalCount,
