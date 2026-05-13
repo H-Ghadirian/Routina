@@ -265,6 +265,104 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func completedTimelineActivityBlocksAvoidExistingPlannerBlocks() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T22:10:05Z"))
+        let taskID = UUID()
+        let placedTaskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Rapid task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let log = RoutineLog(
+            timestamp: completedAt,
+            taskID: taskID,
+            kind: .completed,
+            actualDurationMinutes: 30
+        )
+        let placedBlock = DayPlanBlock(
+            taskID: placedTaskID,
+            dayKey: DayPlanStorage.dayKey(for: activityDate, calendar: calendar),
+            startMinute: 21 * 60 + 40,
+            durationMinutes: 30,
+            titleSnapshot: "Already placed"
+        )
+
+        let activityBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [log],
+            plannedBlocks: [placedBlock],
+            calendar: calendar
+        )
+
+        let activityBlock = try #require(activityBlocks.first)
+        #expect(activityBlocks.count == 1)
+        #expect(activityBlock.block.taskID == taskID)
+        #expect(activityBlock.block.startMinute == 21 * 60 + 10)
+        #expect(activityBlock.block.endMinute == 21 * 60 + 40)
+    }
+
+    @Test
+    func confirmedLatestTimelineActivityKeepsEarlierSuggestionBeforeConfirmedBlock() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let earlierCompletedAt = try #require(date("2026-05-07T22:10:05Z"))
+        let latestCompletedAt = try #require(date("2026-05-07T22:10:40Z"))
+        let earlierTaskID = UUID()
+        let latestTaskID = UUID()
+        let earlierTask = RoutineTask(
+            id: earlierTaskID,
+            name: "Earlier rapid task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let latestTask = RoutineTask(
+            id: latestTaskID,
+            name: "Latest rapid task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: earlierCompletedAt,
+                taskID: earlierTaskID,
+                kind: .completed,
+                actualDurationMinutes: 30
+            ),
+            RoutineLog(
+                timestamp: latestCompletedAt,
+                taskID: latestTaskID,
+                kind: .completed,
+                actualDurationMinutes: 30
+            ),
+        ]
+        let confirmedLatestBlock = DayPlanBlock(
+            taskID: latestTaskID,
+            dayKey: DayPlanStorage.dayKey(for: activityDate, calendar: calendar),
+            startMinute: 21 * 60 + 40,
+            durationMinutes: 30,
+            titleSnapshot: "Latest rapid task"
+        )
+
+        let remainingActivityBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: activityDate,
+            from: [earlierTask, latestTask],
+            logs: logs,
+            plannedBlocks: [confirmedLatestBlock],
+            calendar: calendar
+        )
+
+        let remainingActivityBlock = try #require(remainingActivityBlocks.first)
+        #expect(remainingActivityBlocks.map(\.block.taskID) == [earlierTaskID])
+        #expect(remainingActivityBlock.block.startMinute == 21 * 60 + 10)
+        #expect(remainingActivityBlock.block.endMinute == 21 * 60 + 40)
+    }
+
+    @Test
     func confirmingTimelineActivityPersistsPlannerBlockAndHidesAutomaticBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

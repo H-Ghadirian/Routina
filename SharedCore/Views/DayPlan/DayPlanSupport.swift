@@ -275,15 +275,23 @@ enum DayPlanTimelineTasks {
             )
         }
 
-        return Dictionary(grouping: blocks, by: \.block.dayKey)
-            .mapValues {
-                arrangedTimelineActivityBlocks($0, calendar: calendar).sorted { lhs, rhs in
-                    if lhs.block.startMinute != rhs.block.startMinute {
-                        return lhs.block.startMinute < rhs.block.startMinute
-                    }
-                    return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+        let blocksByDayKey = Dictionary(grouping: blocks, by: \.block.dayKey)
+        return Dictionary(uniqueKeysWithValues: blocksByDayKey.map { dayKey, dayBlocks in
+            let plannedBlocks = plannedBlocksByDayKey[dayKey] ?? []
+            let arrangedBlocks = arrangedTimelineActivityBlocks(
+                dayBlocks,
+                plannedBlocks: plannedBlocks,
+                calendar: calendar
+            )
+            .sorted { lhs, rhs in
+                if lhs.block.startMinute != rhs.block.startMinute {
+                    return lhs.block.startMinute < rhs.block.startMinute
                 }
+                return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
             }
+
+            return (dayKey, arrangedBlocks)
+        })
     }
 
     static func taskIDs(
@@ -485,6 +493,7 @@ enum DayPlanTimelineTasks {
 
     private static func arrangedTimelineActivityBlocks(
         _ blocks: [DayPlanTimelineActivityBlock],
+        plannedBlocks: [DayPlanBlock],
         calendar: Calendar
     ) -> [DayPlanTimelineActivityBlock] {
         let completedBlocks = blocks
@@ -496,12 +505,16 @@ enum DayPlanTimelineTasks {
                 return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedDescending
             }
 
-        var latestAllowedEndMinute = DayPlanBlock.minutesPerDay
-        let arrangedCompletedBlocks = completedBlocks.map { activity in
+        var occupiedIntervals = plannedBlocks.map(DayPlanOccupiedInterval.init(block:))
+        let arrangedCompletedBlocks: [DayPlanTimelineActivityBlock] = completedBlocks.compactMap { activity in
             let completionMinute = startMinute(for: activity.block.updatedAt, calendar: calendar)
-            let endMinute = min(completionMinute, latestAllowedEndMinute)
-            let arrangedActivity = activity.ending(noLaterThan: endMinute)
-            latestAllowedEndMinute = arrangedActivity.block.startMinute
+            guard let arrangedActivity = activity.ending(
+                noLaterThan: completionMinute,
+                avoiding: occupiedIntervals
+            ) else {
+                return nil
+            }
+            occupiedIntervals.append(DayPlanOccupiedInterval(block: arrangedActivity.block))
             return arrangedActivity
         }
 
@@ -587,35 +600,62 @@ enum DayPlanTimelineTasks {
     }
 }
 
-private extension DayPlanTimelineActivityBlock {
-    func ending(noLaterThan endMinute: Int) -> DayPlanTimelineActivityBlock {
-        let clampedEndMinute = min(
-            max(endMinute, DayPlanBlock.minimumDurationMinutes),
-            DayPlanBlock.minutesPerDay
-        )
-        let startMinute = max(0, clampedEndMinute - block.durationMinutes)
-        let availableDuration = max(
-            DayPlanBlock.minimumDurationMinutes,
-            clampedEndMinute - startMinute
-        )
-        let durationMinutes = min(block.durationMinutes, availableDuration)
-        let adjustedBlock = DayPlanBlock(
-            id: block.id,
-            taskID: block.taskID,
-            dayKey: block.dayKey,
-            startMinute: startMinute,
-            durationMinutes: durationMinutes,
-            titleSnapshot: block.titleSnapshot,
-            emojiSnapshot: block.emojiSnapshot,
-            createdAt: block.createdAt,
-            updatedAt: block.updatedAt
-        )
+private struct DayPlanOccupiedInterval {
+    var startMinute: Int
+    var endMinute: Int
 
-        return DayPlanTimelineActivityBlock(
-            block: adjustedBlock,
-            kind: kind,
-            source: source
-        )
+    init(block: DayPlanBlock) {
+        self.startMinute = block.startMinute
+        self.endMinute = block.endMinute
+    }
+
+    func overlaps(startMinute: Int, endMinute: Int) -> Bool {
+        max(startMinute, self.startMinute) < min(endMinute, self.endMinute)
+    }
+}
+
+private extension DayPlanTimelineActivityBlock {
+    func ending(
+        noLaterThan endMinute: Int,
+        avoiding occupiedIntervals: [DayPlanOccupiedInterval]
+    ) -> DayPlanTimelineActivityBlock? {
+        var clampedEndMinute = min(max(endMinute, 0), DayPlanBlock.minutesPerDay)
+        var startMinute = max(0, clampedEndMinute - block.durationMinutes)
+
+        while clampedEndMinute >= DayPlanBlock.minimumDurationMinutes {
+            let durationMinutes = clampedEndMinute - startMinute
+            guard durationMinutes >= DayPlanBlock.minimumDurationMinutes else {
+                return nil
+            }
+
+            if let conflict = occupiedIntervals
+                .filter({ $0.overlaps(startMinute: startMinute, endMinute: clampedEndMinute) })
+                .max(by: { $0.startMinute < $1.startMinute }) {
+                clampedEndMinute = conflict.startMinute
+                startMinute = max(0, clampedEndMinute - block.durationMinutes)
+                continue
+            }
+
+            let adjustedBlock = DayPlanBlock(
+                id: block.id,
+                taskID: block.taskID,
+                dayKey: block.dayKey,
+                startMinute: startMinute,
+                durationMinutes: durationMinutes,
+                titleSnapshot: block.titleSnapshot,
+                emojiSnapshot: block.emojiSnapshot,
+                createdAt: block.createdAt,
+                updatedAt: block.updatedAt
+            )
+
+            return DayPlanTimelineActivityBlock(
+                block: adjustedBlock,
+                kind: kind,
+                source: source
+            )
+        }
+
+        return nil
     }
 }
 
