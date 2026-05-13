@@ -5,27 +5,25 @@ struct SettingsMacDevicesDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            SettingsMacDetailShell(
-                title: "Devices",
-                subtitle: "Review the devices that have recently used Routina."
-            ) {
-                if let currentDevice {
-                    SettingsMacDetailCard(title: "This Device") {
-                        SettingsMacDeviceSessionRow(session: currentDevice)
-                    }
+        SettingsMacDetailShell(
+            title: "Devices",
+            subtitle: "Review the devices that have recently used Routina."
+        ) {
+            if let currentDevice {
+                SettingsMacDetailCard(title: "This Device") {
+                    SettingsMacDeviceSessionRow(session: currentDevice)
                 }
+            }
 
-                let otherDevices = store.devices.sessions.filter { !$0.isCurrentDevice }
-                if !otherDevices.isEmpty {
-                    SettingsMacDetailCard(title: "Active Devices") {
-                        VStack(spacing: 0) {
-                            ForEach(otherDevices) { session in
-                                SettingsMacDeviceSessionRow(session: session)
-                                if session.id != otherDevices.last?.id {
-                                    Divider()
-                                        .padding(.vertical, 10)
-                                }
+            let otherDevices = store.devices.sessions.filter { !$0.isCurrentDevice }
+            if !otherDevices.isEmpty {
+                SettingsMacDetailCard(title: "Active Devices") {
+                    VStack(spacing: 0) {
+                        ForEach(otherDevices) { session in
+                            SettingsMacDeviceSessionRow(session: session)
+                            if session.id != otherDevices.last?.id {
+                                Divider()
+                                    .padding(.vertical, 10)
                             }
                         }
                     }

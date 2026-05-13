@@ -5,27 +5,25 @@ struct SettingsDevicesDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
-        WithPerceptionTracking {
-            List {
-                if let currentDevice {
-                    Section("This Device") {
-                        SettingsDeviceSessionRow(session: currentDevice)
-                    }
+        List {
+            if let currentDevice {
+                Section("This Device") {
+                    SettingsDeviceSessionRow(session: currentDevice)
                 }
+            }
 
-                let otherDevices = store.devices.sessions.filter { !$0.isCurrentDevice }
-                if !otherDevices.isEmpty {
-                    Section("Active Devices") {
-                        ForEach(otherDevices) { session in
-                            SettingsDeviceSessionRow(session: session)
-                        }
+            let otherDevices = store.devices.sessions.filter { !$0.isCurrentDevice }
+            if !otherDevices.isEmpty {
+                Section("Active Devices") {
+                    ForEach(otherDevices) { session in
+                        SettingsDeviceSessionRow(session: session)
                     }
                 }
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Devices")
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Devices")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var currentDevice: RoutinaDeviceSessionSummary? {
