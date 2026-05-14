@@ -134,9 +134,11 @@ struct GoalsFeatureTests {
             $0.editorDraft.color = .blue
         }
         await store.send(.saveEditorTapped)
-        await store.receive(.goalSaved) {
+        await store.receive(\.goalSaved) {
+            let savedGoal = try #require(try context.fetch(FetchDescriptor<RoutineGoal>()).first)
             $0.isEditorPresented = false
             $0.validationMessage = nil
+            $0.selectedGoalID = savedGoal.id
         }
 
         let savedGoals = try context.fetch(FetchDescriptor<RoutineGoal>())
@@ -186,9 +188,11 @@ struct GoalsFeatureTests {
             $0.editorDraft.parentGoalID = parent.id
         }
         await store.send(.saveEditorTapped)
-        await store.receive(.goalSaved) {
+        await store.receive(\.goalSaved) {
+            let child = try #require(try context.fetch(FetchDescriptor<RoutineGoal>()).first { $0.title == "Run 5K" })
             $0.isEditorPresented = false
             $0.validationMessage = nil
+            $0.selectedGoalID = child.id
         }
 
         let savedGoals = try context.fetch(FetchDescriptor<RoutineGoal>())
@@ -201,7 +205,7 @@ struct GoalsFeatureTests {
         )
         await store.receive(.goalsLoaded(expectedGoals)) {
             $0.goals = expectedGoals
-            $0.selectedGoalID = parent.id
+            $0.selectedGoalID = child.id
         }
 
         #expect(child.parentGoalID == parent.id)

@@ -5,46 +5,53 @@ struct GoalsTCAView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-NavigationStack {
-    content
-        .navigationTitle("Goals")
-        .searchable(text: searchBinding, prompt: "Search goals")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    store.send(.addGoalTapped)
-                } label: {
-                    Label("New Goal", systemImage: "plus")
+        NavigationStack {
+            Group {
+                if store.isAddingGoal {
+                    GoalsEditorForm(store: store)
+                        .navigationTitle("New Goal")
+                        .toolbar {
+                            GoalsEditorToolbarContent(store: store)
+                        }
+                } else {
+                    content
+                        .navigationTitle("Goals")
+                        .searchable(text: searchBinding, prompt: "Search goals")
+                        .toolbar {
+                            ToolbarItem(placement: .primaryAction) {
+                                Button {
+                                    store.send(.addGoalTapped)
+                                } label: {
+                                    Label("New Goal", systemImage: "plus")
+                                }
+                            }
+                        }
                 }
             }
+            .navigationDestination(for: UUID.self) { goalID in
+                GoalDetailView(store: store, goalID: goalID)
+            }
         }
-        .navigationDestination(for: UUID.self) { goalID in
-            GoalDetailView(store: store, goalID: goalID)
+        .confirmationDialog(
+            "Delete Goal",
+            isPresented: deleteConfirmationBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                store.send(.deleteGoalConfirmed)
+            }
+            Button("Cancel", role: .cancel) {
+                store.send(.deleteGoalCanceled)
+            }
+        } message: {
+            Text("Tasks linked to this goal keep the task, and sub-goals become top-level goals.")
         }
-}
-.sheet(isPresented: editorBinding) {
-    GoalsEditorSheet(store: store)
-}
-.confirmationDialog(
-    "Delete Goal",
-    isPresented: deleteConfirmationBinding,
-    titleVisibility: .visible
-) {
-    Button("Delete", role: .destructive) {
-        store.send(.deleteGoalConfirmed)
-    }
-    Button("Cancel", role: .cancel) {
-        store.send(.deleteGoalCanceled)
-    }
-} message: {
-    Text("Tasks linked to this goal keep the task, and sub-goals become top-level goals.")
-}
-.task {
-    store.send(.onAppear)
-}
-.onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-    store.send(.refreshRequested)
-}
+        .task {
+            store.send(.onAppear)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+            store.send(.refreshRequested)
+        }
     }
 
     @ViewBuilder
@@ -96,17 +103,6 @@ NavigationStack {
         Binding(
             get: { store.searchText },
             set: { store.send(.searchTextChanged($0)) }
-        )
-    }
-
-    private var editorBinding: Binding<Bool> {
-        Binding(
-            get: { store.isEditorPresented },
-            set: { isPresented in
-                if !isPresented {
-                    store.send(.dismissEditor)
-                }
-            }
         )
     }
 
@@ -167,113 +163,120 @@ private struct GoalDetailView: View {
     var goalID: UUID
 
     var body: some View {
-if let goal = store.goals.first(where: { $0.id == goalID }) {
-    List {
-        Section {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(goal.color.swiftUIColor?.opacity(0.16) ?? Color.secondary.opacity(0.12))
-                        Text(goal.displayEmoji)
-                            .font(.title2)
-                    }
-                    .frame(width: 54, height: 54)
+        if store.isEditorPresented && store.editorDraft.id == goalID {
+            GoalsEditorForm(store: store)
+                .navigationTitle("Edit Goal")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    GoalsEditorToolbarContent(store: store)
+                }
+        } else if let goal = store.goals.first(where: { $0.id == goalID }) {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(goal.color.swiftUIColor?.opacity(0.16) ?? Color.secondary.opacity(0.12))
+                                Text(goal.displayEmoji)
+                                    .font(.title2)
+                            }
+                            .frame(width: 54, height: 54)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(goal.displayTitle)
-                            .font(.title3.weight(.semibold))
-                        Text(goal.status.title)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(goal.displayTitle)
+                                    .font(.title3.weight(.semibold))
+                                Text(goal.status.title)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        if let notes = goal.notes {
+                            Text(notes)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                    .padding(.vertical, 6)
                 }
 
-                if let notes = goal.notes {
-                    Text(notes)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.vertical, 6)
-        }
-
-        Section("Overview") {
-            LabeledContent("Open Items", value: "\(goal.openTaskCount)")
-            LabeledContent("Routines", value: "\(goal.routineCount)")
-            LabeledContent("Todos", value: "\(goal.todoCount)")
-            if let parentGoal = goal.parentGoal {
-                LabeledContent("Parent Goal", value: parentGoal.displayTitle)
-            }
-            if goal.childGoalCount > 0 {
-                LabeledContent("Sub-goals", value: "\(goal.childGoalCount)")
-            }
-            if goal.completedTodoCount > 0 {
-                LabeledContent("Done Todos", value: "\(goal.completedTodoCount)")
-            }
-            if let targetDate = goal.targetDate {
-                LabeledContent(
-                    "Target Date",
-                    value: targetDate.formatted(date: .abbreviated, time: .omitted)
-                )
-            }
-            if let nextDueDate = goal.nextDueDate {
-                LabeledContent(
-                    "Next Due",
-                    value: nextDueDate.formatted(date: .abbreviated, time: .omitted)
-                )
-            }
-        }
-
-        if goal.parentGoal != nil || !goal.childGoals.isEmpty {
-            Section("Linked Goals") {
-                if let parentGoal = goal.parentGoal {
-                    NavigationLink(value: parentGoal.id) {
-                        GoalLinkInlineRow(goal: parentGoal, relationship: "Parent goal")
+                Section("Overview") {
+                    LabeledContent("Open Items", value: "\(goal.openTaskCount)")
+                    LabeledContent("Routines", value: "\(goal.routineCount)")
+                    LabeledContent("Todos", value: "\(goal.todoCount)")
+                    if let parentGoal = goal.parentGoal {
+                        LabeledContent("Parent Goal", value: parentGoal.displayTitle)
                     }
-                }
-
-                ForEach(goal.childGoals) { childGoal in
-                    NavigationLink(value: childGoal.id) {
-                        GoalLinkInlineRow(goal: childGoal, relationship: "Sub-goal")
+                    if goal.childGoalCount > 0 {
+                        LabeledContent("Sub-goals", value: "\(goal.childGoalCount)")
+                    }
+                    if goal.completedTodoCount > 0 {
+                        LabeledContent("Done Todos", value: "\(goal.completedTodoCount)")
+                    }
+                    if let targetDate = goal.targetDate {
+                        LabeledContent(
+                            "Target Date",
+                            value: targetDate.formatted(date: .abbreviated, time: .omitted)
+                        )
+                    }
+                    if let nextDueDate = goal.nextDueDate {
+                        LabeledContent(
+                            "Next Due",
+                            value: nextDueDate.formatted(date: .abbreviated, time: .omitted)
+                        )
                     }
                 }
-            }
-        }
 
-        Section("Linked Tasks") {
-            if goal.linkedTasks.isEmpty {
-                ContentUnavailableView(
-                    "No linked tasks",
-                    systemImage: "checklist"
-                )
-            } else {
-                ForEach(goal.linkedTasks) { task in
-                    GoalTaskInlineRow(task: task)
+                if goal.parentGoal != nil || !goal.childGoals.isEmpty {
+                    Section("Linked Goals") {
+                        if let parentGoal = goal.parentGoal {
+                            NavigationLink(value: parentGoal.id) {
+                                GoalLinkInlineRow(goal: parentGoal, relationship: "Parent goal")
+                            }
+                        }
+
+                        ForEach(goal.childGoals) { childGoal in
+                            NavigationLink(value: childGoal.id) {
+                                GoalLinkInlineRow(goal: childGoal, relationship: "Sub-goal")
+                            }
+                        }
+                    }
+                }
+
+                Section("Linked Tasks") {
+                    if goal.linkedTasks.isEmpty {
+                        ContentUnavailableView(
+                            "No linked tasks",
+                            systemImage: "checklist"
+                        )
+                    } else {
+                        ForEach(goal.linkedTasks) { task in
+                            GoalTaskInlineRow(task: task)
+                        }
+                    }
                 }
             }
-        }
-    }
-    .navigationTitle(goal.displayTitle)
-    .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                store.send(.editGoalTapped(goal.id))
-            } label: {
-                Label("Edit", systemImage: "square.and.pencil")
-            }
-        }
+            .navigationTitle(goal.displayTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        store.send(.editGoalTapped(goal.id))
+                    } label: {
+                        Label("Edit", systemImage: "square.and.pencil")
+                    }
+                }
 
-        ToolbarItem(placement: .topBarTrailing) {
-            GoalActionsMenu(store: store, goal: goal)
+                ToolbarItem(placement: .topBarTrailing) {
+                    GoalActionsMenu(store: store, goal: goal)
+                }
+            }
+            .onAppear {
+                store.send(.selectGoal(goalID))
+            }
+        } else {
+            ContentUnavailableView("Goal unavailable", systemImage: "target")
         }
-    }
-    .onAppear {
-        store.send(.selectGoal(goalID))
-    }
-} else {
-    ContentUnavailableView("Goal unavailable", systemImage: "target")
-}
     }
 }
 

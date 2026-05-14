@@ -32,6 +32,10 @@ struct GoalsFeature {
             return goals.first { $0.id == selectedGoalID }
         }
 
+        var isAddingGoal: Bool {
+            isEditorPresented && editorDraft.id == nil
+        }
+
         var availableParentGoals: [GoalLinkDisplay] {
             let excludedGoalIDs: Set<UUID>
             if let editingGoalID = editorDraft.id {
@@ -369,7 +373,7 @@ struct GoalsFeature {
         case editorColorChanged(RoutineTaskColor)
         case editorParentGoalChanged(UUID?)
         case saveEditorTapped
-        case goalSaved
+        case goalSaved(UUID)
         case archiveGoalTapped(UUID)
         case unarchiveGoalTapped(UUID)
         case deleteGoalRequested(UUID)
@@ -471,9 +475,10 @@ struct GoalsFeature {
                 }
                 return saveGoalEffect(state.editorDraft)
 
-            case .goalSaved:
+            case let .goalSaved(goalID):
                 state.isEditorPresented = false
                 state.validationMessage = nil
+                state.selectedGoalID = goalID
                 return loadGoalsEffect()
 
             case let .archiveGoalTapped(goalID):
@@ -553,6 +558,7 @@ struct GoalsFeature {
                     return
                 }
 
+                let savedGoalID: UUID
                 if let id = draft.id,
                    let existingGoal = allGoals.first(where: { $0.id == id }) {
                     existingGoal.title = title
@@ -561,25 +567,26 @@ struct GoalsFeature {
                     existingGoal.targetDate = draft.targetDate
                     existingGoal.color = draft.color
                     existingGoal.parentGoalID = parentGoalID
+                    savedGoalID = id
                 } else {
                     let nextSortOrder = (allGoals.map(\.sortOrder).max() ?? -1) + 1
-                    context.insert(
-                        RoutineGoal(
-                            title: title,
-                            emoji: draft.emoji,
-                            notes: draft.notes,
-                            targetDate: draft.targetDate,
-                            color: draft.color,
-                            parentGoalID: parentGoalID,
-                            createdAt: now,
-                            sortOrder: nextSortOrder
-                        )
+                    let goal = RoutineGoal(
+                        title: title,
+                        emoji: draft.emoji,
+                        notes: draft.notes,
+                        targetDate: draft.targetDate,
+                        color: draft.color,
+                        parentGoalID: parentGoalID,
+                        createdAt: now,
+                        sortOrder: nextSortOrder
                     )
+                    savedGoalID = goal.id
+                    context.insert(goal)
                 }
 
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
-                send(.goalSaved)
+                send(.goalSaved(savedGoalID))
             } catch {
                 context.rollback()
                 send(.loadingFailed("Could not save goal."))

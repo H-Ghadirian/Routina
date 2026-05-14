@@ -5,20 +5,20 @@ struct GoalsTCAView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-NavigationSplitView {
-    MacGoalsSidebarView(store: store)
-        .navigationTitle("Goals")
-        .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 420)
-        .searchable(text: searchBinding, prompt: "Search goals")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                MacGoalsNewGoalButton(store: store)
-            }
+        NavigationSplitView {
+            MacGoalsSidebarView(store: store)
+                .navigationTitle("Goals")
+                .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 420)
+                .searchable(text: searchBinding, prompt: "Search goals")
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        MacGoalsNewGoalButton(store: store)
+                    }
+                }
+        } detail: {
+            MacGoalsDetailView(store: store)
         }
-} detail: {
-    MacGoalsDetailView(store: store)
-}
-.navigationSplitViewStyle(.balanced)
+        .navigationSplitViewStyle(.balanced)
     }
 
     private var searchBinding: Binding<String> {
@@ -46,7 +46,7 @@ struct MacGoalsSidebarView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-content
+        content
     }
 
     @ViewBuilder
@@ -103,36 +103,34 @@ struct MacGoalsDetailView: View {
     let store: StoreOf<GoalsFeature>
 
     var body: some View {
-content
-    .sheet(isPresented: editorBinding) {
-        GoalsEditorSheet(store: store)
-            .frame(minWidth: 440, minHeight: 420)
-    }
-    .confirmationDialog(
-        "Delete Goal",
-        isPresented: deleteConfirmationBinding,
-        titleVisibility: .visible
-    ) {
-        Button("Delete", role: .destructive) {
-            store.send(.deleteGoalConfirmed)
-        }
-        Button("Cancel", role: .cancel) {
-            store.send(.deleteGoalCanceled)
-        }
-    } message: {
-        Text("Tasks linked to this goal keep the task, and sub-goals become top-level goals.")
-    }
-    .task {
-        store.send(.onAppear)
-    }
-    .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-        store.send(.refreshRequested)
-    }
+        content
+            .confirmationDialog(
+                "Delete Goal",
+                isPresented: deleteConfirmationBinding,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    store.send(.deleteGoalConfirmed)
+                }
+                Button("Cancel", role: .cancel) {
+                    store.send(.deleteGoalCanceled)
+                }
+            } message: {
+                Text("Tasks linked to this goal keep the task, and sub-goals become top-level goals.")
+            }
+            .task {
+                store.send(.onAppear)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                store.send(.refreshRequested)
+            }
     }
 
     @ViewBuilder
     private var content: some View {
-        if let goal = store.selectedGoal {
+        if store.isEditorPresented {
+            MacGoalEditorPane(store: store)
+        } else if let goal = store.selectedGoal {
             GoalDetailPane(store: store, goal: goal)
         } else {
             ContentUnavailableView(
@@ -147,17 +145,6 @@ content
         }
     }
 
-    private var editorBinding: Binding<Bool> {
-        Binding(
-            get: { store.isEditorPresented },
-            set: { isPresented in
-                if !isPresented {
-                    store.send(.dismissEditor)
-                }
-            }
-        )
-    }
-
     private var deleteConfirmationBinding: Binding<Bool> {
         Binding(
             get: { store.pendingDeleteGoalID != nil },
@@ -167,6 +154,44 @@ content
                 }
             }
         )
+    }
+}
+
+private struct MacGoalEditorPane: View {
+    let store: StoreOf<GoalsFeature>
+
+    private var title: String {
+        store.editorDraft.id == nil ? "New Goal" : "Edit Goal"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.largeTitle.weight(.semibold))
+                .padding(.horizontal, 32)
+                .padding(.top, 28)
+
+            GoalsEditorForm(store: store)
+                .formStyle(.grouped)
+                .frame(maxWidth: 720, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .navigationTitle("")
+        .toolbar {
+            RoutinaMacFocusTimerToolbarItem()
+
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button("Cancel") {
+                    store.send(.dismissEditor)
+                }
+
+                Button("Save") {
+                    store.send(.saveEditorTapped)
+                }
+                .keyboardShortcut(.return, modifiers: .command)
+                .disabled(store.editorDraft.cleanedTitle == nil)
+            }
+        }
     }
 }
 

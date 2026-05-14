@@ -406,7 +406,7 @@ let package = Package(
                 "SharedCore/Views/AddRoutineTagComposerView.swift",
                 "SharedCore/Views/QuickAddTaskSheet.swift",
                 "SharedCore/Views/FocusSessionCard.swift",
-                "SharedCore/Views/GoalsEditorSheet.swift",
+                "SharedCore/Views/GoalsEditorForm.swift",
                 "SharedCore/Views/ImportanceUrgencyMatrixPicker.swift",
                 "SharedCore/Views/StatsDashboardComponents.swift",
                 "SharedCore/Views/StatsDashboardPalette.swift",
