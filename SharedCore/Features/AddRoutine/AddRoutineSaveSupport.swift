@@ -184,11 +184,11 @@ struct AddRoutineSaveRequest: Equatable {
         self.tags = organization.routineTags
         self.goals = organization.routineGoals
         self.relationships = organization.relationships
-        self.steps = (schedule.scheduleMode == .fixedInterval || schedule.scheduleMode == .softInterval || schedule.scheduleMode == .oneOff)
+        self.steps = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff)
             ? RoutineStep.sanitized(checklist.routineSteps)
             : []
         self.scheduleMode = schedule.scheduleMode
-        self.checklistItems = (schedule.scheduleMode == .fixedInterval || schedule.scheduleMode == .softInterval || schedule.scheduleMode == .oneOff)
+        self.checklistItems = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff)
             ? []
             : RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
         self.attachments = basics.attachments
@@ -215,11 +215,11 @@ struct AddRoutineSaveRequest: Equatable {
             return .interval(days: 1)
         }
 
-        guard schedule.scheduleMode != .softInterval else {
+        guard !schedule.scheduleMode.isSoftIntervalRoutine else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
-        guard schedule.scheduleMode != .derivedFromChecklist else {
+        guard !schedule.scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
         }
 

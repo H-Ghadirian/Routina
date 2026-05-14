@@ -108,7 +108,7 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     var requiresChecklistItems: Bool {
-        schedule.scheduleMode == .fixedIntervalChecklist || schedule.scheduleMode == .derivedFromChecklist
+        schedule.scheduleMode.isRoutineModeRequiringChecklistItems
     }
 
     var candidateRecurrenceRule: RoutineRecurrenceRule {
@@ -121,11 +121,11 @@ struct AddRoutineFeatureState: Equatable {
             return .interval(days: 1)
         }
 
-        guard schedule.scheduleMode != .softInterval else {
+        guard !schedule.scheduleMode.isSoftIntervalRoutine else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
-        guard schedule.scheduleMode != .derivedFromChecklist else {
+        guard !schedule.scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
         }
 

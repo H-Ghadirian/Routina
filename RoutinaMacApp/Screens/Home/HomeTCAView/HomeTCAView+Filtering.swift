@@ -125,7 +125,7 @@ extension HomeTCAView {
         if task.isOneOffTask {
             return task.isCompletedOneOff ? .green : (task.isCanceledOneOff ? .orange : .blue)
         }
-        if task.scheduleMode == .fixedIntervalChecklist
+        if task.scheduleMode.isChecklistCompletionMode
             && task.completedChecklistItemCount > 0
             && !task.isDoneToday {
             return .orange

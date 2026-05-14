@@ -181,15 +181,24 @@ struct TaskFormIOSScheduleTypeSection: View {
     let presentation: TaskFormPresentation
 
     var body: some View {
-        Section(header: Text("Routine Style")) {
-            Picker("Routine Style", selection: model.scheduleMode) {
-                Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                Text("Soft").tag(RoutineScheduleMode.softInterval)
-                Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+        Section(header: Text("Routine Schedule")) {
+            Picker("Routine Schedule", selection: model.scheduleBehavior) {
+                ForEach(RoutineScheduleBehavior.allCases) { behavior in
+                    Text(behavior.rawValue).tag(behavior)
+                }
             }
             .pickerStyle(.segmented)
-            Text(presentation.scheduleModeDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.scheduleBehaviorDescription).font(.caption).foregroundStyle(.secondary)
+        }
+
+        Section(header: Text("Routine Type")) {
+            Picker("Routine Type", selection: model.routineFormat) {
+                ForEach(RoutineFormat.allCases) { format in
+                    Text(format.rawValue).tag(format)
+                }
+            }
+            .pickerStyle(.segmented)
+            Text(presentation.routineFormatDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -255,7 +264,7 @@ struct TaskFormIOSChecklistSection: View {
             VStack(alignment: .leading, spacing: 10) {
                 TextField("Bread", text: model.checklistItemDraftTitle)
                     .onSubmit { model.onAddChecklistItem() }
-                if model.scheduleMode.wrappedValue == .derivedFromChecklist {
+                if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                     Stepper(value: model.checklistItemDraftInterval, in: 1...365) {
                         Text(TaskFormPresentation.checklistIntervalLabel(for: model.checklistItemDraftInterval.wrappedValue))
                     }
@@ -272,7 +281,7 @@ struct TaskFormIOSChecklistSection: View {
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.title).frame(maxWidth: .infinity, alignment: .leading)
-                                if model.scheduleMode.wrappedValue == .derivedFromChecklist {
+                                if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                                     Text(TaskFormPresentation.checklistIntervalLabel(for: item.intervalDays))
                                         .font(.caption).foregroundStyle(.secondary)
                                 }
@@ -326,7 +335,7 @@ struct TaskFormIOSRepeatPatternSections: View {
     let presentation: TaskFormPresentation
 
     var body: some View {
-        if model.scheduleMode.wrappedValue == .softInterval {
+        if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
             softReminderSection
         } else {
             repeatPatternSection

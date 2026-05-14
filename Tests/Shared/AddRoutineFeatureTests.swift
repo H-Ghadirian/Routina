@@ -468,6 +468,48 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveTapped_forSoftChecklistPreservesChecklistItemsAndUsesSoftSchedule() async {
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let checklistItems = [
+            RoutineChecklistItem(title: "Whites", intervalDays: 3),
+            RoutineChecklistItem(title: "Colors", intervalDays: 5)
+        ]
+
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Laundry", routineEmoji: "🧺"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .softIntervalChecklist,
+                    frequency: .day,
+                    frequencyValue: 4
+                ),
+                checklist: AddRoutineChecklistState(
+                    routineSteps: [RoutineStep(title: "Sort clothes")],
+                    routineChecklistItems: checklistItems
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.scheduleMode == .softIntervalChecklist)
+        #expect(capturedRequest.value?.recurrenceRule == .interval(days: 4))
+        #expect(capturedRequest.value?.steps.isEmpty == true)
+        #expect(capturedRequest.value?.checklistItems.map(\.title) == ["Whites", "Colors"])
+    }
+
+    @Test
     func addTagTapped_parsesMultipleTagsAndDeduplicates() async {
         let store = TestStore(initialState: makeState()) {
             makeFeature()

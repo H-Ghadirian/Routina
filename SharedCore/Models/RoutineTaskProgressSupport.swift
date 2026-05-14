@@ -10,15 +10,15 @@ extension RoutineTask {
     }
 
     var isChecklistDriven: Bool {
-        scheduleMode == .derivedFromChecklist && hasChecklistItems
+        scheduleMode.isChecklistDrivenMode && hasChecklistItems
     }
 
     var isChecklistCompletionRoutine: Bool {
-        scheduleMode == .fixedIntervalChecklist && hasChecklistItems
+        scheduleMode.isChecklistCompletionMode && hasChecklistItems
     }
 
     var isSoftIntervalRoutine: Bool {
-        scheduleMode == .softInterval
+        scheduleMode.isSoftIntervalRoutine
     }
 
     var usesRollingScheduleAnchor: Bool {

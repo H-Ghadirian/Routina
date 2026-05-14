@@ -90,10 +90,10 @@ struct TaskDetailEditSaveRequestBuilder {
             tags: state.editRoutineTags,
             goals: state.editRoutineGoals,
             relationships: state.editRelationships,
-            steps: (scheduleMode == .fixedInterval || scheduleMode == .oneOff)
+            steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
                 ? state.editRoutineSteps
                 : [],
-            checklistItems: (scheduleMode == .fixedInterval || scheduleMode == .oneOff)
+            checklistItems: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
                 ? []
                 : state.editRoutineChecklistItems,
             scheduleMode: scheduleMode,
@@ -116,11 +116,11 @@ struct TaskDetailEditSaveRequestBuilder {
             return .interval(days: 1)
         }
 
-        guard scheduleMode != .softInterval else {
+        guard !scheduleMode.isSoftIntervalRoutine else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
-        guard scheduleMode != .derivedFromChecklist else {
+        guard !scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
@@ -173,7 +173,7 @@ struct TaskDetailEditSaveRequestBuilder {
     }
 
     private func scheduleModeRequiresChecklistItems(_ scheduleMode: RoutineScheduleMode) -> Bool {
-        scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
+        scheduleMode.isRoutineModeRequiringChecklistItems
     }
 
     private func effectiveScheduleMode(for state: TaskDetailFeature.State) -> RoutineScheduleMode {
@@ -182,6 +182,9 @@ struct TaskDetailEditSaveRequestBuilder {
               !state.task.checklistItems.isEmpty else {
             return state.editScheduleMode
         }
-        return .fixedInterval
+        return RoutineScheduleMode.routineMode(
+            behavior: state.editScheduleMode.scheduleBehavior,
+            format: .standard
+        )
     }
 }

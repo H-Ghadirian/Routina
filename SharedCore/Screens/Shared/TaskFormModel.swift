@@ -127,6 +127,36 @@ struct TaskFormModel {
 }
 
 extension TaskFormModel {
+    var scheduleBehavior: Binding<RoutineScheduleBehavior> {
+        let scheduleMode = scheduleMode
+        return Binding(
+            get: {
+                scheduleMode.wrappedValue.scheduleBehavior
+            },
+            set: { behavior in
+                scheduleMode.wrappedValue = RoutineScheduleMode.routineMode(
+                    behavior: behavior,
+                    format: scheduleMode.wrappedValue.routineFormat
+                )
+            }
+        )
+    }
+
+    var routineFormat: Binding<RoutineFormat> {
+        let scheduleMode = scheduleMode
+        return Binding(
+            get: {
+                scheduleMode.wrappedValue.routineFormat
+            },
+            set: { format in
+                scheduleMode.wrappedValue = RoutineScheduleMode.routineMode(
+                    behavior: scheduleMode.wrappedValue.scheduleBehavior,
+                    format: format
+                )
+            }
+        )
+    }
+
     var suggestedRelatedTags: [String] {
         RoutineTagRelations.relatedTags(
             for: routineTags,

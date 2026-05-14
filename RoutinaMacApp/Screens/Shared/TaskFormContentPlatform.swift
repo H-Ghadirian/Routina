@@ -404,7 +404,9 @@ struct TaskFormContent: View {
         case .fixedInterval: return "A repeating routine with one shared cadence."
         case .softInterval: return "A soft routine that stays visible and gently resurfaces after a while."
         case .fixedIntervalChecklist: return "A routine you complete by finishing every checklist item."
+        case .softIntervalChecklist: return "A soft routine you complete by finishing every checklist item."
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
+        case .softDerivedFromChecklist: return "A soft routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
         }
     }
@@ -415,7 +417,9 @@ struct TaskFormContent: View {
         case .fixedInterval: return "Fixed"
         case .softInterval: return "Soft"
         case .fixedIntervalChecklist: return "Checklist"
+        case .softIntervalChecklist: return "Soft Checklist"
         case .derivedFromChecklist: return "Runout"
+        case .softDerivedFromChecklist: return "Soft Runout"
         case .oneOff: return nil
         }
     }

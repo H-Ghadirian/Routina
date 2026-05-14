@@ -77,6 +77,6 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
 
 extension RoutineScheduleMode {
     var isTaskFormStepBased: Bool {
-        self == .fixedInterval || self == .softInterval || self == .oneOff
+        isStandardRoutineMode || self == .oneOff
     }
 }

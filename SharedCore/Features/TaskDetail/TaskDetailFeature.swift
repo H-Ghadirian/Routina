@@ -91,11 +91,11 @@ struct TaskDetailFeature: Reducer {
                 return .interval(days: 1)
             }
 
-            guard editScheduleMode != .softInterval else {
+            guard !editScheduleMode.isSoftIntervalRoutine else {
                 return .interval(days: max(fallbackInterval, 1))
             }
 
-            guard editScheduleMode != .derivedFromChecklist else {
+            guard !editScheduleMode.isChecklistDrivenMode else {
                 return .interval(days: max(fallbackInterval, 1))
             }
 

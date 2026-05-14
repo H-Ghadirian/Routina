@@ -439,7 +439,7 @@ extension TaskDetailFeature {
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
-                if scheduleMode != .softInterval {
+                if !scheduleMode.isSoftIntervalRoutine {
                     task.activityState = .idle
                     task.ongoingSince = nil
                 }

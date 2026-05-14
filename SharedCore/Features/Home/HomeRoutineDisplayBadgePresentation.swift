@@ -68,7 +68,7 @@ extension HomeRoutineDisplayMetadataPresenter {
         }
         let dueIn = filtering.dueInDays(for: task)
 
-        if task.scheduleMode == .derivedFromChecklist {
+        if task.scheduleMode.isChecklistDrivenMode {
             if dueIn < 0 {
                 return badge("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
             }
@@ -84,7 +84,7 @@ extension HomeRoutineDisplayMetadataPresenter {
             return badge("On Track", "circle.fill", .secondary, Color.secondary.opacity(0.12))
         }
 
-        if task.scheduleMode == .fixedIntervalChecklist
+        if task.scheduleMode.isChecklistCompletionMode
             && task.completedChecklistItemCount > 0
             && !task.isDoneToday {
             return badge(

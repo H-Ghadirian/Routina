@@ -4,12 +4,87 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     case fixedInterval
     case softInterval
     case fixedIntervalChecklist
+    case softIntervalChecklist
     case derivedFromChecklist
+    case softDerivedFromChecklist
     case oneOff
 
     var taskType: RoutineTaskType {
         self == .oneOff ? .todo : .routine
     }
+
+    var scheduleBehavior: RoutineScheduleBehavior {
+        switch self {
+        case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
+            return .soft
+        case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff:
+            return .fixed
+        }
+    }
+
+    var routineFormat: RoutineFormat {
+        switch self {
+        case .fixedInterval, .softInterval, .oneOff:
+            return .standard
+        case .fixedIntervalChecklist, .softIntervalChecklist:
+            return .checklist
+        case .derivedFromChecklist, .softDerivedFromChecklist:
+            return .runout
+        }
+    }
+
+    var isSoftIntervalRoutine: Bool {
+        scheduleBehavior == .soft
+    }
+
+    var isChecklistCompletionMode: Bool {
+        routineFormat == .checklist
+    }
+
+    var isChecklistDrivenMode: Bool {
+        routineFormat == .runout
+    }
+
+    var isStandardRoutineMode: Bool {
+        routineFormat == .standard
+    }
+
+    var isRoutineModeRequiringChecklistItems: Bool {
+        routineFormat == .checklist || routineFormat == .runout
+    }
+
+    var showsRoutineRepeatControls: Bool {
+        self != .oneOff && routineFormat != .runout
+    }
+
+    static func routineMode(
+        behavior: RoutineScheduleBehavior,
+        format: RoutineFormat
+    ) -> RoutineScheduleMode {
+        switch (behavior, format) {
+        case (.fixed, .standard): return .fixedInterval
+        case (.soft, .standard): return .softInterval
+        case (.fixed, .checklist): return .fixedIntervalChecklist
+        case (.soft, .checklist): return .softIntervalChecklist
+        case (.fixed, .runout): return .derivedFromChecklist
+        case (.soft, .runout): return .softDerivedFromChecklist
+        }
+    }
+}
+
+enum RoutineScheduleBehavior: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case fixed = "Fixed"
+    case soft = "Soft"
+
+    var id: String { rawValue }
+}
+
+enum RoutineFormat: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case standard = "Standard"
+    case checklist = "Checklist"
+    case runout = "Runout"
+
+    var id: String { rawValue }
 }
 
 enum RoutineActivityState: String, Codable, CaseIterable, Equatable, Hashable, Sendable {

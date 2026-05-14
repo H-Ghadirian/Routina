@@ -126,8 +126,7 @@ enum TaskDetailEditChangeDetector {
         let removesExistingChecklist = sanitizedCandidateChecklistItems.isEmpty
             && !currentChecklistItems.isEmpty
 
-        guard request.scheduleMode == .fixedInterval
-            || request.scheduleMode == .softInterval
+        guard request.scheduleMode.isStandardRoutineMode
             || request.scheduleMode == .oneOff
             || !sanitizedCandidateChecklistItems.isEmpty
             || removesExistingChecklist
@@ -251,7 +250,8 @@ enum TaskFormReminderLeadTime: Int, CaseIterable, Identifiable {
             return deadline
         }
 
-        guard scheduleMode == .fixedInterval,
+        guard scheduleMode.scheduleBehavior == .fixed,
+              !scheduleMode.isChecklistDrivenMode,
               let timeOfDay = recurrenceRule.timeRange?.start ?? recurrenceRule.timeOfDay else {
             return nil
         }

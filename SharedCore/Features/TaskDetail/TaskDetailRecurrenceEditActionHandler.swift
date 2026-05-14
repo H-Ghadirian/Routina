@@ -53,7 +53,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             if mode != .oneOff {
                 state.editDeadline = nil
             }
-            if mode == .softInterval {
+            if mode.isSoftIntervalRoutine {
                 state.editRecurrenceKind = .intervalDays
                 state.editRecurrenceHasExplicitTime = false
                 state.editRecurrenceHasTimeRange = false

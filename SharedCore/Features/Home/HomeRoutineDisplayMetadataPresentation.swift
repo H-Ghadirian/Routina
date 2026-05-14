@@ -107,11 +107,11 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         if task.isOneOffTask {
             return "One-off todo"
         }
+        if task.scheduleMode.isChecklistDrivenMode {
+            return "Checklist-driven"
+        }
         if task.isSoftIntervalRoutine {
             return "Once in a while"
-        }
-        if task.scheduleMode == .derivedFromChecklist {
-            return "Checklist-driven"
         }
         return task.recurrenceRule.displayText()
     }
@@ -135,17 +135,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             if elapsedDays == 1 { return "Completed yesterday" }
             return "Completed \(elapsedDays) days ago"
         }
-        if task.isSoftIntervalRoutine {
-            if task.isOngoing {
-                return ongoingDescription(for: task)
-            }
-            if task.isDoneToday {
-                return "Done today"
-            }
-            guard task.lastDone != nil else { return "Ready whenever" }
-            return softElapsedDescription(for: task)
-        }
-        if task.scheduleMode == .derivedFromChecklist {
+        if task.scheduleMode.isChecklistDrivenMode {
             if task.isDoneToday && filtering.overdueDays(for: task) == 0 {
                 return "Updated today"
             }
@@ -156,8 +146,18 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             if elapsedDays == 1 { return "Updated yesterday" }
             return "Updated \(elapsedDays) days ago"
         }
-        if task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0 {
+        if task.scheduleMode.isChecklistCompletionMode && task.completedChecklistItemCount > 0 {
             return "Checklist \(task.completedChecklistItemCount) of \(max(task.checklistItemCount, 1))"
+        }
+        if task.isSoftIntervalRoutine {
+            if task.isOngoing {
+                return ongoingDescription(for: task)
+            }
+            if task.isDoneToday {
+                return "Done today"
+            }
+            guard task.lastDone != nil else { return "Ready whenever" }
+            return softElapsedDescription(for: task)
         }
         if task.isAssumedDoneToday {
             return "Assumed today"
@@ -182,7 +182,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
     }
 
     func stepMetadataText(for task: Display) -> String? {
-        if task.scheduleMode == .derivedFromChecklist {
+        if task.scheduleMode.isChecklistDrivenMode {
             if let nextDueChecklistItemTitle = task.nextDueChecklistItemTitle {
                 if task.dueChecklistItemCount > 1 {
                     return "Due: \(nextDueChecklistItemTitle) +\(task.dueChecklistItemCount - 1)"
@@ -192,7 +192,7 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             let totalItems = task.checklistItemCount
             return totalItems == 0 ? nil : "\(totalItems) \(totalItems == 1 ? "item" : "items")"
         }
-        if task.scheduleMode == .fixedIntervalChecklist {
+        if task.scheduleMode.isChecklistCompletionMode {
             if let nextPendingChecklistItemTitle = task.nextPendingChecklistItemTitle,
                task.completedChecklistItemCount < task.checklistItemCount {
                 return "Next: \(nextPendingChecklistItemTitle)"

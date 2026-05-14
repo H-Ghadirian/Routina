@@ -4,6 +4,8 @@ struct TaskDetailGoalsHeaderBoxView: View {
     let goals: [RoutineGoalSummary]
 
     var body: some View {
+        let tint = goals.first?.color.swiftUIColor ?? Color.accentColor
+
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("GOALS")
@@ -24,7 +26,18 @@ struct TaskDetailGoalsHeaderBoxView: View {
                 }
             }
         }
-        .detailHeaderBoxStyle(tint: goals.first?.color.swiftUIColor ?? .accentColor)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(tint.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(tint.opacity(0.24), lineWidth: 1)
+        )
     }
 }
 

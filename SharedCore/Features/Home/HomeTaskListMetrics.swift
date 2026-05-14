@@ -35,8 +35,8 @@ struct HomeTaskListMetrics<Display: HomeTaskListDisplay> {
             return false
         }
         if task.isInProgress
-            || task.scheduleMode == .derivedFromChecklist
-            || (task.scheduleMode == .fixedIntervalChecklist && task.completedChecklistItemCount > 0) {
+            || task.scheduleMode.isChecklistDrivenMode
+            || (task.scheduleMode.isChecklistCompletionMode && task.completedChecklistItemCount > 0) {
             return false
         }
         if task.recurrenceRule.isFixedCalendar {

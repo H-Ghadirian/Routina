@@ -43,6 +43,21 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineScheduleMode_composesScheduleBehaviorAndFormat() {
+        #expect(RoutineScheduleMode.routineMode(behavior: .fixed, format: .standard) == .fixedInterval)
+        #expect(RoutineScheduleMode.routineMode(behavior: .soft, format: .standard) == .softInterval)
+        #expect(RoutineScheduleMode.routineMode(behavior: .fixed, format: .checklist) == .fixedIntervalChecklist)
+        #expect(RoutineScheduleMode.routineMode(behavior: .soft, format: .checklist) == .softIntervalChecklist)
+        #expect(RoutineScheduleMode.routineMode(behavior: .fixed, format: .runout) == .derivedFromChecklist)
+        #expect(RoutineScheduleMode.routineMode(behavior: .soft, format: .runout) == .softDerivedFromChecklist)
+
+        #expect(RoutineScheduleMode.softIntervalChecklist.scheduleBehavior == .soft)
+        #expect(RoutineScheduleMode.softIntervalChecklist.routineFormat == .checklist)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.scheduleBehavior == .soft)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFormat == .runout)
+    }
+
+    @Test
     func routineTask_tagsAreSanitizedAndDeduplicated() {
         let task = RoutineTask(tags: [" Health ", "health", "deep work", ""])
         #expect(task.tags == ["Health", "deep work"])

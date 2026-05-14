@@ -41,11 +41,11 @@ struct TaskFormPresentation {
     let canAutoAssumeDailyDone: Bool
 
     var isStepBasedMode: Bool {
-        scheduleMode == .fixedInterval || scheduleMode == .softInterval || scheduleMode == .oneOff
+        scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff
     }
 
     var showsRepeatControls: Bool {
-        scheduleMode != .derivedFromChecklist && scheduleMode != .oneOff
+        scheduleMode.showsRoutineRepeatControls
     }
 
     var derivedPriority: RoutineTaskPriority {
@@ -116,8 +116,25 @@ struct TaskFormPresentation {
         case .fixedInterval: return "One scheduled routine. Mark it done once, or advance its steps."
         case .softInterval: return "Always visible. Highlight it again after enough time has passed."
         case .fixedIntervalChecklist: return "One scheduled routine that finishes after every checklist item is done."
+        case .softIntervalChecklist: return "Always visible. Finish it by completing every checklist item."
         case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
+        case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
         case .oneOff: return "This task does not repeat."
+        }
+    }
+
+    var scheduleBehaviorDescription: String {
+        switch scheduleMode.scheduleBehavior {
+        case .fixed: return "Uses the selected schedule and can become due or overdue."
+        case .soft: return "Stays visible and gently resurfaces after enough time has passed."
+        }
+    }
+
+    var routineFormatDescription: String {
+        switch scheduleMode.routineFormat {
+        case .standard: return "Mark it done once, or advance its steps."
+        case .checklist: return "The routine is done when every checklist item is completed."
+        case .runout: return "Checklist items have their own timing; the earliest due item drives the routine."
         }
     }
 
@@ -129,9 +146,9 @@ struct TaskFormPresentation {
 
     func checklistSectionDescription(includesDerivedChecklistDueDetail: Bool) -> String {
         switch scheduleMode {
-        case .fixedIntervalChecklist:
+        case .fixedIntervalChecklist, .softIntervalChecklist:
             return "The routine is done when every checklist item is completed."
-        case .derivedFromChecklist:
+        case .derivedFromChecklist, .softDerivedFromChecklist:
             return includesDerivedChecklistDueDetail
                 ? "Each item gets its own due date. The routine becomes due when the earliest item is due."
                 : "The routine becomes due when the earliest checklist item is due."

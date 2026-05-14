@@ -188,13 +188,26 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     @ViewBuilder
     private var routineScheduleControls: some View {
         if model.taskType.wrappedValue == .routine {
-            TaskFormMacControlBlock(title: "Routine style", caption: presentation.scheduleModeDescription) {
+            TaskFormMacControlBlock(title: "Routine schedule", caption: presentation.scheduleBehaviorDescription) {
                 HStack(spacing: 0) {
-                    Picker("Routine Style", selection: model.scheduleMode) {
-                        Text("Fixed").tag(RoutineScheduleMode.fixedInterval)
-                        Text("Soft").tag(RoutineScheduleMode.softInterval)
-                        Text("Checklist").tag(RoutineScheduleMode.fixedIntervalChecklist)
-                        Text("Runout").tag(RoutineScheduleMode.derivedFromChecklist)
+                    Picker("Routine Schedule", selection: model.scheduleBehavior) {
+                        ForEach(RoutineScheduleBehavior.allCases) { behavior in
+                            Text(behavior.rawValue).tag(behavior)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                    Spacer(minLength: 0)
+                }
+            }
+
+            TaskFormMacControlBlock(title: "Routine type", caption: presentation.routineFormatDescription) {
+                HStack(spacing: 0) {
+                    Picker("Routine Type", selection: model.routineFormat) {
+                        ForEach(RoutineFormat.allCases) { format in
+                            Text(format.rawValue).tag(format)
+                        }
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
@@ -217,7 +230,7 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     @ViewBuilder
     private var repeatControls: some View {
         if presentation.showsRepeatControls {
-            if model.scheduleMode.wrappedValue == .softInterval {
+            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
                 softReminderControl
             } else {
                 repeatPatternControls

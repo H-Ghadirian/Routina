@@ -29,7 +29,7 @@ extension AddRoutineTCAView {
         AddRoutineChecklistItemComposerView(
             titleDraft: checklistItemDraftTitleBinding,
             intervalDays: checklistItemDraftIntervalBinding,
-            showsInterval: store.schedule.scheduleMode == .derivedFromChecklist,
+            showsInterval: store.schedule.scheduleMode.isChecklistDrivenMode,
             intervalLabel: checklistIntervalLabel(for:),
             isAddDisabled: isAddChecklistItemDisabled,
             onAddItem: { store.send(.addChecklistItemTapped) }
@@ -68,7 +68,7 @@ extension AddRoutineTCAView {
     var editableChecklistItemsContent: some View {
         AddRoutineChecklistItemsView(
             items: store.checklist.routineChecklistItems,
-            showsInterval: store.schedule.scheduleMode == .derivedFromChecklist,
+            showsInterval: store.schedule.scheduleMode.isChecklistDrivenMode,
             intervalLabel: checklistIntervalLabel(for:),
             onRemoveItem: { store.send(.removeChecklistItem($0)) }
         )

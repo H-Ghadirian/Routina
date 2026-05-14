@@ -85,7 +85,7 @@ func makeDisplay(
         recurrenceRule: resolvedRecurrenceRule,
         scheduleMode: scheduleMode,
         createdAt: createdAt,
-        isSoftIntervalRoutine: scheduleMode == .softInterval,
+        isSoftIntervalRoutine: scheduleMode.isSoftIntervalRoutine,
         lastDone: lastDone,
         canceledAt: canceledAt,
         dueDate: dueDate,

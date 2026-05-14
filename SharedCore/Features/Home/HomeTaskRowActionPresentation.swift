@@ -7,7 +7,7 @@ protocol HomeTaskRowDisplay: HomeTaskListDisplay {
 
 enum HomeTaskRowCompletionPresentation {
     static func markDoneLabel<Display: HomeTaskRowDisplay>(for task: Display) -> String {
-        if task.scheduleMode == .derivedFromChecklist {
+        if task.scheduleMode.isChecklistDrivenMode {
             if task.dueChecklistItemCount == 0 {
                 return "No Due Items"
             }
@@ -16,7 +16,7 @@ enum HomeTaskRowCompletionPresentation {
             }
             return "Buy Due Items"
         }
-        if task.scheduleMode == .fixedIntervalChecklist {
+        if task.scheduleMode.isChecklistCompletionMode {
             return "Checklist"
         }
         return task.steps.isEmpty ? "Mark Done" : "Complete Next Step"
@@ -29,10 +29,10 @@ enum HomeTaskRowCompletionPresentation {
         if task.isOneOffTask {
             return task.isCompletedOneOff || task.isCanceledOneOff || task.isPaused
         }
-        if task.scheduleMode == .derivedFromChecklist {
+        if task.scheduleMode.isChecklistDrivenMode {
             return task.isPaused || task.dueChecklistItemCount == 0
         }
-        if task.scheduleMode == .fixedIntervalChecklist {
+        if task.scheduleMode.isChecklistCompletionMode {
             return true
         }
         if task.hasMissedExactTimedOccurrence {

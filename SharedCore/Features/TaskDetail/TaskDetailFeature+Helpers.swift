@@ -28,11 +28,11 @@ extension TaskDetailFeature {
             return .interval(days: 1)
         }
 
-        guard state.editScheduleMode != .softInterval else {
+        guard !state.editScheduleMode.isSoftIntervalRoutine else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
-        guard state.editScheduleMode != .derivedFromChecklist else {
+        guard !state.editScheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
@@ -142,7 +142,7 @@ extension TaskDetailFeature {
     }
 
     func scheduleModeRequiresChecklistItems(_ scheduleMode: RoutineScheduleMode) -> Bool {
-        scheduleMode == .fixedIntervalChecklist || scheduleMode == .derivedFromChecklist
+        scheduleMode.isRoutineModeRequiringChecklistItems
     }
 
     func hasDuplicateRoutineName(

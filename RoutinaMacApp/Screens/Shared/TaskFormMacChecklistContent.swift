@@ -9,7 +9,7 @@ struct TaskFormMacChecklistComposer: View {
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { model.onAddChecklistItem() }
 
-            if model.scheduleMode.wrappedValue == .derivedFromChecklist {
+            if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                 Stepper(value: model.checklistItemDraftInterval, in: 1...365) {
                     Text(TaskFormPresentation.checklistIntervalLabel(for: model.checklistItemDraftInterval.wrappedValue))
                 }
@@ -37,7 +37,7 @@ struct TaskFormMacChecklistItemsContent: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.title)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            if model.scheduleMode.wrappedValue == .derivedFromChecklist {
+                            if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                                 Text(TaskFormPresentation.checklistIntervalLabel(for: item.intervalDays))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
