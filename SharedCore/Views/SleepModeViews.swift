@@ -170,6 +170,9 @@ private struct SleepModeRootModifier: ViewModifier {
             }
         }
         .animation(.easeInOut(duration: 0.22), value: activeSleepSession?.id)
+        #if os(macOS)
+        .toolbarVisibility(activeSleepSession == nil ? .automatic : .hidden, for: .windowToolbar)
+        #endif
         #if os(iOS)
         .background {
             if isShakeToStartSleepEnabled, activeSleepSession == nil {
