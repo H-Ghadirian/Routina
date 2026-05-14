@@ -18,6 +18,18 @@ enum SettingsRoutineDataTransferActionExecution {
         )
     }
 
+    static func beginExport(
+        to destinationURL: URL,
+        state: inout SettingsDataTransferState,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        guard SettingsRoutineDataTransferEditor.begin(.export, state: &state) else {
+            return .none
+        }
+
+        return exportData(to: destinationURL, modelContext: modelContext)
+    }
+
     static func beginImport(
         state: inout SettingsDataTransferState,
         routineDataTransferClient: RoutineDataTransferClient,
@@ -55,6 +67,34 @@ enum SettingsRoutineDataTransferActionExecution {
                     )
                     return
                 }
+
+                await send(
+                    .routineDataTransferFinished(
+                        success: true,
+                        message: "Saved to \(result.destinationFileName)."
+                    )
+                )
+            } catch {
+                await send(
+                    .routineDataTransferFinished(
+                        success: false,
+                        message: "Save failed: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    static func exportData(
+        to destinationURL: URL,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        .run { @MainActor send in
+            do {
+                let result = try await SettingsRoutineDataTransferExecution.exportData(
+                    to: destinationURL,
+                    modelContext: modelContext
+                )
 
                 await send(
                     .routineDataTransferFinished(

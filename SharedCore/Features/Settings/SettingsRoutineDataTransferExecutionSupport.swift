@@ -22,6 +22,17 @@ enum SettingsRoutineDataTransferExecution {
             return nil
         }
 
+        return try await exportData(
+            to: destinationURL,
+            modelContext: modelContext
+        )
+    }
+
+    @MainActor
+    static func exportData(
+        to destinationURL: URL,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) async throws -> SettingsRoutineDataTransferExportResult {
         let context = modelContext()
         if context.hasChanges {
             try context.save()

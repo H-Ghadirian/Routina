@@ -26,15 +26,8 @@ extension PlatformSupport {
 
     @MainActor
     static func selectRoutineDataExportURL(suggestedFileName: String) async -> URL? {
-        let panel = NSSavePanel()
-        panel.title = "Save Routine Data"
-        panel.prompt = "Save"
-        panel.nameFieldStringValue = suggestedFileName
-        panel.canCreateDirectories = true
-        panel.allowedContentTypes = [.routinaBackupPackage, .json]
-        panel.isExtensionHidden = false
-
-        return await presentDataTransferPanel(panel)
+        _ = suggestedFileName
+        return nil
     }
 
     @MainActor

@@ -1,5 +1,6 @@
 import SwiftUI
 import ComposableArchitecture
+import UniformTypeIdentifiers
 
 struct SettingsMacCloudDetailView: View {
     let store: StoreOf<SettingsFeature>
@@ -68,6 +69,8 @@ SettingsMacDetailShell(
 struct SettingsMacBackupDetailView: View {
     let store: StoreOf<SettingsFeature>
 
+    @State private var isBackupExporterPresented = false
+
     var body: some View {
 SettingsMacDetailShell(
     title: "Data Backup",
@@ -76,7 +79,7 @@ SettingsMacDetailShell(
     SettingsMacDetailCard(title: "Routine Data") {
         HStack(spacing: 10) {
             Button {
-                store.send(.exportRoutineDataTapped)
+                isBackupExporterPresented = true
             } label: {
                 Label("Save Backup", systemImage: "square.and.arrow.down")
             }
@@ -102,6 +105,42 @@ SettingsMacDetailShell(
             .foregroundStyle(.secondary)
     }
 }
+    .fileExporter(
+        isPresented: $isBackupExporterPresented,
+        document: RoutineBackupExportPlaceholderDocument(),
+        contentType: .routinaBackupPackage,
+        defaultFilename: SettingsRoutineDataPersistence.defaultBackupFileName()
+    ) { result in
+        switch result {
+        case let .success(destinationURL):
+            store.send(.exportRoutineDataDestinationSelected(destinationURL))
+
+        case let .failure(error):
+            store.send(.routineDataTransferFinished(
+                success: false,
+                message: "Save failed: \(error.localizedDescription)"
+            ))
+        }
+    }
+    }
+}
+
+private struct RoutineBackupExportPlaceholderDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.routinaBackupPackage] }
+    static var writableContentTypes: [UTType] { [.routinaBackupPackage] }
+
+    init() {}
+
+    init(configuration: ReadConfiguration) throws {}
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(directoryWithFileWrappers: [:])
+    }
+}
+
+private extension UTType {
+    static var routinaBackupPackage: UTType {
+        UTType(filenameExtension: SettingsRoutineDataPersistence.backupPackageExtension) ?? .package
     }
 }
 

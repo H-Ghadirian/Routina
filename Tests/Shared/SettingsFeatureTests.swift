@@ -1028,6 +1028,49 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func exportRoutineDataDestinationSelected_writesSelectedBackupPackage() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Backup me", tags: ["Safe"])
+        context.insert(task)
+        try context.save()
+
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.exportRoutineDataDestinationSelected(packageURL)) {
+            $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
+        }
+
+        await store.receive(.routineDataTransferFinished(success: true, message: "Saved to \(packageURL.lastPathComponent).")) {
+            $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.dataTransferStatusMessage = "Saved to \(packageURL.lastPathComponent)."
+        }
+
+        var isDirectory: ObjCBool = false
+        #expect(FileManager.default.fileExists(atPath: packageURL.path, isDirectory: &isDirectory))
+        #expect(isDirectory.boolValue)
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            withBackupPackageAt: packageURL,
+            in: restoreContext
+        )
+        let restoredTask = try #require(restoreContext.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(summary.tasks == 1)
+        #expect(restoredTask.id == task.id)
+        #expect(restoredTask.tags == ["Safe"])
+    }
+
+    @Test
     func importRoutineDataTapped_cancelledSelectionFinishesGracefully() async {
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()

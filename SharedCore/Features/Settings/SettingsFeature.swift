@@ -79,6 +79,7 @@ struct SettingsFeature {
         case placeOperationFinished(success: Bool, message: String)
         case tagOperationFinished(success: Bool, message: String)
         case exportRoutineDataTapped
+        case exportRoutineDataDestinationSelected(URL)
         case importRoutineDataTapped
         case appIconSelected(AppIconOption)
         case resetTemporaryViewStateTapped
@@ -620,6 +621,13 @@ struct SettingsFeature {
                 return SettingsRoutineDataTransferActionExecution.beginExport(
                     state: &state.dataTransfer,
                     routineDataTransferClient: self.routineDataTransferClient,
+                    modelContext: self.modelContext
+                )
+
+            case let .exportRoutineDataDestinationSelected(destinationURL):
+                return SettingsRoutineDataTransferActionExecution.beginExport(
+                    to: destinationURL,
+                    state: &state.dataTransfer,
                     modelContext: self.modelContext
                 )
 
