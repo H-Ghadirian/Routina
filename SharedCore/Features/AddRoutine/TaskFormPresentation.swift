@@ -124,10 +124,7 @@ struct TaskFormPresentation {
     }
 
     var scheduleBehaviorDescription: String {
-        switch scheduleMode.scheduleBehavior {
-        case .fixed: return "Uses the selected schedule and can become due or overdue."
-        case .soft: return "Stays visible and gently resurfaces after enough time has passed."
-        }
+        scheduleMode.scheduleBehavior.explanation
     }
 
     var routineFormatDescription: String {

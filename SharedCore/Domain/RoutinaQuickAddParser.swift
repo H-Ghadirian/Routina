@@ -39,7 +39,7 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
             guard let deadline else { return "Todo" }
             return "Todo due \(deadline.formatted(date: .abbreviated, time: .shortened))"
         case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
-            return "Soft routine · \(recurrenceRule.displayText())"
+            return "Gentle routine · \(recurrenceRule.displayText())"
         case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist:
             return "Routine · \(recurrenceRule.displayText())"
         }

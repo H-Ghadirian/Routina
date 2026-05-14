@@ -72,6 +72,19 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func parseGentleRoutineFromSoftSyntax() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Clean desk every 2 days softly",
+            referenceDate: makeDate("2026-04-23T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        #expect(draft.name == "Clean desk")
+        #expect(draft.scheduleMode == .softInterval)
+        #expect(draft.summaryText == "Gentle routine · Every 2 days")
+    }
+
+    @Test
     func createTaskUsesSharedSavePath() async throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Balcony")

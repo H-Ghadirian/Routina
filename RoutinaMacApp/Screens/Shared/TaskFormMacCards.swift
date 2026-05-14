@@ -62,6 +62,54 @@ struct TaskFormMacInfoPill: View {
     }
 }
 
+private struct TaskFormMacScheduleBehaviorHint: View {
+    let behavior: RoutineScheduleBehavior
+    let description: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ForEach(behavior.rowPreviewBadges) { badge in
+                    TaskFormMacScheduleBehaviorPreviewBadge(badge: badge)
+                }
+            }
+
+            Text(description)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct TaskFormMacScheduleBehaviorPreviewBadge: View {
+    let badge: RoutineScheduleBehaviorPreviewBadge
+
+    var body: some View {
+        Label(badge.title, systemImage: badge.systemImage)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: tint, tintOpacity: tintOpacity)
+    }
+
+    private var tint: Color {
+        switch badge.style {
+        case .due: return .orange
+        case .overdue: return .red
+        case .ready: return .secondary
+        case .gentle: return .teal
+        }
+    }
+
+    private var tintOpacity: Double {
+        switch badge.style {
+        case .ready: return 0.10
+        default: return 0.14
+        }
+    }
+}
+
 struct TaskFormMacIdentityCard<NameField: View>: View {
     let model: TaskFormModel
     let previewScheduleModeTitle: String?
@@ -188,17 +236,24 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     @ViewBuilder
     private var routineScheduleControls: some View {
         if model.taskType.wrappedValue == .routine {
-            TaskFormMacControlBlock(title: "Routine schedule", caption: presentation.scheduleBehaviorDescription) {
-                HStack(spacing: 0) {
-                    Picker("Routine Schedule", selection: model.scheduleBehavior) {
-                        ForEach(RoutineScheduleBehavior.allCases) { behavior in
-                            Text(behavior.rawValue).tag(behavior)
+            TaskFormMacControlBlock(title: "Schedule behavior") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 0) {
+                        Picker("Schedule Behavior", selection: model.scheduleBehavior) {
+                            ForEach(RoutineScheduleBehavior.allCases) { behavior in
+                                Text(behavior.rawValue).tag(behavior)
+                            }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .fixedSize()
+                        Spacer(minLength: 0)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .fixedSize()
-                    Spacer(minLength: 0)
+
+                    TaskFormMacScheduleBehaviorHint(
+                        behavior: model.scheduleBehavior.wrappedValue,
+                        description: presentation.scheduleBehaviorDescription
+                    )
                 }
             }
 
@@ -240,11 +295,11 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
     }
 
     private var softReminderControl: some View {
-        TaskFormMacControlBlock(title: "Soft reminder") {
+        TaskFormMacControlBlock(title: "Gentle reminder") {
             VStack(alignment: .leading, spacing: 12) {
                 frequencyStepper(prefix: "Highlight again after")
 
-                Text("This routine stays visible and never becomes overdue. The app will just give it a softer nudge after this much time has passed.")
+                Text("This routine stays visible and never becomes overdue. Routina will gently nudge it again after this much time has passed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

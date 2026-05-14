@@ -137,7 +137,7 @@ private struct TaskDetailCalendarSectionLegendView: View {
                 TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.overdue, label: "Overdue")
             }
             if showsSoftDueLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.due, label: "Soft due")
+                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.due, label: "Gentle nudge")
             }
             if showsPausedLegend {
                 TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.paused, label: "Paused")

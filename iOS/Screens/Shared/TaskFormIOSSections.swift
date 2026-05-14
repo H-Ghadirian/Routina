@@ -181,14 +181,17 @@ struct TaskFormIOSScheduleTypeSection: View {
     let presentation: TaskFormPresentation
 
     var body: some View {
-        Section(header: Text("Routine Schedule")) {
-            Picker("Routine Schedule", selection: model.scheduleBehavior) {
+        Section(header: Text("Schedule Behavior")) {
+            Picker("Schedule Behavior", selection: model.scheduleBehavior) {
                 ForEach(RoutineScheduleBehavior.allCases) { behavior in
                     Text(behavior.rawValue).tag(behavior)
                 }
             }
             .pickerStyle(.segmented)
-            Text(presentation.scheduleBehaviorDescription).font(.caption).foregroundStyle(.secondary)
+            TaskFormIOSScheduleBehaviorHint(
+                behavior: model.scheduleBehavior.wrappedValue,
+                description: presentation.scheduleBehaviorDescription
+            )
         }
 
         Section(header: Text("Routine Type")) {
@@ -199,6 +202,55 @@ struct TaskFormIOSScheduleTypeSection: View {
             }
             .pickerStyle(.segmented)
             Text(presentation.routineFormatDescription).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct TaskFormIOSScheduleBehaviorHint: View {
+    let behavior: RoutineScheduleBehavior
+    let description: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ForEach(behavior.rowPreviewBadges) { badge in
+                    TaskFormIOSScheduleBehaviorPreviewBadge(badge: badge)
+                }
+            }
+
+            Text(description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+private struct TaskFormIOSScheduleBehaviorPreviewBadge: View {
+    let badge: RoutineScheduleBehaviorPreviewBadge
+
+    var body: some View {
+        Label(badge.title, systemImage: badge.systemImage)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: tint, tintOpacity: tintOpacity)
+    }
+
+    private var tint: Color {
+        switch badge.style {
+        case .due: return .orange
+        case .overdue: return .red
+        case .ready: return .secondary
+        case .gentle: return .teal
+        }
+    }
+
+    private var tintOpacity: Double {
+        switch badge.style {
+        case .ready: return 0.10
+        default: return 0.14
         }
     }
 }
@@ -348,14 +400,14 @@ struct TaskFormIOSRepeatPatternSections: View {
     }
 
     private var softReminderSection: some View {
-        Section(header: Text("Soft Reminder")) {
+        Section(header: Text("Gentle Reminder")) {
             frequencyUnitPicker
 
             Stepper(value: model.frequencyValue, in: 1...365) {
                 Text("Highlight again after \(TaskFormPresentation.stepperLabel(unit: model.frequencyUnit.wrappedValue, value: model.frequencyValue.wrappedValue).lowercased())")
             }
 
-            Text("This routine stays visible and never becomes overdue. The app will just give it a softer nudge after this much time has passed.")
+            Text("This routine stays visible and never becomes overdue. Routina will gently nudge it again after this much time has passed.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

@@ -73,10 +73,49 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
 }
 
 enum RoutineScheduleBehavior: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
-    case fixed = "Fixed"
-    case soft = "Soft"
+    case fixed = "Due"
+    case soft = "Gentle"
 
     var id: String { rawValue }
+
+    var explanation: String {
+        switch self {
+        case .fixed:
+            return "Due means this can become due or overdue."
+        case .soft:
+            return "Gentle keeps it visible and nudges you without overdue pressure."
+        }
+    }
+
+    var rowPreviewBadges: [RoutineScheduleBehaviorPreviewBadge] {
+        switch self {
+        case .fixed:
+            return [
+                RoutineScheduleBehaviorPreviewBadge(title: "Today", systemImage: "clock.fill", style: .due),
+                RoutineScheduleBehaviorPreviewBadge(title: "Overdue 2d", systemImage: "exclamationmark.circle.fill", style: .overdue)
+            ]
+        case .soft:
+            return [
+                RoutineScheduleBehaviorPreviewBadge(title: "Ready", systemImage: "sparkles", style: .ready),
+                RoutineScheduleBehaviorPreviewBadge(title: "Gentle nudge", systemImage: "clock.arrow.circlepath", style: .gentle)
+            ]
+        }
+    }
+}
+
+struct RoutineScheduleBehaviorPreviewBadge: Equatable, Hashable, Identifiable, Sendable {
+    var title: String
+    var systemImage: String
+    var style: RoutineScheduleBehaviorPreviewBadgeStyle
+
+    var id: String { "\(style.rawValue)-\(title)" }
+}
+
+enum RoutineScheduleBehaviorPreviewBadgeStyle: String, Equatable, Hashable, Sendable {
+    case due
+    case overdue
+    case ready
+    case gentle
 }
 
 enum RoutineFormat: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {

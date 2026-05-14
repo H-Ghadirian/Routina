@@ -213,7 +213,7 @@ enum SettingsQuickAddSyntaxGuide {
         ),
         SettingsQuickAddExample(
             phrase: "Clean desk every 2 days softly @Home",
-            result: "Creates a soft routine every 2 days and links it to Home."
+            result: "Creates a Gentle routine every 2 days and links it to Home."
         ),
         SettingsQuickAddExample(
             phrase: "Pay rent monthly on 1st at 8am #finance",
@@ -262,7 +262,7 @@ enum SettingsQuickAddSyntaxGuide {
                 SettingsQuickAddSyntaxItem(syntax: "!urgent", detail: "Sets urgent priority."),
                 SettingsQuickAddSyntaxItem(syntax: "!high / !medium / !low", detail: "Sets priority."),
                 SettingsQuickAddSyntaxItem(syntax: "25m / 45 min / 1h", detail: "Adds an estimated focus duration."),
-                SettingsQuickAddSyntaxItem(syntax: "soft / softly", detail: "Creates a soft routine when used with recurrence.")
+                SettingsQuickAddSyntaxItem(syntax: "soft / softly", detail: "Creates a Gentle routine when used with recurrence.")
             ]
         )
     ]

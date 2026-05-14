@@ -55,6 +55,11 @@ struct SwiftDataModelTests {
         #expect(RoutineScheduleMode.softIntervalChecklist.routineFormat == .checklist)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.scheduleBehavior == .soft)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFormat == .runout)
+
+        #expect(RoutineScheduleBehavior.fixed.rawValue == "Due")
+        #expect(RoutineScheduleBehavior.soft.rawValue == "Gentle")
+        #expect(RoutineScheduleBehavior.fixed.rowPreviewBadges.map(\.title) == ["Today", "Overdue 2d"])
+        #expect(RoutineScheduleBehavior.soft.rowPreviewBadges.map(\.title) == ["Ready", "Gentle nudge"])
     }
 
     @Test

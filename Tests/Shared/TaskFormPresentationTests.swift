@@ -12,12 +12,15 @@ struct TaskFormPresentationTests {
     @Test
     func scheduleAndDescriptionCopyMatchTaskFormModes() {
         let fixed = presentation(scheduleMode: .fixedIntervalChecklist)
+        let gentle = presentation(scheduleMode: .softInterval)
         let oneOff = presentation(taskType: .todo, scheduleMode: .oneOff)
 
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
         #expect(fixed.scheduleModeDescription == "One scheduled routine that finishes after every checklist item is done.")
+        #expect(fixed.scheduleBehaviorDescription == "Due means this can become due or overdue.")
         #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The routine is done when every checklist item is completed.")
+        #expect(gentle.scheduleBehaviorDescription == "Gentle keeps it visible and nudges you without overdue pressure.")
 
         #expect(oneOff.isStepBasedMode)
         #expect(oneOff.showsRepeatControls == false)
