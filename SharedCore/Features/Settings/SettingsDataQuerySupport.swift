@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 
 enum SettingsDataQueries {
@@ -39,11 +40,16 @@ enum SettingsDataQueries {
         return tasks.map(\.tags)
     }
 
-    static func hasDuplicatePlaceName(_ name: String, in context: ModelContext) throws -> Bool {
+    static func hasDuplicatePlaceName(
+        _ name: String,
+        excluding ignoredPlaceID: UUID? = nil,
+        in context: ModelContext
+    ) throws -> Bool {
         guard let normalizedName = RoutinePlace.normalizedName(name) else { return false }
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         return places.contains { place in
-            RoutinePlace.normalizedName(place.name) == normalizedName
+            place.id != ignoredPlaceID
+                && RoutinePlace.normalizedName(place.name) == normalizedName
         }
     }
 }

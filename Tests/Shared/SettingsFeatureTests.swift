@@ -519,6 +519,66 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func updatePlace_updatesSavedPlaceAndActiveSessionSnapshot() throws {
+        let context = makeInMemoryContext()
+        let place = makePlace(in: context, name: "Home", latitude: 48.10, longitude: 11.50, radiusMeters: 75)
+        let session = try PlaceCheckInSupport.checkIn(at: place, in: context)
+        let coordinate = LocationCoordinate(latitude: 48.12, longitude: 11.52)
+
+        let result = try SettingsPlacePersistence.update(
+            SettingsPlaceUpdateRequest(
+                placeID: place.id,
+                cleanedName: "Studio",
+                coordinate: coordinate,
+                radiusMeters: 225
+            ),
+            in: context
+        )
+
+        #expect(place.displayName == "Studio")
+        #expect(place.latitude == coordinate.latitude)
+        #expect(place.longitude == coordinate.longitude)
+        #expect(place.radiusMeters == 225)
+        #expect(session.displayPlaceName == "Studio")
+        #expect(session.latitude == coordinate.latitude)
+        #expect(session.longitude == coordinate.longitude)
+        #expect(session.placeRadiusMeters == 225)
+        #expect(result.placeSummaries.map(\.name) == ["Studio"])
+    }
+
+    @Test
+    func updatePlace_rejectsDuplicateNameExceptCurrentPlace() throws {
+        let context = makeInMemoryContext()
+        let home = makePlace(in: context, name: "Home")
+        _ = makePlace(in: context, name: "Office")
+
+        _ = try SettingsPlacePersistence.update(
+            SettingsPlaceUpdateRequest(
+                placeID: home.id,
+                cleanedName: "Home",
+                coordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
+                radiusMeters: 150
+            ),
+            in: context
+        )
+
+        do {
+            _ = try SettingsPlacePersistence.update(
+                SettingsPlaceUpdateRequest(
+                    placeID: home.id,
+                    cleanedName: "office",
+                    coordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
+                    radiusMeters: 150
+                ),
+                in: context
+            )
+            Issue.record("Expected duplicateName error")
+        } catch let error as SettingsPlacePersistenceError {
+            #expect(error == .duplicateName)
+        }
+    }
+
+    @Test
     func deletePlaceTapped_clearsRoutineLinks() async throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Home")

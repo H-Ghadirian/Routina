@@ -58,6 +58,8 @@ struct PlaceCheckInMapSheet: View {
     @State private var errorText: String?
     @State private var editingSessionDraft: PlaceCheckInSessionEditDraft?
     @State private var deletionCandidate: PlaceCheckInSessionDeletionCandidate?
+    @State private var editingPlaceDraft: PlaceCheckInPlaceEditDraft?
+    @State private var placeDeletionCandidate: PlaceCheckInPlaceDeletionCandidate?
     @State private var newPlaceDraft: PlaceCheckInNewPlaceDraft?
 
     init(
@@ -240,6 +242,11 @@ struct PlaceCheckInMapSheet: View {
                 try saveEditedSession(updatedDraft)
             }
         }
+        .sheet(item: $editingPlaceDraft) { draft in
+            PlaceCheckInPlaceEditor(draft: draft) { updatedDraft in
+                try saveEditedPlace(updatedDraft)
+            }
+        }
         .confirmationDialog(
             item: $deletionCandidate,
             titleVisibility: .visible
@@ -252,6 +259,19 @@ struct PlaceCheckInMapSheet: View {
             Button("Cancel", role: .cancel) {}
         } message: { candidate in
             Text("This removes the check-in at \(candidate.title) from your place timeline.")
+        }
+        .confirmationDialog(
+            item: $placeDeletionCandidate,
+            titleVisibility: .visible
+        ) { _ in
+            Text("Delete Place?")
+        } actions: { candidate in
+            Button("Delete Place", role: .destructive) {
+                deletePlace(id: candidate.id)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { candidate in
+            Text("This removes \(candidate.title) from saved places. Linked tasks will keep working, but they will no longer be tied to this place.")
         }
     }
 
@@ -809,6 +829,8 @@ struct PlaceCheckInMapSheet: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Check in at \(place.displayName)")
             .help("Check in at \(place.displayName)")
+
+            placeActionsMenu(place)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
@@ -819,6 +841,46 @@ struct PlaceCheckInMapSheet: View {
             tintOpacity: isSelected(place) ? 0.12 : 0.07,
             interactive: true
         )
+        .contextMenu {
+            Button {
+                beginEditing(place)
+            } label: {
+                Label("Edit Place", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                confirmDelete(place)
+            } label: {
+                Label("Delete Place", systemImage: "trash")
+            }
+        }
+    }
+
+    private func placeActionsMenu(_ place: RoutinePlace) -> some View {
+        Menu {
+            Button {
+                beginEditing(place)
+            } label: {
+                Label("Edit Place", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                confirmDelete(place)
+            } label: {
+                Label("Delete Place", systemImage: "trash")
+            }
+        } label: {
+            Label("Place actions", systemImage: "ellipsis.circle")
+                .labelStyle(.iconOnly)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel("Place actions")
+        .help("More actions")
     }
 
     private func dayTimelineRow(_ session: PlaceCheckInSession) -> some View {
@@ -1301,10 +1363,21 @@ struct PlaceCheckInMapSheet: View {
         editingSessionDraft = PlaceCheckInSessionEditDraft(session: session)
     }
 
+    private func beginEditing(_ place: RoutinePlace) {
+        editingPlaceDraft = PlaceCheckInPlaceEditDraft(place: place)
+    }
+
     private func confirmDelete(_ session: PlaceCheckInSession) {
         deletionCandidate = PlaceCheckInSessionDeletionCandidate(
             id: session.id,
             title: session.displayPlaceName
+        )
+    }
+
+    private func confirmDelete(_ place: RoutinePlace) {
+        placeDeletionCandidate = PlaceCheckInPlaceDeletionCandidate(
+            id: place.id,
+            title: place.displayName
         )
     }
 
@@ -1336,6 +1409,29 @@ struct PlaceCheckInMapSheet: View {
     }
 
     @MainActor
+    private func saveEditedPlace(_ draft: PlaceCheckInPlaceEditDraft) throws {
+        guard let cleanedName = RoutinePlace.cleanedName(draft.name) else {
+            throw SettingsPlacePersistenceError.invalidName
+        }
+
+        _ = try SettingsPlacePersistence.update(
+            SettingsPlaceUpdateRequest(
+                placeID: draft.id,
+                cleanedName: cleanedName,
+                coordinate: draft.coordinate,
+                radiusMeters: draft.radiusMeters
+            ),
+            in: modelContext
+        )
+        NotificationCenter.default.postRoutineDidUpdate()
+        editingPlaceDraft = nil
+        selectedHistoryMarkerID = nil
+        selectedPlaceID = draft.id
+        errorText = nil
+        focus(on: draft.coordinate)
+    }
+
+    @MainActor
     private func deleteSession(id: UUID) {
         do {
             let deleted = try PlaceCheckInSupport.deleteSession(id: id, in: modelContext)
@@ -1347,6 +1443,30 @@ struct PlaceCheckInMapSheet: View {
         } catch {
             errorText = "Could not delete check-in."
             NSLog("Failed to delete place check-in: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func deletePlace(id: UUID) {
+        do {
+            _ = try SettingsPlacePersistence.delete(
+                SettingsPlaceDeletionRequest(placeID: id),
+                in: modelContext
+            )
+            NotificationCenter.default.postRoutineDidUpdate()
+            if selectedPlaceID == id {
+                selectedPlaceID = nil
+            }
+            if editingPlaceDraft?.id == id {
+                editingPlaceDraft = nil
+            }
+            placeDeletionCandidate = nil
+            errorText = nil
+            syncMapPositionIfAllowed()
+            signalSuccess()
+        } catch {
+            errorText = "Could not delete place."
+            NSLog("Failed to delete place from map: \(error.localizedDescription)")
         }
     }
 
@@ -1525,6 +1645,120 @@ private struct PlaceCheckInNewPlaceDraft: Identifiable, Equatable {
     var name = ""
     var radiusMeters = defaultRadiusMeters
     var statusMessage = ""
+}
+
+private struct PlaceCheckInPlaceEditDraft: Identifiable, Equatable {
+    let id: UUID
+    var name: String
+    var coordinate: LocationCoordinate
+    var radiusMeters: Double
+
+    init(place: RoutinePlace) {
+        id = place.id
+        name = place.displayName
+        coordinate = LocationCoordinate(latitude: place.latitude, longitude: place.longitude)
+        radiusMeters = place.radiusMeters
+    }
+}
+
+private struct PlaceCheckInPlaceDeletionCandidate: Identifiable {
+    let id: UUID
+    let title: String
+}
+
+private struct PlaceCheckInPlaceEditor: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var draft: PlaceCheckInPlaceEditDraft
+    @State private var errorText: String?
+
+    let onSave: (PlaceCheckInPlaceEditDraft) throws -> Void
+
+    init(
+        draft: PlaceCheckInPlaceEditDraft,
+        onSave: @escaping (PlaceCheckInPlaceEditDraft) throws -> Void
+    ) {
+        _draft = State(initialValue: draft)
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Place") {
+                    TextField("Name", text: $draft.name)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Radius")
+                            Spacer()
+                            Text("\(Int(draft.radiusMeters.rounded())) m")
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Slider(value: $draft.radiusMeters, in: 25...2_000, step: 25)
+                    }
+                }
+
+                Section("Location") {
+                    Text(draft.coordinate.formattedForPlaceSelection)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let validationMessage {
+                    Text(validationMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                if let errorText {
+                    Text(errorText)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Edit Place")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        save()
+                    }
+                    .disabled(validationMessage != nil)
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 300)
+        #endif
+    }
+
+    private var validationMessage: String? {
+        if RoutinePlace.cleanedName(draft.name) == nil {
+            return "Enter a place name."
+        }
+        return nil
+    }
+
+    private func save() {
+        guard validationMessage == nil else { return }
+
+        do {
+            try onSave(draft)
+            dismiss()
+        } catch {
+            errorText = error.localizedDescription
+        }
+    }
 }
 
 private struct PlaceCheckInSessionEditor: View {

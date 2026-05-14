@@ -6,6 +6,13 @@ struct SettingsPlaceSaveRequest: Equatable {
     var radiusMeters: Double
 }
 
+struct SettingsPlaceUpdateRequest: Equatable {
+    var placeID: UUID
+    var cleanedName: String
+    var coordinate: LocationCoordinate
+    var radiusMeters: Double
+}
+
 struct SettingsPlaceDeletionRequest: Equatable {
     var placeID: UUID
 }
