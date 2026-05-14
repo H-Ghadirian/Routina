@@ -62,6 +62,8 @@ struct SettingsFeatureDependencyTests {
                 setGitFeaturesEnabled: { _ in },
                 showPersianDates: { true },
                 setShowPersianDates: { _ in },
+                automaticPlaceCheckInEnabled: { false },
+                setAutomaticPlaceCheckInEnabled: { _ in },
                 showTimelineTasksInDayPlanner: { false },
                 setShowTimelineTasksInDayPlanner: { _ in },
                 appColorScheme: { .dark },
@@ -114,6 +116,7 @@ struct SettingsFeatureDependencyTests {
             $0.appearance.isGitFeaturesEnabled = true
             $0.appearance.showPersianDates = true
             $0.appearance.showsTimelineTasksInDayPlanner = false
+            $0.places.isAutomaticCheckInEnabled = false
             $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
             $0.appearance.selectedAppIcon = .teal
             $0.appearance.appIconStatusMessage = ""

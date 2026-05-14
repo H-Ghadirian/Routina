@@ -31,6 +31,10 @@ struct PlaceCheckInMapSheet: View {
     @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var sessions: [PlaceCheckInSession]
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAutomaticPlaceCheckInEnabled = true
 
     @State private var locationSnapshot = LocationSnapshot(authorizationStatus: .notDetermined)
     @State private var isLoadingLocation = false
@@ -1102,6 +1106,16 @@ struct PlaceCheckInMapSheet: View {
 
     @MainActor
     private func reconcileAutomaticCheckIn(for snapshot: LocationSnapshot) {
+        guard isAutomaticPlaceCheckInEnabled else {
+            do {
+                _ = try PlaceCheckInSupport.endActiveAutomaticSession(in: modelContext)
+            } catch {
+                errorText = "Could not end automatic check-in."
+                NSLog("Failed to end automatic place check-in: \(error.localizedDescription)")
+            }
+            return
+        }
+
         guard snapshot.canDeterminePresence, let coordinate = snapshot.coordinate else {
             return
         }

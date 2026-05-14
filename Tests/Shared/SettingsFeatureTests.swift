@@ -295,6 +295,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func automaticPlaceCheckInToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAutomaticPlaceCheckInEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.automaticPlaceCheckInToggled(false)) {
+            $0.places.isAutomaticCheckInEnabled = false
+        }
+
+        #expect(persistedValue.value == false)
+    }
+
+    @Test
     func appLockToggled_onAuthenticatesThenPersistsSetting() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

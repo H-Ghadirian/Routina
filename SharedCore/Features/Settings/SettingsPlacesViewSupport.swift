@@ -4,11 +4,17 @@ extension SettingsPlacesState {
     var overviewSubtitle: String {
         switch savedPlaces.count {
         case 0:
-            return "Save locations for place-based routines"
+            return isAutomaticCheckInEnabled
+                ? "Auto check-in on • Save locations"
+                : "Auto check-in off • Save locations"
         case 1:
-            return "1 saved place"
+            return isAutomaticCheckInEnabled
+                ? "1 saved place • Auto on"
+                : "1 saved place • Auto off"
         default:
-            return "\(savedPlaces.count) saved places"
+            return isAutomaticCheckInEnabled
+                ? "\(savedPlaces.count) saved places • Auto on"
+                : "\(savedPlaces.count) saved places • Auto off"
         }
     }
 

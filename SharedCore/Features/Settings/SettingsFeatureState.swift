@@ -130,6 +130,7 @@ struct SettingsPlacesState: Equatable {
     var placeDraftRadiusMeters: Double = 150
     var placeStatusMessage: String = ""
     var isPlaceOperationInProgress: Bool = false
+    var isAutomaticCheckInEnabled: Bool = true
     var locationAuthorizationStatus: LocationAuthorizationStatus = .notDetermined
     var lastKnownLocationCoordinate: LocationCoordinate?
     var isDeletePlaceConfirmationPresented: Bool = false

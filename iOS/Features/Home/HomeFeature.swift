@@ -658,6 +658,16 @@ struct HomeFeature {
     }
 
     private func automaticPlaceCheckInEffect(for snapshot: LocationSnapshot) -> Effect<Action> {
+        guard appSettingsClient.automaticPlaceCheckInEnabled() else {
+            return .run { @MainActor _ in
+                do {
+                    _ = try PlaceCheckInSupport.endActiveAutomaticSession(in: self.modelContext())
+                } catch {
+                    NSLog("Ending automatic place check-in failed: \(error.localizedDescription)")
+                }
+            }
+        }
+
         guard snapshot.canDeterminePresence, let coordinate = snapshot.coordinate else {
             return .none
         }

@@ -18,6 +18,7 @@ struct SettingsFeature {
         case appLockEnableFinished(DeviceAuthenticationResult)
         case gitFeaturesToggled(Bool)
         case showPersianDatesToggled(Bool)
+        case automaticPlaceCheckInToggled(Bool)
         case showTimelineTasksInDayPlannerToggled(Bool)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
@@ -160,6 +161,14 @@ struct SettingsFeature {
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient
+                )
+
+            case let .automaticPlaceCheckInToggled(isEnabled):
+                return SettingsPlaceActionHandler.automaticPlaceCheckInToggled(
+                    isEnabled,
+                    state: &state.places,
+                    appSettingsClient: self.appSettingsClient,
+                    modelContext: self.modelContext
                 )
 
             case let .showTimelineTasksInDayPlannerToggled(isEnabled):

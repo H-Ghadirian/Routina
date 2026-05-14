@@ -51,6 +51,25 @@ enum SettingsPlaceActionHandler {
         return .none
     }
 
+    static func automaticPlaceCheckInToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsPlacesState,
+        appSettingsClient: AppSettingsClient,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        state.isAutomaticCheckInEnabled = isEnabled
+        appSettingsClient.setAutomaticPlaceCheckInEnabled(isEnabled)
+
+        guard !isEnabled else { return .none }
+        return .run { @MainActor _ in
+            do {
+                _ = try PlaceCheckInSupport.endActiveAutomaticSession(in: modelContext())
+            } catch {
+                NSLog("Failed to end automatic place check-in after disabling setting: \(error.localizedDescription)")
+            }
+        }
+    }
+
     static func savePlaceTapped(
         state: inout SettingsPlacesState,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext

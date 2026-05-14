@@ -16,6 +16,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var appLockEnabled: Bool
     var gitFeaturesEnabled: Bool
     var showPersianDates: Bool
+    var automaticPlaceCheckInEnabled: Bool
     var showTimelineTasksInDayPlanner: Bool
     var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
@@ -53,6 +54,7 @@ enum SettingsRefreshEditor {
         state.gitlab.accessTokenDraft = ""
         state.gitlab.isOperationInProgress = false
         state.gitlab.statusMessage = ""
+        state.places.isAutomaticCheckInEnabled = snapshot.automaticPlaceCheckInEnabled
 
         SettingsNotificationsEditor.refreshFromSettings(
             notificationsEnabled: snapshot.notificationsEnabled,

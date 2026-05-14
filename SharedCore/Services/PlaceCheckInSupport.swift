@@ -291,6 +291,19 @@ enum PlaceCheckInSupport {
 
     @MainActor
     @discardableResult
+    static func endActiveAutomaticSession(
+        at date: Date = Date(),
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> PlaceCheckInSession? {
+        guard let active = try activeSession(in: context), active.isAutomatic else {
+            return nil
+        }
+        return try endActiveSession(at: date, in: context, sourceDevice: sourceDevice)
+    }
+
+    @MainActor
+    @discardableResult
     static func confirmAutomaticSession(
         id: UUID,
         date: Date = Date(),

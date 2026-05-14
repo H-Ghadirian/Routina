@@ -25,6 +25,7 @@ enum SettingsDiagnosticsLoader {
             appLockEnabled: appSettingsClient.appLockEnabled(),
             gitFeaturesEnabled: appSettingsClient.gitFeaturesEnabled(),
             showPersianDates: appSettingsClient.showPersianDates(),
+            automaticPlaceCheckInEnabled: appSettingsClient.automaticPlaceCheckInEnabled(),
             showTimelineTasksInDayPlanner: appSettingsClient.showTimelineTasksInDayPlanner(),
             deviceAuthenticationStatus: deviceAuthenticationClient.status(),
             selectedAppIcon: appSettingsClient.selectedAppIcon(),

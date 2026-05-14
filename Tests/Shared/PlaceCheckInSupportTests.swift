@@ -220,6 +220,45 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func endActiveAutomaticSession_endsOnlyAutomaticSessions() throws {
+        let context = makeInMemoryContext()
+        let automaticSession = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Office",
+            startedAt: makeDate("2026-05-10T09:00:00Z"),
+            captureMode: .automatic
+        )
+        context.insert(automaticSession)
+        try context.save()
+
+        let endedAutomatic = try PlaceCheckInSupport.endActiveAutomaticSession(
+            at: makeDate("2026-05-10T10:00:00Z"),
+            in: context
+        )
+
+        #expect(endedAutomatic?.id == automaticSession.id)
+        #expect(automaticSession.endedAt == makeDate("2026-05-10T10:00:00Z"))
+
+        let manualSession = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Home",
+            startedAt: makeDate("2026-05-10T11:00:00Z"),
+            captureMode: .manual
+        )
+        context.insert(manualSession)
+        try context.save()
+
+        let endedManual = try PlaceCheckInSupport.endActiveAutomaticSession(
+            at: makeDate("2026-05-10T12:00:00Z"),
+            in: context
+        )
+
+        #expect(endedManual == nil)
+        #expect(manualSession.endedAt == nil)
+    }
+
+    @MainActor
+    @Test
     func confirmAutomaticSession_marksSessionConfirmed() throws {
         let context = makeInMemoryContext()
         let session = PlaceCheckInSession(
