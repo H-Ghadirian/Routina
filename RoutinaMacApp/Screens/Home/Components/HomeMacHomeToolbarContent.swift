@@ -12,6 +12,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let goalsStore: StoreOf<GoalsFeature>
     let showsDetailModePicker: Bool
     @Binding var detailMode: MacHomeDetailMode
+    let onPlaceCheckInMapRequested: (PlaceCheckInActivity?) -> Void
 
     var body: some ToolbarContent {
         switch mode {
@@ -26,13 +27,13 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
-        RoutinaMacSleepToolbarItem()
+        navigationToolbarItems
         detailModeToolbarItem
     }
 
     @ToolbarContentBuilder
     private var goalsToolbar: some ToolbarContent {
-        RoutinaMacSleepToolbarItem()
+        navigationToolbarItems
 
         ToolbarItem(placement: .primaryAction) {
             MacGoalsNewGoalButton(store: goalsStore)
@@ -41,8 +42,14 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
-        RoutinaMacSleepToolbarItem()
+        navigationToolbarItems
         detailModeToolbarItem
+    }
+
+    @ToolbarContentBuilder
+    private var navigationToolbarItems: some ToolbarContent {
+        RoutinaMacSleepToolbarItem()
+        RoutinaMacPlaceCheckInToolbarItem(onMapRequested: onPlaceCheckInMapRequested)
     }
 
     @ToolbarContentBuilder

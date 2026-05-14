@@ -426,15 +426,6 @@ extension HomeTCAView {
             }
         }
         .navigationTitle("Routina")
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if macHomeDetailMode != .places {
-                PlaceCheckInDockView(maximumPlaceButtons: 3) { activity in
-                    openMacPlacesWorkspace(activity: activity)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-            }
-        }
         .routinaHomeSidebarColumnWidth()
     }
 

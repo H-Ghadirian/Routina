@@ -29,7 +29,10 @@ extension HomeTCAView {
             mode: homeToolbarMode,
             goalsStore: goalsStore,
             showsDetailModePicker: showsDetailModePickerInToolbar,
-            detailMode: mainDetailModeBinding
+            detailMode: mainDetailModeBinding,
+            onPlaceCheckInMapRequested: { activity in
+                openMacPlacesWorkspace(activity: activity)
+            }
         )
     }
 
