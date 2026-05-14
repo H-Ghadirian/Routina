@@ -62,6 +62,10 @@ enum CloudKitDirectPullRecordParser {
             in: record,
             keys: ["colorRawValue", "COLORRAWVALUE", "zcolorrawvalue", "ZCOLORRAWVALUE", "cd_colorrawvalue"]
         ).flatMap(RoutineTaskColor.init(rawValue:))
+        let parentGoalIDValue = CloudKitDirectPullService.uuidValue(
+            in: record,
+            keys: ["parentGoalID", "parentGoalId", "PARENTGOALID", "zparentgoalid", "ZPARENTGOALID", "cd_parentgoalid"]
+        )
         let createdAtValue = CloudKitDirectPullService.dateValue(
             in: record,
             keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"]
@@ -78,6 +82,7 @@ enum CloudKitDirectPullRecordParser {
                 || targetDateValue != nil
                 || statusValue != nil
                 || colorValue != nil
+                || parentGoalIDValue != nil
                 || createdAtValue != nil
                 || sortOrderValue != nil
         else {
@@ -92,6 +97,7 @@ enum CloudKitDirectPullRecordParser {
             targetDate: targetDateValue,
             status: statusValue,
             color: colorValue,
+            parentGoalID: parentGoalIDValue == id ? nil : parentGoalIDValue,
             createdAt: createdAtValue,
             sortOrder: sortOrderValue
         )

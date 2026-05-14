@@ -13,6 +13,56 @@ import Testing
 @MainActor
 struct CloudKitDirectPullDeletionTests {
     @Test
+    func cloudKitMerge_readsGoalParentLink() throws {
+        let context = makeInMemoryContext()
+        let parentID = UUID()
+        let childID = UUID()
+        let parentGoal = CKRecord(
+            recordType: "RoutineGoal",
+            recordID: CKRecord.ID(recordName: parentID.uuidString)
+        )
+        parentGoal["title"] = "Health" as CKRecordValue
+        let childGoal = CKRecord(
+            recordType: "RoutineGoal",
+            recordID: CKRecord.ID(recordName: childID.uuidString)
+        )
+        childGoal["title"] = "Run 5K" as CKRecordValue
+        childGoal["parentGoalID"] = parentID.uuidString as CKRecordValue
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(changedRecords: [parentGoal, childGoal], deletedRecordIDs: []),
+            into: context
+        )
+
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let child = try #require(goals.first { $0.id == childID })
+        #expect(child.parentGoalID == parentID)
+    }
+
+    @Test
+    func cloudKitMerge_deletedGoalClearsChildParentLink() throws {
+        let context = makeInMemoryContext()
+        let parent = RoutineGoal(title: "Health")
+        let child = RoutineGoal(title: "Run 5K", parentGoalID: parent.id)
+        context.insert(parent)
+        context.insert(child)
+        try context.save()
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(
+                changedRecords: [],
+                deletedRecordIDs: [CKRecord.ID(recordName: parent.id.uuidString)]
+            ),
+            into: context
+        )
+
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let remainingGoal = try #require(goals.first)
+        #expect(remainingGoal.id == child.id)
+        #expect(remainingGoal.parentGoalID == nil)
+    }
+
+    @Test
     func cloudKitMerge_deletedTaskRemovesAssociatedTimelineRows() throws {
         let context = makeInMemoryContext()
         let deletedTask = makeTask(in: context, name: "Old", interval: 1, lastDone: nil, emoji: nil)

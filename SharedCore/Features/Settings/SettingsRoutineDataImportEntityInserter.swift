@@ -83,11 +83,20 @@ enum SettingsRoutineDataImportEntityInserter {
         in context: ModelContext,
         importDate: Date
     ) -> (ids: Set<UUID>, count: Int) {
+        let validGoalIDs = Set(
+            (backup.goals ?? [])
+                .filter { RoutineGoal.cleanedTitle($0.title) != nil }
+                .map(\.id)
+        )
         var importedIDs = Set<UUID>()
         var importedCount = 0
+        var importedGoals: [RoutineGoal] = []
         for goal in backup.goals ?? [] {
-            guard importedIDs.insert(goal.id).inserted else { continue }
             guard RoutineGoal.cleanedTitle(goal.title) != nil else { continue }
+            guard importedIDs.insert(goal.id).inserted else { continue }
+            let parentGoalID = goal.parentGoalID.flatMap { parentID in
+                validGoalIDs.contains(parentID) && parentID != goal.id ? parentID : nil
+            }
 
             let importedGoal = RoutineGoal(
                 id: goal.id,
@@ -97,11 +106,22 @@ enum SettingsRoutineDataImportEntityInserter {
                 targetDate: goal.targetDate,
                 status: goal.status ?? .active,
                 color: goal.color ?? .none,
+                parentGoalID: parentGoalID,
                 createdAt: goal.createdAt ?? importDate,
                 sortOrder: goal.sortOrder ?? importedCount
             )
             context.insert(importedGoal)
+            importedGoals.append(importedGoal)
             importedCount += 1
+        }
+        for goal in importedGoals where goal.parentGoalID != nil {
+            goal.parentGoalID = RoutineGoalHierarchy.sanitizedParentGoalID(
+                goal.parentGoalID,
+                for: goal.id,
+                in: importedGoals,
+                id: { $0.id },
+                parentGoalID: { $0.parentGoalID }
+            )
         }
         return (importedIDs, importedCount)
     }

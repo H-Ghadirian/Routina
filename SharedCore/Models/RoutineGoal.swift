@@ -22,6 +22,7 @@ final class RoutineGoal {
     var targetDate: Date?
     var statusRawValue: String = RoutineGoalStatus.active.rawValue
     var colorRawValue: String = RoutineTaskColor.none.rawValue
+    var parentGoalID: UUID?
     var createdAt: Date? = Date()
     var sortOrder: Int = 0
 
@@ -47,6 +48,7 @@ final class RoutineGoal {
         targetDate: Date? = nil,
         status: RoutineGoalStatus = .active,
         color: RoutineTaskColor = .none,
+        parentGoalID: UUID? = nil,
         createdAt: Date? = Date(),
         sortOrder: Int = 0
     ) {
@@ -57,6 +59,7 @@ final class RoutineGoal {
         self.targetDate = targetDate
         self.statusRawValue = status.rawValue
         self.colorRawValue = color.rawValue
+        self.parentGoalID = parentGoalID == id ? nil : parentGoalID
         self.createdAt = createdAt
         self.sortOrder = max(sortOrder, 0)
     }
@@ -70,6 +73,7 @@ final class RoutineGoal {
             targetDate: targetDate,
             status: status,
             color: color,
+            parentGoalID: parentGoalID,
             createdAt: createdAt,
             sortOrder: sortOrder
         )
@@ -101,6 +105,50 @@ final class RoutineGoal {
             return nil
         }
         return trimmed
+    }
+}
+
+enum RoutineGoalHierarchy {
+    static func descendantIDs<T>(
+        of goalID: UUID,
+        in goals: [T],
+        id: (T) -> UUID,
+        parentGoalID: (T) -> UUID?
+    ) -> Set<UUID> {
+        var childrenByParentID: [UUID: [UUID]] = [:]
+        for goal in goals {
+            guard let parentID = parentGoalID(goal), parentID != id(goal) else { continue }
+            childrenByParentID[parentID, default: []].append(id(goal))
+        }
+
+        var descendants: Set<UUID> = []
+        var stack = childrenByParentID[goalID] ?? []
+        while let childID = stack.popLast() {
+            guard descendants.insert(childID).inserted else { continue }
+            stack.append(contentsOf: childrenByParentID[childID] ?? [])
+        }
+        return descendants
+    }
+
+    static func sanitizedParentGoalID<T>(
+        _ parentID: UUID?,
+        for goalID: UUID?,
+        in goals: [T],
+        id: (T) -> UUID,
+        parentGoalID: (T) -> UUID?
+    ) -> UUID? {
+        guard let parentID else { return nil }
+        guard goals.contains(where: { id($0) == parentID }) else { return nil }
+        guard let goalID else { return parentID }
+        guard parentID != goalID else { return nil }
+        let descendantIDs = descendantIDs(
+            of: goalID,
+            in: goals,
+            id: id,
+            parentGoalID: parentGoalID
+        )
+        guard !descendantIDs.contains(parentID) else { return nil }
+        return parentID
     }
 }
 

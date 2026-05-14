@@ -23,6 +23,7 @@ enum SettingsRoutineDataBackupMapping {
             targetDate: goal.targetDate,
             status: goal.status,
             color: goal.color,
+            parentGoalID: goal.parentGoalID,
             createdAt: goal.createdAt,
             sortOrder: goal.sortOrder
         )

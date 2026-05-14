@@ -15,6 +15,7 @@ enum CloudKitDirectPullGoalPayloadApplier {
         if let color = payload.color {
             goal.color = color
         }
+        goal.parentGoalID = payload.parentGoalID == payload.id ? nil : payload.parentGoalID
         if let createdAt = payload.createdAt {
             goal.createdAt = createdAt
         }
@@ -32,6 +33,7 @@ enum CloudKitDirectPullGoalPayloadApplier {
             targetDate: payload.targetDate,
             status: payload.status ?? .active,
             color: payload.color ?? .none,
+            parentGoalID: payload.parentGoalID == payload.id ? nil : payload.parentGoalID,
             createdAt: payload.createdAt ?? Date(),
             sortOrder: payload.sortOrder ?? 0
         )

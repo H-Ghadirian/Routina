@@ -120,7 +120,7 @@ content
             store.send(.deleteGoalCanceled)
         }
     } message: {
-        Text("Tasks linked to this goal will keep the task, but the goal link will be removed.")
+        Text("Tasks linked to this goal keep the task, and sub-goals become top-level goals.")
     }
     .task {
         store.send(.onAppear)
@@ -187,7 +187,9 @@ private struct GoalListRow: View {
                     .font(.headline)
                     .lineLimit(1)
 
-                Text("\(goal.openTaskCount) open, \(goal.linkedTasks.count) linked")
+                Text(goal.childGoalCount > 0
+                    ? "\(goal.openTaskCount) open, \(goal.childGoalCount) sub-goals"
+                    : "\(goal.openTaskCount) open, \(goal.linkedTasks.count) linked")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -217,6 +219,31 @@ private struct GoalDetailPane: View {
                             .font(.headline)
                         Text(notes)
                             .foregroundStyle(.secondary)
+                    }
+                }
+
+                if goal.parentGoal != nil || !goal.childGoals.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Linked Goals")
+                            .font(.headline)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let parentGoal = goal.parentGoal {
+                                GoalLinkInlineRow(
+                                    goal: parentGoal,
+                                    relationship: "Parent goal",
+                                    onSelect: { store.send(.selectGoal(parentGoal.id)) }
+                                )
+                            }
+
+                            ForEach(goal.childGoals) { childGoal in
+                                GoalLinkInlineRow(
+                                    goal: childGoal,
+                                    relationship: "Sub-goal",
+                                    onSelect: { store.send(.selectGoal(childGoal.id)) }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -319,10 +346,14 @@ private struct GoalDetailPane: View {
 
             GridRow {
                 MetricLabel(title: "Done Todos", value: "\(goal.completedTodoCount)")
+                MetricLabel(title: "Sub-goals", value: "\(goal.childGoalCount)")
                 MetricLabel(
                     title: "Linked Tasks",
                     value: "\(goal.linkedTasks.count)"
                 )
+            }
+
+            GridRow {
                 MetricLabel(
                     title: "Next Due",
                     value: goal.nextDueDate?.formatted(date: .abbreviated, time: .omitted) ?? "None"
@@ -345,6 +376,37 @@ private struct MetricLabel: View {
                 .foregroundStyle(.secondary)
         }
         .frame(minWidth: 100, alignment: .leading)
+    }
+}
+
+private struct GoalLinkInlineRow: View {
+    var goal: GoalsFeature.GoalLinkDisplay
+    var relationship: String
+    var onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(goal.color.swiftUIColor?.opacity(0.16) ?? Color.secondary.opacity(0.12))
+                    Text(goal.displayEmoji)
+                }
+                .frame(width: 28, height: 28)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(goal.displayTitle)
+                    Text(relationship)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.vertical, 4)
     }
 }
 

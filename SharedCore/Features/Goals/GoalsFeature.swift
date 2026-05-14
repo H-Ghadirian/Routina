@@ -32,6 +32,25 @@ struct GoalsFeature {
             return goals.first { $0.id == selectedGoalID }
         }
 
+        var availableParentGoals: [GoalLinkDisplay] {
+            let excludedGoalIDs: Set<UUID>
+            if let editingGoalID = editorDraft.id {
+                excludedGoalIDs = RoutineGoalHierarchy.descendantIDs(
+                    of: editingGoalID,
+                    in: goals,
+                    id: { $0.id },
+                    parentGoalID: { $0.parentGoalID }
+                ).union([editingGoalID])
+            } else {
+                excludedGoalIDs = []
+            }
+
+            return goals
+                .filter { !excludedGoalIDs.contains($0.id) }
+                .map(GoalLinkDisplay.init(goal:))
+                .sorted()
+        }
+
         static func filtered(_ goals: [GoalDisplay], by query: String) -> [GoalDisplay] {
             guard let normalizedQuery = RoutineGoal.normalizedTitle(query) else { return goals }
             return goals.filter { goal in
@@ -48,6 +67,9 @@ struct GoalsFeature {
         var targetDate: Date?
         var status: RoutineGoalStatus
         var color: RoutineTaskColor
+        var parentGoalID: UUID?
+        var parentGoal: GoalLinkDisplay?
+        var childGoals: [GoalLinkDisplay]
         var createdAt: Date?
         var sortOrder: Int
         var linkedTasks: [GoalTaskDisplay]
@@ -76,12 +98,20 @@ struct GoalsFeature {
             linkedTasks.filter(\.isCompletedOneOff).count
         }
 
+        var childGoalCount: Int {
+            childGoals.count
+        }
+
         var nextDueDate: Date? {
             linkedTasks.compactMap(\.dueDate).min()
         }
 
         var searchableText: String {
-            ([displayTitle, notes ?? ""] + linkedTasks.map(\.displayName))
+            (
+                [displayTitle, notes ?? "", parentGoal?.displayTitle ?? ""]
+                    + childGoals.map(\.displayTitle)
+                    + linkedTasks.map(\.displayName)
+            )
                 .joined(separator: " ")
                 .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
         }
@@ -103,10 +133,30 @@ struct GoalsFeature {
                     tasksByGoalID[goalID, default: []].append(taskDisplay)
                 }
             }
+            let linkDisplaysByID = Dictionary(
+                uniqueKeysWithValues: goals.map { ($0.id, GoalLinkDisplay(goal: $0)) }
+            )
+            var validParentGoalIDsByGoalID: [UUID: UUID] = [:]
+            for goal in goals {
+                validParentGoalIDsByGoalID[goal.id] = RoutineGoalHierarchy.sanitizedParentGoalID(
+                    goal.parentGoalID,
+                    for: goal.id,
+                    in: goals,
+                    id: { $0.id },
+                    parentGoalID: { $0.parentGoalID }
+                )
+            }
+            var childGoalsByParentID: [UUID: [GoalLinkDisplay]] = [:]
+            for goal in goals {
+                guard let parentGoalID = validParentGoalIDsByGoalID[goal.id],
+                      let childLink = linkDisplaysByID[goal.id] else { continue }
+                childGoalsByParentID[parentGoalID, default: []].append(childLink)
+            }
 
             return goals
                 .map { goal in
-                    GoalDisplay(
+                    let parentGoalID = validParentGoalIDsByGoalID[goal.id]
+                    return GoalDisplay(
                         id: goal.id,
                         title: goal.displayTitle,
                         emoji: goal.emoji,
@@ -114,6 +164,9 @@ struct GoalsFeature {
                         targetDate: goal.targetDate,
                         status: goal.status,
                         color: goal.color,
+                        parentGoalID: parentGoalID,
+                        parentGoal: parentGoalID.flatMap { linkDisplaysByID[$0] },
+                        childGoals: (childGoalsByParentID[goal.id] ?? []).sorted(),
                         createdAt: goal.createdAt,
                         sortOrder: goal.sortOrder,
                         linkedTasks: (tasksByGoalID[goal.id] ?? []).sorted()
@@ -192,6 +245,63 @@ struct GoalsFeature {
         }
     }
 
+    struct GoalLinkDisplay: Identifiable, Equatable, Hashable, Comparable {
+        var id: UUID
+        var title: String
+        var emoji: String?
+        var status: RoutineGoalStatus
+        var color: RoutineTaskColor
+
+        var displayEmoji: String {
+            emoji.flatMap(RoutineGoal.cleanedEmoji) ?? "\u{1F3AF}"
+        }
+
+        var displayTitle: String {
+            RoutineGoal.cleanedTitle(title) ?? "Untitled goal"
+        }
+
+        init(
+            id: UUID,
+            title: String,
+            emoji: String?,
+            status: RoutineGoalStatus,
+            color: RoutineTaskColor
+        ) {
+            self.id = id
+            self.title = title
+            self.emoji = emoji
+            self.status = status
+            self.color = color
+        }
+
+        init(goal: GoalDisplay) {
+            self.init(
+                id: goal.id,
+                title: goal.displayTitle,
+                emoji: goal.emoji,
+                status: goal.status,
+                color: goal.color
+            )
+        }
+
+        init(goal: RoutineGoal) {
+            self.init(
+                id: goal.id,
+                title: goal.displayTitle,
+                emoji: goal.emoji,
+                status: goal.status,
+                color: goal.color
+            )
+        }
+
+        static func < (lhs: GoalLinkDisplay, rhs: GoalLinkDisplay) -> Bool {
+            if lhs.status != rhs.status {
+                return lhs.status == .active
+            }
+            return lhs.displayTitle.localizedCaseInsensitiveCompare(rhs.displayTitle) == .orderedAscending
+        }
+    }
+
     struct GoalDraft: Equatable {
         var id: UUID?
         var title = ""
@@ -199,6 +309,7 @@ struct GoalsFeature {
         var notes = ""
         var targetDate: Date?
         var color: RoutineTaskColor = .none
+        var parentGoalID: UUID?
 
         var hasTargetDate: Bool {
             targetDate != nil
@@ -214,7 +325,8 @@ struct GoalsFeature {
             emoji: String = "",
             notes: String = "",
             targetDate: Date? = nil,
-            color: RoutineTaskColor = .none
+            color: RoutineTaskColor = .none,
+            parentGoalID: UUID? = nil
         ) {
             self.id = id
             self.title = title
@@ -222,6 +334,7 @@ struct GoalsFeature {
             self.notes = notes
             self.targetDate = targetDate
             self.color = color
+            self.parentGoalID = parentGoalID
         }
 
         init(goal: GoalDisplay) {
@@ -231,7 +344,8 @@ struct GoalsFeature {
                 emoji: goal.emoji ?? "",
                 notes: goal.notes ?? "",
                 targetDate: goal.targetDate,
-                color: goal.color
+                color: goal.color,
+                parentGoalID: goal.parentGoalID
             )
         }
     }
@@ -253,6 +367,7 @@ struct GoalsFeature {
         case editorTargetDateEnabledChanged(Bool)
         case editorTargetDateChanged(Date)
         case editorColorChanged(RoutineTaskColor)
+        case editorParentGoalChanged(UUID?)
         case saveEditorTapped
         case goalSaved
         case archiveGoalTapped(UUID)
@@ -345,6 +460,10 @@ struct GoalsFeature {
                 state.editorDraft.color = color
                 return .none
 
+            case let .editorParentGoalChanged(parentGoalID):
+                state.editorDraft.parentGoalID = parentGoalID
+                return .none
+
             case .saveEditorTapped:
                 guard state.editorDraft.cleanedTitle != nil else {
                     state.validationMessage = "Goal title is required."
@@ -422,6 +541,17 @@ struct GoalsFeature {
                     send(.loadingFailed("A goal with this title already exists."))
                     return
                 }
+                let parentGoalID = RoutineGoalHierarchy.sanitizedParentGoalID(
+                    draft.parentGoalID,
+                    for: draft.id,
+                    in: allGoals,
+                    id: { $0.id },
+                    parentGoalID: { $0.parentGoalID }
+                )
+                if draft.parentGoalID != nil && parentGoalID == nil {
+                    send(.loadingFailed("Choose a different parent goal."))
+                    return
+                }
 
                 if let id = draft.id,
                    let existingGoal = allGoals.first(where: { $0.id == id }) {
@@ -430,6 +560,7 @@ struct GoalsFeature {
                     existingGoal.notes = RoutineGoal.cleanedNotes(draft.notes)
                     existingGoal.targetDate = draft.targetDate
                     existingGoal.color = draft.color
+                    existingGoal.parentGoalID = parentGoalID
                 } else {
                     let nextSortOrder = (allGoals.map(\.sortOrder).max() ?? -1) + 1
                     context.insert(
@@ -439,6 +570,7 @@ struct GoalsFeature {
                             notes: draft.notes,
                             targetDate: draft.targetDate,
                             color: draft.color,
+                            parentGoalID: parentGoalID,
                             createdAt: now,
                             sortOrder: nextSortOrder
                         )
@@ -485,6 +617,10 @@ struct GoalsFeature {
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 for task in tasks where task.goalIDs.contains(goalID) {
                     task.goalIDs = task.goalIDs.filter { $0 != goalID }
+                }
+                let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+                for childGoal in goals where childGoal.parentGoalID == goalID {
+                    childGoal.parentGoalID = nil
                 }
                 context.delete(goal)
                 try context.save()

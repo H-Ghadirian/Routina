@@ -48,6 +48,7 @@ extension CloudKitDirectPullService {
         var targetDate: Date?
         var status: RoutineGoalStatus?
         var color: RoutineTaskColor?
+        var parentGoalID: UUID?
         var createdAt: Date?
         var sortOrder: Int?
     }

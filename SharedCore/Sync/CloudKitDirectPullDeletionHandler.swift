@@ -105,5 +105,10 @@ enum CloudKitDirectPullDeletionHandler {
         for task in tasks where task.goalIDs.contains(goalID) {
             task.goalIDs = task.goalIDs.filter { $0 != goalID }
         }
+
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        for goal in goals where goal.parentGoalID == goalID {
+            goal.parentGoalID = nil
+        }
     }
 }

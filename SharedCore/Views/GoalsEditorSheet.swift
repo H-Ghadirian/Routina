@@ -44,6 +44,21 @@ NavigationStack {
             }
         }
 
+        if !store.availableParentGoals.isEmpty || store.editorDraft.parentGoalID != nil {
+            Section {
+                Picker("Parent Goal", selection: parentGoalBinding) {
+                    Text("No Parent").tag(Optional<UUID>.none)
+                    ForEach(store.availableParentGoals) { goal in
+                        Text(goal.displayTitle).tag(Optional(goal.id))
+                    }
+                }
+
+                Text("Sub-goals appear on the parent goal detail.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+
         if let validationMessage = store.validationMessage {
             Section {
                 Text(validationMessage)
@@ -102,6 +117,13 @@ NavigationStack {
         Binding(
             get: { store.editorDraft.color },
             set: { store.send(.editorColorChanged($0)) }
+        )
+    }
+
+    private var parentGoalBinding: Binding<UUID?> {
+        Binding(
+            get: { store.editorDraft.parentGoalID },
+            set: { store.send(.editorParentGoalChanged($0)) }
         )
     }
 }

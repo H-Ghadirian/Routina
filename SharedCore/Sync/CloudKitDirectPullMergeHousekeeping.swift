@@ -125,6 +125,27 @@ enum CloudKitDirectPullMergeHousekeeping {
     }
 
     @MainActor
+    static func migrateGoalReferences(
+        from sourceGoalID: UUID,
+        to targetGoalID: UUID,
+        in context: ModelContext
+    ) throws {
+        guard sourceGoalID != targetGoalID else { return }
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        for task in tasks where task.goalIDs.contains(sourceGoalID) {
+            task.goalIDs = RoutineGoalIDStorage.sanitized(
+                task.goalIDs.map { $0 == sourceGoalID ? targetGoalID : $0 }
+            )
+        }
+
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        for goal in goals where goal.parentGoalID == sourceGoalID {
+            goal.parentGoalID = targetGoalID == goal.id ? nil : targetGoalID
+        }
+    }
+
+    @MainActor
     private static func deleteRows(
         forTaskIDs taskIDs: Set<UUID>,
         in context: ModelContext

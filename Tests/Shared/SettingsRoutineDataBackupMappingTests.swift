@@ -10,6 +10,20 @@ import Testing
 
 struct SettingsRoutineDataBackupMappingTests {
     @Test
+    func goalMappingIncludesParentGoalLink() {
+        let parentID = UUID()
+        let goal = RoutineGoal(
+            title: "Run 5K",
+            parentGoalID: parentID
+        )
+
+        let backupGoal = SettingsRoutineDataBackupMapping.goal(goal)
+
+        #expect(backupGoal.title == "Run 5K")
+        #expect(backupGoal.parentGoalID == parentID)
+    }
+
+    @Test
     func taskMappingChoosesInlineImageOrAttachmentReference() {
         let taskID = UUID()
         let attachmentID = UUID()

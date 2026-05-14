@@ -37,7 +37,7 @@ NavigationStack {
         store.send(.deleteGoalCanceled)
     }
 } message: {
-    Text("Tasks linked to this goal will keep the task, but the goal link will be removed.")
+    Text("Tasks linked to this goal keep the task, and sub-goals become top-level goals.")
 }
 .task {
     store.send(.onAppear)
@@ -142,6 +142,9 @@ private struct GoalListRow: View {
                     Text("\(goal.openTaskCount) open")
                     Text("\(goal.routineCount) routines")
                     Text("\(goal.todoCount) todos")
+                    if goal.childGoalCount > 0 {
+                        Text("\(goal.childGoalCount) sub-goals")
+                    }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -198,6 +201,12 @@ if let goal = store.goals.first(where: { $0.id == goalID }) {
             LabeledContent("Open Items", value: "\(goal.openTaskCount)")
             LabeledContent("Routines", value: "\(goal.routineCount)")
             LabeledContent("Todos", value: "\(goal.todoCount)")
+            if let parentGoal = goal.parentGoal {
+                LabeledContent("Parent Goal", value: parentGoal.displayTitle)
+            }
+            if goal.childGoalCount > 0 {
+                LabeledContent("Sub-goals", value: "\(goal.childGoalCount)")
+            }
             if goal.completedTodoCount > 0 {
                 LabeledContent("Done Todos", value: "\(goal.completedTodoCount)")
             }
@@ -212,6 +221,22 @@ if let goal = store.goals.first(where: { $0.id == goalID }) {
                     "Next Due",
                     value: nextDueDate.formatted(date: .abbreviated, time: .omitted)
                 )
+            }
+        }
+
+        if goal.parentGoal != nil || !goal.childGoals.isEmpty {
+            Section("Linked Goals") {
+                if let parentGoal = goal.parentGoal {
+                    NavigationLink(value: parentGoal.id) {
+                        GoalLinkInlineRow(goal: parentGoal, relationship: "Parent goal")
+                    }
+                }
+
+                ForEach(goal.childGoals) { childGoal in
+                    NavigationLink(value: childGoal.id) {
+                        GoalLinkInlineRow(goal: childGoal, relationship: "Sub-goal")
+                    }
+                }
             }
         }
 
@@ -302,6 +327,32 @@ private struct GoalTaskInlineRow: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 3)
+    }
+}
+
+private struct GoalLinkInlineRow: View {
+    var goal: GoalsFeature.GoalLinkDisplay
+    var relationship: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(goal.color.swiftUIColor?.opacity(0.16) ?? Color.secondary.opacity(0.12))
+                Text(goal.displayEmoji)
+            }
+            .frame(width: 30, height: 30)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(goal.displayTitle)
+                Text(relationship)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()

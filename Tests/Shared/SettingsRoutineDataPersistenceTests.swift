@@ -12,6 +12,37 @@ import Testing
 @MainActor
 struct SettingsRoutineDataPersistenceTests {
     @Test
+    func backupPackageAndRestore_preservesGoalHierarchy() async throws {
+        let context = makeInMemoryContext()
+        let parent = RoutineGoal(title: "Health")
+        let child = RoutineGoal(title: "Run 5K", parentGoalID: parent.id)
+        context.insert(parent)
+        context.insert(child)
+        try context.save()
+
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        try SettingsRoutineDataPersistence.writeBackupPackage(to: packageURL, from: context)
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            withBackupPackageAt: packageURL,
+            in: restoreContext
+        )
+
+        let restoredGoals = try restoreContext.fetch(FetchDescriptor<RoutineGoal>())
+        let restoredParent = try #require(restoredGoals.first { $0.id == parent.id })
+        let restoredChild = try #require(restoredGoals.first { $0.id == child.id })
+
+        #expect(summary.goals == 2)
+        #expect(restoredParent.parentGoalID == nil)
+        #expect(restoredChild.parentGoalID == parent.id)
+    }
+
+    @Test
     func backupPackageAndRestore_preservesTaskImagesAndAttachments() async throws {
         let context = makeInMemoryContext()
         let imageData = Data([0x01, 0x02, 0x03])

@@ -88,6 +88,14 @@ enum CloudKitDirectPullService {
             )
         }
 
+        for (sourceGoalID, targetGoalID) in mergedGoalIDs where sourceGoalID != targetGoalID {
+            try CloudKitDirectPullMergeHousekeeping.migrateGoalReferences(
+                from: sourceGoalID,
+                to: targetGoalID,
+                in: context
+            )
+        }
+
         for (sourceTaskID, targetTaskID) in mergedTaskIDs where sourceTaskID != targetTaskID {
             try CloudKitDirectPullMergeHousekeeping.migrateLogs(
                 from: sourceTaskID,

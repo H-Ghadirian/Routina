@@ -206,6 +206,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var targetDate: Date?
         var statusRawValue: String
         var colorRawValue: String
+        var parentGoalID: UUID?
         var createdAt: Date?
         var sortOrder: Int
 
@@ -217,6 +218,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             targetDate = goal.targetDate
             statusRawValue = goal.statusRawValue
             colorRawValue = goal.colorRawValue
+            parentGoalID = goal.parentGoalID
             createdAt = goal.createdAt
             sortOrder = goal.sortOrder
         }

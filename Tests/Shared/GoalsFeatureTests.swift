@@ -62,6 +62,46 @@ struct GoalsFeatureTests {
     }
 
     @Test
+    func onAppear_loadsParentAndSubGoals() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-05-01T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let parent = RoutineGoal(title: "Health", emoji: "H", sortOrder: 0)
+        let child = RoutineGoal(title: "Run 5K", emoji: "R", parentGoalID: parent.id, sortOrder: 1)
+        context.insert(parent)
+        context.insert(child)
+        try context.save()
+
+        let expectedGoals = GoalsFeature.GoalDisplay.displays(
+            goals: [parent, child],
+            tasks: [],
+            referenceDate: now,
+            calendar: calendar
+        )
+
+        let store = TestStore(initialState: GoalsFeature.State()) {
+            GoalsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+        await store.receive(.goalsLoaded(expectedGoals)) {
+            $0.goals = expectedGoals
+            $0.isLoading = false
+            $0.selectedGoalID = parent.id
+        }
+
+        let loadedParent = try #require(store.state.goals.first { $0.id == parent.id })
+        let loadedChild = try #require(store.state.goals.first { $0.id == child.id })
+        #expect(loadedParent.childGoals.map(\.id) == [child.id])
+        #expect(loadedChild.parentGoal?.id == parent.id)
+    }
+
+    @Test
     func saveEditorTapped_createsGoal() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-05-01T09:00:00Z")
@@ -121,12 +161,103 @@ struct GoalsFeatureTests {
     }
 
     @Test
+    func saveEditorTapped_linksGoalToParent() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-05-01T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let parent = RoutineGoal(title: "Health")
+        context.insert(parent)
+        try context.save()
+
+        let store = TestStore(initialState: GoalsFeature.State()) {
+            GoalsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+
+        await store.send(.addGoalTapped) {
+            $0.isEditorPresented = true
+        }
+        await store.send(.editorTitleChanged("Run 5K")) {
+            $0.editorDraft.title = "Run 5K"
+        }
+        await store.send(.editorParentGoalChanged(parent.id)) {
+            $0.editorDraft.parentGoalID = parent.id
+        }
+        await store.send(.saveEditorTapped)
+        await store.receive(.goalSaved) {
+            $0.isEditorPresented = false
+            $0.validationMessage = nil
+        }
+
+        let savedGoals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let child = try #require(savedGoals.first { $0.title == "Run 5K" })
+        let expectedGoals = GoalsFeature.GoalDisplay.displays(
+            goals: savedGoals,
+            tasks: [],
+            referenceDate: now,
+            calendar: calendar
+        )
+        await store.receive(.goalsLoaded(expectedGoals)) {
+            $0.goals = expectedGoals
+            $0.selectedGoalID = parent.id
+        }
+
+        #expect(child.parentGoalID == parent.id)
+    }
+
+    @Test
+    func saveEditorTapped_rejectsParentGoalCycle() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-05-01T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let parent = RoutineGoal(title: "Health", sortOrder: 0)
+        let child = RoutineGoal(title: "Run 5K", parentGoalID: parent.id, sortOrder: 1)
+        context.insert(parent)
+        context.insert(child)
+        try context.save()
+        let displays = GoalsFeature.GoalDisplay.displays(
+            goals: [parent, child],
+            tasks: [],
+            referenceDate: now,
+            calendar: calendar
+        )
+
+        let store = TestStore(
+            initialState: GoalsFeature.State(
+                goals: displays,
+                isEditorPresented: true,
+                editorDraft: GoalsFeature.GoalDraft(goal: displays[0])
+            )
+        ) {
+            GoalsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+
+        await store.send(.editorParentGoalChanged(child.id)) {
+            $0.editorDraft.parentGoalID = child.id
+        }
+        await store.send(.saveEditorTapped)
+        await store.receive(.loadingFailed("Choose a different parent goal.")) {
+            $0.isLoading = false
+            $0.validationMessage = "Choose a different parent goal."
+        }
+
+        #expect(parent.parentGoalID == nil)
+    }
+
+    @Test
     func deleteGoalConfirmed_removesGoalAndTaskLinks() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-05-01T09:00:00Z")
         let calendar = makeTestCalendar()
         let goal = RoutineGoal(title: "Portfolio", emoji: "P")
         context.insert(goal)
+        let childGoal = RoutineGoal(title: "Case Study", parentGoalID: goal.id)
+        context.insert(childGoal)
         let task = makeTask(
             in: context,
             name: "Write case study",
@@ -138,7 +269,7 @@ struct GoalsFeatureTests {
         try context.save()
 
         let initialGoals = GoalsFeature.GoalDisplay.displays(
-            goals: [goal],
+            goals: [goal, childGoal],
             tasks: [task],
             referenceDate: now,
             calendar: calendar
@@ -165,15 +296,22 @@ struct GoalsFeatureTests {
         await store.receive(.refreshRequested) {
             $0.isLoading = true
         }
-        await store.receive(.goalsLoaded([])) {
-            $0.goals = []
+        let remainingGoalDisplays = GoalsFeature.GoalDisplay.displays(
+            goals: [childGoal],
+            tasks: [task],
+            referenceDate: now,
+            calendar: calendar
+        )
+        await store.receive(.goalsLoaded(remainingGoalDisplays)) {
+            $0.goals = remainingGoalDisplays
             $0.isLoading = false
-            $0.selectedGoalID = nil
+            $0.selectedGoalID = childGoal.id
         }
 
         let remainingGoals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        #expect(remainingGoals.isEmpty)
+        #expect(remainingGoals.map(\.id) == [childGoal.id])
+        #expect(remainingGoals.first?.parentGoalID == nil)
         #expect(remainingTasks.first?.goalIDs.isEmpty == true)
     }
 }
