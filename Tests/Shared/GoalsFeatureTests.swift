@@ -104,6 +104,185 @@ struct GoalsFeatureTests {
     }
 
     @Test
+    func goalDisplaySuggestsUnlinkedTasksWithMatchingGoalTags() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-05-01T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let goal = RoutineGoal(title: "Health", tags: ["Fitness", "Race"])
+        context.insert(goal)
+        let suggestedTask = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 1,
+            lastDone: nil,
+            emoji: "S",
+            tags: ["fitness"]
+        )
+        let linkedTask = makeTask(
+            in: context,
+            name: "Run",
+            interval: 1,
+            lastDone: nil,
+            emoji: "R",
+            tags: ["Fitness"]
+        )
+        linkedTask.goalIDs = [goal.id]
+        let rejectedTask = makeTask(
+            in: context,
+            name: "Buy shoes",
+            interval: 1,
+            lastDone: nil,
+            emoji: "B",
+            tags: ["Race"]
+        )
+        let unmatchedTask = makeTask(
+            in: context,
+            name: "Read",
+            interval: 1,
+            lastDone: nil,
+            emoji: "R",
+            tags: ["Learning"]
+        )
+        goal.rejectedTaskSuggestionIDs = [rejectedTask.id]
+        try context.save()
+
+        let displays = GoalsFeature.GoalDisplay.displays(
+            goals: [goal],
+            tasks: [suggestedTask, linkedTask, rejectedTask, unmatchedTask],
+            referenceDate: now,
+            calendar: calendar
+        )
+        let display = try #require(displays.first)
+
+        #expect(display.taskSuggestions.map(\.id) == [suggestedTask.id])
+        #expect(display.taskSuggestions.first?.matchedTags == ["Fitness"])
+        #expect(display.linkedTasks.map(\.id) == [linkedTask.id])
+    }
+
+    @Test
+    func acceptTaskSuggestion_linksTaskToGoal() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-05-01T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let goal = RoutineGoal(title: "Health", tags: ["Fitness"])
+        context.insert(goal)
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 1,
+            lastDone: nil,
+            emoji: "S",
+            tags: ["Fitness"]
+        )
+        try context.save()
+        let initialGoals = GoalsFeature.GoalDisplay.displays(
+            goals: [goal],
+            tasks: [task],
+            referenceDate: now,
+            calendar: calendar
+        )
+
+        let store = TestStore(
+            initialState: GoalsFeature.State(
+                goals: initialGoals,
+                selectedGoalID: goal.id
+            )
+        ) {
+            GoalsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+
+        await store.send(.acceptTaskSuggestion(goalID: goal.id, taskID: task.id))
+        await store.receive(.refreshRequested) {
+            $0.isLoading = true
+        }
+
+        let expectedGoals = GoalsFeature.GoalDisplay.displays(
+            goals: [goal],
+            tasks: [task],
+            referenceDate: now,
+            calendar: calendar
+        )
+        let expectedTagSummaries = [
+            RoutineTagSummary(name: "Fitness", linkedRoutineCount: 1, linkedGoalCount: 1)
+        ]
+        await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, [], .defaultValue, [:])) {
+            $0.goals = expectedGoals
+            $0.availableTagSummaries = expectedTagSummaries
+            $0.availableTags = ["Fitness"]
+            $0.isLoading = false
+        }
+
+        #expect(task.goalIDs == [goal.id])
+        #expect(goal.rejectedTaskSuggestionIDs.isEmpty)
+        #expect(store.state.selectedGoal?.linkedTasks.map(\.id) == [task.id])
+        #expect(store.state.selectedGoal?.taskSuggestions.isEmpty == true)
+    }
+
+    @Test
+    func rejectTaskSuggestion_hidesSuggestionForGoal() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-05-01T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let goal = RoutineGoal(title: "Health", tags: ["Fitness"])
+        context.insert(goal)
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 1,
+            lastDone: nil,
+            emoji: "S",
+            tags: ["Fitness"]
+        )
+        try context.save()
+        let initialGoals = GoalsFeature.GoalDisplay.displays(
+            goals: [goal],
+            tasks: [task],
+            referenceDate: now,
+            calendar: calendar
+        )
+
+        let store = TestStore(
+            initialState: GoalsFeature.State(
+                goals: initialGoals,
+                selectedGoalID: goal.id
+            )
+        ) {
+            GoalsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+
+        await store.send(.rejectTaskSuggestion(goalID: goal.id, taskID: task.id))
+        await store.receive(.refreshRequested) {
+            $0.isLoading = true
+        }
+
+        let expectedGoals = GoalsFeature.GoalDisplay.displays(
+            goals: [goal],
+            tasks: [task],
+            referenceDate: now,
+            calendar: calendar
+        )
+        let expectedTagSummaries = [
+            RoutineTagSummary(name: "Fitness", linkedRoutineCount: 1, linkedGoalCount: 1)
+        ]
+        await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, [], .defaultValue, [:])) {
+            $0.goals = expectedGoals
+            $0.availableTagSummaries = expectedTagSummaries
+            $0.availableTags = ["Fitness"]
+            $0.isLoading = false
+        }
+
+        #expect(goal.rejectedTaskSuggestionIDs == [task.id])
+        #expect(store.state.selectedGoal?.taskSuggestions.isEmpty == true)
+        #expect(store.state.selectedGoal?.linkedTasks.isEmpty == true)
+    }
+
+    @Test
     func saveEditorTapped_createsGoal() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-05-01T09:00:00Z")

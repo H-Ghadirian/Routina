@@ -83,6 +83,7 @@ struct GoalsFeature {
         var createdAt: Date?
         var sortOrder: Int
         var linkedTasks: [GoalTaskDisplay]
+        var taskSuggestions: [GoalTaskSuggestionDisplay]
 
         var displayEmoji: String {
             emoji.flatMap(RoutineGoal.cleanedEmoji) ?? "\u{1F3AF}"
@@ -134,14 +135,19 @@ struct GoalsFeature {
             calendar: Calendar
         ) -> [GoalDisplay] {
             var tasksByGoalID: [UUID: [GoalTaskDisplay]] = [:]
-            for task in tasks {
-                let taskDisplay = GoalTaskDisplay(
+            let taskDisplays = tasks.map { task in
+                (
                     task: task,
-                    referenceDate: referenceDate,
-                    calendar: calendar
+                    display: GoalTaskDisplay(
+                        task: task,
+                        referenceDate: referenceDate,
+                        calendar: calendar
+                    )
                 )
-                for goalID in task.goalIDs {
-                    tasksByGoalID[goalID, default: []].append(taskDisplay)
+            }
+            for taskDisplay in taskDisplays {
+                for goalID in taskDisplay.task.goalIDs {
+                    tasksByGoalID[goalID, default: []].append(taskDisplay.display)
                 }
             }
             let linkDisplaysByID = Dictionary(
@@ -181,10 +187,31 @@ struct GoalsFeature {
                         childGoals: (childGoalsByParentID[goal.id] ?? []).sorted(),
                         createdAt: goal.createdAt,
                         sortOrder: goal.sortOrder,
-                        linkedTasks: (tasksByGoalID[goal.id] ?? []).sorted()
+                        linkedTasks: (tasksByGoalID[goal.id] ?? []).sorted(),
+                        taskSuggestions: taskSuggestions(for: goal, from: taskDisplays)
                     )
                 }
                 .sorted()
+        }
+
+        private static func taskSuggestions(
+            for goal: RoutineGoal,
+            from tasks: [(task: RoutineTask, display: GoalTaskDisplay)]
+        ) -> [GoalTaskSuggestionDisplay] {
+            let goalTags = goal.tags
+            guard !goalTags.isEmpty else { return [] }
+            let rejectedTaskIDs = Set(goal.rejectedTaskSuggestionIDs)
+
+            return tasks.compactMap { task, display in
+                guard !task.goalIDs.contains(goal.id),
+                      !rejectedTaskIDs.contains(task.id) else {
+                    return nil
+                }
+                let matchedTags = goalTags.filter { RoutineTag.contains($0, in: task.tags) }
+                guard !matchedTags.isEmpty else { return nil }
+                return GoalTaskSuggestionDisplay(task: display, matchedTags: matchedTags)
+            }
+            .sorted()
         }
     }
 
@@ -314,6 +341,22 @@ struct GoalsFeature {
         }
     }
 
+    struct GoalTaskSuggestionDisplay: Identifiable, Equatable, Hashable, Comparable {
+        var task: GoalTaskDisplay
+        var matchedTags: [String]
+
+        var id: UUID {
+            task.id
+        }
+
+        static func < (lhs: GoalTaskSuggestionDisplay, rhs: GoalTaskSuggestionDisplay) -> Bool {
+            if lhs.task != rhs.task {
+                return lhs.task < rhs.task
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+    }
+
     struct GoalDraft: Equatable {
         var id: UUID?
         var title = ""
@@ -402,6 +445,8 @@ struct GoalsFeature {
         case goalSaved(UUID)
         case archiveGoalTapped(UUID)
         case unarchiveGoalTapped(UUID)
+        case acceptTaskSuggestion(goalID: UUID, taskID: UUID)
+        case rejectTaskSuggestion(goalID: UUID, taskID: UUID)
         case deleteGoalRequested(UUID)
         case deleteGoalCanceled
         case deleteGoalConfirmed
@@ -558,6 +603,12 @@ struct GoalsFeature {
 
             case let .unarchiveGoalTapped(goalID):
                 return setGoalStatusEffect(goalID: goalID, status: .active)
+
+            case let .acceptTaskSuggestion(goalID, taskID):
+                return acceptTaskSuggestionEffect(goalID: goalID, taskID: taskID)
+
+            case let .rejectTaskSuggestion(goalID, taskID):
+                return rejectTaskSuggestionEffect(goalID: goalID, taskID: taskID)
 
             case let .deleteGoalRequested(goalID):
                 state.pendingDeleteGoalID = goalID
@@ -727,10 +778,62 @@ struct GoalsFeature {
         }
     }
 
+    private func acceptTaskSuggestionEffect(goalID: UUID, taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
+            let context = modelContext()
+            do {
+                guard let goal = try context.fetch(goalDescriptor(for: goalID)).first,
+                      let task = try context.fetch(taskDescriptor(for: taskID)).first else {
+                    send(.refreshRequested)
+                    return
+                }
+
+                task.goalIDs = RoutineGoalIDStorage.sanitized(task.goalIDs + [goalID])
+                goal.rejectedTaskSuggestionIDs = goal.rejectedTaskSuggestionIDs.filter { $0 != taskID }
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+                send(.refreshRequested)
+            } catch {
+                context.rollback()
+                send(.loadingFailed("Could not link task to goal."))
+            }
+        }
+    }
+
+    private func rejectTaskSuggestionEffect(goalID: UUID, taskID: UUID) -> Effect<Action> {
+        .run { @MainActor send in
+            let context = modelContext()
+            do {
+                guard let goal = try context.fetch(goalDescriptor(for: goalID)).first else {
+                    send(.refreshRequested)
+                    return
+                }
+
+                goal.rejectedTaskSuggestionIDs = RoutineGoalIDStorage.sanitized(
+                    goal.rejectedTaskSuggestionIDs + [taskID]
+                )
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+                send(.refreshRequested)
+            } catch {
+                context.rollback()
+                send(.loadingFailed("Could not dismiss task suggestion."))
+            }
+        }
+    }
+
     private func goalDescriptor(for goalID: UUID) -> FetchDescriptor<RoutineGoal> {
         FetchDescriptor<RoutineGoal>(
             predicate: #Predicate { goal in
                 goal.id == goalID
+            }
+        )
+    }
+
+    private func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
+        FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
             }
         )
     }

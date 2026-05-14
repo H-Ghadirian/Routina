@@ -108,6 +108,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 status: goal.status ?? .active,
                 color: goal.color ?? .none,
                 parentGoalID: parentGoalID,
+                rejectedTaskSuggestionIDs: goal.rejectedTaskSuggestionIDs ?? [],
                 createdAt: goal.createdAt ?? importDate,
                 sortOrder: goal.sortOrder ?? importedCount
             )

@@ -12,10 +12,12 @@ struct SettingsRoutineDataBackupMappingTests {
     @Test
     func goalMappingIncludesParentGoalLink() {
         let parentID = UUID()
+        let rejectedTaskID = UUID()
         let goal = RoutineGoal(
             title: "Run 5K",
             tags: ["Health", "Race"],
-            parentGoalID: parentID
+            parentGoalID: parentID,
+            rejectedTaskSuggestionIDs: [rejectedTaskID]
         )
 
         let backupGoal = SettingsRoutineDataBackupMapping.goal(goal)
@@ -23,6 +25,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(backupGoal.title == "Run 5K")
         #expect(backupGoal.tags == ["Health", "Race"])
         #expect(backupGoal.parentGoalID == parentID)
+        #expect(backupGoal.rejectedTaskSuggestionIDs == [rejectedTaskID])
     }
 
     @Test

@@ -70,6 +70,17 @@ enum CloudKitDirectPullRecordParser {
             in: record,
             keys: ["parentGoalID", "parentGoalId", "PARENTGOALID", "zparentgoalid", "ZPARENTGOALID", "cd_parentgoalid"]
         )
+        let rejectedTaskSuggestionIDsStorageValue = CloudKitDirectPullService.stringValue(
+            in: record,
+            keys: [
+                "rejectedTaskSuggestionIDsStorage",
+                "rejectedTaskSuggestionIdsStorage",
+                "REJECTEDTASKSUGGESTIONIDSSTORAGE",
+                "zrejectedtasksuggestionidsstorage",
+                "ZREJECTEDTASKSUGGESTIONIDSSTORAGE",
+                "cd_rejectedtasksuggestionidsstorage"
+            ]
+        )
         let createdAtValue = CloudKitDirectPullService.dateValue(
             in: record,
             keys: ["createdAt", "CREATEDAT", "zcreatedat", "ZCREATEDAT", "cd_createdat"]
@@ -88,6 +99,7 @@ enum CloudKitDirectPullRecordParser {
                 || statusValue != nil
                 || colorValue != nil
                 || parentGoalIDValue != nil
+                || rejectedTaskSuggestionIDsStorageValue != nil
                 || createdAtValue != nil
                 || sortOrderValue != nil
         else {
@@ -104,6 +116,7 @@ enum CloudKitDirectPullRecordParser {
             status: statusValue,
             color: colorValue,
             parentGoalID: parentGoalIDValue == id ? nil : parentGoalIDValue,
+            rejectedTaskSuggestionIDs: rejectedTaskSuggestionIDsStorageValue.map(RoutineGoalIDStorage.deserialize),
             createdAt: createdAtValue,
             sortOrder: sortOrderValue
         )

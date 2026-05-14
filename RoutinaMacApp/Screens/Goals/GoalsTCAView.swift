@@ -281,6 +281,30 @@ private struct GoalDetailPane: View {
                     }
                 }
 
+                if !goal.taskSuggestions.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Suggested Tasks")
+                            .font(.headline)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(goal.taskSuggestions) { suggestion in
+                                GoalTaskSuggestionRow(
+                                    suggestion: suggestion,
+                                    onAccept: {
+                                        store.send(.acceptTaskSuggestion(goalID: goal.id, taskID: suggestion.id))
+                                    },
+                                    onReject: {
+                                        store.send(.rejectTaskSuggestion(goalID: goal.id, taskID: suggestion.id))
+                                    }
+                                )
+                                if suggestion.id != goal.taskSuggestions.last?.id {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                }
+
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Linked Tasks")
                         .font(.headline)
@@ -404,6 +428,63 @@ private struct GoalDetailPane: View {
                 )
             }
         }
+    }
+}
+
+private struct GoalTaskSuggestionRow: View {
+    var suggestion: GoalsFeature.GoalTaskSuggestionDisplay
+    var onAccept: () -> Void
+    var onReject: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(suggestion.task.displayEmoji)
+                .frame(width: 28, height: 28)
+                .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(suggestion.task.displayName)
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+
+                HStack(spacing: 8) {
+                    Text(suggestion.task.stateText)
+                    if let dueDate = suggestion.task.dueDate {
+                        Text(dueDate.formatted(date: .abbreviated, time: .omitted))
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                    ForEach(suggestion.matchedTags, id: \.self) { tag in
+                        RoutineTagPill(name: tag, color: nil, size: .small)
+                            .fixedSize()
+                    }
+                }
+            }
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 8) {
+                Button(action: onReject) {
+                    Image(systemName: "xmark")
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Reject suggestion")
+
+                Button(action: onAccept) {
+                    Image(systemName: "checkmark")
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .help("Link task to goal")
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 

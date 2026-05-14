@@ -41,7 +41,13 @@ struct SettingsRoutineDataPersistenceTests {
     func backupPackageAndRestore_preservesGoalHierarchy() async throws {
         let context = makeInMemoryContext()
         let parent = RoutineGoal(title: "Health")
-        let child = RoutineGoal(title: "Run 5K", tags: ["Health", "Race"], parentGoalID: parent.id)
+        let rejectedTaskID = UUID()
+        let child = RoutineGoal(
+            title: "Run 5K",
+            tags: ["Health", "Race"],
+            parentGoalID: parent.id,
+            rejectedTaskSuggestionIDs: [rejectedTaskID]
+        )
         context.insert(parent)
         context.insert(child)
         try context.save()
@@ -67,6 +73,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredParent.parentGoalID == nil)
         #expect(restoredChild.parentGoalID == parent.id)
         #expect(restoredChild.tags == ["Health", "Race"])
+        #expect(restoredChild.rejectedTaskSuggestionIDs == [rejectedTaskID])
     }
 
     @Test

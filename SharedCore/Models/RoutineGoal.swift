@@ -24,6 +24,7 @@ final class RoutineGoal {
     var statusRawValue: String = RoutineGoalStatus.active.rawValue
     var colorRawValue: String = RoutineTaskColor.none.rawValue
     var parentGoalID: UUID?
+    var rejectedTaskSuggestionIDsStorage: String = ""
     var createdAt: Date? = Date()
     var sortOrder: Int = 0
 
@@ -42,6 +43,11 @@ final class RoutineGoal {
         set { tagsStorage = RoutineTag.serialize(newValue) }
     }
 
+    var rejectedTaskSuggestionIDs: [UUID] {
+        get { RoutineGoalIDStorage.deserialize(rejectedTaskSuggestionIDsStorage) }
+        set { rejectedTaskSuggestionIDsStorage = RoutineGoalIDStorage.serialize(newValue) }
+    }
+
     var displayTitle: String {
         Self.cleanedTitle(title) ?? "Untitled goal"
     }
@@ -56,6 +62,7 @@ final class RoutineGoal {
         status: RoutineGoalStatus = .active,
         color: RoutineTaskColor = .none,
         parentGoalID: UUID? = nil,
+        rejectedTaskSuggestionIDs: [UUID] = [],
         createdAt: Date? = Date(),
         sortOrder: Int = 0
     ) {
@@ -68,6 +75,7 @@ final class RoutineGoal {
         self.statusRawValue = status.rawValue
         self.colorRawValue = color.rawValue
         self.parentGoalID = parentGoalID == id ? nil : parentGoalID
+        self.rejectedTaskSuggestionIDsStorage = RoutineGoalIDStorage.serialize(rejectedTaskSuggestionIDs)
         self.createdAt = createdAt
         self.sortOrder = max(sortOrder, 0)
     }
@@ -83,6 +91,7 @@ final class RoutineGoal {
             status: status,
             color: color,
             parentGoalID: parentGoalID,
+            rejectedTaskSuggestionIDs: rejectedTaskSuggestionIDs,
             createdAt: createdAt,
             sortOrder: sortOrder
         )

@@ -261,6 +261,22 @@ private struct GoalDetailView: View {
                     }
                 }
 
+                if !goal.taskSuggestions.isEmpty {
+                    Section("Suggested Tasks") {
+                        ForEach(goal.taskSuggestions) { suggestion in
+                            GoalTaskSuggestionRow(
+                                suggestion: suggestion,
+                                onAccept: {
+                                    store.send(.acceptTaskSuggestion(goalID: goal.id, taskID: suggestion.id))
+                                },
+                                onReject: {
+                                    store.send(.rejectTaskSuggestion(goalID: goal.id, taskID: suggestion.id))
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Section("Linked Tasks") {
                     if goal.linkedTasks.isEmpty {
                         ContentUnavailableView(
@@ -295,6 +311,62 @@ private struct GoalDetailView: View {
         } else {
             ContentUnavailableView("Goal unavailable", systemImage: "target")
         }
+    }
+}
+
+private struct GoalTaskSuggestionRow: View {
+    var suggestion: GoalsFeature.GoalTaskSuggestionDisplay
+    var onAccept: () -> Void
+    var onReject: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(suggestion.task.displayEmoji)
+                .frame(width: 28, height: 28)
+                .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(suggestion.task.displayName)
+                    .font(.body.weight(.medium))
+
+                HStack(spacing: 8) {
+                    Text(suggestion.task.stateText)
+                    if let dueDate = suggestion.task.dueDate {
+                        Text(dueDate.formatted(date: .abbreviated, time: .omitted))
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                    ForEach(suggestion.matchedTags, id: \.self) { tag in
+                        RoutineTagPill(name: tag, color: nil, size: .small)
+                            .fixedSize()
+                    }
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 8) {
+                Button(action: onReject) {
+                    Image(systemName: "xmark")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel("Reject task suggestion")
+
+                Button(action: onAccept) {
+                    Image(systemName: "checkmark")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .accessibilityLabel("Accept task suggestion")
+            }
+        }
+        .padding(.vertical, 3)
     }
 }
 

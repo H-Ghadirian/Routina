@@ -17,6 +17,7 @@ struct CloudKitDirectPullDeletionTests {
         let context = makeInMemoryContext()
         let parentID = UUID()
         let childID = UUID()
+        let rejectedTaskID = UUID()
         let parentGoal = CKRecord(
             recordType: "RoutineGoal",
             recordID: CKRecord.ID(recordName: parentID.uuidString)
@@ -29,6 +30,7 @@ struct CloudKitDirectPullDeletionTests {
         childGoal["title"] = "Run 5K" as CKRecordValue
         childGoal["parentGoalID"] = parentID.uuidString as CKRecordValue
         childGoal["tagsStorage"] = "Health\nRace" as CKRecordValue
+        childGoal["rejectedTaskSuggestionIDsStorage"] = RoutineGoalIDStorage.serialize([rejectedTaskID]) as CKRecordValue
 
         try CloudKitDirectPullService.mergeForTesting(
             .init(changedRecords: [parentGoal, childGoal], deletedRecordIDs: []),
@@ -39,6 +41,7 @@ struct CloudKitDirectPullDeletionTests {
         let child = try #require(goals.first { $0.id == childID })
         #expect(child.parentGoalID == parentID)
         #expect(child.tags == ["Health", "Race"])
+        #expect(child.rejectedTaskSuggestionIDs == [rejectedTaskID])
     }
 
     @Test

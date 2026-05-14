@@ -50,6 +50,7 @@ extension CloudKitDirectPullService {
         var status: RoutineGoalStatus?
         var color: RoutineTaskColor?
         var parentGoalID: UUID?
+        var rejectedTaskSuggestionIDs: [UUID]?
         var createdAt: Date?
         var sortOrder: Int?
     }
