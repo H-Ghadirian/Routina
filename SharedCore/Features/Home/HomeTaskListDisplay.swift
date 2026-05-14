@@ -60,6 +60,7 @@ struct HomeTaskListFilteringConfiguration {
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     var selectedTodoStateFilter: TodoState?
     var selectedPressureFilter: RoutineTaskPressure?
+    var selectedGoalFilter: HomeTaskGoalFilter
     var taskListViewMode: HomeTaskListViewMode
     var taskListSortOrder: HomeTaskListSortOrder
     var createdDateFilter: HomeTaskCreatedDateFilter

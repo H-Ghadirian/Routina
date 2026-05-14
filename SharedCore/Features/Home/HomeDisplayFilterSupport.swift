@@ -96,6 +96,24 @@ enum HomeDisplayFilterSupport {
         return pressure == filter
     }
 
+    static func matchesGoalFilter(
+        _ filter: HomeTaskGoalFilter,
+        goalTitles: [String]
+    ) -> Bool {
+        let hasGoal = goalTitles.contains {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
+        switch filter {
+        case .all:
+            return true
+        case .withGoal:
+            return hasGoal
+        case .withoutGoal:
+            return !hasGoal
+        }
+    }
+
     static func hasActiveRelationshipBlocker(
         taskID: UUID,
         tasks: [RoutineTask],

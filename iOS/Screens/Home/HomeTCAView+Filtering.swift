@@ -13,6 +13,7 @@ extension HomeTCAView {
                 selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: store.selectedTodoStateFilter,
                 selectedPressureFilter: store.selectedPressureFilter,
+                selectedGoalFilter: store.selectedGoalFilter,
                 taskListViewMode: store.taskListViewMode,
                 taskListSortOrder: store.taskListSortOrder,
                 createdDateFilter: store.createdDateFilter,

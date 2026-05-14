@@ -80,6 +80,7 @@ struct HomeFeature {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
             selectedPressureFilter: RoutineTaskPressure? = nil,
+            selectedGoalFilter: HomeTaskGoalFilter = .all,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -136,6 +137,7 @@ struct HomeFeature {
                 selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: selectedTodoStateFilter,
                 selectedPressureFilter: selectedPressureFilter,
+                selectedGoalFilter: selectedGoalFilter,
                 taskListViewMode: taskListViewMode,
                 taskListSortOrder: taskListSortOrder,
                 createdDateFilter: createdDateFilter,
@@ -261,6 +263,11 @@ struct HomeFeature {
         var selectedPressureFilter: RoutineTaskPressure? {
             get { taskFilters.selectedPressureFilter }
             set { taskFilters.selectedPressureFilter = newValue }
+        }
+
+        var selectedGoalFilter: HomeTaskGoalFilter {
+            get { taskFilters.selectedGoalFilter }
+            set { taskFilters.selectedGoalFilter = newValue }
         }
 
         var taskListViewMode: HomeTaskListViewMode {
@@ -392,6 +399,7 @@ struct HomeFeature {
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
         case selectedTodoStateFilterChanged(TodoState?)
         case selectedPressureFilterChanged(RoutineTaskPressure?)
+        case selectedGoalFilterChanged(HomeTaskGoalFilter)
         case taskListViewModeChanged(HomeTaskListViewMode)
         case taskListSortOrderChanged(HomeTaskListSortOrder)
         case createdDateFilterChanged(HomeTaskCreatedDateFilter)
@@ -779,6 +787,9 @@ struct HomeFeature {
             case let .selectedPressureFilterChanged(filter):
                 return filterMutationHandler().applyTaskFilterMutation(.selectedPressureFilter(filter), state: &state)
 
+            case let .selectedGoalFilterChanged(filter):
+                return filterMutationHandler().applyTaskFilterMutation(.selectedGoalFilter(filter), state: &state)
+
             case let .taskListViewModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
 
@@ -808,6 +819,7 @@ struct HomeFeature {
                 state.taskFilters.selectedImportanceUrgencyFilter = nil
                 state.taskFilters.selectedTodoStateFilter = nil
                 state.taskFilters.selectedPressureFilter = nil
+                state.taskFilters.selectedGoalFilter = .all
                 if state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
                     appSettingsClient.setHideUnavailableRoutines(false)

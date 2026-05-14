@@ -17,6 +17,7 @@ enum HomeTaskFilterMutation: Equatable {
     case selectedImportanceUrgencyFilter(ImportanceUrgencyFilterCell?)
     case selectedTodoStateFilter(TodoState?)
     case selectedPressureFilter(RoutineTaskPressure?)
+    case selectedGoalFilter(HomeTaskGoalFilter)
     case taskListViewMode(HomeTaskListViewMode)
     case taskListSortOrder(HomeTaskListSortOrder)
     case createdDateFilter(HomeTaskCreatedDateFilter)
@@ -78,6 +79,7 @@ enum HomeFilterEditor {
         taskFilters.selectedImportanceUrgencyFilter = nil
         taskFilters.selectedTodoStateFilter = nil
         taskFilters.selectedPressureFilter = nil
+        taskFilters.selectedGoalFilter = .all
         taskFilters.taskListViewMode = .all
         taskFilters.taskListSortOrder = .smart
         taskFilters.createdDateFilter = .all
@@ -130,6 +132,9 @@ enum HomeFilterEditor {
 
         case let .selectedPressureFilter(filter):
             taskFilters.selectedPressureFilter = filter
+
+        case let .selectedGoalFilter(filter):
+            taskFilters.selectedGoalFilter = filter
 
         case let .taskListViewMode(mode):
             taskFilters.taskListViewMode = mode

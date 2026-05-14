@@ -573,6 +573,7 @@ extension HomeTCAView {
                 showArchivedTasks: homeFilterBindings.showArchivedTasks,
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
+                selectedGoalFilter: homeFilterBindings.selectedGoalFilter,
                 queryOptions: HomeAdvancedQueryOptions(
                     tags: homeTagFilterData.tagSummaries.map(\.name),
                     places: sortedRoutinePlaces.map(\.displayName)

@@ -12,6 +12,7 @@ struct HomeTaskFiltersState: Equatable {
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var selectedTodoStateFilter: TodoState? = nil
     var selectedPressureFilter: RoutineTaskPressure? = nil
+    var selectedGoalFilter: HomeTaskGoalFilter = .all
     var taskListViewMode: HomeTaskListViewMode = .all
     var taskListSortOrder: HomeTaskListSortOrder = .smart
     var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -32,6 +33,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
+            selectedGoalFilter: selectedGoalFilter,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,
@@ -66,6 +68,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
         selectedTodoStateFilter = snapshot.selectedTodoStateFilter
         selectedPressureFilter = snapshot.selectedPressureFilter
+        selectedGoalFilter = snapshot.selectedGoalFilter
         taskListViewMode = snapshot.taskListViewMode
         taskListSortOrder = snapshot.taskListSortOrder
         createdDateFilter = snapshot.createdDateFilter
@@ -149,6 +152,7 @@ enum HomeTemporaryViewStateMapper {
             selectedImportanceUrgencyFilter: persistedState.homeSelectedImportanceUrgencyFilter,
             selectedTodoStateFilter: persistedState.homeSelectedTodoStateFilter,
             selectedPressureFilter: persistedState.homeSelectedPressureFilter,
+            selectedGoalFilter: persistedState.homeSelectedGoalFilter,
             taskListViewMode: persistedState.homeTaskListViewMode,
             taskListSortOrder: persistedState.homeTaskListSortOrder,
             createdDateFilter: persistedState.homeCreatedDateFilter,
@@ -212,6 +216,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedImportanceUrgencyFilter: taskFilters.selectedImportanceUrgencyFilter,
             homeSelectedTodoStateFilter: taskFilters.selectedTodoStateFilter,
             homeSelectedPressureFilter: taskFilters.selectedPressureFilter,
+            homeSelectedGoalFilter: taskFilters.selectedGoalFilter,
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTaskListSortOrder: taskFilters.taskListSortOrder,
             homeCreatedDateFilter: taskFilters.createdDateFilter,

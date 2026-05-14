@@ -147,6 +147,7 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level3),
             selectedTodoStateFilter: .blocked,
             selectedPressureFilter: .high,
+            selectedGoalFilter: .withGoal,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdNewestFirst,
             createdDateFilter: .today
@@ -170,6 +171,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedImportanceUrgencyFilter == nil)
         #expect(taskFilters.selectedTodoStateFilter == nil)
         #expect(taskFilters.selectedPressureFilter == nil)
+        #expect(taskFilters.selectedGoalFilter == .all)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.taskListSortOrder == .smart)
         #expect(taskFilters.createdDateFilter == .all)
@@ -193,6 +195,7 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
+            selectedGoalFilter: .withoutGoal,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,
             createdDateFilter: .last7Days,
@@ -208,6 +211,7 @@ struct HomeFilterEditorTests {
                     selectedManualPlaceFilterID: nil,
                     selectedTodoStateFilter: .ready,
                     selectedPressureFilter: RoutineTaskPressure.none,
+                    selectedGoalFilter: .withGoal,
                     taskListViewMode: .all,
                     taskListSortOrder: .createdNewestFirst,
                     createdDateFilter: .today
@@ -233,6 +237,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.excludeTagMatchMode == .any)
         #expect(taskFilters.selectedTodoStateFilter == .ready)
         #expect(taskFilters.selectedPressureFilter == RoutineTaskPressure.none)
+        #expect(taskFilters.selectedGoalFilter == .withGoal)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.taskListSortOrder == .createdNewestFirst)
         #expect(taskFilters.createdDateFilter == .today)
@@ -248,6 +253,7 @@ struct HomeFilterEditorTests {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level4),
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
+            selectedGoalFilter: .withoutGoal,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,
             createdDateFilter: .last7Days

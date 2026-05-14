@@ -126,6 +126,21 @@ struct HomeFiltersPressureSection: View {
     }
 }
 
+struct HomeFiltersGoalSection: View {
+    @Binding var selectedGoalFilter: HomeTaskGoalFilter
+
+    var body: some View {
+        Section("Goal") {
+            Picker("Goal", selection: $selectedGoalFilter) {
+                ForEach(HomeTaskGoalFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+}
+
 struct HomeFiltersImportanceUrgencySection: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let summary: String

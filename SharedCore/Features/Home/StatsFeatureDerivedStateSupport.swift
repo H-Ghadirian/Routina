@@ -70,6 +70,7 @@ enum StatsFeatureDerivedStateBuilder {
                 selectedImportanceUrgencyFilter: nil,
                 selectedTodoStateFilter: nil,
                 selectedPressureFilter: nil,
+                selectedGoalFilter: .all,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
                 createdDateFilter: .all,

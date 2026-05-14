@@ -10,6 +10,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var showArchivedTasks: Bool
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
+    @Binding var selectedGoalFilter: HomeTaskGoalFilter
     let queryOptions: HomeAdvancedQueryOptions
     let importanceUrgencySummary: String
     let showsTagSection: Bool
@@ -45,6 +46,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             HomeMacSidebarSectionCard(title: "Pressure") {
                 pressurePicker
+            }
+
+            HomeMacSidebarSectionCard(title: "Goal") {
+                goalPicker
             }
 
             HomeMacSidebarSectionCard(title: "Importance & Urgency") {
@@ -185,6 +190,32 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
                     pressureButton(title: pressure.title, pressure: pressure)
                 }
+            }
+        }
+    }
+
+    private var goalPicker: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
+            alignment: .leading,
+            spacing: 8
+        ) {
+            ForEach(HomeTaskGoalFilter.allCases) { filter in
+                Button {
+                    selectedGoalFilter = filter
+                } label: {
+                    Text(filter.title)
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(selectedGoalFilter == filter ? Color.white : Color.primary)
+                        .background(
+                            Capsule()
+                                .fill(selectedGoalFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+                        )
+                }
+                .buttonStyle(.plain)
             }
         }
     }

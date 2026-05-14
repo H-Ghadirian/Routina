@@ -43,6 +43,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let hasSelectedPlaceFilter: Bool
     let selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let selectedPressureFilter: RoutineTaskPressure?
+    let selectedGoalFilter: HomeTaskGoalFilter
     let hideUnavailableRoutines: Bool
     let showArchivedTasks: Bool
     let hasSavedPlaces: Bool
@@ -64,6 +65,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         hasSelectedPlaceFilter: Bool = false,
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         selectedPressureFilter: RoutineTaskPressure? = nil,
+        selectedGoalFilter: HomeTaskGoalFilter = .all,
         hideUnavailableRoutines: Bool = false,
         showArchivedTasks: Bool = true,
         hasSavedPlaces: Bool = false,
@@ -84,6 +86,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.hasSelectedPlaceFilter = hasSelectedPlaceFilter
         self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
         self.selectedPressureFilter = selectedPressureFilter
+        self.selectedGoalFilter = selectedGoalFilter
         self.hideUnavailableRoutines = hideUnavailableRoutines
         self.showArchivedTasks = showArchivedTasks
         self.hasSavedPlaces = hasSavedPlaces
@@ -99,6 +102,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if selectedImportanceUrgencyFilter != nil { count += 1 }
         if selectedTodoStateFilter != nil { count += 1 }
         if selectedPressureFilter != nil { count += 1 }
+        if selectedGoalFilter != .all { count += 1 }
         if !advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
         if taskListViewMode != .all { count += 1 }
         if taskListSortOrder != .smart { count += 1 }
@@ -137,6 +141,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if let selectedPressureFilter {
             labels.append("Pressure \(selectedPressureFilter.title)")
+        }
+
+        if selectedGoalFilter != .all {
+            labels.append(selectedGoalFilter.title)
         }
 
         let trimmedAdvancedQuery = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)

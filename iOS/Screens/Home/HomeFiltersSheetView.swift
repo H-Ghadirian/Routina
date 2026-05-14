@@ -32,6 +32,9 @@ struct HomeFiltersSheetView: View {
                 HomeFiltersPressureSection(
                     selectedPressureFilter: bindings.selectedPressureFilter
                 )
+                HomeFiltersGoalSection(
+                    selectedGoalFilter: bindings.selectedGoalFilter
+                )
                 HomeFiltersImportanceUrgencySection(
                     selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
                     summary: configuration.importanceUrgencySummary

@@ -64,6 +64,27 @@ enum HomeTaskCreatedDateFilter: String, Codable, CaseIterable, Equatable, Identi
     }
 }
 
+enum HomeTaskGoalFilter: String, Codable, CaseIterable, Equatable, Identifiable, Sendable {
+    case all = "All"
+    case withGoal = "Has Goal"
+    case withoutGoal = "No Goal"
+
+    var id: Self { self }
+
+    var title: String { rawValue }
+
+    var systemImage: String {
+        switch self {
+        case .all:
+            return "target"
+        case .withGoal:
+            return "target"
+        case .withoutGoal:
+            return "circle.slash"
+        }
+    }
+}
+
 enum RoutineTagMatchMode: String, Codable, CaseIterable, Equatable, Identifiable, Sendable {
     case all = "All"
     case any = "Any"
@@ -87,6 +108,7 @@ struct TabFilterStateManager {
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
         var selectedTodoStateFilter: TodoState? = nil
         var selectedPressureFilter: RoutineTaskPressure? = nil
+        var selectedGoalFilter: HomeTaskGoalFilter = .all
         var taskListViewMode: HomeTaskListViewMode = .all
         var taskListSortOrder: HomeTaskListSortOrder = .smart
         var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -105,6 +127,7 @@ struct TabFilterStateManager {
                 selectedImportanceUrgencyFilter: nil,
                 selectedTodoStateFilter: nil,
                 selectedPressureFilter: nil,
+                selectedGoalFilter: .all,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
                 createdDateFilter: .all,
@@ -124,6 +147,7 @@ struct TabFilterStateManager {
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
             selectedTodoStateFilter: TodoState? = nil,
             selectedPressureFilter: RoutineTaskPressure? = nil,
+            selectedGoalFilter: HomeTaskGoalFilter = .all,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -140,6 +164,7 @@ struct TabFilterStateManager {
             self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
             self.selectedTodoStateFilter = selectedTodoStateFilter
             self.selectedPressureFilter = selectedPressureFilter
+            self.selectedGoalFilter = selectedGoalFilter
             self.taskListViewMode = taskListViewMode
             self.taskListSortOrder = taskListSortOrder
             self.createdDateFilter = createdDateFilter
@@ -158,6 +183,7 @@ struct TabFilterStateManager {
             case selectedImportanceUrgencyFilter
             case selectedTodoStateFilter
             case selectedPressureFilter
+            case selectedGoalFilter
             case taskListViewMode
             case taskListSortOrder
             case createdDateFilter
@@ -178,6 +204,7 @@ struct TabFilterStateManager {
             selectedImportanceUrgencyFilter = try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .selectedImportanceUrgencyFilter)
             selectedTodoStateFilter = try container.decodeIfPresent(TodoState.self, forKey: .selectedTodoStateFilter)
             selectedPressureFilter = try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .selectedPressureFilter)
+            selectedGoalFilter = try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .selectedGoalFilter) ?? .all
             taskListViewMode = try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .taskListViewMode) ?? .all
             taskListSortOrder = try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .taskListSortOrder) ?? .smart
             createdDateFilter = try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .createdDateFilter) ?? .all
@@ -217,6 +244,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
     var homeSelectedTodoStateFilter: TodoState? = nil
     var homeSelectedPressureFilter: RoutineTaskPressure? = nil
+    var homeSelectedGoalFilter: HomeTaskGoalFilter = .all
     var homeTaskListViewMode: HomeTaskListViewMode = .all
     var homeTaskListSortOrder: HomeTaskListSortOrder = .smart
     var homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all
@@ -265,6 +293,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         homeSelectedTodoStateFilter: TodoState? = nil,
         homeSelectedPressureFilter: RoutineTaskPressure? = nil,
+        homeSelectedGoalFilter: HomeTaskGoalFilter = .all,
         homeTaskListViewMode: HomeTaskListViewMode = .all,
         homeTaskListSortOrder: HomeTaskListSortOrder = .smart,
         homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -312,6 +341,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedImportanceUrgencyFilter = homeSelectedImportanceUrgencyFilter
         self.homeSelectedTodoStateFilter = homeSelectedTodoStateFilter
         self.homeSelectedPressureFilter = homeSelectedPressureFilter
+        self.homeSelectedGoalFilter = homeSelectedGoalFilter
         self.homeTaskListViewMode = homeTaskListViewMode
         self.homeTaskListSortOrder = homeTaskListSortOrder
         self.homeCreatedDateFilter = homeCreatedDateFilter
@@ -361,6 +391,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedImportanceUrgencyFilter
         case homeSelectedTodoStateFilter
         case homeSelectedPressureFilter
+        case homeSelectedGoalFilter
         case homeTaskListViewMode
         case homeTaskListSortOrder
         case homeCreatedDateFilter
@@ -412,6 +443,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedImportanceUrgencyFilter),
             homeSelectedTodoStateFilter: try container.decodeIfPresent(TodoState.self, forKey: .homeSelectedTodoStateFilter),
             homeSelectedPressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedPressureFilter),
+            homeSelectedGoalFilter: try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .homeSelectedGoalFilter) ?? .all,
             homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
             homeTaskListSortOrder: try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .homeTaskListSortOrder) ?? .smart,
             homeCreatedDateFilter: try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .homeCreatedDateFilter) ?? .all,
@@ -462,6 +494,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedImportanceUrgencyFilter: nil,
         homeSelectedTodoStateFilter: nil,
         homeSelectedPressureFilter: nil,
+        homeSelectedGoalFilter: .all,
         homeTaskListViewMode: .all,
         homeTaskListSortOrder: .smart,
         homeCreatedDateFilter: .all,

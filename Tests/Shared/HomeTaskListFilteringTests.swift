@@ -83,6 +83,34 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func goalFilterShowsTasksWithLinkedGoals() {
+        let tasks = [
+            TestTaskDisplay(name: "No goal"),
+            TestTaskDisplay(name: "Launch goal", goalTitles: ["Launch"]),
+            TestTaskDisplay(name: "Blank goal", goalTitles: ["   "])
+        ]
+
+        let result = makeFiltering(selectedGoalFilter: .withGoal)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Launch goal"])
+    }
+
+    @Test
+    func goalFilterShowsTasksWithoutLinkedGoals() {
+        let tasks = [
+            TestTaskDisplay(name: "No goal"),
+            TestTaskDisplay(name: "Launch goal", goalTitles: ["Launch"]),
+            TestTaskDisplay(name: "Blank goal", goalTitles: ["   "])
+        ]
+
+        let result = makeFiltering(selectedGoalFilter: .withoutGoal)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Blank goal", "No goal"])
+    }
+
+    @Test
     func advancedQueryMatchesFieldedTermsAndExclusions() {
         let tasks = [
             TestTaskDisplay(name: "Draft launch plan", placeName: "Office", tags: ["Work"], isOneOffTask: true, todoState: .ready),
@@ -534,6 +562,7 @@ private func makeFiltering(
     selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
     selectedTodoStateFilter: TodoState? = nil,
     selectedPressureFilter: RoutineTaskPressure? = nil,
+    selectedGoalFilter: HomeTaskGoalFilter = .all,
     taskListViewMode: HomeTaskListViewMode = .all,
     taskListSortOrder: HomeTaskListSortOrder = .smart,
     createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -557,6 +586,7 @@ private func makeFiltering(
             selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
+            selectedGoalFilter: selectedGoalFilter,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,
