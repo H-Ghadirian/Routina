@@ -38,8 +38,10 @@ struct TaskDetailToolbarContent: ToolbarContent {
             ToolbarItemGroup(placement: .primaryAction) {
                 actionButtons
                 CloudSharingToolbarButton(task: store.task)
-                Button("Edit") {
+                Button {
                     store.send(.setEditSheet(true))
+                } label: {
+                    Label("Edit", systemImage: "square.and.pencil")
                 }
             }
         }
@@ -47,7 +49,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
 
     private var editTitle: some View {
         HStack(spacing: 8) {
-            Text("✏️")
+            Image(systemName: "square.and.pencil")
             Text("Edit Task")
                 .lineLimit(1)
         }

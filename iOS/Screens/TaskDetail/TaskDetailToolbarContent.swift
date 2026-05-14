@@ -11,7 +11,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
         ToolbarItem(placement: .principal) {
             if isInlineEditPresented {
                 HStack(spacing: 8) {
-                    Text("✏️")
+                    Image(systemName: "square.and.pencil")
                     Text("Edit Task")
                         .lineLimit(1)
                 }
@@ -48,8 +48,10 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     Label("Share", systemImage: "person.crop.circle.badge.plus")
                 }
 
-                Button("Edit") {
+                Button {
                     store.send(.setEditSheet(true))
+                } label: {
+                    Label("Edit", systemImage: "square.and.pencil")
                 }
             }
         }
