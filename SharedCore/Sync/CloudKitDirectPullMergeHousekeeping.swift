@@ -21,6 +21,42 @@ enum CloudKitDirectPullMergeHousekeeping {
     }
 
     @MainActor
+    static func deleteTaskAndRelatedRows(taskID: UUID, in context: ModelContext) throws {
+        let taskDescriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        RoutineTask.removeRelationships(targeting: Set([taskID]), from: tasks)
+
+        if let task = try context.fetch(taskDescriptor).first {
+            context.delete(task)
+        }
+
+        try deleteRows(forTaskIDs: Set([taskID]), in: context)
+    }
+
+    @MainActor
+    static func deleteOrphanedTaskRows(in context: ModelContext) throws {
+        let taskIDs = Set(try context.fetch(FetchDescriptor<RoutineTask>()).map(\.id))
+        let orphanedLogTaskIDs = try context.fetch(FetchDescriptor<RoutineLog>())
+            .filter { !taskIDs.contains($0.taskID) }
+            .map(\.taskID)
+        let orphanedFocusTaskIDs = try context.fetch(FetchDescriptor<FocusSession>())
+            .filter { !taskIDs.contains($0.taskID) }
+            .map(\.taskID)
+        let orphanedAttachmentTaskIDs = try context.fetch(FetchDescriptor<RoutineAttachment>())
+            .filter { !taskIDs.contains($0.taskID) }
+            .map(\.taskID)
+        let orphanedTaskIDs = Set(orphanedLogTaskIDs + orphanedFocusTaskIDs + orphanedAttachmentTaskIDs)
+
+        guard !orphanedTaskIDs.isEmpty else { return }
+        try deleteRows(forTaskIDs: orphanedTaskIDs, in: context)
+    }
+
+    @MainActor
     static func deduplicatePlaces(in context: ModelContext) throws -> [UUID: UUID] {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
@@ -85,6 +121,29 @@ enum CloudKitDirectPullMergeHousekeeping {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         for task in tasks where task.placeID == sourcePlaceID {
             task.placeID = targetPlaceID
+        }
+    }
+
+    @MainActor
+    private static func deleteRows(
+        forTaskIDs taskIDs: Set<UUID>,
+        in context: ModelContext
+    ) throws {
+        guard !taskIDs.isEmpty else { return }
+
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        for log in logs where taskIDs.contains(log.taskID) {
+            context.delete(log)
+        }
+
+        let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
+        for session in focusSessions where taskIDs.contains(session.taskID) {
+            context.delete(session)
+        }
+
+        let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
+        for attachment in attachments where taskIDs.contains(attachment.taskID) {
+            context.delete(attachment)
         }
     }
 }

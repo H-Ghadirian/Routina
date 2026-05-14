@@ -104,6 +104,7 @@ enum CloudKitDirectPullService {
             in: context
         )
 
+        try CloudKitDirectPullMergeHousekeeping.deleteOrphanedTaskRows(in: context)
         try CloudKitDirectPullMergeHousekeeping.deduplicateLogs(in: context)
 
         if context.hasChanges {

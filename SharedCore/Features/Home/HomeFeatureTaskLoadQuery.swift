@@ -11,6 +11,10 @@ struct HomeFeatureTaskLoadQuery {
         try HomeDeduplicationSupport.enforceUniquePlaceNames(in: context)
         _ = try RoutineLogHistory.deduplicateRedundantSameDayLogs(in: context, calendar: calendar)
         _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
+        try CloudKitDirectPullMergeHousekeeping.deleteOrphanedTaskRows(in: context)
+        if context.hasChanges {
+            try context.save()
+        }
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())

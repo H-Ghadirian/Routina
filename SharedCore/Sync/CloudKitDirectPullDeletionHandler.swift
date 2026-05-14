@@ -30,7 +30,7 @@ enum CloudKitDirectPullDeletionHandler {
                 continue
             }
 
-            try deleteTask(id: id, in: context)
+            try CloudKitDirectPullMergeHousekeeping.deleteTaskAndRelatedRows(taskID: id, in: context)
             try deleteLog(id: id, in: context)
         }
     }
@@ -77,18 +77,6 @@ enum CloudKitDirectPullDeletionHandler {
         context.delete(place)
         try clearPlaceReference(placeID: id, in: context)
         return true
-    }
-
-    @MainActor
-    private static func deleteTask(id: UUID, in context: ModelContext) throws {
-        let descriptor = FetchDescriptor<RoutineTask>(
-            predicate: #Predicate { task in
-                task.id == id
-            }
-        )
-        if let task = try context.fetch(descriptor).first {
-            context.delete(task)
-        }
     }
 
     @MainActor

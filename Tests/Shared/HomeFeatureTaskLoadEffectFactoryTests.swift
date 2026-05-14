@@ -67,6 +67,44 @@ struct HomeFeatureTaskLoadEffectFactoryTests {
         #expect(result.doneStats.canceledCountsByTaskID[taskID] == 1)
         #expect(result.doneStats.canceledDatesByTaskID[taskID] == [makeDate("2026-03-21T08:00:00Z")])
     }
+
+    @Test
+    func loadTasksRemovesOrphanedTimelineRows() throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Kept", emoji: nil)
+        let orphanedTaskID = UUID()
+        let keptLog = RoutineLog(
+            timestamp: makeDate("2026-03-20T08:00:00Z"),
+            taskID: task.id
+        )
+        context.insert(task)
+        context.insert(keptLog)
+        context.insert(
+            RoutineLog(
+                timestamp: makeDate("2026-03-20T09:00:00Z"),
+                taskID: orphanedTaskID
+            )
+        )
+        context.insert(FocusSession(taskID: orphanedTaskID, startedAt: makeDate("2026-03-20T09:00:00Z")))
+        context.insert(RoutineAttachment(taskID: orphanedTaskID, fileName: "orphaned.txt", data: Data([1])))
+        try context.save()
+
+        let factory = HomeFeatureTaskLoadEffectFactory<TestTaskLoadEffectAction, TestTaskLoadCancelID>(
+            calendar: makeTestCalendar(),
+            cancelID: .loadTasks,
+            modelContext: { context },
+            loadedAction: { .loaded($0, $1, $2, $3, $4) },
+            failedAction: { .failed }
+        )
+
+        let result = try factory.loadTasks()
+
+        #expect(result.logs.map(\.id) == [keptLog.id])
+        let verificationContext = ModelContext(context.container)
+        #expect(try verificationContext.fetch(FetchDescriptor<RoutineLog>()).map(\.id) == [keptLog.id])
+        #expect(try verificationContext.fetch(FetchDescriptor<FocusSession>()).isEmpty)
+        #expect(try verificationContext.fetch(FetchDescriptor<RoutineAttachment>()).isEmpty)
+    }
 }
 
 private enum TestTaskLoadEffectAction: Equatable {
