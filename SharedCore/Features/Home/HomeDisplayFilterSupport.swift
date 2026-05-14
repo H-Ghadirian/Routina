@@ -114,6 +114,23 @@ enum HomeDisplayFilterSupport {
         }
     }
 
+    static func matchesMediaFilter(
+        _ filter: TaskMediaFilter,
+        hasImage: Bool,
+        hasFileAttachment: Bool
+    ) -> Bool {
+        switch filter {
+        case .all:
+            return true
+        case .anyMedia:
+            return hasImage || hasFileAttachment
+        case .withImage:
+            return hasImage
+        case .withFile:
+            return hasFileAttachment
+        }
+    }
+
     static func hasActiveRelationshipBlocker(
         taskID: UUID,
         tasks: [RoutineTask],

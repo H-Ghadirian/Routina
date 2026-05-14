@@ -11,6 +11,7 @@ struct HomeFilterBindings {
     let selectedImportanceUrgencyFilter: Binding<ImportanceUrgencyFilterCell?>
     let selectedPressureFilter: Binding<RoutineTaskPressure?>
     let selectedGoalFilter: Binding<HomeTaskGoalFilter>
+    let selectedMediaFilter: Binding<TaskMediaFilter>
     let includeTagMatchMode: Binding<RoutineTagMatchMode>
     let excludeTagMatchMode: Binding<RoutineTagMatchMode>
     let selectedPlaceID: Binding<UUID?>

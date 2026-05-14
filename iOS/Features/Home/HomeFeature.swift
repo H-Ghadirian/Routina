@@ -24,6 +24,7 @@ struct HomeFeature {
         var routinePlaces: [RoutinePlace] = []
         var routineGoals: [RoutineGoal] = []
         var timelineLogs: [RoutineLog] = []
+        var fileAttachmentTaskIDs: Set<UUID> = []
         var routineDisplays: [RoutineDisplay] = []
         var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
@@ -49,6 +50,7 @@ struct HomeFeature {
             routinePlaces: [RoutinePlace] = [],
             routineGoals: [RoutineGoal] = [],
             timelineLogs: [RoutineLog] = [],
+            fileAttachmentTaskIDs: Set<UUID> = [],
             routineDisplays: [RoutineDisplay] = [],
             awayRoutineDisplays: [RoutineDisplay] = [],
             archivedRoutineDisplays: [RoutineDisplay] = [],
@@ -81,6 +83,7 @@ struct HomeFeature {
             selectedTodoStateFilter: TodoState? = nil,
             selectedPressureFilter: RoutineTaskPressure? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
+            selectedMediaFilter: TaskMediaFilter = .all,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -95,6 +98,7 @@ struct HomeFeature {
             selectedTimelineExcludedTags: Set<String> = [],
             selectedTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
             selectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
+            selectedTimelineMediaFilter: TaskMediaFilter = .all,
             statsSelectedRange: DoneChartRange = .week,
             statsSelectedTag: String? = nil,
             statsSelectedTags: Set<String> = [],
@@ -106,6 +110,7 @@ struct HomeFeature {
             self.routinePlaces = routinePlaces
             self.routineGoals = routineGoals
             self.timelineLogs = timelineLogs
+            self.fileAttachmentTaskIDs = fileAttachmentTaskIDs
             self.routineDisplays = routineDisplays
             self.awayRoutineDisplays = awayRoutineDisplays
             self.archivedRoutineDisplays = archivedRoutineDisplays
@@ -138,6 +143,7 @@ struct HomeFeature {
                 selectedTodoStateFilter: selectedTodoStateFilter,
                 selectedPressureFilter: selectedPressureFilter,
                 selectedGoalFilter: selectedGoalFilter,
+                selectedMediaFilter: selectedMediaFilter,
                 taskListViewMode: taskListViewMode,
                 taskListSortOrder: taskListSortOrder,
                 createdDateFilter: createdDateFilter,
@@ -153,7 +159,8 @@ struct HomeFeature {
                 includeTagMatchMode: selectedTimelineIncludeTagMatchMode,
                 selectedExcludedTags: selectedTimelineExcludedTags,
                 excludeTagMatchMode: selectedTimelineExcludeTagMatchMode,
-                selectedImportanceUrgencyFilter: selectedTimelineImportanceUrgencyFilter
+                selectedImportanceUrgencyFilter: selectedTimelineImportanceUrgencyFilter,
+                selectedMediaFilter: selectedTimelineMediaFilter
             )
             self.statsFilters = HomeStatsFiltersState(
                 selectedRange: statsSelectedRange,
@@ -270,6 +277,11 @@ struct HomeFeature {
             set { taskFilters.selectedGoalFilter = newValue }
         }
 
+        var selectedMediaFilter: TaskMediaFilter {
+            get { taskFilters.selectedMediaFilter }
+            set { taskFilters.selectedMediaFilter = newValue }
+        }
+
         var taskListViewMode: HomeTaskListViewMode {
             get { taskFilters.taskListViewMode }
             set { taskFilters.taskListViewMode = newValue }
@@ -340,6 +352,11 @@ struct HomeFeature {
             set { timelineFilters.selectedImportanceUrgencyFilter = newValue }
         }
 
+        var selectedTimelineMediaFilter: TaskMediaFilter {
+            get { timelineFilters.selectedMediaFilter }
+            set { timelineFilters.selectedMediaFilter = newValue }
+        }
+
         var statsSelectedRange: DoneChartRange {
             get { statsFilters.selectedRange }
             set { statsFilters.selectedRange = newValue }
@@ -400,6 +417,7 @@ struct HomeFeature {
         case selectedTodoStateFilterChanged(TodoState?)
         case selectedPressureFilterChanged(RoutineTaskPressure?)
         case selectedGoalFilterChanged(HomeTaskGoalFilter)
+        case selectedMediaFilterChanged(TaskMediaFilter)
         case taskListViewModeChanged(HomeTaskListViewMode)
         case taskListSortOrderChanged(HomeTaskListSortOrder)
         case createdDateFilterChanged(HomeTaskCreatedDateFilter)
@@ -417,6 +435,8 @@ struct HomeFeature {
         case selectedTimelineExcludedTagsChanged(Set<String>)
         case selectedTimelineExcludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedTimelineImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
+        case selectedTimelineMediaFilterChanged(TaskMediaFilter)
+        case fileAttachmentTaskIDsChanged(Set<UUID>)
 
         // Stats filter actions
         case statsSelectedRangeChanged(DoneChartRange)
@@ -790,6 +810,9 @@ struct HomeFeature {
             case let .selectedGoalFilterChanged(filter):
                 return filterMutationHandler().applyTaskFilterMutation(.selectedGoalFilter(filter), state: &state)
 
+            case let .selectedMediaFilterChanged(filter):
+                return filterMutationHandler().applyTaskFilterMutation(.selectedMediaFilter(filter), state: &state)
+
             case let .taskListViewModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)
 
@@ -820,6 +843,7 @@ struct HomeFeature {
                 state.taskFilters.selectedTodoStateFilter = nil
                 state.taskFilters.selectedPressureFilter = nil
                 state.taskFilters.selectedGoalFilter = .all
+                state.taskFilters.selectedMediaFilter = .all
                 if state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
                     appSettingsClient.setHideUnavailableRoutines(false)
@@ -854,6 +878,15 @@ struct HomeFeature {
 
             case let .selectedTimelineImportanceUrgencyFilterChanged(filter):
                 return filterMutationHandler().applyTimelineFilterMutation(.selectedImportanceUrgencyFilter(filter), state: &state)
+
+            case let .selectedTimelineMediaFilterChanged(filter):
+                return filterMutationHandler().applyTimelineFilterMutation(.selectedMediaFilter(filter), state: &state)
+
+            case let .fileAttachmentTaskIDsChanged(taskIDs):
+                guard state.fileAttachmentTaskIDs != taskIDs else { return .none }
+                state.fileAttachmentTaskIDs = taskIDs
+                refreshDisplays(&state)
+                return .none
 
             // MARK: - Stats filter actions
 

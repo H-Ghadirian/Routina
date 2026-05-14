@@ -44,6 +44,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let selectedPressureFilter: RoutineTaskPressure?
     let selectedGoalFilter: HomeTaskGoalFilter
+    let selectedMediaFilter: TaskMediaFilter
     let hideUnavailableRoutines: Bool
     let showArchivedTasks: Bool
     let hasSavedPlaces: Bool
@@ -66,6 +67,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
         selectedPressureFilter: RoutineTaskPressure? = nil,
         selectedGoalFilter: HomeTaskGoalFilter = .all,
+        selectedMediaFilter: TaskMediaFilter = .all,
         hideUnavailableRoutines: Bool = false,
         showArchivedTasks: Bool = true,
         hasSavedPlaces: Bool = false,
@@ -87,6 +89,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.selectedImportanceUrgencyFilter = selectedImportanceUrgencyFilter
         self.selectedPressureFilter = selectedPressureFilter
         self.selectedGoalFilter = selectedGoalFilter
+        self.selectedMediaFilter = selectedMediaFilter
         self.hideUnavailableRoutines = hideUnavailableRoutines
         self.showArchivedTasks = showArchivedTasks
         self.hasSavedPlaces = hasSavedPlaces
@@ -103,6 +106,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if selectedTodoStateFilter != nil { count += 1 }
         if selectedPressureFilter != nil { count += 1 }
         if selectedGoalFilter != .all { count += 1 }
+        if selectedMediaFilter != .all { count += 1 }
         if !advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
         if taskListViewMode != .all { count += 1 }
         if taskListSortOrder != .smart { count += 1 }
@@ -145,6 +149,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if selectedGoalFilter != .all {
             labels.append(selectedGoalFilter.title)
+        }
+
+        if selectedMediaFilter != .all {
+            labels.append(selectedMediaFilter.title)
         }
 
         let trimmedAdvancedQuery = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)

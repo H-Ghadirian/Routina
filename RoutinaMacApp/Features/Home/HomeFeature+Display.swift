@@ -9,14 +9,16 @@ extension HomeFeature {
         goalsByID: [UUID: RoutineGoal],
         locationSnapshot: LocationSnapshot,
         doneStats: DoneStats,
-        sprintBoardData: SprintBoardData
+        sprintBoardData: SprintBoardData,
+        fileAttachmentTaskIDs: Set<UUID> = []
     ) -> RoutineDisplay {
         let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
             placesByID: placesByID,
             goalsByID: goalsByID,
             locationSnapshot: locationSnapshot,
-            doneStats: doneStats
+            doneStats: doneStats,
+            fileAttachmentTaskIDs: fileAttachmentTaskIDs
         )
         let assignedSprint = sprintBoardData.sprint(for: task.id)
         let assignedBacklog = sprintBoardData.backlog(for: task.id)
@@ -39,7 +41,8 @@ extension HomeFeature {
                 goalsByID: goalsByID,
                 locationSnapshot: state.locationSnapshot,
                 doneStats: state.doneStats,
-                sprintBoardData: state.sprintBoardData
+                sprintBoardData: state.sprintBoardData,
+                fileAttachmentTaskIDs: state.fileAttachmentTaskIDs
             )
 
             if task.isOneOffTask {
@@ -113,6 +116,7 @@ private extension HomeFeature.RoutineDisplay {
             emoji: core.emoji,
             notes: core.notes,
             hasImage: core.hasImage,
+            hasFileAttachment: core.hasFileAttachment,
             placeID: core.placeID,
             placeName: core.placeName,
             locationAvailability: core.locationAvailability,

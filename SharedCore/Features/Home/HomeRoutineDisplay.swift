@@ -7,6 +7,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var emoji: String
     var notes: String?
     var hasImage: Bool
+    var hasFileAttachment: Bool = false
     var placeID: UUID?
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability

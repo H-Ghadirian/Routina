@@ -141,6 +141,21 @@ struct HomeFiltersGoalSection: View {
     }
 }
 
+struct HomeFiltersMediaSection: View {
+    @Binding var selectedMediaFilter: TaskMediaFilter
+
+    var body: some View {
+        Section("Media") {
+            Picker("Media", selection: $selectedMediaFilter) {
+                ForEach(TaskMediaFilter.allCases) { filter in
+                    Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                }
+            }
+            .pickerStyle(.inline)
+        }
+    }
+}
+
 struct HomeFiltersImportanceUrgencySection: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let summary: String

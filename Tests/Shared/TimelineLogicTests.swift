@@ -431,6 +431,70 @@ struct TimelineLogicTests {
         #expect(doneEntries.map(\.id) == [log.id])
     }
 
+    @Test
+    func filteredEntries_mediaFilterMatchesDoneEntriesWithImagesOrFiles() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let plainTask = makeRoutineTask(name: "Plain done")
+        let imageTask = RoutineTask(
+            name: "Image done",
+            emoji: "🖼️",
+            imageData: Data([1]),
+            scheduleMode: .fixedInterval
+        )
+        let fileTask = makeRoutineTask(name: "File done")
+        let bothTask = RoutineTask(
+            name: "Image and file done",
+            emoji: "📎",
+            imageData: Data([1]),
+            scheduleMode: .fixedInterval
+        )
+        let plainLog = makeLog(taskID: plainTask.id, timestamp: makeDate("2026-03-20T07:00:00Z"))
+        let imageLog = makeLog(taskID: imageTask.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let fileLog = makeLog(taskID: fileTask.id, timestamp: makeDate("2026-03-20T09:00:00Z"))
+        let bothLog = makeLog(taskID: bothTask.id, timestamp: makeDate("2026-03-20T10:00:00Z"))
+        let logs = [plainLog, imageLog, fileLog, bothLog]
+        let tasks = [plainTask, imageTask, fileTask, bothTask]
+        let fileAttachmentTaskIDs: Set<UUID> = [fileTask.id, bothTask.id]
+
+        let anyMediaEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: tasks,
+            fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+            range: .all,
+            filterType: .done,
+            mediaFilter: .anyMedia,
+            now: now,
+            calendar: calendar
+        )
+        let imageEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: tasks,
+            fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+            range: .all,
+            filterType: .done,
+            mediaFilter: .withImage,
+            now: now,
+            calendar: calendar
+        )
+        let fileEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: tasks,
+            fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+            range: .all,
+            filterType: .done,
+            mediaFilter: .withFile,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(Set(anyMediaEntries.map(\.taskName)) == ["Image done", "File done", "Image and file done"])
+        #expect(Set(imageEntries.map(\.taskName)) == ["Image done", "Image and file done"])
+        #expect(Set(fileEntries.map(\.taskName)) == ["File done", "Image and file done"])
+        #expect(imageEntries.allSatisfy { $0.hasImage })
+        #expect(fileEntries.allSatisfy { $0.hasFileAttachment })
+    }
+
     // MARK: - groupedByDay
 
     @Test

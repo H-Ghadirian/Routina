@@ -11,6 +11,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
+    @Binding var selectedMediaFilter: TaskMediaFilter
     let queryOptions: HomeAdvancedQueryOptions
     let importanceUrgencySummary: String
     let showsTagSection: Bool
@@ -50,6 +51,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             HomeMacSidebarSectionCard(title: "Goal") {
                 goalPicker
+            }
+
+            HomeMacSidebarSectionCard(title: "Media") {
+                mediaPicker
             }
 
             HomeMacSidebarSectionCard(title: "Importance & Urgency") {
@@ -213,6 +218,32 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                         .background(
                             Capsule()
                                 .fill(selectedGoalFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var mediaPicker: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 104), spacing: 8, alignment: .leading)],
+            alignment: .leading,
+            spacing: 8
+        ) {
+            ForEach(TaskMediaFilter.allCases) { filter in
+                Button {
+                    selectedMediaFilter = filter
+                } label: {
+                    Label(filter.title, systemImage: filter.systemImage)
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(selectedMediaFilter == filter ? Color.white : Color.primary)
+                        .background(
+                            Capsule()
+                                .fill(selectedMediaFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
                         )
                 }
                 .buttonStyle(.plain)

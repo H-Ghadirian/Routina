@@ -58,6 +58,7 @@ enum AppFeatureTemporaryViewStateSupport {
         taskFilters.selectedTodoStateFilter = nil
         taskFilters.selectedPressureFilter = nil
         taskFilters.selectedGoalFilter = .all
+        taskFilters.selectedMediaFilter = .all
         taskFilters.tabFilterSnapshots = [:]
         taskFilters.isFilterSheetPresented = false
         state.home.taskFilters = taskFilters
@@ -72,6 +73,7 @@ enum AppFeatureTemporaryViewStateSupport {
         state.timeline.excludedTags = []
         state.timeline.excludeTagMatchMode = .any
         state.timeline.selectedImportanceUrgencyFilter = nil
+        state.timeline.mediaFilter = .all
         state.timeline.isFilterSheetPresented = false
         state.timeline.availableTags = []
         state.timeline.groupedEntries = []
@@ -106,6 +108,7 @@ enum AppFeatureTemporaryViewStateSupport {
             homeSelectedTodoStateFilter: existing.homeSelectedTodoStateFilter,
             homeSelectedPressureFilter: existing.homeSelectedPressureFilter,
             homeSelectedGoalFilter: existing.homeSelectedGoalFilter,
+            homeSelectedMediaFilter: existing.homeSelectedMediaFilter,
             homeTabFilterSnapshots: existing.homeTabFilterSnapshots,
             hideUnavailableRoutines: existing.hideUnavailableRoutines,
             homeSelectedTimelineRange: existing.homeSelectedTimelineRange,
@@ -116,6 +119,7 @@ enum AppFeatureTemporaryViewStateSupport {
             homeSelectedTimelineExcludedTags: existing.homeSelectedTimelineExcludedTags,
             homeTimelineExcludeTagMatchMode: existing.homeTimelineExcludeTagMatchMode,
             homeSelectedTimelineImportanceUrgencyFilter: existing.homeSelectedTimelineImportanceUrgencyFilter,
+            homeSelectedTimelineMediaFilter: existing.homeSelectedTimelineMediaFilter,
             macHomeSidebarModeRawValue: existing.macHomeSidebarModeRawValue,
             macSelectedSettingsSectionRawValue: existing.macSelectedSettingsSectionRawValue,
             timelineSelectedRange: state.timeline.selectedRange,
@@ -126,6 +130,7 @@ enum AppFeatureTemporaryViewStateSupport {
             timelineExcludedTags: state.timeline.excludedTags,
             timelineExcludeTagMatchMode: state.timeline.excludeTagMatchMode,
             timelineSelectedImportanceUrgencyFilter: state.timeline.selectedImportanceUrgencyFilter,
+            timelineMediaFilter: state.timeline.mediaFilter,
             statsSelectedRange: state.stats.selectedRange,
             statsSelectedTag: state.stats.selectedTag,
             statsSelectedTags: state.stats.effectiveSelectedTags,
@@ -154,6 +159,7 @@ enum AppFeatureTemporaryViewStateSupport {
         state.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(
             persistedState.timelineSelectedImportanceUrgencyFilter
         )
+        state.mediaFilter = persistedState.timelineMediaFilter
     }
 
     private static func applyStatsFilters<State: AppStatsFeatureTemporaryViewState>(

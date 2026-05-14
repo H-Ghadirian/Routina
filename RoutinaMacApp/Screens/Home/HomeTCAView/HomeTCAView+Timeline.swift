@@ -29,8 +29,10 @@ extension HomeTCAView {
             tasks: store.routineTasks,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
+            fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             range: store.selectedTimelineRange,
             filterType: store.selectedTimelineFilterType,
+            mediaFilter: store.selectedTimelineMediaFilter,
             now: Date(),
             calendar: calendar
         )
@@ -184,6 +186,10 @@ extension HomeTCAView {
             labels.append("\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+")
         }
 
+        if store.selectedTimelineMediaFilter != .all {
+            labels.append(store.selectedTimelineMediaFilter.title)
+        }
+
         if !store.selectedTimelineTags.isEmpty {
             labels.append("\(store.selectedTimelineIncludeTagMatchMode.rawValue) \(store.selectedTimelineTags.count) tags")
         }
@@ -227,6 +233,10 @@ extension HomeTCAView {
                 selectedImportanceUrgencyFilter: Binding(
                     get: { store.selectedTimelineImportanceUrgencyFilter },
                     set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
+                ),
+                selectedMediaFilter: Binding(
+                    get: { store.selectedTimelineMediaFilter },
+                    set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
                 ),
                 showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty,
                 importanceUrgencySummary: timelineImportanceUrgencySummary,

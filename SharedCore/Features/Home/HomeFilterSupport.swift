@@ -18,6 +18,7 @@ enum HomeTaskFilterMutation: Equatable {
     case selectedTodoStateFilter(TodoState?)
     case selectedPressureFilter(RoutineTaskPressure?)
     case selectedGoalFilter(HomeTaskGoalFilter)
+    case selectedMediaFilter(TaskMediaFilter)
     case taskListViewMode(HomeTaskListViewMode)
     case taskListSortOrder(HomeTaskListSortOrder)
     case createdDateFilter(HomeTaskCreatedDateFilter)
@@ -35,6 +36,7 @@ enum HomeTimelineFilterMutation: Equatable {
     case selectedExcludedTags(Set<String>)
     case excludeTagMatchMode(RoutineTagMatchMode)
     case selectedImportanceUrgencyFilter(ImportanceUrgencyFilterCell?)
+    case selectedMediaFilter(TaskMediaFilter)
 }
 
 enum HomeStatsFilterMutation: Equatable {
@@ -80,6 +82,7 @@ enum HomeFilterEditor {
         taskFilters.selectedTodoStateFilter = nil
         taskFilters.selectedPressureFilter = nil
         taskFilters.selectedGoalFilter = .all
+        taskFilters.selectedMediaFilter = .all
         taskFilters.taskListViewMode = .all
         taskFilters.taskListSortOrder = .smart
         taskFilters.createdDateFilter = .all
@@ -135,6 +138,9 @@ enum HomeFilterEditor {
 
         case let .selectedGoalFilter(filter):
             taskFilters.selectedGoalFilter = filter
+
+        case let .selectedMediaFilter(filter):
+            taskFilters.selectedMediaFilter = filter
 
         case let .taskListViewMode(mode):
             taskFilters.taskListViewMode = mode
@@ -192,6 +198,9 @@ enum HomeFilterEditor {
 
         case let .selectedImportanceUrgencyFilter(filter):
             timelineFilters.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(filter)
+
+        case let .selectedMediaFilter(filter):
+            timelineFilters.selectedMediaFilter = filter
         }
     }
 

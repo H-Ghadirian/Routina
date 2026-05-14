@@ -5,6 +5,8 @@ protocol HomeTaskListDisplay {
     var name: String { get }
     var emoji: String { get }
     var notes: String? { get }
+    var hasImage: Bool { get }
+    var hasFileAttachment: Bool { get }
     var placeID: UUID? { get }
     var placeName: String? { get }
     var tags: [String] { get }
@@ -41,6 +43,14 @@ extension HomeTaskListDisplay {
         false
     }
 
+    var hasImage: Bool {
+        false
+    }
+
+    var hasFileAttachment: Bool {
+        false
+    }
+
     var isDailyRoutine: Bool {
         !isOneOffTask && recurrenceRule.isDaily
     }
@@ -61,6 +71,7 @@ struct HomeTaskListFilteringConfiguration {
     var selectedTodoStateFilter: TodoState?
     var selectedPressureFilter: RoutineTaskPressure?
     var selectedGoalFilter: HomeTaskGoalFilter
+    var selectedMediaFilter: TaskMediaFilter
     var taskListViewMode: HomeTaskListViewMode
     var taskListSortOrder: HomeTaskListSortOrder
     var createdDateFilter: HomeTaskCreatedDateFilter

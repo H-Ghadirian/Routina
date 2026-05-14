@@ -6,6 +6,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var emoji: String
     var notes: String?
     var hasImage: Bool
+    var hasFileAttachment: Bool
     var placeID: UUID?
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability

@@ -15,6 +15,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
             && matchesGoalFilter(task)
+            && matchesMediaFilter(task)
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
@@ -33,6 +34,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesTodoStateFilter(task)
             && matchesPressureFilter(task)
             && matchesGoalFilter(task)
+            && matchesMediaFilter(task)
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
@@ -93,6 +95,14 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
         HomeDisplayFilterSupport.matchesGoalFilter(
             configuration.selectedGoalFilter,
             goalTitles: task.goalTitles
+        )
+    }
+
+    func matchesMediaFilter(_ task: Display) -> Bool {
+        HomeDisplayFilterSupport.matchesMediaFilter(
+            configuration.selectedMediaFilter,
+            hasImage: task.hasImage,
+            hasFileAttachment: task.hasFileAttachment
         )
     }
 

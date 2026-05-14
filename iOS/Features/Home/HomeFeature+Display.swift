@@ -8,14 +8,16 @@ extension HomeFeature {
         placesByID: [UUID: RoutinePlace],
         goalsByID: [UUID: RoutineGoal],
         locationSnapshot: LocationSnapshot,
-        doneStats: DoneStats
+        doneStats: DoneStats,
+        fileAttachmentTaskIDs: Set<UUID> = []
     ) -> RoutineDisplay {
         let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
             placesByID: placesByID,
             goalsByID: goalsByID,
             locationSnapshot: locationSnapshot,
-            doneStats: doneStats
+            doneStats: doneStats,
+            fileAttachmentTaskIDs: fileAttachmentTaskIDs
         )
         return RoutineDisplay(core: core)
     }
@@ -33,7 +35,8 @@ extension HomeFeature {
                 placesByID: placesByID,
                 goalsByID: goalsByID,
                 locationSnapshot: state.locationSnapshot,
-                doneStats: state.doneStats
+                doneStats: state.doneStats,
+                fileAttachmentTaskIDs: state.fileAttachmentTaskIDs
             )
 
             if task.isArchived(referenceDate: now, calendar: calendar) {
@@ -78,6 +81,7 @@ private extension HomeFeature.RoutineDisplay {
             emoji: core.emoji,
             notes: core.notes,
             hasImage: core.hasImage,
+            hasFileAttachment: core.hasFileAttachment,
             placeID: core.placeID,
             placeName: core.placeName,
             locationAvailability: core.locationAvailability,

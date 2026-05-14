@@ -85,6 +85,7 @@ struct HomeTCAView: View {
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
+    @Query private var fileAttachments: [RoutineAttachment]
 
     init(
         store: StoreOf<HomeFeature>,
@@ -121,7 +122,21 @@ homeContent
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
                 }
+                .task {
+                    syncFileAttachmentTaskIDs()
+                }
+                .onChange(of: fileAttachmentChangeToken) { _, _ in
+                    syncFileAttachmentTaskIDs()
+                }
         )
+    }
+
+    private var fileAttachmentChangeToken: [String] {
+        fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
+    }
+
+    private func syncFileAttachmentTaskIDs() {
+        store.send(.fileAttachmentTaskIDsChanged(Set(fileAttachments.map(\.taskID))))
     }
 
     @ViewBuilder

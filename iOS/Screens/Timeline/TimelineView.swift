@@ -10,6 +10,7 @@ struct TimelineView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
+    @Query private var fileAttachments: [RoutineAttachment]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
@@ -21,20 +22,23 @@ timelineRoot
         timelineFiltersSheet
     }
 .task {
-    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
     ensureTimelineSelection()
 }
 .onChange(of: tasks) { _, newValue in
-    store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+    store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
 }
 .onChange(of: logs) { _, newValue in
-    store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+    store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
 }
 .onChange(of: sleepSessionChangeToken) { _, _ in
-    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
 }
 .onChange(of: placeCheckInChangeToken) { _, _ in
-    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions))
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
+}
+.onChange(of: fileAttachmentChangeToken) { _, _ in
+    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
 }
 .onChange(of: visibleTimelineEntryIDs) { _, _ in
     ensureTimelineSelection()
@@ -86,6 +90,14 @@ timelineRoot
         }
     }
 
+    private var fileAttachmentTaskIDs: Set<UUID> {
+        Set(fileAttachments.map(\.taskID))
+    }
+
+    private var fileAttachmentChangeToken: [String] {
+        fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
+    }
+
     private var placeCheckInChangeToken: [String] {
         placeCheckInSessions.map { session in
             [
@@ -132,6 +144,13 @@ timelineRoot
         )
     }
 
+    private var mediaFilterBinding: Binding<TaskMediaFilter> {
+        Binding(
+            get: { store.mediaFilter },
+            set: { store.send(.mediaFilterChanged($0)) }
+        )
+    }
+
     private var groupedByDay: [TimelineFeature.TimelineSection] {
         store.groupedEntries
     }
@@ -160,8 +179,10 @@ timelineRoot
             tasks: store.tasks,
             sleepSessions: store.sleepSessions,
             placeCheckInSessions: store.placeCheckInSessions,
+            fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             range: store.selectedRange,
             filterType: store.filterType,
+            mediaFilter: store.mediaFilter,
             now: Date(),
             calendar: calendar
         ).filter { entry in
@@ -468,6 +489,15 @@ timelineRoot
                     ),
                     summary: importanceUrgencyFilterSummary
                 )
+
+                Section("Media") {
+                    Picker("Media", selection: mediaFilterBinding) {
+                        ForEach(TaskMediaFilter.allCases) { filter in
+                            Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
 
                 HomeFiltersTagRulesSection(
                     bindings: tagRuleBindings,

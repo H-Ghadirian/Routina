@@ -98,6 +98,7 @@ extension HomeTCAView {
                 || store.selectedTimelineFilterType != .all
                 || !store.selectedTimelineTags.isEmpty
                 || store.selectedTimelineImportanceUrgencyFilter != nil
+                || store.selectedTimelineMediaFilter != .all
                 || !store.selectedTimelineExcludedTags.isEmpty
         case .routines, .board:
             return store.selectedFilter != .all || hasActiveOptionalFilters
@@ -152,6 +153,7 @@ extension HomeTCAView {
             store.send(.selectedTimelineTagsChanged([]))
             store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
             store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
+            store.send(.selectedTimelineMediaFilterChanged(.all))
             store.send(.selectedTimelineExcludedTagsChanged([]))
             store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         } else {
@@ -574,6 +576,7 @@ extension HomeTCAView {
                 selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
                 selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
                 selectedGoalFilter: homeFilterBindings.selectedGoalFilter,
+                selectedMediaFilter: homeFilterBindings.selectedMediaFilter,
                 queryOptions: HomeAdvancedQueryOptions(
                     tags: homeTagFilterData.tagSummaries.map(\.name),
                     places: sortedRoutinePlaces.map(\.displayName)

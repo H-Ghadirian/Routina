@@ -4,6 +4,7 @@ struct HomeMacTimelineFiltersDetailView: View {
     @Binding var selectedRange: TimelineRange
     @Binding var selectedType: TimelineFilterType
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    @Binding var selectedMediaFilter: TaskMediaFilter
     let showsTypeSection: Bool
     let importanceUrgencySummary: String
     let allTagsCount: Int
@@ -41,6 +42,10 @@ struct HomeMacTimelineFiltersDetailView: View {
                     selectedFilter: $selectedImportanceUrgencyFilter,
                     summaryText: importanceUrgencySummary
                 )
+            }
+
+            HomeMacSidebarSectionCard(title: "Media") {
+                mediaPicker
             }
 
             if !availableTags.isEmpty {
@@ -82,6 +87,15 @@ struct HomeMacTimelineFiltersDetailView: View {
         Picker("Type", selection: $selectedType) {
             ForEach(TimelineFilterType.allCases) { type in
                 Text(type.rawValue).tag(type)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var mediaPicker: some View {
+        Picker("Media", selection: $selectedMediaFilter) {
+            ForEach(TaskMediaFilter.allCases) { filter in
+                Label(filter.title, systemImage: filter.systemImage).tag(filter)
             }
         }
         .pickerStyle(.segmented)

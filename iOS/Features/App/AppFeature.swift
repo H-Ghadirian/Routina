@@ -94,13 +94,14 @@ struct AppFeature {
             case .settings(.resetTemporaryViewStateTapped):
                 let timelineTasks = state.timeline.tasks
                 let timelineLogs = state.timeline.logs
+                let timelineFileAttachmentTaskIDs = state.timeline.fileAttachmentTaskIDs
                 let statsTasks = state.stats.tasks
                 let statsLogs = state.stats.logs
                 let statsFocusSessions = state.stats.focusSessions
                 resetTemporaryViewState(&state)
                 persistTemporaryViewState(state)
                 return .merge(
-                    .send(.timeline(.setData(tasks: timelineTasks, logs: timelineLogs))),
+                    .send(.timeline(.setData(tasks: timelineTasks, logs: timelineLogs, fileAttachmentTaskIDs: timelineFileAttachmentTaskIDs))),
                     .send(.stats(.setData(tasks: statsTasks, logs: statsLogs, focusSessions: statsFocusSessions)))
                 )
             case .timeline(.selectedRangeChanged),
@@ -109,6 +110,7 @@ struct AppFeature {
                  .timeline(.selectedTagsChanged),
                  .timeline(.includeTagMatchModeChanged),
                  .timeline(.selectedImportanceUrgencyFilterChanged),
+                 .timeline(.mediaFilterChanged),
                  .timeline(.excludedTagsChanged),
                  .timeline(.excludeTagMatchModeChanged),
                  .timeline(.clearFilters),

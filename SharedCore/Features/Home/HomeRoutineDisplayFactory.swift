@@ -9,7 +9,8 @@ struct HomeRoutineDisplayFactory {
         placesByID: [UUID: RoutinePlace],
         goalsByID: [UUID: RoutineGoal],
         locationSnapshot: LocationSnapshot,
-        doneStats: HomeDoneStats
+        doneStats: HomeDoneStats,
+        fileAttachmentTaskIDs: Set<UUID> = []
     ) -> HomeRoutineDisplayCore {
         let doneTodayFromLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
         let assumedDoneToday = !doneTodayFromLastDone && RoutineAssumedCompletion.isAssumedDone(
@@ -42,6 +43,7 @@ struct HomeRoutineDisplayFactory {
             emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨",
             notes: CalendarTaskImportSupport.displayNotes(from: task.notes),
             hasImage: task.hasImage,
+            hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),
             placeID: task.placeID,
             placeName: linkedPlace?.displayName,
             locationAvailability: locationAvailability,

@@ -1,10 +1,12 @@
 import ComposableArchitecture
+import SwiftData
 import SwiftUI
 
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
+    @Query private var fileAttachments: [RoutineAttachment]
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
@@ -67,7 +69,21 @@ homeContent
                         .padding(.horizontal, 24)
                         .padding(.bottom, 6)
                 }
+                .task {
+                    syncFileAttachmentTaskIDs()
+                }
+                .onChange(of: fileAttachmentChangeToken) { _, _ in
+                    syncFileAttachmentTaskIDs()
+                }
         )
+    }
+
+    private var fileAttachmentChangeToken: [String] {
+        fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
+    }
+
+    private func syncFileAttachmentTaskIDs() {
+        store.send(.fileAttachmentTaskIDsChanged(Set(fileAttachments.map(\.taskID))))
     }
 
     @ViewBuilder

@@ -35,6 +35,8 @@ struct TimelineEntry: Identifiable, Equatable {
     let taskName: String
     let taskEmoji: String
     let tags: [String]
+    let hasImage: Bool
+    let hasFileAttachment: Bool
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
     let isOneOff: Bool
@@ -52,6 +54,8 @@ struct TimelineEntry: Identifiable, Equatable {
         taskName: String,
         taskEmoji: String,
         tags: [String],
+        hasImage: Bool = false,
+        hasFileAttachment: Bool = false,
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
         isOneOff: Bool,
@@ -68,6 +72,8 @@ struct TimelineEntry: Identifiable, Equatable {
         self.taskName = taskName
         self.taskEmoji = taskEmoji
         self.tags = tags
+        self.hasImage = hasImage
+        self.hasFileAttachment = hasFileAttachment
         self.importance = importance
         self.urgency = urgency
         self.isOneOff = isOneOff
@@ -92,8 +98,10 @@ enum TimelineLogic {
         tasks: [RoutineTask],
         sleepSessions: [SleepSession] = [],
         placeCheckInSessions: [PlaceCheckInSession] = [],
+        fileAttachmentTaskIDs: Set<UUID> = [],
         range: TimelineRange,
         filterType: TimelineFilterType,
+        mediaFilter: TaskMediaFilter = .all,
         now: Date,
         calendar: Calendar
     ) -> [TimelineEntry] {
@@ -113,6 +121,16 @@ enum TimelineLogic {
 
             let task = lookup[log.taskID]
             let isOneOff = task?.isOneOffTask ?? false
+            let hasImage = task?.hasImage ?? false
+            let hasFileAttachment = fileAttachmentTaskIDs.contains(log.taskID)
+
+            guard HomeDisplayFilterSupport.matchesMediaFilter(
+                mediaFilter,
+                hasImage: hasImage,
+                hasFileAttachment: hasFileAttachment
+            ) else {
+                return nil
+            }
 
             switch filterType {
             case .all: break
@@ -132,6 +150,8 @@ enum TimelineLogic {
                 taskName: task?.name ?? "Deleted Routine",
                 taskEmoji: task?.emoji ?? "🗑️",
                 tags: task?.tags ?? [],
+                hasImage: hasImage,
+                hasFileAttachment: hasFileAttachment,
                 importance: task?.importance ?? .level2,
                 urgency: task?.urgency ?? .level2,
                 isOneOff: isOneOff,
@@ -141,6 +161,7 @@ enum TimelineLogic {
 
         let sleepEntries = sleepSessions.compactMap { session -> TimelineEntry? in
             guard filterType == .all || filterType == .sleep,
+                  mediaFilter == .all,
                   let startedAt = session.startedAt
             else {
                 return nil
@@ -168,6 +189,7 @@ enum TimelineLogic {
 
         let placeEntries = placeCheckInSessions.compactMap { session -> TimelineEntry? in
             guard filterType == .all || filterType == .places,
+                  mediaFilter == .all,
                   let startedAt = session.startedAt
             else {
                 return nil

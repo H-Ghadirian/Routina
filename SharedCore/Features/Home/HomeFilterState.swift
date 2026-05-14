@@ -13,6 +13,7 @@ struct HomeTaskFiltersState: Equatable {
     var selectedTodoStateFilter: TodoState? = nil
     var selectedPressureFilter: RoutineTaskPressure? = nil
     var selectedGoalFilter: HomeTaskGoalFilter = .all
+    var selectedMediaFilter: TaskMediaFilter = .all
     var taskListViewMode: HomeTaskListViewMode = .all
     var taskListSortOrder: HomeTaskListSortOrder = .smart
     var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -34,6 +35,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
             selectedGoalFilter: selectedGoalFilter,
+            selectedMediaFilter: selectedMediaFilter,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,
@@ -69,6 +71,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedTodoStateFilter = snapshot.selectedTodoStateFilter
         selectedPressureFilter = snapshot.selectedPressureFilter
         selectedGoalFilter = snapshot.selectedGoalFilter
+        selectedMediaFilter = snapshot.selectedMediaFilter
         taskListViewMode = snapshot.taskListViewMode
         taskListSortOrder = snapshot.taskListSortOrder
         createdDateFilter = snapshot.createdDateFilter
@@ -85,6 +88,7 @@ struct HomeTimelineFiltersState: Equatable {
     var selectedExcludedTags: Set<String> = []
     var excludeTagMatchMode: RoutineTagMatchMode = .any
     var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+    var selectedMediaFilter: TaskMediaFilter = .all
 
     var effectiveSelectedTags: Set<String> {
         if !selectedTags.isEmpty { return selectedTags }
@@ -155,6 +159,7 @@ enum HomeTemporaryViewStateMapper {
             selectedTodoStateFilter: persistedState.homeSelectedTodoStateFilter,
             selectedPressureFilter: persistedState.homeSelectedPressureFilter,
             selectedGoalFilter: persistedState.homeSelectedGoalFilter,
+            selectedMediaFilter: persistedState.homeSelectedMediaFilter,
             taskListViewMode: persistedState.homeTaskListViewMode,
             taskListSortOrder: persistedState.homeTaskListSortOrder,
             createdDateFilter: persistedState.homeCreatedDateFilter,
@@ -182,7 +187,8 @@ enum HomeTemporaryViewStateMapper {
                 excludeTagMatchMode: persistedState.homeTimelineExcludeTagMatchMode,
                 selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell.normalized(
                     persistedState.homeSelectedTimelineImportanceUrgencyFilter
-                )
+                ),
+                selectedMediaFilter: persistedState.homeSelectedTimelineMediaFilter
             ),
             statsFilters: HomeStatsFiltersState(
                 selectedRange: persistedState.statsSelectedRange,
@@ -221,6 +227,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedTodoStateFilter: taskFilters.selectedTodoStateFilter,
             homeSelectedPressureFilter: taskFilters.selectedPressureFilter,
             homeSelectedGoalFilter: taskFilters.selectedGoalFilter,
+            homeSelectedMediaFilter: taskFilters.selectedMediaFilter,
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTaskListSortOrder: taskFilters.taskListSortOrder,
             homeCreatedDateFilter: taskFilters.createdDateFilter,
@@ -235,6 +242,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedTimelineExcludedTags: values.timelineFilters.selectedExcludedTags,
             homeTimelineExcludeTagMatchMode: values.timelineFilters.excludeTagMatchMode,
             homeSelectedTimelineImportanceUrgencyFilter: values.timelineFilters.selectedImportanceUrgencyFilter,
+            homeSelectedTimelineMediaFilter: values.timelineFilters.selectedMediaFilter,
             macHomeSidebarModeRawValue: values.macSidebarModeRawValue ?? existing.macHomeSidebarModeRawValue,
             macSelectedSettingsSectionRawValue: values.macSelectedSettingsSectionRawValue ?? existing.macSelectedSettingsSectionRawValue,
             timelineSelectedRange: existing.timelineSelectedRange,

@@ -85,6 +85,30 @@ enum HomeTaskGoalFilter: String, Codable, CaseIterable, Equatable, Identifiable,
     }
 }
 
+enum TaskMediaFilter: String, Codable, CaseIterable, Equatable, Identifiable, Sendable {
+    case all = "All"
+    case anyMedia = "Any Media"
+    case withImage = "Image"
+    case withFile = "File"
+
+    var id: Self { self }
+
+    var title: String { rawValue }
+
+    var systemImage: String {
+        switch self {
+        case .all:
+            return "paperclip"
+        case .anyMedia:
+            return "photo.on.rectangle.angled"
+        case .withImage:
+            return "photo"
+        case .withFile:
+            return "paperclip"
+        }
+    }
+}
+
 enum RoutineTagMatchMode: String, Codable, CaseIterable, Equatable, Identifiable, Sendable {
     case all = "All"
     case any = "Any"
@@ -109,6 +133,7 @@ struct TabFilterStateManager {
         var selectedTodoStateFilter: TodoState? = nil
         var selectedPressureFilter: RoutineTaskPressure? = nil
         var selectedGoalFilter: HomeTaskGoalFilter = .all
+        var selectedMediaFilter: TaskMediaFilter = .all
         var taskListViewMode: HomeTaskListViewMode = .all
         var taskListSortOrder: HomeTaskListSortOrder = .smart
         var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -128,6 +153,7 @@ struct TabFilterStateManager {
                 selectedTodoStateFilter: nil,
                 selectedPressureFilter: nil,
                 selectedGoalFilter: .all,
+                selectedMediaFilter: .all,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
                 createdDateFilter: .all,
@@ -148,6 +174,7 @@ struct TabFilterStateManager {
             selectedTodoStateFilter: TodoState? = nil,
             selectedPressureFilter: RoutineTaskPressure? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
+            selectedMediaFilter: TaskMediaFilter = .all,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -165,6 +192,7 @@ struct TabFilterStateManager {
             self.selectedTodoStateFilter = selectedTodoStateFilter
             self.selectedPressureFilter = selectedPressureFilter
             self.selectedGoalFilter = selectedGoalFilter
+            self.selectedMediaFilter = selectedMediaFilter
             self.taskListViewMode = taskListViewMode
             self.taskListSortOrder = taskListSortOrder
             self.createdDateFilter = createdDateFilter
@@ -184,6 +212,7 @@ struct TabFilterStateManager {
             case selectedTodoStateFilter
             case selectedPressureFilter
             case selectedGoalFilter
+            case selectedMediaFilter
             case taskListViewMode
             case taskListSortOrder
             case createdDateFilter
@@ -205,6 +234,7 @@ struct TabFilterStateManager {
             selectedTodoStateFilter = try container.decodeIfPresent(TodoState.self, forKey: .selectedTodoStateFilter)
             selectedPressureFilter = try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .selectedPressureFilter)
             selectedGoalFilter = try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .selectedGoalFilter) ?? .all
+            selectedMediaFilter = try container.decodeIfPresent(TaskMediaFilter.self, forKey: .selectedMediaFilter) ?? .all
             taskListViewMode = try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .taskListViewMode) ?? .all
             taskListSortOrder = try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .taskListSortOrder) ?? .smart
             createdDateFilter = try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .createdDateFilter) ?? .all
@@ -245,6 +275,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedTodoStateFilter: TodoState? = nil
     var homeSelectedPressureFilter: RoutineTaskPressure? = nil
     var homeSelectedGoalFilter: HomeTaskGoalFilter = .all
+    var homeSelectedMediaFilter: TaskMediaFilter = .all
     var homeTaskListViewMode: HomeTaskListViewMode = .all
     var homeTaskListSortOrder: HomeTaskListSortOrder = .smart
     var homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all
@@ -259,6 +290,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedTimelineExcludedTags: Set<String> = []
     var homeTimelineExcludeTagMatchMode: RoutineTagMatchMode
     var homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+    var homeSelectedTimelineMediaFilter: TaskMediaFilter = .all
     var macHomeSidebarModeRawValue: String?
     var macSelectedSettingsSectionRawValue: String?
     var timelineSelectedRange: TimelineRange
@@ -269,6 +301,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var timelineExcludedTags: Set<String>
     var timelineExcludeTagMatchMode: RoutineTagMatchMode
     var timelineSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+    var timelineMediaFilter: TaskMediaFilter = .all
     var statsSelectedRange: DoneChartRange
     var statsSelectedTag: String?
     var statsSelectedTags: Set<String>
@@ -294,6 +327,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTodoStateFilter: TodoState? = nil,
         homeSelectedPressureFilter: RoutineTaskPressure? = nil,
         homeSelectedGoalFilter: HomeTaskGoalFilter = .all,
+        homeSelectedMediaFilter: TaskMediaFilter = .all,
         homeTaskListViewMode: HomeTaskListViewMode = .all,
         homeTaskListSortOrder: HomeTaskListSortOrder = .smart,
         homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -308,6 +342,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTimelineExcludedTags: Set<String> = [],
         homeTimelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
         homeSelectedTimelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
+        homeSelectedTimelineMediaFilter: TaskMediaFilter = .all,
         macHomeSidebarModeRawValue: String?,
         macSelectedSettingsSectionRawValue: String?,
         timelineSelectedRange: TimelineRange,
@@ -318,6 +353,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         timelineExcludedTags: Set<String> = [],
         timelineExcludeTagMatchMode: RoutineTagMatchMode = .any,
         timelineSelectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil,
+        timelineMediaFilter: TaskMediaFilter = .all,
         statsSelectedRange: DoneChartRange,
         statsSelectedTag: String?,
         statsSelectedTags: Set<String>? = nil,
@@ -342,6 +378,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedTodoStateFilter = homeSelectedTodoStateFilter
         self.homeSelectedPressureFilter = homeSelectedPressureFilter
         self.homeSelectedGoalFilter = homeSelectedGoalFilter
+        self.homeSelectedMediaFilter = homeSelectedMediaFilter
         self.homeTaskListViewMode = homeTaskListViewMode
         self.homeTaskListSortOrder = homeTaskListSortOrder
         self.homeCreatedDateFilter = homeCreatedDateFilter
@@ -356,6 +393,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedTimelineExcludedTags = homeSelectedTimelineExcludedTags
         self.homeTimelineExcludeTagMatchMode = homeTimelineExcludeTagMatchMode
         self.homeSelectedTimelineImportanceUrgencyFilter = homeSelectedTimelineImportanceUrgencyFilter
+        self.homeSelectedTimelineMediaFilter = homeSelectedTimelineMediaFilter
         self.macHomeSidebarModeRawValue = macHomeSidebarModeRawValue
         self.macSelectedSettingsSectionRawValue = macSelectedSettingsSectionRawValue
         self.timelineSelectedRange = timelineSelectedRange
@@ -366,6 +404,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.timelineExcludedTags = timelineExcludedTags
         self.timelineExcludeTagMatchMode = timelineExcludeTagMatchMode
         self.timelineSelectedImportanceUrgencyFilter = timelineSelectedImportanceUrgencyFilter
+        self.timelineMediaFilter = timelineMediaFilter
         self.statsSelectedRange = statsSelectedRange
         self.statsSelectedTag = statsSelectedTag
         self.statsSelectedTags = statsSelectedTags ?? statsSelectedTag.map { [$0] } ?? []
@@ -392,6 +431,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedTodoStateFilter
         case homeSelectedPressureFilter
         case homeSelectedGoalFilter
+        case homeSelectedMediaFilter
         case homeTaskListViewMode
         case homeTaskListSortOrder
         case homeCreatedDateFilter
@@ -406,6 +446,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedTimelineExcludedTags
         case homeTimelineExcludeTagMatchMode
         case homeSelectedTimelineImportanceUrgencyFilter
+        case homeSelectedTimelineMediaFilter
         case macHomeSidebarModeRawValue
         case macSelectedSettingsSectionRawValue
         case timelineSelectedRange
@@ -416,6 +457,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case timelineExcludedTags
         case timelineExcludeTagMatchMode
         case timelineSelectedImportanceUrgencyFilter
+        case timelineMediaFilter
         case statsSelectedRange
         case statsSelectedTag
         case statsSelectedTags
@@ -444,6 +486,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedTodoStateFilter: try container.decodeIfPresent(TodoState.self, forKey: .homeSelectedTodoStateFilter),
             homeSelectedPressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedPressureFilter),
             homeSelectedGoalFilter: try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .homeSelectedGoalFilter) ?? .all,
+            homeSelectedMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedMediaFilter) ?? .all,
             homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
             homeTaskListSortOrder: try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .homeTaskListSortOrder) ?? .smart,
             homeCreatedDateFilter: try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .homeCreatedDateFilter) ?? .all,
@@ -458,6 +501,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedTimelineExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .homeSelectedTimelineExcludedTags) ?? [],
             homeTimelineExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .homeTimelineExcludeTagMatchMode) ?? .any,
             homeSelectedTimelineImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .homeSelectedTimelineImportanceUrgencyFilter),
+            homeSelectedTimelineMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedTimelineMediaFilter) ?? .all,
             macHomeSidebarModeRawValue: try container.decodeIfPresent(String.self, forKey: .macHomeSidebarModeRawValue),
             macSelectedSettingsSectionRawValue: try container.decodeIfPresent(String.self, forKey: .macSelectedSettingsSectionRawValue),
             timelineSelectedRange: try container.decodeIfPresent(TimelineRange.self, forKey: .timelineSelectedRange) ?? .all,
@@ -468,6 +512,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             timelineExcludedTags: try container.decodeIfPresent(Set<String>.self, forKey: .timelineExcludedTags) ?? [],
             timelineExcludeTagMatchMode: try container.decodeIfPresent(RoutineTagMatchMode.self, forKey: .timelineExcludeTagMatchMode) ?? .any,
             timelineSelectedImportanceUrgencyFilter: try container.decodeIfPresent(ImportanceUrgencyFilterCell.self, forKey: .timelineSelectedImportanceUrgencyFilter),
+            timelineMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .timelineMediaFilter) ?? .all,
             statsSelectedRange: try container.decodeIfPresent(DoneChartRange.self, forKey: .statsSelectedRange) ?? .week,
             statsSelectedTag: try container.decodeIfPresent(String.self, forKey: .statsSelectedTag),
             statsSelectedTags: try container.decodeIfPresent(Set<String>.self, forKey: .statsSelectedTags),
@@ -495,6 +540,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTodoStateFilter: nil,
         homeSelectedPressureFilter: nil,
         homeSelectedGoalFilter: .all,
+        homeSelectedMediaFilter: .all,
         homeTaskListViewMode: .all,
         homeTaskListSortOrder: .smart,
         homeCreatedDateFilter: .all,
@@ -509,6 +555,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedTimelineExcludedTags: [],
         homeTimelineExcludeTagMatchMode: .any,
         homeSelectedTimelineImportanceUrgencyFilter: nil,
+        homeSelectedTimelineMediaFilter: .all,
         macHomeSidebarModeRawValue: nil,
         macSelectedSettingsSectionRawValue: nil,
         timelineSelectedRange: .all,
@@ -519,6 +566,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         timelineExcludedTags: [],
         timelineExcludeTagMatchMode: .any,
         timelineSelectedImportanceUrgencyFilter: nil,
+        timelineMediaFilter: .all,
         statsSelectedRange: .week,
         statsSelectedTag: nil,
         statsSelectedTags: [],

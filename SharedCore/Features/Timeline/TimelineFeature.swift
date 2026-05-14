@@ -14,6 +14,7 @@ struct TimelineFeature {
     struct State: Equatable {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
+        var fileAttachmentTaskIDs: Set<UUID> = []
         var sleepSessions: [SleepSession] = []
         var placeCheckInSessions: [PlaceCheckInSession] = []
         var selectedRange: TimelineRange = .all
@@ -24,6 +25,7 @@ struct TimelineFeature {
         var excludedTags: Set<String> = []
         var excludeTagMatchMode: RoutineTagMatchMode = .any
         var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? = nil
+        var mediaFilter: TaskMediaFilter = .all
         var isFilterSheetPresented: Bool = false
         var availableTags: [String] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
@@ -35,6 +37,7 @@ struct TimelineFeature {
                 || !effectiveSelectedTags.isEmpty
                 || !excludedTags.isEmpty
                 || selectedImportanceUrgencyFilter != nil
+                || mediaFilter != .all
         }
 
         var effectiveSelectedTags: Set<String> {
@@ -54,7 +57,7 @@ struct TimelineFeature {
     }
 
     enum Action: Equatable {
-        case setData(tasks: [RoutineTask], logs: [RoutineLog], sleepSessions: [SleepSession] = [], placeCheckInSessions: [PlaceCheckInSession] = [])
+        case setData(tasks: [RoutineTask], logs: [RoutineLog], sleepSessions: [SleepSession] = [], placeCheckInSessions: [PlaceCheckInSession] = [], fileAttachmentTaskIDs: Set<UUID> = [])
         case selectedRangeChanged(TimelineRange)
         case filterTypeChanged(TimelineFilterType)
         case selectedTagChanged(String?)
@@ -63,6 +66,7 @@ struct TimelineFeature {
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
         case selectedImportanceUrgencyFilterChanged(ImportanceUrgencyFilterCell?)
+        case mediaFilterChanged(TaskMediaFilter)
         case setFilterSheet(Bool)
         case clearFilters
     }
@@ -74,11 +78,12 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, sleepSessions, placeCheckInSessions):
+            case let .setData(tasks, logs, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs):
                 state.tasks = tasks
                 state.logs = logs
                 state.sleepSessions = sleepSessions
                 state.placeCheckInSessions = placeCheckInSessions
+                state.fileAttachmentTaskIDs = fileAttachmentTaskIDs
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -126,6 +131,11 @@ struct TimelineFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case let .mediaFilterChanged(filter):
+                state.mediaFilter = filter
+                refreshDerivedState(&state)
+                return .none
+
             case let .setFilterSheet(isPresented):
                 state.isFilterSheetPresented = isPresented
                 return .none
@@ -138,6 +148,7 @@ struct TimelineFeature {
                 state.excludedTags = []
                 state.excludeTagMatchMode = .any
                 state.selectedImportanceUrgencyFilter = nil
+                state.mediaFilter = .all
                 refreshDerivedState(&state)
                 return .none
             }
@@ -150,8 +161,10 @@ struct TimelineFeature {
             tasks: state.tasks,
             sleepSessions: state.sleepSessions,
             placeCheckInSessions: state.placeCheckInSessions,
+            fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
             range: state.selectedRange,
             filterType: state.filterType,
+            mediaFilter: state.mediaFilter,
             now: now,
             calendar: calendar
         )

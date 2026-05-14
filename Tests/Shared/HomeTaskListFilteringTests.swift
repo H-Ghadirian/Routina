@@ -111,6 +111,27 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func mediaFilterShowsTasksWithImagesFilesOrAnyMedia() {
+        let tasks = [
+            TestTaskDisplay(name: "No media"),
+            TestTaskDisplay(name: "Design reference", hasImage: true),
+            TestTaskDisplay(name: "Brief attachment", hasFileAttachment: true),
+            TestTaskDisplay(name: "Annotated spec", hasImage: true, hasFileAttachment: true)
+        ]
+
+        let anyMediaResult = makeFiltering(selectedMediaFilter: .anyMedia)
+            .filteredTasks(tasks)
+        let imageResult = makeFiltering(selectedMediaFilter: .withImage)
+            .filteredTasks(tasks)
+        let fileResult = makeFiltering(selectedMediaFilter: .withFile)
+            .filteredTasks(tasks)
+
+        #expect(Set(anyMediaResult.map(\.name)) == ["Design reference", "Brief attachment", "Annotated spec"])
+        #expect(Set(imageResult.map(\.name)) == ["Design reference", "Annotated spec"])
+        #expect(Set(fileResult.map(\.name)) == ["Brief attachment", "Annotated spec"])
+    }
+
+    @Test
     func advancedQueryMatchesFieldedTermsAndExclusions() {
         let tasks = [
             TestTaskDisplay(name: "Draft launch plan", placeName: "Office", tags: ["Work"], isOneOffTask: true, todoState: .ready),
@@ -574,6 +595,7 @@ private func makeFiltering(
     selectedTodoStateFilter: TodoState? = nil,
     selectedPressureFilter: RoutineTaskPressure? = nil,
     selectedGoalFilter: HomeTaskGoalFilter = .all,
+    selectedMediaFilter: TaskMediaFilter = .all,
     taskListViewMode: HomeTaskListViewMode = .all,
     taskListSortOrder: HomeTaskListSortOrder = .smart,
     createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -598,6 +620,7 @@ private func makeFiltering(
             selectedTodoStateFilter: selectedTodoStateFilter,
             selectedPressureFilter: selectedPressureFilter,
             selectedGoalFilter: selectedGoalFilter,
+            selectedMediaFilter: selectedMediaFilter,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,
@@ -620,6 +643,8 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var name: String
     var emoji: String = "✅"
     var notes: String?
+    var hasImage: Bool = false
+    var hasFileAttachment: Bool = false
     var placeID: UUID?
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability = .unrestricted

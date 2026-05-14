@@ -17,6 +17,7 @@ extension HomeTCAView {
             selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
+            selectedMediaFilter: store.selectedMediaFilter,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
             onClearAll: { store.send(.clearOptionalFilters) },
@@ -44,6 +45,9 @@ extension HomeTCAView {
             onClearGoal: {
                 store.send(.selectedGoalFilterChanged(.all))
             },
+            onClearMedia: {
+                store.send(.selectedMediaFilterChanged(.all))
+            },
             onShowUnavailableRoutines: {
                 store.send(.hideUnavailableRoutinesChanged(false))
             },
@@ -70,6 +74,7 @@ extension HomeTCAView {
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
+            selectedMediaFilter: store.selectedMediaFilter,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
             hasSavedPlaces: hasSavedPlaces,
@@ -143,6 +148,10 @@ extension HomeTCAView {
             selectedGoalFilter: Binding(
                 get: { store.selectedGoalFilter },
                 set: { store.send(.selectedGoalFilterChanged($0)) }
+            ),
+            selectedMediaFilter: Binding(
+                get: { store.selectedMediaFilter },
+                set: { store.send(.selectedMediaFilterChanged($0)) }
             ),
             includeTagMatchMode: Binding(
                 get: { store.includeTagMatchMode },
