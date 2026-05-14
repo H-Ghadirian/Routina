@@ -511,7 +511,7 @@ struct PlaceCheckInMapSheet: View {
         if let draft = newPlaceDraft {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
-                    Label("New Place", systemImage: "mappin.and.ellipse")
+                    Label("Add New Place", systemImage: "mappin.and.ellipse")
                         .font(.headline.weight(.semibold))
 
                     Spacer(minLength: 8)
