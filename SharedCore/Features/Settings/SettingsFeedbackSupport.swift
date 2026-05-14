@@ -20,29 +20,42 @@ enum SettingsFeedbackSupport {
 
     static func renameTagSuccessMessage(
         updatedTagName: String,
-        updatedRoutineCount: Int
+        updatedRoutineCount: Int,
+        updatedGoalCount: Int = 0
     ) -> String {
-        switch updatedRoutineCount {
-        case ..<1:
+        let updatedParts = tagUpdateParts(
+            routineCount: updatedRoutineCount,
+            goalCount: updatedGoalCount
+        )
+        guard !updatedParts.isEmpty else {
             return "Updated tag to \(updatedTagName)."
-        case 1:
-            return "Updated tag to \(updatedTagName) in 1 routine."
-        default:
-            return "Updated tag to \(updatedTagName) in \(updatedRoutineCount) routines."
         }
+        return "Updated tag to \(updatedTagName) in \(updatedParts.joined(separator: " and "))."
     }
 
     static func deleteTagSuccessMessage(
         deletedTagName: String,
-        updatedRoutineCount: Int
+        updatedRoutineCount: Int,
+        updatedGoalCount: Int = 0
     ) -> String {
-        switch updatedRoutineCount {
-        case ..<1:
+        let updatedParts = tagUpdateParts(
+            routineCount: updatedRoutineCount,
+            goalCount: updatedGoalCount
+        )
+        guard !updatedParts.isEmpty else {
             return "Deleted \(deletedTagName)."
-        case 1:
-            return "Deleted \(deletedTagName) from 1 routine."
-        default:
-            return "Deleted \(deletedTagName) from \(updatedRoutineCount) routines."
         }
+        return "Deleted \(deletedTagName) from \(updatedParts.joined(separator: " and "))."
+    }
+
+    private static func tagUpdateParts(routineCount: Int, goalCount: Int) -> [String] {
+        var parts: [String] = []
+        if routineCount > 0 {
+            parts.append(routineCount == 1 ? "1 routine" : "\(routineCount) routines")
+        }
+        if goalCount > 0 {
+            parts.append(goalCount == 1 ? "1 goal" : "\(goalCount) goals")
+        }
+        return parts
     }
 }

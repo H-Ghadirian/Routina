@@ -473,7 +473,7 @@ extension SettingsTagsState {
 
         switch savedTags.count {
         case 0:
-            return "Review and manage tags across routines\(fastFilterSuffix)"
+            return "Review and manage tags across tasks and goals\(fastFilterSuffix)"
         case 1:
             return "1 saved tag\(fastFilterSuffix)"
         default:
@@ -483,17 +483,15 @@ extension SettingsTagsState {
 
     var deleteConfirmationMessage: String {
         guard let tag = tagPendingDeletion else {
-            return "This will remove the tag from every routine that uses it."
+            return "This will remove the tag from every task or goal that uses it."
         }
 
-        let linkedRoutinesText: String
-        if tag.linkedRoutineCount == 1 {
-            linkedRoutinesText = "1 routine will lose it"
-        } else {
-            linkedRoutinesText = "\(tag.linkedRoutineCount) routines will lose it"
-        }
+        let affectedParts = tag.settingsAffectedDeletionParts
+        let affectedText = affectedParts.isEmpty
+            ? "no saved items will lose it"
+            : "\(affectedParts.joined(separator: " and ")) will lose it"
 
-        return "Delete \(tag.name)? This cannot be undone, and \(linkedRoutinesText)."
+        return "Delete \(tag.name)? This cannot be undone, and \(affectedText)."
     }
 
     var isSaveRenameDisabled: Bool {
@@ -519,10 +517,28 @@ extension RoutineTagSummary {
         if linkedTodoCount > 0 {
             parts.append(linkedTodoCount == 1 ? "1 todo" : "\(linkedTodoCount) todos")
         }
+        if linkedGoalCount > 0 {
+            parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
+        }
         if doneCount > 0 {
             parts.append(doneCount == 1 ? "1 done" : "\(doneCount) done")
         }
         guard !parts.isEmpty else { return "" }
         return "Used by " + parts.joined(separator: " · ")
+    }
+
+    var settingsAffectedDeletionParts: [String] {
+        let routinesOnly = max(0, linkedRoutineCount - linkedTodoCount)
+        var parts: [String] = []
+        if routinesOnly > 0 {
+            parts.append(routinesOnly == 1 ? "1 routine" : "\(routinesOnly) routines")
+        }
+        if linkedTodoCount > 0 {
+            parts.append(linkedTodoCount == 1 ? "1 todo" : "\(linkedTodoCount) todos")
+        }
+        if linkedGoalCount > 0 {
+            parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
+        }
+        return parts
     }
 }

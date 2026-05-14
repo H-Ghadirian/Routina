@@ -104,6 +104,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 emoji: goal.emoji,
                 notes: goal.notes,
                 targetDate: goal.targetDate,
+                tags: goal.tags ?? [],
                 status: goal.status ?? .active,
                 color: goal.color ?? .none,
                 parentGoalID: parentGoalID,

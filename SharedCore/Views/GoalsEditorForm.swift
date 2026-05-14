@@ -49,6 +49,77 @@ struct GoalsEditorForm: View {
                 }
             }
 
+            Section("Tags") {
+                HStack(spacing: 10) {
+                    TextField("health, focus, morning", text: tagDraftBinding)
+                        .onSubmit {
+                            store.send(.editorAddTagTapped)
+                        }
+
+                    Button("Add") {
+                        store.send(.editorAddTagTapped)
+                    }
+                    .disabled(RoutineTag.parseDraft(store.editorDraft.tagDraft).isEmpty)
+                }
+
+                if !store.editorDraft.tags.isEmpty {
+                    HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                        ForEach(store.editorDraft.tags, id: \.self) { tag in
+                            Button {
+                                store.send(.editorRemoveTagTapped(tag))
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text("#\(tag)")
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.caption)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
+                            }
+                            .buttonStyle(.plain)
+                            .fixedSize()
+                            .accessibilityLabel("Remove tag \(tag)")
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                if !availableTagSuggestions.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Choose from existing tags")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+
+                        HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                            ForEach(availableTagSuggestions, id: \.self) { tag in
+                                Button {
+                                    store.send(.editorToggleTagSelection(tag))
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus.circle")
+                                            .font(.caption)
+                                        Text("#\(tag)")
+                                            .lineLimit(1)
+                                            .fixedSize(horizontal: true, vertical: false)
+                                    }
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .routinaGlassPill(tint: .secondary, tintOpacity: 0.10, interactive: true)
+                                }
+                                .buttonStyle(.plain)
+                                .fixedSize()
+                                .accessibilityLabel("Add tag \(tag)")
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
             Section {
                 Picker("Color", selection: colorBinding) {
                     ForEach(RoutineTaskColor.allCases, id: \.self) { color in
@@ -111,6 +182,20 @@ struct GoalsEditorForm: View {
             get: { store.editorDraft.hasTargetDate },
             set: { store.send(.editorTargetDateEnabledChanged($0)) }
         )
+    }
+
+    private var tagDraftBinding: Binding<String> {
+        Binding(
+            get: { store.editorDraft.tagDraft },
+            set: { store.send(.editorTagDraftChanged($0)) }
+        )
+    }
+
+    private var availableTagSuggestions: [String] {
+        store.availableTags
+            .filter { !RoutineTag.contains($0, in: store.editorDraft.tags) }
+            .prefix(12)
+            .map { $0 }
     }
 
     private var colorBinding: Binding<RoutineTaskColor> {

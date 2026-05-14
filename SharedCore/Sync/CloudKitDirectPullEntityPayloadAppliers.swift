@@ -9,6 +9,9 @@ enum CloudKitDirectPullGoalPayloadApplier {
         goal.emoji = RoutineGoal.cleanedEmoji(payload.emoji)
         goal.notes = payload.notes?.trimmingCharacters(in: .whitespacesAndNewlines)
         goal.targetDate = payload.targetDate
+        if let tags = payload.tags {
+            goal.tags = tags
+        }
         if let status = payload.status {
             goal.status = status
         }
@@ -31,6 +34,7 @@ enum CloudKitDirectPullGoalPayloadApplier {
             emoji: payload.emoji,
             notes: payload.notes,
             targetDate: payload.targetDate,
+            tags: payload.tags ?? [],
             status: payload.status ?? .active,
             color: payload.color ?? .none,
             parentGoalID: payload.parentGoalID == payload.id ? nil : payload.parentGoalID,

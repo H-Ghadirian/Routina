@@ -21,6 +21,7 @@ enum SettingsRoutineDataBackupMapping {
             emoji: goal.emoji,
             notes: goal.notes,
             targetDate: goal.targetDate,
+            tags: goal.tags,
             status: goal.status,
             color: goal.color,
             parentGoalID: goal.parentGoalID,

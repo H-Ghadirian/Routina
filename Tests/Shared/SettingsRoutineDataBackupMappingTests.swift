@@ -14,12 +14,14 @@ struct SettingsRoutineDataBackupMappingTests {
         let parentID = UUID()
         let goal = RoutineGoal(
             title: "Run 5K",
+            tags: ["Health", "Race"],
             parentGoalID: parentID
         )
 
         let backupGoal = SettingsRoutineDataBackupMapping.goal(goal)
 
         #expect(backupGoal.title == "Run 5K")
+        #expect(backupGoal.tags == ["Health", "Race"])
         #expect(backupGoal.parentGoalID == parentID)
     }
 

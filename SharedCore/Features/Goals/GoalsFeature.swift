@@ -7,6 +7,7 @@ struct GoalsFeature {
     @ObservableState
     struct State: Equatable {
         var goals: [GoalDisplay] = []
+        var availableTags: [String] = []
         var searchText = ""
         var selectedGoalID: UUID?
         var isEditorPresented = false
@@ -69,6 +70,7 @@ struct GoalsFeature {
         var emoji: String?
         var notes: String?
         var targetDate: Date?
+        var tags: [String]
         var status: RoutineGoalStatus
         var color: RoutineTaskColor
         var parentGoalID: UUID?
@@ -113,6 +115,7 @@ struct GoalsFeature {
         var searchableText: String {
             (
                 [displayTitle, notes ?? "", parentGoal?.displayTitle ?? ""]
+                    + tags
                     + childGoals.map(\.displayTitle)
                     + linkedTasks.map(\.displayName)
             )
@@ -166,6 +169,7 @@ struct GoalsFeature {
                         emoji: goal.emoji,
                         notes: RoutineGoal.cleanedNotes(goal.notes),
                         targetDate: goal.targetDate,
+                        tags: goal.tags,
                         status: goal.status,
                         color: goal.color,
                         parentGoalID: parentGoalID,
@@ -312,6 +316,8 @@ struct GoalsFeature {
         var emoji = ""
         var notes = ""
         var targetDate: Date?
+        var tags: [String] = []
+        var tagDraft = ""
         var color: RoutineTaskColor = .none
         var parentGoalID: UUID?
 
@@ -329,6 +335,8 @@ struct GoalsFeature {
             emoji: String = "",
             notes: String = "",
             targetDate: Date? = nil,
+            tags: [String] = [],
+            tagDraft: String = "",
             color: RoutineTaskColor = .none,
             parentGoalID: UUID? = nil
         ) {
@@ -337,6 +345,8 @@ struct GoalsFeature {
             self.emoji = emoji
             self.notes = notes
             self.targetDate = targetDate
+            self.tags = RoutineTag.deduplicated(tags)
+            self.tagDraft = tagDraft
             self.color = color
             self.parentGoalID = parentGoalID
         }
@@ -348,6 +358,7 @@ struct GoalsFeature {
                 emoji: goal.emoji ?? "",
                 notes: goal.notes ?? "",
                 targetDate: goal.targetDate,
+                tags: goal.tags,
                 color: goal.color,
                 parentGoalID: goal.parentGoalID
             )
@@ -358,7 +369,7 @@ struct GoalsFeature {
     enum Action: Equatable {
         case onAppear
         case refreshRequested
-        case goalsLoaded([GoalDisplay])
+        case goalsLoaded([GoalDisplay], [String])
         case loadingFailed(String)
         case searchTextChanged(String)
         case selectGoal(UUID?)
@@ -370,6 +381,10 @@ struct GoalsFeature {
         case editorNotesChanged(String)
         case editorTargetDateEnabledChanged(Bool)
         case editorTargetDateChanged(Date)
+        case editorTagDraftChanged(String)
+        case editorAddTagTapped
+        case editorRemoveTagTapped(String)
+        case editorToggleTagSelection(String)
         case editorColorChanged(RoutineTaskColor)
         case editorParentGoalChanged(UUID?)
         case saveEditorTapped
@@ -392,8 +407,9 @@ struct GoalsFeature {
                 state.isLoading = true
                 return loadGoalsEffect()
 
-            case let .goalsLoaded(goals):
+            case let .goalsLoaded(goals, availableTags):
                 state.goals = goals
+                state.availableTags = availableTags
                 state.isLoading = false
                 if let selectedGoalID = state.selectedGoalID,
                    goals.contains(where: { $0.id == selectedGoalID }) {
@@ -460,6 +476,32 @@ struct GoalsFeature {
                 state.editorDraft.targetDate = targetDate
                 return .none
 
+            case let .editorTagDraftChanged(tagDraft):
+                state.editorDraft.tagDraft = tagDraft
+                return .none
+
+            case .editorAddTagTapped:
+                let updatedTags = RoutineTag.appending(
+                    state.editorDraft.tagDraft,
+                    to: state.editorDraft.tags
+                )
+                guard updatedTags != state.editorDraft.tags else { return .none }
+                state.editorDraft.tags = updatedTags
+                state.editorDraft.tagDraft = ""
+                return .none
+
+            case let .editorRemoveTagTapped(tag):
+                state.editorDraft.tags = RoutineTag.removing(tag, from: state.editorDraft.tags)
+                return .none
+
+            case let .editorToggleTagSelection(tag):
+                if RoutineTag.contains(tag, in: state.editorDraft.tags) {
+                    state.editorDraft.tags = RoutineTag.removing(tag, from: state.editorDraft.tags)
+                } else {
+                    state.editorDraft.tags = RoutineTag.appending(tag, to: state.editorDraft.tags)
+                }
+                return .none
+
             case let .editorColorChanged(color):
                 state.editorDraft.color = color
                 return .none
@@ -516,13 +558,15 @@ struct GoalsFeature {
                     )
                 )
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                let availableTags = RoutineTag.allTags(from: tasks.map(\.tags) + goals.map(\.tags))
                 send(.goalsLoaded(
                     GoalDisplay.displays(
                         goals: goals,
                         tasks: tasks,
                         referenceDate: now,
                         calendar: calendar
-                    )
+                    ),
+                    availableTags
                 ))
             } catch {
                 send(.loadingFailed("Could not load goals."))
@@ -565,6 +609,7 @@ struct GoalsFeature {
                     existingGoal.emoji = RoutineGoal.cleanedEmoji(draft.emoji)
                     existingGoal.notes = RoutineGoal.cleanedNotes(draft.notes)
                     existingGoal.targetDate = draft.targetDate
+                    existingGoal.tags = draft.tags
                     existingGoal.color = draft.color
                     existingGoal.parentGoalID = parentGoalID
                     savedGoalID = id
@@ -575,6 +620,7 @@ struct GoalsFeature {
                         emoji: draft.emoji,
                         notes: draft.notes,
                         targetDate: draft.targetDate,
+                        tags: draft.tags,
                         color: draft.color,
                         parentGoalID: parentGoalID,
                         createdAt: now,

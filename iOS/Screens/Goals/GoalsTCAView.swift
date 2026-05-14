@@ -144,6 +144,15 @@ private struct GoalListRow: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+                if !goal.tags.isEmpty {
+                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                        ForEach(goal.tags, id: \.self) { tag in
+                            RoutineTagPill(name: tag, color: nil, size: .small)
+                                .fixedSize()
+                        }
+                    }
+                }
             }
 
             Spacer()
@@ -195,6 +204,15 @@ private struct GoalDetailView: View {
                         if let notes = goal.notes {
                             Text(notes)
                                 .foregroundStyle(.secondary)
+                        }
+
+                        if !goal.tags.isEmpty {
+                            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                                ForEach(goal.tags, id: \.self) { tag in
+                                    RoutineTagPill(name: tag, color: nil, size: .regular)
+                                        .fixedSize()
+                                }
+                            }
                         }
                     }
                     .padding(.vertical, 6)

@@ -20,6 +20,7 @@ final class RoutineGoal {
     var emoji: String?
     var notes: String?
     var targetDate: Date?
+    var tagsStorage: String = ""
     var statusRawValue: String = RoutineGoalStatus.active.rawValue
     var colorRawValue: String = RoutineTaskColor.none.rawValue
     var parentGoalID: UUID?
@@ -36,6 +37,11 @@ final class RoutineGoal {
         set { colorRawValue = newValue.rawValue }
     }
 
+    var tags: [String] {
+        get { RoutineTag.deserialize(tagsStorage) }
+        set { tagsStorage = RoutineTag.serialize(newValue) }
+    }
+
     var displayTitle: String {
         Self.cleanedTitle(title) ?? "Untitled goal"
     }
@@ -46,6 +52,7 @@ final class RoutineGoal {
         emoji: String? = nil,
         notes: String? = nil,
         targetDate: Date? = nil,
+        tags: [String] = [],
         status: RoutineGoalStatus = .active,
         color: RoutineTaskColor = .none,
         parentGoalID: UUID? = nil,
@@ -57,6 +64,7 @@ final class RoutineGoal {
         self.emoji = Self.cleanedEmoji(emoji)
         self.notes = Self.cleanedNotes(notes)
         self.targetDate = targetDate
+        self.tagsStorage = RoutineTag.serialize(tags)
         self.statusRawValue = status.rawValue
         self.colorRawValue = color.rawValue
         self.parentGoalID = parentGoalID == id ? nil : parentGoalID
@@ -71,6 +79,7 @@ final class RoutineGoal {
             emoji: emoji,
             notes: notes,
             targetDate: targetDate,
+            tags: tags,
             status: status,
             color: color,
             parentGoalID: parentGoalID,

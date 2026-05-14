@@ -217,6 +217,15 @@ private struct GoalListRow: View {
                     : "\(goal.openTaskCount) open, \(goal.linkedTasks.count) linked")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if !goal.tags.isEmpty {
+                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                        ForEach(goal.tags.prefix(3), id: \.self) { tag in
+                            RoutineTagPill(name: tag, color: nil, size: .small)
+                                .fixedSize()
+                        }
+                    }
+                }
             }
 
             Spacer(minLength: 8)
@@ -357,6 +366,16 @@ private struct GoalDetailPane: View {
                     }
                 }
                 .foregroundStyle(.secondary)
+
+                if !goal.tags.isEmpty {
+                    HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                        ForEach(goal.tags, id: \.self) { tag in
+                            RoutineTagPill(name: tag, color: nil, size: .regular)
+                                .fixedSize()
+                        }
+                    }
+                    .padding(.top, 2)
+                }
             }
         }
     }

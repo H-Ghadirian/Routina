@@ -46,6 +46,7 @@ extension CloudKitDirectPullService {
         var emoji: String?
         var notes: String?
         var targetDate: Date?
+        var tags: [String]?
         var status: RoutineGoalStatus?
         var color: RoutineTaskColor?
         var parentGoalID: UUID?

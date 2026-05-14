@@ -54,6 +54,10 @@ enum CloudKitDirectPullRecordParser {
             in: record,
             keys: ["targetDate", "TARGETDATE", "ztargetdate", "ZTARGETDATE", "cd_targetdate"]
         )
+        let tagsStorageValue = CloudKitDirectPullService.stringValue(
+            in: record,
+            keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"]
+        )
         let statusValue = CloudKitDirectPullService.stringValue(
             in: record,
             keys: ["statusRawValue", "STATUSRAWVALUE", "zstatusrawvalue", "ZSTATUSRAWVALUE", "cd_statusrawvalue"]
@@ -80,6 +84,7 @@ enum CloudKitDirectPullRecordParser {
                 || emojiValue != nil
                 || notesValue != nil
                 || targetDateValue != nil
+                || tagsStorageValue != nil
                 || statusValue != nil
                 || colorValue != nil
                 || parentGoalIDValue != nil
@@ -95,6 +100,7 @@ enum CloudKitDirectPullRecordParser {
             emoji: emojiValue,
             notes: notesValue,
             targetDate: targetDateValue,
+            tags: tagsStorageValue.map(RoutineTag.deserialize),
             status: statusValue,
             color: colorValue,
             parentGoalID: parentGoalIDValue == id ? nil : parentGoalIDValue,

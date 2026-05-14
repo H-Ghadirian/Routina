@@ -6,7 +6,7 @@ struct SettingsMacTagsListContent: View {
 
     var body: some View {
 if store.tags.savedTags.isEmpty {
-    Text("No tags yet. Tags you add to routines will appear here.")
+    Text("No tags yet. Tags you add to tasks or goals will appear here.")
         .font(.footnote)
         .foregroundStyle(.secondary)
 } else {

@@ -204,6 +204,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var emoji: String?
         var notes: String?
         var targetDate: Date?
+        var tagsStorage: String
         var statusRawValue: String
         var colorRawValue: String
         var parentGoalID: UUID?
@@ -216,6 +217,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             emoji = goal.emoji
             notes = goal.notes
             targetDate = goal.targetDate
+            tagsStorage = goal.tagsStorage
             statusRawValue = goal.statusRawValue
             colorRawValue = goal.colorRawValue
             parentGoalID = goal.parentGoalID

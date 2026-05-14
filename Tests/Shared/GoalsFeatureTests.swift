@@ -54,8 +54,9 @@ struct GoalsFeatureTests {
         await store.send(.onAppear) {
             $0.isLoading = true
         }
-        await store.receive(.goalsLoaded(expectedGoals)) {
+        await store.receive(.goalsLoaded(expectedGoals, [])) {
             $0.goals = expectedGoals
+            $0.availableTags = []
             $0.isLoading = false
             $0.selectedGoalID = goal.id
         }
@@ -89,8 +90,9 @@ struct GoalsFeatureTests {
         await store.send(.onAppear) {
             $0.isLoading = true
         }
-        await store.receive(.goalsLoaded(expectedGoals)) {
+        await store.receive(.goalsLoaded(expectedGoals, [])) {
             $0.goals = expectedGoals
+            $0.availableTags = []
             $0.isLoading = false
             $0.selectedGoalID = parent.id
         }
@@ -133,6 +135,13 @@ struct GoalsFeatureTests {
         await store.send(.editorColorChanged(.blue)) {
             $0.editorDraft.color = .blue
         }
+        await store.send(.editorTagDraftChanged("Health, Work, health")) {
+            $0.editorDraft.tagDraft = "Health, Work, health"
+        }
+        await store.send(.editorAddTagTapped) {
+            $0.editorDraft.tags = ["Health", "Work"]
+            $0.editorDraft.tagDraft = ""
+        }
         await store.send(.saveEditorTapped)
         await store.receive(\.goalSaved) {
             let savedGoal = try #require(try context.fetch(FetchDescriptor<RoutineGoal>()).first)
@@ -149,8 +158,9 @@ struct GoalsFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
-        await store.receive(.goalsLoaded(expectedGoals)) {
+        await store.receive(.goalsLoaded(expectedGoals, ["Health", "Work"])) {
             $0.goals = expectedGoals
+            $0.availableTags = ["Health", "Work"]
             $0.selectedGoalID = goal.id
         }
 
@@ -160,6 +170,7 @@ struct GoalsFeatureTests {
         #expect(goal.notes == "Ship a usable first version.")
         #expect(goal.targetDate == targetDate)
         #expect(goal.color == .blue)
+        #expect(goal.tags == ["Health", "Work"])
     }
 
     @Test
@@ -203,8 +214,9 @@ struct GoalsFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
-        await store.receive(.goalsLoaded(expectedGoals)) {
+        await store.receive(.goalsLoaded(expectedGoals, [])) {
             $0.goals = expectedGoals
+            $0.availableTags = []
             $0.selectedGoalID = child.id
         }
 
@@ -306,8 +318,9 @@ struct GoalsFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
-        await store.receive(.goalsLoaded(remainingGoalDisplays)) {
+        await store.receive(.goalsLoaded(remainingGoalDisplays, [])) {
             $0.goals = remainingGoalDisplays
+            $0.availableTags = []
             $0.isLoading = false
             $0.selectedGoalID = childGoal.id
         }

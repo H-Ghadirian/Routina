@@ -15,7 +15,7 @@ struct SettingsRoutineDataPersistenceTests {
     func backupPackageAndRestore_preservesGoalHierarchy() async throws {
         let context = makeInMemoryContext()
         let parent = RoutineGoal(title: "Health")
-        let child = RoutineGoal(title: "Run 5K", parentGoalID: parent.id)
+        let child = RoutineGoal(title: "Run 5K", tags: ["Health", "Race"], parentGoalID: parent.id)
         context.insert(parent)
         context.insert(child)
         try context.save()
@@ -40,6 +40,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(summary.goals == 2)
         #expect(restoredParent.parentGoalID == nil)
         #expect(restoredChild.parentGoalID == parent.id)
+        #expect(restoredChild.tags == ["Health", "Race"])
     }
 
     @Test

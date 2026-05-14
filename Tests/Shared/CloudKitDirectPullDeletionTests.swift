@@ -28,6 +28,7 @@ struct CloudKitDirectPullDeletionTests {
         )
         childGoal["title"] = "Run 5K" as CKRecordValue
         childGoal["parentGoalID"] = parentID.uuidString as CKRecordValue
+        childGoal["tagsStorage"] = "Health\nRace" as CKRecordValue
 
         try CloudKitDirectPullService.mergeForTesting(
             .init(changedRecords: [parentGoal, childGoal], deletedRecordIDs: []),
@@ -37,6 +38,7 @@ struct CloudKitDirectPullDeletionTests {
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let child = try #require(goals.first { $0.id == childID })
         #expect(child.parentGoalID == parentID)
+        #expect(child.tags == ["Health", "Race"])
     }
 
     @Test

@@ -31,13 +31,15 @@ enum SettingsDataQueries {
     @MainActor
     static func fetchTagSummaries(in context: ModelContext) throws -> [RoutineTagSummary] {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        return RoutineTag.summaries(from: tasks)
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        return RoutineTag.summaries(from: tasks, goals: goals)
     }
 
     @MainActor
     static func fetchTaskTagCollections(in context: ModelContext) throws -> [[String]] {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        return tasks.map(\.tags)
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        return tasks.map(\.tags) + goals.map(\.tags)
     }
 
     static func hasDuplicatePlaceName(
