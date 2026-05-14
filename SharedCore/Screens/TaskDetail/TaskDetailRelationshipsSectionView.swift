@@ -1,32 +1,30 @@
 import SwiftUI
 
-struct TaskDetailGoalsSectionView: View {
+struct TaskDetailGoalsHeaderBoxView: View {
     let goals: [RoutineGoalSummary]
-    let background: Color
-    let stroke: Color
 
     var body: some View {
-        TaskDetailSectionCardView(background: background, stroke: stroke) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Goals")
-                        .font(.headline)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("GOALS")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-                    Text(goals.count.formatted())
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
-                }
+                Text(goals.count.formatted())
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+            }
 
-                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-                    ForEach(goals) { goal in
-                        TaskDetailGoalChip(goal: goal)
-                    }
+            HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                ForEach(goals) { goal in
+                    TaskDetailGoalChip(goal: goal)
                 }
             }
         }
+        .detailHeaderBoxStyle(tint: goals.first?.color.swiftUIColor ?? .accentColor)
     }
 }
 

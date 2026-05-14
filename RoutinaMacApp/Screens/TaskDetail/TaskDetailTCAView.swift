@@ -181,7 +181,6 @@ detailBody
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                taskGoalsSection
                 todoStateTimingSection
                 commentsSection
                 routineLogsSection
@@ -309,6 +308,13 @@ detailBody
         }
     }
 
+    @ViewBuilder
+    private var headerGoalsBox: some View {
+        if !store.taskGoalSummaries.isEmpty {
+            TaskDetailGoalsHeaderBoxView(goals: store.taskGoalSummaries)
+        }
+    }
+
     private var headerCalendarDisclosure: some View {
         VStack(alignment: .leading, spacing: 10) {
             Button {
@@ -425,7 +431,6 @@ detailBody
             LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                taskGoalsSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
@@ -473,17 +478,6 @@ detailBody
             onSaveEditComment: { store.send(.detailCommentEditSaveTapped($0)) },
             onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
         )
-    }
-
-    @ViewBuilder
-    private var taskGoalsSection: some View {
-        if !store.taskGoalSummaries.isEmpty {
-            TaskDetailGoalsSectionView(
-                goals: store.taskGoalSummaries,
-                background: routineLogsBackground,
-                stroke: TaskDetailPlatformStyle.sectionCardStroke
-            )
-        }
     }
 
     private var blockingFocusTitle: String? {
@@ -637,6 +631,7 @@ detailBody
 
                 headerCalendarDisclosure
                 headerTagsAndPointsRow
+                headerGoalsBox
                 headerLinkBox
             }
         }
@@ -657,6 +652,7 @@ detailBody
                 headerCalendarDisclosure
 
                 headerTagsAndPointsRow
+                headerGoalsBox
                 headerLinkBox
             }
         }
