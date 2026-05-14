@@ -9,6 +9,7 @@ extension HomeTCAView {
             filtering: taskListFiltering(),
             showPersianDates: showPersianDates,
             badgeMode: .complete,
+            rowVisibility: taskRowVisibility,
             showsRoutineCompletionCount: false
         )
     }

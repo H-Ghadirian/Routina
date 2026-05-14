@@ -14,7 +14,7 @@ struct SettingsMacAppearanceDetailView: View {
     var body: some View {
 SettingsMacDetailShell(
     title: "Appearance",
-    subtitle: "Choose the app theme, pick the Dock icon, and decide how the home list is grouped."
+    subtitle: "Choose the app theme, pick the Dock icon, and decide what the home list shows."
 ) {
     SettingsMacDetailCard(title: "App Theme") {
         Picker("Theme", selection: appColorSchemeBinding) {
@@ -53,6 +53,29 @@ SettingsMacDetailShell(
         )
         .font(.footnote)
         .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Task Row") {
+        SettingsTaskRowPreviewView(
+            visibility: store.appearance.taskRowVisibility,
+            showsTaskTypeBadge: false
+        )
+
+        ForEach(macTaskRowFields) { field in
+            Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(field.title)
+                    Text(field.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+        }
+
+        Text("Shown: \(macTaskRowSummaryText)")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 
     SettingsMacDetailCard(title: "Tag Counters") {
@@ -144,6 +167,25 @@ SettingsMacDetailShell(
             get: { store.appearance.tagCounterDisplayMode },
             set: { store.send(.tagCounterDisplayModeChanged($0)) }
         )
+    }
+
+    private func taskRowFieldVisibilityBinding(_ field: HomeTaskRowField) -> Binding<Bool> {
+        Binding(
+            get: { store.appearance.taskRowVisibility.shows(field) },
+            set: { store.send(.taskRowFieldVisibilityChanged(field, $0)) }
+        )
+    }
+
+    private var macTaskRowFields: [HomeTaskRowField] {
+        HomeTaskRowField.allCases.filter { $0 != .taskTypeBadge }
+    }
+
+    private var macTaskRowSummaryText: String {
+        let hiddenCount = macTaskRowFields.filter {
+            !store.appearance.taskRowVisibility.shows($0)
+        }.count
+        guard hiddenCount > 0 else { return "All fields" }
+        return "\(macTaskRowFields.count - hiddenCount) of \(macTaskRowFields.count) fields"
     }
 
     private var resetButtonSystemImage: String {

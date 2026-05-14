@@ -35,6 +35,28 @@ List {
             .foregroundStyle(.secondary)
     }
 
+    Section("Task Row") {
+        SettingsTaskRowPreviewView(
+            visibility: store.appearance.taskRowVisibility,
+            showsTaskTypeBadge: true
+        )
+        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+
+        ForEach(HomeTaskRowField.allCases) { field in
+            Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(field.title)
+                    Text(field.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        Text("Shown: \(store.appearance.taskRowVisibility.summaryText)")
+            .foregroundStyle(.secondary)
+    }
+
     Section("Tag Counters") {
         Picker("Display", selection: tagCounterDisplayModeBinding) {
             ForEach(TagCounterDisplayMode.allCases) { mode in
@@ -124,6 +146,13 @@ List {
         Binding(
             get: { store.appearance.tagCounterDisplayMode },
             set: { store.send(.tagCounterDisplayModeChanged($0)) }
+        )
+    }
+
+    private func taskRowFieldVisibilityBinding(_ field: HomeTaskRowField) -> Binding<Bool> {
+        Binding(
+            get: { store.appearance.taskRowVisibility.shows(field) },
+            set: { store.send(.taskRowFieldVisibilityChanged(field, $0)) }
         )
     }
 

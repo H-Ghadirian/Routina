@@ -13,6 +13,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) var showPersianDates = false
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) private var taskRowHiddenFieldsRawValue = ""
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
@@ -100,6 +104,10 @@ homeContent
 
     var routineListSectioningMode: RoutineListSectioningMode {
         RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+    }
+
+    var taskRowVisibility: HomeTaskRowVisibility {
+        HomeTaskRowVisibility(storageRawValue: taskRowHiddenFieldsRawValue)
     }
 
     var selectedTaskBinding: Binding<UUID?> {

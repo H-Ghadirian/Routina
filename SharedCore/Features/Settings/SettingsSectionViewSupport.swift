@@ -291,7 +291,7 @@ extension SettingsNotificationsState {
 
 extension SettingsAppearanceState {
     var overviewSubtitle: String {
-        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)"
+        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText) • Rows: \(taskRowVisibility.summaryText)"
     }
 
     var routineListSectioningSubtitle: String {

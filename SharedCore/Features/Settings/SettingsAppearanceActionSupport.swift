@@ -32,6 +32,21 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func taskRowFieldVisibilityChanged(
+        _ field: HomeTaskRowField,
+        isVisible: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        SettingsAppearanceEditor.updateTaskRowField(
+            field,
+            isVisible: isVisible,
+            state: &state
+        )
+        appSettingsClient.setTaskRowVisibility(state.taskRowVisibility)
+        return .none
+    }
+
     static func appLockToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

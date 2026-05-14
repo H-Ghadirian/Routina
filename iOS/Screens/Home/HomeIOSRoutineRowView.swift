@@ -4,6 +4,7 @@ struct HomeIOSRoutineRowView: View {
     let task: HomeFeature.RoutineDisplay
     let rowNumber: Int
     let metadataText: String?
+    let rowVisibility: HomeTaskRowVisibility
     let showTaskTypeBadge: Bool
     let statusBadgeStyle: HomeStatusBadgeStyle?
     let iconBackgroundColor: Color
@@ -11,12 +12,21 @@ struct HomeIOSRoutineRowView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            icon
+            leadingAccessories
             content
             Spacer(minLength: 0)
         }
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var leadingAccessories: some View {
+        if rowVisibility.shows(.icon) {
+            icon
+        } else if rowVisibility.shows(.rowNumber) {
+            rowNumberPill
+        }
     }
 
     private var icon: some View {
@@ -31,7 +41,10 @@ struct HomeIOSRoutineRowView: View {
         }
         .frame(width: 40, height: 40)
         .overlay(alignment: .topLeading) {
-            rowNumberBadge
+            if rowVisibility.shows(.rowNumber) {
+                rowNumberPill
+                    .offset(x: -10, y: -8)
+            }
         }
     }
 
@@ -50,7 +63,7 @@ struct HomeIOSRoutineRowView: View {
         .padding(2)
     }
 
-    private var rowNumberBadge: some View {
+    private var rowNumberPill: some View {
         Text("\(rowNumber)")
             .font(.caption2.monospacedDigit().weight(.semibold))
             .foregroundStyle(.secondary)
@@ -61,7 +74,6 @@ struct HomeIOSRoutineRowView: View {
                 Capsule()
                     .stroke(Color.white.opacity(0.08), lineWidth: 1)
             )
-            .offset(x: -10, y: -8)
     }
 
     private var content: some View {
@@ -79,12 +91,26 @@ struct HomeIOSRoutineRowView: View {
     }
 
     private var badges: some View {
-        HStack(spacing: 6) {
-            if showTaskTypeBadge {
-                HomeTaskTypeBadgeView(isTodo: task.isOneOffTask)
+        Group {
+            if shouldShowTaskTypeBadge || shouldShowStatusBadge {
+                HStack(spacing: 6) {
+                    if shouldShowTaskTypeBadge {
+                        HomeTaskTypeBadgeView(isTodo: task.isOneOffTask)
+                    }
+                    if shouldShowStatusBadge {
+                        HomeStatusBadgeView(style: statusBadgeStyle)
+                    }
+                }
             }
-            HomeStatusBadgeView(style: statusBadgeStyle)
         }
+    }
+
+    private var shouldShowTaskTypeBadge: Bool {
+        showTaskTypeBadge && rowVisibility.shows(.taskTypeBadge)
+    }
+
+    private var shouldShowStatusBadge: Bool {
+        statusBadgeStyle != nil && rowVisibility.shows(.statusBadge)
     }
 
     @ViewBuilder
@@ -99,7 +125,7 @@ struct HomeIOSRoutineRowView: View {
 
     @ViewBuilder
     private var tags: some View {
-        if !task.tags.isEmpty {
+        if rowVisibility.shows(.tags), !task.tags.isEmpty {
             HStack(spacing: 8) {
                 ForEach(task.tags, id: \.self) { tag in
                     Text("#\(tag)")
@@ -114,7 +140,7 @@ struct HomeIOSRoutineRowView: View {
 
     @ViewBuilder
     private var goals: some View {
-        if !task.goalTitles.isEmpty {
+        if rowVisibility.shows(.goals), !task.goalTitles.isEmpty {
             HStack(spacing: 8) {
                 ForEach(task.goalTitles, id: \.self) { goal in
                     Label(goal, systemImage: "target")

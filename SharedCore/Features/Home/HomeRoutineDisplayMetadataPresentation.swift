@@ -5,49 +5,76 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
     let filtering: HomeTaskListFiltering<Display>
     let showPersianDates: Bool
     let badgeMode: HomeRoutineMetadataBadgeMode
+    var rowVisibility: HomeTaskRowVisibility = .defaultValue
     var showsRoutineCompletionCount = true
 
     func rowMetadataText(for task: Display) -> String? {
-        if task.isOneOffTask {
-            let items = todoRowMetadataItems(for: task)
-            return items.isEmpty ? nil : items.joined(separator: " • ")
+        let items = task.isOneOffTask
+            ? todoRowMetadataItems(for: task)
+            : routineRowMetadataItems(for: task)
+        return items.isEmpty ? nil : items.joined(separator: " • ")
+    }
+
+    func routineRowMetadataItems(for task: Display) -> [String] {
+        var items: [String] = []
+
+        if rowVisibility.shows(.schedule) {
+            items.append(cadenceDescription(for: task))
         }
 
-        let prioritySegment = task.priority.metadataLabel.map { "\($0) • " } ?? ""
-        let completionCountSegment = showsRoutineCompletionCount
-            ? "\(doneCountDescription(for: task.doneCount)) • "
-            : ""
-        let statusDescription = task.isPaused ? pauseDescription(for: task) : completionDescription(for: task)
+        if rowVisibility.shows(.priority), let priorityText = task.priority.metadataLabel {
+            items.append(priorityText)
+        }
 
-        return "\(cadenceDescription(for: task)) • \(prioritySegment)\(completionCountSegment)\(statusDescription)\(pressureMetadataSuffix(for: task))\(stepMetadataSuffix(for: task))\(placeMetadataSuffix(for: task))"
+        if rowVisibility.shows(.progress) {
+            if showsRoutineCompletionCount {
+                items.append(doneCountDescription(for: task.doneCount))
+            }
+            items.append(task.isPaused ? pauseDescription(for: task) : completionDescription(for: task))
+        }
+
+        if rowVisibility.shows(.pressure), let pressureText = task.pressure.metadataLabel {
+            items.append(pressureText)
+        }
+
+        if rowVisibility.shows(.steps), let stepText = stepMetadataText(for: task) {
+            items.append(stepText)
+        }
+
+        if rowVisibility.shows(.place), let placeText = placeMetadataText(for: task) {
+            items.append(placeText)
+        }
+
+        return items
     }
 
     func todoRowMetadataItems(for task: Display) -> [String] {
         var items: [String] = []
 
-        if let deadlineText = conciseDeadlineText(for: task) {
+        if rowVisibility.shows(.schedule), let deadlineText = conciseDeadlineText(for: task) {
             items.append(deadlineText)
         }
 
-        if let priorityText = task.priority.metadataLabel {
+        if rowVisibility.shows(.priority), let priorityText = task.priority.metadataLabel {
             items.append(priorityText)
         }
 
-        if let pressureText = task.pressure.metadataLabel {
+        if rowVisibility.shows(.pressure), let pressureText = task.pressure.metadataLabel {
             items.append(pressureText)
         }
 
-        if task.isPaused {
+        if rowVisibility.shows(.progress), task.isPaused {
             items.append(pauseDescription(for: task))
-        } else if task.isCompletedOneOff || task.isCanceledOneOff || task.isInProgress {
+        } else if rowVisibility.shows(.progress),
+                  task.isCompletedOneOff || task.isCanceledOneOff || task.isInProgress {
             items.append(completionDescription(for: task))
         }
 
-        if let stepText = conciseTodoStepText(for: task) {
+        if rowVisibility.shows(.steps), let stepText = conciseTodoStepText(for: task) {
             items.append(stepText)
         }
 
-        if let placeText = concisePlaceMetadataText(for: task) {
+        if rowVisibility.shows(.place), let placeText = concisePlaceMetadataText(for: task) {
             items.append(placeText)
         }
 
@@ -55,7 +82,9 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
     }
 
     func pressureMetadataSuffix(for task: Display) -> String {
-        guard let pressureText = task.pressure.metadataLabel else { return "" }
+        guard rowVisibility.shows(.pressure),
+              let pressureText = task.pressure.metadataLabel
+        else { return "" }
         return " • \(pressureText)"
     }
 
@@ -146,31 +175,38 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
     }
 
     func stepMetadataSuffix(for task: Display) -> String {
+        guard rowVisibility.shows(.steps),
+              let text = stepMetadataText(for: task)
+        else { return "" }
+        return " • \(text)"
+    }
+
+    func stepMetadataText(for task: Display) -> String? {
         if task.scheduleMode == .derivedFromChecklist {
             if let nextDueChecklistItemTitle = task.nextDueChecklistItemTitle {
                 if task.dueChecklistItemCount > 1 {
-                    return " • Due: \(nextDueChecklistItemTitle) +\(task.dueChecklistItemCount - 1)"
+                    return "Due: \(nextDueChecklistItemTitle) +\(task.dueChecklistItemCount - 1)"
                 }
-                return " • Due: \(nextDueChecklistItemTitle)"
+                return "Due: \(nextDueChecklistItemTitle)"
             }
             let totalItems = task.checklistItemCount
-            return totalItems == 0 ? "" : " • \(totalItems) \(totalItems == 1 ? "item" : "items")"
+            return totalItems == 0 ? nil : "\(totalItems) \(totalItems == 1 ? "item" : "items")"
         }
         if task.scheduleMode == .fixedIntervalChecklist {
             if let nextPendingChecklistItemTitle = task.nextPendingChecklistItemTitle,
                task.completedChecklistItemCount < task.checklistItemCount {
-                return " • Next: \(nextPendingChecklistItemTitle)"
+                return "Next: \(nextPendingChecklistItemTitle)"
             }
             let totalItems = task.checklistItemCount
-            if totalItems == 0 { return "" }
-            return " • Checklist \(task.completedChecklistItemCount)/\(totalItems)"
+            if totalItems == 0 { return nil }
+            return "Checklist \(task.completedChecklistItemCount)/\(totalItems)"
         }
-        guard !task.steps.isEmpty else { return "" }
+        guard !task.steps.isEmpty else { return nil }
         if let nextStepTitle = task.nextStepTitle {
-            return " • Next: \(nextStepTitle)"
+            return "Next: \(nextStepTitle)"
         }
         let totalSteps = task.steps.count
-        return " • \(totalSteps) \(totalSteps == 1 ? "step" : "steps")"
+        return "\(totalSteps) \(totalSteps == 1 ? "step" : "steps")"
     }
 
     func conciseTodoStepText(for task: Display) -> String? {
@@ -222,15 +258,22 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
     }
 
     func placeMetadataSuffix(for task: Display) -> String {
+        guard rowVisibility.shows(.place),
+              let text = placeMetadataText(for: task)
+        else { return "" }
+        return " • \(text)"
+    }
+
+    func placeMetadataText(for task: Display) -> String? {
         switch task.locationAvailability {
         case .unrestricted:
-            return ""
+            return nil
         case let .available(placeName):
-            return " • At \(placeName)"
+            return "At \(placeName)"
         case let .away(placeName, _):
-            return " • Away from \(placeName)"
+            return "Away from \(placeName)"
         case let .unknown(placeName):
-            return " • \(placeName) task"
+            return "\(placeName) task"
         }
     }
 

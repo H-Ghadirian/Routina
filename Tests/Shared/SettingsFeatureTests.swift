@@ -205,6 +205,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func taskRowFieldVisibilityChanged_persistsSelection() async {
+        let persistedValue = LockIsolated<HomeTaskRowVisibility?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setTaskRowVisibility = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.taskRowFieldVisibilityChanged(.tags, false)) {
+            $0.appearance.taskRowVisibility = HomeTaskRowVisibility(hiddenFields: [.tags])
+        }
+
+        #expect(persistedValue.value == HomeTaskRowVisibility(hiddenFields: [.tags]))
+    }
+
+    @Test
     func appColorSchemeChanged_persistsSelection() async {
         let persistedValue = LockIsolated<AppColorScheme?>(nil)
 

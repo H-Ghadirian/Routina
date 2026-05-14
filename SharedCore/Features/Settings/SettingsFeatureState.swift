@@ -64,6 +64,7 @@ struct SettingsAppearanceState: Equatable {
     var appColorScheme: AppColorScheme = .system
     var routineListSectioningMode: RoutineListSectioningMode = .defaultValue
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
+    var taskRowVisibility: HomeTaskRowVisibility = .defaultValue
     var isAppLockEnabled: Bool = false
     var isAppLockToggleInProgress: Bool = false
     var appLockMethodDescription: String = DeviceAuthenticationClient.defaultMethodDescription

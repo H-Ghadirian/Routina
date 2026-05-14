@@ -489,6 +489,43 @@ struct HomeTaskListFilteringTests {
         #expect(hiddenMetadata?.contains("completions") == false)
         #expect(hiddenMetadata?.contains("Never completed") == true)
     }
+
+    @Test
+    func rowMetadataRespectsHiddenFields() {
+        let task = TestTaskDisplay(
+            name: "Read",
+            steps: ["Open book"],
+            recurrenceRule: .daily(at: .defaultValue),
+            priority: .medium,
+            pressure: .high,
+            nextStepTitle: "Open book",
+            doneCount: 3
+        )
+        let filtering = makeFiltering()
+
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: filtering,
+            showPersianDates: false,
+            badgeMode: .complete,
+            rowVisibility: HomeTaskRowVisibility(
+                hiddenFields: [.priority, .pressure, .progress, .steps]
+            )
+        )
+
+        let metadata = presenter.rowMetadataText(for: task)
+
+        #expect(metadata == "Every day at 20:00")
+    }
+
+    @Test
+    func taskRowVisibilityRoundTripsHiddenFields() {
+        let visibility = HomeTaskRowVisibility(hiddenFields: [.tags, .icon, .pressure])
+        let rawValue = visibility.storageRawValue
+
+        #expect(rawValue == "icon,pressure,tags")
+        #expect(HomeTaskRowVisibility(storageRawValue: rawValue) == visibility)
+        #expect(HomeTaskRowVisibility(storageRawValue: nil) == .defaultValue)
+    }
 }
 
 private func makeFiltering(

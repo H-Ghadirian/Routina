@@ -44,6 +44,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) var showPersianDates = false
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) private var taskRowHiddenFieldsRawValue = ""
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
     @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)
@@ -154,6 +158,10 @@ homeContent
 
     var routineListSectioningMode: RoutineListSectioningMode {
         RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+    }
+
+    var taskRowVisibility: HomeTaskRowVisibility {
+        HomeTaskRowVisibility(storageRawValue: taskRowHiddenFieldsRawValue)
     }
 
     var selectedTaskBinding: Binding<UUID?> {

@@ -36,18 +36,25 @@ extension HomeTCAView {
 
     func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
         let metadataText = rowMetadataText(for: task)
+        let rowVisibility = taskRowVisibility
 
         return HStack(alignment: .top, spacing: 10) {
-            VStack(spacing: 4) {
-                taskIcon(for: task)
+            if rowVisibility.shows(.icon) || rowVisibility.shows(.rowNumber) {
+                VStack(spacing: 4) {
+                    if rowVisibility.shows(.icon) {
+                        taskIcon(for: task)
+                    }
 
-                Text("\(rowNumber)")
-                    .font(.caption2.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
+                    if rowVisibility.shows(.rowNumber) {
+                        Text("\(rowNumber)")
+                            .font(.caption2.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                }
+                .frame(width: 38)
             }
-            .frame(width: 38)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -58,7 +65,9 @@ extension HomeTCAView {
 
                     Spacer(minLength: 8)
 
-                    statusBadge(for: task)
+                    if rowVisibility.shows(.statusBadge) {
+                        statusBadge(for: task)
+                    }
                 }
 
                 if let metadataText {
@@ -68,7 +77,7 @@ extension HomeTCAView {
                         .lineLimit(1)
                 }
 
-                if !task.tags.isEmpty {
+                if rowVisibility.shows(.tags), !task.tags.isEmpty {
                     HStack(spacing: 6) {
                         ForEach(task.tags, id: \.self) { tag in
                             sidebarTagChip(tag)
@@ -77,7 +86,7 @@ extension HomeTCAView {
                     .lineLimit(1)
                 }
 
-                if !task.goalTitles.isEmpty {
+                if rowVisibility.shows(.goals), !task.goalTitles.isEmpty {
                     HStack(spacing: 6) {
                         ForEach(task.goalTitles, id: \.self) { goal in
                             Label(goal, systemImage: "target")

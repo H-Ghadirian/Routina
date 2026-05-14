@@ -291,6 +291,7 @@ detailContent
             task: task,
             rowNumber: rowNumber,
             metadataText: rowMetadataText(for: task),
+            rowVisibility: taskRowVisibility,
             showTaskTypeBadge: store.taskListMode == .all,
             statusBadgeStyle: badgeStyle(for: task).map { HomeStatusBadgeStyle($0) },
             iconBackgroundColor: rowIconBackgroundColor(for: task),

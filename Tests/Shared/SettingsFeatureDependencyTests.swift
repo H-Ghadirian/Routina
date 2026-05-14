@@ -70,6 +70,8 @@ struct SettingsFeatureDependencyTests {
                 setRoutineListSectioningMode: { _ in },
                 tagCounterDisplayMode: { .defaultValue },
                 setTagCounterDisplayMode: { _ in },
+                taskRowVisibility: { HomeTaskRowVisibility(hiddenFields: [.tags, .goals]) },
+                setTaskRowVisibility: { _ in },
                 relatedTagRules: { [] },
                 setRelatedTagRules: { _ in },
                 tagColors: { [:] },
@@ -106,6 +108,7 @@ struct SettingsFeatureDependencyTests {
             $0.notifications.notificationsEnabled = true
             $0.notifications.notificationReminderTime = reminderTime
             $0.appearance.routineListSectioningMode = .deadlineDate
+            $0.appearance.taskRowVisibility = HomeTaskRowVisibility(hiddenFields: [.tags, .goals])
             $0.appearance.appColorScheme = .dark
             $0.appearance.isAppLockEnabled = true
             $0.appearance.isGitFeaturesEnabled = true

@@ -11,6 +11,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var notificationReminderTime: Date
     var routineListSectioningMode: RoutineListSectioningMode
     var tagCounterDisplayMode: TagCounterDisplayMode
+    var taskRowVisibility: HomeTaskRowVisibility
     var appColorScheme: AppColorScheme
     var appLockEnabled: Bool
     var gitFeaturesEnabled: Bool
@@ -66,12 +67,17 @@ enum SettingsRefreshEditor {
             snapshot.tagCounterDisplayMode,
             state: &state.appearance
         )
+        SettingsAppearanceEditor.updateTaskRowVisibility(
+            snapshot.taskRowVisibility,
+            state: &state.appearance
+        )
         SettingsAppearanceEditor.refreshFromSettings(
             appColorScheme: snapshot.appColorScheme,
             appLockEnabled: snapshot.appLockEnabled,
             gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
             showPersianDates: snapshot.showPersianDates,
             showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
+            taskRowVisibility: snapshot.taskRowVisibility,
             deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,
             selectedAppIcon: snapshot.selectedAppIcon,
             hasTemporaryViewStateToReset: snapshot.hasTemporaryViewStateToReset,

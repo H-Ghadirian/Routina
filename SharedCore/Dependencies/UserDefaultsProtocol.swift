@@ -66,6 +66,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingAppColorScheme
     case appSettingRoutineListSectioningMode
     case appSettingTagCounterDisplayMode
+    case appSettingHomeTaskRowHiddenFields
     case appSettingRelatedTagRules
     case appSettingTagColors
     case appSettingFastFilterTags
@@ -101,6 +102,8 @@ struct AppSettingsClient: Sendable {
     var setRoutineListSectioningMode: @Sendable (RoutineListSectioningMode) -> Void
     var tagCounterDisplayMode: @Sendable () -> TagCounterDisplayMode
     var setTagCounterDisplayMode: @Sendable (TagCounterDisplayMode) -> Void
+    var taskRowVisibility: @Sendable () -> HomeTaskRowVisibility
+    var setTaskRowVisibility: @Sendable (HomeTaskRowVisibility) -> Void
     var relatedTagRules: @Sendable () -> [RoutineRelatedTagRule]
     var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
     var tagColors: @Sendable () -> [String: String]
@@ -310,6 +313,14 @@ extension AppSettingsClient {
         setTagCounterDisplayMode: { mode in
             SharedDefaults.app[.appSettingTagCounterDisplayMode] = mode.rawValue
         },
+        taskRowVisibility: {
+            HomeTaskRowVisibility(
+                storageRawValue: SharedDefaults.app[.appSettingHomeTaskRowHiddenFields]
+            )
+        },
+        setTaskRowVisibility: { visibility in
+            SharedDefaults.app[.appSettingHomeTaskRowHiddenFields] = visibility.storageRawValue
+        },
         relatedTagRules: {
             guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingRelatedTagRules),
                   let data = rawValue.data(using: .utf8),
@@ -420,6 +431,8 @@ extension AppSettingsClient {
         setRoutineListSectioningMode: { _ in },
         tagCounterDisplayMode: { .defaultValue },
         setTagCounterDisplayMode: { _ in },
+        taskRowVisibility: { .defaultValue },
+        setTaskRowVisibility: { _ in },
         relatedTagRules: { [] },
         setRelatedTagRules: { _ in },
         tagColors: { [:] },

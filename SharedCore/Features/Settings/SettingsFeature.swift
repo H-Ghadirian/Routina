@@ -13,6 +13,7 @@ struct SettingsFeature {
         case appColorSchemeChanged(AppColorScheme)
         case routineListSectioningModeChanged(RoutineListSectioningMode)
         case tagCounterDisplayModeChanged(TagCounterDisplayMode)
+        case taskRowFieldVisibilityChanged(HomeTaskRowField, Bool)
         case appLockToggled(Bool)
         case appLockEnableFinished(DeviceAuthenticationResult)
         case gitFeaturesToggled(Bool)
@@ -119,6 +120,14 @@ struct SettingsFeature {
             case let .tagCounterDisplayModeChanged(mode):
                 return SettingsAppearanceActionHandler.tagCounterDisplayModeChanged(
                     mode,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .taskRowFieldVisibilityChanged(field, isVisible):
+                return SettingsAppearanceActionHandler.taskRowFieldVisibilityChanged(
+                    field,
+                    isVisible: isVisible,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient
                 )

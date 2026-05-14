@@ -22,12 +22,28 @@ enum SettingsAppearanceEditor {
         state.tagCounterDisplayMode = mode
     }
 
+    static func updateTaskRowVisibility(
+        _ visibility: HomeTaskRowVisibility,
+        state: inout SettingsAppearanceState
+    ) {
+        state.taskRowVisibility = visibility
+    }
+
+    static func updateTaskRowField(
+        _ field: HomeTaskRowField,
+        isVisible: Bool,
+        state: inout SettingsAppearanceState
+    ) {
+        state.taskRowVisibility = state.taskRowVisibility.setting(field, visible: isVisible)
+    }
+
     static func refreshFromSettings(
         appColorScheme: AppColorScheme,
         appLockEnabled: Bool,
         gitFeaturesEnabled: Bool,
         showPersianDates: Bool,
         showTimelineTasksInDayPlanner: Bool,
+        taskRowVisibility: HomeTaskRowVisibility,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         selectedAppIcon: AppIconOption,
         hasTemporaryViewStateToReset: Bool,
@@ -38,6 +54,7 @@ enum SettingsAppearanceEditor {
         state.isGitFeaturesEnabled = gitFeaturesEnabled
         state.showPersianDates = showPersianDates
         state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
+        state.taskRowVisibility = taskRowVisibility
         state.isAppLockToggleInProgress = false
         state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
