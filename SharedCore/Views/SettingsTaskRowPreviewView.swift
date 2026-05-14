@@ -18,7 +18,7 @@ struct SettingsTaskRowPreviewView: View {
             tintOpacity: visibility.shows(.rowColor) ? 0.12 : 0.06
         )
         .overlay(alignment: .topTrailing) {
-            if visibility.shows(.rowColor) {
+            if visibility.shows(.colorBadge) {
                 rowColorMarker
             }
         }

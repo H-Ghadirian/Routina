@@ -528,12 +528,12 @@ extension HomeTCAView {
     }
 
     private func macTaskSourceRowColorBadgeTrailingSpace(for task: HomeFeature.RoutineDisplay) -> CGFloat {
-        taskRowVisibility.shows(.rowColor) && task.color.swiftUIColor != nil ? 15 : 0
+        taskRowVisibility.shows(.colorBadge) && task.color.swiftUIColor != nil ? 15 : 0
     }
 
     @ViewBuilder
     private func macTaskSourceRowColorBadge(for task: HomeFeature.RoutineDisplay) -> some View {
-        if taskRowVisibility.shows(.rowColor),
+        if taskRowVisibility.shows(.colorBadge),
            let color = task.color.swiftUIColor {
             HomeTaskRowColorMarkerShape()
                 .fill(color)

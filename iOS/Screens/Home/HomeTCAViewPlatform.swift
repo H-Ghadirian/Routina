@@ -334,8 +334,12 @@ detailContent
     ) -> some View {
         NavigationLink(value: task.taskID) {
             routineRow(for: task, rowNumber: rowNumber)
+                .padding(.trailing, routineListRowColorBadgeTrailingSpace(for: task))
         }
         .listRowBackground(routineListRowBackground(for: task))
+        .overlay(alignment: .topTrailing) {
+            routineListRowColorBadge(for: task)
+        }
         .contentShape(Rectangle())
         .contextMenu {
             routineContextMenu(for: task, includeMarkDone: includeMarkDone, moveContext: moveContext)
@@ -349,6 +353,23 @@ detailContent
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(color.opacity(0.12))
                 .padding(.vertical, 4)
+        }
+    }
+
+    private func routineListRowColorBadgeTrailingSpace(for task: HomeFeature.RoutineDisplay) -> CGFloat {
+        taskRowVisibility.shows(.colorBadge) && task.color.swiftUIColor != nil ? 14 : 0
+    }
+
+    @ViewBuilder
+    private func routineListRowColorBadge(for task: HomeFeature.RoutineDisplay) -> some View {
+        if taskRowVisibility.shows(.colorBadge),
+           let color = task.color.swiftUIColor {
+            HomeTaskRowColorMarkerShape()
+                .fill(color)
+                .frame(width: 10, height: 18)
+                .padding(.top, 8)
+                .padding(.trailing, 8)
+                .accessibilityHidden(true)
         }
     }
 

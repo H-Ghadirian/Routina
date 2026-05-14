@@ -547,12 +547,23 @@ struct HomeTaskListFilteringTests {
 
     @Test
     func taskRowVisibilityRoundTripsHiddenFields() {
-        let visibility = HomeTaskRowVisibility(hiddenFields: [.tags, .icon, .pressure])
+        let visibility = HomeTaskRowVisibility(hiddenFields: [.tags, .icon, .colorBadge, .pressure])
         let rawValue = visibility.storageRawValue
 
-        #expect(rawValue == "icon,pressure,tags")
+        #expect(rawValue == "icon,colorBadge,pressure,tags")
         #expect(HomeTaskRowVisibility(storageRawValue: rawValue) == visibility)
         #expect(HomeTaskRowVisibility(storageRawValue: nil) == .defaultValue)
+    }
+
+    @Test
+    func rowColorAndColorBadgeVisibilityAreIndependent() {
+        let hiddenRowColor = HomeTaskRowVisibility(hiddenFields: [.rowColor])
+        let hiddenColorBadge = HomeTaskRowVisibility(hiddenFields: [.colorBadge])
+
+        #expect(!hiddenRowColor.shows(.rowColor))
+        #expect(hiddenRowColor.shows(.colorBadge))
+        #expect(hiddenColorBadge.shows(.rowColor))
+        #expect(!hiddenColorBadge.shows(.colorBadge))
     }
 }
 

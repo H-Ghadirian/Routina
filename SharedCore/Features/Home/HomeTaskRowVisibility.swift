@@ -3,6 +3,7 @@ import Foundation
 enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
     case icon
     case rowColor
+    case colorBadge
     case rowNumber
     case taskTypeBadge
     case statusBadge
@@ -23,6 +24,8 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
             return "Icon"
         case .rowColor:
             return "Row Color"
+        case .colorBadge:
+            return "Color Badge"
         case .rowNumber:
             return "Row Number"
         case .taskTypeBadge:
@@ -53,7 +56,9 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
         case .icon:
             return "Emoji, image marker, and color block."
         case .rowColor:
-            return "Custom task tint and row color marker."
+            return "Custom task tint and row background."
+        case .colorBadge:
+            return "Small custom color marker at the row edge."
         case .rowNumber:
             return "Visible position in the current list."
         case .taskTypeBadge:
