@@ -11,6 +11,7 @@ struct TaskFormContent: View {
     @State private var isFileImporterPresented = false
     @State private var isAttachmentDropTargeted = false
     @State private var isImageDropTargeted = false
+    @State private var hasAppliedInitialNameAutofocus = false
     @State private var isTagManagerPresented = false
     @State private var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
@@ -68,8 +69,10 @@ struct TaskFormContent: View {
             loadPickedImage(from: newItem)
         }
         .onAppear {
-            guard model.autofocusName else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            guard model.autofocusName, !hasAppliedInitialNameAutofocus else { return }
+            hasAppliedInitialNameAutofocus = true
+            Task { @MainActor in
+                await Task.yield()
                 nameFocusBinding.wrappedValue = true
             }
         }

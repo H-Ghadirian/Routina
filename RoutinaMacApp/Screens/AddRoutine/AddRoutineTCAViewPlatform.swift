@@ -6,20 +6,6 @@ extension View {
         isRoutineNameFocused: FocusState<Bool>.Binding
     ) -> some View {
         self
-            .onAppear {
-                isRoutineNameFocused.wrappedValue = false
-                DispatchQueue.main.async {
-                    isRoutineNameFocused.wrappedValue = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    isRoutineNameFocused.wrappedValue = false
-                    isRoutineNameFocused.wrappedValue = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    isRoutineNameFocused.wrappedValue = false
-                    isRoutineNameFocused.wrappedValue = true
-                }
-            }
     }
 
     func routinaAddRoutineSheetFrame() -> some View {

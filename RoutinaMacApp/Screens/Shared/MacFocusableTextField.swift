@@ -10,6 +10,8 @@ struct MacFocusableTextField: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: MacFocusableTextField
         var lastAppliedFocusRequestID: Int?
+        var focusGeneration = 0
+        var didFocusCurrentRequest = false
 
         init(parent: MacFocusableTextField) {
             self.parent = parent
@@ -47,6 +49,8 @@ struct MacFocusableTextField: NSViewRepresentable {
 
         guard isFocusRequested else {
             context.coordinator.lastAppliedFocusRequestID = nil
+            context.coordinator.focusGeneration += 1
+            context.coordinator.didFocusCurrentRequest = false
             return
         }
 
@@ -55,17 +59,51 @@ struct MacFocusableTextField: NSViewRepresentable {
         }
 
         context.coordinator.lastAppliedFocusRequestID = focusRequestID
-        let delays: [TimeInterval] = [0, 0.05, 0.15, 0.3, 0.6, 1.0, 1.5]
+        context.coordinator.focusGeneration += 1
+        context.coordinator.didFocusCurrentRequest = false
+        let focusGeneration = context.coordinator.focusGeneration
+        let delays: [TimeInterval] = [0, 0.05, 0.15, 0.3]
         for delay in delays {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                focus(nsView)
+            let coordinator = context.coordinator
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak nsView] in
+                guard coordinator.focusGeneration == focusGeneration,
+                      let textField = nsView else {
+                    return
+                }
+                focus(textField, coordinator: coordinator)
             }
         }
     }
 
-    private func focus(_ textField: NSTextField) {
+    private func focus(_ textField: NSTextField, coordinator: Coordinator) {
         guard let window = textField.window else { return }
-        window.makeFirstResponder(textField)
-        textField.currentEditor()?.selectedRange = NSRange(location: textField.stringValue.count, length: 0)
+        guard shouldFocus(textField, in: window, coordinator: coordinator) else { return }
+        guard window.makeFirstResponder(textField) else { return }
+        coordinator.didFocusCurrentRequest = isFocused(textField, in: window)
+        textField.currentEditor()?.selectedRange = NSRange(
+            location: textField.stringValue.count,
+            length: 0
+        )
+    }
+
+    private func shouldFocus(
+        _ textField: NSTextField,
+        in window: NSWindow,
+        coordinator: Coordinator
+    ) -> Bool {
+        if isFocused(textField, in: window) {
+            return true
+        }
+        if coordinator.didFocusCurrentRequest {
+            return false
+        }
+        if window.firstResponder is NSTextView {
+            return false
+        }
+        return true
+    }
+
+    private func isFocused(_ textField: NSTextField, in window: NSWindow) -> Bool {
+        window.firstResponder === textField || window.firstResponder === textField.currentEditor()
     }
 }
