@@ -10,13 +10,13 @@ Accepted
 
 ## Context
 
-The Home task row had accumulated several useful signals: icon, row number, status, schedule, priority, pressure, progress, steps, places, tags, and goals. Different users and workflows need different density, especially on smaller iPhone screens and in the Mac sidebar.
+The Home task row had accumulated several useful signals: icon, row color, row number, status, schedule, priority, pressure, progress, steps, places, tags, and goals. Different users and workflows need different density, especially on smaller iPhone screens and in the Mac sidebar.
 
 ## Decision
 
 Routina lets users choose which Home task row fields are visible from Settings > Appearance > Task Row. The preference is stored as hidden row fields so the default remains the full existing row and future fields can default to visible.
 
-Both iOS and macOS Home list rows consume the same visibility model. Metadata generation respects the field choices before joining text fragments, so hiding priority, pressure, progress, steps, schedule, or place data removes those fragments without leaving dangling separators.
+Both iOS and macOS Home list rows consume the same visibility model. Metadata generation respects the field choices before joining text fragments, so hiding priority, pressure, progress, steps, schedule, or place data removes those fragments without leaving dangling separators. Hiding row color suppresses the task-specific row tint and color marker, but does not erase the task's saved color or selection highlighting.
 
 ## Consequences
 

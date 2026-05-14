@@ -454,12 +454,18 @@ extension HomeTCAView {
         if task.id == store.selectedTaskID {
             return .accentColor
         }
+        guard taskRowVisibility.shows(.rowColor) else {
+            return .secondary
+        }
         return task.color.swiftUIColor ?? .secondary
     }
 
     private func macTaskSourceRowGlassOpacity(for task: HomeFeature.RoutineDisplay) -> Double {
         if task.id == store.selectedTaskID {
             return 0.16
+        }
+        guard taskRowVisibility.shows(.rowColor) else {
+            return 0.05
         }
         return task.color.swiftUIColor == nil ? 0.05 : 0.10
     }
@@ -495,6 +501,9 @@ extension HomeTCAView {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.18)
         }
+        guard taskRowVisibility.shows(.rowColor) else {
+            return Color.secondary.opacity(0.08)
+        }
         if let color = task.color.swiftUIColor {
             return color.opacity(0.12)
         }
@@ -504,6 +513,9 @@ extension HomeTCAView {
     private func macTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.55)
+        }
+        guard taskRowVisibility.shows(.rowColor) else {
+            return Color.primary.opacity(0.06)
         }
         if let color = task.color.swiftUIColor {
             return color.opacity(0.32)
@@ -516,13 +528,14 @@ extension HomeTCAView {
     }
 
     private func macTaskSourceRowColorBadgeTrailingSpace(for task: HomeFeature.RoutineDisplay) -> CGFloat {
-        task.color.swiftUIColor == nil ? 0 : 15
+        taskRowVisibility.shows(.rowColor) && task.color.swiftUIColor != nil ? 15 : 0
     }
 
     @ViewBuilder
     private func macTaskSourceRowColorBadge(for task: HomeFeature.RoutineDisplay) -> some View {
-        if let color = task.color.swiftUIColor {
-            MacTaskSourceRowColorBadgeShape()
+        if taskRowVisibility.shows(.rowColor),
+           let color = task.color.swiftUIColor {
+            HomeTaskRowColorMarkerShape()
                 .fill(color)
                 .frame(width: 10, height: 18)
                 .padding(.trailing, 18)
@@ -613,20 +626,5 @@ private extension MacSidebarTaskScrollRequest {
         case .minimalReveal:
             return nil
         }
-    }
-}
-
-private struct MacTaskSourceRowColorBadgeShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let notchDepth = min(rect.height * 0.24, 8)
-
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - notchDepth))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
     }
 }

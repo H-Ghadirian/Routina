@@ -12,7 +12,16 @@ struct SettingsTaskRowPreviewView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassCard(cornerRadius: 12, tint: .teal, tintOpacity: 0.12)
+        .routinaGlassCard(
+            cornerRadius: 12,
+            tint: visibility.shows(.rowColor) ? .teal : .secondary,
+            tintOpacity: visibility.shows(.rowColor) ? 0.12 : 0.06
+        )
+        .overlay(alignment: .topTrailing) {
+            if visibility.shows(.rowColor) {
+                rowColorMarker
+            }
+        }
         .animation(.snappy(duration: 0.22), value: visibility)
     }
 
@@ -56,6 +65,14 @@ struct SettingsTaskRowPreviewView: View {
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
             .routinaGlassPill()
+    }
+
+    private var rowColorMarker: some View {
+        HomeTaskRowColorMarkerShape()
+        .fill(Color.teal)
+        .frame(width: 10, height: 18)
+        .padding(.trailing, 18)
+        .accessibilityHidden(true)
     }
 
     private var content: some View {

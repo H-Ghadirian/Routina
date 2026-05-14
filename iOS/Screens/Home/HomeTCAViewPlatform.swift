@@ -344,7 +344,8 @@ detailContent
 
     @ViewBuilder
     private func routineListRowBackground(for task: HomeFeature.RoutineDisplay) -> some View {
-        if let color = task.color.swiftUIColor {
+        if taskRowVisibility.shows(.rowColor),
+           let color = task.color.swiftUIColor {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(color.opacity(0.12))
                 .padding(.vertical, 4)

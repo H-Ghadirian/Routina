@@ -391,6 +391,7 @@ let package = Package(
                 "SharedCore/Views/HomeFilterControlModels.swift",
                 "SharedCore/Views/HomeFilterChipButton.swift",
                 "SharedCore/Views/HomeFilterFlowLayout.swift",
+                "SharedCore/Views/HomeTaskRowColorMarkerShape.swift",
                 "SharedCore/Views/HomeTodoStateFilterChips.swift",
                 "SharedCore/Views/RoutinaLiquidGlass.swift",
                 "SharedCore/Screens/Home/HomeStatusAndEmptyViews.swift",
