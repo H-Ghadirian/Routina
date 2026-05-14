@@ -54,7 +54,7 @@ struct GoalsFeatureTests {
         await store.send(.onAppear) {
             $0.isLoading = true
         }
-        await store.receive(.goalsLoaded(expectedGoals, [])) {
+        await store.receive(.goalsLoaded(expectedGoals, [], [], .defaultValue, [:])) {
             $0.goals = expectedGoals
             $0.availableTags = []
             $0.isLoading = false
@@ -90,7 +90,7 @@ struct GoalsFeatureTests {
         await store.send(.onAppear) {
             $0.isLoading = true
         }
-        await store.receive(.goalsLoaded(expectedGoals, [])) {
+        await store.receive(.goalsLoaded(expectedGoals, [], [], .defaultValue, [:])) {
             $0.goals = expectedGoals
             $0.availableTags = []
             $0.isLoading = false
@@ -158,9 +158,19 @@ struct GoalsFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
-        await store.receive(.goalsLoaded(expectedGoals, ["Health", "Work"])) {
+        let expectedTagSummaries = [
+            RoutineTagSummary(name: "Health", linkedRoutineCount: 0, linkedGoalCount: 1),
+            RoutineTagSummary(name: "Work", linkedRoutineCount: 0, linkedGoalCount: 1)
+        ]
+        let expectedRelatedTagRules = [
+            RoutineRelatedTagRule(tag: "Health", relatedTags: ["Work"]),
+            RoutineRelatedTagRule(tag: "Work", relatedTags: ["Health"])
+        ]
+        await store.receive(.goalsLoaded(expectedGoals, expectedTagSummaries, expectedRelatedTagRules, .defaultValue, [:])) {
             $0.goals = expectedGoals
+            $0.availableTagSummaries = expectedTagSummaries
             $0.availableTags = ["Health", "Work"]
+            $0.relatedTagRules = expectedRelatedTagRules
             $0.selectedGoalID = goal.id
         }
 
@@ -171,6 +181,23 @@ struct GoalsFeatureTests {
         #expect(goal.targetDate == targetDate)
         #expect(goal.color == .blue)
         #expect(goal.tags == ["Health", "Work"])
+    }
+
+    @Test
+    func editorAcceptTagAutocompleteTappedCompletesCurrentDraftToken() async {
+        let store = TestStore(
+            initialState: GoalsFeature.State(
+                availableTags: ["Health", "Home", "Work"],
+                isEditorPresented: true,
+                editorDraft: GoalsFeature.GoalDraft(tags: ["Work"], tagDraft: "deep, ho")
+            )
+        ) {
+            GoalsFeature()
+        }
+
+        await store.send(.editorAcceptTagAutocompleteTapped) {
+            $0.editorDraft.tagDraft = "deep, Home"
+        }
     }
 
     @Test
@@ -214,7 +241,7 @@ struct GoalsFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
-        await store.receive(.goalsLoaded(expectedGoals, [])) {
+        await store.receive(.goalsLoaded(expectedGoals, [], [], .defaultValue, [:])) {
             $0.goals = expectedGoals
             $0.availableTags = []
             $0.selectedGoalID = child.id
@@ -318,7 +345,7 @@ struct GoalsFeatureTests {
             referenceDate: now,
             calendar: calendar
         )
-        await store.receive(.goalsLoaded(remainingGoalDisplays, [])) {
+        await store.receive(.goalsLoaded(remainingGoalDisplays, [], [], .defaultValue, [:])) {
             $0.goals = remainingGoalDisplays
             $0.availableTags = []
             $0.isLoading = false

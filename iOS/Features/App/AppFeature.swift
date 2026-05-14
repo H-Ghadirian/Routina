@@ -84,6 +84,14 @@ struct AppFeature {
                 state.timeline.relatedTagRules = RoutineTagRelations.sanitized(
                     relatedTagRules + RoutineTagRelations.learnedRules(from: state.timeline.tasks.map(\.tags))
                 )
+                state.goals.tagColors = tagColors
+                state.goals.availableTagSummaries = RoutineTagColors.applying(
+                    tagColors,
+                    to: state.goals.availableTagSummaries
+                )
+                state.goals.relatedTagRules = RoutineTagRelations.sanitized(
+                    relatedTagRules + RoutineTagRelations.learnedRules(from: state.goals.goals.map(\.tags))
+                )
                 state.stats.tagColors = tagColors
                 state.stats.relatedTagRules = RoutineTagRelations.sanitized(
                     relatedTagRules + RoutineTagRelations.learnedRules(from: state.stats.tasks.map(\.tags))

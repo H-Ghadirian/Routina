@@ -8,6 +8,10 @@ struct GoalsFeature {
     struct State: Equatable {
         var goals: [GoalDisplay] = []
         var availableTags: [String] = []
+        var availableTagSummaries: [RoutineTagSummary] = []
+        var relatedTagRules: [RoutineRelatedTagRule] = []
+        var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
+        var tagColors: [String: String] = [:]
         var searchText = ""
         var selectedGoalID: UUID?
         var isEditorPresented = false
@@ -369,7 +373,13 @@ struct GoalsFeature {
     enum Action: Equatable {
         case onAppear
         case refreshRequested
-        case goalsLoaded([GoalDisplay], [String])
+        case goalsLoaded(
+            [GoalDisplay],
+            [RoutineTagSummary],
+            [RoutineRelatedTagRule],
+            TagCounterDisplayMode,
+            [String: String]
+        )
         case loadingFailed(String)
         case searchTextChanged(String)
         case selectGoal(UUID?)
@@ -382,6 +392,7 @@ struct GoalsFeature {
         case editorTargetDateEnabledChanged(Bool)
         case editorTargetDateChanged(Date)
         case editorTagDraftChanged(String)
+        case editorAcceptTagAutocompleteTapped
         case editorAddTagTapped
         case editorRemoveTagTapped(String)
         case editorToggleTagSelection(String)
@@ -399,6 +410,7 @@ struct GoalsFeature {
     @Dependency(\.modelContext) var modelContext
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
+    @Dependency(\.appSettingsClient) var appSettingsClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -407,9 +419,13 @@ struct GoalsFeature {
                 state.isLoading = true
                 return loadGoalsEffect()
 
-            case let .goalsLoaded(goals, availableTags):
+            case let .goalsLoaded(goals, tagSummaries, relatedTagRules, tagCounterDisplayMode, tagColors):
                 state.goals = goals
-                state.availableTags = availableTags
+                state.availableTagSummaries = tagSummaries
+                state.availableTags = tagSummaries.map(\.name)
+                state.relatedTagRules = relatedTagRules
+                state.tagCounterDisplayMode = tagCounterDisplayMode
+                state.tagColors = tagColors
                 state.isLoading = false
                 if let selectedGoalID = state.selectedGoalID,
                    goals.contains(where: { $0.id == selectedGoalID }) {
@@ -478,6 +494,20 @@ struct GoalsFeature {
 
             case let .editorTagDraftChanged(tagDraft):
                 state.editorDraft.tagDraft = tagDraft
+                return .none
+
+            case .editorAcceptTagAutocompleteTapped:
+                guard let suggestion = RoutineTag.autocompleteSuggestion(
+                    for: state.editorDraft.tagDraft,
+                    availableTags: state.availableTags,
+                    selectedTags: state.editorDraft.tags
+                ) else {
+                    return .none
+                }
+                state.editorDraft.tagDraft = RoutineTag.acceptingAutocompleteSuggestion(
+                    suggestion,
+                    in: state.editorDraft.tagDraft
+                )
                 return .none
 
             case .editorAddTagTapped:
@@ -558,7 +588,15 @@ struct GoalsFeature {
                     )
                 )
                 let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-                let availableTags = RoutineTag.allTags(from: tasks.map(\.tags) + goals.map(\.tags))
+                let tagColors = appSettingsClient.tagColors()
+                let tagSummaries = RoutineTagColors.applying(
+                    tagColors,
+                    to: sortedTagSummaries(RoutineTag.summaries(from: tasks, goals: goals))
+                )
+                let tagCollections = tasks.map(\.tags) + goals.map(\.tags)
+                let relatedTagRules = RoutineTagRelations.sanitized(
+                    appSettingsClient.relatedTagRules() + RoutineTagRelations.learnedRules(from: tagCollections)
+                )
                 send(.goalsLoaded(
                     GoalDisplay.displays(
                         goals: goals,
@@ -566,7 +604,10 @@ struct GoalsFeature {
                         referenceDate: now,
                         calendar: calendar
                     ),
-                    availableTags
+                    tagSummaries,
+                    relatedTagRules,
+                    appSettingsClient.tagCounterDisplayMode(),
+                    tagColors
                 ))
             } catch {
                 send(.loadingFailed("Could not load goals."))
@@ -692,6 +733,21 @@ struct GoalsFeature {
                 goal.id == goalID
             }
         )
+    }
+
+    private func sortedTagSummaries(_ summaries: [RoutineTagSummary]) -> [RoutineTagSummary] {
+        summaries.sorted { lhs, rhs in
+            let lhsTotal = lhs.linkedRoutineCount + lhs.linkedTodoCount + lhs.linkedGoalCount + lhs.doneCount
+            let rhsTotal = rhs.linkedRoutineCount + rhs.linkedTodoCount + rhs.linkedGoalCount + rhs.doneCount
+
+            if lhsTotal != rhsTotal {
+                return lhsTotal > rhsTotal
+            }
+            if lhs.linkedGoalCount != rhs.linkedGoalCount {
+                return lhs.linkedGoalCount > rhs.linkedGoalCount
+            }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
     }
 }
 
