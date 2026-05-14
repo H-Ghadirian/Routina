@@ -71,14 +71,14 @@ struct SettingsMacBackupDetailView: View {
     var body: some View {
 SettingsMacDetailShell(
     title: "Data Backup",
-    subtitle: "Export your routines as JSON or bring a previous backup back into Routina."
+    subtitle: "Save a full backup package or bring a previous backup back into Routina."
 ) {
-    SettingsMacDetailCard(title: "JSON Backup") {
+    SettingsMacDetailCard(title: "Routine Data") {
         HStack(spacing: 10) {
             Button {
                 store.send(.exportRoutineDataTapped)
             } label: {
-                Label("Save JSON", systemImage: "square.and.arrow.down")
+                Label("Save Backup", systemImage: "square.and.arrow.down")
             }
             .buttonStyle(.bordered)
             .disabled(store.dataTransfer.isDataTransferInProgress)
@@ -86,7 +86,7 @@ SettingsMacDetailShell(
             Button {
                 store.send(.importRoutineDataTapped)
             } label: {
-                Label("Load JSON", systemImage: "square.and.arrow.up")
+                Label("Load Backup", systemImage: "square.and.arrow.up")
             }
             .buttonStyle(.bordered)
             .disabled(store.dataTransfer.isDataTransferInProgress)

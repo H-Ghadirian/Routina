@@ -5,6 +5,7 @@ enum SettingsRoutineDataPersistence {
     static let currentSchemaVersion = 20
     static let legacyJSONSchemaVersion = 14
     static let backupPackageExtension = "routinabackup"
+    static let legacyJSONBackupExtension = "json"
     static let manifestFileName = "manifest.json"
     static let attachmentsDirectoryName = "attachments"
 
@@ -45,6 +46,29 @@ enum SettingsRoutineDataPersistence {
         )
 
         return try SettingsRoutineDataBackupCoding.encode(backup)
+    }
+
+    @MainActor
+    static func writeBackup(
+        to destinationURL: URL,
+        from context: ModelContext,
+        exportedAt: Date = Date()
+    ) throws {
+        if isLegacyJSONBackupURL(destinationURL) {
+            let jsonData = try buildBackupJSON(from: context, exportedAt: exportedAt)
+            try jsonData.write(to: destinationURL, options: .atomic)
+            return
+        }
+
+        try writeBackupPackage(
+            to: destinationURL,
+            from: context,
+            exportedAt: exportedAt
+        )
+    }
+
+    static func isLegacyJSONBackupURL(_ url: URL) -> Bool {
+        url.pathExtension.localizedCaseInsensitiveCompare(legacyJSONBackupExtension) == .orderedSame
     }
 
     @MainActor

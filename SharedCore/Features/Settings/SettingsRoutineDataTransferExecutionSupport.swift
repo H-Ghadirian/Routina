@@ -28,7 +28,7 @@ enum SettingsRoutineDataTransferExecution {
         }
 
         try SettingsExecutionSupport.withSecurityScopedAccess(to: destinationURL) {
-            try SettingsRoutineDataPersistence.writeBackupPackage(
+            try SettingsRoutineDataPersistence.writeBackup(
                 to: destinationURL,
                 from: context
             )

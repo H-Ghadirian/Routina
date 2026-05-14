@@ -12,6 +12,32 @@ import Testing
 @MainActor
 struct SettingsRoutineDataPersistenceTests {
     @Test
+    func writeBackup_toJSONURLWritesLegacyJSONFile() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Archive paperwork", tags: ["Admin"])
+        context.insert(task)
+        try context.save()
+
+        let jsonURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.legacyJSONBackupExtension)
+        defer { try? FileManager.default.removeItem(at: jsonURL) }
+
+        try SettingsRoutineDataPersistence.writeBackup(to: jsonURL, from: context)
+
+        var isDirectory: ObjCBool = false
+        #expect(FileManager.default.fileExists(atPath: jsonURL.path, isDirectory: &isDirectory))
+        #expect(!isDirectory.boolValue)
+
+        let backup = try SettingsRoutineDataBackupCoding.decodeBackup(
+            from: Data(contentsOf: jsonURL)
+        )
+        #expect(backup.schemaVersion == SettingsRoutineDataPersistence.legacyJSONSchemaVersion)
+        #expect(backup.tasks.map(\.id) == [task.id])
+        #expect(backup.tasks.first?.tags == ["Admin"])
+    }
+
+    @Test
     func backupPackageAndRestore_preservesGoalHierarchy() async throws {
         let context = makeInMemoryContext()
         let parent = RoutineGoal(title: "Health")

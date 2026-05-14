@@ -78,7 +78,7 @@ extension SettingsCloudState {
 extension SettingsDataTransferState {
     var overviewSubtitle: String {
         if isDataTransferInProgress {
-            return "Importing or exporting JSON"
+            return "Importing or exporting backup"
         }
         if !dataTransferStatusMessage.isEmpty {
             return dataTransferStatusMessage
@@ -88,11 +88,11 @@ extension SettingsDataTransferState {
 
     var statusText: String {
         if isDataTransferInProgress {
-            return "Processing JSON file..."
+            return "Processing backup..."
         }
         if !dataTransferStatusMessage.isEmpty {
             return dataTransferStatusMessage
         }
-        return "Export or import all routine data as JSON."
+        return "Export a full backup package, or import a package or legacy JSON file."
     }
 }
