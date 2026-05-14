@@ -86,6 +86,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
             .buttonStyle(.bordered)
             .tint(.orange)
             .disabled(store.isCancelTodoButtonDisabled)
+            .help(store.cancelTodoButtonTitle)
         }
 
         if !store.task.isOneOffTask {
