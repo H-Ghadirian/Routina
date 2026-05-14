@@ -194,6 +194,7 @@ detailBody
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
+                taskGoalsSection
                 calendarSection
                 TaskDetailTodoPrimaryActionSection(store: store)
                 todoStateTimingSection
@@ -227,6 +228,7 @@ detailBody
             LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
+                taskGoalsSection
                 TaskDetailRoutinePrimaryActionSection(
                     store: store,
                     pauseArchivePresentation: pauseArchivePresentation
@@ -278,6 +280,17 @@ detailBody
             onSaveEditComment: { store.send(.detailCommentEditSaveTapped($0)) },
             onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
         )
+    }
+
+    @ViewBuilder
+    private var taskGoalsSection: some View {
+        if !store.taskGoalSummaries.isEmpty {
+            TaskDetailGoalsSectionView(
+                goals: store.taskGoalSummaries,
+                background: routineLogsBackground,
+                stroke: TaskDetailPlatformStyle.sectionCardStroke
+            )
+        }
     }
 
     private var blockingFocusTitle: String? {

@@ -93,12 +93,14 @@ enum HomeTaskSupport {
         _ detailState: inout TaskDetailFeature.State,
         tasks: [RoutineTask],
         places: [RoutinePlace],
+        goals: [RoutineGoal],
         now: Date,
         calendar: Calendar
     ) {
         guard !detailState.isEditSheetPresented else { return }
 
         let task = detailState.task
+        detailState.availableGoals = RoutineGoalSummary.summaries(from: goals)
         let directRelationshipTargetIDs = Set(task.relationships.map(\.targetTaskID))
         let relatedTasks = tasks.filter { candidate in
             guard candidate.id != task.id else { return false }

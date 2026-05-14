@@ -4,6 +4,7 @@ import Foundation
 protocol HomeFeatureSelectionRoutingState {
     var routineTasks: [RoutineTask] { get set }
     var routinePlaces: [RoutinePlace] { get set }
+    var routineGoals: [RoutineGoal] { get set }
     var selection: HomeSelectionState { get set }
     var presentation: HomePresentationState { get set }
 }
@@ -104,6 +105,7 @@ struct HomeFeatureSelectionRouter<State: HomeFeatureSelectionRoutingState, Actio
             &detailState,
             tasks: state.routineTasks,
             places: state.routinePlaces,
+            goals: state.routineGoals,
             now: now,
             calendar: calendar
         )

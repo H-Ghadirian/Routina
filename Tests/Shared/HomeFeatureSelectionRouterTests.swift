@@ -150,6 +150,7 @@ private final class TestSelectionRouterRecorder {
 private struct TestSelectionRoutingState: HomeFeatureSelectionRoutingState, Equatable {
     var routineTasks: [RoutineTask] = []
     var routinePlaces: [RoutinePlace] = []
+    var routineGoals: [RoutineGoal] = []
     var selection = HomeSelectionState()
     var presentation = HomePresentationState()
 }

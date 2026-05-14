@@ -151,6 +151,20 @@ struct TaskDetailFeature: Reducer {
             }
             return body != comment.body
         }
+
+        var taskGoalSummaries: [RoutineGoalSummary] {
+            let resolvedGoals = RoutineGoalSummary.summaries(
+                for: task.goalIDs,
+                in: availableGoals
+            )
+            if !resolvedGoals.isEmpty || task.goalIDs.isEmpty {
+                return resolvedGoals
+            }
+            return RoutineGoalSummary.summaries(
+                for: task.goalIDs,
+                in: editRoutineGoals
+            )
+        }
     }
 
     enum Action: Equatable {
@@ -1120,7 +1134,10 @@ struct TaskDetailFeature: Reducer {
                 state.selectedDate = calendar.startOfDay(for: now)
             }
             updateDerivedState(&state)
-            return handleOnAppear(taskID: state.task.id)
+            return .concatenate(
+                loadEditContext(excluding: state.task.id),
+                handleOnAppear(taskID: state.task.id)
+            )
             .cancellable(id: CancelID.loadContext, cancelInFlight: true)
         }
     }

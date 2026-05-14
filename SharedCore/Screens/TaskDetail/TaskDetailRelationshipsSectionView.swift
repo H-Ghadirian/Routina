@@ -1,5 +1,61 @@
 import SwiftUI
 
+struct TaskDetailGoalsSectionView: View {
+    let goals: [RoutineGoalSummary]
+    let background: Color
+    let stroke: Color
+
+    var body: some View {
+        TaskDetailSectionCardView(background: background, stroke: stroke) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Goals")
+                        .font(.headline)
+
+                    Text(goals.count.formatted())
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+                }
+
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                    ForEach(goals) { goal in
+                        TaskDetailGoalChip(goal: goal)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct TaskDetailGoalChip: View {
+    let goal: RoutineGoalSummary
+
+    var body: some View {
+        let tint = goal.color.swiftUIColor ?? Color.accentColor
+
+        HStack(spacing: 7) {
+            Text(goal.displayEmoji)
+                .font(.caption.weight(.semibold))
+
+            Text(goal.displayTitle)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(tint)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .routinaGlassPill(tint: tint, tintOpacity: 0.13)
+        .overlay(
+            Capsule()
+                .stroke(tint.opacity(0.25), lineWidth: 1)
+        )
+    }
+}
+
 struct TaskDetailRelationshipsSectionView: View {
     let groups: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])]
     @Binding var selectedRelationshipKind: RoutineTaskRelationshipKind

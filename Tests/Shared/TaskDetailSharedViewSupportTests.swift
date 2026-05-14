@@ -224,6 +224,24 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func taskGoalSummariesResolveLinkedGoalsInTaskOrder() {
+        let healthID = UUID()
+        let focusID = UUID()
+        let task = RoutineTask(
+            name: "Deep work",
+            goalIDs: [focusID, healthID]
+        )
+        var state = TaskDetailFeature.State(task: task)
+        state.availableGoals = [
+            RoutineGoalSummary(id: healthID, title: "Health", emoji: "H", color: .green),
+            RoutineGoalSummary(id: focusID, title: "Focus", emoji: "F", color: .blue)
+        ]
+
+        #expect(state.taskGoalSummaries.map(\.id) == [focusID, healthID])
+        #expect(state.taskGoalSummaries.map(\.displayTitle) == ["Focus", "Health"])
+    }
+
+    @Test
     func editChangeDetectorTracksPristineChangedAndInvalidNames() {
         let task = RoutineTask(
             name: "Write report",
