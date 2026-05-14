@@ -125,7 +125,7 @@ enum HomeFilterEditor {
             taskFilters.selectedManualPlaceFilterID = id
 
         case let .selectedImportanceUrgencyFilter(filter):
-            taskFilters.selectedImportanceUrgencyFilter = filter
+            taskFilters.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(filter)
 
         case let .selectedTodoStateFilter(filter):
             taskFilters.selectedTodoStateFilter = filter
@@ -191,7 +191,7 @@ enum HomeFilterEditor {
             timelineFilters.excludeTagMatchMode = mode
 
         case let .selectedImportanceUrgencyFilter(filter):
-            timelineFilters.selectedImportanceUrgencyFilter = filter
+            timelineFilters.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(filter)
         }
     }
 

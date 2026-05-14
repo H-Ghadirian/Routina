@@ -505,13 +505,15 @@ timelineRoot
     }
 
     private var selectedImportanceUrgencyFilterLabel: String? {
-        guard let filter = store.selectedImportanceUrgencyFilter else { return nil }
+        guard let filter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter) else {
+            return nil
+        }
         return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
     }
 
     private var importanceUrgencyFilterSummary: String {
-        guard let filter = store.selectedImportanceUrgencyFilter else {
-            return "Choose a cell to show done items from tasks that meet or exceed that importance and urgency."
+        guard let filter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter) else {
+            return "Showing done items across all importance and urgency levels."
         }
         return "Showing done items from tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }

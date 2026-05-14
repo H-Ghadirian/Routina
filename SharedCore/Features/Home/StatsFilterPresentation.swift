@@ -147,7 +147,7 @@ struct StatsFilterPresentation {
         StatsTaskTypeMatrixFilterSupport.filteredTasks(
             tasks,
             taskTypeFilter: taskTypeFilter,
-            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter)
         )
     }
 }

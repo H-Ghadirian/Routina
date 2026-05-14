@@ -125,8 +125,8 @@ extension HomeTCAView {
     }
 
     private var statsImportanceUrgencySummary: String {
-        guard let filter = statsStore?.selectedImportanceUrgencyFilter else {
-            return "Choose a cell to show stats only for tasks that meet or exceed that importance and urgency."
+        guard let filter = ImportanceUrgencyFilterCell.normalized(statsStore?.selectedImportanceUrgencyFilter) else {
+            return "Showing stats across all importance and urgency levels."
         }
         return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }

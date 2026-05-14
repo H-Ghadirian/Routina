@@ -63,6 +63,20 @@ struct HomeFilterPresentationTests {
     }
 
     @Test
+    func allLevelsThresholdDoesNotCountAsActiveImportanceUrgencyFilter() {
+        let presentation = HomeFilterPresentation(
+            taskListKind: .all,
+            selectedImportanceUrgencyFilter: .allLevels
+        )
+
+        #expect(presentation.activeOptionalFilterCount == 0)
+        #expect(!presentation.hasActiveOptionalFilters)
+        #expect(presentation.filterLabels.isEmpty)
+        #expect(presentation.selectedImportanceUrgencyFilterLabel == nil)
+        #expect(presentation.importanceUrgencyFilterSummary == "Showing tasks across all importance and urgency levels.")
+    }
+
+    @Test
     func placeCopyAdaptsToTaskListKindAndSavedPlaces() {
         let selected = HomeFilterPresentation(
             taskListKind: .routines,

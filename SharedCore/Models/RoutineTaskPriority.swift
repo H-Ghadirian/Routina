@@ -143,6 +143,13 @@ struct ImportanceUrgencyFilterCell: Codable, Equatable, Hashable, Identifiable, 
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency
 
+    static let allLevels = ImportanceUrgencyFilterCell(importance: .level1, urgency: .level1)
+
+    static func normalized(_ cell: ImportanceUrgencyFilterCell?) -> ImportanceUrgencyFilterCell? {
+        guard cell != allLevels else { return nil }
+        return cell
+    }
+
     var id: String {
         "\(importance.rawValue)-\(urgency.rawValue)"
     }

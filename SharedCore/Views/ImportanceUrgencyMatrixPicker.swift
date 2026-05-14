@@ -30,8 +30,8 @@ struct ImportanceUrgencyMatrixPicker: View {
         selectedFilter: Binding<ImportanceUrgencyFilterCell?>,
         showsSummaryChip: Bool = true
     ) {
-        self._importance = .constant(selectedFilter.wrappedValue?.importance ?? .level2)
-        self._urgency = .constant(selectedFilter.wrappedValue?.urgency ?? .level2)
+        self._importance = .constant(selectedFilter.wrappedValue?.importance ?? .level1)
+        self._urgency = .constant(selectedFilter.wrappedValue?.urgency ?? .level1)
         self.selectionMode = .filter(selectedFilter)
         self.showsSummaryChip = showsSummaryChip
     }
@@ -40,9 +40,9 @@ struct ImportanceUrgencyMatrixPicker: View {
         VStack(alignment: .leading, spacing: 14) {
             if showsSummaryChip {
                 summaryChip(
-                    title: derivedPriority.title,
-                    systemImage: "flag.fill",
-                    color: priorityColor(for: derivedPriority),
+                    title: summaryChipTitle,
+                    systemImage: summaryChipSystemImage,
+                    color: summaryChipColor,
                     emphasized: true
                 )
             }
@@ -105,7 +105,8 @@ struct ImportanceUrgencyMatrixPicker: View {
                 urgency = urgencyLevel
             case let .filter(selectedFilter):
                 let newCell = ImportanceUrgencyFilterCell(importance: importanceLevel, urgency: urgencyLevel)
-                selectedFilter.wrappedValue = selectedFilter.wrappedValue == newCell ? nil : newCell
+                let nextCell = selectedFilter.wrappedValue == newCell ? nil : newCell
+                selectedFilter.wrappedValue = ImportanceUrgencyFilterCell.normalized(nextCell)
             }
         } label: {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -141,7 +142,7 @@ struct ImportanceUrgencyMatrixPicker: View {
         case .task:
             return importance
         case let .filter(selectedFilter):
-            return selectedFilter.wrappedValue?.importance ?? .level2
+            return selectedFilter.wrappedValue?.importance ?? .level1
         }
     }
 
@@ -150,8 +151,29 @@ struct ImportanceUrgencyMatrixPicker: View {
         case .task:
             return urgency
         case let .filter(selectedFilter):
-            return selectedFilter.wrappedValue?.urgency ?? .level2
+            return selectedFilter.wrappedValue?.urgency ?? .level1
         }
+    }
+
+    private var isShowingAllLevels: Bool {
+        switch selectionMode {
+        case .task:
+            return false
+        case let .filter(selectedFilter):
+            return selectedFilter.wrappedValue == nil
+        }
+    }
+
+    private var summaryChipTitle: String {
+        isShowingAllLevels ? "All levels" : derivedPriority.title
+    }
+
+    private var summaryChipSystemImage: String {
+        isShowingAllLevels ? "line.3.horizontal.decrease.circle" : "flag.fill"
+    }
+
+    private var summaryChipColor: Color {
+        isShowingAllLevels ? .accentColor : priorityColor(for: derivedPriority)
     }
 
     private func priorityTitle(

@@ -23,6 +23,27 @@ struct StatsFilterPresentationTests {
     }
 
     @Test
+    func allLevelsThresholdDoesNotCountAsActiveStatsFilter() {
+        let presentation = makePresentation(
+            selectedImportanceUrgencyFilter: .allLevels
+        )
+        let lowTask = RoutineTask(
+            name: "Low task",
+            importance: .level1,
+            urgency: .level1
+        )
+        let highTask = RoutineTask(
+            name: "High task",
+            importance: .level4,
+            urgency: .level4
+        )
+
+        #expect(!presentation.hasActiveSheetFilters)
+        #expect(presentation.activeSheetFilterCount == 0)
+        #expect(presentation.taskCountForSelectedTypeFilter(in: [lowTask, highTask]) == 2)
+    }
+
+    @Test
     func tagMutationsKeepIncludeAndExcludeFiltersExclusive() {
         let presentation = makePresentation(
             selectedTags: ["Focus", "Work"],

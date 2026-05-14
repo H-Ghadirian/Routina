@@ -61,6 +61,7 @@ enum StatsFeatureDerivedStateBuilder {
         referenceDate: Date,
         calendar: Calendar
     ) -> StatsFeatureDerivedState {
+        let normalizedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter)
         let query = HomeTaskAdvancedQuery<StatsTaskQueryDisplay>(advancedQuery)
         let queryMetrics = HomeTaskListMetrics<StatsTaskQueryDisplay>(
             configuration: HomeTaskListFilteringConfiguration(
@@ -88,12 +89,12 @@ enum StatsFeatureDerivedStateBuilder {
         let tasksMatchingTaskTypeAndMatrixFilters = taskTypeAndMatrixFilteredTasks(
             tasks: tasks,
             taskTypeFilter: taskTypeFilter,
-            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter
+            selectedImportanceUrgencyFilter: normalizedImportanceUrgencyFilter
         )
         let tasksMatchingQuery = queryMatchedTasks(
             tasks: tasks,
             taskTypeFilter: taskTypeFilter,
-            selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
+            selectedImportanceUrgencyFilter: normalizedImportanceUrgencyFilter,
             query: query,
             queryMetrics: queryMetrics,
             referenceDate: referenceDate,
@@ -136,7 +137,7 @@ enum StatsFeatureDerivedStateBuilder {
             let tasksMatchingCreatedQuery = queryMatchedTasks(
                 tasks: tasks,
                 taskTypeFilter: createdChartTaskTypeFilter,
-                selectedImportanceUrgencyFilter: selectedImportanceUrgencyFilter,
+                selectedImportanceUrgencyFilter: normalizedImportanceUrgencyFilter,
                 query: query,
                 queryMetrics: queryMetrics,
                 referenceDate: referenceDate,

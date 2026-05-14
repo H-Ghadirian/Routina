@@ -65,7 +65,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedFilter = snapshot.selectedFilter
         advancedQuery = snapshot.advancedQuery
         selectedManualPlaceFilterID = snapshot.selectedManualPlaceFilterID
-        selectedImportanceUrgencyFilter = snapshot.selectedImportanceUrgencyFilter
+        selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(snapshot.selectedImportanceUrgencyFilter)
         selectedTodoStateFilter = snapshot.selectedTodoStateFilter
         selectedPressureFilter = snapshot.selectedPressureFilter
         selectedGoalFilter = snapshot.selectedGoalFilter
@@ -149,7 +149,9 @@ enum HomeTemporaryViewStateMapper {
             excludedTags: persistedState.homeExcludedTags,
             excludeTagMatchMode: persistedState.homeExcludeTagMatchMode,
             selectedManualPlaceFilterID: persistedState.homeSelectedManualPlaceFilterID,
-            selectedImportanceUrgencyFilter: persistedState.homeSelectedImportanceUrgencyFilter,
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell.normalized(
+                persistedState.homeSelectedImportanceUrgencyFilter
+            ),
             selectedTodoStateFilter: persistedState.homeSelectedTodoStateFilter,
             selectedPressureFilter: persistedState.homeSelectedPressureFilter,
             selectedGoalFilter: persistedState.homeSelectedGoalFilter,
@@ -178,7 +180,9 @@ enum HomeTemporaryViewStateMapper {
                 includeTagMatchMode: persistedState.homeTimelineIncludeTagMatchMode,
                 selectedExcludedTags: persistedState.homeSelectedTimelineExcludedTags,
                 excludeTagMatchMode: persistedState.homeTimelineExcludeTagMatchMode,
-                selectedImportanceUrgencyFilter: persistedState.homeSelectedTimelineImportanceUrgencyFilter
+                selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell.normalized(
+                    persistedState.homeSelectedTimelineImportanceUrgencyFilter
+                )
             ),
             statsFilters: HomeStatsFiltersState(
                 selectedRange: persistedState.statsSelectedRange,

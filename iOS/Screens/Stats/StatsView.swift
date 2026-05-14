@@ -508,13 +508,15 @@ statsRoot
     }
 
     private var selectedImportanceUrgencyFilterLabel: String? {
-        guard let filter = store.selectedImportanceUrgencyFilter else { return nil }
+        guard let filter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter) else {
+            return nil
+        }
         return "\(filter.importance.shortTitle)/\(filter.urgency.shortTitle)+"
     }
 
     private var importanceUrgencyFilterSummary: String {
-        guard let filter = store.selectedImportanceUrgencyFilter else {
-            return "Choose a cell to show stats only for tasks that meet or exceed that importance and urgency."
+        guard let filter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter) else {
+            return "Showing stats across all importance and urgency levels."
         }
         return "Showing stats for tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
     }

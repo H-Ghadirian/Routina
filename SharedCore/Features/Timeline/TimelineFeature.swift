@@ -122,7 +122,7 @@ struct TimelineFeature {
                 return .none
 
             case let .selectedImportanceUrgencyFilterChanged(filter):
-                state.selectedImportanceUrgencyFilter = filter
+                state.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(filter)
                 refreshDerivedState(&state)
                 return .none
 

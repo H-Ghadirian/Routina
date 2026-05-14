@@ -99,7 +99,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if !selectedTags.isEmpty { count += 1 }
         count += excludedTags.count
         if hasSelectedPlaceFilter { count += 1 }
-        if selectedImportanceUrgencyFilter != nil { count += 1 }
+        if normalizedImportanceUrgencyFilter != nil { count += 1 }
         if selectedTodoStateFilter != nil { count += 1 }
         if selectedPressureFilter != nil { count += 1 }
         if selectedGoalFilter != .all { count += 1 }
@@ -206,15 +206,19 @@ struct HomeFilterPresentation: Equatable, Sendable {
     }
 
     var selectedImportanceUrgencyFilterLabel: String? {
-        guard let selectedImportanceUrgencyFilter else { return nil }
+        guard let selectedImportanceUrgencyFilter = normalizedImportanceUrgencyFilter else { return nil }
         return "\(selectedImportanceUrgencyFilter.importance.shortTitle)/\(selectedImportanceUrgencyFilter.urgency.shortTitle)+"
     }
 
     var importanceUrgencyFilterSummary: String {
-        guard let selectedImportanceUrgencyFilter else {
-            return "Choose a cell to show tasks that meet or exceed that importance and urgency."
+        guard let selectedImportanceUrgencyFilter = normalizedImportanceUrgencyFilter else {
+            return "Showing tasks across all importance and urgency levels."
         }
         return "Showing tasks with at least \(selectedImportanceUrgencyFilter.importance.title.lowercased()) importance and \(selectedImportanceUrgencyFilter.urgency.title.lowercased()) urgency."
+    }
+
+    private var normalizedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? {
+        ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter)
     }
 
     var locationStatusText: String {

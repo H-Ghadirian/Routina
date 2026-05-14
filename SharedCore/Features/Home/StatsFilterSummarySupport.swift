@@ -16,7 +16,7 @@ enum StatsFilterSummarySupport {
             || !trimmedAdvancedQuery(advancedQuery).isEmpty
             || !selectedTags.isEmpty
             || !excludedTags.isEmpty
-            || selectedImportanceUrgencyFilter != nil
+            || ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter) != nil
     }
 
     static func activeSheetFilterCount(
@@ -31,7 +31,7 @@ enum StatsFilterSummarySupport {
         if !trimmedAdvancedQuery(advancedQuery).isEmpty { count += 1 }
         if !selectedTags.isEmpty { count += 1 }
         count += excludedTags.count
-        if selectedImportanceUrgencyFilter != nil { count += 1 }
+        if ImportanceUrgencyFilterCell.normalized(selectedImportanceUrgencyFilter) != nil { count += 1 }
         return count
     }
 

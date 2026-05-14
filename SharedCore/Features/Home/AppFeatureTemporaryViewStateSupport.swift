@@ -151,7 +151,9 @@ enum AppFeatureTemporaryViewStateSupport {
         state.includeTagMatchMode = persistedState.timelineIncludeTagMatchMode
         state.excludedTags = persistedState.timelineExcludedTags
         state.excludeTagMatchMode = persistedState.timelineExcludeTagMatchMode
-        state.selectedImportanceUrgencyFilter = persistedState.timelineSelectedImportanceUrgencyFilter
+        state.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(
+            persistedState.timelineSelectedImportanceUrgencyFilter
+        )
     }
 
     private static func applyStatsFilters<State: AppStatsFeatureTemporaryViewState>(
@@ -166,7 +168,9 @@ enum AppFeatureTemporaryViewStateSupport {
         state.includeTagMatchMode = persistedState.statsIncludeTagMatchMode
         state.excludedTags = persistedState.statsExcludedTags
         state.excludeTagMatchMode = persistedState.statsExcludeTagMatchMode
-        state.selectedImportanceUrgencyFilter = persistedState.statsSelectedImportanceUrgencyFilter
+        state.selectedImportanceUrgencyFilter = ImportanceUrgencyFilterCell.normalized(
+            persistedState.statsSelectedImportanceUrgencyFilter
+        )
         state.advancedQuery = persistedState.statsAdvancedQuery
         if let rawValue = persistedState.statsTaskTypeFilterRawValue,
            let filter = StatsTaskTypeFilter(rawValue: rawValue) {
