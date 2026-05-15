@@ -447,6 +447,8 @@ struct GoalsFeature {
         case unarchiveGoalTapped(UUID)
         case acceptTaskSuggestion(goalID: UUID, taskID: UUID)
         case rejectTaskSuggestion(goalID: UUID, taskID: UUID)
+        case acceptAllTaskSuggestions(goalID: UUID, taskIDs: [UUID])
+        case rejectAllTaskSuggestions(goalID: UUID, taskIDs: [UUID])
         case deleteGoalRequested(UUID)
         case deleteGoalCanceled
         case deleteGoalConfirmed
@@ -605,10 +607,16 @@ struct GoalsFeature {
                 return setGoalStatusEffect(goalID: goalID, status: .active)
 
             case let .acceptTaskSuggestion(goalID, taskID):
-                return acceptTaskSuggestionEffect(goalID: goalID, taskID: taskID)
+                return acceptTaskSuggestionsEffect(goalID: goalID, taskIDs: [taskID])
 
             case let .rejectTaskSuggestion(goalID, taskID):
-                return rejectTaskSuggestionEffect(goalID: goalID, taskID: taskID)
+                return rejectTaskSuggestionsEffect(goalID: goalID, taskIDs: [taskID])
+
+            case let .acceptAllTaskSuggestions(goalID, taskIDs):
+                return acceptTaskSuggestionsEffect(goalID: goalID, taskIDs: taskIDs)
+
+            case let .rejectAllTaskSuggestions(goalID, taskIDs):
+                return rejectTaskSuggestionsEffect(goalID: goalID, taskIDs: taskIDs)
 
             case let .deleteGoalRequested(goalID):
                 state.pendingDeleteGoalID = goalID
@@ -778,18 +786,24 @@ struct GoalsFeature {
         }
     }
 
-    private func acceptTaskSuggestionEffect(goalID: UUID, taskID: UUID) -> Effect<Action> {
-        .run { @MainActor send in
+    private func acceptTaskSuggestionsEffect(goalID: UUID, taskIDs: [UUID]) -> Effect<Action> {
+        let taskIDs = RoutineGoalIDStorage.sanitized(taskIDs)
+        guard !taskIDs.isEmpty else { return .none }
+
+        return .run { @MainActor send in
             let context = modelContext()
             do {
-                guard let goal = try context.fetch(goalDescriptor(for: goalID)).first,
-                      let task = try context.fetch(taskDescriptor(for: taskID)).first else {
+                guard let goal = try context.fetch(goalDescriptor(for: goalID)).first else {
                     send(.refreshRequested)
                     return
                 }
 
-                task.goalIDs = RoutineGoalIDStorage.sanitized(task.goalIDs + [goalID])
-                goal.rejectedTaskSuggestionIDs = goal.rejectedTaskSuggestionIDs.filter { $0 != taskID }
+                let taskIDSet = Set(taskIDs)
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                for task in tasks where taskIDSet.contains(task.id) {
+                    task.goalIDs = RoutineGoalIDStorage.sanitized(task.goalIDs + [goalID])
+                }
+                goal.rejectedTaskSuggestionIDs = goal.rejectedTaskSuggestionIDs.filter { !taskIDSet.contains($0) }
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
                 send(.refreshRequested)
@@ -800,8 +814,11 @@ struct GoalsFeature {
         }
     }
 
-    private func rejectTaskSuggestionEffect(goalID: UUID, taskID: UUID) -> Effect<Action> {
-        .run { @MainActor send in
+    private func rejectTaskSuggestionsEffect(goalID: UUID, taskIDs: [UUID]) -> Effect<Action> {
+        let taskIDs = RoutineGoalIDStorage.sanitized(taskIDs)
+        guard !taskIDs.isEmpty else { return .none }
+
+        return .run { @MainActor send in
             let context = modelContext()
             do {
                 guard let goal = try context.fetch(goalDescriptor(for: goalID)).first else {
@@ -810,7 +827,7 @@ struct GoalsFeature {
                 }
 
                 goal.rejectedTaskSuggestionIDs = RoutineGoalIDStorage.sanitized(
-                    goal.rejectedTaskSuggestionIDs + [taskID]
+                    goal.rejectedTaskSuggestionIDs + taskIDs
                 )
                 try context.save()
                 NotificationCenter.default.postRoutineDidUpdate()
@@ -826,14 +843,6 @@ struct GoalsFeature {
         FetchDescriptor<RoutineGoal>(
             predicate: #Predicate { goal in
                 goal.id == goalID
-            }
-        )
-    }
-
-    private func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
-        FetchDescriptor<RoutineTask>(
-            predicate: #Predicate { task in
-                task.id == taskID
             }
         )
     }

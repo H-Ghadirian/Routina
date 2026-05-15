@@ -262,7 +262,7 @@ private struct GoalDetailView: View {
                 }
 
                 if !goal.taskSuggestions.isEmpty {
-                    Section("Suggested Tasks") {
+                    Section {
                         ForEach(goal.taskSuggestions) { suggestion in
                             GoalTaskSuggestionRow(
                                 suggestion: suggestion,
@@ -274,6 +274,21 @@ private struct GoalDetailView: View {
                                 }
                             )
                         }
+                    } header: {
+                        GoalTaskSuggestionsHeader(
+                            onAcceptAll: {
+                                store.send(.acceptAllTaskSuggestions(
+                                    goalID: goal.id,
+                                    taskIDs: goal.taskSuggestions.map(\.id)
+                                ))
+                            },
+                            onRejectAll: {
+                                store.send(.rejectAllTaskSuggestions(
+                                    goalID: goal.id,
+                                    taskIDs: goal.taskSuggestions.map(\.id)
+                                ))
+                            }
+                        )
                     }
                 }
 
@@ -311,6 +326,31 @@ private struct GoalDetailView: View {
         } else {
             ContentUnavailableView("Goal unavailable", systemImage: "target")
         }
+    }
+}
+
+private struct GoalTaskSuggestionsHeader: View {
+    var onAcceptAll: () -> Void
+    var onRejectAll: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text("Suggested Tasks")
+                .font(.subheadline.weight(.semibold))
+
+            Spacer(minLength: 12)
+
+            Button("Reject All", action: onRejectAll)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel("Reject all task suggestions")
+
+            Button("Accept All", action: onAcceptAll)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .accessibilityLabel("Accept all task suggestions")
+        }
+        .textCase(nil)
     }
 }
 

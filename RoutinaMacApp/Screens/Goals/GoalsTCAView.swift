@@ -283,8 +283,32 @@ private struct GoalDetailPane: View {
 
                 if !goal.taskSuggestions.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Suggested Tasks")
-                            .font(.headline)
+                        HStack(spacing: 10) {
+                            Text("Suggested Tasks")
+                                .font(.headline)
+
+                            Spacer(minLength: 12)
+
+                            Button("Reject All") {
+                                store.send(.rejectAllTaskSuggestions(
+                                    goalID: goal.id,
+                                    taskIDs: goal.taskSuggestions.map(\.id)
+                                ))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .help("Reject all task suggestions")
+
+                            Button("Accept All") {
+                                store.send(.acceptAllTaskSuggestions(
+                                    goalID: goal.id,
+                                    taskIDs: goal.taskSuggestions.map(\.id)
+                                ))
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                            .help("Link all suggested tasks to this goal")
+                        }
 
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(goal.taskSuggestions) { suggestion in
