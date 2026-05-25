@@ -24,6 +24,56 @@ enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable
     var id: String { rawValue }
 }
 
+enum TaskFormCompactSection: Hashable, Sendable {
+    case name
+    case taskType
+    case emoji
+    case color
+    case notes
+    case voiceNote
+    case link
+    case deadline
+    case reminder
+    case importanceUrgency
+    case pressure
+    case estimation
+    case image
+    case attachment
+    case tags
+    case goals
+    case relationships
+    case scheduleType
+    case stepsOrChecklist
+    case place
+    case repeatPattern
+    case delete
+
+    static let defaultOrder: [TaskFormCompactSection] = [
+        .name,
+        .taskType,
+        .emoji,
+        .color,
+        .notes,
+        .voiceNote,
+        .link,
+        .deadline,
+        .reminder,
+        .importanceUrgency,
+        .pressure,
+        .estimation,
+        .image,
+        .attachment,
+        .tags,
+        .goals,
+        .relationships,
+        .scheduleType,
+        .stepsOrChecklist,
+        .place,
+        .repeatPattern,
+        .delete
+    ]
+}
+
 struct TaskFormPresentation {
     let taskType: RoutineTaskType
     let scheduleMode: RoutineScheduleMode

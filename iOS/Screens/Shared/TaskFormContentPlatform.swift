@@ -25,45 +25,8 @@ struct TaskFormContent: View {
 
     var body: some View {
         Form {
-            nameSection
-            taskTypeSection
-            emojiSection
-            colorSection
-            notesSection
-            linkSection
-            if model.taskType.wrappedValue == .todo {
-                deadlineSection
-            }
-            reminderSection
-            importanceUrgencySection
-            pressureSection
-            estimationSection
-            imageSection
-            voiceNoteSection
-            attachmentSection
-            tagsSection
-            goalsSection
-            relationshipsSection
-            if model.scheduleMode.wrappedValue.taskType == .routine {
-                scheduleTypeSection
-            }
-            if presentation.isStepBasedMode {
-                stepsSection
-            } else {
-                checklistSection
-            }
-            placeSection
-            if presentation.showsRepeatControls {
-                repeatPatternSections
-            }
-            if let onDelete = model.onDelete {
-                Section {
-                    Button(role: .destructive) { onDelete() } label: {
-                        Text("Delete Task")
-                    }
-                } footer: {
-                    Text("This action cannot be undone.")
-                }
+            ForEach(TaskFormCompactSection.defaultOrder, id: \.self) { section in
+                compactSection(section)
             }
         }
         .sheet(isPresented: $isTagManagerPresented) {
@@ -120,6 +83,68 @@ struct TaskFormContent: View {
             return place.name
         }
         return nil
+    }
+
+    @ViewBuilder
+    private func compactSection(_ section: TaskFormCompactSection) -> some View {
+        switch section {
+        case .name:
+            nameSection
+        case .taskType:
+            taskTypeSection
+        case .emoji:
+            emojiSection
+        case .color:
+            colorSection
+        case .notes:
+            notesSection
+        case .voiceNote:
+            voiceNoteSection
+        case .link:
+            linkSection
+        case .deadline:
+            if model.taskType.wrappedValue == .todo {
+                deadlineSection
+            }
+        case .reminder:
+            reminderSection
+        case .importanceUrgency:
+            importanceUrgencySection
+        case .pressure:
+            pressureSection
+        case .estimation:
+            estimationSection
+        case .image:
+            imageSection
+        case .attachment:
+            attachmentSection
+        case .tags:
+            tagsSection
+        case .goals:
+            goalsSection
+        case .relationships:
+            relationshipsSection
+        case .scheduleType:
+            if model.scheduleMode.wrappedValue.taskType == .routine {
+                scheduleTypeSection
+            }
+        case .stepsOrChecklist:
+            if presentation.isStepBasedMode {
+                stepsSection
+            } else {
+                checklistSection
+            }
+        case .place:
+            placeSection
+        case .repeatPattern:
+            if presentation.showsRepeatControls {
+                repeatPatternSections
+            }
+        case .delete:
+            if let onDelete = model.onDelete {
+                deleteSection(onDelete: onDelete)
+            }
+        }
     }
 
     private func loadPickedImage(from item: PhotosPickerItem) {
@@ -262,6 +287,16 @@ struct TaskFormContent: View {
             RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
         }?.displayColor
         ?? Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: appSettingsClient.tagColors()))
+    }
+
+    private func deleteSection(onDelete: @escaping () -> Void) -> some View {
+        Section {
+            Button(role: .destructive) { onDelete() } label: {
+                Text("Delete Task")
+            }
+        } footer: {
+            Text("This action cannot be undone.")
+        }
     }
 
 }

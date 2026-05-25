@@ -81,6 +81,19 @@ struct TaskFormPresentationTests {
         #expect(weeklyWindow.weeklyRecurrenceTimeHelpText(timeRangeText: "7:00 AM to 10:00 AM") == "Due every \(weekdaySymbols[1]) from 7:00 AM to 10:00 AM.")
     }
 
+    @Test
+    func compactSectionOrderKeepsVoiceNoteDiscoverableNearNotes() throws {
+        let order = TaskFormCompactSection.defaultOrder
+        let notesIndex = try #require(order.firstIndex(of: .notes))
+        let voiceNoteIndex = try #require(order.firstIndex(of: .voiceNote))
+        let deadlineIndex = try #require(order.firstIndex(of: .deadline))
+        let imageIndex = try #require(order.firstIndex(of: .image))
+
+        #expect(voiceNoteIndex == order.index(after: notesIndex))
+        #expect(voiceNoteIndex < deadlineIndex)
+        #expect(voiceNoteIndex < imageIndex)
+    }
+
     private func presentation(
         taskType: RoutineTaskType = .routine,
         scheduleMode: RoutineScheduleMode = .fixedInterval,
