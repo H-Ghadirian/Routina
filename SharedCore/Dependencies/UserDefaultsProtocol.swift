@@ -52,7 +52,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingGitFeaturesEnabled
     case appSettingShowPersianDates
     case appSettingBatteryRoutineMonitoringEnabled
-    case appSettingSleepHomeDockEnabled
+    case appSettingSleepHomeActionEnabled = "appSettingSleepHomeDockEnabled"
     case appSettingSleepHomeMenuEnabled
     case appSettingShakeToStartSleepEnabled
     case appSettingAutomaticPlaceCheckInEnabled

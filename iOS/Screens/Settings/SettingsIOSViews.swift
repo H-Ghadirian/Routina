@@ -125,9 +125,9 @@ struct SettingsIOSDetailView: View {
 
 private struct SettingsIOSShortcutsDetailView: View {
     @AppStorage(
-        UserDefaultBoolValueKey.appSettingSleepHomeDockEnabled.rawValue,
+        UserDefaultBoolValueKey.appSettingSleepHomeActionEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isSleepHomeDockEnabled = true
+    ) private var isSleepHomeActionEnabled = true
     @AppStorage(
         UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue,
         store: SharedDefaults.app
@@ -140,7 +140,7 @@ private struct SettingsIOSShortcutsDetailView: View {
     var body: some View {
         List {
             Section("Sleep Shortcuts") {
-                Toggle("Show Going to sleep on Home", isOn: $isSleepHomeDockEnabled)
+                Toggle("Show Going to sleep in Home actions", isOn: $isSleepHomeActionEnabled)
                 Toggle("Show Going to sleep in Home menu", isOn: $isSleepHomeMenuEnabled)
                 Toggle("Shake to start sleep mode", isOn: $isShakeToStartSleepEnabled)
 
