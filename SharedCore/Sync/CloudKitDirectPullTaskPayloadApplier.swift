@@ -13,6 +13,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
         task.notes = RoutineTask.sanitizedNotes(payload.notes)
         task.link = RoutineTask.sanitizedLink(payload.link)
         task.imageData = payload.imageData
+        task.voiceNoteData = payload.voiceNoteData
+        task.voiceNoteDurationSeconds = payload.voiceNoteDurationSeconds
+        task.voiceNoteCreatedAt = payload.voiceNoteCreatedAt
         task.placeID = payload.placeID
         if let tags = payload.tags {
             task.tags = tags
@@ -87,6 +90,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
             pressure: payload.pressure ?? .none,
             pressureUpdatedAt: payload.pressureUpdatedAt,
             imageData: payload.imageData,
+            voiceNoteData: payload.voiceNoteData,
+            voiceNoteDurationSeconds: payload.voiceNoteDurationSeconds,
+            voiceNoteCreatedAt: payload.voiceNoteCreatedAt,
             placeID: payload.placeID,
             tags: payload.tags ?? [],
             goalIDs: payload.goalIDs ?? [],

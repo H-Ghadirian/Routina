@@ -13,6 +13,64 @@ import Testing
 @MainActor
 struct TaskDetailEditSaveTests {
     @Test
+    func editSaveTapped_persistsVoiceNoteChange() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let voiceNote = RoutineVoiceNote(
+            data: Data([0x09, 0x08, 0x07]),
+            durationSeconds: 8,
+            createdAt: now
+        )
+        let task = makeTask(
+            in: context,
+            name: "Call supplier",
+            interval: 1,
+            lastDone: nil,
+            emoji: "☎️"
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Call supplier",
+                editRoutineEmoji: "☎️",
+                editVoiceNote: voiceNote,
+                editScheduleMode: .fixedInterval,
+                editFrequency: .day,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.voiceNote == voiceNote)
+        #expect(persistedTask.hasVoiceNote)
+    }
+
+    @Test
     func editSaveTapped_preservesCreatedAtAndLogsOnMetadataEdit() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

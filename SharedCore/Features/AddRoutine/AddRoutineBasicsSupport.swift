@@ -78,6 +78,13 @@ enum AddRoutineBasicsEditor {
         basics.imageData = nil
     }
 
+    static func setVoiceNote(
+        _ voiceNote: RoutineVoiceNote?,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.voiceNote = voiceNote
+    }
+
     static func addAttachment(
         data: Data,
         fileName: String,

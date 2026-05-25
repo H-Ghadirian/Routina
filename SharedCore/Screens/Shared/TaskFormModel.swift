@@ -42,6 +42,10 @@ struct TaskFormModel {
     var onImagePicked: (Data?) -> Void
     var onRemoveImage: () -> Void
 
+    // MARK: Voice Note
+    var voiceNote: RoutineVoiceNote?
+    var onVoiceNoteChanged: (RoutineVoiceNote?) -> Void
+
     // MARK: File Attachments
     var attachments: [AttachmentItem]
     var onAttachmentPicked: (Data, String) -> Void

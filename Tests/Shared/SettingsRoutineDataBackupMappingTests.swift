@@ -32,12 +32,18 @@ struct SettingsRoutineDataBackupMappingTests {
     func taskMappingChoosesInlineImageOrAttachmentReference() {
         let taskID = UUID()
         let attachmentID = UUID()
+        let voiceAttachmentID = UUID()
         let imageData = Data([1, 2, 3])
+        let voiceData = Data([7, 8, 9])
+        let voiceCreatedAt = Date(timeIntervalSince1970: 100)
         let task = RoutineTask(
             id: taskID,
             name: "Archive receipt",
             pressure: .high,
             imageData: imageData,
+            voiceNoteData: voiceData,
+            voiceNoteDurationSeconds: 2.5,
+            voiceNoteCreatedAt: voiceCreatedAt,
             interval: 0
         )
 
@@ -45,22 +51,32 @@ struct SettingsRoutineDataBackupMappingTests {
             task,
             imageData: imageData,
             imageAttachmentID: nil,
+            voiceNoteData: voiceData,
+            voiceNoteAttachmentID: nil,
             includesPressure: true
         )
         let packaged = SettingsRoutineDataBackupMapping.task(
             task,
             imageData: nil,
             imageAttachmentID: attachmentID,
+            voiceNoteData: nil,
+            voiceNoteAttachmentID: voiceAttachmentID,
             includesPressure: false
         )
 
         #expect(inline.id == taskID)
         #expect(inline.imageData == imageData)
         #expect(inline.imageAttachmentID == nil)
+        #expect(inline.voiceNoteData == voiceData)
+        #expect(inline.voiceNoteAttachmentID == nil)
+        #expect(inline.voiceNoteDurationSeconds == 2.5)
+        #expect(inline.voiceNoteCreatedAt == voiceCreatedAt)
         #expect(inline.interval == 1)
         #expect(inline.pressure == .high)
         #expect(packaged.imageData == nil)
         #expect(packaged.imageAttachmentID == attachmentID)
+        #expect(packaged.voiceNoteData == nil)
+        #expect(packaged.voiceNoteAttachmentID == voiceAttachmentID)
         #expect(packaged.pressure == nil)
     }
 

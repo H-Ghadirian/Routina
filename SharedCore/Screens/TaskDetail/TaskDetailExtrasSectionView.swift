@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TaskDetailExtrasSectionView: View {
     let imageData: Data?
+    let voiceNote: RoutineVoiceNote?
     let attachments: [AttachmentItem]
     let notes: String?
     let linkURL: URL?
@@ -19,6 +20,10 @@ struct TaskDetailExtrasSectionView: View {
 
             if let imageData {
                 imageContent(for: imageData)
+            }
+
+            if let voiceNote {
+                TaskVoiceNotePlaybackControl(voiceNote: voiceNote)
             }
 
             ForEach(attachments) { item in

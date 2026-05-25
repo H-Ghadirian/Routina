@@ -37,6 +37,8 @@ struct AddRoutineTaskFormModelFactory {
             imageData: store.basics.imageData,
             onImagePicked: { store.send(.imagePicked($0)) },
             onRemoveImage: { store.send(.removeImageTapped) },
+            voiceNote: store.basics.voiceNote,
+            onVoiceNoteChanged: { store.send(.voiceNoteChanged($0)) },
             attachments: store.basics.attachments,
             onAttachmentPicked: { store.send(.attachmentPicked($0, $1)) },
             onRemoveAttachment: { store.send(.removeAttachment($0)) },

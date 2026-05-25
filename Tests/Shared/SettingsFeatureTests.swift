@@ -15,7 +15,7 @@ import Testing
 @Suite(.serialized)
 struct SettingsFeatureTests {
     @Test
-    func cloudUsageEstimate_countsRecordsAndImagePayload() throws {
+    func cloudUsageEstimate_countsRecordsAndMediaPayload() throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Home")
         let task = makeTask(
@@ -28,6 +28,8 @@ struct SettingsFeatureTests {
             tags: ["Focus", "Evening"]
         )
         task.imageData = Data(repeating: 0xAB, count: 1_024)
+        task.voiceNoteData = Data(repeating: 0xEF, count: 256)
+        task.voiceNoteDurationSeconds = 4
         let placeCheckIn = PlaceCheckInSession(
             placeID: place.id,
             placeName: place.displayName,
@@ -49,11 +51,13 @@ struct SettingsFeatureTests {
         #expect(estimate.goalCount == 1)
         #expect(estimate.imageCount == 2)
         #expect(estimate.imagePayloadBytes == 1_536)
+        #expect(estimate.voiceNoteCount == 1)
+        #expect(estimate.voiceNotePayloadBytes == 256)
         #expect(estimate.taskPayloadBytes > 0)
         #expect(estimate.logPayloadBytes > 0)
         #expect(estimate.placePayloadBytes > 0)
         #expect(estimate.goalPayloadBytes > 0)
-        #expect(estimate.totalPayloadBytes >= 1_024)
+        #expect(estimate.totalPayloadBytes >= 1_792)
     }
 
     @Test

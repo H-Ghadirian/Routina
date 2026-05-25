@@ -12,6 +12,67 @@ import Testing
 @MainActor
 struct AddRoutineFeatureSaveTests {
     @Test
+    func saveTapped_includesVoiceNoteInRequest() async {
+        let createdAt = makeDate("2026-03-20T10:00:00Z")
+        let voiceNote = RoutineVoiceNote(
+            data: Data([0x01, 0x02, 0x03]),
+            durationSeconds: 6.5,
+            createdAt: createdAt
+        )
+        let capturedVoiceNote = LockIsolated<RoutineVoiceNote?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Call supplier",
+                    voiceNote: voiceNote
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: [])
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedVoiceNote.withValue { $0 = request.voiceNote }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedVoiceNote.value == voiceNote)
+    }
+
+    @Test
+    func makeRoutine_persistsVoiceNoteFromSaveRequest() {
+        let createdAt = makeDate("2026-03-20T10:00:00Z")
+        let voiceNote = RoutineVoiceNote(
+            data: Data([0x04, 0x05]),
+            durationSeconds: 4.25,
+            createdAt: createdAt
+        )
+        let request = makeSaveRequest(
+            name: "Call supplier",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "☎️",
+            voiceNote: voiceNote
+        )
+
+        let task = HomeAddRoutineSupport.makeRoutine(
+            from: request,
+            name: request.name,
+            goalIDs: [],
+            scheduleAnchor: createdAt
+        )
+
+        #expect(task.voiceNote == voiceNote)
+        #expect(task.hasVoiceNote)
+    }
+
+    @Test
     func saveTapped_commitsPendingStepsBeforeDelegating() async {
         let washID = UUID()
         let capturedNames = LockIsolated<[String]>([])

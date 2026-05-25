@@ -46,6 +46,10 @@ extension SettingsRoutineDataPersistence {
             var reminderAt: Date?
             var imageData: Data?
             var imageAttachmentID: UUID?
+            var voiceNoteData: Data?
+            var voiceNoteAttachmentID: UUID?
+            var voiceNoteDurationSeconds: Double?
+            var voiceNoteCreatedAt: Date?
             var placeID: UUID?
             var tags: [String]?
             var goalIDs: [UUID]?
@@ -115,6 +119,7 @@ extension SettingsRoutineDataPersistence {
         struct Attachment: Codable {
             enum Role: String, Codable {
                 case taskImage
+                case taskVoiceNote
                 case placeCheckInImage
                 case fileAttachment
             }

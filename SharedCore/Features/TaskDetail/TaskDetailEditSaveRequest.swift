@@ -13,6 +13,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var urgency: RoutineTaskUrgency
     var pressure: RoutineTaskPressure
     var imageData: Data?
+    var voiceNote: RoutineVoiceNote?
     var attachments: [AttachmentItem]
     var placeID: UUID?
     var tags: [String]
@@ -85,6 +86,7 @@ struct TaskDetailEditSaveRequestBuilder {
             urgency: state.editUrgency,
             pressure: state.editPressure,
             imageData: state.editImageData,
+            voiceNote: state.editVoiceNote,
             attachments: state.editAttachments,
             placeID: state.editSelectedPlaceID,
             tags: state.editRoutineTags,

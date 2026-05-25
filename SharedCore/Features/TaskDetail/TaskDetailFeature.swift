@@ -36,6 +36,7 @@ struct TaskDetailFeature: Reducer {
         var editUrgency: RoutineTaskUrgency = .level2
         var editPressure: RoutineTaskPressure = .none
         var editImageData: Data?
+        var editVoiceNote: RoutineVoiceNote?
         var taskAttachments: [AttachmentItem] = []
         var editAttachments: [AttachmentItem] = []
         var editRoutineTags: [String] = []
@@ -208,6 +209,7 @@ struct TaskDetailFeature: Reducer {
         case editPressureChanged(RoutineTaskPressure)
         case editImagePicked(Data?)
         case editRemoveImageTapped
+        case editVoiceNoteChanged(RoutineVoiceNote?)
         case editAttachmentPicked(Data, String)
         case editRemoveAttachment(UUID)
         case attachmentsLoaded([AttachmentItem])
@@ -851,6 +853,9 @@ struct TaskDetailFeature: Reducer {
 
         case .editRemoveImageTapped:
             return basicEditActionHandler().editRemoveImageTapped(state: &state)
+
+        case let .editVoiceNoteChanged(voiceNote):
+            return basicEditActionHandler().editVoiceNoteChanged(voiceNote, state: &state)
 
         case let .editAttachmentPicked(data, fileName):
             return basicEditActionHandler().editAttachmentPicked(

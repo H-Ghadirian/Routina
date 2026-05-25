@@ -16,6 +16,9 @@ extension CloudKitDirectPullService {
         var steps: [RoutineStep]?
         var checklistItems: [RoutineChecklistItem]?
         var imageData: Data?
+        var voiceNoteData: Data?
+        var voiceNoteDurationSeconds: Double?
+        var voiceNoteCreatedAt: Date?
         var scheduleMode: RoutineScheduleMode?
         var interval: Int16
         var recurrenceRule: RoutineRecurrenceRule?

@@ -106,6 +106,9 @@ enum CloudKitDirectPullTaskRecordParser {
             in: record,
             keys: ["imageData", "IMAGEDATA", "zimagedata", "ZIMAGEDATA", "cd_imagedata"]
         )
+        let voiceNoteDataValue = dataValue(in: record, keys: storageKeys("voiceNoteData"))
+        let voiceNoteDurationSecondsValue = doubleValue(in: record, keys: storageKeys("voiceNoteDurationSeconds"))
+        let voiceNoteCreatedAtValue = dateValue(in: record, keys: storageKeys("voiceNoteCreatedAt"))
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
         let canceledAtValue = dateValue(in: record, keys: ["canceledAt", "CANCELEDAT", "zcanceledat", "ZCANCELEDAT", "cd_canceledat"])
         let scheduleAnchorValue = dateValue(
@@ -211,6 +214,9 @@ enum CloudKitDirectPullTaskRecordParser {
                 || stepsStorageValue != nil
                 || checklistItemsStorageValue != nil
                 || imageDataValue != nil
+                || voiceNoteDataValue != nil
+                || voiceNoteDurationSecondsValue != nil
+                || voiceNoteCreatedAtValue != nil
                 || scheduleModeValue != nil
                 || recurrenceRuleValue != nil
                 || lastDoneValue != nil
@@ -263,6 +269,9 @@ enum CloudKitDirectPullTaskRecordParser {
             steps: stepsValue,
             checklistItems: checklistItemsValue,
             imageData: imageDataValue,
+            voiceNoteData: voiceNoteDataValue,
+            voiceNoteDurationSeconds: voiceNoteDurationSecondsValue,
+            voiceNoteCreatedAt: voiceNoteCreatedAtValue,
             scheduleMode: scheduleModeValue.flatMap(RoutineScheduleMode.init(rawValue:)),
             interval: Int16(clamping: intervalValue ?? 1),
             recurrenceRule: recurrenceRuleValue,
@@ -306,6 +315,10 @@ enum CloudKitDirectPullTaskRecordParser {
 
     private static func boolValue(in record: CKRecord, keys: [String]) -> Bool? {
         CloudKitDirectPullService.boolValue(in: record, keys: keys)
+    }
+
+    private static func doubleValue(in record: CKRecord, keys: [String]) -> Double? {
+        CloudKitDirectPullService.doubleValue(in: record, keys: keys)
     }
 
     private static func dateValue(in record: CKRecord, keys: [String]) -> Date? {

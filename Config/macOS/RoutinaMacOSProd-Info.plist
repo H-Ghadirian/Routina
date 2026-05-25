@@ -45,6 +45,8 @@
 	<string>Routina uses your location to show place-based routines when you are at the right place.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Routina uses your location to show place-based routines when you are at the right place.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Routina uses the microphone only when you record a voice note for a task.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Routina reads selected calendars only when you review events to add as tasks.</string>
 	<key>NSCalendarsUsageDescription</key>

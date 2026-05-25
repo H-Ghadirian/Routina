@@ -12,7 +12,7 @@ struct FormSectionTests {
 
         #expect(sections.first == .identity)
         #expect(sections.contains(.steps))
-        #expect(Array(sections.suffix(3)) == [.image, .attachment, .dangerZone])
+        #expect(Array(sections.suffix(4)) == [.image, .voiceNote, .attachment, .dangerZone])
     }
 
     @Test
@@ -25,6 +25,6 @@ struct FormSectionTests {
 
         #expect(!sections.contains(.identity))
         #expect(!sections.contains(.steps))
-        #expect(Array(sections.suffix(2)) == [.image, .attachment])
+        #expect(Array(sections.suffix(3)) == [.image, .voiceNote, .attachment])
     }
 }

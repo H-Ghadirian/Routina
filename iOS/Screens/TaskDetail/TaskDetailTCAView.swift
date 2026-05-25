@@ -207,7 +207,7 @@ detailBody
                     checklistItemsSection
                 }
                 relationshipsSection
-                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
+                if store.task.hasNotes || store.task.hasImage || store.task.hasVoiceNote || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
                     taskExtrasSection
                 }
             }
@@ -242,7 +242,7 @@ detailBody
                     checklistItemsSection
                 }
                 relationshipsSection
-                if store.task.hasNotes || store.task.hasImage || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
+                if store.task.hasNotes || store.task.hasImage || store.task.hasVoiceNote || !store.taskAttachments.isEmpty || store.task.resolvedLinkURL != nil {
                     taskExtrasSection
                 }
             }
@@ -559,6 +559,7 @@ detailBody
     private var taskExtrasSection: some View {
         TaskDetailExtrasSectionView(
             imageData: store.task.imageData,
+            voiceNote: store.task.voiceNote,
             attachments: store.taskAttachments,
             notes: CalendarTaskImportSupport.displayNotes(from: store.task.notes),
             linkURL: store.task.resolvedLinkURL,

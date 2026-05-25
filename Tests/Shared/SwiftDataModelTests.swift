@@ -40,6 +40,29 @@ struct SwiftDataModelTests {
         #expect(task.estimatedDurationMinutes == nil)
         #expect(task.storyPoints == nil)
         #expect(task.focusModeEnabled == false)
+        #expect(task.voiceNote == nil)
+        #expect(task.hasVoiceNote == false)
+    }
+
+    @Test
+    func routineTask_storesVoiceNoteAndCopiesItDetached() {
+        let data = Data([0x01, 0x02, 0x03])
+        let createdAt = Date(timeIntervalSince1970: 42)
+        let task = RoutineTask(
+            name: "Practice",
+            voiceNoteData: data,
+            voiceNoteDurationSeconds: 12.4,
+            voiceNoteCreatedAt: createdAt
+        )
+
+        #expect(task.hasVoiceNote)
+        #expect(task.voiceNote?.data == data)
+        #expect(task.voiceNote?.durationSeconds == 12.4)
+        #expect(task.voiceNote?.createdAt == createdAt)
+
+        let copy = task.detachedCopy()
+        #expect(copy.voiceNote == task.voiceNote)
+        #expect(copy.hasVoiceNote)
     }
 
     @Test

@@ -21,6 +21,7 @@ struct AddRoutineFeature: Reducer {
         case pressureChanged(RoutineTaskPressure)
         case imagePicked(Data?)
         case removeImageTapped
+        case voiceNoteChanged(RoutineVoiceNote?)
         case attachmentPicked(Data, String)
         case removeAttachment(UUID)
         case taskTypeChanged(RoutineTaskType)
@@ -186,6 +187,13 @@ struct AddRoutineFeature: Reducer {
 
         case .removeImageTapped:
             AddRoutineBasicsEditor.removeImage(
+                basics: &state.basics
+            )
+            return .none
+
+        case let .voiceNoteChanged(voiceNote):
+            AddRoutineBasicsEditor.setVoiceNote(
+                voiceNote,
                 basics: &state.basics
             )
             return .none

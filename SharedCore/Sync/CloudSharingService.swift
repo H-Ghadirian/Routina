@@ -27,6 +27,9 @@ enum CloudSharingService {
         var pressure: RoutineTaskPressure
         var pressureUpdatedAt: Date?
         var imageData: Data?
+        var voiceNoteData: Data?
+        var voiceNoteDurationSeconds: Double?
+        var voiceNoteCreatedAt: Date?
         var placeID: UUID?
         var tags: [String]
         var goalIDs: [UUID]?
@@ -268,6 +271,9 @@ extension CloudSharingService.SharedTaskPayload {
         self.pressure = task.pressure
         self.pressureUpdatedAt = task.pressureUpdatedAt
         self.imageData = task.imageData
+        self.voiceNoteData = task.voiceNoteData
+        self.voiceNoteDurationSeconds = task.voiceNoteDurationSeconds
+        self.voiceNoteCreatedAt = task.voiceNoteCreatedAt
         self.placeID = task.placeID
         self.tags = task.tags
         self.goalIDs = task.goalIDs
@@ -320,6 +326,9 @@ extension CloudSharingService.SharedTaskPayload {
         task.pressure = pressure
         task.pressureUpdatedAt = pressure == .none ? nil : pressureUpdatedAt
         task.imageData = imageData
+        task.voiceNoteData = voiceNoteData
+        task.voiceNoteDurationSeconds = voiceNoteDurationSeconds
+        task.voiceNoteCreatedAt = voiceNoteCreatedAt
         task.placeID = placeID
         task.tags = tags
         task.goalIDs = goalIDs ?? []
@@ -367,6 +376,9 @@ private extension RoutineTask {
             pressure: payload.pressure,
             pressureUpdatedAt: payload.pressureUpdatedAt,
             imageData: payload.imageData,
+            voiceNoteData: payload.voiceNoteData,
+            voiceNoteDurationSeconds: payload.voiceNoteDurationSeconds,
+            voiceNoteCreatedAt: payload.voiceNoteCreatedAt,
             placeID: payload.placeID,
             tags: payload.tags,
             goalIDs: payload.goalIDs ?? [],

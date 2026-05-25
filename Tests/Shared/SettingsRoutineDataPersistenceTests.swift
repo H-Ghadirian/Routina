@@ -77,11 +77,19 @@ struct SettingsRoutineDataPersistenceTests {
     }
 
     @Test
-    func backupPackageAndRestore_preservesTaskImagesAndAttachments() async throws {
+    func backupPackageAndRestore_preservesTaskImagesVoiceNotesAndAttachments() async throws {
         let context = makeInMemoryContext()
         let imageData = Data([0x01, 0x02, 0x03])
+        let voiceData = Data([0x07, 0x08, 0x09])
+        let voiceCreatedAt = Date(timeIntervalSince1970: 250)
         let attachmentData = Data([0x04, 0x05, 0x06])
-        let task = RoutineTask(name: "File insurance", imageData: imageData)
+        let task = RoutineTask(
+            name: "File insurance",
+            imageData: imageData,
+            voiceNoteData: voiceData,
+            voiceNoteDurationSeconds: 3.5,
+            voiceNoteCreatedAt: voiceCreatedAt
+        )
         context.insert(task)
         context.insert(
             RoutineAttachment(
@@ -109,6 +117,9 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(summary.attachments == 1)
         let restoredTask = try #require(restoreContext.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(restoredTask.imageData == imageData)
+        #expect(restoredTask.voiceNoteData == voiceData)
+        #expect(restoredTask.voiceNoteDurationSeconds == 3.5)
+        #expect(restoredTask.voiceNoteCreatedAt == voiceCreatedAt)
         let restoredAttachment = try #require(restoreContext.fetch(FetchDescriptor<RoutineAttachment>()).first)
         #expect(restoredAttachment.taskID == restoredTask.id)
         #expect(restoredAttachment.fileName == "receipt.jpg")

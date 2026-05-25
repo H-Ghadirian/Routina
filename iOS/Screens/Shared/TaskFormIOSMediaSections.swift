@@ -96,3 +96,14 @@ struct TaskFormIOSAttachmentContent: View {
         .padding(.horizontal, 2)
     }
 }
+
+struct TaskFormIOSVoiceNoteContent: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        TaskVoiceNoteRecorderControl(
+            voiceNote: model.voiceNote,
+            onVoiceNoteChanged: model.onVoiceNoteChanged
+        )
+    }
+}

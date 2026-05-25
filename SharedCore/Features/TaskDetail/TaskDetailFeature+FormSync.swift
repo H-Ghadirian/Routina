@@ -20,6 +20,7 @@ extension TaskDetailFeature {
         state.editPriority = state.task.priority
         state.editPressure = state.task.pressure
         state.editImageData = state.task.imageData
+        state.editVoiceNote = state.task.voiceNote
         state.editAttachments = state.taskAttachments
         state.editRoutineTags = state.task.tags
         state.editRoutineGoals = RoutineGoalSummary.summaries(

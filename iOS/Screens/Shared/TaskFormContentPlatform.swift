@@ -39,6 +39,7 @@ struct TaskFormContent: View {
             pressureSection
             estimationSection
             imageSection
+            voiceNoteSection
             attachmentSection
             tagsSection
             goalsSection
@@ -198,6 +199,12 @@ struct TaskFormContent: View {
                 model: model,
                 selectedPhotoItem: $selectedPhotoItem
             )
+        }
+    }
+
+    private var voiceNoteSection: some View {
+        Section(header: Text("Voice Note")) {
+            TaskFormIOSVoiceNoteContent(model: model)
         }
     }
 

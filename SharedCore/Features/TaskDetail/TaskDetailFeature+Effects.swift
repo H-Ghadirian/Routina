@@ -349,6 +349,7 @@ extension TaskDetailFeature {
             urgency: request.urgency,
             pressure: request.pressure,
             imageData: request.imageData,
+            voiceNote: request.voiceNote,
             attachments: request.attachments,
             placeID: request.placeID,
             tags: request.tags,
@@ -380,6 +381,7 @@ extension TaskDetailFeature {
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure,
         imageData: Data?,
+        voiceNote: RoutineVoiceNote?,
         attachments: [AttachmentItem],
         placeID: UUID?,
         tags: [String],
@@ -419,6 +421,7 @@ extension TaskDetailFeature {
                 task.pressure = pressure
                 task.color = color
                 task.imageData = imageData
+                task.voiceNote = voiceNote
                 // Sync attachments by taskID
                 let existingAtts = try context.fetch(TaskDetailFetchDescriptors.attachments(for: taskID))
                 let newIDs = Set(attachments.map(\.id))

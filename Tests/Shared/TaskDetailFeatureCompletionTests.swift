@@ -65,12 +65,25 @@ struct TaskDetailFeatureCompletionTests {
 
     @Test
     func notificationDisabledWarningText_showsWhenSystemNotificationsAreDisabledForExactRoutine() {
+        let calendar = Calendar.current
+        let futureOccurrence = calendar.date(
+            byAdding: .day,
+            value: 1,
+            to: Date()
+        ) ?? Date().addingTimeInterval(86_400)
+        let occurrenceComponents = calendar.dateComponents(
+            [.weekday, .hour, .minute],
+            from: futureOccurrence
+        )
         let task = RoutineTask(
             name: "Planning",
             scheduleMode: .fixedInterval,
             recurrenceRule: .weekly(
-                on: 2,
-                at: RoutineTimeOfDay(hour: 13, minute: 0)
+                on: occurrenceComponents.weekday ?? 2,
+                at: RoutineTimeOfDay(
+                    hour: occurrenceComponents.hour ?? 13,
+                    minute: occurrenceComponents.minute ?? 0
+                )
             ),
             scheduleAnchor: Date()
         )

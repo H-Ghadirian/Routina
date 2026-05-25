@@ -46,6 +46,10 @@ struct TaskDetailEditDraftMutationHandler {
         state.editImageData = nil
     }
 
+    func setVoiceNote(_ voiceNote: RoutineVoiceNote?, state: inout TaskDetailFeature.State) {
+        state.editVoiceNote = voiceNote
+    }
+
     func addAttachment(
         data: Data,
         fileName: String,

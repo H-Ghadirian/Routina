@@ -166,6 +166,25 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func statusMetadataSummarizesVoiceNotesAsAttachments() {
+        let task = RoutineTask(
+            name: "Call supplier",
+            voiceNoteData: Data([1, 2, 3]),
+            voiceNoteDurationSeconds: 3
+        )
+        let state = TaskDetailFeature.State(task: task)
+
+        let items = TaskDetailStatusMetadataPresentation.items(
+            for: state,
+            showSelectedDate: false,
+            displayedActualDurationText: nil,
+            dueDateMetadataDisplayText: nil
+        )
+
+        #expect(items.first { $0.id == "attachments" }?.value == "1 voice note")
+    }
+
+    @Test
     func statusContextCopyPreservesPlatformDifferences() {
         let completedTodo = RoutineTask(
             name: "Submit report",

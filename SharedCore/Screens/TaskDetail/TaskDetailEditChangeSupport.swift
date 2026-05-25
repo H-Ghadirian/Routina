@@ -14,6 +14,7 @@ struct TaskDetailEditChangeRequest {
     let urgency: RoutineTaskUrgency
     let color: RoutineTaskColor
     let imageData: Data?
+    let voiceNote: RoutineVoiceNote?
     let editAttachments: [AttachmentItem]
     let taskAttachments: [AttachmentItem]
     let selectedPlaceID: UUID?
@@ -58,6 +59,7 @@ struct TaskDetailEditChangeRequest {
         self.urgency = state.editUrgency
         self.color = state.editColor
         self.imageData = state.editImageData
+        self.voiceNote = state.editVoiceNote
         self.editAttachments = state.editAttachments
         self.taskAttachments = state.taskAttachments
         self.selectedPlaceID = state.editSelectedPlaceID
@@ -147,6 +149,7 @@ enum TaskDetailEditChangeDetector {
             || request.urgency != task.urgency
             || request.color != task.color
             || request.imageData != task.imageData
+            || request.voiceNote != task.voiceNote
             || request.editAttachments != request.taskAttachments
             || request.selectedPlaceID != task.placeID
             || candidateTags != currentTags

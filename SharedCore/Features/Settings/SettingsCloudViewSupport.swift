@@ -25,16 +25,21 @@ extension SettingsCloudState {
         ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.imagePayloadBytes, countStyle: .file)
     }
 
+    var usageVoiceNotePayloadText: String {
+        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.voiceNotePayloadBytes, countStyle: .file)
+    }
+
     var usageSummaryText: String {
-        switch (cloudUsageEstimate.totalRecordCount, cloudUsageEstimate.imageCount) {
+        let mediaCount = cloudUsageEstimate.imageCount + cloudUsageEstimate.voiceNoteCount
+        switch (cloudUsageEstimate.totalRecordCount, mediaCount) {
         case (0, 0):
             return cloudSyncAvailable
                 ? "No Routina data is estimated to be using iCloud yet."
                 : "No Routina data is available to estimate yet."
         case let (recordCount, 0):
             return "\(recordCount) synced records are included in this estimate."
-        case let (recordCount, imageCount):
-            return "\(recordCount) synced records and \(imageCount) image\(imageCount == 1 ? "" : "s") are included in this estimate."
+        case let (recordCount, mediaCount):
+            return "\(recordCount) synced records and \(mediaCount) media item\(mediaCount == 1 ? "" : "s") are included in this estimate."
         }
     }
 

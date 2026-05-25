@@ -13,6 +13,7 @@ struct AddRoutineBasicsState: Equatable {
     var urgency: RoutineTaskUrgency = .level2
     var pressure: RoutineTaskPressure = .none
     var imageData: Data?
+    var voiceNote: RoutineVoiceNote?
     var attachments: [AttachmentItem] = []
     var selectedPlaceID: UUID?
     var routineColor: RoutineTaskColor = .none

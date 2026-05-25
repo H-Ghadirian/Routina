@@ -16,6 +16,9 @@ final class RoutineTask {
     var pressureRawValue: String = RoutineTaskPressure.none.rawValue
     var pressureUpdatedAt: Date?
     @Attribute(.externalStorage) var imageData: Data?
+    @Attribute(.externalStorage) var voiceNoteData: Data?
+    var voiceNoteDurationSeconds: Double?
+    var voiceNoteCreatedAt: Date?
     var placeID: UUID?
     var tagsStorage: String = ""
     var stepsStorage: String = ""
@@ -65,6 +68,25 @@ final class RoutineTask {
 
     var hasImage: Bool {
         imageData?.isEmpty == false
+    }
+
+    var hasVoiceNote: Bool {
+        voiceNoteData?.isEmpty == false
+    }
+
+    var voiceNote: RoutineVoiceNote? {
+        get {
+            RoutineVoiceNote(
+                data: voiceNoteData,
+                durationSeconds: voiceNoteDurationSeconds,
+                createdAt: voiceNoteCreatedAt
+            )
+        }
+        set {
+            voiceNoteData = newValue?.data
+            voiceNoteDurationSeconds = newValue?.durationSeconds
+            voiceNoteCreatedAt = newValue?.createdAt
+        }
     }
 
     var priority: RoutineTaskPriority {
@@ -225,6 +247,9 @@ final class RoutineTask {
         pressure: RoutineTaskPressure = .none,
         pressureUpdatedAt: Date? = nil,
         imageData: Data? = nil,
+        voiceNoteData: Data? = nil,
+        voiceNoteDurationSeconds: Double? = nil,
+        voiceNoteCreatedAt: Date? = nil,
         placeID: UUID? = nil,
         tags: [String] = [],
         goalIDs: [UUID] = [],
@@ -272,6 +297,14 @@ final class RoutineTask {
         self.pressureRawValue = pressure.rawValue
         self.pressureUpdatedAt = pressure == .none ? nil : pressureUpdatedAt
         self.imageData = imageData
+        let sanitizedVoiceNote = RoutineVoiceNote(
+            data: voiceNoteData,
+            durationSeconds: voiceNoteDurationSeconds,
+            createdAt: voiceNoteCreatedAt
+        )
+        self.voiceNoteData = sanitizedVoiceNote?.data
+        self.voiceNoteDurationSeconds = sanitizedVoiceNote?.durationSeconds
+        self.voiceNoteCreatedAt = sanitizedVoiceNote?.createdAt
         self.placeID = placeID
         self.tagsStorage = RoutineTag.serialize(tags)
         self.goalIDsStorage = RoutineGoalIDStorage.serialize(goalIDs)
@@ -456,6 +489,9 @@ final class RoutineTask {
             pressure: pressure,
             pressureUpdatedAt: pressureUpdatedAt,
             imageData: imageData,
+            voiceNoteData: voiceNoteData,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteCreatedAt: voiceNoteCreatedAt,
             placeID: placeID,
             tags: tags,
             goalIDs: goalIDs,

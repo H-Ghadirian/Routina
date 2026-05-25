@@ -23,6 +23,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     case notes              = "Notes"
     case steps              = "Steps"
     case image              = "Image"
+    case voiceNote          = "Voice Note"
     case attachment         = "Attachment"
     case dangerZone         = "Danger Zone"
 
@@ -44,6 +45,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         case .notes:             return "note.text"
         case .steps:             return "list.number"
         case .image:             return "photo.fill"
+        case .voiceNote:         return "mic.fill"
         case .attachment:        return "paperclip"
         case .dangerZone:        return "exclamationmark.triangle.fill"
         }
@@ -67,6 +69,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
             sections.append(.steps)
         }
         sections.append(.image)
+        sections.append(.voiceNote)
         sections.append(.attachment)
         if includesDangerZone {
             sections.append(.dangerZone)

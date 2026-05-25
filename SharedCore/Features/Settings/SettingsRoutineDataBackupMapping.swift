@@ -35,6 +35,8 @@ enum SettingsRoutineDataBackupMapping {
         _ task: RoutineTask,
         imageData: Data?,
         imageAttachmentID: UUID?,
+        voiceNoteData: Data?,
+        voiceNoteAttachmentID: UUID?,
         includesPressure: Bool
     ) -> Backup.Task {
         Backup.Task(
@@ -47,6 +49,10 @@ enum SettingsRoutineDataBackupMapping {
             reminderAt: task.reminderAt,
             imageData: imageData,
             imageAttachmentID: imageAttachmentID,
+            voiceNoteData: voiceNoteData,
+            voiceNoteAttachmentID: voiceNoteAttachmentID,
+            voiceNoteDurationSeconds: task.voiceNoteDurationSeconds,
+            voiceNoteCreatedAt: task.voiceNoteCreatedAt,
             placeID: task.placeID,
             tags: task.tags,
             goalIDs: task.goalIDs,

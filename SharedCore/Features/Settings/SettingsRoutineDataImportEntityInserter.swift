@@ -153,6 +153,11 @@ enum SettingsRoutineDataImportEntityInserter {
                 attachmentManifestsByID: attachmentManifestsByID,
                 attachmentData: attachmentData
             )
+            let voiceNoteData = try importedVoiceNoteData(
+                for: task,
+                attachmentManifestsByID: attachmentManifestsByID,
+                attachmentData: attachmentData
+            )
 
             let importedTask = RoutineTask(
                 id: task.id,
@@ -165,6 +170,9 @@ enum SettingsRoutineDataImportEntityInserter {
                 pressure: task.pressure ?? .none,
                 pressureUpdatedAt: task.pressureUpdatedAt,
                 imageData: imageData,
+                voiceNoteData: voiceNoteData,
+                voiceNoteDurationSeconds: task.voiceNoteDurationSeconds,
+                voiceNoteCreatedAt: task.voiceNoteCreatedAt,
                 placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
                 tags: task.tags ?? [],
                 goalIDs: (task.goalIDs ?? []).filter { importedGoalIDs.contains($0) },
@@ -209,6 +217,22 @@ enum SettingsRoutineDataImportEntityInserter {
 
         guard let data = try attachmentData(imageAttachment.fileName) else {
             throw SettingsRoutineDataPersistence.Error.missingAttachment(imageAttachment.fileName)
+        }
+        return data
+    }
+
+    private static func importedVoiceNoteData(
+        for task: Backup.Task,
+        attachmentManifestsByID: [UUID: Backup.Attachment],
+        attachmentData: (String) throws -> Data?
+    ) throws -> Data? {
+        guard let voiceNoteAttachmentID = task.voiceNoteAttachmentID,
+              let voiceNoteAttachment = attachmentManifestsByID[voiceNoteAttachmentID] else {
+            return task.voiceNoteData
+        }
+
+        guard let data = try attachmentData(voiceNoteAttachment.fileName) else {
+            throw SettingsRoutineDataPersistence.Error.missingAttachment(voiceNoteAttachment.fileName)
         }
         return data
     }

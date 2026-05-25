@@ -156,3 +156,14 @@ struct TaskFormMacAttachmentContent: View {
         }
     }
 }
+
+struct TaskFormMacVoiceNoteContent: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        TaskVoiceNoteRecorderControl(
+            voiceNote: model.voiceNote,
+            onVoiceNoteChanged: model.onVoiceNoteChanged
+        )
+    }
+}

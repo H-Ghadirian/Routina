@@ -116,6 +116,7 @@ struct TaskFormContent: View {
         case .notes:              notesCard
         case .steps:              stepsCard
         case .image:              imageCard
+        case .voiceNote:          voiceNoteCard
         case .attachment:         attachmentCard
         case .dangerZone:         dangerZoneCard
         }
@@ -304,6 +305,17 @@ struct TaskFormContent: View {
             )
         }
         .id(FormSection.image)
+    }
+
+    // MARK: Voice Note
+
+    private var voiceNoteCard: some View {
+        macSectionCard(
+            title: "Voice Note"
+        ) {
+            TaskFormMacVoiceNoteContent(model: model)
+        }
+        .id(FormSection.voiceNote)
     }
 
     // MARK: Attachment

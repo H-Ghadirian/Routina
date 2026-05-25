@@ -398,6 +398,7 @@ enum TaskDetailStatusMetadataPresentation {
             || state.shouldShowSelectedDateMetadata
             || !state.task.tags.isEmpty
             || state.task.hasImage
+            || state.task.hasVoiceNote
             || !state.taskAttachments.isEmpty
             || state.task.isChecklistDriven
             || state.task.isChecklistCompletionRoutine
@@ -439,7 +440,7 @@ enum TaskDetailStatusMetadataPresentation {
             items.append(.init(id: "selectedDate", label: "Selected", value: state.selectedDateMetadataText))
         }
 
-        if state.task.hasImage || !state.taskAttachments.isEmpty {
+        if state.task.hasImage || state.task.hasVoiceNote || !state.taskAttachments.isEmpty {
             items.append(
                 .init(
                     id: "attachments",
@@ -465,6 +466,7 @@ enum TaskDetailStatusMetadataPresentation {
         let fileCount = state.taskAttachments.count
         return [
             state.task.hasImage ? "1 image" : nil,
+            state.task.hasVoiceNote ? "1 voice note" : nil,
             fileCount > 0 ? "\(fileCount) \(fileCount == 1 ? "file" : "files")" : nil
         ]
         .compactMap { $0 }

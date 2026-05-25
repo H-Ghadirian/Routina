@@ -7,11 +7,13 @@ struct CloudUsageEstimate: Equatable, Sendable {
     var placeCount: Int
     var goalCount: Int
     var imageCount: Int
+    var voiceNoteCount: Int
     var taskPayloadBytes: Int64
     var logPayloadBytes: Int64
     var placePayloadBytes: Int64
     var goalPayloadBytes: Int64
     var imagePayloadBytes: Int64
+    var voiceNotePayloadBytes: Int64
 
     static let zero = CloudUsageEstimate(
         taskCount: 0,
@@ -19,15 +21,17 @@ struct CloudUsageEstimate: Equatable, Sendable {
         placeCount: 0,
         goalCount: 0,
         imageCount: 0,
+        voiceNoteCount: 0,
         taskPayloadBytes: 0,
         logPayloadBytes: 0,
         placePayloadBytes: 0,
         goalPayloadBytes: 0,
-        imagePayloadBytes: 0
+        imagePayloadBytes: 0,
+        voiceNotePayloadBytes: 0
     )
 
     var totalPayloadBytes: Int64 {
-        taskPayloadBytes + logPayloadBytes + placePayloadBytes + goalPayloadBytes + imagePayloadBytes
+        taskPayloadBytes + logPayloadBytes + placePayloadBytes + goalPayloadBytes + imagePayloadBytes + voiceNotePayloadBytes
     }
 
     var totalRecordCount: Int {
@@ -61,6 +65,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
         imagePayloadBytes += placeCheckInSessions.reduce(into: Int64.zero) { total, session in
             total += Int64(session.imageData?.count ?? 0)
         }
+        let voiceNotePayloadBytes = tasks.reduce(into: Int64.zero) { total, task in
+            total += Int64(task.voiceNoteData?.count ?? 0)
+        }
 
         return CloudUsageEstimate(
             taskCount: tasks.count,
@@ -76,11 +83,17 @@ struct CloudUsageEstimate: Equatable, Sendable {
                     count += 1
                 }
             },
+            voiceNoteCount: tasks.reduce(into: 0) { count, task in
+                if task.voiceNoteData?.isEmpty == false {
+                    count += 1
+                }
+            },
             taskPayloadBytes: taskPayloadBytes,
             logPayloadBytes: logPayloadBytes,
             placePayloadBytes: placePayloadBytes,
             goalPayloadBytes: goalPayloadBytes,
-            imagePayloadBytes: imagePayloadBytes
+            imagePayloadBytes: imagePayloadBytes,
+            voiceNotePayloadBytes: voiceNotePayloadBytes
         )
     }
 
@@ -100,6 +113,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var importanceRawValue: String
         var urgencyRawValue: String
         var hasImage: Bool
+        var hasVoiceNote: Bool
         var placeID: UUID?
         var tagsStorage: String
         var goalIDsStorage: String
@@ -142,6 +156,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             importanceRawValue = task.importanceRawValue
             urgencyRawValue = task.urgencyRawValue
             hasImage = task.hasImage
+            hasVoiceNote = task.hasVoiceNote
             placeID = task.placeID
             tagsStorage = task.tagsStorage
             goalIDsStorage = task.goalIDsStorage

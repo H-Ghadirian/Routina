@@ -79,6 +79,7 @@ struct AddRoutineSaveRequest: Equatable {
     let urgency: RoutineTaskUrgency
     let pressure: RoutineTaskPressure
     let imageData: Data?
+    let voiceNote: RoutineVoiceNote?
     let selectedPlaceID: UUID?
     let tags: [String]
     let goals: [RoutineGoalSummary]
@@ -107,6 +108,7 @@ struct AddRoutineSaveRequest: Equatable {
         urgency: RoutineTaskUrgency,
         pressure: RoutineTaskPressure = .none,
         imageData: Data? = nil,
+        voiceNote: RoutineVoiceNote? = nil,
         selectedPlaceID: UUID? = nil,
         tags: [String] = [],
         goals: [RoutineGoalSummary] = [],
@@ -134,6 +136,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.urgency = urgency
         self.pressure = pressure
         self.imageData = imageData
+        self.voiceNote = voiceNote
         self.selectedPlaceID = selectedPlaceID
         self.tags = tags
         self.goals = RoutineGoalSummary.sanitized(goals)
@@ -180,6 +183,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.urgency = basics.urgency
         self.pressure = basics.pressure
         self.imageData = basics.imageData
+        self.voiceNote = basics.voiceNote
         self.selectedPlaceID = basics.selectedPlaceID
         self.tags = organization.routineTags
         self.goals = organization.routineGoals

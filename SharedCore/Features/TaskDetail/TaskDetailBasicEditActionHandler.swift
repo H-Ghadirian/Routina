@@ -57,6 +57,11 @@ struct TaskDetailBasicEditActionHandler {
         return .none
     }
 
+    func editVoiceNoteChanged(_ voiceNote: RoutineVoiceNote?, state: inout State) -> Effect<Action> {
+        draftMutationHandler.setVoiceNote(voiceNote, state: &state)
+        return .none
+    }
+
     func editAttachmentPicked(
         data: Data,
         fileName: String,
