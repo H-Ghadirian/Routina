@@ -36,7 +36,7 @@ struct HomeFeatureTaskLoadHandlerTests {
         let olderLog = RoutineLog(timestamp: olderLogDate, taskID: taskID)
         let newerLog = RoutineLog(timestamp: newerLogDate, taskID: taskID)
         let doneStats = HomeDoneStats(totalCount: 2, countsByTaskID: [taskID: 2])
-        var state = TestTaskLoadState()
+        var state = TestTaskLoadState(isLoading: true)
         let recorder = TestTaskLoadRecorder()
         let handler = makeHandler(recorder)
 
@@ -54,6 +54,7 @@ struct HomeFeatureTaskLoadHandlerTests {
         #expect(state.routineGoals.map(\.id) == [goalID])
         #expect(state.timelineLogs.map(\.timestamp) == [newerLogDate, olderLogDate])
         #expect(state.doneStats == doneStats)
+        #expect(state.isLoading == false)
         #expect(state.relatedTagRules == [RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Planning"])])
         #expect(state.tagColors == ["Focus": "#112233", "validated": "true"])
         #expect(recorder.events == ["refresh", "sync", "validate", "persist", "detail"])
@@ -106,6 +107,7 @@ private struct TestTaskLoadState: HomeFeatureTaskLoadState, Equatable {
     var routineGoals: [RoutineGoal] = []
     var timelineLogs: [RoutineLog] = []
     var doneStats = HomeDoneStats()
+    var isLoading = false
     var selection = HomeSelectionState()
     var presentation = HomePresentationState()
     var relatedTagRules: [RoutineRelatedTagRule] = []

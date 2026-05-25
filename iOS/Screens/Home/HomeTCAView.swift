@@ -211,10 +211,15 @@ homeContent
            let detailStore = self.store.scope(
                state: \.taskDetailState,
                action: \.taskDetail
-           ) {
+        ) {
             TaskDetailTCAView(store: detailStore)
         } else if store.routineTasks.contains(where: { $0.id == taskID }) {
-            ProgressView()
+            HomeLoadingStateView(
+                title: "Opening Routine",
+                message: "Loading routine details and recent activity.",
+                systemImage: "checklist.checked",
+                showsSkeleton: false
+            )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .onAppear {
                     openTask(taskID)

@@ -376,7 +376,7 @@ detailContent
     @ViewBuilder
     private var iosSidebarContent: some View {
         HomeIOSSidebarContent(
-            isEmpty: store.routineTasks.isEmpty,
+            isEmpty: store.routineTasks.isEmpty && !store.isLoading,
             navigationTitle: homeNavigationTitle
         ) {
             emptyStateView(
@@ -387,11 +387,15 @@ detailContent
                 openAddTask()
             }
         } taskListContent: {
-            listOfSortedTasksView(
-                routineDisplays: store.routineDisplays,
-                awayRoutineDisplays: store.awayRoutineDisplays,
-                archivedRoutineDisplays: store.archivedRoutineDisplays
-            )
+            if store.isLoading && store.routineTasks.isEmpty {
+                HomeLoadingStateView()
+            } else {
+                listOfSortedTasksView(
+                    routineDisplays: store.routineDisplays,
+                    awayRoutineDisplays: store.awayRoutineDisplays,
+                    archivedRoutineDisplays: store.archivedRoutineDisplays
+                )
+            }
         } toolbarItems: {
             homeToolbarContent
         }

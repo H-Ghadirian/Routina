@@ -373,6 +373,13 @@ extension HomeTCAView {
                 macPlacesSidebarView
             } else if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
+            } else if isMacRoutinesMode && store.isLoading && store.routineTasks.isEmpty && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
+                VStack(spacing: 0) {
+                    macSidebarHeader
+                    Divider()
+                    HomeLoadingStateView()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else if isMacRoutinesMode && store.routineTasks.isEmpty && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                 VStack(spacing: 0) {
                     macSidebarHeader
@@ -384,6 +391,17 @@ extension HomeTCAView {
                     ) {
                         openAddTask()
                     }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            } else if isMacBoardSidebarPresented && store.isLoading && store.routineTasks.isEmpty {
+                VStack(spacing: 0) {
+                    macSidebarHeader
+                    Divider()
+                    HomeLoadingStateView(
+                        title: "Loading Board",
+                        message: "Fetching todos and workflow state.",
+                        systemImage: "square.grid.3x3.topleft.filled"
+                    )
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else if isMacBoardSidebarPresented && !store.routineTasks.contains(where: \.isOneOffTask) {

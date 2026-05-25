@@ -223,6 +223,24 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func homeLoadingStateIncludesTextIconAndShimmerPlaceholder() throws {
+        let testsDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let projectRoot = testsDirectory.deletingLastPathComponent()
+        let source = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Screens/Home/HomeStatusAndEmptyViews.swift"),
+            encoding: .utf8
+        )
+
+        #expect(source.contains("struct HomeLoadingStateView"))
+        #expect(source.contains("Fetching routines, todos, and recent activity."))
+        #expect(source.contains("Image(systemName: systemImage)"))
+        #expect(source.contains("SwiftUI.TimelineView(.animation)"))
+        #expect(source.contains("accessibilityReduceMotion"))
+    }
+
+    @Test
     func removeSprintAssignments_removesAssignmentsForDeletedTodosOnly() {
         let removedTodoID = UUID()
         let keptTodoID = UUID()

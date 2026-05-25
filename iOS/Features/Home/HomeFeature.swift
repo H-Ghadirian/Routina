@@ -29,6 +29,7 @@ struct HomeFeature {
         var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
         var doneStats: DoneStats = DoneStats()
+        var isLoading = false
         var selection = HomeSelectionState()
         var presentation = HomePresentationState()
         var locationSnapshot = LocationSnapshot(
@@ -55,6 +56,7 @@ struct HomeFeature {
             awayRoutineDisplays: [RoutineDisplay] = [],
             archivedRoutineDisplays: [RoutineDisplay] = [],
             doneStats: DoneStats = DoneStats(),
+            isLoading: Bool = false,
             selectedTaskID: UUID? = nil,
             isAddRoutineSheetPresented: Bool = false,
             locationSnapshot: LocationSnapshot = LocationSnapshot(
@@ -115,6 +117,7 @@ struct HomeFeature {
             self.awayRoutineDisplays = awayRoutineDisplays
             self.archivedRoutineDisplays = archivedRoutineDisplays
             self.doneStats = doneStats
+            self.isLoading = isLoading
             self.selection = HomeSelectionState(
                 selectedTaskID: selectedTaskID,
                 taskDetailState: taskDetailState,
@@ -725,6 +728,7 @@ struct HomeFeature {
                 return lifecycleActionHandler().onAppear(state: &state)
 
             case .manualRefreshRequested:
+                state.isLoading = true
                 return lifecycleActionHandler().manualRefreshRequested()
 
             case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
@@ -738,6 +742,7 @@ struct HomeFeature {
                 )
 
             case .tasksLoadFailed:
+                state.isLoading = false
                 return lifecycleActionHandler().tasksLoadFailed()
 
             case let .locationSnapshotUpdated(snapshot):
