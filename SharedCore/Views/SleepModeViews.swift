@@ -32,48 +32,20 @@ struct SleepHomeDockView: View {
 
     var body: some View {
         if isSleepHomeDockEnabled, activeSleepSession == nil {
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .trailing, spacing: 5) {
                 Button {
                     requestStartSleep()
                 } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "bed.double.fill")
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(.indigo)
-                            .frame(width: 32, height: 32)
-                            .routinaGlassPill(tint: .indigo, tintOpacity: 0.16)
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Going to sleep")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
-
-                            Text("Start sleep mode")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-
-                        Spacer(minLength: 10)
-
-                        Image(systemName: "arrow.right")
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 42, height: 32)
-                            .routinaGlassPill(tint: .indigo, tintOpacity: 0.72, interactive: true)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .routinaGlassPill(tint: .indigo, tintOpacity: 0.10, interactive: true)
-                    .overlay(
-                        Capsule()
-                            .stroke(.primary.opacity(0.08), lineWidth: 1)
-                    )
+                    Image(systemName: "bed.double.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(width: 32, height: 32)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.circle)
+                .controlSize(.small)
+                .tint(.indigo)
                 .accessibilityLabel("Going to sleep")
+                .frame(maxWidth: .infinity, alignment: .trailing)
 
                 if let errorText {
                     Text(errorText)
@@ -82,7 +54,7 @@ struct SleepHomeDockView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .shadow(color: .black.opacity(0.12), radius: 14, y: 7)
+            .shadow(color: .black.opacity(0.10), radius: 8, y: 4)
             .accessibilityElement(children: .contain)
             .alert("Stop focus timer?", isPresented: focusStopWarningPresented) {
                 Button("Start Sleep", role: .destructive) {

@@ -24,6 +24,7 @@ struct HomeTCAView: View {
     @State var areTaskListModeActionsExpanded = false
     @State var areTopActionsExpanded = false
     @State var isQuickAddSheetPresented = false
+    @State var isPlaceCheckInMapPresented = false
     @State var isRefreshScheduled = false
     @State var relatedFilterTagSuggestionAnchor: String?
 
@@ -61,9 +62,14 @@ homeContent
                         requestRefresh()
                     }
                 }
+                .sheet(isPresented: $isPlaceCheckInMapPresented) {
+                    PlaceCheckInMapSheet(selectedActivity: nil)
+                }
                 .safeAreaInset(edge: .bottom) {
                     VStack(spacing: 8) {
-                        PlaceCheckInDockView()
+                        HomeCheckInButton {
+                            isPlaceCheckInMapPresented = true
+                        }
                         SleepHomeDockView()
                     }
                         .padding(.horizontal, 24)
@@ -314,5 +320,24 @@ extension HomeFeature.TaskListMode {
         case .todos:
             return .todos
         }
+    }
+}
+
+private struct HomeCheckInButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "mappin.and.ellipse")
+                .font(.subheadline.weight(.semibold))
+                .frame(width: 32, height: 32)
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.circle)
+        .controlSize(.small)
+        .tint(.teal)
+        .accessibilityLabel("Check In")
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .shadow(color: .black.opacity(0.10), radius: 8, y: 4)
     }
 }
