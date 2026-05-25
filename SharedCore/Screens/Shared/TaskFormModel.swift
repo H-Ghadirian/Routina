@@ -1,5 +1,15 @@
 import SwiftUI
 
+enum TaskFormVisibilityMode: Equatable, Sendable {
+    case full
+    case progressiveCreate
+    case progressiveEdit
+
+    var usesProgressiveDisclosure: Bool {
+        self != .full
+    }
+}
+
 struct TaskFormModel {
     // MARK: Name
     var name: Binding<String>
@@ -119,6 +129,7 @@ struct TaskFormModel {
     // MARK: Focus
     var nameFocus: FocusState<Bool>.Binding? = nil
     var nameFocusRequestID: Int = 0
+    var visibilityMode: TaskFormVisibilityMode = .full
 
     // MARK: Extras
     var autofocusName: Bool = false
@@ -183,5 +194,99 @@ extension TaskFormModel {
             suggestion,
             in: tagDraft.wrappedValue
         )
+    }
+
+    func visibleCompactSections(isShowingMoreDetails: Bool) -> [TaskFormCompactSection] {
+        guard visibilityMode.usesProgressiveDisclosure, !isShowingMoreDetails else {
+            return TaskFormCompactSection.defaultOrder
+        }
+
+        let primarySections = progressivePrimaryCompactSections
+        let populatedSections = populatedCompactSections
+        return TaskFormCompactSection.defaultOrder.filter {
+            primarySections.contains($0) || populatedSections.contains($0)
+        }
+    }
+
+    private var progressivePrimaryCompactSections: Set<TaskFormCompactSection> {
+        var sections: Set<TaskFormCompactSection> = [
+            .name,
+            .taskType,
+            .deadline,
+            .reminder
+        ]
+
+        if scheduleMode.wrappedValue.taskType == .routine {
+            sections.insert(.scheduleType)
+        }
+
+        if scheduleMode.wrappedValue.showsRoutineRepeatControls {
+            sections.insert(.repeatPattern)
+        }
+
+        if scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems {
+            sections.insert(.stepsOrChecklist)
+        }
+
+        return sections
+    }
+
+    private var populatedCompactSections: Set<TaskFormCompactSection> {
+        var sections = Set<TaskFormCompactSection>()
+
+        if color.wrappedValue != .none {
+            sections.insert(.color)
+        }
+        if hasText(notes.wrappedValue) {
+            sections.insert(.notes)
+        }
+        if voiceNote != nil {
+            sections.insert(.voiceNote)
+        }
+        if hasText(link.wrappedValue) {
+            sections.insert(.link)
+        }
+        if importance.wrappedValue != .level2 || urgency.wrappedValue != .level2 {
+            sections.insert(.importanceUrgency)
+        }
+        if pressure.wrappedValue != .none {
+            sections.insert(.pressure)
+        }
+        if estimatedDurationMinutes.wrappedValue != nil
+            || actualDurationMinutes?.wrappedValue != nil
+            || storyPoints.wrappedValue != nil
+            || focusModeEnabled.wrappedValue {
+            sections.insert(.estimation)
+        }
+        if imageData != nil {
+            sections.insert(.image)
+        }
+        if !attachments.isEmpty {
+            sections.insert(.attachment)
+        }
+        if !routineTags.isEmpty || hasText(tagDraft.wrappedValue) {
+            sections.insert(.tags)
+        }
+        if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
+            sections.insert(.goals)
+        }
+        if !relationships.isEmpty {
+            sections.insert(.relationships)
+        }
+        if !routineSteps.isEmpty
+            || hasText(stepDraft.wrappedValue)
+            || !routineChecklistItems.isEmpty
+            || hasText(checklistItemDraftTitle.wrappedValue) {
+            sections.insert(.stepsOrChecklist)
+        }
+        if selectedPlaceID.wrappedValue != nil {
+            sections.insert(.place)
+        }
+
+        return sections
+    }
+
+    private func hasText(_ value: String) -> Bool {
+        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

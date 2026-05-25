@@ -495,20 +495,33 @@ extension HomeTCAView {
     }
 
     var macAddFormSections: [FormSection] {
-        let scheduleMode = store.addRoutineState?.schedule.scheduleMode ?? .fixedInterval
-        return FormSection.taskFormSections(
+        let addState = store.addRoutineState
+        let scheduleMode = addState?.schedule.scheduleMode ?? .fixedInterval
+        let sections = FormSection.taskFormSections(
             scheduleMode: scheduleMode,
             includesIdentity: true,
             includesDangerZone: false
+        )
+        return FormSection.visibleTaskFormSections(
+            from: sections,
+            mode: .progressiveCreate,
+            isShowingMoreDetails: addEditFormCoordinator.isTaskFormMoreDetailsExpanded,
+            populatedSections: addState?.populatedMacFormSections ?? []
         )
     }
 
     var macEditFormSections: [FormSection] {
         guard let detail = store.taskDetailState else { return [] }
-        return FormSection.taskFormSections(
+        let sections = FormSection.taskFormSections(
             scheduleMode: detail.editScheduleMode,
             includesIdentity: true,
             includesDangerZone: true
+        )
+        return FormSection.visibleTaskFormSections(
+            from: sections,
+            mode: .progressiveEdit,
+            isShowingMoreDetails: addEditFormCoordinator.isTaskFormMoreDetailsExpanded,
+            populatedSections: detail.populatedMacFormSections
         )
     }
 

@@ -5,6 +5,7 @@ import SwiftUI
 final class AddEditFormCoordinator {
     var scrollTarget: FormSection?
     var nameFocusRequestID: Int = 0
+    var isTaskFormMoreDetailsExpanded = false
 
     /// User-customised ordering of movable sections (persisted via UserDefaults).
     /// Does NOT include `.identity` – that section is always first and not movable.

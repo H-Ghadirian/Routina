@@ -124,6 +124,7 @@ struct AddRoutineTaskFormModelFactory {
             color: binding(get: { store.basics.routineColor }, send: AddRoutineFeature.Action.routineColorChanged),
             nameFocus: nameFocus,
             nameFocusRequestID: nameFocusRequestID,
+            visibilityMode: .progressiveCreate,
             autofocusName: true,
             onDelete: nil
         )

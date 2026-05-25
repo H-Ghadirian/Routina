@@ -18,6 +18,7 @@ struct TaskFormContent: View {
     }
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isFileImporterPresented = false
+    @State private var isShowingMoreDetails = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
@@ -25,8 +26,12 @@ struct TaskFormContent: View {
 
     var body: some View {
         Form {
-            ForEach(TaskFormCompactSection.defaultOrder, id: \.self) { section in
+            ForEach(model.visibleCompactSections(isShowingMoreDetails: isShowingMoreDetails), id: \.self) { section in
                 compactSection(section)
+            }
+
+            if model.visibilityMode.usesProgressiveDisclosure {
+                moreDetailsSection
             }
         }
         .sheet(isPresented: $isTagManagerPresented) {
@@ -57,6 +62,21 @@ struct TaskFormContent: View {
     }
 
     // MARK: - Helpers
+
+    private var moreDetailsSection: some View {
+        Section {
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isShowingMoreDetails.toggle()
+                }
+            } label: {
+                Label(
+                    isShowingMoreDetails ? "Hide More Details" : "More Details",
+                    systemImage: isShowingMoreDetails ? "chevron.up.circle" : "ellipsis.circle"
+                )
+            }
+        }
+    }
 
     private var presentation: TaskFormPresentation {
         TaskFormPresentation(

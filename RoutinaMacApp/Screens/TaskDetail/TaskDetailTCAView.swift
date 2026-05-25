@@ -14,6 +14,7 @@ struct TaskDetailTCAView: View {
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = false
     @State private var isTaskChangesExpanded = false
+    @State private var isCommentComposerVisible = false
     @State private var isTimeSectionExpanded = false
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State private var taskTimeEntryHours = 0
@@ -126,6 +127,7 @@ detailBody
 .onChange(of: store.task.id) { _, _ in
     referenceDate = Date()
     activeBlockingTask = nil
+    isCommentComposerVisible = false
     Task {
         await refreshFocusBlockingContext()
     }
@@ -182,14 +184,19 @@ detailBody
                 todoHeaderSection
                 notificationDisabledWarningSection
                 todoStateTimingSection
-                commentsSection
+                optionalActionsSection
+                if shouldShowCommentsSection {
+                    commentsSection
+                }
                 routineLogsSection
                 taskChangesSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
-                relationshipsSection
-                if store.task.hasNotes || store.task.hasImage || store.task.hasVoiceNote || !store.taskAttachments.isEmpty {
+                if shouldShowRelationshipsSection {
+                    relationshipsSection
+                }
+                if hasTaskExtras {
                     taskExtrasSection
                 }
             }
@@ -434,14 +441,19 @@ detailBody
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
-                commentsSection
+                optionalActionsSection
+                if shouldShowCommentsSection {
+                    commentsSection
+                }
                 routineLogsSection
                 taskChangesSection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
-                relationshipsSection
-                if store.task.hasNotes || store.task.hasImage || store.task.hasVoiceNote || !store.taskAttachments.isEmpty {
+                if shouldShowRelationshipsSection {
+                    relationshipsSection
+                }
+                if hasTaskExtras {
                     taskExtrasSection
                 }
             }
@@ -478,6 +490,49 @@ detailBody
             onSaveEditComment: { store.send(.detailCommentEditSaveTapped($0)) },
             onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
         )
+    }
+
+    @ViewBuilder
+    private var optionalActionsSection: some View {
+        if shouldShowOptionalActionsSection {
+            TaskDetailOptionalActionsSectionView(
+                showsCommentAction: !shouldShowCommentsSection,
+                showsLinkedTaskAction: !shouldShowRelationshipsSection,
+                showsDetailsAction: !hasTaskExtras,
+                background: routineLogsBackground,
+                stroke: TaskDetailPlatformStyle.sectionCardStroke,
+                onAddComment: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        isCommentComposerVisible = true
+                    }
+                },
+                onAddLinkedTask: { store.send(.openAddLinkedTask) },
+                onEditDetails: { store.send(.setEditSheet(true)) }
+            )
+        }
+    }
+
+    private var shouldShowOptionalActionsSection: Bool {
+        !shouldShowCommentsSection || !shouldShowRelationshipsSection || !hasTaskExtras
+    }
+
+    private var shouldShowCommentsSection: Bool {
+        isCommentComposerVisible
+            || !store.task.comments.isEmpty
+            || !store.detailCommentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || store.editingDetailCommentID != nil
+    }
+
+    private var shouldShowRelationshipsSection: Bool {
+        !store.groupedResolvedRelationships.isEmpty
+    }
+
+    private var hasTaskExtras: Bool {
+        store.task.hasNotes
+            || store.task.hasImage
+            || store.task.hasVoiceNote
+            || !store.taskAttachments.isEmpty
+            || store.task.resolvedLinkURL != nil
     }
 
     private var blockingFocusTitle: String? {

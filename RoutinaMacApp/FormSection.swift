@@ -76,10 +76,209 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         }
         return sections
     }
+
+    static func visibleTaskFormSections(
+        from sections: [FormSection],
+        mode: TaskFormVisibilityMode,
+        isShowingMoreDetails: Bool,
+        populatedSections: Set<FormSection>
+    ) -> [FormSection] {
+        guard mode.usesProgressiveDisclosure, !isShowingMoreDetails else {
+            return sections
+        }
+
+        let primarySections: Set<FormSection> = [.identity, .behavior]
+        return sections.filter {
+            primarySections.contains($0) || populatedSections.contains($0)
+        }
+    }
 }
 
 extension RoutineScheduleMode {
     var isTaskFormStepBased: Bool {
         isStandardRoutineMode || self == .oneOff
+    }
+}
+
+extension TaskFormModel {
+    var populatedMacFormSections: Set<FormSection> {
+        var sections = Set<FormSection>()
+
+        if color.wrappedValue != .none {
+            sections.insert(.color)
+        }
+        if pressure.wrappedValue != .none {
+            sections.insert(.pressure)
+        }
+        if estimatedDurationMinutes.wrappedValue != nil
+            || actualDurationMinutes?.wrappedValue != nil
+            || storyPoints.wrappedValue != nil
+            || focusModeEnabled.wrappedValue {
+            sections.insert(.estimation)
+        }
+        if selectedPlaceID.wrappedValue != nil {
+            sections.insert(.places)
+        }
+        if importance.wrappedValue != .level2 || urgency.wrappedValue != .level2 {
+            sections.insert(.importanceUrgency)
+        }
+        if !routineTags.isEmpty || hasText(tagDraft.wrappedValue) {
+            sections.insert(.tags)
+        }
+        if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
+            sections.insert(.goals)
+        }
+        if !relationships.isEmpty {
+            sections.insert(.linkedTasks)
+        }
+        if hasText(link.wrappedValue) {
+            sections.insert(.linkURL)
+        }
+        if hasText(notes.wrappedValue) {
+            sections.insert(.notes)
+        }
+        if !routineSteps.isEmpty
+            || hasText(stepDraft.wrappedValue)
+            || !routineChecklistItems.isEmpty
+            || hasText(checklistItemDraftTitle.wrappedValue)
+            || scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems {
+            sections.insert(.steps)
+        }
+        if imageData != nil {
+            sections.insert(.image)
+        }
+        if voiceNote != nil {
+            sections.insert(.voiceNote)
+        }
+        if !attachments.isEmpty {
+            sections.insert(.attachment)
+        }
+
+        return sections
+    }
+
+    private func hasText(_ value: String) -> Bool {
+        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+extension AddRoutineFeature.State {
+    var populatedMacFormSections: Set<FormSection> {
+        var sections = Set<FormSection>()
+
+        if basics.routineColor != .none {
+            sections.insert(.color)
+        }
+        if basics.pressure != .none {
+            sections.insert(.pressure)
+        }
+        if basics.estimatedDurationMinutes != nil || basics.storyPoints != nil || basics.focusModeEnabled {
+            sections.insert(.estimation)
+        }
+        if basics.selectedPlaceID != nil {
+            sections.insert(.places)
+        }
+        if basics.importance != .level2 || basics.urgency != .level2 {
+            sections.insert(.importanceUrgency)
+        }
+        if !organization.routineTags.isEmpty || hasText(organization.tagDraft) {
+            sections.insert(.tags)
+        }
+        if !organization.routineGoals.isEmpty || hasText(organization.goalDraft) {
+            sections.insert(.goals)
+        }
+        if !organization.relationships.isEmpty {
+            sections.insert(.linkedTasks)
+        }
+        if hasText(basics.routineLink) {
+            sections.insert(.linkURL)
+        }
+        if hasText(basics.routineNotes) {
+            sections.insert(.notes)
+        }
+        if !checklist.routineSteps.isEmpty
+            || hasText(checklist.stepDraft)
+            || !checklist.routineChecklistItems.isEmpty
+            || hasText(checklist.checklistItemDraftTitle)
+            || schedule.scheduleMode.isRoutineModeRequiringChecklistItems {
+            sections.insert(.steps)
+        }
+        if basics.imageData != nil {
+            sections.insert(.image)
+        }
+        if basics.voiceNote != nil {
+            sections.insert(.voiceNote)
+        }
+        if !basics.attachments.isEmpty {
+            sections.insert(.attachment)
+        }
+
+        return sections
+    }
+
+    private func hasText(_ value: String) -> Bool {
+        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+extension TaskDetailFeature.State {
+    var populatedMacFormSections: Set<FormSection> {
+        var sections = Set<FormSection>()
+
+        if editColor != .none {
+            sections.insert(.color)
+        }
+        if editPressure != .none {
+            sections.insert(.pressure)
+        }
+        if editEstimatedDurationMinutes != nil
+            || editActualDurationMinutes != nil
+            || editStoryPoints != nil
+            || editFocusModeEnabled {
+            sections.insert(.estimation)
+        }
+        if editSelectedPlaceID != nil {
+            sections.insert(.places)
+        }
+        if editImportance != .level2 || editUrgency != .level2 {
+            sections.insert(.importanceUrgency)
+        }
+        if !editRoutineTags.isEmpty || hasText(editTagDraft) {
+            sections.insert(.tags)
+        }
+        if !editRoutineGoals.isEmpty || hasText(editGoalDraft) {
+            sections.insert(.goals)
+        }
+        if !editRelationships.isEmpty {
+            sections.insert(.linkedTasks)
+        }
+        if hasText(editRoutineLink) {
+            sections.insert(.linkURL)
+        }
+        if hasText(editRoutineNotes) {
+            sections.insert(.notes)
+        }
+        if !editRoutineSteps.isEmpty
+            || hasText(editStepDraft)
+            || !editRoutineChecklistItems.isEmpty
+            || hasText(editChecklistItemDraftTitle)
+            || editScheduleMode.isRoutineModeRequiringChecklistItems {
+            sections.insert(.steps)
+        }
+        if editImageData != nil {
+            sections.insert(.image)
+        }
+        if editVoiceNote != nil {
+            sections.insert(.voiceNote)
+        }
+        if !editAttachments.isEmpty {
+            sections.insert(.attachment)
+        }
+
+        return sections
+    }
+
+    private func hasText(_ value: String) -> Bool {
+        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

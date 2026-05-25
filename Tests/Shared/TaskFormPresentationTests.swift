@@ -94,6 +94,13 @@ struct TaskFormPresentationTests {
         #expect(voiceNoteIndex < imageIndex)
     }
 
+    @Test
+    func progressiveVisibilityModesAreOptIn() {
+        #expect(!TaskFormVisibilityMode.full.usesProgressiveDisclosure)
+        #expect(TaskFormVisibilityMode.progressiveCreate.usesProgressiveDisclosure)
+        #expect(TaskFormVisibilityMode.progressiveEdit.usesProgressiveDisclosure)
+    }
+
     private func presentation(
         taskType: RoutineTaskType = .routine,
         scheduleMode: RoutineScheduleMode = .fixedInterval,

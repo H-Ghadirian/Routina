@@ -160,6 +160,7 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editColor },
                 set: { store.send(.editColorChanged($0)) }
             ),
+            visibilityMode: .progressiveEdit,
             autofocusName: false,
             onDelete: { store.send(.setDeleteConfirmation(true)) },
             pauseResumeAction: showsPauseResume

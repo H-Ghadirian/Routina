@@ -89,13 +89,42 @@ struct TaskFormContent: View {
         )
     }
 
+    private var visibleSections: [FormSection] {
+        FormSection.visibleTaskFormSections(
+            from: availableSections,
+            mode: model.visibilityMode,
+            isShowingMoreDetails: formCoordinator.isTaskFormMoreDetailsExpanded,
+            populatedSections: model.populatedMacFormSections
+        )
+    }
+
     @ViewBuilder
     private var scrollableFormSections: some View {
-        let ordered = formCoordinator.orderedSections(available: availableSections)
+        let ordered = formCoordinator.orderedSections(available: visibleSections)
         VStack(alignment: .leading, spacing: 20) {
             ForEach(ordered, id: \.self) { section in
                 formSectionView(for: section)
             }
+
+            if model.visibilityMode.usesProgressiveDisclosure {
+                moreDetailsCard
+            }
+        }
+    }
+
+    private var moreDetailsCard: some View {
+        TaskFormMacSectionCard(title: "More Details") {
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    formCoordinator.isTaskFormMoreDetailsExpanded.toggle()
+                }
+            } label: {
+                Label(
+                    formCoordinator.isTaskFormMoreDetailsExpanded ? "Hide More Details" : "Show More Details",
+                    systemImage: formCoordinator.isTaskFormMoreDetailsExpanded ? "chevron.up.circle" : "ellipsis.circle"
+                )
+            }
+            .buttonStyle(.bordered)
         }
     }
 

@@ -91,6 +91,75 @@ struct TaskDetailExtrasSectionView: View {
     }
 }
 
+struct TaskDetailOptionalActionsSectionView: View {
+    let showsCommentAction: Bool
+    let showsLinkedTaskAction: Bool
+    let showsDetailsAction: Bool
+    let background: Color
+    let stroke: Color
+    let onAddComment: () -> Void
+    let onAddLinkedTask: () -> Void
+    let onEditDetails: () -> Void
+
+    var body: some View {
+        TaskDetailSectionCardView(background: background, stroke: stroke) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Add More")
+                    .font(.headline)
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        actionButtons
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        actionButtons
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if showsCommentAction {
+            actionButton(
+                title: "Comment",
+                systemImage: "text.bubble",
+                action: onAddComment
+            )
+        }
+
+        if showsLinkedTaskAction {
+            actionButton(
+                title: "Linked Task",
+                systemImage: "link.badge.plus",
+                action: onAddLinkedTask
+            )
+        }
+
+        if showsDetailsAction {
+            actionButton(
+                title: "Details",
+                systemImage: "square.and.pencil",
+                action: onEditDetails
+            )
+        }
+    }
+
+    private func actionButton(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline)
+        }
+        .buttonStyle(.bordered)
+    }
+}
+
 private struct TaskDetailAttachmentRow: View {
     let item: AttachmentItem
     let onSave: () -> Void
