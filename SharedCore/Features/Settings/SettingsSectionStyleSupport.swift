@@ -25,10 +25,8 @@ extension SettingsSectionID {
             return .mint
         case .shortcuts:
             return .teal
-        case .support:
+        case .support, .about:
             return .green
-        case .about:
-            return .gray
         }
     }
 }

@@ -213,6 +213,13 @@ List {
             .foregroundStyle(.secondary)
     }
 
+    Section("Advanced") {
+        Toggle("Enable Git features", isOn: gitFeaturesBinding)
+
+        Text("Shows GitHub and GitLab contribution activity in Stats.")
+            .foregroundStyle(.secondary)
+    }
+
 }
 .listStyle(.insetGrouped)
 .navigationTitle("General")
@@ -243,6 +250,13 @@ List {
                 batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
                 BatteryRoutinePreferences.notifyChanged()
             }
+        )
+    }
+
+    private var gitFeaturesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isGitFeaturesEnabled },
+            set: { store.send(.gitFeaturesToggled($0)) }
         )
     }
 }

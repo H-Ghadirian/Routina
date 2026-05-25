@@ -325,38 +325,27 @@ private struct SettingsMacShortcutKeyCluster: View {
     }
 }
 
-struct SettingsMacSupportDetailView: View {
-    let store: StoreOf<SettingsFeature>
-
-    var body: some View {
-        SettingsMacDetailShell(
-            title: "Support",
-            subtitle: "Reach out if something feels off or you want help with Routina."
-        ) {
-            SettingsMacDetailCard(title: "Contact") {
-                Button {
-                    store.send(.contactUsTapped)
-                } label: {
-                    Label("Email Support", systemImage: "envelope")
-                }
-                .buttonStyle(.borderedProminent)
-
-                Text("h.qadirian@gmail.com")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-}
-
 struct SettingsMacAboutDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
 SettingsMacDetailShell(
-    title: "About",
-    subtitle: "Version details and, if unlocked, the app’s diagnostic information."
+    title: "Support & About",
+    subtitle: "Contact support, check version details, and view diagnostics when unlocked."
 ) {
+    SettingsMacDetailCard(title: "Contact") {
+        Button {
+            store.send(.contactUsTapped)
+        } label: {
+            Label("Email Support", systemImage: "envelope")
+        }
+        .buttonStyle(.borderedProminent)
+
+        Text("h.qadirian@gmail.com")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
     SettingsMacDetailCard(title: "App") {
         settingsInfoRow(title: "Version", value: store.diagnostics.appVersion)
             .contentShape(Rectangle())

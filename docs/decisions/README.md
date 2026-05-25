@@ -47,6 +47,8 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Platform baseline:** Routina targets the current Apple platform SDK baseline only. App, extension, test, and package targets should move together with the installed verified toolchain, use Swift 6, and avoid older-OS compatibility paths.
 - **Liquid Glass UI:** Custom app cards, panels, chips, and floating controls use shared Liquid Glass surface modifiers with semantic tinting. Standard system structures stay system-native, and custom opaque backgrounds behind macOS split-view chrome should be avoided.
 - **iOS More navigation:** Compact iOS uses an app-owned More tab for Stats and Settings instead of UIKit's automatic overflow More controller. The More flow owns a single SwiftUI navigation stack so Settings sections do not nest inside a second navigation hierarchy, and compact/regular presentation is chosen from SwiftUI size classes.
+- **Git settings visibility:** Git contribution settings are opt-in from Settings > General > Advanced. When Git features are disabled, the standalone Git settings section is hidden from Settings navigation.
+- **Support and About settings:** Support contact actions and About/version diagnostics share one Settings section named Support & About. Legacy Support navigation state should route to the combined section instead of showing a separate destination.
 
 ## Open Questions
 
@@ -113,3 +115,5 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0053](0053-record-task-voice-notes.md) | Record Task Voice Notes | Accepted | 2026-05-25 |
 | [0054](0054-open-ios-home-top-actions-vertically.md) | Open iOS Home Top Actions Vertically | Accepted | 2026-05-25 |
 | [0055](0055-move-ios-home-place-and-sleep-into-action-rail.md) | Move iOS Home Place and Sleep Into Action Rail | Accepted | 2026-05-25 |
+| [0056](0056-hide-git-settings-until-enabled.md) | Hide Git Settings Until Enabled | Accepted | 2026-05-25 |
+| [0057](0057-merge-support-and-about-settings.md) | Merge Support and About Settings | Accepted | 2026-05-25 |

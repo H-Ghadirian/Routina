@@ -18,18 +18,14 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
-    static func visibleSections(isGitFeaturesEnabled _: Bool) -> [SettingsSectionID] {
-        allCases.filter { section in
-            #if os(macOS)
-            return true
-            #else
-            return section != .shortcuts
-            #endif
+    static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsSectionID] {
+        allCases.filter {
+            isSectionVisible($0, isGitFeaturesEnabled: isGitFeaturesEnabled)
         }
     }
 
-    static func compactSectionGroups(isGitFeaturesEnabled _: Bool) -> [[SettingsSectionID]] {
-        [
+    static func compactSectionGroups(isGitFeaturesEnabled: Bool) -> [[SettingsSectionID]] {
+        let groupedSections: [[SettingsSectionID]] = [
             [
                 .general,
                 .devices,
@@ -44,10 +40,35 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             ],
             [
                 .backup,
-                .support,
                 .about
             ]
         ]
+
+        return groupedSections
+            .map {
+                $0.filter {
+                    isSectionVisible($0, isGitFeaturesEnabled: isGitFeaturesEnabled)
+                }
+            }
+            .filter { !$0.isEmpty }
+    }
+
+    private static func isSectionVisible(
+        _ section: SettingsSectionID,
+        isGitFeaturesEnabled: Bool
+    ) -> Bool {
+        if section == .git && !isGitFeaturesEnabled {
+            return false
+        }
+        if section == .support {
+            return false
+        }
+
+        #if os(macOS)
+        return true
+        #else
+        return section != .shortcuts
+        #endif
     }
 
     var title: String {
@@ -65,7 +86,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .quickAdd:      return "Quick Add"
         case .shortcuts:     return "Shortcuts"
         case .support:       return "Support"
-        case .about:         return "About"
+        case .about:         return "Support & About"
         }
     }
 
@@ -162,11 +183,15 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             return SettingsSectionRowPresentation(subtitle: "Keyboard, Siri, and Apple Shortcuts")
 
         case .support:
-            return SettingsSectionRowPresentation(subtitle: "Contact us by email")
+            return SettingsSectionRowPresentation(subtitle: aboutAndSupportSubtitle(in: state))
 
         case .about:
-            return SettingsSectionRowPresentation(subtitle: state.diagnostics.aboutOverviewSubtitle)
+            return SettingsSectionRowPresentation(subtitle: aboutAndSupportSubtitle(in: state))
         }
+    }
+
+    private func aboutAndSupportSubtitle(in state: SettingsFeatureState) -> String {
+        "Email support • \(state.diagnostics.aboutOverviewSubtitle)"
     }
 }
 

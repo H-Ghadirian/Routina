@@ -61,7 +61,7 @@ private struct SettingsIPadSplitView: View {
     var body: some View {
 NavigationSplitView {
     List(selection: $selectedSection) {
-        ForEach(SettingsIOSSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
+        ForEach(visibleSections) { section in
             SettingsIOSSectionRow(
                 section: section,
                 store: store
@@ -79,7 +79,16 @@ NavigationSplitView {
     }
 
     private var selectedDetailSection: SettingsIOSSection {
-        selectedSection ?? .notifications
+        let candidate = selectedSection ?? .notifications
+        if candidate == .support { return .about }
+        guard visibleSections.contains(candidate) else { return .general }
+        return candidate
+    }
+
+    private var visibleSections: [SettingsIOSSection] {
+        SettingsIOSSection.visibleSections(
+            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
+        )
     }
 }
 
@@ -115,9 +124,7 @@ struct SettingsIOSDetailView: View {
             SettingsQuickAddDetailView()
         case .shortcuts:
             SettingsIOSShortcutsDetailView()
-        case .support:
-            SettingsSupportDetailView(store: store)
-        case .about:
+        case .support, .about:
             SettingsAboutDetailView(store: store)
         }
     }

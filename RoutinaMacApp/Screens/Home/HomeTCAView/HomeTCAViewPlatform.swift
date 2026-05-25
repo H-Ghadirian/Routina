@@ -85,7 +85,7 @@ extension HomeTCAView {
                 placeCheckInMapActivity: placeCheckInMapActivity,
                 settingsStore: settingsStore,
                 statsStore: statsStore,
-                selectedSettingsSection: store.selectedSettingsSection ?? .notifications,
+                selectedSettingsSection: currentSelectedSettingsSection,
                 dayPlanPlanner: dayPlanPlanner,
                 mainDetailMode: mainDetailModeBinding,
                 isBoardInspectorPresented: macBoardInspectorPresentedBinding,

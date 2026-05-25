@@ -6,13 +6,6 @@ struct SettingsGitDetailView: View {
 
     var body: some View {
 List {
-    Section("Git Features") {
-        Toggle("Enable Git features", isOn: gitFeaturesBinding)
-
-        Text("Shows GitHub and GitLab contribution activity in Stats.")
-            .foregroundStyle(.secondary)
-    }
-
     Section("GitHub – Mode") {
         Picker("Source", selection: scopeBinding) {
             ForEach(GitHubStatsScope.allCases) { scope in
@@ -161,13 +154,6 @@ List {
 .listStyle(.insetGrouped)
 .navigationTitle("Git")
 .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var gitFeaturesBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.isGitFeaturesEnabled },
-            set: { store.send(.gitFeaturesToggled($0)) }
-        )
     }
 
     private var scopeBinding: Binding<GitHubStatsScope> {

@@ -23,10 +23,22 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
-    func visibleSectionsKeepGitAvailableWhenFeatureIsDisabled() {
-        #expect(SettingsSectionID.visibleSections(isGitFeaturesEnabled: false).contains(.git))
+    func visibleSectionsHideGitWhenFeatureIsDisabled() {
+        #expect(!SettingsSectionID.visibleSections(isGitFeaturesEnabled: false).contains(.git))
         #expect(SettingsSectionID.visibleSections(isGitFeaturesEnabled: true).contains(.git))
-        #expect(SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }.contains(.git))
+        #expect(!SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }.contains(.git))
+        #expect(SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: true).flatMap { $0 }.contains(.git))
+    }
+
+    @Test
+    func visibleSectionsHideMergedSupportSection() {
+        let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
+        let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
+
+        #expect(!sections.contains(.support))
+        #expect(!compactSections.contains(.support))
+        #expect(sections.contains(.about))
+        #expect(SettingsSectionID.about.title == "Support & About")
     }
 
     @Test
@@ -73,5 +85,16 @@ struct SettingsSectionViewSupportTests {
 
         #expect(presentation.subtitle == "GitHub and GitLab activity is hidden")
         #expect(presentation.value == "Off")
+    }
+
+    @Test
+    func rowPresentationBuildsMergedAboutSummary() {
+        var state = SettingsFeatureState()
+        state.diagnostics.appVersion = "1.2.3"
+
+        let presentation = SettingsSectionID.about.rowPresentation(in: state)
+
+        #expect(presentation.subtitle.contains("Email support"))
+        #expect(presentation.subtitle.contains("Version 1.2.3"))
     }
 }

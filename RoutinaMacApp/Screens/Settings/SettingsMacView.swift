@@ -16,7 +16,7 @@ struct SettingsMacView: View {
     var body: some View {
 NavigationSplitView {
     List(selection: $selectedSection) {
-        ForEach(SettingsMacSection.visibleSections(isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled)) { section in
+        ForEach(visibleSections) { section in
             SettingsMacSidebarRow(
                 section: section,
                 store: store
@@ -55,7 +55,16 @@ NavigationSplitView {
     }
 
     private var selectedDetailSection: SettingsMacSection {
-        selectedSection ?? .notifications
+        let candidate = selectedSection ?? .notifications
+        if candidate == .support { return .about }
+        guard visibleSections.contains(candidate) else { return .general }
+        return candidate
+    }
+
+    private var visibleSections: [SettingsMacSection] {
+        SettingsMacSection.visibleSections(
+            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
+        )
     }
 }
 
@@ -93,9 +102,7 @@ struct SettingsMacDetailView: View {
             SettingsMacQuickAddDetailView()
         case .shortcuts:
             SettingsMacShortcutsDetailView()
-        case .support:
-            SettingsMacSupportDetailView(store: store)
-        case .about:
+        case .support, .about:
             SettingsMacAboutDetailView(store: store)
         }
     }

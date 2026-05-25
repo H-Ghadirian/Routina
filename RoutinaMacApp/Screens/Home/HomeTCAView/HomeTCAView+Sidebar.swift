@@ -88,7 +88,13 @@ extension HomeTCAView {
     }
 
     var currentSelectedSettingsSection: SettingsMacSection {
-        store.selectedSettingsSection ?? .notifications
+        let visibleSections = SettingsMacSection.visibleSections(
+            isGitFeaturesEnabled: settingsStore.appearance.isGitFeaturesEnabled
+        )
+        let candidate = store.selectedSettingsSection ?? .notifications
+        if candidate == .support { return .about }
+        guard visibleSections.contains(candidate) else { return .general }
+        return candidate
     }
 
     var macHasCustomFiltersApplied: Bool {

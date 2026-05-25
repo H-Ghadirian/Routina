@@ -247,6 +247,15 @@ SettingsMacDetailShell(
             .foregroundStyle(.secondary)
     }
 
+    SettingsMacDetailCard(title: "Advanced") {
+        Toggle("Enable Git features", isOn: gitFeaturesBinding)
+            .toggleStyle(.switch)
+
+        Text("Shows GitHub and GitLab contribution activity in Stats.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
 }
     }
 
@@ -274,6 +283,13 @@ SettingsMacDetailShell(
                 batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
                 BatteryRoutinePreferences.notifyChanged()
             }
+        )
+    }
+
+    private var gitFeaturesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isGitFeaturesEnabled },
+            set: { store.send(.gitFeaturesToggled($0)) }
         )
     }
 }

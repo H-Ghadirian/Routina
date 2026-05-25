@@ -41,7 +41,7 @@ List {
     }
 }
 
-struct SettingsSupportDetailView: View {
+struct SettingsAboutDetailView: View {
     let store: StoreOf<SettingsFeature>
 
     var body: some View {
@@ -60,18 +60,7 @@ List {
                 .foregroundStyle(.secondary)
         }
     }
-}
-.listStyle(.insetGrouped)
-.navigationTitle("Support")
-.navigationBarTitleDisplayMode(.inline)
-    }
-}
 
-struct SettingsAboutDetailView: View {
-    let store: StoreOf<SettingsFeature>
-
-    var body: some View {
-List {
     Section("App") {
         HStack {
             Text("Version")
@@ -100,7 +89,7 @@ List {
     }
 }
 .listStyle(.insetGrouped)
-.navigationTitle("About")
+.navigationTitle("Support & About")
 .navigationBarTitleDisplayMode(.inline)
     }
 }
