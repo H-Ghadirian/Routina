@@ -40,6 +40,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
         let encoder = JSONEncoder()
 
         let taskPayloadBytes = tasks.reduce(into: Int64.zero) { total, task in
@@ -54,8 +55,11 @@ struct CloudUsageEstimate: Equatable, Sendable {
         let goalPayloadBytes = goals.reduce(into: Int64.zero) { total, goal in
             total += encodedByteCount(GoalPayload(goal: goal), encoder: encoder)
         }
-        let imagePayloadBytes = tasks.reduce(into: Int64.zero) { total, task in
+        var imagePayloadBytes = tasks.reduce(into: Int64.zero) { total, task in
             total += Int64(task.imageData?.count ?? 0)
+        }
+        imagePayloadBytes += placeCheckInSessions.reduce(into: Int64.zero) { total, session in
+            total += Int64(session.imageData?.count ?? 0)
         }
 
         return CloudUsageEstimate(
@@ -65,6 +69,10 @@ struct CloudUsageEstimate: Equatable, Sendable {
             goalCount: goals.count,
             imageCount: tasks.reduce(into: 0) { count, task in
                 if task.imageData?.isEmpty == false {
+                    count += 1
+                }
+            } + placeCheckInSessions.reduce(into: 0) { count, session in
+                if session.imageData?.isEmpty == false {
                     count += 1
                 }
             },

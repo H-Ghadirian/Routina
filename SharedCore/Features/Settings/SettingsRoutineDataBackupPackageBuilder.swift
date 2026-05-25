@@ -51,6 +51,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
 
         var attachmentManifests: [Backup.Attachment] = []
         var taskImageAttachmentIDs: [UUID: UUID] = [:]
+        var placeCheckInImageAttachmentIDs: [UUID: UUID] = [:]
 
         for task in tasks {
             guard let imageData = task.imageData, !imageData.isEmpty else { continue }
@@ -62,10 +63,30 @@ enum SettingsRoutineDataBackupPackageBuilder {
                 .init(
                     id: attachmentID,
                     taskID: task.id,
+                    placeCheckInSessionID: nil,
                     role: .taskImage,
                     fileName: fileName,
                     originalFileName: "task-image",
                     createdAt: task.createdAt ?? exportedAt
+                )
+            )
+        }
+
+        for session in placeCheckInSessions {
+            guard let imageData = session.imageData, !imageData.isEmpty else { continue }
+            let attachmentID = UUID()
+            let fileName = "\(attachmentID.uuidString).place-check-in-image"
+            try writeAttachment(fileName, imageData)
+            placeCheckInImageAttachmentIDs[session.id] = attachmentID
+            attachmentManifests.append(
+                .init(
+                    id: attachmentID,
+                    taskID: nil,
+                    placeCheckInSessionID: session.id,
+                    role: .placeCheckInImage,
+                    fileName: fileName,
+                    originalFileName: "place-check-in-image",
+                    createdAt: session.createdAt ?? exportedAt
                 )
             )
         }
@@ -78,6 +99,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
                 .init(
                     id: attachment.id,
                     taskID: attachment.taskID,
+                    placeCheckInSessionID: nil,
                     role: .fileAttachment,
                     fileName: fileName,
                     originalFileName: attachment.fileName,
@@ -101,7 +123,13 @@ enum SettingsRoutineDataBackupPackageBuilder {
             },
             logs: logs.map(SettingsRoutineDataBackupMapping.log),
             sleepSessions: sleepSessions.map(SettingsRoutineDataBackupMapping.sleep),
-            placeCheckInSessions: placeCheckInSessions.map(SettingsRoutineDataBackupMapping.placeCheckIn),
+            placeCheckInSessions: placeCheckInSessions.map {
+                SettingsRoutineDataBackupMapping.placeCheckIn(
+                    $0,
+                    imageData: nil,
+                    imageAttachmentID: placeCheckInImageAttachmentIDs[$0.id]
+                )
+            },
             attachments: attachmentManifests
         )
 

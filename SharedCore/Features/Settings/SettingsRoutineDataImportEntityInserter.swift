@@ -35,8 +35,9 @@ enum SettingsRoutineDataImportEntityInserter {
             in: context
         )
         let sleepSessionCount = insertSleepSessions(from: backup, in: context)
-        let placeCheckInCount = insertPlaceCheckInSessions(
+        let placeCheckInCount = try insertPlaceCheckInSessions(
             from: backup,
+            attachmentData: attachmentData,
             importedPlaceIDs: places.ids,
             in: context
         )
@@ -223,7 +224,9 @@ enum SettingsRoutineDataImportEntityInserter {
         var importedIDs = Set<UUID>()
         var importedCount = 0
         for attachment in backup.attachments ?? [] where attachment.role == .fileAttachment {
-            guard importedTaskIDs.contains(attachment.taskID) else { continue }
+            guard let taskID = attachment.taskID,
+                  importedTaskIDs.contains(taskID)
+            else { continue }
             guard importedIDs.insert(attachment.id).inserted else { continue }
             guard let data = try attachmentData(attachment.fileName) else {
                 if backup.schemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
@@ -234,7 +237,7 @@ enum SettingsRoutineDataImportEntityInserter {
 
             let importedAttachment = RoutineAttachment(
                 id: attachment.id,
-                taskID: attachment.taskID,
+                taskID: taskID,
                 fileName: attachment.originalFileName ?? attachment.fileName,
                 data: data,
                 createdAt: attachment.createdAt ?? importDate
@@ -297,13 +300,26 @@ enum SettingsRoutineDataImportEntityInserter {
     @MainActor
     private static func insertPlaceCheckInSessions(
         from backup: Backup,
+        attachmentData: (String) throws -> Data?,
         importedPlaceIDs: Set<UUID>,
         in context: ModelContext
-    ) -> Int {
+    ) throws -> Int {
         var importedIDs = Set<UUID>()
         var importedCount = 0
+        var attachmentManifestsByID: [UUID: Backup.Attachment] = [:]
+        for attachment in backup.attachments ?? [] {
+            attachmentManifestsByID[attachment.id] = attachment
+        }
+
         for session in backup.placeCheckInSessions ?? [] {
             guard importedIDs.insert(session.id).inserted else { continue }
+
+            let imageData = try importedPlaceCheckInImageData(
+                for: session,
+                backupSchemaVersion: backup.schemaVersion,
+                attachmentManifestsByID: attachmentManifestsByID,
+                attachmentData: attachmentData
+            )
 
             let importedSession = PlaceCheckInSession(
                 id: session.id,
@@ -315,6 +331,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 placeRadiusMeters: session.placeRadiusMeters,
                 activity: session.activity,
                 note: session.note,
+                imageData: imageData,
                 startedAt: session.startedAt,
                 endedAt: session.endedAt,
                 createdAt: session.createdAt,
@@ -326,6 +343,26 @@ enum SettingsRoutineDataImportEntityInserter {
             importedCount += 1
         }
         return importedCount
+    }
+
+    private static func importedPlaceCheckInImageData(
+        for session: Backup.PlaceCheckIn,
+        backupSchemaVersion: Int,
+        attachmentManifestsByID: [UUID: Backup.Attachment],
+        attachmentData: (String) throws -> Data?
+    ) throws -> Data? {
+        guard let imageAttachmentID = session.imageAttachmentID,
+              let imageAttachment = attachmentManifestsByID[imageAttachmentID] else {
+            return session.imageData
+        }
+
+        guard let data = try attachmentData(imageAttachment.fileName) else {
+            if backupSchemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+                throw SettingsRoutineDataPersistence.Error.missingAttachment(imageAttachment.fileName)
+            }
+            return session.imageData
+        }
+        return data
     }
 
     private static func clampedInterval(_ interval: Int) -> Int {

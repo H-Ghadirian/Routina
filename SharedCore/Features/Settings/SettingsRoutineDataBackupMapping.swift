@@ -98,7 +98,11 @@ enum SettingsRoutineDataBackupMapping {
         )
     }
 
-    static func placeCheckIn(_ session: PlaceCheckInSession) -> Backup.PlaceCheckIn {
+    static func placeCheckIn(
+        _ session: PlaceCheckInSession,
+        imageData: Data?,
+        imageAttachmentID: UUID?
+    ) -> Backup.PlaceCheckIn {
         Backup.PlaceCheckIn(
             id: session.id,
             placeID: session.placeID,
@@ -109,6 +113,8 @@ enum SettingsRoutineDataBackupMapping {
             placeRadiusMeters: session.placeRadiusMeters,
             activity: session.activity,
             note: session.note,
+            imageData: imageData,
+            imageAttachmentID: imageAttachmentID,
             startedAt: session.startedAt,
             endedAt: session.endedAt,
             createdAt: session.createdAt,

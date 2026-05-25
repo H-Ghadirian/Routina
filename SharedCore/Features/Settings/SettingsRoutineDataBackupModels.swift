@@ -102,6 +102,8 @@ extension SettingsRoutineDataPersistence {
             var placeRadiusMeters: Double?
             var activity: PlaceCheckInActivity?
             var note: String?
+            var imageData: Data?
+            var imageAttachmentID: UUID?
             var startedAt: Date?
             var endedAt: Date?
             var createdAt: Date?
@@ -113,11 +115,13 @@ extension SettingsRoutineDataPersistence {
         struct Attachment: Codable {
             enum Role: String, Codable {
                 case taskImage
+                case placeCheckInImage
                 case fileAttachment
             }
 
             var id: UUID
-            var taskID: UUID
+            var taskID: UUID?
+            var placeCheckInSessionID: UUID?
             var role: Role
             var fileName: String
             var originalFileName: String?

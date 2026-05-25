@@ -361,6 +361,7 @@ enum PlaceCheckInSupport {
         placeName: String,
         activity: PlaceCheckInActivity?,
         note: String?,
+        imageData: Data?,
         startedAt: Date,
         endedAt: Date?,
         updatedAt date: Date = Date(),
@@ -381,6 +382,7 @@ enum PlaceCheckInSupport {
         session.placeName = cleanedPlaceName
         session.activity = activity
         session.note = PlaceCheckInSession.cleanedNote(note)
+        session.imageData = imageData
         session.startedAt = startedAt
         session.endedAt = endedAt
         session.updatedAt = date

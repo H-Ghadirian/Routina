@@ -67,6 +67,7 @@ final class PlaceCheckInSession {
     var placeRadiusMeters: Double?
     var activityRawValue: String?
     var note: String?
+    @Attribute(.externalStorage) var imageData: Data?
     var startedAt: Date?
     var endedAt: Date?
     var createdAt: Date?
@@ -76,6 +77,10 @@ final class PlaceCheckInSession {
 
     var isActive: Bool {
         endedAt == nil
+    }
+
+    var hasImage: Bool {
+        imageData?.isEmpty == false
     }
 
     var activity: PlaceCheckInActivity? {
@@ -127,6 +132,7 @@ final class PlaceCheckInSession {
         placeRadiusMeters: Double? = nil,
         activity: PlaceCheckInActivity? = nil,
         note: String? = nil,
+        imageData: Data? = nil,
         startedAt: Date? = Date(),
         endedAt: Date? = nil,
         createdAt: Date? = Date(),
@@ -143,6 +149,7 @@ final class PlaceCheckInSession {
         self.placeRadiusMeters = placeRadiusMeters.map { max($0, 0) }
         self.activityRawValue = activity?.rawValue
         self.note = Self.cleanedNote(note)
+        self.imageData = imageData
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.createdAt = createdAt
@@ -173,6 +180,7 @@ final class PlaceCheckInSession {
             placeRadiusMeters: placeRadiusMeters,
             activity: activity,
             note: note,
+            imageData: imageData,
             startedAt: startedAt,
             endedAt: endedAt,
             createdAt: createdAt,

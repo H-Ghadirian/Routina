@@ -499,6 +499,7 @@ struct PlaceCheckInSupportTests {
             placeName: "Current Location",
             activity: .other,
             note: "rough",
+            imageData: Data([0x01]),
             startedAt: makeDate("2026-05-10T08:00:00Z"),
             endedAt: makeDate("2026-05-10T08:20:00Z"),
             createdAt: makeDate("2026-05-10T08:00:00Z"),
@@ -512,6 +513,7 @@ struct PlaceCheckInSupportTests {
             placeName: "  Office focus  ",
             activity: .work,
             note: "  deep work block  ",
+            imageData: Data([0x02, 0x03]),
             startedAt: makeDate("2026-05-10T09:00:00Z"),
             endedAt: makeDate("2026-05-10T11:30:00Z"),
             updatedAt: makeDate("2026-05-10T12:00:00Z"),
@@ -521,6 +523,8 @@ struct PlaceCheckInSupportTests {
         #expect(updated.displayPlaceName == "Office focus")
         #expect(updated.activity == .work)
         #expect(updated.note == "deep work block")
+        #expect(updated.imageData == Data([0x02, 0x03]))
+        #expect(updated.hasImage)
         #expect(updated.startedAt == makeDate("2026-05-10T09:00:00Z"))
         #expect(updated.endedAt == makeDate("2026-05-10T11:30:00Z"))
         #expect(updated.updatedAt == makeDate("2026-05-10T12:00:00Z"))
@@ -545,6 +549,7 @@ struct PlaceCheckInSupportTests {
                 placeName: "Gym",
                 activity: nil,
                 note: nil,
+                imageData: nil,
                 startedAt: makeDate("2026-05-10T10:00:00Z"),
                 endedAt: makeDate("2026-05-10T09:30:00Z"),
                 in: context
@@ -592,6 +597,7 @@ struct PlaceCheckInSupportTests {
             placeRadiusMeters: place.radiusMeters,
             activity: .work,
             note: "Morning block",
+            imageData: Data([0xA1, 0xB2, 0xC3]),
             startedAt: makeDate("2026-05-10T09:00:00Z"),
             endedAt: makeDate("2026-05-10T12:30:00Z"),
             createdAt: makeDate("2026-05-10T09:00:00Z"),
@@ -602,14 +608,20 @@ struct PlaceCheckInSupportTests {
         sourceContext.insert(session)
         try sourceContext.save()
 
-        let package = try SettingsRoutineDataPersistence.buildBackupPackage(
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        try SettingsRoutineDataPersistence.writeBackupPackage(
+            to: packageURL,
             from: sourceContext,
             exportedAt: makeDate("2026-05-10T13:00:00Z")
         )
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
-            with: package.manifestData,
+            withBackupPackageAt: packageURL,
             in: restoreContext,
             importDate: makeDate("2026-05-10T13:05:00Z")
         )
@@ -621,6 +633,7 @@ struct PlaceCheckInSupportTests {
         #expect(restored.displayPlaceName == "Office")
         #expect(restored.activity == .work)
         #expect(restored.note == "Morning block")
+        #expect(restored.imageData == Data([0xA1, 0xB2, 0xC3]))
         #expect(restored.latitude == place.latitude)
         #expect(restored.longitude == place.longitude)
         #expect(restored.placeRadiusMeters == place.radiusMeters)

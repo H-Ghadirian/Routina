@@ -188,8 +188,13 @@ enum TimelineLogic {
         }
 
         let placeEntries = placeCheckInSessions.compactMap { session -> TimelineEntry? in
+            let hasImage = session.hasImage
             guard filterType == .all || filterType == .places,
-                  mediaFilter == .all,
+                  HomeDisplayFilterSupport.matchesMediaFilter(
+                    mediaFilter,
+                    hasImage: hasImage,
+                    hasFileAttachment: false
+                  ),
                   let startedAt = session.startedAt
             else {
                 return nil
@@ -208,6 +213,7 @@ enum TimelineLogic {
                 taskName: session.displayPlaceName,
                 taskEmoji: "📍",
                 tags: session.activity.map { [$0.title] } ?? [],
+                hasImage: hasImage,
                 isOneOff: false,
                 kind: .completed,
                 entryType: .placeCheckIn,

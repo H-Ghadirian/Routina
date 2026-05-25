@@ -63,4 +63,34 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(packaged.imageAttachmentID == attachmentID)
         #expect(packaged.pressure == nil)
     }
+
+    @Test
+    func placeCheckInMappingChoosesInlineImageOrAttachmentReference() {
+        let sessionID = UUID()
+        let attachmentID = UUID()
+        let imageData = Data([4, 5, 6])
+        let session = PlaceCheckInSession(
+            id: sessionID,
+            placeID: nil,
+            placeName: "Office",
+            imageData: imageData
+        )
+
+        let inline = SettingsRoutineDataBackupMapping.placeCheckIn(
+            session,
+            imageData: imageData,
+            imageAttachmentID: nil
+        )
+        let packaged = SettingsRoutineDataBackupMapping.placeCheckIn(
+            session,
+            imageData: nil,
+            imageAttachmentID: attachmentID
+        )
+
+        #expect(inline.id == sessionID)
+        #expect(inline.imageData == imageData)
+        #expect(inline.imageAttachmentID == nil)
+        #expect(packaged.imageData == nil)
+        #expect(packaged.imageAttachmentID == attachmentID)
+    }
 }

@@ -102,9 +102,11 @@ timelineRoot
         placeCheckInSessions.map { session in
             [
                 session.id.uuidString,
+                session.placeName,
                 session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.activityRawValue ?? "",
+                session.imageData?.count.description ?? "",
             ].joined(separator: ":")
         }
     }

@@ -28,6 +28,13 @@ struct SettingsFeatureTests {
             tags: ["Focus", "Evening"]
         )
         task.imageData = Data(repeating: 0xAB, count: 1_024)
+        let placeCheckIn = PlaceCheckInSession(
+            placeID: place.id,
+            placeName: place.displayName,
+            imageData: Data(repeating: 0xCD, count: 512),
+            startedAt: makeDate("2026-03-21T09:00:00Z")
+        )
+        context.insert(placeCheckIn)
         let goal = RoutineGoal(title: "Portfolio")
         context.insert(goal)
         task.goalIDs = [goal.id]
@@ -40,8 +47,8 @@ struct SettingsFeatureTests {
         #expect(estimate.logCount == 1)
         #expect(estimate.placeCount == 1)
         #expect(estimate.goalCount == 1)
-        #expect(estimate.imageCount == 1)
-        #expect(estimate.imagePayloadBytes == 1_024)
+        #expect(estimate.imageCount == 2)
+        #expect(estimate.imagePayloadBytes == 1_536)
         #expect(estimate.taskPayloadBytes > 0)
         #expect(estimate.logPayloadBytes > 0)
         #expect(estimate.placePayloadBytes > 0)

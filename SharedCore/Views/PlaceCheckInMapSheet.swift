@@ -1,10 +1,14 @@
 import ComposableArchitecture
 import Foundation
 import MapKit
+import PhotosUI
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 #if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 enum PlaceCheckInMapSheetLayout {
@@ -946,6 +950,16 @@ struct PlaceCheckInMapSheet: View {
 
                     Spacer(minLength: 8)
 
+                    if let imageData = session.imageData, !imageData.isEmpty {
+                        PlaceCheckInImagePreview(data: imageData, contentMode: .fill)
+                            .frame(width: 46, height: 46)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                            )
+                    }
+
                     Image(systemName: canFocus ? "scope" : "mappin.slash")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -1400,6 +1414,7 @@ struct PlaceCheckInMapSheet: View {
             placeName: draft.placeName,
             activity: draft.activity,
             note: draft.note,
+            imageData: draft.imageData,
             startedAt: draft.startedAt,
             endedAt: draft.hasEndTime ? draft.endedAt : nil,
             in: modelContext
@@ -1618,6 +1633,7 @@ private struct PlaceCheckInSessionEditDraft: Identifiable {
     var hasEndTime: Bool
     var activity: PlaceCheckInActivity?
     var note: String
+    var imageData: Data?
 
     init(session: PlaceCheckInSession) {
         let start = session.startedAt ?? session.createdAt ?? Date()
@@ -1629,6 +1645,7 @@ private struct PlaceCheckInSessionEditDraft: Identifiable {
         self.hasEndTime = session.endedAt != nil
         self.activity = session.activity
         self.note = session.note ?? ""
+        self.imageData = session.imageData
     }
 }
 
@@ -1766,6 +1783,8 @@ private struct PlaceCheckInSessionEditor: View {
 
     @State private var draft: PlaceCheckInSessionEditDraft
     @State private var errorText: String?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var isImageImporterPresented = false
 
     let onSave: (PlaceCheckInSessionEditDraft) throws -> Void
 
@@ -1778,6 +1797,10 @@ private struct PlaceCheckInSessionEditor: View {
     }
 
     var body: some View {
+        let hasImage = draft.imageData?.isEmpty == false
+        let imagePickerLabel = hasImage ? "Replace Image" : "Choose Image"
+        let imageImportLabel = hasImage ? "Browse Another File" : "Browse"
+
         NavigationStack {
             Form {
                 Section("Check-In") {
@@ -1795,6 +1818,47 @@ private struct PlaceCheckInSessionEditor: View {
 
                     TextField("Note", text: $draft.note, axis: .vertical)
                         .lineLimit(3, reservesSpace: true)
+                }
+
+                Section("Image") {
+                    if let imageData = draft.imageData, !imageData.isEmpty {
+                        PlaceCheckInImagePreview(data: imageData, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                            )
+                    } else {
+                        Label("No image selected", systemImage: "photo")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack(spacing: 10) {
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            Label(imagePickerLabel, systemImage: "photo.on.rectangle")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button(imageImportLabel) {
+                            isImageImporterPresented = true
+                        }
+                        .buttonStyle(.bordered)
+
+                        if hasImage {
+                            Button("Remove") {
+                                selectedPhotoItem = nil
+                                draft.imageData = nil
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+
+                    Text("Images are resized and compressed before saving to reduce storage use.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("Time") {
@@ -1849,8 +1913,19 @@ private struct PlaceCheckInSessionEditor: View {
                 }
             }
         }
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            guard let newItem else { return }
+            loadPickedImage(from: newItem)
+        }
+        .fileImporter(
+            isPresented: $isImageImporterPresented,
+            allowedContentTypes: [.image],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImageImport(result)
+        }
         #if os(macOS)
-        .frame(minWidth: 420, minHeight: 360)
+        .frame(minWidth: 420, minHeight: 520)
         #endif
     }
 
@@ -1873,6 +1948,54 @@ private struct PlaceCheckInSessionEditor: View {
         } catch {
             errorText = error.localizedDescription
         }
+    }
+
+    private func loadPickedImage(from item: PhotosPickerItem) {
+        _ = Task {
+            let data = try? await item.loadTransferable(type: Data.self)
+            let compressedData = data.flatMap(TaskImageProcessor.compressedImageData(from:))
+            await MainActor.run {
+                draft.imageData = compressedData
+                selectedPhotoItem = nil
+            }
+        }
+    }
+
+    private func handleImageImport(_ result: Result<[URL], Error>) {
+        guard case let .success(urls) = result, let url = urls.first else { return }
+        draft.imageData = TaskImageProcessor.compressedImageData(fromFileAt: url)
+    }
+}
+
+private struct PlaceCheckInImagePreview: View {
+    let data: Data
+    let contentMode: ContentMode
+
+    var body: some View {
+        if let image = previewImage {
+            image
+                .resizable()
+                .aspectRatio(contentMode: contentMode)
+        } else {
+            Rectangle()
+                .fill(Color.secondary.opacity(0.12))
+                .overlay(
+                    Image(systemName: "photo")
+                        .foregroundStyle(.secondary)
+                )
+        }
+    }
+
+    private var previewImage: Image? {
+        #if os(iOS)
+        guard let uiImage = UIImage(data: data) else { return nil }
+        return Image(uiImage: uiImage)
+        #elseif os(macOS)
+        guard let nsImage = NSImage(data: data) else { return nil }
+        return Image(nsImage: nsImage)
+        #else
+        return nil
+        #endif
     }
 }
 

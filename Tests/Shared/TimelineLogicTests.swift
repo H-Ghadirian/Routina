@@ -385,6 +385,7 @@ struct TimelineLogicTests {
             placeID: UUID(),
             placeName: "Office",
             activity: .work,
+            imageData: Data([0x01]),
             startedAt: startedAt,
             endedAt: nil
         )
@@ -416,6 +417,26 @@ struct TimelineLogicTests {
             now: now,
             calendar: calendar
         )
+        let imageEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            placeCheckInSessions: [placeSession],
+            range: .all,
+            filterType: .all,
+            mediaFilter: .withImage,
+            now: now,
+            calendar: calendar
+        )
+        let fileEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            placeCheckInSessions: [placeSession],
+            range: .all,
+            filterType: .all,
+            mediaFilter: .withFile,
+            now: now,
+            calendar: calendar
+        )
 
         let placeEntry = allEntries.first { $0.id == placeSession.id }
         #expect(allEntries.count == 2)
@@ -426,9 +447,12 @@ struct TimelineLogicTests {
         #expect(placeEntry?.startTimestamp == startedAt)
         #expect(placeEntry?.endTimestamp == nil)
         #expect(placeEntry?.activityTitle == "Work")
+        #expect(placeEntry?.hasImage == true)
         #expect(placeEntry?.durationSeconds == now.timeIntervalSince(startedAt))
         #expect(placeEntries.map(\.id) == [placeSession.id])
         #expect(doneEntries.map(\.id) == [log.id])
+        #expect(imageEntries.map(\.id) == [placeSession.id])
+        #expect(fileEntries.isEmpty)
     }
 
     @Test
