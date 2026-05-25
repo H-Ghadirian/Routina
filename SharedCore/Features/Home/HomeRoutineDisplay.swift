@@ -61,3 +61,68 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var assignedBacklogID: UUID? = nil
     var assignedBacklogTitle: String? = nil
 }
+
+enum HomeRoutineRowTone: Equatable {
+    case teal
+    case blue
+    case orange
+    case green
+    case red
+}
+
+enum HomeRoutineRowToneResolver {
+    static func tone(for task: HomeRoutineDisplay, referenceDate: Date) -> HomeRoutineRowTone {
+        if task.isPaused {
+            return .teal
+        }
+        if case .away = task.locationAvailability {
+            return .blue
+        }
+        if task.isInProgress {
+            return .orange
+        }
+        if task.isOneOffTask {
+            return task.isCompletedOneOff ? .green : (task.isCanceledOneOff ? .orange : .blue)
+        }
+        if task.scheduleMode.isChecklistCompletionMode
+            && task.completedChecklistItemCount > 0
+            && !task.isDoneToday {
+            return .orange
+        }
+        if task.recurrenceRule.isFixedCalendar {
+            switch fixedCalendarUrgencyLevel(for: task) {
+            case 3:
+                return .red
+            case 2, 1:
+                return .orange
+            default:
+                return .green
+            }
+        }
+
+        let progress = Double(daysSinceScheduleAnchor(task, referenceDate: referenceDate)) / Double(task.interval)
+        switch progress {
+        case ..<0.75: return .green
+        case ..<0.90: return .orange
+        default: return .red
+        }
+    }
+
+    private static func fixedCalendarUrgencyLevel(for task: HomeRoutineDisplay) -> Int {
+        if task.hasMissedExactTimedOccurrence { return 3 }
+        if task.daysUntilDue < 0 { return 3 }
+        if task.daysUntilDue == 0 { return 2 }
+        if task.daysUntilDue == 1 { return 1 }
+        return 0
+    }
+
+    private static func daysSinceScheduleAnchor(
+        _ task: HomeRoutineDisplay,
+        referenceDate: Date
+    ) -> Int {
+        RoutineDateMath.elapsedDaysSinceLastDone(
+            from: task.scheduleAnchor ?? task.lastDone,
+            referenceDate: referenceDate
+        )
+    }
+}

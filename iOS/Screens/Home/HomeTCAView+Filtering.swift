@@ -95,43 +95,20 @@ extension HomeTCAView {
     }
 
     func urgencyColor(for task: HomeFeature.RoutineDisplay) -> Color {
-        if task.isPaused {
-            return .teal
-        }
-        if case .away = task.locationAvailability {
-            return .blue
-        }
-        if task.isInProgress {
-            return .orange
-        }
-        if task.isOneOffTask {
-            return task.isCompletedOneOff ? .green : (task.isCanceledOneOff ? .orange : .blue)
-        }
-        if task.scheduleMode.isChecklistCompletionMode
-            && task.completedChecklistItemCount > 0
-            && !task.isDoneToday {
-            return .orange
-        }
-        if task.recurrenceRule.isFixedCalendar {
-            let urgency = urgencyLevel(for: task)
-            switch urgency {
-            case 3:
-                return .red
-            case 2, 1:
-                return .orange
-            default:
-                return .green
-            }
-        }
-        let progress = Double(daysSinceScheduleAnchor(task)) / Double(task.interval)
-        switch progress {
-        case ..<0.75: return .green
-        case ..<0.90: return .orange
-        default: return .red
-        }
+        color(for: HomeRoutineRowToneResolver.tone(for: task, referenceDate: Date()))
     }
 
     func rowIconBackgroundColor(for task: HomeFeature.RoutineDisplay) -> Color {
         urgencyColor(for: task).opacity(task.isDoneToday ? 0.22 : 0.14)
+    }
+
+    private func color(for tone: HomeRoutineRowTone) -> Color {
+        switch tone {
+        case .teal: return .teal
+        case .blue: return .blue
+        case .orange: return .orange
+        case .green: return .green
+        case .red: return .red
+        }
     }
 }

@@ -6,8 +6,22 @@ struct HomeMacTodoBoardView: View {
         let title: String
         let tint: Color
         let tasks: [HomeFeature.RoutineDisplay]
+        let orderedTaskIDs: [UUID]
 
         var id: String { title }
+
+        init(
+            state: TodoState,
+            title: String,
+            tint: Color,
+            tasks: [HomeFeature.RoutineDisplay]
+        ) {
+            self.state = state
+            self.title = title
+            self.tint = tint
+            self.tasks = tasks
+            self.orderedTaskIDs = tasks.map(\.id)
+        }
     }
 
     enum Layout {
@@ -119,7 +133,7 @@ struct HomeMacTodoBoardView: View {
                         HomeMacTodoBoardCardView(
                             task: task,
                             columnState: column.state,
-                            orderedTaskIDs: column.tasks.map(\.id),
+                            orderedTaskIDs: column.orderedTaskIDs,
                             isSelected: selectedTaskID == task.id,
                             isCompactLayout: isCompactLayout,
                             canMoveUp: index > 0,
@@ -142,7 +156,7 @@ struct HomeMacTodoBoardView: View {
                             delegate: HomeMacTodoBoardCardDropDelegate(
                                 destinationTaskID: task.id,
                                 columnState: column.state,
-                                orderedTaskIDs: column.tasks.map(\.id),
+                                orderedTaskIDs: column.orderedTaskIDs,
                                 draggedTaskID: $draggedTaskID,
                                 highlightedColumnState: $highlightedColumnState,
                                 hoverTargetTaskID: $hoverTargetTaskID,
@@ -164,7 +178,7 @@ struct HomeMacTodoBoardView: View {
                 of: [.text],
                 delegate: HomeMacTodoBoardColumnDropDelegate(
                     columnState: column.state,
-                    orderedTaskIDs: column.tasks.map(\.id),
+                    orderedTaskIDs: column.orderedTaskIDs,
                     draggedTaskID: $draggedTaskID,
                     highlightedColumnState: $highlightedColumnState,
                     hoverTargetTaskID: $hoverTargetTaskID,

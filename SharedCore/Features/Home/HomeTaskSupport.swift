@@ -145,30 +145,37 @@ enum HomeTaskSupport {
 
     static func makeDoneStats(tasks: [RoutineTask], logs: [RoutineLog]) -> HomeDoneStats {
         let taskIDs = Set(tasks.map(\.id))
-        let countsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
-            guard taskIDs.contains(log.taskID) else { return }
-            guard log.kind == .completed else { return }
-            partialResult[log.taskID, default: 0] += 1
+        var totalCount = 0
+        var countsByTaskID: [UUID: Int] = [:]
+        var canceledTotalCount = 0
+        var canceledCountsByTaskID: [UUID: Int] = [:]
+        var canceledDatesByTaskID: [UUID: Set<Date>] = [:]
+        var missedDatesByTaskID: [UUID: Set<Date>] = [:]
+
+        for log in logs {
+            guard taskIDs.contains(log.taskID) else { continue }
+
+            switch log.kind {
+            case .completed:
+                totalCount += 1
+                countsByTaskID[log.taskID, default: 0] += 1
+            case .canceled:
+                canceledTotalCount += 1
+                canceledCountsByTaskID[log.taskID, default: 0] += 1
+                if let timestamp = log.timestamp {
+                    canceledDatesByTaskID[log.taskID, default: []].insert(timestamp)
+                }
+            case .missed:
+                if let timestamp = log.timestamp {
+                    missedDatesByTaskID[log.taskID, default: []].insert(timestamp)
+                }
+            }
         }
-        let canceledCountsByTaskID = logs.reduce(into: [UUID: Int]()) { partialResult, log in
-            guard taskIDs.contains(log.taskID) else { return }
-            guard log.kind == .canceled else { return }
-            partialResult[log.taskID, default: 0] += 1
-        }
-        let canceledDatesByTaskID = logs.reduce(into: [UUID: Set<Date>]()) { partialResult, log in
-            guard taskIDs.contains(log.taskID) else { return }
-            guard log.kind == .canceled, let timestamp = log.timestamp else { return }
-            partialResult[log.taskID, default: []].insert(timestamp)
-        }
-        let missedDatesByTaskID = logs.reduce(into: [UUID: Set<Date>]()) { partialResult, log in
-            guard taskIDs.contains(log.taskID) else { return }
-            guard log.kind == .missed, let timestamp = log.timestamp else { return }
-            partialResult[log.taskID, default: []].insert(timestamp)
-        }
+
         return HomeDoneStats(
-            totalCount: countsByTaskID.values.reduce(0, +),
+            totalCount: totalCount,
             countsByTaskID: countsByTaskID,
-            canceledTotalCount: canceledCountsByTaskID.values.reduce(0, +),
+            canceledTotalCount: canceledTotalCount,
             canceledCountsByTaskID: canceledCountsByTaskID,
             canceledDatesByTaskID: canceledDatesByTaskID,
             missedDatesByTaskID: missedDatesByTaskID

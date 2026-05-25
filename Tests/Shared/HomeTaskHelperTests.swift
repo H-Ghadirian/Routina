@@ -130,6 +130,99 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func makeDoneStats_countsOnlyLoadedTasksAcrossOutcomeKinds() {
+        let primaryTask = RoutineTask(name: "Write")
+        let secondaryTask = RoutineTask(name: "Review")
+        let orphanedTaskID = UUID()
+        let completedDate = makeDate("2026-05-20T08:00:00Z")
+        let canceledDate = makeDate("2026-05-21T08:00:00Z")
+        let missedDate = makeDate("2026-05-22T08:00:00Z")
+
+        let stats = HomeTaskSupport.makeDoneStats(
+            tasks: [primaryTask, secondaryTask],
+            logs: [
+                RoutineLog(timestamp: completedDate, taskID: primaryTask.id, kind: .completed),
+                RoutineLog(timestamp: nil, taskID: primaryTask.id, kind: .completed),
+                RoutineLog(timestamp: completedDate, taskID: secondaryTask.id, kind: .completed),
+                RoutineLog(timestamp: canceledDate, taskID: primaryTask.id, kind: .canceled),
+                RoutineLog(timestamp: nil, taskID: primaryTask.id, kind: .canceled),
+                RoutineLog(timestamp: missedDate, taskID: primaryTask.id, kind: .missed),
+                RoutineLog(timestamp: nil, taskID: primaryTask.id, kind: .missed),
+                RoutineLog(timestamp: completedDate, taskID: orphanedTaskID, kind: .completed),
+                RoutineLog(timestamp: canceledDate, taskID: orphanedTaskID, kind: .canceled),
+                RoutineLog(timestamp: missedDate, taskID: orphanedTaskID, kind: .missed)
+            ]
+        )
+
+        #expect(stats.totalCount == 3)
+        #expect(stats.countsByTaskID == [
+            primaryTask.id: 2,
+            secondaryTask.id: 1
+        ])
+        #expect(stats.canceledTotalCount == 2)
+        #expect(stats.canceledCountsByTaskID == [primaryTask.id: 2])
+        #expect(stats.canceledDatesByTaskID == [primaryTask.id: [canceledDate]])
+        #expect(stats.missedDatesByTaskID == [primaryTask.id: [missedDate]])
+        #expect(stats.missedTotalCount == 1)
+    }
+
+    @Test
+    func rowToneResolverUsesDisplayFieldsForScrollPathColor() {
+        let referenceDate = makeDate("2026-05-25T08:00:00Z")
+
+        #expect(HomeRoutineRowToneResolver.tone(
+            for: makeHomeRoutineDisplay(
+                interval: 4,
+                lastDone: referenceDate.addingTimeInterval(-86_400)
+            ),
+            referenceDate: referenceDate
+        ) == .green)
+        #expect(HomeRoutineRowToneResolver.tone(
+            for: makeHomeRoutineDisplay(
+                interval: 4,
+                scheduleAnchor: referenceDate.addingTimeInterval(-86_400 * 4)
+            ),
+            referenceDate: referenceDate
+        ) == .red)
+        #expect(HomeRoutineRowToneResolver.tone(
+            for: makeHomeRoutineDisplay(
+                recurrenceRule: .daily(at: .defaultValue),
+                daysUntilDue: 1
+            ),
+            referenceDate: referenceDate
+        ) == .orange)
+        #expect(HomeRoutineRowToneResolver.tone(
+            for: makeHomeRoutineDisplay(
+                scheduleMode: .oneOff,
+                isOneOffTask: true
+            ),
+            referenceDate: referenceDate
+        ) == .blue)
+    }
+
+    @Test
+    func rowIconColorPathDoesNotRebuildTaskListFiltering() throws {
+        let testsDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let projectRoot = testsDirectory.deletingLastPathComponent()
+        let paths = [
+            "iOS/Screens/Home/HomeTCAView+Filtering.swift",
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Filtering.swift"
+        ]
+
+        for path in paths {
+            let source = try String(
+                contentsOf: projectRoot.appendingPathComponent(path),
+                encoding: .utf8
+            )
+            #expect(source.contains("HomeRoutineRowToneResolver.tone"))
+            #expect(!source.contains("let urgency = urgencyLevel(for: task)"))
+            #expect(!source.contains("Double(daysSinceScheduleAnchor(task))"))
+        }
+    }
+
+    @Test
     func removeSprintAssignments_removesAssignmentsForDeletedTodosOnly() {
         let removedTodoID = UUID()
         let keptTodoID = UUID()
@@ -269,4 +362,71 @@ struct HomeTaskHelperTests {
             RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Health", "Writing"])
         ))
     }
+}
+
+private func makeHomeRoutineDisplay(
+    interval: Int = 1,
+    recurrenceRule: RoutineRecurrenceRule = .interval(days: 1),
+    scheduleMode: RoutineScheduleMode = .fixedInterval,
+    lastDone: Date? = nil,
+    scheduleAnchor: Date? = nil,
+    daysUntilDue: Int = Int.max,
+    hasMissedExactTimedOccurrence: Bool = false,
+    isOneOffTask: Bool = false,
+    isCompletedOneOff: Bool = false,
+    isCanceledOneOff: Bool = false,
+    isDoneToday: Bool = false,
+    isPaused: Bool = false,
+    locationAvailability: RoutineLocationAvailability = .unrestricted,
+    isInProgress: Bool = false,
+    completedChecklistItemCount: Int = 0
+) -> HomeRoutineDisplay {
+    HomeRoutineDisplay(
+        taskID: UUID(),
+        name: "Display",
+        emoji: "sparkles",
+        notes: nil,
+        hasImage: false,
+        placeID: nil,
+        placeName: nil,
+        locationAvailability: locationAvailability,
+        tags: [],
+        steps: [],
+        interval: interval,
+        recurrenceRule: recurrenceRule,
+        scheduleMode: scheduleMode,
+        createdAt: nil,
+        isSoftIntervalRoutine: false,
+        lastDone: lastDone,
+        canceledAt: nil,
+        dueDate: nil,
+        priority: .medium,
+        importance: .level2,
+        urgency: .level2,
+        scheduleAnchor: scheduleAnchor,
+        pausedAt: nil,
+        snoozedUntil: nil,
+        pinnedAt: nil,
+        daysUntilDue: daysUntilDue,
+        hasMissedExactTimedOccurrence: hasMissedExactTimedOccurrence,
+        isOneOffTask: isOneOffTask,
+        isCompletedOneOff: isCompletedOneOff,
+        isCanceledOneOff: isCanceledOneOff,
+        isDoneToday: isDoneToday,
+        isPaused: isPaused,
+        isSnoozed: false,
+        isPinned: false,
+        isOngoing: false,
+        ongoingSince: nil,
+        hasPassedSoftThreshold: false,
+        completedStepCount: 0,
+        isInProgress: isInProgress,
+        nextStepTitle: nil,
+        checklistItemCount: 0,
+        completedChecklistItemCount: completedChecklistItemCount,
+        dueChecklistItemCount: 0,
+        nextPendingChecklistItemTitle: nil,
+        nextDueChecklistItemTitle: nil,
+        doneCount: 0
+    )
 }

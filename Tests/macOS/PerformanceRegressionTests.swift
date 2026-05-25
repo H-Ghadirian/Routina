@@ -26,6 +26,26 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("homeToolbarTodoCount"))
     }
 
+    func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {
+        let source = try Self.sourceFile("SharedCore/Features/Home/HomeTaskSupport.swift")
+
+        XCTAssertFalse(
+            source.contains("logs.reduce"),
+            "Home refresh should scan logs once when building done stats; repeated reductions are noticeable with large Home histories."
+        )
+        XCTAssertTrue(source.contains("for log in logs"))
+    }
+
+    func testMacHomeBoardReusesColumnOrderedTaskIDs() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTodoBoardView.swift")
+
+        XCTAssertFalse(
+            source.contains("column.tasks.map(\\.id)"),
+            "Board scroll and drag/drop rendering should reuse each column's ordered task IDs instead of rebuilding them for every card."
+        )
+        XCTAssertTrue(source.contains("let orderedTaskIDs: [UUID]"))
+    }
+
     func testMacLaunchWidgetRefreshKeepsStatsWorkOutOfInitialScrollWindow() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
 
