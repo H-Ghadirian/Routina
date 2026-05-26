@@ -6,6 +6,7 @@ struct HomeMacSidebarModeStripView: View {
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
+    let onStartSleep: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
@@ -68,6 +69,12 @@ struct HomeMacSidebarModeStripView: View {
             } label: {
                 Label("Check In", systemImage: "mappin.and.ellipse")
             }
+
+            Button {
+                onStartSleep()
+            } label: {
+                Label("Sleep", systemImage: "bed.double.fill")
+            }
         } label: {
             sidebarModeLabel(for: .addTask)
         }
@@ -75,7 +82,7 @@ struct HomeMacSidebarModeStripView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Add")
-        .help("Add note, goal, task, or check in")
+        .help("Add note, goal, task, check in, or sleep")
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

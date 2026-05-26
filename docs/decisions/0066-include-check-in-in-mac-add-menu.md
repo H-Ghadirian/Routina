@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded By
+
+- [0070: Include Sleep in the Mac Add Menu](0070-include-sleep-in-mac-add-menu.md)
 
 ## Date
 

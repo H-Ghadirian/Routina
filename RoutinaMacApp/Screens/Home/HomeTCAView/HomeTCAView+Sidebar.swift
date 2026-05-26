@@ -511,7 +511,8 @@ extension HomeTCAView {
                 onAddNote: openAddNote,
                 onAddGoal: openAddGoal,
                 onAddTask: openAddTask,
-                onCheckIn: openCheckInFromAddMenu
+                onCheckIn: openCheckInFromAddMenu,
+                onStartSleep: startSleepFromAddMenu
             )
         }
         .padding(.horizontal, 14)
@@ -576,7 +577,8 @@ extension HomeTCAView {
             onAddNote: openAddNote,
             onAddGoal: openAddGoal,
             onAddTask: openAddTask,
-            onCheckIn: openCheckInFromAddMenu
+            onCheckIn: openCheckInFromAddMenu,
+            onStartSleep: startSleepFromAddMenu
         ) {
             if isMacGoalsMode {
                 platformSearchField(searchText: goalsSearchTextBinding)
@@ -591,6 +593,13 @@ extension HomeTCAView {
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
         openMacPlacesWorkspace(activity: nil)
+    }
+
+    func startSleepFromAddMenu() {
+        isNoteEditorPresented = false
+        store.send(.setSelectedTask(nil))
+        store.send(.setAddRoutineSheet(false))
+        RoutinaMacSleepModeStarter.requestStartUsingSharedPersistence()
     }
 
     var emptyTaskListTitle: String {

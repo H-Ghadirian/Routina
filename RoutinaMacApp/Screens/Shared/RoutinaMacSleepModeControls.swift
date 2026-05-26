@@ -1,6 +1,5 @@
 import AppKit
 import SwiftData
-import SwiftUI
 
 enum RoutinaMacSleepModeStarter {
     static func requestStartUsingSharedPersistence() {
@@ -46,40 +45,5 @@ enum RoutinaMacSleepModeStarter {
         alert.informativeText = error.localizedDescription
         alert.addButton(withTitle: "OK")
         alert.runModal()
-    }
-}
-
-struct RoutinaMacSleepToolbarItem: ToolbarContent {
-    var body: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            RoutinaMacSleepToolbarButton()
-        }
-    }
-}
-
-private struct RoutinaMacSleepToolbarButton: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var activeSleepSessions: [SleepSession]
-
-    init() {
-        _activeSleepSessions = Query(
-            filter: #Predicate<SleepSession> { session in
-                session.endedAt == nil
-            },
-            sort: \.startedAt,
-            order: .reverse
-        )
-    }
-
-    var body: some View {
-        if activeSleepSessions.isEmpty {
-            Button {
-                RoutinaMacSleepModeStarter.requestStart(in: modelContext)
-            } label: {
-                Label("Going to sleep", systemImage: "bed.double.fill")
-                    .padding(.horizontal, 4)
-            }
-            .help("Start sleep mode")
-        }
     }
 }

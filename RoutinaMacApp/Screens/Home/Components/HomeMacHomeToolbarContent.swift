@@ -43,7 +43,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var navigationToolbarItems: some ToolbarContent {
-        RoutinaMacSleepToolbarItem()
         RoutinaMacPlaceCheckInToolbarItem(onMapRequested: onPlaceCheckInMapRequested)
     }
 
