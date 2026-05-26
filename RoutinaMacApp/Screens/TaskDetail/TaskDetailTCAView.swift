@@ -15,6 +15,7 @@ struct TaskDetailTCAView: View {
     @State private var isRoutineLogsExpanded = false
     @State private var isTaskChangesExpanded = false
     @State private var isCommentComposerVisible = false
+    @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
     @State private var isTimeSectionExpanded = false
@@ -144,6 +145,9 @@ detailBody
 }
 .onChange(of: store.resolvedSelectedDate) { _, newValue in
     displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
+}
+.onChange(of: store.task.actualDurationMinutes) { _, _ in
+    isTimeControlRevealed = false
 }
 .onChange(of: store.task.pressure) { oldValue, newValue in
     if oldValue != newValue {
@@ -399,7 +403,9 @@ detailBody
     private var todoHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             priorityDisclosureBox
-            todoTimeSpentHeaderBox
+            if shouldShowTimeControl {
+                todoTimeSpentHeaderBox
+            }
 
             if shouldShowTodoHeaderStatusControls {
                 ViewThatFits(in: .horizontal) {
@@ -431,6 +437,17 @@ detailBody
         shouldShowTodoStateControl || shouldShowPressureControl
     }
 
+    private var shouldShowTimeControl: Bool {
+        canShowTimeControl
+            && (
+                isTimeControlRevealed
+                    || TaskDetailOptionalControlVisibility.showsTimeSpent(
+                        for: store.task,
+                        hasActiveFocus: hasActiveFocusForTask
+                    )
+            )
+    }
+
     private var shouldShowTodoStateControl: Bool {
         canShowTodoStateControl
             && (isTodoStateControlRevealed || TaskDetailOptionalControlVisibility.showsTodoState(for: store.task))
@@ -448,10 +465,24 @@ detailBody
         !shouldShowPressureControl
     }
 
+    private var shouldShowTimeAddAction: Bool {
+        canShowTimeControl && !shouldShowTimeControl
+    }
+
+    private var canShowTimeControl: Bool {
+        store.task.isOneOffTask
+    }
+
     private var canShowTodoStateControl: Bool {
         store.task.isOneOffTask
             && !store.task.isCompletedOneOff
             && !store.task.isCanceledOneOff
+    }
+
+    private var hasActiveFocusForTask: Bool {
+        focusSessions.contains { session in
+            session.taskID == store.task.id && session.state == .active
+        }
     }
 
     private var todoTimeSpentHeaderBox: some View {
@@ -546,6 +577,7 @@ detailBody
             TaskDetailOptionalActionsSectionView(
                 showsCommentAction: !shouldShowCommentsSection,
                 showsLinkedTaskAction: !shouldShowRelationshipsSection,
+                showsTimeAction: shouldShowTimeAddAction,
                 showsStateAction: shouldShowTodoStateAddAction,
                 showsPressureAction: shouldShowPressureAddAction,
                 showsDetailsAction: !hasTaskExtras,
@@ -557,6 +589,12 @@ detailBody
                     }
                 },
                 onAddLinkedTask: { store.send(.openAddLinkedTask) },
+                onAddTime: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        isTimeControlRevealed = true
+                        isTimeSectionExpanded = true
+                    }
+                },
                 onAddState: {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         isTodoStateControlRevealed = true
@@ -575,6 +613,7 @@ detailBody
     private var shouldShowOptionalActionsSection: Bool {
         !shouldShowCommentsSection
             || !shouldShowRelationshipsSection
+            || shouldShowTimeAddAction
             || shouldShowTodoStateAddAction
             || shouldShowPressureAddAction
             || !hasTaskExtras
@@ -600,6 +639,7 @@ detailBody
     }
 
     private func resetRevealedOptionalControls() {
+        isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
     }

@@ -14,6 +14,7 @@ struct TaskDetailTCAView: View {
     @State private var isRoutineLogsExpanded = true
     @State private var isTaskChangesExpanded = true
     @State private var isCommentComposerVisible = false
+    @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
     @State private var timeEditing = TaskDetailTimeEditingState()
@@ -153,6 +154,9 @@ detailBody
 }
 .onChange(of: store.resolvedSelectedDate) { _, newValue in
     displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
+}
+.onChange(of: store.task.actualDurationMinutes) { _, _ in
+    isTimeControlRevealed = false
 }
 .onChange(of: store.task.pressure) { oldValue, newValue in
     if oldValue != newValue {
@@ -316,6 +320,7 @@ detailBody
             TaskDetailOptionalActionsSectionView(
                 showsCommentAction: !shouldShowCommentsSection,
                 showsLinkedTaskAction: !shouldShowRelationshipsSection,
+                showsTimeAction: shouldShowTimeAddAction,
                 showsStateAction: shouldShowTodoStateAddAction,
                 showsPressureAction: shouldShowPressureAddAction,
                 showsDetailsAction: !hasTaskExtras,
@@ -327,6 +332,11 @@ detailBody
                     }
                 },
                 onAddLinkedTask: { store.send(.openAddLinkedTask) },
+                onAddTime: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        isTimeControlRevealed = true
+                    }
+                },
                 onAddState: {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         isTodoStateControlRevealed = true
@@ -345,6 +355,7 @@ detailBody
     private var shouldShowOptionalActionsSection: Bool {
         !shouldShowCommentsSection
             || !shouldShowRelationshipsSection
+            || shouldShowTimeAddAction
             || shouldShowTodoStateAddAction
             || shouldShowPressureAddAction
             || !hasTaskExtras
@@ -359,6 +370,14 @@ detailBody
 
     private var shouldShowRelationshipsSection: Bool {
         !store.groupedResolvedRelationships.isEmpty
+    }
+
+    private var shouldShowTimeControl: Bool {
+        canShowTimeControl
+            && (
+                isTimeControlRevealed
+                    || TaskDetailOptionalControlVisibility.showsTimeSpent(for: store.task)
+            )
     }
 
     private var shouldShowTodoStateControl: Bool {
@@ -378,6 +397,14 @@ detailBody
         !shouldShowPressureControl
     }
 
+    private var shouldShowTimeAddAction: Bool {
+        canShowTimeControl && !shouldShowTimeControl
+    }
+
+    private var canShowTimeControl: Bool {
+        store.task.isOneOffTask
+    }
+
     private var canShowTodoStateControl: Bool {
         store.task.isOneOffTask
             && !store.task.isCompletedOneOff
@@ -393,6 +420,7 @@ detailBody
     }
 
     private func resetRevealedOptionalControls() {
+        isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
     }
@@ -537,7 +565,9 @@ detailBody
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
                 priorityDisclosureBox
-                todoTimeSpentHeaderBox
+                if shouldShowTimeControl {
+                    todoTimeSpentHeaderBox
+                }
                 headerGoalsBox
             }
         }

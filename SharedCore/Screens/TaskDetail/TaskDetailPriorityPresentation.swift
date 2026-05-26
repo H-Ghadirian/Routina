@@ -119,6 +119,10 @@ enum TaskDetailOptionalControlVisibility {
     static func showsPressure(for task: RoutineTask) -> Bool {
         task.pressure != .none
     }
+
+    static func showsTimeSpent(for task: RoutineTask, hasActiveFocus: Bool = false) -> Bool {
+        task.actualDurationMinutes != nil || hasActiveFocus
+    }
 }
 
 enum TaskDetailPressureTintStyle {

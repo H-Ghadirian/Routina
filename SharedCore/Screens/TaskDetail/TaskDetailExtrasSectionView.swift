@@ -94,6 +94,7 @@ struct TaskDetailExtrasSectionView: View {
 struct TaskDetailOptionalActionsSectionView: View {
     let showsCommentAction: Bool
     let showsLinkedTaskAction: Bool
+    let showsTimeAction: Bool
     let showsStateAction: Bool
     let showsPressureAction: Bool
     let showsDetailsAction: Bool
@@ -101,6 +102,7 @@ struct TaskDetailOptionalActionsSectionView: View {
     let stroke: Color
     let onAddComment: () -> Void
     let onAddLinkedTask: () -> Void
+    let onAddTime: () -> Void
     let onAddState: () -> Void
     let onAddPressure: () -> Void
     let onEditDetails: () -> Void
@@ -139,6 +141,14 @@ struct TaskDetailOptionalActionsSectionView: View {
                 title: "Linked Task",
                 systemImage: "link.badge.plus",
                 action: onAddLinkedTask
+            )
+        }
+
+        if showsTimeAction {
+            actionButton(
+                title: "Time",
+                systemImage: "clock.badge",
+                action: onAddTime
             )
         }
 
