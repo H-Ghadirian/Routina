@@ -50,6 +50,7 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Git settings visibility:** Git contribution settings are opt-in from Settings > General > Advanced. When Git features are disabled, the standalone Git settings section is hidden from Settings navigation.
 - **Support and About settings:** Support contact actions and About/version diagnostics share one Settings section named Support & About. Legacy Support navigation state should route to the combined section instead of showing a separate destination.
 - **Progressive task forms:** Task creation and editing show identity and scheduling first, keep populated optional sections visible, and tuck empty optional fields behind More Details. Task detail hides empty optional sections and exposes compact Add More actions for comments, linked tasks, and richer details.
+- **Mac Home add menu:** The Mac Home sidebar `+` opens a menu with Goal and Task actions. Goal switches to Goals and opens the inline goal editor; Task opens the existing add-task form. Goals mode does not add a separate toolbar `+`.
 
 ## Open Questions
 
@@ -119,3 +120,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0056](0056-hide-git-settings-until-enabled.md) | Hide Git Settings Until Enabled | Accepted | 2026-05-25 |
 | [0057](0057-merge-support-and-about-settings.md) | Merge Support and About Settings | Accepted | 2026-05-25 |
 | [0058](0058-use-progressive-task-forms.md) | Use Progressive Task Forms | Accepted | 2026-05-25 |
+| [0059](0059-use-mac-home-sidebar-add-menu.md) | Use a Mac Home Sidebar Add Menu | Accepted | 2026-05-26 |

@@ -8,11 +8,17 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     let isGoalsMode: Bool
     let isTimelineMode: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
+    let onAddGoal: () -> Void
+    let onAddTask: () -> Void
     @ViewBuilder let searchPanel: () -> SearchPanel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HomeMacSidebarModeStripView(selectedMode: $selectedSidebarMode)
+            HomeMacSidebarModeStripView(
+                selectedMode: $selectedSidebarMode,
+                onAddGoal: onAddGoal,
+                onAddTask: onAddTask
+            )
 
             if isRoutinesMode {
                 HomeMacTaskListModeStripView(selectedMode: selectedTaskListMode) { mode in

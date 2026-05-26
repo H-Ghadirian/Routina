@@ -247,6 +247,11 @@ extension HomeTCAView {
         store.send(.macSidebarModeChanged(.goals))
     }
 
+    func openAddGoal() {
+        store.send(.macSidebarModeChanged(.goals))
+        goalsStore.send(.addGoalTapped)
+    }
+
     func openStatsInSidebar() {
         store.send(.macSidebarModeChanged(.stats))
     }
@@ -475,7 +480,11 @@ extension HomeTCAView {
 
     private var macPlacesSidebarHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HomeMacSidebarModeStripView(selectedMode: macSidebarModeBinding)
+            HomeMacSidebarModeStripView(
+                selectedMode: macSidebarModeBinding,
+                onAddGoal: openAddGoal,
+                onAddTask: openAddTask
+            )
         }
         .padding(.horizontal, 14)
         .padding(.top, 10)
@@ -535,7 +544,9 @@ extension HomeTCAView {
             isTimelineMode: isMacTimelineMode,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
-            }
+            },
+            onAddGoal: openAddGoal,
+            onAddTask: openAddTask
         ) {
             if isMacGoalsMode {
                 platformSearchField(searchText: goalsSearchTextBinding)

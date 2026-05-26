@@ -9,7 +9,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     }
 
     let mode: Mode
-    let goalsStore: StoreOf<GoalsFeature>
     let showsDetailModePicker: Bool
     @Binding var detailMode: MacHomeDetailMode
     let onPlaceCheckInMapRequested: (PlaceCheckInActivity?) -> Void
@@ -34,10 +33,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var goalsToolbar: some ToolbarContent {
         navigationToolbarItems
-
-        ToolbarItem(placement: .primaryAction) {
-            MacGoalsNewGoalButton(store: goalsStore)
-        }
     }
 
     @ToolbarContentBuilder

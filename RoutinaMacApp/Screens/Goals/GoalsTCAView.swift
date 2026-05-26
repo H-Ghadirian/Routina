@@ -10,11 +10,6 @@ struct GoalsTCAView: View {
                 .navigationTitle("Goals")
                 .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 420)
                 .searchable(text: searchBinding, prompt: "Search goals")
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        MacGoalsNewGoalButton(store: store)
-                    }
-                }
         } detail: {
             MacGoalsDetailView(store: store)
         }
@@ -26,19 +21,6 @@ struct GoalsTCAView: View {
             get: { store.searchText },
             set: { store.send(.searchTextChanged($0)) }
         )
-    }
-}
-
-struct MacGoalsNewGoalButton: View {
-    let store: StoreOf<GoalsFeature>
-
-    var body: some View {
-        Button {
-            store.send(.addGoalTapped)
-        } label: {
-            Label("New Goal", systemImage: "plus")
-        }
-        .help("New Goal")
     }
 }
 

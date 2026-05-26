@@ -27,7 +27,6 @@ extension HomeTCAView {
     var homeToolbarContent: some ToolbarContent {
         HomeMacHomeToolbarContent(
             mode: homeToolbarMode,
-            goalsStore: goalsStore,
             showsDetailModePicker: showsDetailModePickerInToolbar,
             detailMode: mainDetailModeBinding,
             onPlaceCheckInMapRequested: { activity in
