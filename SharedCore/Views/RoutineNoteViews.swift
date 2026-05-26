@@ -41,37 +41,7 @@ struct RoutineNoteEditorView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Note") {
-                    TextField("Title", text: $title)
-                    TextField("Write a note", text: $bodyText, axis: .vertical)
-                        .lineLimit(5, reservesSpace: true)
-                }
-
-                Section("Tags") {
-                    tagsSection
-                }
-
-                Section("Image") {
-                    imageSection
-                }
-
-                Section("Voice") {
-                    TaskVoiceNoteRecorderControl(voiceNote: voiceNote, onVoiceNoteChanged: {
-                        voiceNote = $0
-                    })
-                }
-
-                Section("Files") {
-                    filesSection
-                }
-
-                if let errorText {
-                    Text(errorText)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            }
+            editorContent
             .navigationTitle("New Note")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -114,6 +84,256 @@ struct RoutineNoteEditorView: View {
         .frame(minWidth: 460, minHeight: 620)
         #endif
     }
+
+    @ViewBuilder
+    private var editorContent: some View {
+        #if os(macOS)
+        macEditorContent
+        #else
+        formEditorContent
+        #endif
+    }
+
+    private var formEditorContent: some View {
+        Form {
+            Section("Note") {
+                TextField("Title", text: $title)
+                TextField("Write a note", text: $bodyText, axis: .vertical)
+                    .lineLimit(5, reservesSpace: true)
+            }
+
+            Section("Tags") {
+                tagsSection
+            }
+
+            Section("Image") {
+                imageSection
+            }
+
+            Section("Voice") {
+                TaskVoiceNoteRecorderControl(voiceNote: voiceNote, onVoiceNoteChanged: {
+                    voiceNote = $0
+                })
+            }
+
+            Section("Files") {
+                filesSection
+            }
+
+            if let errorText {
+                Text(errorText)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    #if os(macOS)
+    private var macEditorContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                macHeader
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            macNoteCard
+                            macTagsCard
+                        }
+                        .frame(minWidth: 520, maxWidth: .infinity, alignment: .topLeading)
+
+                        VStack(alignment: .leading, spacing: 18) {
+                            macImageCard
+                            macVoiceCard
+                            macFilesCard
+                        }
+                        .frame(width: 320, alignment: .topLeading)
+                    }
+
+                    VStack(alignment: .leading, spacing: 18) {
+                        macNoteCard
+                        macTagsCard
+                        macImageCard
+                        macVoiceCard
+                        macFilesCard
+                    }
+                }
+
+                if let errorText {
+                    macErrorBanner(errorText)
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 28)
+            .frame(maxWidth: 980, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .top)
+        }
+    }
+
+    private var macHeader: some View {
+        HStack(alignment: .center, spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.16))
+                Image(systemName: "note.text")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .frame(width: 48, height: 48)
+
+            Text("New Note")
+                .font(.largeTitle.weight(.semibold))
+                .lineLimit(1)
+
+            Spacer(minLength: 16)
+
+            Button("Cancel") {
+                cancel()
+            }
+            .buttonStyle(.bordered)
+
+            Button {
+                save()
+            } label: {
+                Label("Save", systemImage: "checkmark")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!hasContent)
+        }
+    }
+
+    private var macNoteCard: some View {
+        RoutineNoteEditorCard(title: "Note", systemImage: "text.alignleft") {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Title")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    TextField("", text: $title, prompt: Text("Untitled note"))
+                        .textFieldStyle(.plain)
+                        .font(.title3.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(macInputBackground)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Write a note")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: $bodyText)
+                            .font(.body)
+                            .scrollContentBackground(.hidden)
+                            .padding(8)
+                            .frame(minHeight: 260)
+
+                        if bodyText.isEmpty {
+                            Text("Write a note")
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 13)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                    .background(macInputBackground)
+                }
+            }
+        }
+    }
+
+    private var macTagsCard: some View {
+        RoutineNoteEditorCard(title: "Tags", systemImage: "tag") {
+            VStack(alignment: .leading, spacing: 12) {
+                macTagComposer
+                selectedTagsContent
+                existingTagsContent
+            }
+        }
+    }
+
+    private var macImageCard: some View {
+        RoutineNoteEditorCard(title: "Image", systemImage: "photo") {
+            imageSection
+        }
+    }
+
+    private var macVoiceCard: some View {
+        RoutineNoteEditorCard(title: "Voice", systemImage: "mic") {
+            TaskVoiceNoteRecorderControl(voiceNote: voiceNote, onVoiceNoteChanged: {
+                voiceNote = $0
+            })
+        }
+    }
+
+    private var macFilesCard: some View {
+        RoutineNoteEditorCard(title: "Files", systemImage: "paperclip") {
+            filesSection
+        }
+    }
+
+    private var macTagComposer: some View {
+        HStack(spacing: 10) {
+            ZStack(alignment: .trailing) {
+                TextField("", text: $tagDraft, prompt: Text("health, focus, morning"))
+                    .textFieldStyle(.plain)
+                    .onSubmit(addTagDraft)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .padding(.trailing, tagAutocompleteSuggestion == nil ? 0 : 96)
+                    .background(macInputBackground)
+
+                if let suggestion = tagAutocompleteSuggestion {
+                    Button {
+                        acceptTagAutocompleteSuggestion()
+                    } label: {
+                        Text("#\(suggestion)")
+                            .font(.caption.weight(.medium))
+                            .lineLimit(1)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .routinaGlassPill(tint: .secondary, tintOpacity: 0.12, interactive: true)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 6)
+                    .accessibilityLabel("Complete tag \(suggestion)")
+                }
+            }
+
+            Button {
+                addTagDraft()
+            } label: {
+                Label("Add", systemImage: "plus")
+            }
+            .buttonStyle(.bordered)
+            .disabled(RoutineTag.parseDraft(tagDraft).isEmpty)
+        }
+    }
+
+    private var macInputBackground: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Color.secondary.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+            )
+    }
+
+    private func macErrorBanner(_ message: String) -> some View {
+        Label(message, systemImage: "exclamationmark.triangle.fill")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.red)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.red.opacity(0.10))
+            )
+    }
+    #endif
 
     private var hasContent: Bool {
         RoutineNote.cleanedText(title) != nil
@@ -184,41 +404,7 @@ struct RoutineNoteEditorView: View {
 
             selectedTagsContent
 
-            if !availableUnselectedTags.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Existing tags")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-
-                    HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-                        ForEach(availableUnselectedTags, id: \.self) { tag in
-                            Button {
-                                tags = RoutineTag.appending(tag, to: tags)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "plus.circle")
-                                        .font(.caption)
-                                    Text("#\(tag)")
-                                        .lineLimit(1)
-                                        .fixedSize(horizontal: true, vertical: false)
-                                }
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .routinaGlassPill(tint: .secondary, tintOpacity: 0.10, interactive: true)
-                                .overlay {
-                                    Capsule()
-                                        .stroke(Color.secondary.opacity(0.24), lineWidth: 1)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .fixedSize()
-                            .accessibilityLabel("Add tag \(tag)")
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
+            existingTagsContent
         }
         .padding(.vertical, 4)
     }
@@ -257,6 +443,45 @@ struct RoutineNoteEditorView: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private var existingTagsContent: some View {
+        if !availableUnselectedTags.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Existing tags")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+
+                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                    ForEach(availableUnselectedTags, id: \.self) { tag in
+                        Button {
+                            tags = RoutineTag.appending(tag, to: tags)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle")
+                                    .font(.caption)
+                                Text("#\(tag)")
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                            }
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .routinaGlassPill(tint: .secondary, tintOpacity: 0.10, interactive: true)
+                            .overlay {
+                                Capsule()
+                                    .stroke(Color.secondary.opacity(0.24), lineWidth: 1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                        .accessibilityLabel("Add tag \(tag)")
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
     }
 
@@ -425,6 +650,38 @@ struct RoutineNoteEditorView: View {
         }
         attachments.append(AttachmentItem(fileName: url.lastPathComponent, data: data))
         errorText = nil
+    }
+}
+
+private struct RoutineNoteEditorCard<Content: View>: View {
+    let title: String
+    let systemImage: String
+    let content: Content
+
+    init(
+        title: String,
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label(title, systemImage: systemImage)
+                .font(.headline.weight(.semibold))
+
+            content
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .routinaGlassPanel(cornerRadius: 14, tint: .secondary, tintOpacity: 0.06)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        )
     }
 }
 
