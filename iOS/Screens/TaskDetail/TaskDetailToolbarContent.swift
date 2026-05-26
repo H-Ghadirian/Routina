@@ -48,6 +48,11 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     Label("Share", systemImage: "person.crop.circle.badge.plus")
                 }
 
+                RoutinaDeepLinkShareMenu(
+                    title: RoutineTask.trimmedName(store.task.name) ?? "Untitled task",
+                    deepLink: .task(store.task.id)
+                )
+
                 Button {
                     store.send(.setEditSheet(true))
                 } label: {

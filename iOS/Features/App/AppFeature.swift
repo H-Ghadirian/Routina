@@ -186,6 +186,16 @@ struct AppFeature {
 
             state.pendingDeepLinkedTaskID = nil
             return .send(.home(.setSelectedTask(taskID)))
+        case let .goal(goalID):
+            state.selectedTab = .goals
+            state.pendingDeepLinkedTaskID = nil
+            persistTemporaryViewState(state)
+            return .send(.goals(.openGoalDeepLink(goalID)))
+        case let .note(noteID):
+            state.selectedTab = .timeline
+            state.pendingDeepLinkedTaskID = nil
+            persistTemporaryViewState(state)
+            return .send(.timeline(.openNoteDeepLink(noteID)))
         case .sprint:
             state.selectedTab = .home
             state.pendingDeepLinkedTaskID = nil

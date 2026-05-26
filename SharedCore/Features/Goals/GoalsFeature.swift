@@ -14,6 +14,7 @@ struct GoalsFeature {
         var tagColors: [String: String] = [:]
         var searchText = ""
         var selectedGoalID: UUID?
+        var deepLinkedGoalNavigationID: UUID?
         var isEditorPresented = false
         var editorDraft = GoalDraft()
         var validationMessage: String?
@@ -426,6 +427,8 @@ struct GoalsFeature {
         case loadingFailed(String)
         case searchTextChanged(String)
         case selectGoal(UUID?)
+        case openGoalDeepLink(UUID)
+        case goalDeepLinkNavigationHandled(UUID)
         case addGoalTapped
         case editGoalTapped(UUID)
         case dismissEditor
@@ -474,6 +477,14 @@ struct GoalsFeature {
                 state.tagCounterDisplayMode = tagCounterDisplayMode
                 state.tagColors = tagColors
                 state.isLoading = false
+                if let deepLinkedGoalID = state.deepLinkedGoalNavigationID {
+                    if goals.contains(where: { $0.id == deepLinkedGoalID }) {
+                        state.selectedGoalID = deepLinkedGoalID
+                    } else {
+                        state.deepLinkedGoalNavigationID = nil
+                    }
+                    return .none
+                }
                 if let selectedGoalID = state.selectedGoalID,
                    goals.contains(where: { $0.id == selectedGoalID }) {
                     return .none
@@ -492,6 +503,22 @@ struct GoalsFeature {
 
             case let .selectGoal(goalID):
                 state.selectedGoalID = goalID
+                return .none
+
+            case let .openGoalDeepLink(goalID):
+                state.searchText = ""
+                state.isEditorPresented = false
+                state.selectedGoalID = goalID
+                state.deepLinkedGoalNavigationID = goalID
+                guard state.goals.contains(where: { $0.id == goalID }) else {
+                    return loadGoalsEffect()
+                }
+                return .none
+
+            case let .goalDeepLinkNavigationHandled(goalID):
+                if state.deepLinkedGoalNavigationID == goalID {
+                    state.deepLinkedGoalNavigationID = nil
+                }
                 return .none
 
             case .addGoalTapped:

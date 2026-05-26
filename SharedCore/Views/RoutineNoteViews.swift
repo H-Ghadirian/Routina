@@ -323,6 +323,14 @@ struct RoutineNoteDetailView: View {
             .padding(24)
         }
         .navigationTitle(note.displayTitle)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                RoutinaDeepLinkShareMenu(
+                    title: note.displayTitle,
+                    deepLink: .note(note.id)
+                )
+            }
+        }
     }
 
     private var header: some View {

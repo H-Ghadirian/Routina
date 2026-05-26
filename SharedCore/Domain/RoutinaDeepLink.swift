@@ -2,6 +2,8 @@ import Foundation
 
 enum RoutinaDeepLink: Equatable, Sendable {
     case task(UUID)
+    case goal(UUID)
+    case note(UUID)
     case sprint(UUID)
 
     init?(url: URL) {
@@ -10,6 +12,16 @@ enum RoutinaDeepLink: Equatable, Sendable {
         let components = url.pathComponents.filter { $0 != "/" }
         if let taskID = Self.targetID(for: "task", url: url, components: components) {
             self = .task(taskID)
+            return
+        }
+
+        if let goalID = Self.targetID(for: "goal", url: url, components: components) {
+            self = .goal(goalID)
+            return
+        }
+
+        if let noteID = Self.targetID(for: "note", url: url, components: components) {
+            self = .note(noteID)
             return
         }
 
@@ -45,6 +57,10 @@ enum RoutinaDeepLink: Equatable, Sendable {
         switch self {
         case let .task(taskID):
             return URL(string: "routina://task/\(taskID.uuidString)")!
+        case let .goal(goalID):
+            return URL(string: "routina://goal/\(goalID.uuidString)")!
+        case let .note(noteID):
+            return URL(string: "routina://note/\(noteID.uuidString)")!
         case let .sprint(sprintID):
             return URL(string: "routina://sprint/\(sprintID.uuidString)")!
         }

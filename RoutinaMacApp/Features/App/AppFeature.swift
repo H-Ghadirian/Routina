@@ -168,6 +168,8 @@ struct AppFeature {
     }
 
     private func handleDeepLink(_ deepLink: RoutinaDeepLink, state: inout State) -> Effect<Action> {
+        state.hasRestoredTemporaryViewState = true
+
         switch deepLink {
         case let .task(taskID):
             state.selectedTab = .home
@@ -181,6 +183,18 @@ struct AppFeature {
 
             state.pendingDeepLinkedTaskID = nil
             return .send(.home(.openTaskDeepLink(taskID)))
+        case let .goal(goalID):
+            state.selectedTab = .goals
+            state.pendingDeepLinkedTaskID = nil
+            state.pendingDeepLinkedSprintID = nil
+            persistTemporaryViewState(state)
+            return .send(.goals(.openGoalDeepLink(goalID)))
+        case let .note(noteID):
+            state.selectedTab = .timeline
+            state.pendingDeepLinkedTaskID = nil
+            state.pendingDeepLinkedSprintID = nil
+            persistTemporaryViewState(state)
+            return .send(.timeline(.openNoteDeepLink(noteID)))
         case let .sprint(sprintID):
             state.selectedTab = .home
             state.pendingDeepLinkedTaskID = nil

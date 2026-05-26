@@ -33,6 +33,19 @@ NavigationStack {
         .sheet(isPresented: filterSheetBinding) {
             timelineFiltersSheet
         }
+        .sheet(item: deepLinkedNotePresentationBinding) { presentation in
+            NavigationStack {
+                deepLinkedNoteDetail(noteID: presentation.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") {
+                                store.send(.noteDeepLinkPresentationDismissed(presentation.id))
+                            }
+                        }
+                    }
+            }
+            .frame(minWidth: 560, minHeight: 420)
+        }
 }
 .task {
     syncTimelineData()
@@ -98,6 +111,20 @@ NavigationStack {
 
     private var noteAttachmentChangeToken: [String] {
         noteAttachments.map { "\($0.id.uuidString):\($0.noteID.uuidString):\($0.fileName):\($0.data.count)" }.sorted()
+    }
+
+    private var deepLinkedNotePresentationBinding: Binding<TimelineNoteDeepLinkPresentation?> {
+        Binding(
+            get: {
+                guard let noteID = store.deepLinkedNoteID else { return nil }
+                return TimelineNoteDeepLinkPresentation(id: noteID)
+            },
+            set: { presentation in
+                if presentation == nil, let noteID = store.deepLinkedNoteID {
+                    store.send(.noteDeepLinkPresentationDismissed(noteID))
+                }
+            }
+        )
     }
 
     private func syncTimelineData() {
@@ -583,6 +610,20 @@ NavigationStack {
     }
 
     @ViewBuilder
+    private func deepLinkedNoteDetail(noteID: UUID) -> some View {
+        if let note = notes.first(where: { $0.id == noteID }) {
+            RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
+        } else {
+            ContentUnavailableView(
+                "Note not found",
+                systemImage: "note.text",
+                description: Text("The selected note is no longer available.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
     private func timelineDetailDestination(taskID: UUID) -> some View {
         if let task = tasks.first(where: { $0.id == taskID }) {
             TaskDetailTCAView(
@@ -644,4 +685,8 @@ NavigationStack {
         }
         .buttonStyle(.plain)
     }
+}
+
+private struct TimelineNoteDeepLinkPresentation: Identifiable, Equatable {
+    let id: UUID
 }

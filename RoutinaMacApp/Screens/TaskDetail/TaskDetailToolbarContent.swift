@@ -37,6 +37,10 @@ struct TaskDetailToolbarContent: ToolbarContent {
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
                 actionButtons
+                RoutinaDeepLinkShareMenu(
+                    title: RoutineTask.trimmedName(store.task.name) ?? "Untitled task",
+                    deepLink: .task(store.task.id)
+                )
                 CloudSharingToolbarButton(task: store.task)
                 Button {
                     store.send(.setEditSheet(true))

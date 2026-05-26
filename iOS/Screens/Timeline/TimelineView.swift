@@ -23,9 +23,22 @@ timelineRoot
     .sheet(isPresented: filterSheetBinding) {
         timelineFiltersSheet
     }
+    .sheet(item: deepLinkedNotePresentationBinding) { presentation in
+        NavigationStack {
+            deepLinkedNoteDetail(noteID: presentation.id)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") {
+                            store.send(.noteDeepLinkPresentationDismissed(presentation.id))
+                        }
+                    }
+                }
+        }
+    }
 .task {
     syncTimelineData()
     ensureTimelineSelection()
+    routePendingDeepLinkedNote()
 }
 .onChange(of: tasks) { _, _ in
     syncTimelineData()
@@ -50,6 +63,10 @@ timelineRoot
 }
 .onChange(of: visibleTimelineEntryIDs) { _, _ in
     ensureTimelineSelection()
+    routePendingDeepLinkedNote()
+}
+.onChange(of: store.deepLinkedNoteID) { _, _ in
+    routePendingDeepLinkedNote()
 }
     }
 
@@ -159,12 +176,33 @@ timelineRoot
             .first { $0.id == selectedTimelineEntryID }
     }
 
+    private var deepLinkedNotePresentationBinding: Binding<TimelineNoteDeepLinkPresentation?> {
+        Binding(
+            get: {
+                guard !usesSidebarLayout, let noteID = store.deepLinkedNoteID else { return nil }
+                return TimelineNoteDeepLinkPresentation(id: noteID)
+            },
+            set: { presentation in
+                if presentation == nil, let noteID = store.deepLinkedNoteID {
+                    store.send(.noteDeepLinkPresentationDismissed(noteID))
+                }
+            }
+        )
+    }
+
     private func ensureTimelineSelection() {
         selectedTimelineEntryID = TimelineSelectionSupport.resolvedSelection(
             currentSelection: selectedTimelineEntryID,
             visibleEntryIDs: visibleTimelineEntryIDs,
             usesSidebarLayout: usesSidebarLayout
         )
+    }
+
+    private func routePendingDeepLinkedNote() {
+        guard usesSidebarLayout, let noteID = store.deepLinkedNoteID else { return }
+        guard visibleTimelineEntryIDs.contains(noteID) else { return }
+        selectedTimelineEntryID = noteID
+        store.send(.noteDeepLinkPresentationDismissed(noteID))
     }
 
     private var filterSheetBinding: Binding<Bool> {
@@ -733,6 +771,20 @@ timelineRoot
     }
 
     @ViewBuilder
+    private func deepLinkedNoteDetail(noteID: UUID) -> some View {
+        if let note = notes.first(where: { $0.id == noteID }) {
+            RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
+        } else {
+            ContentUnavailableView(
+                "Note not found",
+                systemImage: "note.text",
+                description: Text("The selected note is no longer available.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
     private func timelineDetailDestination(taskID: UUID) -> some View {
         if let task = tasks.first(where: { $0.id == taskID }) {
             TaskDetailTCAView(
@@ -774,4 +826,8 @@ timelineRoot
         )
     }
 
+}
+
+private struct TimelineNoteDeepLinkPresentation: Identifiable, Equatable {
+    let id: UUID
 }

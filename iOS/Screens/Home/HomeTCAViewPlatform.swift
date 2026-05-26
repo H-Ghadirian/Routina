@@ -430,7 +430,7 @@ detailContent
                 switch deepLink {
                 case let .task(taskID):
                     openTask(taskID)
-                case .sprint:
+                case .goal, .note, .sprint:
                     RoutinaDeepLinkDispatcher.open(deepLink)
                 }
             }

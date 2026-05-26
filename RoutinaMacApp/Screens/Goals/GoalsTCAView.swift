@@ -348,6 +348,13 @@ private struct GoalDetailPane: View {
                 }
 
                 Menu {
+                    RoutinaDeepLinkShareActions(
+                        title: goal.displayTitle,
+                        deepLink: .goal(goal.id)
+                    )
+
+                    Divider()
+
                     if goal.status == .active {
                         Button {
                             store.send(.archiveGoalTapped(goal.id))

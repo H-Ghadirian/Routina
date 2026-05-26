@@ -147,6 +147,69 @@ struct AppFeatureTests {
     }
 
     @Test
+    func openDeepLink_goalSelectsGoalsTabAndGoal() async {
+        let goalID = UUID()
+        let goal = makeGoalDisplay(id: goalID, title: "Health")
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .home,
+                goals: GoalsFeature.State(goals: [goal])
+            )
+        ) {
+            AppFeature()
+        }
+
+        await store.send(.openDeepLink(.goal(goalID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .goals
+        }
+
+        await store.receive(.goals(.openGoalDeepLink(goalID))) {
+            $0.goals.selectedGoalID = goalID
+            $0.goals.deepLinkedGoalNavigationID = goalID
+        }
+    }
+
+    @Test
+    func openDeepLink_noteSelectsTimelineAndPreparesNotePresentation() async {
+        let noteID = UUID()
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .home,
+                timeline: TimelineFeature.State(
+                    tasks: [],
+                    logs: [],
+                    selectedRange: .month,
+                    filterType: .todos,
+                    selectedTag: "Errands",
+                    selectedTags: ["Errands"],
+                    excludedTags: ["Hidden"],
+                    mediaFilter: .withImage,
+                    isFilterSheetPresented: true
+                )
+            )
+        ) {
+            AppFeature()
+        }
+
+        await store.send(.openDeepLink(.note(noteID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .timeline
+        }
+
+        await store.receive(.timeline(.openNoteDeepLink(noteID))) {
+            $0.timeline.selectedRange = .all
+            $0.timeline.filterType = .notes
+            $0.timeline.selectedTag = nil
+            $0.timeline.selectedTags = []
+            $0.timeline.excludedTags = []
+            $0.timeline.mediaFilter = .all
+            $0.timeline.isFilterSheetPresented = false
+            $0.timeline.deepLinkedNoteID = noteID
+        }
+    }
+
+    @Test
     func tabSelected_switchesToStatsTab() async {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
@@ -342,5 +405,25 @@ struct AppFeatureTests {
         #expect(persistedState.value?.statsTaskTypeFilterRawValue == StatsTaskTypeFilter.all.rawValue)
         #expect(persistedState.value?.statsSelectedTag == nil)
         #expect(persistedState.value?.statsExcludedTags == [])
+    }
+
+    private func makeGoalDisplay(id: UUID, title: String) -> GoalsFeature.GoalDisplay {
+        GoalsFeature.GoalDisplay(
+            id: id,
+            title: title,
+            emoji: nil,
+            notes: nil,
+            targetDate: nil,
+            tags: [],
+            status: .active,
+            color: .none,
+            parentGoalID: nil,
+            parentGoal: nil,
+            childGoals: [],
+            createdAt: nil,
+            sortOrder: 0,
+            linkedTasks: [],
+            taskSuggestions: []
+        )
     }
 }

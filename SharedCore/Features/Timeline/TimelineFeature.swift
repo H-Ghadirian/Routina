@@ -32,6 +32,7 @@ struct TimelineFeature {
         var availableTags: [String] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var groupedEntries: [TimelineSection] = []
+        var deepLinkedNoteID: UUID?
 
         var hasActiveFilters: Bool {
             selectedRange != .all
@@ -79,6 +80,8 @@ struct TimelineFeature {
         case mediaFilterChanged(TaskMediaFilter)
         case setFilterSheet(Bool)
         case clearFilters
+        case openNoteDeepLink(UUID)
+        case noteDeepLinkPresentationDismissed(UUID)
     }
 
     @Dependency(\.calendar) var calendar
@@ -162,6 +165,26 @@ struct TimelineFeature {
                 state.selectedImportanceUrgencyFilter = nil
                 state.mediaFilter = .all
                 refreshDerivedState(&state)
+                return .none
+
+            case let .openNoteDeepLink(noteID):
+                state.selectedRange = .all
+                state.filterType = .notes
+                state.setSelectedTag(nil)
+                state.includeTagMatchMode = .all
+                state.excludedTags = []
+                state.excludeTagMatchMode = .any
+                state.selectedImportanceUrgencyFilter = nil
+                state.mediaFilter = .all
+                state.isFilterSheetPresented = false
+                state.deepLinkedNoteID = noteID
+                refreshDerivedState(&state)
+                return .none
+
+            case let .noteDeepLinkPresentationDismissed(noteID):
+                if state.deepLinkedNoteID == noteID {
+                    state.deepLinkedNoteID = nil
+                }
                 return .none
             }
         }

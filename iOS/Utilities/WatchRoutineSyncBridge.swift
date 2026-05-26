@@ -521,6 +521,10 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         switch deepLink {
         case let .task(taskID):
             return "watch-open-task-\(taskID.uuidString)"
+        case let .goal(goalID):
+            return "watch-open-goal-\(goalID.uuidString)"
+        case let .note(noteID):
+            return "watch-open-note-\(noteID.uuidString)"
         case let .sprint(sprintID):
             return "watch-open-sprint-\(sprintID.uuidString)"
         }
@@ -530,6 +534,10 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         switch deepLink {
         case .task:
             return "Open task timer on iPhone"
+        case .goal:
+            return "Open goal on iPhone"
+        case .note:
+            return "Open note on iPhone"
         case .sprint:
             return "Open sprint timer on iPhone"
         }

@@ -3,9 +3,10 @@ import SwiftUI
 
 struct GoalsTCAView: View {
     let store: StoreOf<GoalsFeature>
+    @State private var navigationPath: [UUID] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             Group {
                 if store.isAddingGoal {
                     GoalsEditorForm(store: store)
@@ -48,6 +49,10 @@ struct GoalsTCAView: View {
         }
         .task {
             store.send(.onAppear)
+            routePendingDeepLinkedGoal()
+        }
+        .onChange(of: store.deepLinkedGoalNavigationID) { _, _ in
+            routePendingDeepLinkedGoal()
         }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             store.send(.refreshRequested)
@@ -115,6 +120,14 @@ struct GoalsTCAView: View {
                 }
             }
         )
+    }
+
+    private func routePendingDeepLinkedGoal() {
+        guard let goalID = store.deepLinkedGoalNavigationID else { return }
+        if navigationPath.last != goalID {
+            navigationPath = [goalID]
+        }
+        store.send(.goalDeepLinkNavigationHandled(goalID))
     }
 }
 
@@ -416,6 +429,13 @@ private struct GoalActionsMenu: View {
 
     var body: some View {
         Menu {
+            RoutinaDeepLinkShareActions(
+                title: goal.displayTitle,
+                deepLink: .goal(goal.id)
+            )
+
+            Divider()
+
             if goal.status == .active {
                 Button {
                     store.send(.archiveGoalTapped(goal.id))
