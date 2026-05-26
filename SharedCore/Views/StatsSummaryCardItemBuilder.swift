@@ -41,6 +41,39 @@ enum StatsSummaryCardItemBuilder {
             )
         )
 
+        items.append(
+            StatsSummaryCardItem(
+                icon: "heart.fill",
+                accent: .pink,
+                title: "Emotions",
+                value: metrics.emotionLogCount.formatted(),
+                caption: emotionCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.emotions"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
+                icon: "note.text",
+                accent: .brown,
+                title: "Notes",
+                value: metrics.noteCount.formatted(),
+                caption: noteCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.notes"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
+                icon: "target",
+                accent: .indigo,
+                title: "Goals",
+                value: metrics.activeGoalCount.formatted(),
+                caption: goalCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.goals"
+            )
+        )
+
         if selectedRange != .today {
             items.append(
                 StatsSummaryCardItem(
@@ -144,5 +177,26 @@ enum StatsSummaryCardItemBuilder {
         )
 
         return items
+    }
+
+    private static func emotionCaption(metrics: StatsFeatureMetrics) -> String {
+        guard metrics.emotionLogCount > 0 else {
+            return "No emotion logs in range"
+        }
+
+        let intensity = metrics.averageEmotionIntensity.formatted(.number.precision(.fractionLength(1)))
+        return "\(metrics.emotionActiveDayCount) logged \(metrics.emotionActiveDayCount == 1 ? "day" : "days"), avg \(intensity)/5"
+    }
+
+    private static func noteCaption(metrics: StatsFeatureMetrics) -> String {
+        guard metrics.noteCount > 0 else {
+            return "No notes in range"
+        }
+
+        return "\(metrics.noteWithMediaCount) with media"
+    }
+
+    private static func goalCaption(metrics: StatsFeatureMetrics) -> String {
+        "\(metrics.goalsCreatedCount) new, \(metrics.archivedGoalCount) archived"
     }
 }

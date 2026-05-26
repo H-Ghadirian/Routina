@@ -108,6 +108,10 @@ struct AppFeature {
                 let statsTasks = state.stats.tasks
                 let statsLogs = state.stats.logs
                 let statsFocusSessions = state.stats.focusSessions
+                let statsEmotionLogs = state.stats.emotionLogs
+                let statsNotes = state.stats.notes
+                let statsNoteAttachmentNoteIDs = state.stats.noteAttachmentNoteIDs
+                let statsGoals = state.stats.goals
                 resetTemporaryViewState(&state)
                 persistTemporaryViewState(state)
                 return .merge(
@@ -118,7 +122,15 @@ struct AppFeature {
                         fileAttachmentTaskIDs: timelineFileAttachmentTaskIDs,
                         noteAttachmentNoteIDs: timelineNoteAttachmentNoteIDs
                     ))),
-                    .send(.stats(.setData(tasks: statsTasks, logs: statsLogs, focusSessions: statsFocusSessions)))
+                    .send(.stats(.setData(
+                        tasks: statsTasks,
+                        logs: statsLogs,
+                        focusSessions: statsFocusSessions,
+                        emotionLogs: statsEmotionLogs,
+                        notes: statsNotes,
+                        noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
+                        goals: statsGoals
+                    )))
                 )
             case .timeline(.selectedRangeChanged),
                  .timeline(.filterTypeChanged),
@@ -214,6 +226,10 @@ struct StatsFeature {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
         var focusSessions: [FocusSession] = []
+        var emotionLogs: [EmotionLog] = []
+        var notes: [RoutineNote] = []
+        var noteAttachmentNoteIDs: Set<UUID> = []
+        var goals: [RoutineGoal] = []
         var selectedRange: DoneChartRange = .week
         var taskTypeFilter: StatsTaskTypeFilter = .all
         var isFilterSheetPresented: Bool = false
@@ -261,7 +277,15 @@ struct StatsFeature {
     }
 
     enum Action: Equatable {
-        case setData(tasks: [RoutineTask], logs: [RoutineLog], focusSessions: [FocusSession])
+        case setData(
+            tasks: [RoutineTask],
+            logs: [RoutineLog],
+            focusSessions: [FocusSession],
+            emotionLogs: [EmotionLog] = [],
+            notes: [RoutineNote] = [],
+            noteAttachmentNoteIDs: Set<UUID> = [],
+            goals: [RoutineGoal] = []
+        )
         case onAppear
         case selectedRangeChanged(DoneChartRange)
         case taskTypeFilterChanged(StatsTaskTypeFilter)
@@ -288,10 +312,14 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, focusSessions):
+            case let .setData(tasks, logs, focusSessions, emotionLogs, notes, noteAttachmentNoteIDs, goals):
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
+                state.emotionLogs = emotionLogs
+                state.notes = notes
+                state.noteAttachmentNoteIDs = noteAttachmentNoteIDs
+                state.goals = goals
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -472,6 +500,10 @@ struct StatsFeature {
             tasks: state.tasks,
             logs: state.logs,
             focusSessions: state.focusSessions,
+            emotionLogs: state.emotionLogs,
+            notes: state.notes,
+            noteAttachmentNoteIDs: state.noteAttachmentNoteIDs,
+            goals: state.goals,
             selectedRange: state.selectedRange,
             taskTypeFilter: state.taskTypeFilter,
             selectedImportanceUrgencyFilter: state.selectedImportanceUrgencyFilter,

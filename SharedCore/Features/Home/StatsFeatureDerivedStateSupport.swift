@@ -11,6 +11,14 @@ struct StatsFeatureMetrics: Equatable {
     var createdTotalCount: Int = 0
     var totalFocusSeconds: TimeInterval = 0
     var averageFocusSecondsPerDay: TimeInterval = 0
+    var emotionLogCount: Int = 0
+    var emotionActiveDayCount: Int = 0
+    var averageEmotionIntensity: Double = 0
+    var noteCount: Int = 0
+    var noteWithMediaCount: Int = 0
+    var activeGoalCount: Int = 0
+    var archivedGoalCount: Int = 0
+    var goalsCreatedCount: Int = 0
     var routineCount: Int = 0
     var openTodoCount: Int = 0
     var activeRoutineCount: Int = 0
@@ -48,6 +56,10 @@ enum StatsFeatureDerivedStateBuilder {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         focusSessions: [FocusSession],
+        emotionLogs: [EmotionLog] = [],
+        notes: [RoutineNote] = [],
+        noteAttachmentNoteIDs: Set<UUID> = [],
+        goals: [RoutineGoal] = [],
         selectedRange: DoneChartRange,
         taskTypeFilter: StatsTaskTypeFilter,
         createdChartTaskTypeFilter: StatsTaskTypeFilter? = nil,
@@ -166,6 +178,30 @@ enum StatsFeatureDerivedStateBuilder {
             .compactMap(\.timestamp)
         let activityDates = completionDates + canceledDates + missedDates
         let createdDates = createdChartFilteredTasks.compactMap(\.createdAt)
+        let emotionLogsInRange = emotionLogs.filter { emotion in
+            dateIsInRange(
+                emotion.createdAt,
+                selectedRange: selectedRange,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
+        let notesInRange = notes.filter { note in
+            dateIsInRange(
+                note.createdAt,
+                selectedRange: selectedRange,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
+        let goalsCreatedInRange = goals.filter { goal in
+            dateIsInRange(
+                goal.createdAt,
+                selectedRange: selectedRange,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
         let earliestActivityDate = [
             filteredTasks.compactMap(\.createdAt).min(),
             createdChartFilteredTasks.compactMap(\.createdAt).min(),
@@ -215,6 +251,19 @@ enum StatsFeatureDerivedStateBuilder {
         let totalFocusSeconds = FocusDurationStats.totalSeconds(in: focusChartPoints)
         let averageFocusSecondsPerDay = FocusDurationStats.averageSeconds(in: focusChartPoints)
         let busiestFocusDay = FocusDurationStats.busiestDay(in: focusChartPoints)
+        let emotionActiveDayCount = Set(
+            emotionLogsInRange
+                .compactMap(\.createdAt)
+                .map { calendar.startOfDay(for: $0) }
+        ).count
+        let averageEmotionIntensity = emotionLogsInRange.isEmpty
+            ? 0
+            : Double(emotionLogsInRange.reduce(0) { $0 + $1.clampedIntensity }) / Double(emotionLogsInRange.count)
+        let noteWithMediaCount = notesInRange.filter {
+            $0.hasImage || $0.hasVoiceNote || noteAttachmentNoteIDs.contains($0.id)
+        }.count
+        let activeGoalCount = goals.filter { $0.status == .active }.count
+        let archivedGoalCount = goals.filter { $0.status == .archived }.count
         let routineCount = filteredTasks.filter { !$0.isOneOffTask }.count
         let openTodoCount = filteredTasks.filter {
             $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff
@@ -251,6 +300,14 @@ enum StatsFeatureDerivedStateBuilder {
                 createdTotalCount: createdTotalCount,
                 totalFocusSeconds: totalFocusSeconds,
                 averageFocusSecondsPerDay: averageFocusSecondsPerDay,
+                emotionLogCount: emotionLogsInRange.count,
+                emotionActiveDayCount: emotionActiveDayCount,
+                averageEmotionIntensity: averageEmotionIntensity,
+                noteCount: notesInRange.count,
+                noteWithMediaCount: noteWithMediaCount,
+                activeGoalCount: activeGoalCount,
+                archivedGoalCount: archivedGoalCount,
+                goalsCreatedCount: goalsCreatedInRange.count,
                 routineCount: routineCount,
                 openTodoCount: openTodoCount,
                 activeRoutineCount: archiveCounts.active,
@@ -412,6 +469,26 @@ enum StatsFeatureDerivedStateBuilder {
                 return nil
             }
         }
+    }
+
+    private static func dateIsInRange(
+        _ date: Date?,
+        selectedRange: DoneChartRange,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard let date else { return false }
+        let endDate = calendar.startOfDay(for: referenceDate)
+        guard let startDate = calendar.date(
+            byAdding: .day,
+            value: -(selectedRange.trailingDayCount - 1),
+            to: endDate
+        ) else {
+            return false
+        }
+        let day = calendar.startOfDay(for: date)
+
+        return day >= startDate && day <= endDate
     }
 }
 
