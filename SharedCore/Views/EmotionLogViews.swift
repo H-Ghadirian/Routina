@@ -712,6 +712,7 @@ private struct EmotionChip: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .routinaGlassPill(tint: isSelected ? tint : .secondary, tintOpacity: isSelected ? 0.22 : 0.08, interactive: true)
+            .contentShape(Capsule(style: .continuous))
             .foregroundStyle(isSelected ? tint : .secondary)
         }
         .buttonStyle(.plain)
