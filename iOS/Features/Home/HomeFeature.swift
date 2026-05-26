@@ -391,6 +391,8 @@ struct HomeFeature {
         case setSelectedTask(UUID?)
 
         case setAddRoutineSheet(Bool)
+        case setSmartAddTaskSheet(Bool)
+        case prepareAddRoutineDetails
         case deleteTasksTapped([UUID])
         case setDeleteConfirmation(Bool)
         case setMacFilterDetailPresented(Bool)
@@ -759,6 +761,14 @@ struct HomeFeature {
 
             case let .setAddRoutineSheet(isPresented):
                 addRoutinePresentationRouter().setSheet(isPresented, state: &state)
+                return .none
+
+            case let .setSmartAddTaskSheet(isPresented):
+                addRoutinePresentationRouter().setSmartSheet(isPresented, state: &state)
+                return .none
+
+            case .prepareAddRoutineDetails:
+                addRoutinePresentationRouter().prepareSheetDetails(state: &state)
                 return .none
 
             case let .deleteTasksTapped(ids):

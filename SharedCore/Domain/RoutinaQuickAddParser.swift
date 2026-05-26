@@ -266,6 +266,13 @@ enum RoutinaQuickAddParser {
 
     private static func extractTimeOfDay(from working: inout String) -> RoutineTimeOfDay? {
         if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)(morning|noon|afternoon|evening|night|tonight)(?=\\s|$)",
+            from: &working
+        ) {
+            return partOfDayTime(match.groups[0])
+        }
+
+        if let match = removeFirstMatch(
             pattern: "(?:^|\\s)(?:at\\s+)?(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)(?=\\s|$)",
             from: &working
         ), let rawHour = Int(match.groups[0]) {
@@ -293,6 +300,23 @@ enum RoutinaQuickAddParser {
         }
 
         return nil
+    }
+
+    private static func partOfDayTime(_ value: String) -> RoutineTimeOfDay? {
+        switch value.lowercased() {
+        case "morning":
+            return RoutineTimeOfDay(hour: 9, minute: 0)
+        case "noon":
+            return RoutineTimeOfDay(hour: 12, minute: 0)
+        case "afternoon":
+            return RoutineTimeOfDay(hour: 15, minute: 0)
+        case "evening":
+            return RoutineTimeOfDay(hour: 18, minute: 0)
+        case "night", "tonight":
+            return RoutineTimeOfDay(hour: 21, minute: 0)
+        default:
+            return nil
+        }
     }
 
     private static func cleanedName(from working: String) -> String {

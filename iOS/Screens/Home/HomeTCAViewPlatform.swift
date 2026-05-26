@@ -133,7 +133,7 @@ detailContent
     }
 
     func openAddTask() {
-        store.send(.setAddRoutineSheet(true))
+        store.send(.setSmartAddTaskSheet(true))
     }
 
     var filterPicker: some View {

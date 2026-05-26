@@ -34,6 +34,39 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
     }
 
     @Test
+    func setSmartSheetPresentsWithoutPreparingAddRoutineState() {
+        let task = RoutineTask(id: UUID(), name: "Focus", emoji: "F", tags: ["Deep"])
+        var state = TestAddRoutinePresentationState(
+            routineTasks: [task],
+            presentation: HomePresentationState(isMacFilterDetailPresented: true)
+        )
+
+        makeRouter().setSmartSheet(true, state: &state)
+
+        #expect(state.presentation.isAddRoutineSheetPresented)
+        #expect(!state.presentation.isMacFilterDetailPresented)
+        #expect(state.presentation.addRoutineState == nil)
+    }
+
+    @Test
+    func prepareSheetDetailsBuildsAddRoutineStateForPresentedSmartSheet() {
+        let task = RoutineTask(id: UUID(), name: "Focus", emoji: "F", tags: ["Deep"])
+        let place = RoutinePlace(name: "Office", latitude: 52.52, longitude: 13.405)
+        var state = TestAddRoutinePresentationState(
+            routineTasks: [task],
+            routinePlaces: [place],
+            doneStats: HomeDoneStats(totalCount: 1, countsByTaskID: [task.id: 1]),
+            presentation: HomePresentationState(isAddRoutineSheetPresented: true)
+        )
+
+        makeRouter().prepareSheetDetails(state: &state)
+
+        #expect(state.presentation.addRoutineState?.organization.availableTags == ["Deep"])
+        #expect(state.presentation.addRoutineState?.organization.existingRoutineNames == ["Focus"])
+        #expect(state.presentation.addRoutineState?.organization.availablePlaces.map(\.name) == ["Office"])
+    }
+
+    @Test
     func openLinkedTaskSheetPreselectsInverseRelationshipAndExcludesCurrentTask() {
         let currentTask = RoutineTask(id: UUID(), name: "Current", emoji: "C")
         let otherTask = RoutineTask(id: UUID(), name: "Other", emoji: "O")

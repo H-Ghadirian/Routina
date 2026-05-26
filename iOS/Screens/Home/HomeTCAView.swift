@@ -166,13 +166,8 @@ homeContent
 
     @ViewBuilder
     var addRoutineSheetContent: some View {
-        if let addRoutineStore = self.store.scope(
-            state: \.addRoutineState,
-            action: \.addRoutineSheet
-        ) {
-            IOSSmartAddTaskSheet(addRoutineStore: addRoutineStore) {
-                requestRefresh()
-            }
+        IOSSmartAddTaskSheet(homeStore: store) {
+            requestRefresh()
         }
     }
 
@@ -393,7 +388,7 @@ homeContent
 }
 
 private struct IOSSmartAddTaskSheet: View {
-    let addRoutineStore: StoreOf<AddRoutineFeature>
+    let homeStore: StoreOf<HomeFeature>
     let onCreated: () -> Void
 
     @Environment(\.calendar) private var calendar
@@ -415,7 +410,17 @@ private struct IOSSmartAddTaskSheet: View {
 
     var body: some View {
         if isShowingDetails {
-            AddRoutineTCAView(store: addRoutineStore)
+            if let addRoutineStore = homeStore.scope(
+                state: \.addRoutineState,
+                action: \.addRoutineSheet
+            ) {
+                AddRoutineTCAView(store: addRoutineStore)
+            } else {
+                ProgressView()
+                    .task {
+                        prepareDetails()
+                    }
+            }
         } else {
             smartAddContent
         }
@@ -438,7 +443,7 @@ private struct IOSSmartAddTaskSheet: View {
                     .onSubmit(save)
                 }
 
-                if let draft {
+                if let draft, IOSSmartAddDetectedChips.hasDetections(in: draft) {
                     Section("Detected") {
                         IOSSmartAddDetectedChips(draft: draft)
                     }
@@ -484,6 +489,8 @@ private struct IOSSmartAddTaskSheet: View {
                 }
             }
             .task {
+                try? await Task.sleep(for: .milliseconds(150))
+                guard !Task.isCancelled else { return }
                 isInputFocused = true
             }
         }
@@ -511,11 +518,23 @@ private struct IOSSmartAddTaskSheet: View {
     }
 
     private func openDetails() {
-        seedDetailsFromDraft()
+        prepareDetails()
         isShowingDetails = true
     }
 
-    private func seedDetailsFromDraft() {
+    private func prepareDetails() {
+        homeStore.send(.prepareAddRoutineDetails)
+        guard let addRoutineStore = homeStore.scope(
+            state: \.addRoutineState,
+            action: \.addRoutineSheet
+        ) else {
+            return
+        }
+
+        seedDetailsFromDraft(into: addRoutineStore)
+    }
+
+    private func seedDetailsFromDraft(into addRoutineStore: StoreOf<AddRoutineFeature>) {
         guard let draft else {
             addRoutineStore.send(.routineNameChanged(text.trimmingCharacters(in: .whitespacesAndNewlines)))
             return
@@ -523,8 +542,8 @@ private struct IOSSmartAddTaskSheet: View {
 
         addRoutineStore.send(.routineNameChanged(draft.name))
         addRoutineStore.send(.scheduleModeChanged(draft.scheduleMode))
-        seedFrequency(from: draft.frequencyInDays)
-        seedRecurrence(from: draft.recurrenceRule, scheduleMode: draft.scheduleMode)
+        seedFrequency(from: draft.frequencyInDays, into: addRoutineStore)
+        seedRecurrence(from: draft.recurrenceRule, scheduleMode: draft.scheduleMode, into: addRoutineStore)
 
         if let deadline = draft.deadline {
             addRoutineStore.send(.deadlineEnabledChanged(true))
@@ -553,10 +572,13 @@ private struct IOSSmartAddTaskSheet: View {
             addRoutineStore.send(.addTagTapped)
         }
 
-        addRoutineStore.send(.selectedPlaceChanged(matchingPlaceID(named: draft.placeName)))
+        addRoutineStore.send(.selectedPlaceChanged(matchingPlaceID(named: draft.placeName, in: addRoutineStore)))
     }
 
-    private func seedFrequency(from days: Int) {
+    private func seedFrequency(
+        from days: Int,
+        into addRoutineStore: StoreOf<AddRoutineFeature>
+    ) {
         let safeDays = max(days, 1)
         if safeDays.isMultiple(of: 30) {
             addRoutineStore.send(.frequencyChanged(.month))
@@ -572,7 +594,8 @@ private struct IOSSmartAddTaskSheet: View {
 
     private func seedRecurrence(
         from recurrenceRule: RoutineRecurrenceRule,
-        scheduleMode: RoutineScheduleMode
+        scheduleMode: RoutineScheduleMode,
+        into addRoutineStore: StoreOf<AddRoutineFeature>
     ) {
         guard scheduleMode != .oneOff, !scheduleMode.isSoftIntervalRoutine else { return }
 
@@ -582,17 +605,20 @@ private struct IOSSmartAddTaskSheet: View {
         case .intervalDays:
             break
         case .dailyTime:
-            seedTimeConstraint(from: recurrenceRule)
+            seedTimeConstraint(from: recurrenceRule, into: addRoutineStore)
         case .weekly:
             addRoutineStore.send(.recurrenceWeekdayChanged(recurrenceRule.weekday ?? calendar.firstWeekday))
-            seedTimeConstraint(from: recurrenceRule)
+            seedTimeConstraint(from: recurrenceRule, into: addRoutineStore)
         case .monthlyDay:
             addRoutineStore.send(.recurrenceDayOfMonthChanged(recurrenceRule.dayOfMonth ?? 1))
-            seedTimeConstraint(from: recurrenceRule)
+            seedTimeConstraint(from: recurrenceRule, into: addRoutineStore)
         }
     }
 
-    private func seedTimeConstraint(from recurrenceRule: RoutineRecurrenceRule) {
+    private func seedTimeConstraint(
+        from recurrenceRule: RoutineRecurrenceRule,
+        into addRoutineStore: StoreOf<AddRoutineFeature>
+    ) {
         if let timeRange = recurrenceRule.timeRange {
             addRoutineStore.send(.recurrenceHasTimeRangeChanged(true))
             addRoutineStore.send(.recurrenceTimeRangeStartChanged(timeRange.start))
@@ -606,7 +632,10 @@ private struct IOSSmartAddTaskSheet: View {
         }
     }
 
-    private func matchingPlaceID(named placeName: String?) -> UUID? {
+    private func matchingPlaceID(
+        named placeName: String?,
+        in addRoutineStore: StoreOf<AddRoutineFeature>
+    ) -> UUID? {
         guard let placeName,
               let normalizedName = RoutinePlace.normalizedName(placeName)
         else {
@@ -621,52 +650,119 @@ private struct IOSSmartAddTaskSheet: View {
 
 private struct IOSSmartAddDetectedChips: View {
     let draft: RoutinaQuickAddDraft
+    @Environment(\.calendar) private var calendar
+
+    static func hasDetections(in draft: RoutinaQuickAddDraft) -> Bool {
+        !detectedDetailRows(for: draft).isEmpty
+    }
 
     var body: some View {
-        HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-            chip("Title", draft.name, systemImage: "textformat")
-            chip("Plan", draft.scheduleSummaryText, systemImage: "calendar")
-
-            if !draft.tags.isEmpty {
-                chip("Tags", draft.tags.map { "#\($0)" }.joined(separator: " "), systemImage: "tag")
-            }
-
-            if let placeName = draft.placeName {
-                chip("Place", "@\(placeName)", systemImage: "mappin.and.ellipse")
-            }
-
-            if draft.importance != .level2 || draft.urgency != .level2 {
-                chip(
-                    "Priority",
-                    "\(draft.importance.title) / \(draft.urgency.title)",
-                    systemImage: "exclamationmark.triangle"
-                )
-            }
-
-            if let estimatedDurationMinutes = draft.estimatedDurationMinutes {
-                chip("Focus", "\(estimatedDurationMinutes)m", systemImage: "timer")
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(Self.detectedRows(for: draft, calendar: calendar)) { detectedChip in
+                detectedRow(detectedChip)
             }
         }
         .padding(.vertical, 4)
     }
 
-    private func chip(
-        _ title: String,
-        _ value: String,
-        systemImage: String
-    ) -> some View {
-        Label {
-            Text("\(title): \(value)")
-                .lineLimit(1)
-                .truncationMode(.tail)
-        } icon: {
-            Image(systemName: systemImage)
+    private static func detectedRows(
+        for draft: RoutinaQuickAddDraft,
+        calendar: Calendar
+    ) -> [DetectedChip] {
+        [
+            DetectedChip(
+                title: "Task",
+                value: draft.name,
+                systemImage: "textformat"
+            )
+        ] + detectedDetailRows(for: draft, calendar: calendar)
+    }
+
+    private static func detectedDetailRows(
+        for draft: RoutinaQuickAddDraft,
+        calendar: Calendar = .current
+    ) -> [DetectedChip] {
+        var chips: [DetectedChip] = []
+
+        if draft.scheduleMode != .oneOff {
+            chips.append(DetectedChip(
+                title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle routine" : "Repeats",
+                value: draft.recurrenceRule.displayText(calendar: calendar),
+                systemImage: "calendar"
+            ))
+        } else if let deadline = draft.deadline {
+            chips.append(DetectedChip(
+                title: "Due",
+                value: deadline.formatted(date: .abbreviated, time: .shortened),
+                systemImage: "calendar"
+            ))
         }
-        .font(.caption.weight(.semibold))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .frame(maxWidth: 260, alignment: .leading)
-        .background(.quaternary, in: Capsule())
+
+        if !draft.tags.isEmpty {
+            chips.append(DetectedChip(
+                title: "Tags",
+                value: draft.tags.map { "#\($0)" }.joined(separator: " "),
+                systemImage: "tag"
+            ))
+        }
+
+        if let placeName = draft.placeName {
+            chips.append(DetectedChip(
+                title: "Place",
+                value: "@\(placeName)",
+                systemImage: "mappin.and.ellipse"
+            ))
+        }
+
+        if draft.importance != .level2 || draft.urgency != .level2 {
+            chips.append(DetectedChip(
+                title: "Priority",
+                value: "\(draft.importance.title) / \(draft.urgency.title)",
+                systemImage: "exclamationmark.triangle"
+            ))
+        }
+
+        if let estimatedDurationMinutes = draft.estimatedDurationMinutes {
+            chips.append(DetectedChip(
+                title: "Focus",
+                value: "\(estimatedDurationMinutes)m",
+                systemImage: "timer"
+            ))
+        }
+
+        return chips
+    }
+
+    private func detectedRow(_ detectedChip: DetectedChip) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: detectedChip.systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 24, height: 24)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(detectedChip.title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(detectedChip.value)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private struct DetectedChip: Identifiable {
+        let title: String
+        let value: String
+        let systemImage: String
+
+        var id: String { "\(title):\(value)" }
     }
 }
 

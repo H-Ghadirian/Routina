@@ -28,6 +28,24 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
         state.presentation.addRoutineState = nil
     }
 
+    func setSmartSheet(_ isPresented: Bool, state: inout State) {
+        state.presentation.isAddRoutineSheetPresented = isPresented
+        if isPresented {
+            state.presentation.isMacFilterDetailPresented = false
+            state.presentation.addRoutineState = nil
+        } else {
+            state.presentation.addRoutineState = nil
+        }
+    }
+
+    func prepareSheetDetails(state: inout State) {
+        guard state.presentation.isAddRoutineSheetPresented,
+              state.presentation.addRoutineState == nil
+        else { return }
+
+        state.presentation.addRoutineState = makeAddRoutineState(for: state)
+    }
+
     @discardableResult
     func openLinkedTaskSheet(state: inout State) -> Bool {
         guard let currentTaskID = state.selection.taskDetailState?.task.id,

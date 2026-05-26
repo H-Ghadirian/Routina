@@ -49,6 +49,19 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func parsePartOfDayAsExactTime() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Check if I have paracetamol every day night",
+            referenceDate: makeDate("2026-04-23T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        #expect(draft.name == "Check if I have paracetamol")
+        #expect(draft.recurrenceRule.kind == .dailyTime)
+        #expect(draft.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 21, minute: 0))
+    }
+
+    @Test
     func parseTomorrowTodoWithDeadline() throws {
         let calendar = makeTestCalendar()
         let draft = try #require(RoutinaQuickAddParser.parse(
