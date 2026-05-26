@@ -47,12 +47,16 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
         let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
         let storedAttachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
+        let storedNoteAttachments = try context.fetch(FetchDescriptor<RoutineNoteAttachment>())
 
         var attachmentManifests: [Backup.Attachment] = []
         var taskImageAttachmentIDs: [UUID: UUID] = [:]
         var taskVoiceNoteAttachmentIDs: [UUID: UUID] = [:]
         var placeCheckInImageAttachmentIDs: [UUID: UUID] = [:]
+        var noteImageAttachmentIDs: [UUID: UUID] = [:]
+        var noteVoiceNoteAttachmentIDs: [UUID: UUID] = [:]
 
         for task in tasks {
             guard let imageData = task.imageData, !imageData.isEmpty else { continue }
@@ -65,6 +69,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
                     id: attachmentID,
                     taskID: task.id,
                     placeCheckInSessionID: nil,
+                    noteID: nil,
                     role: .taskImage,
                     fileName: fileName,
                     originalFileName: "task-image",
@@ -84,6 +89,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
                     id: attachmentID,
                     taskID: task.id,
                     placeCheckInSessionID: nil,
+                    noteID: nil,
                     role: .taskVoiceNote,
                     fileName: fileName,
                     originalFileName: RoutineVoiceNote.defaultFileName,
@@ -103,10 +109,51 @@ enum SettingsRoutineDataBackupPackageBuilder {
                     id: attachmentID,
                     taskID: nil,
                     placeCheckInSessionID: session.id,
+                    noteID: nil,
                     role: .placeCheckInImage,
                     fileName: fileName,
                     originalFileName: "place-check-in-image",
                     createdAt: session.createdAt ?? exportedAt
+                )
+            )
+        }
+
+        for note in notes {
+            guard let imageData = note.imageData, !imageData.isEmpty else { continue }
+            let attachmentID = UUID()
+            let fileName = "\(attachmentID.uuidString).note-image"
+            try writeAttachment(fileName, imageData)
+            noteImageAttachmentIDs[note.id] = attachmentID
+            attachmentManifests.append(
+                .init(
+                    id: attachmentID,
+                    taskID: nil,
+                    placeCheckInSessionID: nil,
+                    noteID: note.id,
+                    role: .noteImage,
+                    fileName: fileName,
+                    originalFileName: "note-image",
+                    createdAt: note.createdAt ?? exportedAt
+                )
+            )
+        }
+
+        for note in notes {
+            guard let voiceNoteData = note.voiceNoteData, !voiceNoteData.isEmpty else { continue }
+            let attachmentID = UUID()
+            let fileName = "\(attachmentID.uuidString).note-voice.\(RoutineVoiceNote.fileExtension)"
+            try writeAttachment(fileName, voiceNoteData)
+            noteVoiceNoteAttachmentIDs[note.id] = attachmentID
+            attachmentManifests.append(
+                .init(
+                    id: attachmentID,
+                    taskID: nil,
+                    placeCheckInSessionID: nil,
+                    noteID: note.id,
+                    role: .noteVoiceNote,
+                    fileName: fileName,
+                    originalFileName: RoutineVoiceNote.defaultFileName,
+                    createdAt: note.voiceNoteCreatedAt ?? note.createdAt ?? exportedAt
                 )
             )
         }
@@ -120,7 +167,26 @@ enum SettingsRoutineDataBackupPackageBuilder {
                     id: attachment.id,
                     taskID: attachment.taskID,
                     placeCheckInSessionID: nil,
+                    noteID: nil,
                     role: .fileAttachment,
+                    fileName: fileName,
+                    originalFileName: attachment.fileName,
+                    createdAt: attachment.createdAt
+                )
+            )
+        }
+
+        for attachment in storedNoteAttachments {
+            guard !attachment.data.isEmpty else { continue }
+            let fileName = SettingsRoutineDataBackupFileNaming.packageAttachmentFileName(for: attachment)
+            try writeAttachment(fileName, attachment.data)
+            attachmentManifests.append(
+                .init(
+                    id: attachment.id,
+                    taskID: nil,
+                    placeCheckInSessionID: nil,
+                    noteID: attachment.noteID,
+                    role: .noteFileAttachment,
                     fileName: fileName,
                     originalFileName: attachment.fileName,
                     createdAt: attachment.createdAt
@@ -150,6 +216,15 @@ enum SettingsRoutineDataBackupPackageBuilder {
                     $0,
                     imageData: nil,
                     imageAttachmentID: placeCheckInImageAttachmentIDs[$0.id]
+                )
+            },
+            notes: notes.map {
+                SettingsRoutineDataBackupMapping.note(
+                    $0,
+                    imageData: nil,
+                    imageAttachmentID: noteImageAttachmentIDs[$0.id],
+                    voiceNoteData: nil,
+                    voiceNoteAttachmentID: noteVoiceNoteAttachmentIDs[$0.id]
                 )
             },
             attachments: attachmentManifests

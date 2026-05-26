@@ -8,6 +8,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     let isGoalsMode: Bool
     let isTimelineMode: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
+    let onAddNote: () -> Void
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
     @ViewBuilder let searchPanel: () -> SearchPanel
@@ -16,6 +17,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             HomeMacSidebarModeStripView(
                 selectedMode: $selectedSidebarMode,
+                onAddNote: onAddNote,
                 onAddGoal: onAddGoal,
                 onAddTask: onAddTask
             )

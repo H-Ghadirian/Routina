@@ -117,13 +117,14 @@ enum HomeDisplayFilterSupport {
     static func matchesMediaFilter(
         _ filter: TaskMediaFilter,
         hasImage: Bool,
-        hasFileAttachment: Bool
+        hasFileAttachment: Bool,
+        hasVoiceNote: Bool = false
     ) -> Bool {
         switch filter {
         case .all:
             return true
         case .anyMedia:
-            return hasImage || hasFileAttachment
+            return hasImage || hasFileAttachment || hasVoiceNote
         case .withImage:
             return hasImage
         case .withFile:

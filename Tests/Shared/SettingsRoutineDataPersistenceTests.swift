@@ -125,4 +125,64 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredAttachment.fileName == "receipt.jpg")
         #expect(restoredAttachment.data == attachmentData)
     }
+
+    @Test
+    func backupPackageAndRestore_preservesStandaloneNotesAndAttachments() async throws {
+        let context = makeInMemoryContext()
+        let imageData = Data([0x11, 0x12])
+        let voiceData = Data([0x21, 0x22])
+        let fileData = Data([0x31, 0x32])
+        let createdAt = Date(timeIntervalSince1970: 300)
+        let updatedAt = Date(timeIntervalSince1970: 360)
+        let voiceCreatedAt = Date(timeIntervalSince1970: 330)
+        let note = RoutineNote(
+            title: "Visa paperwork",
+            body: "Attach scanned permit forms",
+            imageData: imageData,
+            voiceNoteData: voiceData,
+            voiceNoteDurationSeconds: 4.25,
+            voiceNoteCreatedAt: voiceCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+        context.insert(note)
+        context.insert(
+            RoutineNoteAttachment(
+                noteID: note.id,
+                fileName: "permit.pdf",
+                data: fileData,
+                createdAt: createdAt
+            )
+        )
+        try context.save()
+
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        try SettingsRoutineDataPersistence.writeBackupPackage(to: packageURL, from: context)
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            withBackupPackageAt: packageURL,
+            in: restoreContext
+        )
+
+        #expect(summary.notes == 1)
+        #expect(summary.attachments == 1)
+        let restoredNote = try #require(restoreContext.fetch(FetchDescriptor<RoutineNote>()).first)
+        #expect(restoredNote.title == "Visa paperwork")
+        #expect(restoredNote.body == "Attach scanned permit forms")
+        #expect(restoredNote.imageData == imageData)
+        #expect(restoredNote.voiceNoteData == voiceData)
+        #expect(restoredNote.voiceNoteDurationSeconds == 4.25)
+        #expect(restoredNote.voiceNoteCreatedAt == voiceCreatedAt)
+        #expect(restoredNote.createdAt == createdAt)
+        #expect(restoredNote.updatedAt == updatedAt)
+        let restoredAttachment = try #require(restoreContext.fetch(FetchDescriptor<RoutineNoteAttachment>()).first)
+        #expect(restoredAttachment.noteID == restoredNote.id)
+        #expect(restoredAttachment.fileName == "permit.pdf")
+        #expect(restoredAttachment.data == fileData)
+    }
 }

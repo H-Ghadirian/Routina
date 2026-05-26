@@ -35,12 +35,18 @@ enum RoutineDuplicateIDCleanup {
                 id: \.id,
                 rank: { $0.endedAt ?? $0.startedAt ?? $0.createdAt ?? .distantPast }
             )
+            let removedNotes = try dedupe(
+                FetchDescriptor<RoutineNote>(),
+                in: context,
+                id: \.id,
+                rank: { $0.updatedAt ?? $0.createdAt ?? .distantPast }
+            )
 
-            let total = removedTasks + removedPlaces + removedLogs + removedSessions + removedPlaceCheckIns
+            let total = removedTasks + removedPlaces + removedLogs + removedSessions + removedPlaceCheckIns + removedNotes
             guard total > 0 else { return }
 
             try context.save()
-            print("RoutineDuplicateIDCleanup removed \(total) duplicate row(s): tasks=\(removedTasks) places=\(removedPlaces) logs=\(removedLogs) sessions=\(removedSessions) placeCheckIns=\(removedPlaceCheckIns)")
+            print("RoutineDuplicateIDCleanup removed \(total) duplicate row(s): tasks=\(removedTasks) places=\(removedPlaces) logs=\(removedLogs) sessions=\(removedSessions) placeCheckIns=\(removedPlaceCheckIns) notes=\(removedNotes)")
         } catch {
             print("RoutineDuplicateIDCleanup failed: \(error)")
         }

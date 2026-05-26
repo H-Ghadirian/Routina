@@ -141,7 +141,7 @@ enum SettingsRoutineDataTransferActionExecution {
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.goals) goals, \(result.importedSummary.places) places, \(result.importedSummary.logs) logs, \(result.importedSummary.sleepSessions) sleep sessions, \(result.importedSummary.placeCheckInSessions) place check-ins, and \(result.importedSummary.attachments) attachments."
+                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.goals) goals, \(result.importedSummary.places) places, \(result.importedSummary.logs) logs, \(result.importedSummary.sleepSessions) sleep sessions, \(result.importedSummary.placeCheckInSessions) place check-ins, \(result.importedSummary.notes) notes, and \(result.importedSummary.attachments) attachments."
                     )
                 )
             } catch {

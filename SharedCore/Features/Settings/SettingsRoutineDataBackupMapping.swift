@@ -129,4 +129,26 @@ enum SettingsRoutineDataBackupMapping {
             confirmedAt: session.confirmedAt
         )
     }
+
+    static func note(
+        _ note: RoutineNote,
+        imageData: Data?,
+        imageAttachmentID: UUID?,
+        voiceNoteData: Data?,
+        voiceNoteAttachmentID: UUID?
+    ) -> Backup.Note {
+        Backup.Note(
+            id: note.id,
+            title: note.title,
+            body: note.body,
+            imageData: imageData,
+            imageAttachmentID: imageAttachmentID,
+            voiceNoteData: voiceNoteData,
+            voiceNoteAttachmentID: voiceNoteAttachmentID,
+            voiceNoteDurationSeconds: note.voiceNoteDurationSeconds,
+            voiceNoteCreatedAt: note.voiceNoteCreatedAt,
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt
+        )
+    }
 }

@@ -223,12 +223,16 @@ extension HomeTCAView {
             set: { selection in
                 switch selection {
                 case let .task(taskID):
+                    selectedNoteID = nil
                     store.send(.macSidebarSelectionChanged(.task(taskID)))
                 case let .timelineEntry(entryID):
                     store.send(.macSidebarSelectionChanged(.timelineEntry(entryID)))
-                    let taskID = timelineEntries.first(where: { $0.id == entryID })?.taskID
+                    let entry = timelineEntries.first { $0.id == entryID }
+                    selectedNoteID = entry?.isNote == true ? entryID : nil
+                    let taskID = entry?.taskID
                     store.send(.setSelectedTask(taskID))
                 case nil:
+                    selectedNoteID = nil
                     store.send(.macSidebarSelectionChanged(nil))
                 }
             }
@@ -245,6 +249,10 @@ extension HomeTCAView {
 
     func openGoalsInSidebar() {
         store.send(.macSidebarModeChanged(.goals))
+    }
+
+    func openAddNote() {
+        isNoteEditorPresented = true
     }
 
     func openAddGoal() {
@@ -482,6 +490,7 @@ extension HomeTCAView {
         VStack(alignment: .leading, spacing: 12) {
             HomeMacSidebarModeStripView(
                 selectedMode: macSidebarModeBinding,
+                onAddNote: openAddNote,
                 onAddGoal: openAddGoal,
                 onAddTask: openAddTask
             )
@@ -545,6 +554,7 @@ extension HomeTCAView {
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
             },
+            onAddNote: openAddNote,
             onAddGoal: openAddGoal,
             onAddTask: openAddTask
         ) {

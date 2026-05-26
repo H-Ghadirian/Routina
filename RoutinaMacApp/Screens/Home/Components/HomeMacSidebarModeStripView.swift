@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeMacSidebarModeStripView: View {
     @Binding var selectedMode: HomeFeature.MacSidebarMode
+    let onAddNote: () -> Void
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
 
@@ -42,6 +43,12 @@ struct HomeMacSidebarModeStripView: View {
     private var addMenu: some View {
         Menu {
             Button {
+                onAddNote()
+            } label: {
+                Label("Note", systemImage: "note.text")
+            }
+
+            Button {
                 onAddGoal()
             } label: {
                 Label("Goal", systemImage: "target")
@@ -59,7 +66,7 @@ struct HomeMacSidebarModeStripView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Add")
-        .help("Add goal or task")
+        .help("Add note, goal, or task")
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

@@ -30,6 +30,7 @@ struct HomeTCAView: View {
     @State var areTaskListModeActionsExpanded = false
     @State var areTopActionsExpanded = false
     @State var isQuickAddSheetPresented = false
+    @State var isNoteEditorPresented = false
     @State var isPlaceCheckInMapPresented = false
     @State var isRefreshScheduled = false
     @State private var homeActionSleepWarningMessage: String?
@@ -76,6 +77,9 @@ homeContent
                     QuickAddTaskSheet {
                         requestRefresh()
                     }
+                }
+                .sheet(isPresented: $isNoteEditorPresented) {
+                    RoutineNoteEditorView()
                 }
                 .sheet(isPresented: $isPlaceCheckInMapPresented) {
                     PlaceCheckInMapSheet(selectedActivity: nil)

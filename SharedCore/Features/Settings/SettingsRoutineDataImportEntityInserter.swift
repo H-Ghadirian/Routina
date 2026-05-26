@@ -22,7 +22,7 @@ enum SettingsRoutineDataImportEntityInserter {
             in: context,
             importDate: importDate
         )
-        let attachmentCount = try insertFileAttachments(
+        let taskAttachmentCount = try insertFileAttachments(
             from: backup,
             attachmentData: attachmentData,
             importedTaskIDs: tasks.ids,
@@ -41,6 +41,19 @@ enum SettingsRoutineDataImportEntityInserter {
             importedPlaceIDs: places.ids,
             in: context
         )
+        let notes = try insertNotes(
+            from: backup,
+            attachmentData: attachmentData,
+            in: context,
+            importDate: importDate
+        )
+        let noteAttachmentCount = try insertNoteFileAttachments(
+            from: backup,
+            attachmentData: attachmentData,
+            importedNoteIDs: notes.ids,
+            in: context,
+            importDate: importDate
+        )
 
         return ImportSummary(
             places: places.count,
@@ -49,7 +62,8 @@ enum SettingsRoutineDataImportEntityInserter {
             logs: logCount,
             sleepSessions: sleepSessionCount,
             placeCheckInSessions: placeCheckInCount,
-            attachments: attachmentCount
+            notes: notes.count,
+            attachments: taskAttachmentCount + noteAttachmentCount
         )
     }
 
@@ -387,6 +401,129 @@ enum SettingsRoutineDataImportEntityInserter {
             return session.imageData
         }
         return data
+    }
+
+    @MainActor
+    private static func insertNotes(
+        from backup: Backup,
+        attachmentData: (String) throws -> Data?,
+        in context: ModelContext,
+        importDate: Date
+    ) throws -> (ids: Set<UUID>, count: Int) {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+        var attachmentManifestsByID: [UUID: Backup.Attachment] = [:]
+        for attachment in backup.attachments ?? [] {
+            attachmentManifestsByID[attachment.id] = attachment
+        }
+
+        for note in backup.notes ?? [] {
+            guard importedIDs.insert(note.id).inserted else { continue }
+
+            let imageData = try importedNoteImageData(
+                for: note,
+                backupSchemaVersion: backup.schemaVersion,
+                attachmentManifestsByID: attachmentManifestsByID,
+                attachmentData: attachmentData
+            )
+            let voiceNoteData = try importedNoteVoiceNoteData(
+                for: note,
+                backupSchemaVersion: backup.schemaVersion,
+                attachmentManifestsByID: attachmentManifestsByID,
+                attachmentData: attachmentData
+            )
+
+            let importedNote = RoutineNote(
+                id: note.id,
+                title: note.title,
+                body: note.body,
+                imageData: imageData,
+                voiceNoteData: voiceNoteData,
+                voiceNoteDurationSeconds: note.voiceNoteDurationSeconds,
+                voiceNoteCreatedAt: note.voiceNoteCreatedAt,
+                createdAt: note.createdAt ?? importDate,
+                updatedAt: note.updatedAt ?? note.createdAt ?? importDate
+            )
+            context.insert(importedNote)
+            importedCount += 1
+        }
+
+        return (importedIDs, importedCount)
+    }
+
+    private static func importedNoteImageData(
+        for note: Backup.Note,
+        backupSchemaVersion: Int,
+        attachmentManifestsByID: [UUID: Backup.Attachment],
+        attachmentData: (String) throws -> Data?
+    ) throws -> Data? {
+        guard let imageAttachmentID = note.imageAttachmentID,
+              let imageAttachment = attachmentManifestsByID[imageAttachmentID] else {
+            return note.imageData
+        }
+
+        guard let data = try attachmentData(imageAttachment.fileName) else {
+            if backupSchemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+                throw SettingsRoutineDataPersistence.Error.missingAttachment(imageAttachment.fileName)
+            }
+            return note.imageData
+        }
+        return data
+    }
+
+    private static func importedNoteVoiceNoteData(
+        for note: Backup.Note,
+        backupSchemaVersion: Int,
+        attachmentManifestsByID: [UUID: Backup.Attachment],
+        attachmentData: (String) throws -> Data?
+    ) throws -> Data? {
+        guard let voiceNoteAttachmentID = note.voiceNoteAttachmentID,
+              let voiceNoteAttachment = attachmentManifestsByID[voiceNoteAttachmentID] else {
+            return note.voiceNoteData
+        }
+
+        guard let data = try attachmentData(voiceNoteAttachment.fileName) else {
+            if backupSchemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+                throw SettingsRoutineDataPersistence.Error.missingAttachment(voiceNoteAttachment.fileName)
+            }
+            return note.voiceNoteData
+        }
+        return data
+    }
+
+    @MainActor
+    private static func insertNoteFileAttachments(
+        from backup: Backup,
+        attachmentData: (String) throws -> Data?,
+        importedNoteIDs: Set<UUID>,
+        in context: ModelContext,
+        importDate: Date
+    ) throws -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+        for attachment in backup.attachments ?? [] where attachment.role == .noteFileAttachment {
+            guard let noteID = attachment.noteID,
+                  importedNoteIDs.contains(noteID)
+            else { continue }
+            guard importedIDs.insert(attachment.id).inserted else { continue }
+            guard let data = try attachmentData(attachment.fileName) else {
+                if backup.schemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+                    throw SettingsRoutineDataPersistence.Error.missingAttachment(attachment.fileName)
+                }
+                continue
+            }
+
+            let importedAttachment = RoutineNoteAttachment(
+                id: attachment.id,
+                noteID: noteID,
+                fileName: attachment.originalFileName ?? attachment.fileName,
+                data: data,
+                createdAt: attachment.createdAt ?? importDate
+            )
+            context.insert(importedAttachment)
+            importedCount += 1
+        }
+        return importedCount
     }
 
     private static func clampedInterval(_ interval: Int) -> Int {

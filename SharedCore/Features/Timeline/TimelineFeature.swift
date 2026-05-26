@@ -14,7 +14,9 @@ struct TimelineFeature {
     struct State: Equatable {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
+        var notes: [RoutineNote] = []
         var fileAttachmentTaskIDs: Set<UUID> = []
+        var noteAttachmentNoteIDs: Set<UUID> = []
         var sleepSessions: [SleepSession] = []
         var placeCheckInSessions: [PlaceCheckInSession] = []
         var selectedRange: TimelineRange = .all
@@ -57,7 +59,15 @@ struct TimelineFeature {
     }
 
     enum Action: Equatable {
-        case setData(tasks: [RoutineTask], logs: [RoutineLog], sleepSessions: [SleepSession] = [], placeCheckInSessions: [PlaceCheckInSession] = [], fileAttachmentTaskIDs: Set<UUID> = [])
+        case setData(
+            tasks: [RoutineTask],
+            logs: [RoutineLog],
+            notes: [RoutineNote] = [],
+            sleepSessions: [SleepSession] = [],
+            placeCheckInSessions: [PlaceCheckInSession] = [],
+            fileAttachmentTaskIDs: Set<UUID> = [],
+            noteAttachmentNoteIDs: Set<UUID> = []
+        )
         case selectedRangeChanged(TimelineRange)
         case filterTypeChanged(TimelineFilterType)
         case selectedTagChanged(String?)
@@ -78,12 +88,14 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs):
+            case let .setData(tasks, logs, notes, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
                 state.tasks = tasks
                 state.logs = logs
+                state.notes = notes
                 state.sleepSessions = sleepSessions
                 state.placeCheckInSessions = placeCheckInSessions
                 state.fileAttachmentTaskIDs = fileAttachmentTaskIDs
+                state.noteAttachmentNoteIDs = noteAttachmentNoteIDs
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
@@ -159,9 +171,11 @@ struct TimelineFeature {
         let baseEntries = TimelineLogic.filteredEntries(
             logs: state.logs,
             tasks: state.tasks,
+            notes: state.notes,
             sleepSessions: state.sleepSessions,
             placeCheckInSessions: state.placeCheckInSessions,
             fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
+            noteAttachmentNoteIDs: state.noteAttachmentNoteIDs,
             range: state.selectedRange,
             filterType: state.filterType,
             mediaFilter: state.mediaFilter,

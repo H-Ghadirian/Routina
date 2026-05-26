@@ -73,6 +73,10 @@ detailContent
                 collapseExpandedToolbarActions()
                 openAddTask()
             },
+            onAddNote: {
+                collapseExpandedToolbarActions()
+                isNoteEditorPresented = true
+            },
             onCheckIn: {
                 collapseExpandedToolbarActions()
                 isPlaceCheckInMapPresented = true
@@ -440,6 +444,7 @@ private struct HomeIOSTopActionRail: View {
     let onQuickAdd: () -> Void
     let onShowFilters: () -> Void
     let onAddTask: () -> Void
+    let onAddNote: () -> Void
     let onCheckIn: () -> Void
     let onStartSleep: () -> Void
 
@@ -466,6 +471,13 @@ private struct HomeIOSTopActionRail: View {
                 systemImage: "plus",
                 tint: .primary,
                 action: onAddTask
+            )
+
+            actionButton(
+                title: "Add Note",
+                systemImage: "note.text",
+                tint: .blue,
+                action: onAddNote
             )
 
             actionButton(

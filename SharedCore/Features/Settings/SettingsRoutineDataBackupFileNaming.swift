@@ -16,6 +16,10 @@ enum SettingsRoutineDataBackupFileNaming {
         packageAttachmentFileName(id: attachment.id, fileName: attachment.fileName)
     }
 
+    static func packageAttachmentFileName(for attachment: RoutineNoteAttachment) -> String {
+        packageAttachmentFileName(id: attachment.id, fileName: attachment.fileName)
+    }
+
     static func packageAttachmentFileName(id: UUID, fileName: String) -> String {
         "\(id.uuidString)-\(sanitizedFileName(fileName, fallback: "attachment"))"
     }

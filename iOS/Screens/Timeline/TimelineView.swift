@@ -11,6 +11,8 @@ struct TimelineView: View {
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @Query private var fileAttachments: [RoutineAttachment]
+    @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
+    @Query private var noteAttachments: [RoutineNoteAttachment]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
@@ -22,23 +24,29 @@ timelineRoot
         timelineFiltersSheet
     }
 .task {
-    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
+    syncTimelineData()
     ensureTimelineSelection()
 }
-.onChange(of: tasks) { _, newValue in
-    store.send(.setData(tasks: newValue, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
+.onChange(of: tasks) { _, _ in
+    syncTimelineData()
 }
-.onChange(of: logs) { _, newValue in
-    store.send(.setData(tasks: tasks, logs: newValue, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
+.onChange(of: logs) { _, _ in
+    syncTimelineData()
 }
 .onChange(of: sleepSessionChangeToken) { _, _ in
-    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
+    syncTimelineData()
 }
 .onChange(of: placeCheckInChangeToken) { _, _ in
-    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
+    syncTimelineData()
 }
 .onChange(of: fileAttachmentChangeToken) { _, _ in
-    store.send(.setData(tasks: tasks, logs: logs, sleepSessions: sleepSessions, placeCheckInSessions: placeCheckInSessions, fileAttachmentTaskIDs: fileAttachmentTaskIDs))
+    syncTimelineData()
+}
+.onChange(of: noteChangeToken) { _, _ in
+    syncTimelineData()
+}
+.onChange(of: noteAttachmentChangeToken) { _, _ in
+    syncTimelineData()
 }
 .onChange(of: visibleTimelineEntryIDs) { _, _ in
     ensureTimelineSelection()
@@ -96,6 +104,40 @@ timelineRoot
 
     private var fileAttachmentChangeToken: [String] {
         fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
+    }
+
+    private var noteAttachmentNoteIDs: Set<UUID> {
+        Set(noteAttachments.map(\.noteID))
+    }
+
+    private var noteChangeToken: [String] {
+        notes.map { note in
+            [
+                note.id.uuidString,
+                note.title ?? "",
+                note.body ?? "",
+                note.createdAt?.timeIntervalSinceReferenceDate.description ?? "",
+                note.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                note.imageData?.count.description ?? "",
+                note.voiceNoteData?.count.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
+    private var noteAttachmentChangeToken: [String] {
+        noteAttachments.map { "\($0.id.uuidString):\($0.noteID.uuidString):\($0.fileName):\($0.data.count)" }.sorted()
+    }
+
+    private func syncTimelineData() {
+        store.send(.setData(
+            tasks: tasks,
+            logs: logs,
+            notes: notes,
+            sleepSessions: sleepSessions,
+            placeCheckInSessions: placeCheckInSessions,
+            fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+            noteAttachmentNoteIDs: noteAttachmentNoteIDs
+        ))
     }
 
     private var placeCheckInChangeToken: [String] {
@@ -179,9 +221,11 @@ timelineRoot
         let baseEntries = TimelineLogic.filteredEntries(
             logs: store.logs,
             tasks: store.tasks,
+            notes: store.notes,
             sleepSessions: store.sleepSessions,
             placeCheckInSessions: store.placeCheckInSessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
+            noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
             range: store.selectedRange,
             filterType: store.filterType,
             mediaFilter: store.mediaFilter,
@@ -264,11 +308,11 @@ timelineRoot
 
     @ViewBuilder
     private var content: some View {
-        if logs.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
+        if logs.isEmpty && notes.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items, place check-ins, and sleep records will appear here in chronological order.")
+                description: Text("Completed items, notes, place check-ins, and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
@@ -381,11 +425,11 @@ timelineRoot
                     .padding(.vertical, 10)
             }
 
-            if logs.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
+            if logs.isEmpty && notes.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items, place check-ins, and sleep records will appear here in chronological order.")
+                    description: Text("Completed items, notes, place check-ins, and sleep records will appear here in chronological order.")
                 )
             } else if groupedByDay.isEmpty {
                 ContentUnavailableView(
@@ -422,6 +466,8 @@ timelineRoot
     private var timelineSidebarDetail: some View {
         if let taskID = selectedTimelineEntry?.taskID {
             timelineDetailDestination(taskID: taskID)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isNote, let note = note(for: selectedTimelineEntry) {
+            RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
         } else if let selectedTimelineEntry, selectedTimelineEntry.isSleep {
             ContentUnavailableView(
                 "Sleep record",
@@ -473,7 +519,7 @@ timelineRoot
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
+                if tasks.contains(where: { $0.isOneOffTask }) || !notes.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
@@ -556,6 +602,12 @@ timelineRoot
             NavigationLink(value: taskID) {
                 timelineRowContent(entry)
             }
+        } else if entry.isNote, let note = note(for: entry) {
+            NavigationLink {
+                RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
+            } label: {
+                timelineRowContent(entry)
+            }
         } else {
             timelineRowContent(entry)
         }
@@ -594,6 +646,9 @@ timelineRoot
         if entry.isSleep {
             return "Sleep"
         }
+        if entry.isNote {
+            return "Note"
+        }
         if entry.isPlaceCheckIn {
             return "Place"
         }
@@ -611,6 +666,9 @@ timelineRoot
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isNote {
+            return .blue
         }
         if entry.isPlaceCheckIn {
             return .teal
@@ -649,7 +707,29 @@ timelineRoot
             return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
+        if entry.isNote {
+            let mediaSummary = RoutineNoteMediaSummary.text(
+                hasImage: entry.hasImage,
+                hasFileAttachment: entry.hasFileAttachment,
+                hasVoiceNote: entry.hasVoiceNote
+            )
+            return [
+                entry.timestamp.formatted(date: .omitted, time: .shortened),
+                mediaSummary
+            ].compactMap(\.self).joined(separator: " · ")
+        }
+
         return entry.timestamp.formatted(date: .omitted, time: .shortened)
+    }
+
+    private func note(for entry: TimelineEntry) -> RoutineNote? {
+        notes.first { $0.id == entry.id }
+    }
+
+    private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
+        noteAttachments
+            .filter { $0.noteID == note.id }
+            .sorted { $0.createdAt < $1.createdAt }
     }
 
     @ViewBuilder

@@ -27,9 +27,11 @@ extension HomeTCAView {
         TimelineLogic.filteredEntries(
             logs: store.timelineLogs,
             tasks: store.routineTasks,
+            notes: notes,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
+            noteAttachmentNoteIDs: noteAttachmentNoteIDs,
             range: store.selectedTimelineRange,
             filterType: store.selectedTimelineFilterType,
             mediaFilter: store.selectedTimelineMediaFilter,
@@ -238,7 +240,7 @@ extension HomeTCAView {
                     get: { store.selectedTimelineMediaFilter },
                     set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
                 ),
-                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty,
+                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !notes.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty,
                 importanceUrgencySummary: timelineImportanceUrgencySummary,
                 allTagsCount: filteredTimelineEntriesForTagging.count,
                 availableTags: availableTimelineTags,
@@ -287,7 +289,7 @@ extension HomeTCAView {
 
     var macTimelineSidebarView: some View {
         HomeMacTimelineSidebarView(
-            timelineEntryCount: store.timelineLogs.count + sleepSessions.count + placeCheckInSessions.count,
+            timelineEntryCount: store.timelineLogs.count + notes.count + sleepSessions.count + placeCheckInSessions.count,
             groupedEntries: groupedTimelineEntries,
             selection: macSidebarSelectionBinding,
             sectionTitle: { date in
@@ -301,6 +303,9 @@ extension HomeTCAView {
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
         if entry.isSleep {
             return "Sleep"
+        }
+        if entry.isNote {
+            return "Note"
         }
         if entry.isPlaceCheckIn {
             return "Place"
@@ -319,6 +324,9 @@ extension HomeTCAView {
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isNote {
+            return .blue
         }
         if entry.isPlaceCheckIn {
             return .teal
@@ -357,6 +365,22 @@ extension HomeTCAView {
             return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
+        if entry.isNote {
+            let mediaSummary = RoutineNoteMediaSummary.text(
+                hasImage: entry.hasImage,
+                hasFileAttachment: entry.hasFileAttachment,
+                hasVoiceNote: entry.hasVoiceNote
+            )
+            return [
+                entry.timestamp.formatted(date: .omitted, time: .shortened),
+                mediaSummary
+            ].compactMap(\.self).joined(separator: " · ")
+        }
+
         return entry.timestamp.formatted(date: .omitted, time: .shortened)
+    }
+
+    private var noteAttachmentNoteIDs: Set<UUID> {
+        Set(noteAttachments.map(\.noteID))
     }
 }

@@ -10,6 +10,7 @@ extension SettingsRoutineDataPersistence {
         var logs: [Log]
         var sleepSessions: [Sleep]?
         var placeCheckInSessions: [PlaceCheckIn]?
+        var notes: [Note]?
         var attachments: [Attachment]?
 
         struct Place: Codable {
@@ -116,17 +117,35 @@ extension SettingsRoutineDataPersistence {
             var confirmedAt: Date?
         }
 
+        struct Note: Codable {
+            var id: UUID
+            var title: String?
+            var body: String?
+            var imageData: Data?
+            var imageAttachmentID: UUID?
+            var voiceNoteData: Data?
+            var voiceNoteAttachmentID: UUID?
+            var voiceNoteDurationSeconds: Double?
+            var voiceNoteCreatedAt: Date?
+            var createdAt: Date?
+            var updatedAt: Date?
+        }
+
         struct Attachment: Codable {
             enum Role: String, Codable {
                 case taskImage
                 case taskVoiceNote
                 case placeCheckInImage
                 case fileAttachment
+                case noteImage
+                case noteVoiceNote
+                case noteFileAttachment
             }
 
             var id: UUID
             var taskID: UUID?
             var placeCheckInSessionID: UUID?
+            var noteID: UUID?
             var role: Role
             var fileName: String
             var originalFileName: String?
@@ -141,6 +160,7 @@ extension SettingsRoutineDataPersistence {
         var logs: Int
         var sleepSessions: Int = 0
         var placeCheckInSessions: Int = 0
+        var notes: Int = 0
         var attachments: Int
     }
 

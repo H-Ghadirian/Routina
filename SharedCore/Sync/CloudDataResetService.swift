@@ -40,6 +40,16 @@ enum CloudDataResetService {
             context.delete(session)
         }
 
+        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        for note in notes {
+            context.delete(note)
+        }
+
+        let noteAttachments = try context.fetch(FetchDescriptor<RoutineNoteAttachment>())
+        for attachment in noteAttachments {
+            context.delete(attachment)
+        }
+
         let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
         for att in attachments {
             context.delete(att)

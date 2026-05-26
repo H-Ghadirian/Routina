@@ -12,6 +12,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case notes = "Notes"
     case places = "Places"
     case sleep = "Sleep"
     case done = "Done"
@@ -22,6 +23,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
 
 enum TimelineEntryType: Equatable {
     case task
+    case note
     case sleep
     case placeCheckIn
 }
@@ -37,6 +39,7 @@ struct TimelineEntry: Identifiable, Equatable {
     let tags: [String]
     let hasImage: Bool
     let hasFileAttachment: Bool
+    let hasVoiceNote: Bool
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
     let isOneOff: Bool
@@ -56,6 +59,7 @@ struct TimelineEntry: Identifiable, Equatable {
         tags: [String],
         hasImage: Bool = false,
         hasFileAttachment: Bool = false,
+        hasVoiceNote: Bool = false,
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
         isOneOff: Bool,
@@ -74,6 +78,7 @@ struct TimelineEntry: Identifiable, Equatable {
         self.tags = tags
         self.hasImage = hasImage
         self.hasFileAttachment = hasFileAttachment
+        self.hasVoiceNote = hasVoiceNote
         self.importance = importance
         self.urgency = urgency
         self.isOneOff = isOneOff
@@ -87,6 +92,10 @@ struct TimelineEntry: Identifiable, Equatable {
         entryType == .sleep
     }
 
+    var isNote: Bool {
+        entryType == .note
+    }
+
     var isPlaceCheckIn: Bool {
         entryType == .placeCheckIn
     }
@@ -96,9 +105,11 @@ enum TimelineLogic {
     static func filteredEntries(
         logs: [RoutineLog],
         tasks: [RoutineTask],
+        notes: [RoutineNote] = [],
         sleepSessions: [SleepSession] = [],
         placeCheckInSessions: [PlaceCheckInSession] = [],
         fileAttachmentTaskIDs: Set<UUID> = [],
+        noteAttachmentNoteIDs: Set<UUID> = [],
         range: TimelineRange,
         filterType: TimelineFilterType,
         mediaFilter: TaskMediaFilter = .all,
@@ -123,11 +134,13 @@ enum TimelineLogic {
             let isOneOff = task?.isOneOffTask ?? false
             let hasImage = task?.hasImage ?? false
             let hasFileAttachment = fileAttachmentTaskIDs.contains(log.taskID)
+            let hasVoiceNote = task?.hasVoiceNote ?? false
 
             guard HomeDisplayFilterSupport.matchesMediaFilter(
                 mediaFilter,
                 hasImage: hasImage,
-                hasFileAttachment: hasFileAttachment
+                hasFileAttachment: hasFileAttachment,
+                hasVoiceNote: hasVoiceNote
             ) else {
                 return nil
             }
@@ -136,6 +149,7 @@ enum TimelineLogic {
             case .all: break
             case .routines: if isOneOff { return nil }
             case .todos: if !isOneOff { return nil }
+            case .notes: return nil
             case .places: return nil
             case .sleep: return nil
             case .done: if log.kind != .completed { return nil }
@@ -152,10 +166,43 @@ enum TimelineLogic {
                 tags: task?.tags ?? [],
                 hasImage: hasImage,
                 hasFileAttachment: hasFileAttachment,
+                hasVoiceNote: hasVoiceNote,
                 importance: task?.importance ?? .level2,
                 urgency: task?.urgency ?? .level2,
                 isOneOff: isOneOff,
                 kind: log.kind
+            )
+        }
+
+        let noteEntries = notes.compactMap { note -> TimelineEntry? in
+            let timestamp = note.createdAt ?? note.updatedAt ?? Date.distantPast
+            if let cutoff, timestamp < cutoff { return nil }
+
+            let hasFileAttachment = noteAttachmentNoteIDs.contains(note.id)
+            guard filterType == .all || filterType == .notes,
+                  HomeDisplayFilterSupport.matchesMediaFilter(
+                    mediaFilter,
+                    hasImage: note.hasImage,
+                    hasFileAttachment: hasFileAttachment,
+                    hasVoiceNote: note.hasVoiceNote
+                  )
+            else {
+                return nil
+            }
+
+            return TimelineEntry(
+                id: note.id,
+                taskID: nil,
+                timestamp: timestamp,
+                taskName: note.displayTitle,
+                taskEmoji: "📝",
+                tags: [],
+                hasImage: note.hasImage,
+                hasFileAttachment: hasFileAttachment,
+                hasVoiceNote: note.hasVoiceNote,
+                isOneOff: false,
+                kind: .completed,
+                entryType: .note
             )
         }
 
@@ -222,7 +269,7 @@ enum TimelineLogic {
             )
         }
 
-        return logEntries + sleepEntries + placeEntries
+        return logEntries + noteEntries + sleepEntries + placeEntries
     }
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {

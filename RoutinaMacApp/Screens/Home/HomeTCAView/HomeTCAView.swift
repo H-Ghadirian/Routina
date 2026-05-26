@@ -63,6 +63,8 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var isQuickAddSheetPresented = false
+    @State var isNoteEditorPresented = false
+    @State var selectedNoteID: UUID?
     @State var isRefreshScheduled = false
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var relatedTimelineTagSuggestionAnchor: String?
@@ -86,6 +88,8 @@ struct HomeTCAView: View {
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
     @Query private var fileAttachments: [RoutineAttachment]
+    @Query(sort: \RoutineNote.createdAt, order: .reverse) var notes: [RoutineNote]
+    @Query var noteAttachments: [RoutineNoteAttachment]
 
     init(
         store: StoreOf<HomeFeature>,
@@ -122,6 +126,9 @@ homeContent
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
                 }
+                .sheet(isPresented: $isNoteEditorPresented) {
+                    RoutineNoteEditorView()
+                }
                 .task {
                     syncFileAttachmentTaskIDs()
                 }
@@ -146,6 +153,11 @@ homeContent
             action: \.taskDetail
         ) {
             TaskDetailTCAView(store: detailStore)
+        } else if let selectedNote {
+            RoutineNoteDetailView(
+                note: selectedNote,
+                attachments: noteAttachments(for: selectedNote)
+            )
         } else {
             ContentUnavailableView(
                 "Select a task",
@@ -154,6 +166,17 @@ homeContent
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private var selectedNote: RoutineNote? {
+        guard let selectedNoteID else { return nil }
+        return notes.first { $0.id == selectedNoteID }
+    }
+
+    private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
+        noteAttachments
+            .filter { $0.noteID == note.id }
+            .sorted { $0.createdAt < $1.createdAt }
     }
 
     var addRoutineSheetBinding: Binding<Bool> {

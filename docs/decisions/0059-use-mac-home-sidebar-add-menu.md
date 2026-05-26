@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0060: Support Standalone Notes](0060-support-standalone-notes.md)
 
 ## Date
 

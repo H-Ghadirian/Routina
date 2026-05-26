@@ -426,6 +426,7 @@ let package = Package(
                 "SharedCore/Views/SleepModeViews.swift",
                 "SharedCore/Views/PlaceCheckInDockView.swift",
                 "SharedCore/Views/PlaceCheckInMapSheet.swift",
+                "SharedCore/Views/RoutineNoteViews.swift",
                 "SharedCore/Views/TaskRelationshipsEditor.swift",
                 "SharedCore/Views/TaskVoiceNoteViews.swift",
                 "SharedCore/Views/CalendarTaskSuggestionRowPresentation.swift",

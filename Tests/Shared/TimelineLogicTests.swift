@@ -456,6 +456,79 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_includesStandaloneNotesAndSupportsNoteFilter() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Read")
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let note = RoutineNote(
+            title: "Job permit",
+            body: "Collect supporting documents",
+            imageData: Data([0x01]),
+            voiceNoteData: Data([0x02]),
+            voiceNoteDurationSeconds: 2,
+            voiceNoteCreatedAt: makeDate("2026-03-20T09:20:00Z"),
+            createdAt: makeDate("2026-03-20T09:30:00Z"),
+            updatedAt: makeDate("2026-03-20T09:30:00Z")
+        )
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            notes: [note],
+            noteAttachmentNoteIDs: [note.id],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let noteEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            notes: [note],
+            noteAttachmentNoteIDs: [note.id],
+            range: .all,
+            filterType: .notes,
+            now: now,
+            calendar: calendar
+        )
+        let doneEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            notes: [note],
+            noteAttachmentNoteIDs: [note.id],
+            range: .all,
+            filterType: .done,
+            now: now,
+            calendar: calendar
+        )
+        let fileEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            notes: [note],
+            noteAttachmentNoteIDs: [note.id],
+            range: .all,
+            filterType: .all,
+            mediaFilter: .withFile,
+            now: now,
+            calendar: calendar
+        )
+
+        let noteEntry = allEntries.first { $0.id == note.id }
+        #expect(allEntries.count == 2)
+        #expect(noteEntry?.isNote == true)
+        #expect(noteEntry?.taskID == nil)
+        #expect(noteEntry?.taskName == "Job permit")
+        #expect(noteEntry?.timestamp == makeDate("2026-03-20T09:30:00Z"))
+        #expect(noteEntry?.hasImage == true)
+        #expect(noteEntry?.hasFileAttachment == true)
+        #expect(noteEntry?.hasVoiceNote == true)
+        #expect(noteEntries.map(\.id) == [note.id])
+        #expect(doneEntries.map(\.id) == [log.id])
+        #expect(fileEntries.map(\.id) == [note.id])
+    }
+
+    @Test
     func filteredEntries_mediaFilterMatchesDoneEntriesWithImagesOrFiles() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
