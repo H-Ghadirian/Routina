@@ -28,44 +28,51 @@ struct AppView: View {
 let tabView = TabView(
     selection: selectedTabBinding
 ) {
-    SwiftUI.Tab(Tab.home.rawValue, systemImage: "house", value: Tab.home) {
+    SwiftUI.Tab(Tab.home.rawValue, systemImage: "house", value: AppTabBarItem.home) {
         platformHomeView
     }
 
-    SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: Tab.search, role: .search) {
+    SwiftUI.Tab(Tab.search.rawValue, systemImage: "magnifyingglass", value: AppTabBarItem.search, role: .search) {
         platformSearchHomeView(searchText: $searchText)
     }
 
-    SwiftUI.Tab(Tab.goals.rawValue, systemImage: "target", value: Tab.goals) {
-        GoalsTCAView(
-            store: store.scope(state: \.goals, action: \.goals)
-        )
+    if !usesCompactMoreTab {
+        SwiftUI.Tab(Tab.goals.rawValue, systemImage: "target", value: AppTabBarItem.goals) {
+            GoalsTCAView(
+                store: store.scope(state: \.goals, action: \.goals)
+            )
+        }
     }
 
-    SwiftUI.Tab("Timeline", systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
+    SwiftUI.Tab("Task", systemImage: "plus", value: AppTabBarItem.addTask) {
+        Color.clear
+    }
+
+    SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: AppTabBarItem.timeline) {
         TimelineView(
             store: store.scope(state: \.timeline, action: \.timeline)
         )
     }
 
     if usesCompactMoreTab {
-        SwiftUI.Tab(Tab.more.rawValue, systemImage: "ellipsis.circle", value: Tab.more) {
+        SwiftUI.Tab(Tab.more.rawValue, systemImage: "ellipsis.circle", value: AppTabBarItem.more) {
             AppMoreNavigationView(
                 path: $moreNavigationPath,
                 selectedTab: store.selectedTab,
+                goalsStore: store.scope(state: \.goals, action: \.goals),
                 statsStore: store.scope(state: \.stats, action: \.stats),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
                 onSelectTab: { store.send(.tabSelected($0)) }
             )
         }
     } else {
-        SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
+        SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: AppTabBarItem.stats) {
             StatsViewWrapper(
                 store: store.scope(state: \.stats, action: \.stats)
             )
         }
 
-        SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: Tab.settings) {
+        SwiftUI.Tab(Tab.settings.rawValue, systemImage: "gear", value: AppTabBarItem.settings) {
             SettingsTCAView(
                 store: store.scope(state: \.settings, action: \.settings)
             )
@@ -146,7 +153,7 @@ Group {
         AppColorScheme(rawValue: appColorSchemeRawValue) ?? .system
     }
 
-    private var selectedTabBinding: Binding<Tab> {
+    private var selectedTabBinding: Binding<AppTabBarItem> {
         Binding(
             get: { selectedTabForCurrentLayout },
             set: { tab in
@@ -155,8 +162,9 @@ Group {
         )
     }
 
-    private var selectedTabForCurrentLayout: Tab {
-        if usesCompactMoreTab, store.selectedTab == .stats || store.selectedTab == .settings {
+    private var selectedTabForCurrentLayout: AppTabBarItem {
+        if usesCompactMoreTab,
+           store.selectedTab == .goals || store.selectedTab == .stats || store.selectedTab == .settings {
             return .more
         }
 
@@ -164,14 +172,21 @@ Group {
             return .settings
         }
 
-        return store.selectedTab
+        return AppTabBarItem(tab: store.selectedTab)
     }
 
     private var usesCompactMoreTab: Bool {
         horizontalSizeClass == .compact || verticalSizeClass == .compact
     }
 
-    private func selectTab(_ tab: Tab) {
+    private func selectTab(_ tab: AppTabBarItem) {
+        if tab == .addTask {
+            moreNavigationPath = NavigationPath()
+            store.send(.tabSelected(.home))
+            store.send(.home(.setAddRoutineSheet(true)))
+            return
+        }
+
         if usesCompactMoreTab, tab == .more, selectedTabForCurrentLayout == .more {
             moreNavigationPath = NavigationPath()
         }
@@ -180,7 +195,8 @@ Group {
             moreNavigationPath = NavigationPath()
         }
 
-        store.send(.tabSelected(tab))
+        guard let appTab = tab.appTab else { return }
+        store.send(.tabSelected(appTab))
     }
 
     private var fastFilterTags: [String] {
@@ -360,6 +376,57 @@ Group {
     }
 }
 
+private enum AppTabBarItem: Hashable {
+    case home
+    case search
+    case goals
+    case addTask
+    case timeline
+    case stats
+    case settings
+    case more
+
+    init(tab: Tab) {
+        switch tab {
+        case .home:
+            self = .home
+        case .search:
+            self = .search
+        case .goals:
+            self = .goals
+        case .timeline:
+            self = .timeline
+        case .stats:
+            self = .stats
+        case .settings:
+            self = .settings
+        case .more:
+            self = .more
+        }
+    }
+
+    var appTab: Tab? {
+        switch self {
+        case .home:
+            return .home
+        case .search:
+            return .search
+        case .goals:
+            return .goals
+        case .addTask:
+            return nil
+        case .timeline:
+            return .timeline
+        case .stats:
+            return .stats
+        case .settings:
+            return .settings
+        case .more:
+            return .more
+        }
+    }
+}
+
 private struct ActiveFocusDeepLink {
     let deepLink: RoutinaDeepLink
     let startedAt: Date
@@ -383,6 +450,7 @@ private extension AppColorScheme {
 }
 
 private enum AppMoreDestination: Hashable {
+    case goals
     case stats
     case settings
 }
@@ -390,6 +458,7 @@ private enum AppMoreDestination: Hashable {
 private struct AppMoreNavigationView: View {
     @Binding var path: NavigationPath
     let selectedTab: Tab
+    let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let onSelectTab: (Tab) -> Void
@@ -398,6 +467,15 @@ private struct AppMoreNavigationView: View {
         NavigationStack(path: $path) {
             List {
                 Section {
+                    NavigationLink(value: AppMoreDestination.goals) {
+                        SettingsNavigationRow(
+                            icon: "target",
+                            tint: .blue,
+                            title: Tab.goals.rawValue,
+                            subtitle: "Outcomes, sub-goals, and linked tasks"
+                        )
+                    }
+
                     NavigationLink(value: AppMoreDestination.stats) {
                         SettingsNavigationRow(
                             icon: "chart.bar.xaxis",
@@ -422,6 +500,11 @@ private struct AppMoreNavigationView: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: AppMoreDestination.self) { destination in
                 switch destination {
+                case .goals:
+                    GoalsTCAView(store: goalsStore)
+                        .onAppear {
+                            onSelectTab(.goals)
+                        }
                 case .stats:
                     StatsView(
                         store: statsStore,
@@ -451,7 +534,7 @@ private struct AppMoreNavigationView: View {
             restoreSelectedMoreDestinationIfNeeded(for: tab)
         }
         .onChange(of: path.count) { _, count in
-            if count == 0, selectedTab == .stats || selectedTab == .settings {
+            if count == 0, selectedTab == .goals || selectedTab == .stats || selectedTab == .settings {
                 onSelectTab(.more)
             }
         }
@@ -461,6 +544,8 @@ private struct AppMoreNavigationView: View {
         guard path.isEmpty else { return }
 
         switch tab ?? selectedTab {
+        case .goals:
+            path.append(AppMoreDestination.goals)
         case .stats:
             path.append(AppMoreDestination.stats)
         case .settings:

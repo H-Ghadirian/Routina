@@ -69,10 +69,6 @@ detailContent
                 collapseExpandedToolbarActions()
                 store.send(.isFilterSheetPresentedChanged(true))
             },
-            onAddTask: {
-                collapseExpandedToolbarActions()
-                openAddTask()
-            },
             onAddNote: {
                 collapseExpandedToolbarActions()
                 isNoteEditorPresented = true
@@ -443,7 +439,6 @@ private struct HomeIOSTopActionRail: View {
     let showsSleepAction: Bool
     let onQuickAdd: () -> Void
     let onShowFilters: () -> Void
-    let onAddTask: () -> Void
     let onAddNote: () -> Void
     let onCheckIn: () -> Void
     let onStartSleep: () -> Void
@@ -464,13 +459,6 @@ private struct HomeIOSTopActionRail: View {
                     : "line.3.horizontal.decrease.circle",
                 tint: hasActiveOptionalFilters ? .accentColor : .secondary,
                 action: onShowFilters
-            )
-
-            actionButton(
-                title: "Add Task",
-                systemImage: "plus",
-                tint: .primary,
-                action: onAddTask
             )
 
             actionButton(
