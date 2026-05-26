@@ -232,6 +232,16 @@ extension HomeTCAView {
         .onChange(of: macNavigationSnapshot) { _, snapshot in
             recordMacNavigationSnapshotIfNeeded(snapshot)
         }
+        .onChange(of: store.selectedTaskID) { _, taskID in
+            if taskID != nil {
+                isNoteEditorPresented = false
+            }
+        }
+        .onChange(of: store.macSidebarMode) { _, mode in
+            if mode != .routines {
+                isNoteEditorPresented = false
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .routinaMacNavigateBack)) { _ in
             goBackInMacNavigationHistory()
         }

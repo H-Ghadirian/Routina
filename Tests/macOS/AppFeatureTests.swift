@@ -121,12 +121,41 @@ struct AppFeatureTests {
     }
 
     @Test
-    func openDeepLink_goalSelectsGoalsTabAndGoal() async {
+    func openDeepLink_taskSelectsHomeSidebarTaskRow() async {
+        let taskID = UUID()
+        let task = RoutineTask(id: taskID, name: "Focus target", scheduleMode: .oneOff)
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .timeline,
+                home: HomeFeature.State(
+                    routineTasks: [task],
+                    macSidebarMode: .stats
+                )
+            )
+        ) {
+            AppFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.openDeepLink(.task(taskID)))
+        await store.receive(.home(.openTaskDeepLink(taskID)))
+        await store.receive(.home(.macSidebarSelectionChanged(.task(taskID))))
+        await store.receive(.home(.setSelectedTask(taskID)))
+
+        #expect(store.state.selectedTab == .home)
+        #expect(store.state.home.macSidebarMode == .routines)
+        #expect(store.state.home.macSidebarSelection == .task(taskID))
+        #expect(store.state.home.selectedTaskID == taskID)
+    }
+
+    @Test
+    func openDeepLink_goalSelectsHomeGoalsSidebarAndGoal() async {
         let goalID = UUID()
         let goal = makeGoalDisplay(id: goalID, title: "Health")
         let store = TestStore(
             initialState: AppFeature.State(
-                selectedTab: .home,
+                selectedTab: .timeline,
+                home: HomeFeature.State(macSidebarMode: .stats),
                 goals: GoalsFeature.State(goals: [goal])
             )
         ) {
@@ -135,7 +164,11 @@ struct AppFeatureTests {
 
         await store.send(.openDeepLink(.goal(goalID))) {
             $0.hasRestoredTemporaryViewState = true
-            $0.selectedTab = .goals
+            $0.selectedTab = .home
+        }
+
+        await store.receive(.home(.macSidebarModeChanged(.goals))) {
+            $0.home.macSidebarMode = .goals
         }
 
         await store.receive(.goals(.openGoalDeepLink(goalID))) {
@@ -145,21 +178,19 @@ struct AppFeatureTests {
     }
 
     @Test
-    func openDeepLink_noteSelectsTimelineAndPreparesNotePresentation() async {
+    func openDeepLink_noteSelectsHomeTimelineSidebarRow() async {
         let noteID = UUID()
         let store = TestStore(
             initialState: AppFeature.State(
-                selectedTab: .home,
-                timeline: TimelineFeature.State(
-                    tasks: [],
-                    logs: [],
-                    selectedRange: .month,
-                    filterType: .todos,
-                    selectedTag: "Errands",
-                    selectedTags: ["Errands"],
-                    excludedTags: ["Hidden"],
-                    mediaFilter: .withImage,
-                    isFilterSheetPresented: true
+                selectedTab: .stats,
+                home: HomeFeature.State(
+                    selectedTimelineRange: .month,
+                    selectedTimelineFilterType: .todos,
+                    selectedTimelineTags: ["Errands"],
+                    selectedTimelineExcludedTags: ["Hidden"],
+                    selectedTimelineMediaFilter: .withImage,
+                    macSidebarMode: .settings,
+                    macSidebarSelection: .task(UUID())
                 )
             )
         ) {
@@ -168,18 +199,18 @@ struct AppFeatureTests {
 
         await store.send(.openDeepLink(.note(noteID))) {
             $0.hasRestoredTemporaryViewState = true
-            $0.selectedTab = .timeline
+            $0.selectedTab = .home
         }
 
-        await store.receive(.timeline(.openNoteDeepLink(noteID))) {
-            $0.timeline.selectedRange = .all
-            $0.timeline.filterType = .notes
-            $0.timeline.selectedTag = nil
-            $0.timeline.selectedTags = []
-            $0.timeline.excludedTags = []
-            $0.timeline.mediaFilter = .all
-            $0.timeline.isFilterSheetPresented = false
-            $0.timeline.deepLinkedNoteID = noteID
+        await store.receive(.home(.openNoteDeepLink(noteID))) {
+            $0.home.macSidebarMode = .timeline
+            $0.home.macSidebarSelection = .timelineEntry(noteID)
+            $0.home.selectedTimelineRange = .all
+            $0.home.selectedTimelineFilterType = .notes
+            $0.home.selectedTimelineTag = nil
+            $0.home.selectedTimelineTags = []
+            $0.home.selectedTimelineExcludedTags = []
+            $0.home.selectedTimelineMediaFilter = .all
         }
     }
 

@@ -517,6 +517,7 @@ struct HomeFeature {
         case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
         case selectedBoardScopeChanged(BoardScope)
         case openTaskDeepLink(UUID)
+        case openNoteDeepLink(UUID)
         case openSprintDeepLink(UUID)
         case createBacklogTapped
         case createBacklogTitleChanged(String)
@@ -1154,6 +1155,9 @@ struct HomeFeature {
             case let .openTaskDeepLink(taskID):
                 return openTaskDeepLink(taskID, state: &state)
 
+            case let .openNoteDeepLink(noteID):
+                return openNoteDeepLink(noteID, state: &state)
+
             case let .openSprintDeepLink(sprintID):
                 return openSprintDeepLink(sprintID, state: &state)
 
@@ -1483,6 +1487,28 @@ struct HomeFeature {
         state.macSidebarMode = .routines
         state.presentation.isMacFilterDetailPresented = false
         return .send(.macSidebarSelectionChanged(.task(taskID)))
+    }
+
+    private func openNoteDeepLink(
+        _ noteID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        state.macSidebarMode = .timeline
+        state.macSidebarSelection = .timelineEntry(noteID)
+        state.presentation.isMacFilterDetailPresented = false
+        state.presentation.isAddRoutineSheetPresented = false
+        state.presentation.addRoutineState = nil
+        state.selectedTimelineRange = .all
+        state.selectedTimelineFilterType = .notes
+        state.selectedTimelineTags = []
+        state.selectedTimelineIncludeTagMatchMode = .all
+        state.selectedTimelineExcludedTags = []
+        state.selectedTimelineExcludeTagMatchMode = .any
+        state.selectedTimelineImportanceUrgencyFilter = nil
+        state.selectedTimelineMediaFilter = .all
+        HomeSelectionEditor.clearTaskSelection(&state.selection)
+        persistTemporaryViewState(state)
+        return .none
     }
 
     private func openSprintDeepLink(

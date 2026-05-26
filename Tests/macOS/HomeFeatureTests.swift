@@ -22,6 +22,40 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
+        let noteID = UUID()
+        let selectedTaskID = UUID()
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                selectedTaskID: selectedTaskID,
+                isMacFilterDetailPresented: true,
+                selectedTimelineRange: .month,
+                selectedTimelineFilterType: .todos,
+                selectedTimelineTags: ["Errands"],
+                selectedTimelineExcludedTags: ["Hidden"],
+                selectedTimelineMediaFilter: .withImage,
+                macSidebarMode: .settings,
+                macSidebarSelection: .task(selectedTaskID)
+            )
+        ) {
+            HomeFeature()
+        }
+
+        await store.send(.openNoteDeepLink(noteID)) {
+            $0.selectedTaskID = nil
+            $0.isMacFilterDetailPresented = false
+            $0.selectedTimelineRange = .all
+            $0.selectedTimelineFilterType = .notes
+            $0.selectedTimelineTag = nil
+            $0.selectedTimelineTags = []
+            $0.selectedTimelineExcludedTags = []
+            $0.selectedTimelineMediaFilter = .all
+            $0.macSidebarMode = .timeline
+            $0.macSidebarSelection = .timelineEntry(noteID)
+        }
+    }
+
+    @Test
     func staleTaskDetailLoadActionAfterDismissIsIgnored() async {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
