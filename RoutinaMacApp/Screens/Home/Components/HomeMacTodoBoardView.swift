@@ -152,7 +152,7 @@ struct HomeMacTodoBoardView: View {
                             draggedTaskID: $draggedTaskID
                         )
                         .onDrop(
-                            of: [.text],
+                            of: HomeMacTodoBoardDragPayload.supportedContentTypes,
                             delegate: HomeMacTodoBoardCardDropDelegate(
                                 destinationTaskID: task.id,
                                 columnState: column.state,
@@ -175,7 +175,7 @@ struct HomeMacTodoBoardView: View {
                 .padding(.bottom, 4)
             }
             .onDrop(
-                of: [.text],
+                of: HomeMacTodoBoardDragPayload.supportedContentTypes,
                 delegate: HomeMacTodoBoardColumnDropDelegate(
                     columnState: column.state,
                     orderedTaskIDs: column.orderedTaskIDs,

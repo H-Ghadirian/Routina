@@ -1,4 +1,66 @@
+import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
+
+enum HomeMacTodoBoardDragPayload {
+    private static let boardTaskType = UTType(exportedAs: "app.routina.todo-board-task")
+
+    static let supportedContentTypes: [UTType] = [
+        boardTaskType,
+        .plainText,
+        .text,
+    ]
+
+    static func itemProvider(for taskID: UUID) -> NSItemProvider {
+        let provider = NSItemProvider(object: taskID.uuidString as NSString)
+        provider.registerDataRepresentation(
+            forTypeIdentifier: boardTaskType.identifier,
+            visibility: .ownProcess
+        ) { completion in
+            completion(taskID.uuidString.data(using: .utf8), nil)
+            return nil
+        }
+        return provider
+    }
+
+    static func hasTaskPayload(in info: DropInfo) -> Bool {
+        info.hasItemsConforming(to: supportedContentTypes)
+    }
+
+    @discardableResult
+    static func loadTaskID(from info: DropInfo, completion: @escaping @Sendable (UUID?) -> Void) -> Bool {
+        if let provider = info.itemProviders(for: [boardTaskType]).first {
+            provider.loadDataRepresentation(forTypeIdentifier: boardTaskType.identifier) { data, _ in
+                guard
+                    let data,
+                    let text = String(data: data, encoding: .utf8)
+                else {
+                    completion(nil)
+                    return
+                }
+                completion(taskID(from: text))
+            }
+            return true
+        }
+
+        guard let provider = info.itemProviders(for: [.plainText, .text]).first else {
+            return false
+        }
+
+        provider.loadObject(ofClass: NSString.self) { object, _ in
+            guard let text = object as? NSString else {
+                completion(nil)
+                return
+            }
+            completion(taskID(from: text as String))
+        }
+        return true
+    }
+
+    private static func taskID(from text: String) -> UUID? {
+        UUID(uuidString: text.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+}
 
 struct HomeMacTodoBoardCardDropDelegate: DropDelegate {
     let destinationTaskID: UUID
@@ -11,10 +73,15 @@ struct HomeMacTodoBoardCardDropDelegate: DropDelegate {
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
-        draggedTaskID != nil
+        draggedTaskID != nil || HomeMacTodoBoardDragPayload.hasTaskPayload(in: info)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        validateDrop(info: info) ? DropProposal(operation: .move) : nil
     }
 
     func dropEntered(info: DropInfo) {
+        guard validateDrop(info: info) else { return }
         highlightedColumnState = columnState
         hoverTargetTaskID = destinationTaskID
         trailingDropColumnState = nil
@@ -30,17 +97,40 @@ struct HomeMacTodoBoardCardDropDelegate: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
+        guard let destinationIndex = orderedTaskIDs.firstIndex(of: destinationTaskID) else {
+            clearDragState()
+            return false
+        }
+
+        if let draggedTaskID {
+            return performDrop(draggedTaskID: draggedTaskID, destinationIndex: destinationIndex)
+        }
+
+        let didStartLoading = HomeMacTodoBoardDragPayload.loadTaskID(from: info) { taskID in
+            DispatchQueue.main.async {
+                guard let taskID else {
+                    clearDragState()
+                    return
+                }
+                _ = performDrop(draggedTaskID: taskID, destinationIndex: destinationIndex)
+            }
+        }
+        if !didStartLoading {
+            clearDragState()
+        }
+        return didStartLoading
+    }
+
+    private func performDrop(draggedTaskID: UUID, destinationIndex: Int) -> Bool {
         defer {
             clearDragState()
         }
 
-        guard let draggedTaskID,
-              draggedTaskID != destinationTaskID,
-              let destinationIndex = orderedTaskIDs.firstIndex(of: destinationTaskID) else {
+        guard draggedTaskID != destinationTaskID else {
             return false
         }
 
-        let reorderedIDs = reorderedTaskIDs(
+        let reorderedIDs = Self.reorderedTaskIDs(
             draggedTaskID: draggedTaskID,
             destinationIndex: destinationIndex,
             orderedTaskIDs: orderedTaskIDs
@@ -49,7 +139,7 @@ struct HomeMacTodoBoardCardDropDelegate: DropDelegate {
         return true
     }
 
-    private func reorderedTaskIDs(
+    static func reorderedTaskIDs(
         draggedTaskID: UUID,
         destinationIndex: Int,
         orderedTaskIDs: [UUID]
@@ -78,10 +168,15 @@ struct HomeMacTodoBoardColumnDropDelegate: DropDelegate {
     let onDropTask: (UUID, TodoState, [UUID]) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
-        draggedTaskID != nil
+        draggedTaskID != nil || HomeMacTodoBoardDragPayload.hasTaskPayload(in: info)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        validateDrop(info: info) ? DropProposal(operation: .move) : nil
     }
 
     func dropEntered(info: DropInfo) {
+        guard validateDrop(info: info) else { return }
         highlightedColumnState = columnState
         hoverTargetTaskID = nil
         trailingDropColumnState = columnState
@@ -97,15 +192,34 @@ struct HomeMacTodoBoardColumnDropDelegate: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
+        if let draggedTaskID {
+            performDrop(draggedTaskID: draggedTaskID)
+            return true
+        }
+
+        let didStartLoading = HomeMacTodoBoardDragPayload.loadTaskID(from: info) { taskID in
+            DispatchQueue.main.async {
+                guard let taskID else {
+                    clearDragState()
+                    return
+                }
+                performDrop(draggedTaskID: taskID)
+            }
+        }
+        if !didStartLoading {
+            clearDragState()
+        }
+        return didStartLoading
+    }
+
+    private func performDrop(draggedTaskID: UUID) {
         defer {
             clearDragState()
         }
 
-        guard let draggedTaskID else { return false }
         var reorderedIDs = orderedTaskIDs.filter { $0 != draggedTaskID }
         reorderedIDs.append(draggedTaskID)
         onDropTask(draggedTaskID, columnState, reorderedIDs)
-        return true
     }
 
     private func clearDragState() {

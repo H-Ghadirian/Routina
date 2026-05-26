@@ -37,7 +37,7 @@ struct HomeMacTodoBoardCardView: View {
             cornerRadius: 8,
             tint: isSelected ? .accentColor : .secondary,
             tintOpacity: isSelected ? 0.14 : 0.06,
-            interactive: true
+            interactive: false
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -53,7 +53,7 @@ struct HomeMacTodoBoardCardView: View {
         .onDrag {
             draggedTaskID = task.id
             onSelectTask(task.id)
-            return NSItemProvider(object: task.id.uuidString as NSString)
+            return HomeMacTodoBoardDragPayload.itemProvider(for: task.id)
         }
         .contextMenu {
             taskMenuItems
