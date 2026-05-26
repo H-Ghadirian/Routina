@@ -41,16 +41,18 @@ struct TodoStateTimingSectionView: View {
                 )
             }
 
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    ForEach(summary.stateTotals) { total in
-                        stateTotalChip(total)
+            if !visibleStateTotals.isEmpty {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(visibleStateTotals) { total in
+                            stateTotalChip(total)
+                        }
                     }
-                }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(summary.stateTotals) { total in
-                        stateTotalChip(total)
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(visibleStateTotals) { total in
+                            stateTotalChip(total)
+                        }
                     }
                 }
             }
@@ -81,6 +83,10 @@ struct TodoStateTimingSectionView: View {
             return .green
         }
         return summary.currentState.map(tint(for:)) ?? .secondary
+    }
+
+    private var visibleStateTotals: [TodoStateTimingStateTotal] {
+        summary.stateTotals.filter { $0.days > 0 }
     }
 
     private func timingHeroRow(
