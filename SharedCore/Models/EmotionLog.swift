@@ -303,6 +303,35 @@ final class EmotionLog {
         )
     }
 
+    func update(
+        families: [EmotionFamily],
+        labels: [String],
+        valence: Double,
+        arousal: Double,
+        intensity: Int,
+        bodyAreas: [EmotionBodyArea],
+        reflection: String?,
+        linkedNoteID: UUID?,
+        linkedGoalID: UUID?,
+        linkedTaskID: UUID?,
+        linkedPlaceID: UUID?,
+        linkedSleepSessionID: UUID?,
+        updatedAt: Date? = Date()
+    ) {
+        applyEmotionSelection(families: families, labels: labels)
+        self.valence = Self.clampedAffectValue(valence)
+        self.arousal = Self.clampedAffectValue(arousal)
+        self.intensity = min(max(intensity, 1), 5)
+        self.bodyAreasStorage = EmotionBodyAreaStorage.serialize(bodyAreas)
+        self.reflection = Self.cleanedText(reflection)
+        self.linkedNoteID = linkedNoteID
+        self.linkedGoalID = linkedGoalID
+        self.linkedTaskID = linkedTaskID
+        self.linkedPlaceID = linkedPlaceID
+        self.linkedSleepSessionID = linkedSleepSessionID
+        self.updatedAt = updatedAt
+    }
+
     static func cleanedText(_ value: String?) -> String? {
         guard let value else { return nil }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)

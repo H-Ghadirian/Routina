@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -41,6 +42,49 @@ struct EmotionFamilyTests {
         #expect(log.labels == ["relaxed"])
         #expect(log.displayLabel == "relaxed")
         #expect(log.familiesDisplayTitle == "Calm")
+    }
+
+    @Test
+    func emotionLogUpdateEditsExistingSelectionAndTimestamp() {
+        let createdAt = Date(timeIntervalSince1970: 100)
+        let updatedAt = Date(timeIntervalSince1970: 200)
+        let log = EmotionLog(
+            family: .calm,
+            label: "relaxed",
+            valence: 0.6,
+            arousal: -0.5,
+            intensity: 2,
+            createdAt: createdAt,
+            updatedAt: createdAt
+        )
+
+        log.update(
+            families: [.fear, .anger],
+            labels: ["worried", "frustrated"],
+            valence: -0.8,
+            arousal: 0.7,
+            intensity: 5,
+            bodyAreas: [.chest],
+            reflection: "After the call",
+            linkedNoteID: UUID(),
+            linkedGoalID: nil,
+            linkedTaskID: nil,
+            linkedPlaceID: nil,
+            linkedSleepSessionID: nil,
+            updatedAt: updatedAt
+        )
+
+        #expect(log.createdAt == createdAt)
+        #expect(log.updatedAt == updatedAt)
+        #expect(log.families == [.fear, .anger])
+        #expect(log.labels == ["worried", "frustrated"])
+        #expect(log.displayLabel == "worried, frustrated")
+        #expect(log.valence == -0.8)
+        #expect(log.arousal == 0.7)
+        #expect(log.intensity == 5)
+        #expect(log.bodyAreas == [.chest])
+        #expect(log.reflection == "After the call")
+        #expect(log.linkedNoteID != nil)
     }
 
     @Test

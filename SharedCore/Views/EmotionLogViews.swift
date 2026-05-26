@@ -65,21 +65,39 @@ struct EmotionLogEditorView: View {
     @State private var linkedPlaceID: UUID?
     @State private var linkedSleepSessionID: UUID?
 
+    let emotion: EmotionLog?
     let onCancel: (() -> Void)?
     let onSaved: ((UUID) -> Void)?
 
     init(
+        emotion: EmotionLog? = nil,
         onCancel: (() -> Void)? = nil,
         onSaved: ((UUID) -> Void)? = nil
     ) {
+        self.emotion = emotion
         self.onCancel = onCancel
         self.onSaved = onSaved
+
+        let initialFamilies = emotion?.families ?? [.calm]
+        let initialLabels = emotion?.displayLabels ?? [EmotionFamily.calm.defaultLabel]
+        _valence = State(initialValue: emotion?.valence ?? 0.25)
+        _arousal = State(initialValue: emotion?.arousal ?? -0.15)
+        _selectedFamilies = State(initialValue: Set(initialFamilies))
+        _selectedLabels = State(initialValue: Set(initialLabels))
+        _intensity = State(initialValue: Double(emotion?.clampedIntensity ?? 3))
+        _selectedBodyAreas = State(initialValue: Set(emotion?.bodyAreas ?? []))
+        _reflection = State(initialValue: emotion?.reflection ?? "")
+        _linkedNoteID = State(initialValue: emotion?.linkedNoteID)
+        _linkedGoalID = State(initialValue: emotion?.linkedGoalID)
+        _linkedTaskID = State(initialValue: emotion?.linkedTaskID)
+        _linkedPlaceID = State(initialValue: emotion?.linkedPlaceID)
+        _linkedSleepSessionID = State(initialValue: emotion?.linkedSleepSessionID)
     }
 
     var body: some View {
         NavigationStack {
             editorContent
-                .navigationTitle("Emotion Log")
+                .navigationTitle(editorTitle)
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -90,7 +108,7 @@ struct EmotionLogEditorView: View {
                     }
 
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
+                        Button(saveButtonTitle) {
                             save()
                         }
                         .keyboardShortcut(.defaultAction)
@@ -153,12 +171,20 @@ struct EmotionLogEditorView: View {
             Button {
                 save()
             } label: {
-                Label("Save", systemImage: "checkmark")
+                Label(saveButtonTitle, systemImage: "checkmark")
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
             #endif
         }
+    }
+
+    private var editorTitle: String {
+        emotion == nil ? "Emotion Log" : "Edit Emotion"
+    }
+
+    private var saveButtonTitle: String {
+        emotion == nil ? "Save" : "Update"
     }
 
     private var moodCard: some View {
@@ -500,25 +526,50 @@ struct EmotionLogEditorView: View {
     }
 
     private func save() {
-        let log = EmotionLog(
-            families: selectedFamiliesInDisplayOrder,
-            labels: selectedLabelsInDisplayOrder,
-            valence: valence,
-            arousal: arousal,
-            intensity: Int(intensity.rounded()),
-            bodyAreas: EmotionBodyArea.allCases.filter { selectedBodyAreas.contains($0) },
-            reflection: reflection,
-            linkedNoteID: linkedNoteID,
-            linkedGoalID: linkedGoalID,
-            linkedTaskID: linkedTaskID,
-            linkedPlaceID: linkedPlaceID,
-            linkedSleepSessionID: linkedSleepSessionID
-        )
-        modelContext.insert(log)
+        let bodyAreas = EmotionBodyArea.allCases.filter { selectedBodyAreas.contains($0) }
+        let savedID: UUID
+        if let emotion {
+            emotion.update(
+                families: selectedFamiliesInDisplayOrder,
+                labels: selectedLabelsInDisplayOrder,
+                valence: valence,
+                arousal: arousal,
+                intensity: Int(intensity.rounded()),
+                bodyAreas: bodyAreas,
+                reflection: reflection,
+                linkedNoteID: linkedNoteID,
+                linkedGoalID: linkedGoalID,
+                linkedTaskID: linkedTaskID,
+                linkedPlaceID: linkedPlaceID,
+                linkedSleepSessionID: linkedSleepSessionID
+            )
+            savedID = emotion.id
+        } else {
+            let log = EmotionLog(
+                families: selectedFamiliesInDisplayOrder,
+                labels: selectedLabelsInDisplayOrder,
+                valence: valence,
+                arousal: arousal,
+                intensity: Int(intensity.rounded()),
+                bodyAreas: bodyAreas,
+                reflection: reflection,
+                linkedNoteID: linkedNoteID,
+                linkedGoalID: linkedGoalID,
+                linkedTaskID: linkedTaskID,
+                linkedPlaceID: linkedPlaceID,
+                linkedSleepSessionID: linkedSleepSessionID
+            )
+            modelContext.insert(log)
+            savedID = log.id
+        }
+
         do {
             try modelContext.save()
-            onSaved?(log.id)
-            dismiss()
+            if let onSaved {
+                onSaved(savedID)
+            } else {
+                dismiss()
+            }
         } catch {
             modelContext.rollback()
         }
@@ -527,6 +578,7 @@ struct EmotionLogEditorView: View {
 
 struct EmotionLogDetailView: View {
     let emotion: EmotionLog
+    @State private var isEditing = false
     @Query private var notes: [RoutineNote]
     @Query private var goals: [RoutineGoal]
     @Query private var tasks: [RoutineTask]
@@ -534,6 +586,24 @@ struct EmotionLogDetailView: View {
     @Query private var sleepSessions: [SleepSession]
 
     var body: some View {
+        Group {
+            if isEditing {
+                EmotionLogEditorView(
+                    emotion: emotion,
+                    onCancel: { isEditing = false },
+                    onSaved: { _ in isEditing = false }
+                )
+                .id(emotion.id)
+            } else {
+                detailContent
+            }
+        }
+        .onChange(of: emotion.id) { _, _ in
+            isEditing = false
+        }
+    }
+
+    private var detailContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(spacing: 12) {
@@ -552,6 +622,13 @@ struct EmotionLogDetailView: View {
                     }
 
                     Spacer(minLength: 0)
+
+                    Button {
+                        isEditing = true
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .buttonStyle(.bordered)
                 }
 
                 EmotionLogCard(title: "Mood", systemImage: "circle.grid.cross") {

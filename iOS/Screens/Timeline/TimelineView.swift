@@ -136,7 +136,11 @@ timelineRoot
             [
                 emotion.id.uuidString,
                 emotion.familyRawValue,
+                emotion.familyRawValuesStorage,
                 emotion.label,
+                emotion.labelsStorage,
+                emotion.valence.description,
+                emotion.arousal.description,
                 emotion.intensity.description,
                 emotion.bodyAreasStorage,
                 emotion.reflection ?? "",
