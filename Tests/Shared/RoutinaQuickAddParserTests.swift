@@ -34,6 +34,21 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func parseBareHourAfterAtAsExactTime() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Water plants every Sat at 9 #home",
+            referenceDate: makeDate("2026-04-23T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        #expect(draft.name == "Water plants")
+        #expect(draft.recurrenceRule.kind == .weekly)
+        #expect(draft.recurrenceRule.weekday == 7)
+        #expect(draft.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 9, minute: 0))
+        #expect(draft.tags == ["home"])
+    }
+
+    @Test
     func parseTomorrowTodoWithDeadline() throws {
         let calendar = makeTestCalendar()
         let draft = try #require(RoutinaQuickAddParser.parse(

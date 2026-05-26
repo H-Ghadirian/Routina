@@ -29,7 +29,6 @@ struct HomeTCAView: View {
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
     @State var areTopActionsExpanded = false
-    @State var isQuickAddSheetPresented = false
     @State var isNoteEditorPresented = false
     @State var isPlaceCheckInMapPresented = false
     @State var isRefreshScheduled = false
@@ -72,11 +71,6 @@ homeContent
             )
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
-                }
-                .sheet(isPresented: $isQuickAddSheetPresented) {
-                    QuickAddTaskSheet {
-                        requestRefresh()
-                    }
                 }
                 .sheet(isPresented: $isNoteEditorPresented) {
                     RoutineNoteEditorView()
@@ -176,7 +170,9 @@ homeContent
             state: \.addRoutineState,
             action: \.addRoutineSheet
         ) {
-            AddRoutineTCAView(store: addRoutineStore)
+            IOSSmartAddTaskSheet(addRoutineStore: addRoutineStore) {
+                requestRefresh()
+            }
         }
     }
 
@@ -393,6 +389,284 @@ homeContent
                 }
             }
         )
+    }
+}
+
+private struct IOSSmartAddTaskSheet: View {
+    let addRoutineStore: StoreOf<AddRoutineFeature>
+    let onCreated: () -> Void
+
+    @Environment(\.calendar) private var calendar
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @FocusState private var isInputFocused: Bool
+    @State private var text = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+    @State private var isShowingDetails = false
+
+    private var draft: RoutinaQuickAddDraft? {
+        RoutinaQuickAddParser.parse(text, calendar: calendar)
+    }
+
+    private var canSave: Bool {
+        draft != nil && !isSaving
+    }
+
+    var body: some View {
+        if isShowingDetails {
+            AddRoutineTCAView(store: addRoutineStore)
+        } else {
+            smartAddContent
+        }
+    }
+
+    private var smartAddContent: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(
+                        "water plants every Sat at 9 #home",
+                        text: $text,
+                        axis: .vertical
+                    )
+                    .focused($isInputFocused)
+                    .lineLimit(2...5)
+                    .disabled(isSaving)
+                    .submitLabel(.done)
+                    .textInputAutocapitalization(.sentences)
+                    .onSubmit(save)
+                }
+
+                if let draft {
+                    Section("Detected") {
+                        IOSSmartAddDetectedChips(draft: draft)
+                    }
+                }
+
+                Section {
+                    Button {
+                        openDetails()
+                    } label: {
+                        Label("Details", systemImage: "slider.horizontal.3")
+                    }
+                }
+
+                if let errorMessage {
+                    Section {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("New Task")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .disabled(isSaving)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        save()
+                    } label: {
+                        if isSaving {
+                            ProgressView()
+                        } else {
+                            Text("Add")
+                        }
+                    }
+                    .disabled(!canSave)
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+            .task {
+                isInputFocused = true
+            }
+        }
+    }
+
+    private func save() {
+        guard canSave else { return }
+        errorMessage = nil
+        isSaving = true
+
+        Task { @MainActor in
+            defer { isSaving = false }
+            do {
+                _ = try await RoutinaQuickAddService.createTask(
+                    from: text,
+                    context: modelContext,
+                    calendar: calendar
+                )
+                onCreated()
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func openDetails() {
+        seedDetailsFromDraft()
+        isShowingDetails = true
+    }
+
+    private func seedDetailsFromDraft() {
+        guard let draft else {
+            addRoutineStore.send(.routineNameChanged(text.trimmingCharacters(in: .whitespacesAndNewlines)))
+            return
+        }
+
+        addRoutineStore.send(.routineNameChanged(draft.name))
+        addRoutineStore.send(.scheduleModeChanged(draft.scheduleMode))
+        seedFrequency(from: draft.frequencyInDays)
+        seedRecurrence(from: draft.recurrenceRule, scheduleMode: draft.scheduleMode)
+
+        if let deadline = draft.deadline {
+            addRoutineStore.send(.deadlineEnabledChanged(true))
+            addRoutineStore.send(.deadlineDateChanged(deadline))
+        } else {
+            addRoutineStore.send(.deadlineEnabledChanged(false))
+        }
+
+        if let reminderAt = draft.reminderAt {
+            addRoutineStore.send(.reminderEnabledChanged(true))
+            addRoutineStore.send(.reminderDateChanged(reminderAt))
+        } else {
+            addRoutineStore.send(.reminderEnabledChanged(false))
+        }
+
+        addRoutineStore.send(.importanceChanged(draft.importance))
+        addRoutineStore.send(.urgencyChanged(draft.urgency))
+        addRoutineStore.send(.estimatedDurationChanged(draft.estimatedDurationMinutes))
+        addRoutineStore.send(.focusModeEnabledChanged(draft.focusModeEnabled))
+
+        for tag in addRoutineStore.organization.routineTags {
+            addRoutineStore.send(.removeTag(tag))
+        }
+        for tag in draft.tags {
+            addRoutineStore.send(.tagDraftChanged(tag))
+            addRoutineStore.send(.addTagTapped)
+        }
+
+        addRoutineStore.send(.selectedPlaceChanged(matchingPlaceID(named: draft.placeName)))
+    }
+
+    private func seedFrequency(from days: Int) {
+        let safeDays = max(days, 1)
+        if safeDays.isMultiple(of: 30) {
+            addRoutineStore.send(.frequencyChanged(.month))
+            addRoutineStore.send(.frequencyValueChanged(max(safeDays / 30, 1)))
+        } else if safeDays.isMultiple(of: 7) {
+            addRoutineStore.send(.frequencyChanged(.week))
+            addRoutineStore.send(.frequencyValueChanged(max(safeDays / 7, 1)))
+        } else {
+            addRoutineStore.send(.frequencyChanged(.day))
+            addRoutineStore.send(.frequencyValueChanged(safeDays))
+        }
+    }
+
+    private func seedRecurrence(
+        from recurrenceRule: RoutineRecurrenceRule,
+        scheduleMode: RoutineScheduleMode
+    ) {
+        guard scheduleMode != .oneOff, !scheduleMode.isSoftIntervalRoutine else { return }
+
+        addRoutineStore.send(.recurrenceKindChanged(recurrenceRule.kind))
+
+        switch recurrenceRule.kind {
+        case .intervalDays:
+            break
+        case .dailyTime:
+            seedTimeConstraint(from: recurrenceRule)
+        case .weekly:
+            addRoutineStore.send(.recurrenceWeekdayChanged(recurrenceRule.weekday ?? calendar.firstWeekday))
+            seedTimeConstraint(from: recurrenceRule)
+        case .monthlyDay:
+            addRoutineStore.send(.recurrenceDayOfMonthChanged(recurrenceRule.dayOfMonth ?? 1))
+            seedTimeConstraint(from: recurrenceRule)
+        }
+    }
+
+    private func seedTimeConstraint(from recurrenceRule: RoutineRecurrenceRule) {
+        if let timeRange = recurrenceRule.timeRange {
+            addRoutineStore.send(.recurrenceHasTimeRangeChanged(true))
+            addRoutineStore.send(.recurrenceTimeRangeStartChanged(timeRange.start))
+            addRoutineStore.send(.recurrenceTimeRangeEndChanged(timeRange.end))
+        } else if let timeOfDay = recurrenceRule.timeOfDay {
+            addRoutineStore.send(.recurrenceHasExplicitTimeChanged(true))
+            addRoutineStore.send(.recurrenceTimeOfDayChanged(timeOfDay))
+        } else {
+            addRoutineStore.send(.recurrenceHasExplicitTimeChanged(false))
+            addRoutineStore.send(.recurrenceHasTimeRangeChanged(false))
+        }
+    }
+
+    private func matchingPlaceID(named placeName: String?) -> UUID? {
+        guard let placeName,
+              let normalizedName = RoutinePlace.normalizedName(placeName)
+        else {
+            return nil
+        }
+
+        return addRoutineStore.organization.availablePlaces.first { place in
+            RoutinePlace.normalizedName(place.name) == normalizedName
+        }?.id
+    }
+}
+
+private struct IOSSmartAddDetectedChips: View {
+    let draft: RoutinaQuickAddDraft
+
+    var body: some View {
+        HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+            chip("Title", draft.name, systemImage: "textformat")
+            chip("Plan", draft.scheduleSummaryText, systemImage: "calendar")
+
+            if !draft.tags.isEmpty {
+                chip("Tags", draft.tags.map { "#\($0)" }.joined(separator: " "), systemImage: "tag")
+            }
+
+            if let placeName = draft.placeName {
+                chip("Place", "@\(placeName)", systemImage: "mappin.and.ellipse")
+            }
+
+            if draft.importance != .level2 || draft.urgency != .level2 {
+                chip(
+                    "Priority",
+                    "\(draft.importance.title) / \(draft.urgency.title)",
+                    systemImage: "exclamationmark.triangle"
+                )
+            }
+
+            if let estimatedDurationMinutes = draft.estimatedDurationMinutes {
+                chip("Focus", "\(estimatedDurationMinutes)m", systemImage: "timer")
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func chip(
+        _ title: String,
+        _ value: String,
+        systemImage: String
+    ) -> some View {
+        Label {
+            Text("\(title): \(value)")
+                .lineLimit(1)
+                .truncationMode(.tail)
+        } icon: {
+            Image(systemName: systemImage)
+        }
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(maxWidth: 260, alignment: .leading)
+        .background(.quaternary, in: Capsule())
     }
 }
 

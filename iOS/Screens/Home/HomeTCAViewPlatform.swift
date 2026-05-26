@@ -63,7 +63,7 @@ detailContent
             showsSleepAction: shouldShowHomeSleepAction,
             onQuickAdd: {
                 collapseExpandedToolbarActions()
-                isQuickAddSheetPresented = true
+                openAddTask()
             },
             onShowFilters: {
                 collapseExpandedToolbarActions()

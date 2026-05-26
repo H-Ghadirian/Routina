@@ -14,6 +14,10 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
     var estimatedDurationMinutes: Int?
     var focusModeEnabled: Bool
 
+    var scheduleSummaryText: String {
+        scheduleSummary
+    }
+
     var summaryText: String {
         var parts: [String] = []
         parts.append(scheduleSummary)
@@ -279,6 +283,13 @@ enum RoutinaQuickAddParser {
             from: &working
         ), let hour = Int(match.groups[0]), let minute = Int(match.groups[1]) {
             return RoutineTimeOfDay(hour: hour, minute: minute)
+        }
+
+        if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)at\\s+(\\d{1,2})(?=\\s|$)",
+            from: &working
+        ), let hour = Int(match.groups[0]) {
+            return RoutineTimeOfDay(hour: hour, minute: 0)
         }
 
         return nil
